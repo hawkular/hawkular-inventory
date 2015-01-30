@@ -14,6 +14,16 @@ image:https://travis-ci.org/hawkular/hawkular-inventory.svg["Build Status", link
 .org/hawkular/hawkular-inventory"]
 endif::[]
 
+== About Inventory
+
+The project is divided into several modules
+
+* api: the Java Api of Hawkular-Inventory
+* impl: the Backend implementation of the Inventory service
+* rest-servlet: A JAX-RS servlet implementation that provides a gateway to the Java Api. It creates a .war file that
+contain the Java api and Implementation to be deployed into a WildFly server
+* rest-test: Integration tests of the rest-api above
+
 == License
 
 Hawkular-Inventory is released under Apache License, Version 2.0 as described in the link:LICENSE[LICENSE] document

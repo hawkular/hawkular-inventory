@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,12 @@ import org.hawkular.inventory.api.Resource;
 import org.hawkular.inventory.api.ResourceType;
 
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 import java.util.List;
@@ -43,8 +48,9 @@ public class RestApi {
     Inventory inventory;
 
     /*
-    [14:23:18]  <theute>	POST /hawkular/inventory/resources { type:url; parameters { url="http://www.google.com" } and return an id would do...
-    [14:23:47]  <theute>	GET /hawkular/inventory/resources?type=url to return all URLs typed resources
+    [14:23:18]  <theute>   POST /hawkular/inventory/resources { type:url; parameters { url="http://www.google.com" }
+        and return an id would do...
+    [14:23:47]  <theute>    GET /hawkular/inventory/resources?type=url to return all URLs typed resources
      */
 
 
@@ -57,10 +63,7 @@ public class RestApi {
     @POST
     @Path("/{tenantId}/resources")
     public Response addResource(@PathParam("tenantId") String tenantId,
-                            Resource definition)
-    {
-
-
+                            Resource definition) {
 
         try {
             String id = inventory.addResource(tenantId, definition);
@@ -80,9 +83,7 @@ public class RestApi {
     @GET
     @Path("/{tenantId}/resources")
     public Response getResources(@PathParam("tenantId") String tenantId,
-                             @PathParam("type") ResourceType type)
-
-    {
+                             @PathParam("type") ResourceType type) {
 
         try {
             List<Resource> bla = inventory.getResourcesForType(tenantId, type);
@@ -96,8 +97,8 @@ public class RestApi {
     @GET
     @Path("/{tenantId}/resource/{uid}")
     public Response getResource(@PathParam("tenantId") String tenantId, @PathParam
-            ("uid") String uid)
-    {
+            ("uid") String uid) {
+
         try {
             Resource def = inventory.getResource(tenantId, uid);
 
