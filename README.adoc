@@ -24,6 +24,51 @@ The project is divided into several modules
 contain the Java api and Implementation to be deployed into a WildFly server
 * rest-test: Integration tests of the rest-api above
 
+== Setup
+
+The build currently runs inside a WildFly server, that has a H2-DB installed. You can use the following
+snippet to configure this database:
+
+[source,xml]
+----
+<datasource jta="true" jndi-name="java:/jdbc/HawkularDS" pool-name="HawkularDS" enabled="true" use-ccm="true">
+    <connection-url>jdbc:h2:standalone/data/hawkular_db</connection-url>
+    <driver-class>org.h2.Driver</driver-class>
+    <driver>h2</driver>
+    <security>
+        <user-name>sa</user-name>
+        <password>sa</password>
+    </security>
+    <validation>
+        <validate-on-match>false</validate-on-match>
+        <background-validation>false</background-validation>
+    </validation>
+    <timeout>
+        <set-tx-query-timeout>false</set-tx-query-timeout>
+        <blocking-timeout-millis>0</blocking-timeout-millis>
+        <idle-timeout-minutes>0</idle-timeout-minutes>
+        <query-timeout>0</query-timeout>
+        <use-try-lock>0</use-try-lock>
+        <allocation-retry>0</allocation-retry>
+        <allocation-retry-wait-millis>0</allocation-retry-wait-millis>
+    </timeout>
+    <statement>
+        <share-prepared-statements>false</share-prepared-statements>
+    </statement>
+</datasource>
+----
+
+The datasource files will then be created inside the `standalone/data/` directory:
+
+----
+wildfly-8.2.0.Final $ ls standalone/data/
+content  hawkular_db.h2.db  timer-service-data  tx-object-store
+----
+
+To clean the database, just remove those `hawkular_db.h2*` files.
+
+We will make some automated process available in the future.
+
 == License
 
 Hawkular-Inventory is released under Apache License, Version 2.0 as described in the link:LICENSE[LICENSE] document

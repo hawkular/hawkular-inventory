@@ -32,5 +32,6 @@ public interface Inventory {
 
     Resource getResource(String tenant, String uid) throws Exception;
 
+    boolean deleteResource(String tenant, String uid) throws Exception;
 
 }

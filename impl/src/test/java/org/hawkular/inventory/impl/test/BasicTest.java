@@ -16,12 +16,14 @@
  */
 package org.hawkular.inventory.impl.test;
 
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Resource;
 import org.hawkular.inventory.api.ResourceType;
 import org.hawkular.inventory.impl.InventoryService;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.List;
 
 /**
@@ -31,10 +33,22 @@ import java.util.List;
  */
 public class BasicTest {
 
+
+    Connection conn;
+
+    @Before
+    public void setup() throws Exception {
+
+
+        Class.forName("org.h2.Driver");
+        conn = DriverManager.
+            getConnection("jdbc:h2:mem:test");
+    }
+
     @Test
     public void testAddGetOne() throws Exception {
 
-        Inventory inventory = new InventoryService();
+        InventoryService inventory = new InventoryService(conn);
 
         Resource resource = new Resource();
         resource.setType(ResourceType.URL);
@@ -52,6 +66,7 @@ public class BasicTest {
         List<Resource> resources = inventory.getResourcesForType("test",ResourceType.URL);
         assert resources != null;
         assert !resources.isEmpty();
+        assert resources.size() == 1 : "Found " + resources.size() + " entries, but expected 1";
         assert resources.get(0).equals(result);
 
     }
@@ -59,12 +74,12 @@ public class BasicTest {
     @Test
     public void testAddGetBadTenant() throws Exception {
 
-        Inventory inventory = new InventoryService();
+        InventoryService inventory = new InventoryService(conn);
 
         Resource resource = new Resource();
         resource.setType(ResourceType.URL);
         resource.addParameter("url","http://hawkular.org");
-        String id = inventory.addResource("test",resource);
+        String id = inventory.addResource("test2",resource);
 
         Resource result = inventory.getResource("bla",id);
         assert result == null;

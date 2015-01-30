@@ -89,4 +89,44 @@ class BaseTest extends RESTTest{
         }
     }
 
+    @Test
+    void addGetDeleteOne() {
+
+        def res = new Resource()
+        res.setType(ResourceType.URL)
+        res.setId("bla-bla")
+        res.addParameter("url","http://hawkular.org")
+
+        def tenantId = "rest-test";
+
+        def response = rhqm.post(path: "$tenantId/resources", body: res)
+        assertEquals(200, response.status)
+        assertEquals("bla-bla",response.data.id)
+
+
+        def data = response.data
+        def id = data.id
+
+        assertNotEquals("", id, "Id should not be empty")
+
+        response = rhqm.get(path: "$tenantId/resource/$id")
+
+        assertEquals(200, response.status)
+        assertEquals(id,response.data.id)
+
+        response = rhqm.delete(path: "$tenantId/resource/$id")
+        assertEquals(200, response.status)
+
+        try {
+            rhqm.get(path: "$tenantId/resource/$id")
+            assert false;
+        } catch (HttpResponseException e) {
+            ; // this is good
+        }
+
+
+
+
+    }
+
 }

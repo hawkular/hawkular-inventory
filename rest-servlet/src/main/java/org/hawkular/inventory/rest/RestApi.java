@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.ResourceType;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -68,15 +69,11 @@ public class RestApi {
         try {
             String id = inventory.addResource(tenantId, definition);
 
-            System.out.println("add " + id);
-
             return Response.ok(new IdWrapper(id)).build();
         } catch (Exception e) {
             RestApiLogger.LOGGER.warn(e);
             return Response.serverError().entity(e).build();
         }
-
-
     }
 
 
@@ -113,5 +110,27 @@ public class RestApi {
             return Response.serverError().build();
         }
     }
+
+
+    @DELETE
+    @Path("/{tenantId}/resource/{uid}")
+    public Response deleteResource(@PathParam("tenantId") String tenantId, @PathParam
+            ("uid") String uid) {
+
+        try {
+            boolean def = inventory.deleteResource(tenantId, uid);
+
+            if (def) {
+                return Response.ok(def).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.warn(e);
+            return Response.serverError().build();
+        }
+    }
+
 
 }

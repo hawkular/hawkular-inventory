@@ -61,4 +61,24 @@ public class Resource {
     public void setId(String id) {
         this.id = id;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Resource resource = (Resource) o;
+
+        if (id != null ? !id.equals(resource.id) : resource.id != null) return false;
+        if (type != resource.type) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type != null ? type.hashCode() : 0;
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        return result;
+    }
 }

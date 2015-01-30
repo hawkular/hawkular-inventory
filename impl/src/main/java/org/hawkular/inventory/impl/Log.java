@@ -14,30 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.impl;
 
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.impl.InventoryService;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import org.jboss.logging.LogMessage;
+import org.jboss.logging.Logger;
+import org.jboss.logging.Message;
+import org.jboss.logging.MessageLogger;
 
 /**
- * Creates the inventory service
+ * Logger for the Inventory impl.
+ *
+ * Code range is 3100-3199
+ *
  * @author Heiko W. Rupp
  */
-@SuppressWarnings("unused")
-@ApplicationScoped
-public class InventoryProducer {
+@MessageLogger(projectCode = "HAWK")
+public interface Log {
 
-    private Inventory inventory;
+    Log LOG = Logger.getMessageLogger(Log.class,"org.hawkular.inventory.impl");
 
-    @Produces
-    public Inventory getInventory() {
-        if (inventory == null) {
-            // TODO we want to differentiate here on the scenario
-            inventory = new InventoryService();
-        }
-        return inventory;
-    }
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3100, value = "Something bad has happened: %s")
+    void warn(String s);
 }

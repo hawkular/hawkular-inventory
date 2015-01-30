@@ -24,7 +24,9 @@ import org.jboss.logging.Message;
 import org.jboss.logging.MessageLogger;
 
 /**
- * Logger definitions for Jboss Logging
+ * Logger definitions for Jboss Logging for the rest api
+ *
+ * Code range is 3000-3099
  *
  * @author Heiko W. Rupp
  */
