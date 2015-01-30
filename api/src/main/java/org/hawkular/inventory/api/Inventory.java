@@ -34,4 +34,7 @@ public interface Inventory {
 
     boolean deleteResource(String tenant, String uid) throws Exception;
 
+    boolean addMetricToResource(String tenant, String resourceId, String metric_name) throws Exception;
+
+    List<String> listMetricsForResource(String tenant, String resourceId) throws Exception;
 }

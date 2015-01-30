@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.Resource;
 import org.hawkular.inventory.api.ResourceType;
 import org.hawkular.inventory.impl.db.DbManager;
 
+import javax.annotation.PreDestroy;
 import javax.ejb.Stateless;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -30,6 +31,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,17 +41,19 @@ import java.util.List;
  * @author Heiko Rupp
  */
 @Stateless
-//@javax.annotation.Resource(mappedName = "HAWKULAR_DS", name = "java:/jdbc/HawkularDS")
 public class InventoryService implements Inventory {
 
-//    @javax.annotation.Resource(mappedName = "HAWKULAR_DS")
+//    @javax.annotation.Resource( lookup = "java:/jdbc/HawkularDS")
     private DataSource db;
 
     Gson gson;
-    PreparedStatement insertStatement;
-    PreparedStatement findByTypeStatement;
-    PreparedStatement findByIdStatement;
-    PreparedStatement deleteByIdStatement;
+    PreparedStatement insertResourceStatement;
+    PreparedStatement findResourceByTypeStatement;
+    PreparedStatement findResourceByIdStatement;
+    PreparedStatement deleteResourceByIdStatement;
+    private PreparedStatement addMetricToResourceStatement;
+    private PreparedStatement listMetricsOfResourceStatement;
+    Connection connection;
 
     public InventoryService() {
 
@@ -59,7 +63,7 @@ public class InventoryService implements Inventory {
             db = (DataSource) ic.lookup("java:/jdbc/HawkularDS");
             ic.close();
         } catch (NamingException e) {
-            e.printStackTrace();  // TODO: Customise this generated block
+            e.printStackTrace();
         }
 
 
@@ -68,7 +72,7 @@ public class InventoryService implements Inventory {
             throw new RuntimeException("No db, can't continue");
         }
 
-        Connection connection;
+
         try {
             connection = db.getConnection("sa","sa");
             DbManager.setupDB(connection);
@@ -91,6 +95,17 @@ public class InventoryService implements Inventory {
         gson = new GsonBuilder().create();
     }
 
+    @PreDestroy
+    public void cleanup() {
+        if (connection!=null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();  // TODO: Customise this generated block
+            }
+        }
+    }
+
     @Override
     public String addResource(String tenant, Resource resource) throws Exception {
 
@@ -100,12 +115,12 @@ public class InventoryService implements Inventory {
             resource.setId(id);
         }
 
-        insertStatement.setString(1,id);
-        insertStatement.setString(2,tenant);
-        insertStatement.setString(3,resource.getType().name());
+        insertResourceStatement.setString(1, id);
+        insertResourceStatement.setString(2, tenant);
+        insertResourceStatement.setString(3, resource.getType().name());
         String payload = toJson(resource);
-        insertStatement.setString(4,payload);
-        insertStatement.execute();
+        insertResourceStatement.setString(4, payload);
+        insertResourceStatement.execute();
 
         return id;
     }
@@ -115,9 +130,9 @@ public class InventoryService implements Inventory {
 
         List<Resource> result = new ArrayList<>();
 
-        findByTypeStatement.setString(1,type.name());
-        findByTypeStatement.setString(2, tenant);
-        ResultSet resultSet = findByTypeStatement.executeQuery();
+        findResourceByTypeStatement.setString(1, type.name());
+        findResourceByTypeStatement.setString(2, tenant);
+        ResultSet resultSet = findResourceByTypeStatement.executeQuery();
         while (resultSet.next()) {
             String payload = resultSet.getString(1);
             Resource resource = fromJson(payload);
@@ -133,9 +148,10 @@ public class InventoryService implements Inventory {
 
         Resource result = null;
 
-        findByIdStatement.setString(1,uid);
-        findByIdStatement.setString(2, tenant);
-        ResultSet resultSet = findByIdStatement.executeQuery();
+        findResourceByIdStatement.setString(1, uid);
+        findResourceByIdStatement.setString(2, tenant);
+
+        ResultSet resultSet = findResourceByIdStatement.executeQuery();
         while (resultSet.next()) {
             String payload = resultSet.getString(1);
             result = fromJson(payload);
@@ -148,11 +164,49 @@ public class InventoryService implements Inventory {
     @Override
     public boolean deleteResource(String tenant, String uid) throws Exception {
 
-        deleteByIdStatement.setString(1,uid);
-        deleteByIdStatement.setString(2,tenant);
-        int count = deleteByIdStatement.executeUpdate();
+        deleteResourceByIdStatement.setString(1, uid);
+        deleteResourceByIdStatement.setString(2, tenant);
+        int count = deleteResourceByIdStatement.executeUpdate();
 
         return count ==1;
+    }
+
+    @Override
+    public boolean addMetricToResource(String tenant, String resourceId, String metric_name) throws Exception {
+        try {
+            addMetricToResourceStatement.setString(1, resourceId);
+            addMetricToResourceStatement.setString(2, tenant);
+            addMetricToResourceStatement.setString(3, metric_name);
+
+            int count = addMetricToResourceStatement.executeUpdate();
+
+            return count == 1;
+        }
+        catch (SQLException e) {
+            if (!e.getSQLState().equals("23505")) { // violated PK - we don't care
+                Log.LOG.warn(e.getMessage());
+            }
+            return false;
+        }
+    }
+
+
+    @Override
+    public List<String> listMetricsForResource(String tenant, String resourceId) throws Exception {
+
+        List<String> result = new ArrayList<>();
+
+        listMetricsOfResourceStatement.setString(1,resourceId);
+        listMetricsOfResourceStatement.setString(2, tenant);
+
+        ResultSet resultSet = listMetricsOfResourceStatement.executeQuery();
+        while (resultSet.next()) {
+            String payload = resultSet.getString(1);
+            result.add(payload);
+        }
+        resultSet.close();
+
+        return result;
     }
 
     private String createUUID() {
@@ -163,11 +217,19 @@ public class InventoryService implements Inventory {
 
     void prepareH2Statements(Connection c ) throws Exception {
 
-        insertStatement = c.prepareStatement("INSERT INTO HWK_RESOURCES VALUES ( ?, ?, ?, ? ) ");
-        insertStatement = c.prepareStatement("INSERT INTO HWK_RESOURCES VALUES ( ?, ?, ?, ? ) ");
-        findByIdStatement = c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r  WHERE ID = ? AND TENANT = ?");
-        findByTypeStatement = c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r WHERE type = ? AND tenant = ?");
-        deleteByIdStatement = c.prepareStatement("DELETE FROM HWK_RESOURCES WHERE ID = ? AND TENANT = ?");
+        // deal with resources
+        insertResourceStatement = c.prepareStatement("INSERT INTO HWK_RESOURCES VALUES ( ?, ?, ?, ? ) ");
+        findResourceByIdStatement =
+                c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r  WHERE ID = ? AND TENANT = ?");
+        findResourceByTypeStatement =
+                c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r WHERE type = ? AND tenant = ?");
+        deleteResourceByIdStatement = c.prepareStatement("DELETE FROM HWK_RESOURCES WHERE ID = ? AND TENANT = ?");
+
+        // deal with metrics
+        addMetricToResourceStatement = c.prepareStatement("INSERT INTO HWK_METRICS VALUES ( ?,?,?)");
+        listMetricsOfResourceStatement = c.prepareStatement("SELECT m.metric_name FROM HWK_METRICS m WHERE m" +
+                ".resource_id = ? AND TENANT = ?");
+
 
     }
 

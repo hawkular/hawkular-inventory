@@ -85,4 +85,27 @@ public class BasicTest {
         assert result == null;
 
     }
+
+    @Test
+    public void testAddMetricsToResource() throws Exception {
+
+        InventoryService inventory = new InventoryService(conn);
+
+        Resource resource = new Resource();
+        resource.setType(ResourceType.URL);
+        resource.addParameter("url","http://hawkular.org");
+        String tenant = "test3";
+        String id = inventory.addResource(tenant,resource);
+
+
+        inventory.addMetricToResource(tenant,id,"vm.user_load");
+        inventory.addMetricToResource(tenant,id,"vm.system_load");
+        inventory.addMetricToResource(tenant,id,"vm.size");
+        inventory.addMetricToResource(tenant,id,"cpu.count");
+
+        List<String> metrics = inventory.listMetricsForResource(tenant,id);
+
+        assert metrics.size()==4;
+
+    }
 }

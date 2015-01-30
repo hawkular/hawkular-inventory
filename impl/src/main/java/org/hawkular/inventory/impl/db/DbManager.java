@@ -36,12 +36,18 @@ public class DbManager {
 
     private static void createH2DDL(Connection c) throws Exception {
 
-          Statement s = c.createStatement();
-          s.execute("CREATE TABLE IF NOT EXISTS HWK_RESOURCES " +
-                  " (  id VARCHAR(250) PRIMARY KEY ,"+
-                  "  tenant VARCHAR(250) ,  \n" +
-                  "  type VARCHAR(12) ,   \n" +
-                  "  payload VARCHAR(1024) )");
+        Statement s = c.createStatement();
+        s.execute("CREATE TABLE IF NOT EXISTS HWK_RESOURCES " +
+              " (  id VARCHAR(250) PRIMARY KEY ,"+
+              "  tenant VARCHAR(250) ,  \n" +
+              "  type VARCHAR(12) ,   \n" +
+              "  payload VARCHAR(1024) )");
+
+        s.execute("CREATE TABLE IF NOT EXISTS HWK_METRICS " +
+              " ( resource_id VARCHAR(250) NOT NULL, " +
+              "  tenant VARCHAR(250) , " +
+              "   metric_name VARCHAR(250) NOT NULL )  ");
+        s.execute("CREATE UNIQUE INDEX ON HWK_METRICS ( resource_id, metric_name) ");
 
         s.close();
       }

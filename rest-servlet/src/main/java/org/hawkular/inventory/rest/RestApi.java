@@ -26,6 +26,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -133,4 +134,44 @@ public class RestApi {
     }
 
 
+    @PUT
+    @Path("/{tenantId}/resource/{resourceId}/metrics/{metric_name}")
+    public Response addMetricToResource(@PathParam("tenantId") String tenantId,
+                                        @PathParam("resourceId") String resourceId,
+                                        @PathParam("metric_name") String metricName) {
+
+        try {
+            boolean def = inventory.addMetricToResource(tenantId, resourceId, metricName);
+
+            if (def) {
+                return Response.ok(def).build();
+            } else {
+                return Response.status(Response.Status.NOT_MODIFIED).build();
+            }
+
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.warn(e);
+            return Response.serverError().build();
+        }
+
+
+
+    }
+
+    @GET
+    @Path("/{tenantId}/resource/{resourceId}/metrics")
+    public Response listMetricsOfResource(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceId") String resourceId) {
+
+
+        // TODO return 404 for no resource?
+        try {
+            List<String> bla = inventory.listMetricsForResource(tenantId, resourceId);
+            return Response.ok(bla).build();
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.warn(e);
+            return Response.serverError().entity(e).build();
+        }
+
+    }
 }
