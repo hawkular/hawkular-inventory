@@ -1,0 +1,98 @@
+= Inventory Rest Api
+
+Base Url: /hawkular/inventory
+
+The API offers the following endpoints:
+
+== Add Resource
+
+* Method POST
+* Url-Template /{tenant}/resources
+* Payload:
+----
+    {"type":"URL",   (1)
+     "id":"x1422733176502",  (2)
+     "parameters":{   (3)
+        "url":"http://hawkular.org"
+        }
+    }
+----
+(1) type of the resource
+(2)  uid of the resource. If empty server will assign one
+(3) Map of parameters
+
+== Get Resource
+
+* Method GET
+* Url-Template /{tenant}/resources/{id}
+
+
+Example
+[source, shell]
+----
+curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502 -HAccepts:application/json
+HTTP/1.1 200 OK
+Connection: keep-alive
+X-Powered-By: Undertow/1
+Server: WildFly/8
+Transfer-Encoding: chunked
+Content-Type: application/json
+Date: Sat, 31 Jan 2015 19:40:13 GMT
+
+{"type":"URL","id":"x1422733176502","parameters":{"url":"http://hawkular.org"}}
+----
+
+== Delete Resource
+
+* Method DELETE
+* Url-Template /{tenant}/resource/{id}
+
+
+== List Resources by Type
+
+* Method GET
+* Url-Template /{tenant}/resources
+* Query-Param: type : type of resource (currently only "URL")
+
+
+== Add Metrics To Resource
+
+* Method PUT
+* Url-Template /{tenant}/resource/{resourceId}/metrics
+* Payload: list of `MetricDefinition`
+
+[source]
+----
+    {
+     "name":"cpu.load1", (1)
+     "unit":"NONE",      (2)
+     "description":null  (3)
+    }
+----
+(1) Name of the metric, required
+(2) Unit - optional, "NONE" is default
+(3) Description: String, optional
+
+Note: when adding multiple metrics with the same name to a resource, the first definition will "win".
+
+== List Metrics of Resource
+
+* Method GET
+* Url-Tempalte /{tenant}/resource/{rid}/metrics
+
+Example:
+
+[source,shell]
+curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502/metrics -HAccepts:application/json
+----
+HTTP/1.1 200 OK
+Connection: keep-alive
+X-Powered-By: Undertow/1
+Server: WildFly/8
+Transfer-Encoding: chunked
+Content-Type: application/json
+Date: Sat, 31 Jan 2015 19:40:58 GMT
+
+[{"name":"cpu.load1","unit":"NONE","description":null},{"name":"cpu.load15","unit":"NONE","description":null},
+{"name":"cpu.load5","unit":"NONE","description":null}]
+----
