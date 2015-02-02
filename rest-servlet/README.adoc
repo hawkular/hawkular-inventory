@@ -78,13 +78,13 @@ Note: when adding multiple metrics with the same name to a resource, the first d
 == List Metrics of Resource
 
 * Method GET
-* Url-Tempalte /{tenant}/resource/{rid}/metrics
+* Url-Template /{tenant}/resource/{rid}/metrics
 
 Example:
 
 [source,shell]
-curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502/metrics -HAccepts:application/json
 ----
+curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502/metrics -HAccepts:application/json
 HTTP/1.1 200 OK
 Connection: keep-alive
 X-Powered-By: Undertow/1
@@ -93,6 +93,48 @@ Transfer-Encoding: chunked
 Content-Type: application/json
 Date: Sat, 31 Jan 2015 19:40:58 GMT
 
-[{"name":"cpu.load1","unit":"NONE","description":null},{"name":"cpu.load15","unit":"NONE","description":null},
-{"name":"cpu.load5","unit":"NONE","description":null}]
+[
+  {"name":"cpu.load1","unit":"NONE","description":null},
+  {"name":"cpu.load15","unit":"NONE","description":null},
+  {"name":"cpu.load5","unit":"NONE","description":null}
+]
 ----
+
+== Get one Metric
+
+* Method GET
+* URL-Template /{tenant}/resource/{rid}/metric/{mid}
+
+Example:
+
+[source,shell]
+----
+$ curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422867147296/metric/cpu.load1
+HTTP/1.1 200 OK
+Connection: keep-alive
+X-Powered-By: Undertow/1
+Server: WildFly/8
+Transfer-Encoding: chunked
+Content-Type: application/json
+Date: Mon, 02 Feb 2015 08:57:39 GMT
+
+{"name":"cpu.load1","unit":"BYTE","description":"This is the one minute load of the CPU"}
+----
+
+== Update one Metric
+
+* Method PUT
+* Url-Template  /{tenant}/resource/{rid}/metric/{mid}
+* Payload: One `MetricDefinition`
+
+[source]
+----
+    {
+     "name":"cpu.load1", (1)
+     "unit":"NONE",      (2)
+     "description":null  (3)
+    }
+----
+(1) Name of the metric, required
+(2) Unit - optional, "NONE" is default
+(3) Description: String, optional

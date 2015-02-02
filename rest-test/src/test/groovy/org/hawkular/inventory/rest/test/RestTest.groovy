@@ -86,6 +86,10 @@ class RestTest extends AbstractTestBase{
         assertEquals(200, response.status)
         assert response.data.size() > 0
         assertEquals(id,response.data[0].id)
+
+        response = client.delete(path: "$tenantId/resource/$id");
+        assertEquals(200, response.status)
+
     }
 
     @Test
@@ -153,7 +157,7 @@ class RestTest extends AbstractTestBase{
     }
 
     @Test
-    public void testAddMetricToResource() throws Exception {
+    public void testAddAndUpdateMetricToResource() throws Exception {
 
         def res = new Resource()
         res.setType(ResourceType.URL)
@@ -181,6 +185,16 @@ class RestTest extends AbstractTestBase{
         assert data.size() == 3
 
         println(rid)
+
+        metricDefinition.unit = MetricUnit.BYTE;
+        response = client.put(path: "$tenantId/resource/$rid/metric/cpu.load1", body: metricDefinition);
+
+        assertEquals(200, response.status)
+
+        response = client.get(path: "$tenantId/resource/$rid/metric/cpu.load1")
+        assertEquals(200, response.status)
+
+        assertEquals("BYTE", response.data.unit)
 
     }
 

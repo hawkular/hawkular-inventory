@@ -65,6 +65,7 @@ public class InventoryService implements Inventory {
 
     public InventoryService(Connection conn) {
         this();
+        this.connection = conn;
         try {
             DbManager.setupDB(conn);
             prepareH2Statements(conn);
@@ -222,6 +223,46 @@ public class InventoryService implements Inventory {
         resultSet.close();
 
         return result;
+    }
+
+    @Override
+    public boolean updateMetric(String tenant, String resourceId, MetricDefinition metric) throws Exception {
+        PreparedStatement s = connection.prepareStatement("MERGE INTO HWK_METRICS VALUES (?,?,?,?)");
+
+        s.setString(1, resourceId);
+        s.setString(2, tenant);
+        s.setString(3, metric.getName());
+        s.setString(4, toJson(metric));
+
+        int count = s.executeUpdate();
+
+        return count == 1;
+
+    }
+
+    @Override
+    public MetricDefinition getMetric(String tenant, String resourceId, String metricId) throws Exception {
+        PreparedStatement s = connection.prepareStatement("SELECT m.payload FROM HWK_METRICS m " +
+                "WHERE m.TENANT = ? AND m.RESOURCE_ID = ? and m.METRIC_NAME = ?");
+
+        s.setString(1, tenant);
+        s.setString(2, resourceId);
+        s.setString(3, metricId);
+
+        MetricDefinition result;
+
+        try (ResultSet resultSet = s.executeQuery()) {
+            result = null;
+            while (resultSet.next()) {
+                String payload = resultSet.getString(1);
+                result = fromJson(payload,MetricDefinition.class);
+            }
+
+        }
+        return result;
+
+
+
     }
 
     private String createUUID() {

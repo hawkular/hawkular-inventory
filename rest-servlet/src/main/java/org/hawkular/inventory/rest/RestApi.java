@@ -182,4 +182,56 @@ public class RestApi {
         }
 
     }
+
+    @GET
+    @Path("/{tenantId}/resource/{resourceId}/metric/{metricId}")
+    public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceId") String resourceId,
+                                            @PathParam("metricId") String metricId
+    ) {
+
+
+        try {
+
+            if (inventory.getResource(tenantId, resourceId)==null) {
+                return Response.status(404).entity("Resource with ID " + resourceId + " not found for tenant").build();
+            }
+
+            MetricDefinition bla = inventory.getMetric(tenantId, resourceId, metricId);
+            if (bla==null) {
+                return Response.status(404).entity("Metric {" + metricId + "} for " +
+                        "Resource with ID " + resourceId + " not found for tenant")
+                        .build();
+            }
+            return Response.ok(bla).build();
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.warn(e);
+            return Response.serverError().entity(e).build();
+        }
+    }
+
+    @PUT
+    @Path("/{tenantId}/resource/{resourceId}/metric/{metricId}")
+    public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceId") String resourceId,
+                                            MetricDefinition payload) {
+
+        try {
+            if (inventory.getResource(tenantId, resourceId)==null) {
+                return Response.status(404).entity("Resource with ID " + resourceId + " not found for tenant").build();
+            }
+
+            boolean updated = inventory.updateMetric(tenantId,resourceId,payload);
+
+            if (updated) {
+                return Response.ok().build();
+            } else {
+                return Response.notModified().build();
+            }
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.warn(e);
+            return Response.serverError().entity(e).build();
+        }
+    }
+
 }

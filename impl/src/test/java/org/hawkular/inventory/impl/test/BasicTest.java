@@ -29,6 +29,9 @@ import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 /**
  * Test some basic functionality
  *
@@ -116,5 +119,16 @@ public class BasicTest {
 
         assert metrics.size()==6;
 
+        MetricDefinition updateDef = new MetricDefinition("vm.size");
+        updateDef.setUnit(MetricUnit.BYTE);
+        updateDef.setDescription("How much memory does the vm use?");
+
+        boolean updated = inventory.updateMetric(tenant,id,updateDef);
+        assert updated;
+
+        MetricDefinition vmDef = inventory.getMetric(tenant,id,"vm.size");
+        assertNotNull(vmDef);
+        assertEquals("vm.size", vmDef.getName());
+        assertEquals(MetricUnit.BYTE, vmDef.getUnit());
     }
 }

@@ -45,4 +45,10 @@ public interface Inventory {
 
     /** Retrieve all metrics for a resource */
     Collection<MetricDefinition> listMetricsForResource(String tenant, String resourceId) throws Exception;
+
+    /** Updates a single metric */
+    boolean updateMetric(String tenant, String resourceId, MetricDefinition metric) throws Exception;
+
+    /** Retrieve one metric by its id */
+    MetricDefinition getMetric(String tenant, String resourceId, String metricId) throws Exception;
 }
