@@ -47,8 +47,9 @@ public class DbManager {
               " ( resource_id VARCHAR(250) NOT NULL, " +
               "  tenant VARCHAR(250) , " +
               "   metric_name VARCHAR(250) NOT NULL," +
-                " payload VARCHAR(2048) )  ");
-        s.execute("CREATE UNIQUE INDEX ON HWK_METRICS ( resource_id, metric_name) ");
+                " payload VARCHAR(2048) ," +
+                "PRIMARY KEY (resource_id, metric_name) ) ");
+//        s.execute("CREATE UNIQUE INDEX ON HWK_METRICS ( resource_id, metric_name) ");
 
         s.close();
       }
