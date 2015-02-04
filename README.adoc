@@ -69,6 +69,22 @@ To clean the database, just remove those `hawkular_db.h2*` files.
 
 We will make some automated process available in the future.
 
+== Logger
+
+Hawkular-Inv uses Logger prefix `HAWKINV` for looging wiht JBoss-Logging.
+
+Code ranges are
+api: 1-999
+impl:  1000-1999
+rest-api : 2000-2999
+
+== Rest-Tests
+
+The rest-tests are not run by default as they need a running WildFly server with above setup.
+To run them manually you can specify not to skip them
+
+    mvn -Dmaven.test.skip=false test
+
 == License
 
 Hawkular-Inventory is released under Apache License, Version 2.0 as described in the link:LICENSE[LICENSE] document

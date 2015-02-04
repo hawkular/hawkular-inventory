@@ -24,16 +24,16 @@ import org.jboss.logging.MessageLogger;
 /**
  * Logger for the Inventory impl.
  *
- * Code range is 3100-3199
+ * Code range is 1000-1999
  *
  * @author Heiko W. Rupp
  */
-@MessageLogger(projectCode = "HAWK")
+@MessageLogger(projectCode = "HAWKINV")
 public interface Log {
 
     Log LOG = Logger.getMessageLogger(Log.class,"org.hawkular.inventory.impl");
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 3100, value = "Something bad has happened: %s")
+    @Message(id = 1000, value = "Something bad has happened: %s")
     void warn(String s);
 }
