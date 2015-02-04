@@ -26,22 +26,22 @@ import org.jboss.logging.MessageLogger;
 /**
  * Logger definitions for Jboss Logging for the rest api
  *
- * Code range is 3000-3099
+ * Code range is 2000-2999
  *
  * @author Heiko W. Rupp
  */
-@MessageLogger(projectCode = "HAWK")
+@MessageLogger(projectCode = "HAWKINV")
 public interface RestApiLogger {
 
     RestApiLogger LOGGER = Logger.getMessageLogger(RestApiLogger.class, "org.hawkular.inventory.rest");
 
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 3000, value = "Hawkular-Inventory REST Api is starting...")
+    @Message(id = 2000, value = "Hawkular-Inventory REST Api is starting...")
     void apiStarting();
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 3001, value = "Something bad has happened")
+    @Message(id = 2001, value = "Something bad has happened")
     void warn(@Cause Throwable t);
 
 }
