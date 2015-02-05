@@ -16,10 +16,10 @@
  */
 package org.hawkular.inventory.impl;
 
-import org.jboss.logging.LogMessage;
 import org.jboss.logging.Logger;
-import org.jboss.logging.Message;
-import org.jboss.logging.MessageLogger;
+import org.jboss.logging.annotations.LogMessage;
+import org.jboss.logging.annotations.Message;
+import org.jboss.logging.annotations.MessageLogger;
 
 /**
  * Logger for the Inventory impl.
@@ -31,7 +31,7 @@ import org.jboss.logging.MessageLogger;
 @MessageLogger(projectCode = "HAWKINV")
 public interface Log {
 
-    Log LOG = Logger.getMessageLogger(Log.class,"org.hawkular.inventory.impl");
+    Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.impl");
 
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 1000, value = "Something bad has happened: %s")
