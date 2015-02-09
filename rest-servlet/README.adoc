@@ -52,7 +52,8 @@ Date: Sat, 31 Jan 2015 19:40:13 GMT
 
 * Method GET
 * Url-Template /{tenant}/resources
-* Query-Param: type : type of resource (currently only "URL")
+* Query-Param: type : type of resource (currently only "URL"), optional. If no type is given all resources
+are returned
 
 
 == Add Metrics To Resource

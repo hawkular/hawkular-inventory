@@ -56,6 +56,7 @@ public class InventoryService implements Inventory {
     private PreparedStatement listMetricsOfResourceStatement;
     Connection connection;
     private PreparedStatement deleteMetricsOfResourceStatement;
+    private PreparedStatement findResourcesForTenant;
 
     public InventoryService() {
 
@@ -126,10 +127,17 @@ public class InventoryService implements Inventory {
     public List<Resource> getResourcesForType(String tenant, ResourceType type) throws Exception {
 
         List<Resource> result = new ArrayList<>();
+        ResultSet resultSet;
 
-        findResourceByTypeStatement.setString(1, type.name());
-        findResourceByTypeStatement.setString(2, tenant);
-        ResultSet resultSet = findResourceByTypeStatement.executeQuery();
+        if (type!=null) {
+            findResourceByTypeStatement.setString(1, type.name());
+            findResourceByTypeStatement.setString(2, tenant);
+            resultSet = findResourceByTypeStatement.executeQuery();
+        } else {
+            findResourcesForTenant.setString(1, tenant);
+            resultSet = findResourcesForTenant.executeQuery();
+        }
+
         while (resultSet.next()) {
             String payload = resultSet.getString(1);
             Resource resource = fromJson(payload, Resource.class);
@@ -279,6 +287,8 @@ public class InventoryService implements Inventory {
                 c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r  WHERE ID = ? AND TENANT = ?");
         findResourceByTypeStatement =
                 c.prepareStatement("SELECT r.payload FROM HWK_RESOURCES r WHERE type = ? AND tenant = ?");
+        findResourcesForTenant =
+                c.prepareStatement("SELECT r.PAYLOAD FROM HWK_RESOURCES r WHERE TENANT = ?");
         deleteResourceByIdStatement = c.prepareStatement("DELETE FROM HWK_RESOURCES WHERE ID = ? AND TENANT = ?");
 
         // deal with metrics

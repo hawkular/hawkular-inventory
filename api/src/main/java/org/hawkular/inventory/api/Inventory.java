@@ -29,7 +29,7 @@ public interface Inventory {
     /** Add a resource for a tenant */
     String addResource(String tenant, Resource resource) throws Exception;
 
-    /** Retrieve a collection of resources for a given type */
+    /** Retrieve a collection of resources for a given type. If type is null, all resources are returned. */
     Collection<Resource> getResourcesForType(String tenant, ResourceType type) throws Exception;
 
     /** Get a resource by its Id */

@@ -78,7 +78,10 @@ public class RestApi {
     public Response getResourcesByType(@PathParam("tenantId") String tenantId,
                                        @QueryParam("type") String type) {
 
-        ResourceType rtype = ResourceType.valueOf(type.toUpperCase());
+        ResourceType rtype = null;
+        if (type!=null) {
+            rtype = ResourceType.valueOf(type.toUpperCase());
+        }
 
         try {
             Collection<Resource> resources = inventory.getResourcesForType(tenantId, rtype);
