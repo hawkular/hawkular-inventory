@@ -81,14 +81,49 @@ class RestTest extends AbstractTestBase{
 
         assertNotEquals("", id, "Id should not be empty")
 
-        response = client.get(path: "$tenantId/resources", query: [type: "url"] )
+        try {
+            response = client.get(path: "$tenantId/resources", query: [type: "url"] )
 
-        assertEquals(200, response.status)
-        assert response.data.size() > 0
-        assertEquals(id,response.data[0].id)
+            assertEquals(200, response.status)
+            assert response.data.size() > 0
+            assertEquals(id,response.data[0].id)
+        } finally {
+            response = client.delete(path: "$tenantId/resource/$id");
+            assertEquals(200, response.status)
+        }
 
-        response = client.delete(path: "$tenantId/resource/$id");
+
+    }
+
+    @Test
+    void addOneFindNoType() {
+
+        def res = new Resource()
+        res.setType(ResourceType.URL)
+        res.addParameter("url","http://hawkular.org")
+
+        def tenantId = "rest-test4";
+
+        def response = client.post(path: "$tenantId/resources", body: res)
         assertEquals(200, response.status)
+
+        def data = response.data
+        def id = data.id
+
+        assertNotEquals("", id, "Id should not be empty")
+
+        try {
+            response = client.get(path: "$tenantId/resources" )
+
+            assertEquals(200, response.status)
+            assert response.data.size() > 0
+            assertEquals(id,response.data[0].id)
+        } finally {
+            response = client.delete(path: "$tenantId/resource/$id");
+            assertEquals(200, response.status)
+
+        }
+
 
     }
 
