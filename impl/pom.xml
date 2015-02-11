@@ -85,6 +85,17 @@
       <groupId>org.jboss.spec.javax.ejb</groupId>
       <artifactId>jboss-ejb-api_3.1_spec</artifactId>
     </dependency>
+    <dependency>
+      <groupId>javax.jms</groupId>
+      <artifactId>jms-api</artifactId>
+      <version>1.1-rev-1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.bus</groupId>
+      <artifactId>hawkular-bus-common</artifactId>
+      <version>1.0.0.Alpha1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
 

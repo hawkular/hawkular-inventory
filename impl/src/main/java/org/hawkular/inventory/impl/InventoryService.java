@@ -18,6 +18,11 @@ package org.hawkular.inventory.impl;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.hawkular.bus.common.ConnectionContextFactory;
+import org.hawkular.bus.common.Endpoint;
+import org.hawkular.bus.common.MessageProcessor;
+import org.hawkular.bus.common.SimpleBasicMessage;
+import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.MetricDefinition;
 import org.hawkular.inventory.api.Resource;
@@ -27,6 +32,8 @@ import org.hawkular.inventory.impl.db.DbManager;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.Stateless;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,7 +41,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -46,6 +55,12 @@ public class InventoryService implements Inventory {
 
     @javax.annotation.Resource( lookup = "java:/jdbc/HawkularDS")
     private DataSource db;
+
+    @javax.annotation.Resource( lookup = "java:/topic/HawkularNotifications")
+    javax.jms.Topic topic;
+
+    @javax.annotation.Resource (lookup = "java:/HawkularBusConnectionFactory")
+    ConnectionFactory connectionFactory;
 
     Gson gson;
     PreparedStatement insertResourceStatement;
@@ -113,12 +128,19 @@ public class InventoryService implements Inventory {
             resource.setId(id);
         }
 
-        insertResourceStatement.setString(1, id);
-        insertResourceStatement.setString(2, tenant);
-        insertResourceStatement.setString(3, resource.getType().name());
-        String payload = toJson(resource);
-        insertResourceStatement.setString(4, payload);
-        insertResourceStatement.execute();
+        try {
+            String payload = toJson(resource);
+            insertResourceStatement.setString(1, id);
+            insertResourceStatement.setString(2, tenant);
+            insertResourceStatement.setString(3, resource.getType().name());
+            insertResourceStatement.setString(4, payload);
+            insertResourceStatement.execute();
+
+            sendNotification("resource_added",id, payload);
+
+        } catch (SQLException e) {
+            e.printStackTrace();  // TODO: Customise this generated block
+        }
 
         return id;
     }
@@ -169,6 +191,12 @@ public class InventoryService implements Inventory {
     @Override
     public boolean deleteResource(String tenant, String uid) throws Exception {
 
+        Resource res = getResource(tenant,uid);
+        if (res==null) {
+            return false;
+        }
+
+
         deleteMetricsOfResourceStatement.setString(1, uid);
         deleteMetricsOfResourceStatement.setString(2, tenant);
         deleteMetricsOfResourceStatement.executeUpdate();
@@ -176,6 +204,8 @@ public class InventoryService implements Inventory {
         deleteResourceByIdStatement.setString(1, uid);
         deleteResourceByIdStatement.setString(2, tenant);
         int count = deleteResourceByIdStatement.executeUpdate();
+
+        sendNotification("resource_deleted",uid,toJson(res));
 
         return count ==1;
     }
@@ -203,6 +233,9 @@ public class InventoryService implements Inventory {
 
             }
             addMetricToResourceStatement.executeBatch();
+
+            sendNotification("metric_added",resourceId,toJson(definitions));
+
         } catch (SQLException e) {
             if (!e.getSQLState().equals("23505")) { // violated PK - we don't care
                 Log.LOG.warn(e.getMessage());
@@ -270,6 +303,45 @@ public class InventoryService implements Inventory {
         return result;
 
 
+
+    }
+
+    /**
+     * Send a message to a JMS topic at java:/topic/HawkularNotifications
+     * @param code Code word of the notification
+     * @param resource Id of the resource
+     * @param payload The payload depends on the code
+     * @throws JMSException
+     */
+    private void sendNotification(String code, String resource, String payload) throws JMSException{
+
+        if (topic != null) {
+
+            ConnectionContextFactory factory = null;
+            try {
+
+                Endpoint endpoint = new Endpoint(Endpoint.Type.TOPIC,topic.getTopicName());
+                factory = new ConnectionContextFactory(connectionFactory);
+                ProducerConnectionContext pc = factory.createProducerConnectionContext(endpoint);
+                SimpleBasicMessage msg = new SimpleBasicMessage(payload);
+                MessageProcessor processor = new MessageProcessor();
+                Map<String,String> headers =new HashMap<>();
+                headers.put("code",code);
+                headers.put("resource",resource);
+                processor.send(pc, msg,headers);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            finally {
+                if (factory!=null) {
+                    factory.close();
+                }
+            }
+        }
+        else {
+            Log.LOG.wNoTopicConnection();
+        }
 
     }
 
