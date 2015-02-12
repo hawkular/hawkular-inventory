@@ -31,7 +31,7 @@ snippet to configure this database:
 
 [source,xml]
 ----
-<datasource jta="true" jndi-name="java:/jdbc/HawkularDS" pool-name="HawkularDS" enabled="true" use-ccm="true">
+<datasource jta="true" jndi-name="java:jboss/datasources/HawkularDS" pool-name="HawkularDS" enabled="true" use-ccm="true">
     <connection-url>jdbc:h2:standalone/data/hawkular_db</connection-url>
     <driver-class>org.h2.Driver</driver-class>
     <driver>h2</driver>

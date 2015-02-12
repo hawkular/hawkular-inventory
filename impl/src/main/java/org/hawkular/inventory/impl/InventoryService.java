@@ -53,7 +53,7 @@ import java.util.Map;
 @Stateless
 public class InventoryService implements Inventory {
 
-    @javax.annotation.Resource( lookup = "java:/jdbc/HawkularDS")
+    @javax.annotation.Resource( lookup = "java:jboss/datasources/HawkularDS")
     private DataSource db;
 
     @javax.annotation.Resource( lookup = "java:/topic/HawkularNotifications")
