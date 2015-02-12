@@ -14,26 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.hawkular.inventory.api.model.Feed;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public final class Feeds {
 
-    @Inject
-    Inventory inventory;
+    private Feeds() {
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+    }
+
+    public interface Browser extends BasicBrowser<Feed> {
+        Resources.Read resources();
+    }
+
+    public interface ReadAndRegister extends ReadInterface<Browser, Feed> {
+        Browser register(String proposedId);
     }
 }

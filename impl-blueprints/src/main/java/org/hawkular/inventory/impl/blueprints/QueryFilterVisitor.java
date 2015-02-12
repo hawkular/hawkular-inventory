@@ -14,26 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
 
-import org.hawkular.inventory.api.Inventory;
+package org.hawkular.inventory.impl.blueprints;
 
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Entity;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since ${MODULE_VERSION}
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public interface QueryFilterVisitor<S, E> {
+    void visit(HawkularPipeline<S, E> query, Related<? extends Entity> related);
 
-    @Inject
-    Inventory inventory;
+    void visit(HawkularPipeline<S, E> query, With.Ids ids);
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
-    }
+    void visit(HawkularPipeline<S, E> query, With.Types types);
 }
