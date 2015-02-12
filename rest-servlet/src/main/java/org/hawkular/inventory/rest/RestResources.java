@@ -143,14 +143,14 @@ public class RestResources {
     public Response addMetricToResource(@PathParam("tenantId") String tenantId,
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
-                                        Collection<Metric.Blueprint> payload) {
+                                        Collection<String> metricIds) {
 
 
         try {
-            Metrics.ReadWrite metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
+            Metrics.ReadRelate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
                     .resources().get(resourceId).metrics();
 
-            payload.forEach(metricDao::create);
+            metricIds.forEach(metricDao::add);
 
             return Response.ok().build();
         } catch (Exception e) {
