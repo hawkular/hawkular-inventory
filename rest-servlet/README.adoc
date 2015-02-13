@@ -30,7 +30,7 @@ The API offers the following endpoints:
 Example
 [source, shell]
 ----
-curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502 -HAccepts:application/json
+curl -i http://localhost:8080/hawkular/inventory/rest-test/resources/x1422733176502 -HAccepts:application/json
 HTTP/1.1 200 OK
 Connection: keep-alive
 X-Powered-By: Undertow/1
@@ -45,7 +45,7 @@ Date: Sat, 31 Jan 2015 19:40:13 GMT
 == Delete Resource
 
 * Method DELETE
-* Url-Template /{tenant}/resource/{id}
+* Url-Template /{tenant}/resources/{id}
 
 
 == List Resources by Type
@@ -59,7 +59,7 @@ are returned
 == Add Metrics To Resource
 
 * Method PUT
-* Url-Template /{tenant}/resource/{resourceId}/metrics
+* Url-Template /{tenant}/resources/{resourceId}/metrics
 * Payload: list of `MetricDefinition`
 
 [source]
@@ -79,13 +79,13 @@ Note: when adding multiple metrics with the same name to a resource, the first d
 == List Metrics of Resource
 
 * Method GET
-* Url-Template /{tenant}/resource/{rid}/metrics
+* Url-Template /{tenant}/resources/{rid}/metrics
 
 Example:
 
 [source,shell]
 ----
-curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422733176502/metrics -HAccepts:application/json
+curl -i http://localhost:8080/hawkular/inventory/rest-test/resources/x1422733176502/metrics -HAccepts:application/json
 HTTP/1.1 200 OK
 Connection: keep-alive
 X-Powered-By: Undertow/1
@@ -104,13 +104,13 @@ Date: Sat, 31 Jan 2015 19:40:58 GMT
 == Get one Metric
 
 * Method GET
-* URL-Template /{tenant}/resource/{rid}/metric/{mid}
+* URL-Template /{tenant}/resources/{rid}/metrics/{mid}
 
 Example:
 
 [source,shell]
 ----
-$ curl -i http://localhost:8080/hawkular/inventory/rest-test/resource/x1422867147296/metric/cpu.load1
+$ curl -i http://localhost:8080/hawkular/inventory/rest-test/resources/x1422867147296/metrics/cpu.load1
 HTTP/1.1 200 OK
 Connection: keep-alive
 X-Powered-By: Undertow/1
@@ -125,7 +125,7 @@ Date: Mon, 02 Feb 2015 08:57:39 GMT
 == Update one Metric
 
 * Method PUT
-* Url-Template  /{tenant}/resource/{rid}/metric/{mid}
+* Url-Template  /{tenant}/resources/{rid}/metrics/{mid}
 * Payload: One `MetricDefinition`
 
 [source]
