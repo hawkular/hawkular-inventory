@@ -93,7 +93,7 @@ public class RestApi {
     }
 
     @GET
-    @Path("/{tenantId}/resource/{uid}")
+    @Path("/{tenantId}/resources/{uid}")
     public Response getResource(@PathParam("tenantId") String tenantId, @PathParam
             ("uid") String uid) {
 
@@ -114,7 +114,7 @@ public class RestApi {
 
 
     @DELETE
-    @Path("/{tenantId}/resource/{uid}")
+    @Path("/{tenantId}/resources/{uid}")
     public Response deleteResource(@PathParam("tenantId") String tenantId, @PathParam
             ("uid") String uid) {
 
@@ -134,8 +134,8 @@ public class RestApi {
     }
 
 
-    @PUT
-    @Path("/{tenantId}/resource/{resourceId}/metrics/")
+    @POST
+    @Path("/{tenantId}/resources/{resourceId}/metrics")
     public Response addMetricToResource(@PathParam("tenantId") String tenantId,
                                         @PathParam("resourceId") String resourceId,
                                         Collection<MetricDefinition> payload) {
@@ -166,7 +166,7 @@ public class RestApi {
     }
 
     @GET
-    @Path("/{tenantId}/resource/{resourceId}/metrics")
+    @Path("/{tenantId}/resources/{resourceId}/metrics")
     public Response listMetricsOfResource(@PathParam("tenantId") String tenantId,
                                             @PathParam("resourceId") String resourceId) {
 
@@ -187,7 +187,7 @@ public class RestApi {
     }
 
     @GET
-    @Path("/{tenantId}/resource/{resourceId}/metric/{metricId}")
+    @Path("/{tenantId}/resources/{resourceId}/metrics/{metricId}")
     public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
                                             @PathParam("resourceId") String resourceId,
                                             @PathParam("metricId") String metricId
@@ -214,7 +214,7 @@ public class RestApi {
     }
 
     @PUT
-    @Path("/{tenantId}/resource/{resourceId}/metric/{metricId}")
+    @Path("/{tenantId}/resources/{resourceId}/metrics/{metricId}")
     public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
                                             @PathParam("resourceId") String resourceId,
                                             MetricDefinition payload) {
