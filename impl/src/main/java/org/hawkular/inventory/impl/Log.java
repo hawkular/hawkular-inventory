@@ -38,6 +38,7 @@ public interface Log {
     void warn(String s);
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HKNotifications' bound?), not sending")
+    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HawkularNotifications' bound?), not " +
+            "sending")
     void wNoTopicConnection();
 }
