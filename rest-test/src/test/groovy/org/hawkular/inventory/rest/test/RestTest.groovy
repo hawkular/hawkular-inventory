@@ -58,7 +58,7 @@ class RestTest extends AbstractTestBase{
 
         assertNotEquals("", id, "Id should not be empty")
 
-        response = client.get(path: "$tenantId/resource/$id")
+        response = client.get(path: "$tenantId/resources/$id")
 
         assertEquals(200, response.status)
         assertEquals(id,response.data.id)
@@ -88,7 +88,7 @@ class RestTest extends AbstractTestBase{
             assert response.data.size() > 0
             assertEquals(id,response.data[0].id)
         } finally {
-            response = client.delete(path: "$tenantId/resource/$id");
+            response = client.delete(path: "$tenantId/resources/$id");
             assertEquals(200, response.status)
         }
 
@@ -119,7 +119,7 @@ class RestTest extends AbstractTestBase{
             assert response.data.size() > 0
             assertEquals(id,response.data[0].id)
         } finally {
-            response = client.delete(path: "$tenantId/resource/$id");
+            response = client.delete(path: "$tenantId/resources/$id");
             assertEquals(200, response.status)
 
         }
@@ -146,7 +146,7 @@ class RestTest extends AbstractTestBase{
         assertNotEquals("", id, "Id should not be empty")
 
         try {
-            client.get(path: "XX$tenantId/resource/$id")
+            client.get(path: "XX$tenantId/resources/$id")
             // We should never hit the next line
             assert false;
         } catch (HttpResponseException e) {
@@ -174,16 +174,16 @@ class RestTest extends AbstractTestBase{
 
         assertNotEquals("", id, "Id should not be empty")
 
-        response = client.get(path: "$tenantId/resource/$id")
+        response = client.get(path: "$tenantId/resources/$id")
 
         assertEquals(200, response.status)
         assertEquals(id,response.data.id)
 
-        response = client.delete(path: "$tenantId/resource/$id")
+        response = client.delete(path: "$tenantId/resources/$id")
         assertEquals(200, response.status)
 
         try {
-            client.get(path: "$tenantId/resource/$id")
+            client.get(path: "$tenantId/resources/$id")
             assert false;
         } catch (HttpResponseException e) {
             ; // this is good
@@ -205,14 +205,14 @@ class RestTest extends AbstractTestBase{
 
         def rid = response.data.id
 
-        client.put(path: "$tenantId/resource/$rid/metrics", body: ["cpu.load1"])
-        client.put(path: "$tenantId/resource/$rid/metrics", body: ["cpu.load5", "cpu.load15"])
+        client.post(path: "$tenantId/resources/$rid/metrics", body: ["cpu.load1"])
+        client.post(path: "$tenantId/resources/$rid/metrics", body: ["cpu.load5", "cpu.load15"])
 
         def metricDefinition = new MetricDefinition("cpu.load1",MetricUnit.NONE); // name is on purpose like above
         metricDefinition.description = "This is the one minute load of the CPU"
-        client.put(path: "$tenantId/resource/$rid/metrics", body: [ metricDefinition ])
+        client.post(path: "$tenantId/resources/$rid/metrics", body: [ metricDefinition ])
 
-        response = client.get(path: "$tenantId/resource/$rid/metrics")
+        response = client.get(path: "$tenantId/resources/$rid/metrics")
 
         assertEquals(200,response.status)
         def data = response.data
@@ -222,11 +222,11 @@ class RestTest extends AbstractTestBase{
         println(rid)
 
         metricDefinition.unit = MetricUnit.BYTE;
-        response = client.put(path: "$tenantId/resource/$rid/metric/cpu.load1", body: metricDefinition);
+        response = client.put(path: "$tenantId/resources/$rid/metrics/cpu.load1", body: metricDefinition);
 
         assertEquals(200, response.status)
 
-        response = client.get(path: "$tenantId/resource/$rid/metric/cpu.load1")
+        response = client.get(path: "$tenantId/resources/$rid/metrics/cpu.load1")
         assertEquals(200, response.status)
 
         assertEquals("BYTE", response.data.unit)
@@ -239,7 +239,7 @@ class RestTest extends AbstractTestBase{
         def tenantId = "bla"
         def rid = "-1"
         try {
-            client.put(path: "$tenantId/resource/$rid/metrics", body: ["cpu.load1"])
+            client.post(path: "$tenantId/resources/$rid/metrics", body: ["cpu.load1"])
             assert false : "We should have gotten a 404, but obviously didnt"
         } catch (HttpResponseException e) {
             ; // This is good
