@@ -36,4 +36,9 @@ public interface Log {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 1000, value = "Something bad has happened: %s")
     void warn(String s);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HawkularNotifications' bound?), not " +
+            "sending")
+    void wNoTopicConnection();
 }

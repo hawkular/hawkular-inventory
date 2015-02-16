@@ -100,7 +100,7 @@ class RestTest extends AbstractTestBase{
 
         def res = new Resource()
         res.setType(ResourceType.URL)
-        res.addParameter("url","http://hawkular.org")
+        res.addParameter("url","http://hawkular.github.io")
 
         def tenantId = "rest-test4";
 
