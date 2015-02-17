@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Resource;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
@@ -38,6 +39,6 @@ final class FeedBrowser extends AbstractBrowser<Feed> implements Feeds.Browser {
     @Override
     public Resources.Read resources() {
         return new ResourcesService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
-                With.type(Feed.class))));
+                With.type(Resource.class))));
     }
 }
