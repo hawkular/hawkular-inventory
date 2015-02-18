@@ -28,24 +28,32 @@ public final class Environments {
 
     }
 
-    public interface Browser extends BasicBrowser<Environment> {
+    private interface BrowserBase<Feeds, Resources, Metrics> {
         /**
          * @return feeds API
          */
-        Feeds.ReadAndRegister feeds();
+        Feeds feeds();
 
         /**
          * @return resources API
          */
-        Resources.ReadWrite resources();
+        Resources resources();
 
         /**
          * @return metrics API
          */
-        Metrics.ReadWrite metrics();
+        Metrics metrics();
     }
 
-    public interface ReadWrite extends ReadWriteInterface<Browser, Environment, String> {
+    public interface Single extends SingleRelatableEntityBrowser<Environment>,
+            BrowserBase<Feeds.ReadAndRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<Environment>,
+            BrowserBase<Feeds.Read, Resources.Read, Metrics.Read> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadWrite extends ReadWriteInterface<Environment, String, Single, Multiple> {
         void copy(String sourceEnvironmentId, String targetEnvironmentId);
     }
 }

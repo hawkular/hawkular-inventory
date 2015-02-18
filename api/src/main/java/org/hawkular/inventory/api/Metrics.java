@@ -28,8 +28,9 @@ public final class Metrics {
 
     }
 
-    public interface Browser extends BasicBrowser<Metric> {}
-    public interface Read extends ReadInterface<Browser, Metric> {}
-    public interface ReadWrite extends ReadWriteInterface<Browser, Metric, Metric.Blueprint> {}
-    public interface ReadRelate extends ReadInterface<Browser, Metric>, RelateInterface {}
+    public interface Single extends SingleRelatableEntityBrowser<Metric> {}
+    public interface Multiple extends MultipleRelatableEntityBrowser<Metric> {}
+    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<Metric, Metric.Blueprint, Single, Multiple> {}
+    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

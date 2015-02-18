@@ -33,7 +33,6 @@ import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
 import com.tinkerpop.pipes.util.structures.Tree;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Filter;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,20 +64,6 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
     @SuppressWarnings("unchecked")
     public HawkularPipeline<S, Vertex> hasUid(String uid) {
         return (HawkularPipeline<S, Vertex>) has(Constants.Property.uid.name(), uid);
-    }
-
-    public HawkularPipeline<S, E> filter(Filter... filters) {
-        return filter(new FilterVisitor<>(), filters);
-    }
-
-    public HawkularPipeline<S, E> filter(FilterVisitor<S, E> visitor, Filter... filters) {
-        for (Filter f : filters) {
-            if (f != null) {
-                FilterWrapper.wrap(f).accept(visitor, this);
-            }
-        }
-
-        return this;
     }
 
     public HawkularPipeline<S, Vertex> out(Relationships.WellKnown... rel) {

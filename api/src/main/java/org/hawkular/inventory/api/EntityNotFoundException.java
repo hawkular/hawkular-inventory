@@ -14,16 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.Entity;
+
+import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadInterface<Resolved, Unresolved> {
-    Resolved get(String id);
+public class EntityNotFoundException extends RuntimeException {
 
-    Unresolved getAll(Filter... filters);
+    private final String entityType;
+    private final Filter[] filters;
+
+    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters) {
+        this.entityType = entityClass.getSimpleName();
+        this.filters = filters;
+    }
+
+    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters, Throwable cause) {
+        super(cause);
+        this.entityType = entityClass.getSimpleName();
+        this.filters = filters;
+    }
+
+    @Override
+    public String getMessage() {
+        return entityType + " not found using filters: " + Arrays.toString(filters);
+    }
 }

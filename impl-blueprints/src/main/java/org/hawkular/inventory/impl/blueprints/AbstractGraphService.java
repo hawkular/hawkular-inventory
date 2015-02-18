@@ -17,7 +17,6 @@
 package org.hawkular.inventory.impl.blueprints;
 
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
@@ -37,25 +36,29 @@ import org.hawkular.inventory.api.model.Tenant;
  */
 abstract class AbstractGraphService {
     protected final TransactionalGraph graph;
-    private final Filter[] path;
+    private final FilterApplicator[] path;
 
-    AbstractGraphService(TransactionalGraph graph, Filter... path) {
+    AbstractGraphService(TransactionalGraph graph, FilterApplicator... path) {
         this.graph = graph;
         this.path = path;
     }
 
-    protected HawkularPipeline<?, Vertex> source(Filter... filters) {
+    protected HawkularPipeline<?, Vertex> source(FilterApplicator... filters) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(graph)).V();
 
-        applyFilters(ret, new PathVisitor<>(), path);
+        for (FilterApplicator fa : path) {
+            fa.applyTo(ret);
+        }
 
-        applyFilters(ret, new FilterVisitor<>(), filters);
+        for (FilterApplicator fa : filters) {
+            fa.applyTo(ret);
+        }
 
         return ret;
     }
 
-    protected Filter.Accumulator filterBy(Filter... filters) {
-        return Filter.by(path).and(filters);
+    protected FilterApplicator.Builder pathWith(Filter... filters) {
+        return FilterApplicator.from(path).and(FilterApplicator.Type.PATH, filters);
     }
 
     static String getProperty(Vertex v, Constants.Property property) {
@@ -134,13 +137,6 @@ abstract class AbstractGraphService {
                 return entityVertex.getVertices(Direction.IN, Constants.Relationship.contains.name()).iterator().next();
             default:
                 return null;
-        }
-    }
-
-    protected <S, E extends Element> void applyFilters(HawkularPipeline<S, E> query, FilterVisitor<S, E> visitor,
-                                                       Filter... filters) {
-        for (Filter f : filters) {
-            FilterWrapper.wrap(f).accept(visitor, query);
         }
     }
 }

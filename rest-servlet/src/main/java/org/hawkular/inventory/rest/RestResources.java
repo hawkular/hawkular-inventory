@@ -61,7 +61,7 @@ public class RestResources {
                                 @QueryParam("resourceType") String resourceTypeId) {
 
         try {
-            Tenants.Browser tb = inventory.tenants().get(tenantId);
+            Tenants.Single tb = inventory.tenants().get(tenantId);
             ResourceType rt = tb.types().get(resourceTypeId).entity();
 
             Resource.Blueprint b = new Resource.Blueprint(resourceId, rt);
@@ -89,9 +89,9 @@ public class RestResources {
             Set<Resource> rs;
             if (typeId != null && typeVersion != null) {
                 ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-                rs = rr.getAll(Related.definedBy(rt));
+                rs = rr.getAll(Related.definedBy(rt)).entities();
             } else {
-                rs = rr.getAll();
+                rs = rr.getAll().entities();
             }
             return Response.ok(rs).build();
         } catch (Exception e) {
@@ -168,7 +168,7 @@ public class RestResources {
 
         try {
             Set<Metric> ms = inventory.tenants().get(tenantId).environments().get(environmentID)
-                    .resources().get(resourceId).metrics().getAll();
+                    .resources().get(resourceId).metrics().getAll().entities();
 
             return Response.ok(ms).build();
         } catch (Exception e) {

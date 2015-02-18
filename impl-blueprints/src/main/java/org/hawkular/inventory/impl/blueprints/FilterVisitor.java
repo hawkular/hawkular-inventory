@@ -31,11 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Lukas Krejci
  * @since 1.0
  */
-class FilterVisitor<S, E> implements QueryFilterVisitor<S, E> {
+class FilterVisitor {
     private static AtomicInteger CNT = new AtomicInteger();
 
-    @Override
-    public void visit(HawkularPipeline<S, E> query, Related<? extends Entity> related) {
+    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
         String step = "filter" + CNT.getAndIncrement();
 
         query.as(step);
@@ -60,15 +59,14 @@ class FilterVisitor<S, E> implements QueryFilterVisitor<S, E> {
         query.back(step);
     }
 
-    @Override
-    public void visit(HawkularPipeline<S, E> query, With.Ids ids) {
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.Ids ids) {
         if (ids.getIds().length == 1) {
             query.has(Constants.Property.uid.name(), ids.getIds()[0]);
             return;
         }
 
-        @SuppressWarnings("unchecked")
-        Pipe<E, Boolean>[] idChecks = new Pipe[ids.getIds().length];
+        Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
                 new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
@@ -76,16 +74,15 @@ class FilterVisitor<S, E> implements QueryFilterVisitor<S, E> {
         query.or(idChecks);
     }
 
-    @Override
-    public void visit(HawkularPipeline<S, E> query, With.Types types) {
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.Types types) {
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
             query.has(Constants.Property.type.name(), type.name());
             return;
         }
 
-        @SuppressWarnings("unchecked")
-        Pipe<E, Boolean>[] typeChecks = new Pipe[types.getTypes().length];
+        Pipe[] typeChecks = new Pipe[types.getTypes().length];
 
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);

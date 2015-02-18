@@ -14,16 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+package org.hawkular.inventory.api;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadInterface<Resolved, Unresolved> {
-    Resolved get(String id);
-
-    Unresolved getAll(Filter... filters);
+interface SingleRelatableEntityBrowser<Entity> extends SingleEntityBrowser<Entity> {
+    Relationships.ReadWrite relationships();
 }

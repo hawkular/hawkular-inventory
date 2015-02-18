@@ -20,6 +20,7 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadWriteInterface<BrowsableType, EntityType, BlueprintType> extends
-        ReadInterface<BrowsableType, EntityType>, WriteInterface<BrowsableType, EntityType, BlueprintType> {
+interface ReadWriteInterface<EntityType, BlueprintType, Resolved,
+        Unresolved> extends
+        ReadInterface<Resolved, Unresolved>, WriteInterface<EntityType, BlueprintType, Resolved> {
 }

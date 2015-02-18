@@ -28,22 +28,31 @@ public final class Tenants {
 
     }
 
-    public interface Browser extends BasicBrowser<Tenant> {
+    private interface BrowserBase<Types, MDs, Envs> {
         /**
          * @return types API
          */
-        Types.ReadWrite types();
+        Types types();
 
         /**
          * @return metric definitions API
          */
-        MetricDefinitions.ReadWrite metricDefinitions();
+        MDs metricDefinitions();
 
         /**
          * @return environments API
          */
-        Environments.ReadWrite environments();
+        Envs environments();
+
     }
 
-    public interface ReadWrite extends ReadWriteInterface<Browser, Tenant, String> {}
+    public interface Single extends SingleRelatableEntityBrowser<Tenant>,
+            BrowserBase<Types.ReadWrite, MetricDefinitions.ReadWrite, Environments.ReadWrite> {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<Tenant>,
+            BrowserBase<Types.Read, MetricDefinitions.Read, Environments.Read> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadWrite extends ReadWriteInterface<Tenant, String, Single, Multiple> {}
 }

@@ -22,13 +22,11 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Relationship;
 
-import java.util.Set;
-
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-final class RelationshipService implements Relationships.ReadWrite {
+final class RelationshipService implements Relationships.ReadWrite, Relationships.Read {
     private final TransactionalGraph graph;
     private final Vertex startVertex;
 
@@ -39,25 +37,19 @@ final class RelationshipService implements Relationships.ReadWrite {
     }
 
     @Override
-    public Relationships.Browser get(String id) {
+    public Relationships.Single get(String id) {
         //TODO implement
         return null;
     }
 
     @Override
-    public Set<String> getAllIds(Filter... filters) {
+    public Relationships.Multiple getAll(Filter... filters) {
         //TODO implement
         return null;
     }
 
     @Override
-    public Set<Relationship> getAll(Filter... filters) {
-        //TODO implement
-        return null;
-    }
-
-    @Override
-    public Relationships.Browser create(Relationship.Blueprint blueprint) {
+    public Relationships.Single create(Relationship.Blueprint blueprint) {
         //TODO implement
         return null;
     }

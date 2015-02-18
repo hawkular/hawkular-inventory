@@ -31,8 +31,9 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class FeedBrowser extends AbstractBrowser<Feed> implements Feeds.Browser {
-    FeedBrowser(TransactionalGraph graph, Filter... path) {
+final class FeedBrowser extends AbstractBrowser<Feed> implements Feeds.Single, Feeds.Multiple {
+
+    FeedBrowser(TransactionalGraph graph, FilterApplicator... path) {
         super(graph, Feed.class, path);
     }
 

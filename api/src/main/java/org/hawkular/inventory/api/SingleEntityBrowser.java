@@ -14,21 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.impl.blueprints;
-
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.Entity;
+package org.hawkular.inventory.api;
 
 /**
  * @author Lukas Krejci
- * @since ${MODULE_VERSION}
+ * @since 1.0
  */
-public interface QueryFilterVisitor<S, E> {
-    void visit(HawkularPipeline<S, E> query, Related<? extends Entity> related);
+interface SingleEntityBrowser<EntityType> {
 
-    void visit(HawkularPipeline<S, E> query, With.Ids ids);
-
-    void visit(HawkularPipeline<S, E> query, With.Types types);
+    EntityType entity();
 }

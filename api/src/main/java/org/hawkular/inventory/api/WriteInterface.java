@@ -20,8 +20,8 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface WriteInterface<BrowsableType, EntityType, BlueprintType> {
-    BrowsableType create(BlueprintType blueprint);
+interface WriteInterface<EntityType, BlueprintType, Resolved> {
+    Resolved create(BlueprintType blueprint);
 
     void update(EntityType entity);
 

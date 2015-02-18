@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.filters;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,9 +54,7 @@ public abstract class Filter {
         }
 
         public Accumulator and(Filter... fs) {
-            for (Filter f : fs) {
-                filters.add(f);
-            }
+            Collections.addAll(filters, fs);
             return this;
         }
 

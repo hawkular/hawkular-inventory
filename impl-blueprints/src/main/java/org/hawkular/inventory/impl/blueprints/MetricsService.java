@@ -40,7 +40,8 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.resource;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricsService extends AbstractSourcedGraphService<MetricBrowser, Metric, Metric.Blueprint>
+final class MetricsService
+        extends AbstractSourcedGraphService<Metrics.Single, Metrics.Multiple, Metric, Metric.Blueprint>
         implements Metrics.ReadWrite, Metrics.Read, Metrics.ReadRelate {
 
     MetricsService(TransactionalGraph graph, PathContext ctx) {
@@ -76,7 +77,7 @@ final class MetricsService extends AbstractSourcedGraphService<MetricBrowser, Me
     }
 
     @Override
-    protected MetricBrowser createBrowser(Filter... path) {
+    protected Metrics.Single createSingleBrowser(FilterApplicator... path) {
         return new MetricBrowser(graph, path);
     }
 
@@ -86,13 +87,19 @@ final class MetricsService extends AbstractSourcedGraphService<MetricBrowser, Me
     }
 
     @Override
+    protected Metrics.Multiple createMultiBrowser(FilterApplicator... path) {
+        return new MetricBrowser(graph, path);
+    }
+
+    @Override
     public void update(Metric entity) {
         //TODO implement - metric can change its definition
     }
 
     @Override
     public void delete(String id) {
-        Vertex v = source(selectCandidates()).hasUid(id).next();
+        Vertex v = source(FilterApplicator.fromFilter(selectCandidates()).get())
+                .hasUid(id).next();
         graph.removeVertex(v);
     }
 

@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import java.util.Set;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadInterface<Resolved, Unresolved> {
-    Resolved get(String id);
+interface MultipleEntityBrowser<Entity> {
 
-    Unresolved getAll(Filter... filters);
+    Set<Entity> entities();
 }

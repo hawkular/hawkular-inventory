@@ -35,7 +35,8 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.tenant;
  * @since 1.0
  */
 final class MetricDefinitionsService
-        extends AbstractSourcedGraphService<MetricDefinitionBrowser, MetricDefinition, MetricDefinition.Blueprint>
+        extends AbstractSourcedGraphService<MetricDefinitions.Single, MetricDefinitions.Multiple,
+        MetricDefinition, MetricDefinition.Blueprint>
         implements MetricDefinitions.ReadWrite, MetricDefinitions.ReadRelate {
 
     MetricDefinitionsService(TransactionalGraph graph, PathContext ctx) {
@@ -58,7 +59,12 @@ final class MetricDefinitionsService
     }
 
     @Override
-    protected MetricDefinitionBrowser createBrowser(Filter... path) {
+    protected MetricDefinitions.Single createSingleBrowser(FilterApplicator... path) {
+        return new MetricDefinitionBrowser(graph, path);
+    }
+
+    @Override
+    protected MetricDefinitions.Multiple createMultiBrowser(FilterApplicator... path) {
         return new MetricDefinitionBrowser(graph, path);
     }
 

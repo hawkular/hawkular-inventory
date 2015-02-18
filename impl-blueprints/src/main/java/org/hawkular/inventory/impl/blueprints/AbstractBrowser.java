@@ -19,15 +19,19 @@ package org.hawkular.inventory.impl.blueprints;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, E, Void> {
-    AbstractBrowser(TransactionalGraph graph, Class<E> entityClass, Filter... path) {
+abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Void> {
+    AbstractBrowser(TransactionalGraph graph, Class<E> entityClass, FilterApplicator... path) {
         super(graph, entityClass, new PathContext(path, null));
     }
 
@@ -35,10 +39,18 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
         HawkularPipeline<?, Vertex> q = source();
 
         if (!q.hasNext()) {
-            throw new IllegalArgumentException("Entity does not exist.");
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
         }
 
         return entityClass.cast(convert(q.next()));
+    }
+
+    public Set<E> entities() {
+        Set<E> ret = new HashSet<>();
+
+        source().forEach(v -> ret.add(entityClass.cast(convert(v))));
+
+        return ret;
     }
 
     public RelationshipService relationships() {
@@ -46,7 +58,12 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
     }
 
     @Override
-    protected final Void createBrowser(Filter... path) {
+    protected final Void createSingleBrowser(FilterApplicator... path) {
+        throw new IllegalStateException("This method is not valid on a browser interface.");
+    }
+
+    @Override
+    protected final Void createMultiBrowser(FilterApplicator... path) {
         throw new IllegalStateException("This method is not valid on a browser interface.");
     }
 

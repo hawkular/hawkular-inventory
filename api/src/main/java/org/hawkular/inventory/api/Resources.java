@@ -26,15 +26,17 @@ public final class Resources {
 
     private Resources() {}
 
-    public interface Browser extends BasicBrowser<Resource> {
-        Metrics.ReadRelate metrics();
+    private interface BrowserBase<Metrics> {
+        Metrics metrics();
     }
 
-    public interface Read extends ReadInterface<Browser, Resource> {
+    public interface Single extends SingleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.ReadRelate> {}
 
-    }
+    public interface Multiple extends MultipleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.Read> {}
 
-    public interface ReadWrite extends ReadWriteInterface<Browser, Resource, Resource.Blueprint> {
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {
 
     }
 }

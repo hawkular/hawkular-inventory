@@ -18,15 +18,14 @@ package org.hawkular.inventory.impl.blueprints;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Metric;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricBrowser extends AbstractBrowser<Metric> implements Metrics.Browser {
-    MetricBrowser(TransactionalGraph graph, Filter... path) {
+final class MetricBrowser extends AbstractBrowser<Metric> implements Metrics.Single, Metrics.Multiple {
+    MetricBrowser(TransactionalGraph graph, FilterApplicator... path) {
         super(graph, Metric.class, path);
     }
 }

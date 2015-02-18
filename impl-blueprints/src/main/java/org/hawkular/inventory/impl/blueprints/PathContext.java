@@ -25,11 +25,11 @@ import org.hawkular.inventory.api.filters.Filter;
  */
 final class PathContext {
 
-    final Filter[] path;
+    final FilterApplicator[] path;
 
     final Filter[] candidatesFilter;
 
-    public PathContext(Filter[] path, Filter[] candidatesFilter) {
+    PathContext(FilterApplicator[] path, Filter[] candidatesFilter) {
         this.candidatesFilter = candidatesFilter;
         this.path = path;
     }

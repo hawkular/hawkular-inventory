@@ -28,11 +28,17 @@ public final class Feeds {
 
     }
 
-    public interface Browser extends BasicBrowser<Feed> {
+    private interface BrowserBase {
         Resources.Read resources();
     }
 
-    public interface ReadAndRegister extends ReadInterface<Browser, Feed> {
-        Browser register(String proposedId);
+    public interface Single extends SingleRelatableEntityBrowser<Feed>, BrowserBase {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<Feed>, BrowserBase {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
+        Single register(String proposedId);
     }
 }

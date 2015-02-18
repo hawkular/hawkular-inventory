@@ -100,7 +100,7 @@ public class Related<T extends Entity> extends Filter {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[entity=" + String.valueOf(entity) + ", rel='" + relationshipName +
-                ", dir=" + direction.name() + "]";
+        return getClass().getSimpleName() + "[" + (entity != null ? "entity=" + String.valueOf(entity) : "")
+                + ", rel='" + relationshipName + "', dir=" + direction.name() + "]";
     }
 }
