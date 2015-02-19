@@ -20,7 +20,7 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface SingleEntityBrowser<EntityType> {
+interface SingleEntityBrowser<Entity> {
 
-    EntityType entity();
+    Entity entity();
 }

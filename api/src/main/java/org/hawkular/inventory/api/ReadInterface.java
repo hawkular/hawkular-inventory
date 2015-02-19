@@ -22,8 +22,8 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadInterface<Resolved, Unresolved> {
-    Resolved get(String id);
+interface ReadInterface<Single, Multiple> {
+    Single get(String id);
 
-    Unresolved getAll(Filter... filters);
+    Multiple getAll(Filter... filters);
 }
