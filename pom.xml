@@ -37,7 +37,7 @@
 
   <modules>
     <module>api</module>
-    <module>impl</module>
+    <module>impl-blueprints</module>
     <module>rest-servlet</module>
     <module>rest-test</module>
   </modules>

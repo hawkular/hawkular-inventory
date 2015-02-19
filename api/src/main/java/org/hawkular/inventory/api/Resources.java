@@ -14,26 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.hawkular.inventory.api.model.Resource;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public final class Resources {
 
-    @Inject
-    Inventory inventory;
+    private Resources() {}
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+    private interface BrowserBase<Metrics> {
+        Metrics metrics();
+    }
+
+    public interface Single extends SingleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.ReadRelate> {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.Read> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {
+
     }
 }

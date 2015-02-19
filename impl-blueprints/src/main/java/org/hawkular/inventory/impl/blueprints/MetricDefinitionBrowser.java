@@ -14,16 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api;
+
+package org.hawkular.inventory.impl.blueprints;
+
+import com.tinkerpop.blueprints.TransactionalGraph;
+import org.hawkular.inventory.api.MetricDefinitions;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.model.MetricDefinition;
 
 /**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface Inventory extends AutoCloseable {
+final class MetricDefinitionBrowser extends AbstractBrowser<MetricDefinition> implements MetricDefinitions.Single,
+        MetricDefinitions.Multiple {
 
-    Tenants.ReadWrite tenants();
+    MetricDefinitionBrowser(TransactionalGraph graph, FilterApplicator... path) {
+        super(graph, MetricDefinition.class, path);
+    }
+
+    @Override
+    public Metrics.Read metrics() {
+        return new MetricsService(graph, pathToHereWithSelect(null));
+    }
 }

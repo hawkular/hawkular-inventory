@@ -14,26 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.impl.blueprints;
 
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.model.Metric;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
-
-    @Inject
-    Inventory inventory;
-
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+final class MetricBrowser extends AbstractBrowser<Metric> implements Metrics.Single, Metrics.Multiple {
+    MetricBrowser(TransactionalGraph graph, FilterApplicator... path) {
+        super(graph, Metric.class, path);
     }
 }
