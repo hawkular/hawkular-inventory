@@ -14,16 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api;
+package org.hawkular.inventory.api.filters;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.ResourceType;
 
 /**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface Inventory extends AutoCloseable {
+public final class Defined<T extends Entity> extends Related<T> {
 
-    Tenants.ReadWrite tenants();
+    private Defined(T entity) {
+        super(entity, Relationships.WellKnown.defines.name(), Related.Direction.IN);
+    }
+
+    public static Defined<MetricDefinition> by(MetricDefinition definition) {
+        return new Defined<>(definition);
+    }
+
+    public static Defined<ResourceType> by(ResourceType type) {
+        return new Defined<>(type);
+    }
 }

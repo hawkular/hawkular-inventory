@@ -16,14 +16,36 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Environment;
+
 /**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface Inventory extends AutoCloseable {
+public final class Environments {
 
-    Tenants.ReadWrite tenants();
+    private Environments() {
+
+    }
+
+    public interface Browser extends BasicBrowser<Environment> {
+        /**
+         * @return feeds API
+         */
+        Feeds.ReadAndRegister feeds();
+
+        /**
+         * @return resources API
+         */
+        Resources.ReadWrite resources();
+
+        /**
+         * @return metrics API
+         */
+        Metrics.ReadWrite metrics();
+    }
+
+    public interface ReadWrite extends ReadWriteInterface<Browser, Environment, String> {
+        void copy(String sourceEnvironmentId, String targetEnvironmentId);
+    }
 }
