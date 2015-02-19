@@ -33,7 +33,7 @@
   <name>inventory-api</name>
 
   <build>
-    <finalName>hawkular-inventory-api</finalName>
+    <finalName>inventory-api</finalName>
   </build>
 
 </project>

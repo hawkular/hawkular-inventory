@@ -16,14 +16,39 @@
  */
 package org.hawkular.inventory.api;
 
-/**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
- * @author Lukas Krejci
- * @since 1.0
- */
-public interface Inventory extends AutoCloseable {
+import java.util.Collection;
 
-    Tenants.ReadWrite tenants();
+/**
+ * Provides an inventory api.
+ * TODO factor in the environment
+ * @author Heiko Rupp
+ */
+public interface Inventory {
+
+
+    /** Add a resource for a tenant */
+    String addResource(String tenant, Resource resource) throws Exception;
+
+    /** Retrieve a collection of resources for a given type. If type is null, all resources are returned. */
+    Collection<Resource> getResourcesForType(String tenant, ResourceType type) throws Exception;
+
+    /** Get a resource by its Id */
+    Resource getResource(String tenant, String uid) throws Exception;
+
+    /** Remove a resource with a certain id */
+    boolean deleteResource(String tenant, String uid) throws Exception;
+
+    /** Adds metrics to a resource */
+    boolean addMetricToResource(String tenant, String resourceId, String metric_name) throws Exception;
+    boolean addMetricsToResource(String tenant, String resourceId, Collection<MetricDefinition> definitions)
+            throws Exception;
+
+    /** Retrieve all metrics for a resource */
+    Collection<MetricDefinition> listMetricsForResource(String tenant, String resourceId) throws Exception;
+
+    /** Updates a single metric */
+    boolean updateMetric(String tenant, String resourceId, MetricDefinition metric) throws Exception;
+
+    /** Retrieve one metric by its id */
+    MetricDefinition getMetric(String tenant, String resourceId, String metricId) throws Exception;
 }
