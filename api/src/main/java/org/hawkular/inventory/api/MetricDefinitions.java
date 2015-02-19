@@ -16,14 +16,32 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.MetricDefinition;
+
 /**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface Inventory extends AutoCloseable {
+public final class MetricDefinitions {
 
-    Tenants.ReadWrite tenants();
+    private MetricDefinitions() {
+
+    }
+
+    private interface BrowserBase {
+        Metrics.Read metrics();
+    }
+
+    public interface Single extends SingleRelatableEntityBrowser<MetricDefinition>, BrowserBase {
+    }
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<MetricDefinition>, BrowserBase {
+    }
+
+    public interface ReadWrite extends ReadWriteInterface<MetricDefinition, MetricDefinition.Blueprint, Single,
+            Multiple> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadRelate extends Read, RelateInterface {}
 }

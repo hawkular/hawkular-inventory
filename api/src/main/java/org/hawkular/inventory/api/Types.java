@@ -16,14 +16,30 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.ResourceType;
+
 /**
- * The inventory implementations are not required to be thread-safe. Instances should therefore be accessed only by a
- * single thread or serially.
- *
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface Inventory extends AutoCloseable {
+public final class Types {
 
-    Tenants.ReadWrite tenants();
+    private Types() {
+
+    }
+
+    private interface BrowserBase<Resources, MetricDefs> {
+        Resources resources();
+
+        MetricDefs metricDefinitions();
+    }
+
+    public interface Single extends SingleRelatableEntityBrowser<ResourceType>,
+            BrowserBase<Resources.Read, MetricDefinitions.ReadRelate> {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<ResourceType>,
+            BrowserBase<Resources.Read, MetricDefinitions.Read> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<ResourceType, ResourceType.Blueprint, Single, Multiple> {}
 }
