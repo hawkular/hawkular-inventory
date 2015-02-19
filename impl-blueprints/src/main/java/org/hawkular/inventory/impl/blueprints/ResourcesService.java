@@ -38,7 +38,8 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.resourceType
  * @author Lukas Krejci
  * @since 1.0
  */
-final class ResourcesService extends AbstractSourcedGraphService<ResourceBrowser, Resource, Resource.Blueprint>
+final class ResourcesService
+        extends AbstractSourcedGraphService<Resources.Single, Resources.Multiple, Resource, Resource.Blueprint>
         implements Resources.ReadWrite, Resources.Read {
 
     public ResourcesService(TransactionalGraph graph, PathContext ctx) {
@@ -71,8 +72,13 @@ final class ResourcesService extends AbstractSourcedGraphService<ResourceBrowser
     }
 
     @Override
-    protected ResourceBrowser createBrowser(Filter... path) {
-        return new ResourceBrowser(graph, path);
+    protected Resources.Single createSingleBrowser(FilterApplicator... path) {
+        return ResourceBrowser.single(graph, path);
+    }
+
+    @Override
+    protected Resources.Multiple createMultiBrowser(FilterApplicator... path) {
+        return ResourceBrowser.multiple(graph, path);
     }
 
     @Override

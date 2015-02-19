@@ -28,11 +28,18 @@ public final class Types {
 
     }
 
-    public interface Browser extends BasicBrowser<ResourceType> {
-        Resources.Read resources();
+    private interface BrowserBase<Resources, MetricDefs> {
+        Resources resources();
 
-        MetricDefinitions.ReadRelate metricDefinitions();
+        MetricDefs metricDefinitions();
     }
 
-    public interface ReadWrite extends ReadWriteInterface<Browser, ResourceType, ResourceType.Blueprint> {}
+    public interface Single extends SingleRelatableEntityBrowser<ResourceType>,
+            BrowserBase<Resources.Read, MetricDefinitions.ReadRelate> {}
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<ResourceType>,
+            BrowserBase<Resources.Read, MetricDefinitions.Read> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<ResourceType, ResourceType.Blueprint, Single, Multiple> {}
 }

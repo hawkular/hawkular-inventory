@@ -16,29 +16,11 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.Feed;
-
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-public final class Feeds {
+interface SingleEntityBrowser<Entity> {
 
-    private Feeds() {
-
-    }
-
-    private interface BrowserBase {
-        Resources.Read resources();
-    }
-
-    public interface Single extends SingleRelatableEntityBrowser<Feed>, BrowserBase {}
-
-    public interface Multiple extends MultipleRelatableEntityBrowser<Feed>, BrowserBase {}
-
-    public interface Read extends ReadInterface<Single, Multiple> {}
-
-    public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
-        Single register(String proposedId);
-    }
+    Entity entity();
 }

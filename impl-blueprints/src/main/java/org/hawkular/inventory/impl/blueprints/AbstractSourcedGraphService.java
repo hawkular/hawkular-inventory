@@ -25,17 +25,15 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractSourcedGraphService<Browser, E extends Entity, Blueprint> extends AbstractGraphService {
+abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, Blueprint>
+        extends AbstractGraphService {
+
     protected final Class<E> entityClass;
-    private final PathContext pathContext;
+    protected final PathContext pathContext;
 
     AbstractSourcedGraphService(TransactionalGraph graph, Class<E> entityClass, PathContext pathContext) {
         super(graph, pathContext.path);
@@ -44,36 +42,26 @@ abstract class AbstractSourcedGraphService<Browser, E extends Entity, Blueprint>
     }
 
     protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
-        return new PathContext(filterBy().get(), select == null ? null : select.get());
+        return new PathContext(pathWith().get(), select == null ? null : select.get());
     }
 
     protected final Filter[] selectCandidates() {
         return pathContext.candidatesFilter;
     }
 
-    public Set<String> getAllIds(Filter... filters) {
-        return getAll(filters).stream().map(Entity::getId).collect(Collectors.toSet());
+    @SuppressWarnings("UnusedDeclaration")
+    public Multiple getAll(Filter... filters) {
+        return createMultiBrowser(pathWith(selectCandidates()).andFilter(filters).get());
     }
 
-    public Set<E> getAll(Filter... filters) {
-        HawkularPipeline<?, Vertex> q = source(selectCandidates());
-
-        applyFilters(q, new FilterVisitor<>(), filters);
-
-        HashSet<E> ret = new HashSet<>();
-        q.forEach(v -> ret.add(entityClass.cast(convert(v))));
-
-        return ret;
+    public Single get(String id) {
+        return createSingleBrowser(pathWith(selectCandidates()).andPath(With.ids(id)).get());
     }
 
-    public Browser get(String id) {
-        return createBrowser(filterBy(selectCandidates()).and(With.ids(id)).get());
-    }
-
-    public Browser create(Blueprint blueprint) {
+    public Single create(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        Iterable<Vertex> check = source(filterBy(selectCandidates()).and(With.ids(id)).get());
+        Iterable<Vertex> check = source(pathWith(selectCandidates()).andFilter(With.ids(id)).get());
 
         if (check.iterator().hasNext()) {
             throw new IllegalArgumentException("Entity with type '" + entityClass.getSimpleName() + " ' and id '" + id
@@ -88,7 +76,7 @@ abstract class AbstractSourcedGraphService<Browser, E extends Entity, Blueprint>
 
         graph.commit();
 
-        return createBrowser(path);
+        return createSingleBrowser(FilterApplicator.fromPath(path).get());
     }
 
     protected void addRelationship(Constants.Type typeInSource, Relationships.WellKnown rel, Iterable<Vertex> others) {
@@ -110,7 +98,9 @@ abstract class AbstractSourcedGraphService<Browser, E extends Entity, Blueprint>
         edges.forEach(graph::removeEdge);
     }
 
-    protected abstract Browser createBrowser(Filter... path);
+    protected abstract Single createSingleBrowser(FilterApplicator... path);
+
+    protected abstract Multiple createMultiBrowser(FilterApplicator... path);
 
     protected abstract String getProposedId(Blueprint b);
 

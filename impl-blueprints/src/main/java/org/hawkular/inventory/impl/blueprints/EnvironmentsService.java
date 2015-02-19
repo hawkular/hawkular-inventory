@@ -31,8 +31,9 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.tenant;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class EnvironmentsService extends AbstractSourcedGraphService<EnvironmentBrowser, Environment, String>
-        implements Environments.ReadWrite {
+final class EnvironmentsService extends
+        AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, String>
+        implements Environments.ReadWrite, Environments.Read {
 
     public EnvironmentsService(TransactionalGraph graph, PathContext ctx) {
         super(graph, Environment.class, ctx);
@@ -56,8 +57,13 @@ final class EnvironmentsService extends AbstractSourcedGraphService<EnvironmentB
     }
 
     @Override
-    protected EnvironmentBrowser createBrowser(Filter... path) {
-        return new EnvironmentBrowser(graph, path);
+    protected Environments.Single createSingleBrowser(FilterApplicator... path) {
+        return EnvironmentBrowser.single(graph, path);
+    }
+
+    @Override
+    protected Environments.Multiple createMultiBrowser(FilterApplicator... path) {
+        return EnvironmentBrowser.multiple(graph, path);
     }
 
     @Override

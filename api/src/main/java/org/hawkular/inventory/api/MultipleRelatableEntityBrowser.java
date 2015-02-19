@@ -14,15 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.hawkular.inventory.api;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-interface BasicBrowser<EntityType> {
-
-    EntityType entity();
-
-    Relationships.ReadWrite relationships();
+interface MultipleRelatableEntityBrowser<Entity> extends MultipleEntityBrowser<Entity> {
+    Relationships.Read relationships();
 }

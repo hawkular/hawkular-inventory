@@ -32,8 +32,8 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.environment;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class FeedsService extends AbstractSourcedGraphService<FeedBrowser, Feed, String>
-        implements Feeds.ReadAndRegister {
+final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
+        implements Feeds.ReadAndRegister, Feeds.Read {
 
     FeedsService(TransactionalGraph graph, PathContext ctx) {
         super(graph, Feed.class, ctx);
@@ -53,7 +53,12 @@ final class FeedsService extends AbstractSourcedGraphService<FeedBrowser, Feed, 
     }
 
     @Override
-    protected FeedBrowser createBrowser(Filter... path) {
+    protected FeedBrowser createSingleBrowser(FilterApplicator... path) {
+        return new FeedBrowser(graph, path);
+    }
+
+    @Override
+    protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
         return new FeedBrowser(graph, path);
     }
 
@@ -63,7 +68,7 @@ final class FeedsService extends AbstractSourcedGraphService<FeedBrowser, Feed, 
     }
 
     @Override
-    public Feeds.Browser register(String proposedId) {
+    public Feeds.Single register(String proposedId) {
         return super.create(proposedId);
     }
 }

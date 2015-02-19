@@ -23,16 +23,18 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
-import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDefinition;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.impl.blueprints.InventoryService;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -46,8 +48,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 /**
  * Test some basic functionality
@@ -64,16 +69,62 @@ public class BasicTest {
     public void setup() throws Exception {
         graph = new DummyTransactionalGraph(new TinkerGraph(new File("./__tinker.graph").getAbsolutePath()));
         inventory = new InventoryService(graph);
+        setupData();
+    }
+
+    private void setupData() throws Exception {
+        inventory.tenants().create("com.acme.tenant");
+        inventory.tenants().get("com.acme.tenant").environments().create("production");
+        inventory.tenants().get("com.acme.tenant").types()
+                .create(new ResourceType.Blueprint("URL", new Version("1.0")));
+        inventory.tenants().get("com.acme.tenant").metricDefinitions()
+                .create(new MetricDefinition.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
+        inventory.tenants().get("com.acme.tenant").types().get("URL").metricDefinitions().add("ResponseTime");
+        inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
+                .create(new Metric.Blueprint(
+                        new MetricDefinition("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
+                        "host1_ping_response"));
+        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0")));
+        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("host1").metrics().add("host1_ping_response");
+
+        inventory.tenants().create("com.example.tenant");
+        inventory.tenants().get("com.example.tenant").environments().create("test");
+        inventory.tenants().get("com.example.tenant").types()
+                .create(new ResourceType.Blueprint("Kachna", new Version("1.0")));
+        inventory.tenants().get("com.example.tenant").types()
+                .create(new ResourceType.Blueprint("Playroom", new Version("1.0")));
+        inventory.tenants().get("com.example.tenant").metricDefinitions()
+                .create(new MetricDefinition.Blueprint("Size", MetricUnit.BYTE));
+        inventory.tenants().get("com.example.tenant").types().get("Playroom").metricDefinitions().add("Size");
+
+        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+                .create(new Metric.Blueprint(
+                        new MetricDefinition("com.example.tenant", "Size", MetricUnit.BYTE),
+                        "playroom1_size"));
+        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+                .create(new Metric.Blueprint(
+                        new MetricDefinition("com.example.tenant", "Size", MetricUnit.BYTE),
+                        "playroom2_size"));
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")));
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")));
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom1").metrics().add("playroom1_size");
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().add("playroom2_size");
     }
 
     @After
     public void teardown() throws Exception {
         inventory.close();
         graph.shutdown();
+        deleteGraph();
     }
 
-    @AfterClass
-    public static void deleteGraph() throws Exception {
+    private static void deleteGraph() throws Exception {
         Files.walkFileTree(Paths.get("./", "__tinker.graph"), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -90,148 +141,234 @@ public class BasicTest {
     }
 
     @Test
-    public void stage1_testTenantInitialized() throws Exception {
-        inventory.tenants().create("com.acme.tenant");
-        GraphQuery query = graph.query().has("type", "tenant").has("uid", "com.acme.tenant");
+    public void testTenants() throws Exception {
+        Function<String, Void> test = (id) -> {
+            GraphQuery q = graph.query().has("type", "tenant").has("uid", id);
 
-        Iterator<Vertex> tenants = query.vertices().iterator();
+            Iterator<Vertex> evs = q.vertices().iterator();
+            assert evs.hasNext();
+            Vertex ev = evs.next();
+            assert !evs.hasNext();
 
-        assert tenants.hasNext();
-        Vertex t = tenants.next();
-        assert !tenants.hasNext();
+            Tenant t = inventory.tenants().get(id).entity();
 
-        //query, we should get the same results
-        inventory.tenants().get("com.acme.tenant");
-        tenants = query.vertices().iterator();
-        assert tenants.hasNext();
-        t = tenants.next();
-        assert !tenants.hasNext();
+            assert ev.getProperty("uid").equals(id);
+            assert t.getId().equals(id);
+            return null;
+        };
+
+        test.apply("com.acme.tenant");
+        test.apply("com.example.tenant");
+
+        GraphQuery query = graph.query().has("type", "tenant");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
     @Test
-    public void stage2_testEnvironmentInitialized() throws Exception {
-        inventory.tenants().get("com.acme.tenant").environments().create("production");
+    public void testEnvironments() throws Exception {
+        BiFunction<String, String, Void> test = (tenantId, id) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph)
+                    .V().has("type", "tenant").has("uid", tenantId).out("contains")
+                    .has("type", "environment").has("uid", id).cast(Vertex.class);
 
-        GraphQuery tenantQuery = graph.query().has("type", "tenant").has("uid", "com.acme.tenant");
+            Iterator<Vertex> envs = q.iterator();
+            assert envs.hasNext();
+            envs.next();
+            assert !envs.hasNext();
 
-        Iterator<Vertex> tenants = tenantQuery.vertices().iterator();
-        assert tenants.hasNext();
-        Vertex t = tenants.next();
-        assert !tenants.hasNext();
+            //query, we should get the same results
+            Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
+            assert env.getId().equals(id);
 
+            return null;
+        };
 
-        GremlinPipeline<Vertex, Vertex> envQuery = new GremlinPipeline<Vertex, Vertex>().start(t).out("contains")
-                .has("type", "environment").has("uid", "production").cast(Vertex.class);
+        test.apply("com.acme.tenant", "production");
+        test.apply("com.example.tenant", "test");
 
-        Iterator<Vertex> envs = envQuery.iterator();
-        assert envs.hasNext();
-        Vertex e = envs.next();
-        assert !envs.hasNext();
-
-        //query, we should get the same results
-        inventory.tenants().get("com.acme.tenant").environments().get("production");
-
-        tenants = tenantQuery.vertices().iterator();
-        assert tenants.hasNext();
-        t = tenants.next();
-        assert !tenants.hasNext();
-
-        //reset, so that we can query again
-        envQuery.reset();
-        envQuery.setStarts(Arrays.asList(t));
-
-        envs = envQuery.iterator();
-        assert envs.hasNext();
-        e = envs.next();
-        assert !envs.hasNext();
+        GraphQuery query = graph.query().has("type", "environment");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
     @Test
-    public void stage3_testAddResourceType() throws Exception {
+    public void testResourceTypes() throws Exception {
+        BiFunction<String, String, Void> test = (tenantId, id) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "resourceType").has("uid", id)
+                    .has("version", "1.0").cast(Vertex.class);
 
-        inventory.tenants().get("com.acme.tenant").types()
-                .create(new ResourceType.Blueprint("URL", new Version("1.0")));
+            assert q.hasNext();
 
-        GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                .has("uid", "com.acme.tenant").out("contains").has("type", "resourceType").has("uid", "URL")
-                .has("version", "1.0").cast(Vertex.class);
+            ResourceType rt = inventory.tenants().get(tenantId).types().get(id).entity();
+            assert rt.getId().equals(id);
 
-        assert q.hasNext();
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "URL");
+        test.apply("com.example.tenant", "Kachna");
+        test.apply("com.example.tenant", "Playroom");
+
+        GraphQuery query = graph.query().has("type", "resourceType");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
     @Test
-    public void stage4_testAddMetricDefinition() throws Exception {
-        inventory.tenants().get("com.acme.tenant").metricDefinitions()
-                .create(new MetricDefinition.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
+    public void testMetricDefinitions() throws Exception {
+        BiFunction<String, String, Void> test = (tenantId, id) -> {
 
-        GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                .has("uid", "com.acme.tenant").out("contains").has("type", "metricDefinition")
-                .has("uid", "ResponseTime").has("unit", "ms").cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "metricDefinition")
+                    .has("uid", id).cast(Vertex.class);
 
-        assert q.hasNext();
+            assert q.hasNext();
+
+            MetricDefinition md = inventory.tenants().get(tenantId).metricDefinitions().get(id).entity();
+            assert md.getId().equals(id);
+
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "ResponseTime");
+        test.apply("com.example.tenant", "Size");
+
+        GraphQuery query = graph.query().has("type", "metricDefinition");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
     @Test
-    public void stage5_testAddMetricDefToResourceType() throws Exception {
-        inventory.tenants().get("com.acme.tenant").types().get("URL").metricDefinitions().add("ResponseTime");
+    public void testMetricDefsLinkedToResourceTypes() throws Exception {
+        TriFunction<String, String, String, Void> test = (tenantId, resourceTypeId, id) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "resourceType")
+                    .has("uid", resourceTypeId).out("owns").has("type", "metricDefinition").has("uid", id)
+                    .cast(Vertex.class);
 
-        GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                .has("uid", "com.acme.tenant").out("contains").has("type", "resourceType")
-                .has("uid", "URL").out("owns").has("type", "metricDefinition").has("uid", "ResponseTime")
-                .has("unit", "ms").cast(Vertex.class);
+            assert q.hasNext();
 
-        assert q.hasNext();
+            MetricDefinition md = inventory.tenants().get(tenantId).types().get(resourceTypeId)
+                    .metricDefinitions().get(id).entity();
+            assert md.getId().equals(id);
+
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "URL", "ResponseTime");
+        test.apply("com.example.tenant", "Playroom", "Size");
     }
 
     @Test
-    public void stage6_testAddMetric() throws Exception {
-        inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
-                .create(new Metric.Blueprint(
-                        new MetricDefinition("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
-                        "host1_ping_response"));
+    public void testMetrics() throws Exception {
+        TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, metricDefId, id) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
+                    .out("contains").has("type", "metric").has("uid", id).as("metric").in("defines")
+                    .has("type", "metricDefinition").has("uid", metricDefId).back("metric").cast(Vertex.class);
 
-        GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                .has("uid", "com.acme.tenant").out("contains").has("type", "environment").has("uid", "production")
-                .out("contains").has("type", "metric").has("uid", "host1_ping_response").as("metric").in("defines")
-                .has("type", "metricDefinition").has("uid", "ResponseTime").back("metric").cast(Vertex.class);
+            assert q.hasNext();
 
-        assert q.hasNext();
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).metrics()
+                    .getAll(Defined.by(new MetricDefinition(tenantId, metricDefId)), With.id(id)).entities().iterator()
+                    .next();
+            assert m.getId().equals(id);
+
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "production", "ResponseTime", "host1_ping_response");
+        test.apply("com.example.tenant", "test", "Size", "playroom1_size");
+        test.apply("com.example.tenant", "test", "Size", "playroom2_size");
+
+        GraphQuery query = graph.query().has("type", "metric");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
     @Test
-    public void stage7_testAddResource() throws Exception {
-        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0")));
+    public void testResources() throws Exception {
+        TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
+                    .out("contains").has("type", "resource").has("uid", id).as("resource").in("defines")
+                    .has("type", "resourceType").has("uid", resourceTypeId).back("resource").cast(Vertex.class);
 
-        GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                .has("uid", "com.acme.tenant").out("contains").has("type", "environment").has("uid", "production")
-                .out("contains").has("type", "resource").has("uid", "host1").as("resource").in("defines")
-                .has("type", "resourceType").has("uid", "URL").back("resource").cast(Vertex.class);
+            assert q.hasNext();
 
-        assert q.hasNext();
+            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                    .getAll(Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0")), With.id(id)).entities()
+                    .iterator().next();
+            assert r.getId().equals(id);
+
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "production", "URL", "host1");
+        test.apply("com.example.tenant", "test", "Playroom", "playroom1");
+        test.apply("com.example.tenant", "test", "Playroom", "playroom2");
+
+        GraphQuery query = graph.query().has("type", "resource");
+        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
     @Test
-    public void stage8_testAssociateMetricWithResource() throws Exception {
-        Metrics.ReadRelate ms = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .get("host1").metrics();
+    public void testAssociateMetricWithResource() throws Exception {
+        TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceId, metricId) -> {
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
+                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
+                    .out("contains").has("type", "resource").has("uid", resourceId).out("owns")
+                    .has("type", "metric").has("uid", metricId).cast(Vertex.class);
 
-        try {
-            ms.get("host1_ping_response");
-        } catch (IllegalArgumentException ignored) {
-            //expected
-        }
+            assert q.hasNext();
 
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                    .get(resourceId).metrics().get(metricId).entity();
+            assert metricId.equals(m.getId());
 
-        ms.add("host1_ping_response");
+            return null;
+        };
 
-        Metric m = ms.get("host1_ping_response").entity();
-
-        assert "host1_ping_response".equals(m.getId());
-        assert "production".equals(m.getEnvironmentId());
-        assert "com.acme.tenant".equals(m.getTenantId());
-        assert "ResponseTime".equals(m.getDefinition().getId());
+        test.apply("com.acme.tenant", "production", "host1", "host1_ping_response");
+        test.apply("com.example.tenant", "test", "playroom1", "playroom1_size");
+        test.apply("com.example.tenant", "test", "playroom2", "playroom2_size");
     }
+
+    @Test
+    public void queryMultipleTenants() throws Exception {
+        Set<Tenant> tenants = inventory.tenants().getAll().entities();
+
+        assert tenants.size() == 2;
+    }
+
+    @Test
+    public void queryMultipleEnvironments() throws Exception {
+        Set<Environment> environments = inventory.tenants().getAll().environments().getAll().entities();
+
+        assert environments.size() == 2;
+    }
+
+    @Test
+    public void queryMultipleResourceTypes() throws Exception {
+        Set<ResourceType> types = inventory.tenants().getAll().types().getAll().entities();
+        assert types.size() == 3;
+    }
+
+    @Test
+    public void queryMultipleMetricDefs() throws Exception {
+        Set<MetricDefinition> types = inventory.tenants().getAll().metricDefinitions().getAll().entities();
+        assert types.size() == 2;
+    }
+
+    @Test
+    public void queryMultipleResources() throws Exception {
+        Set<Resource> rs = inventory.tenants().getAll().environments().getAll().resources().getAll().entities();
+        assert rs.size() == 3;
+    }
+
+    @Test
+    public void queryMultipleMetrics() throws Exception {
+        Set<Metric> ms = inventory.tenants().getAll().environments().getAll().metrics().getAll().entities();
+        assert ms.size() == 3;
+    }
+
 /*
     @Test
     public void testAddGetOne() throws Exception {
@@ -333,5 +470,13 @@ public class BasicTest {
         @Override
         public void rollback() {
         }
+    }
+
+    private interface TriFunction<T, U, V, R> {
+        R apply(T t, U u, V v);
+    }
+
+    private interface TetraFunction<T, U, V, W, R> {
+        R apply(T t, U u, V v, W w);
     }
 }

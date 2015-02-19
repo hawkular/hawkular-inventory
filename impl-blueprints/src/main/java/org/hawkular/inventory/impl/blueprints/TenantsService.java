@@ -27,11 +27,12 @@ import org.hawkular.inventory.api.model.Tenant;
 * @author Lukas Krejci
 * @since 1.0
 */
-final class TenantsService extends AbstractSourcedGraphService<TenantBrowser, Tenant, String>
-        implements Tenants.ReadWrite {
+final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant, String>
+        implements Tenants.ReadWrite, Tenants.Read {
 
     public TenantsService(TransactionalGraph graph) {
-        super(graph, Tenant.class, new PathContext(Filter.all(), Filter.by(With.type(Tenant.class)).get()));
+        super(graph, Tenant.class, new PathContext(FilterApplicator.fromPath().get(),
+                Filter.by(With.type(Tenant.class)).get()));
     }
 
     @Override
@@ -40,8 +41,13 @@ final class TenantsService extends AbstractSourcedGraphService<TenantBrowser, Te
     }
 
     @Override
-    protected TenantBrowser createBrowser(Filter... path) {
-        return new TenantBrowser(graph, path);
+    protected Tenants.Single createSingleBrowser(FilterApplicator... path) {
+        return TenantBrowser.single(graph, path);
+    }
+
+    @Override
+    protected Tenants.Multiple createMultiBrowser(FilterApplicator... path) {
+        return TenantBrowser.multiple(graph, path);
     }
 
     @Override

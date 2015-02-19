@@ -31,8 +31,9 @@ import static org.hawkular.inventory.impl.blueprints.Constants.Type.tenant;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class TypesService extends AbstractSourcedGraphService<TypeBrowser, ResourceType, ResourceType.Blueprint>
-        implements Types.ReadWrite {
+final class TypesService extends
+        AbstractSourcedGraphService<Types.Single, Types.Multiple, ResourceType, ResourceType.Blueprint>
+        implements Types.ReadWrite, Types.Read {
 
     TypesService(TransactionalGraph graph, PathContext ctx) {
         super(graph, ResourceType.class, ctx);
@@ -53,8 +54,13 @@ final class TypesService extends AbstractSourcedGraphService<TypeBrowser, Resour
     }
 
     @Override
-    protected TypeBrowser createBrowser(Filter... path) {
-        return new TypeBrowser(graph, path);
+    protected Types.Single createSingleBrowser(FilterApplicator... path) {
+        return TypeBrowser.single(graph, path);
+    }
+
+    @Override
+    protected Types.Multiple createMultiBrowser(FilterApplicator... path) {
+        return TypeBrowser.multiple(graph, path);
     }
 
     @Override
