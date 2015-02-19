@@ -14,26 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.api.filters;
 
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public final class Owned<T extends Entity> extends Related<T> {
 
-    @Inject
-    Inventory inventory;
+    private Owned(T entity) {
+        super(entity, Relationships.WellKnown.owns.name(), Related.Direction.IN);
+    }
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+    public static Owned<Resource> by(Resource resource) {
+        return new Owned<>(resource);
+    }
+
+    public static Owned<ResourceType> by(ResourceType resourceType) {
+        return new Owned<>(resourceType);
     }
 }

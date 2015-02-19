@@ -14,26 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
-
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+package org.hawkular.inventory.api.model;
 
 /**
- * JAX-RS startup "marker" class
+ * Units of a metric
  *
  * @author Heiko W. Rupp
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public enum MetricUnit {
 
-    @Inject
-    Inventory inventory;
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+    NONE(""),
+    MILLI_SECOND("ms"),
+    SECONDS("s"),
+    MINUTE("min"),
+    BYTE("b"),
+    KILO_BYTE("kb");
+
+    private final String displayName;
+
+    MetricUnit(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public static MetricUnit fromDisplayName(String displayName) {
+        for (MetricUnit mu : values()) {
+            if (mu.displayName.equals(displayName)) {
+                return mu;
+            }
+        }
+
+        throw new IllegalArgumentException("No such unit: " + displayName);
     }
 }

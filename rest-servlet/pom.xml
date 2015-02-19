@@ -71,7 +71,7 @@
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl</artifactId>
+      <artifactId>inventory-impl-blueprints</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
 
