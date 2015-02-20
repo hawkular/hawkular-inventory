@@ -33,7 +33,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricDefinition;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
 
 /**
@@ -63,8 +63,8 @@ final class MetricsService
         //connect to the metric def in the blueprint
         HawkularPipeline<?, Vertex> mds = new HawkularPipeline<>(envs) //from environments we're in
                 .in(contains) //up to tenants
-                .out(contains).hasType(metricDefinition) //down to metric defs
-                .hasUid(blueprint.getDefinition().getId()); //filter on our id
+                .out(contains).hasType(metricType) //down to metric defs
+                .hasUid(blueprint.getType().getId()); //filter on our id
 
         for (Vertex md : mds) {
             md.addEdge(Relationships.WellKnown.defines.name(), newEntity);

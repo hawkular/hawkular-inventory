@@ -25,23 +25,23 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Heiko W. Rupp
  */
 @XmlRootElement
-public final class MetricDefinition extends OwnedEntity {
+public final class MetricType extends OwnedEntity {
 
     @XmlAttribute
     private final MetricUnit unit;
 
     /** JAXB support */
     @SuppressWarnings("unused")
-    private MetricDefinition() {
+    private MetricType() {
         unit = null;
     }
 
-    public MetricDefinition(String tenantId, String id) {
+    public MetricType(String tenantId, String id) {
         super(tenantId, id);
         this.unit = MetricUnit.NONE;
     }
 
-    public MetricDefinition(String tenantId, String id, MetricUnit unit) {
+    public MetricType(String tenantId, String id, MetricUnit unit) {
         super(tenantId, id);
         this.unit = unit;
     }
@@ -52,7 +52,7 @@ public final class MetricDefinition extends OwnedEntity {
 
     @Override
     public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
-        return visitor.visitMetricDefinition(this, parameter);
+        return visitor.visitMetricType(this, parameter);
     }
 
     @Override

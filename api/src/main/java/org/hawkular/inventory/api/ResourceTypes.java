@@ -22,23 +22,23 @@ import org.hawkular.inventory.api.model.ResourceType;
  * @author Lukas Krejci
  * @since 1.0
  */
-public final class Types {
+public final class ResourceTypes {
 
-    private Types() {
+    private ResourceTypes() {
 
     }
 
-    private interface BrowserBase<Resources, MetricDefs> {
+    private interface BrowserBase<Resources, MetricTypes> {
         Resources resources();
 
-        MetricDefs metricDefinitions();
+        MetricTypes metricTypes();
     }
 
     public interface Single extends SingleRelatableEntityBrowser<ResourceType>,
-            BrowserBase<Resources.Read, MetricDefinitions.ReadRelate> {}
+            BrowserBase<Resources.Read, MetricTypes.ReadRelate> {}
 
     public interface Multiple extends MultipleRelatableEntityBrowser<ResourceType>,
-            BrowserBase<Resources.Read, MetricDefinitions.Read> {}
+            BrowserBase<Resources.Read, MetricTypes.Read> {}
 
     public interface Read extends ReadInterface<Single, Multiple> {}
     public interface ReadWrite extends ReadWriteInterface<ResourceType, ResourceType.Blueprint, Single, Multiple> {}

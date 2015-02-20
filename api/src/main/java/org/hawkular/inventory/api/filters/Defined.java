@@ -18,7 +18,7 @@ package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 
 /**
@@ -31,7 +31,7 @@ public final class Defined<T extends Entity> extends Related<T> {
         super(entity, Relationships.WellKnown.defines.name(), Related.Direction.IN);
     }
 
-    public static Defined<MetricDefinition> by(MetricDefinition definition) {
+    public static Defined<MetricType> by(MetricType definition) {
         return new Defined<>(definition);
     }
 

@@ -18,15 +18,15 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.MetricDefinitions;
+import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
-import org.hawkular.inventory.api.Types;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
@@ -48,12 +48,12 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
 
         return new Tenants.Single() {
             @Override
-            public Types.ReadWrite types() {
+            public ResourceTypes.ReadWrite resourceTypes() {
                 return b.types();
             }
 
             @Override
-            public MetricDefinitions.ReadWrite metricDefinitions() {
+            public MetricTypes.ReadWrite metricTypes() {
                 return b.metricDefinitions();
             }
 
@@ -78,12 +78,12 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
         TenantBrowser b = new TenantBrowser(graph, path);
         return new Tenants.Multiple() {
             @Override
-            public Types.Read types() {
+            public ResourceTypes.Read resourceTypes() {
                 return b.types();
             }
 
             @Override
-            public MetricDefinitions.Read metricDefinitions() {
+            public MetricTypes.Read metricTypes() {
                 return b.metricDefinitions();
             }
 
@@ -114,8 +114,8 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
                 With.type(ResourceType.class))));
     }
 
-    public MetricDefinitionsService metricDefinitions() {
-        return new MetricDefinitionsService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
-                With.type(MetricDefinition.class))));
+    public MetricTypesService metricDefinitions() {
+        return new MetricTypesService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
+                With.type(MetricType.class))));
     }
 }

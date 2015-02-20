@@ -52,29 +52,29 @@ public final class Relationships {
         owns
     }
 
-    private interface BrowserBase<Tenants, Environments, Feeds, MetricDefs, Metrics, Resources, Types> {
+    private interface BrowserBase<Tenants, Environments, Feeds, MetricTypes, Metrics, Resources, ResourceTypes> {
         Tenants tenants();
 
         Environments environments();
 
         Feeds feeds();
 
-        MetricDefs metricDefinitions();
+        MetricTypes metricTypes();
 
         Metrics metrics();
 
         Resources resources();
 
-        Types types();
+        ResourceTypes resourceTypes();
     }
 
     public interface Single extends SingleEntityBrowser<Relationship>,
-            BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricDefinitions.ReadWrite,
-                    Metrics.ReadWrite, Resources.ReadWrite, Types.ReadWrite> {}
+            BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricTypes.ReadWrite,
+                    Metrics.ReadWrite, Resources.ReadWrite, ResourceTypes.ReadWrite> {}
 
     public interface Multiple extends MultipleEntityBrowser<Relationship>,
-            BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricDefinitions.Read, Metrics.Read,
-                    Resources.Read, Types.Read> {}
+            BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricTypes.Read, Metrics.Read,
+                    Resources.Read, ResourceTypes.Read> {}
 
     public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
     }
