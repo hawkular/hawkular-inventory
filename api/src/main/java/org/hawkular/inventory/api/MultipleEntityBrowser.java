@@ -23,7 +23,7 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface MultipleEntityBrowser<Entity> {
+public interface MultipleEntityBrowser<Entity> {
 
     Set<Entity> entities();
 }

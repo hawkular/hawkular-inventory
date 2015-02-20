@@ -23,7 +23,9 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import org.hawkular.inventory.api.MultipleEntityBrowser;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
@@ -51,6 +53,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
@@ -111,6 +114,7 @@ public class BasicTest {
                 .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")));
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")));
+
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom1").metrics().add("playroom1_size");
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
@@ -162,6 +166,78 @@ public class BasicTest {
 
         GraphQuery query = graph.query().has("type", "tenant");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
+    }
+
+    @Test
+    public void testEntitiesByRelationships() throws Exception {
+        Function<Integer, Function<String, Function<String, Function<Integer, Function<String,
+                Function<MultipleEntityBrowser, Consumer<MultipleEntityBrowser>>>>>>>
+                testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
+                multipleParents -> multipleChildren -> {
+                    GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
+                            .V().has("type", parentType).cast(Vertex.class);
+                    Iterator<Vertex> parentIterator = q1.iterator();
+
+                    GremlinPipeline<Graph, Vertex> q2 = new GremlinPipeline<Graph, Vertex>(graph)
+                            .V().has("type", parentType).out(edgeLabel).has("type", childType)
+                            .cast(Vertex.class);
+                    Iterator<Vertex> childIterator = q2.iterator();
+
+                    Iterator<Object> multipleParentIterator = multipleParents.entities().iterator();
+                    Iterator<Object> multipleChildrenIterator = multipleChildren.entities().iterator();
+
+                    for (int i = 0; i < numberOfParents; i++) {
+                        assert parentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
+                                parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Gremlin " +
+                                "query returned only " + i;
+                        assert multipleParentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
+                                parentType + "s that have outgoing edge labeled with " + edgeLabel + ". Tested API " +
+                                "returned only " + i;
+                        parentIterator.next();
+                        multipleParentIterator.next();
+                    }
+                    assert !parentIterator.hasNext() : "There must be " + numberOfParents + " " + parentType +
+                            "s. Gremlin query returned more than " + numberOfParents;
+                    assert !multipleParentIterator.hasNext() : "There must be " + numberOfParents + " " + parentType +
+                            "s. Tested API returned more than " + numberOfParents;
+
+                    for (int i = 0; i < numberOfKids; i++) {
+                        assert childIterator.hasNext() : "There must be exactly " + numberOfKids + " " + childType +
+                                "s that are directly under " + parentType + " connected with " + edgeLabel +
+                                ". Gremlin query returned only " + i;
+                        assert multipleChildrenIterator.hasNext();
+                        childIterator.next();
+                        multipleChildrenIterator.next();
+                    }
+                    assert !childIterator.hasNext() : "There must be exactly " + numberOfKids + " " + childType + "s";
+                    assert !multipleChildrenIterator.hasNext();
+                });
+
+        MultipleEntityBrowser parents = inventory.tenants().getAll(Related.by("contains"));
+        MultipleEntityBrowser kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("environment").apply(parents).accept(kids);
+
+        kids = inventory.tenants().getAll().types().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("tenant").apply("contains").apply(3).apply("resourceType").apply(parents)
+                .accept(kids);
+
+        kids = inventory.tenants().getAll().metricDefinitions().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("metricDefinition").apply(parents)
+                .accept(kids);
+
+        parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
+        kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("environment").apply("contains").apply(3).apply("metric").apply(parents).
+                accept(kids);
+
+        kids = inventory.tenants().getAll().environments().getAll().resources().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("environment").apply("contains").apply(3).apply("resource").apply(parents).accept
+                (kids);
+
+        parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
+        kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("defines"));
+        testHelper.apply(2).apply("metricDefinition").apply("defines").apply(3).apply("metric").apply(parents)
+                .accept(kids);
     }
 
     @Test
