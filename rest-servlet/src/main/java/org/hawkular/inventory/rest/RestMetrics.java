@@ -19,7 +19,7 @@ package org.hawkular.inventory.rest;
 
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -48,7 +48,7 @@ public class RestMetrics {
     public Response updateMetric(@PathParam("tenantId") String tenantId,
                                  @PathParam("environmentId") String environmentId,
                                  @PathParam("metricId") String metricId,
-                                 MetricDefinition newDef) {
+                                 MetricType newDef) {
 
         try {
             Metric updatedMetric = new Metric(tenantId, environmentId, metricId, newDef);

@@ -62,7 +62,7 @@ public class RestResources {
 
         try {
             Tenants.Single tb = inventory.tenants().get(tenantId);
-            ResourceType rt = tb.types().get(resourceTypeId).entity();
+            ResourceType rt = tb.resourceTypes().get(resourceTypeId).entity();
 
             Resource.Blueprint b = new Resource.Blueprint(resourceId, rt);
 

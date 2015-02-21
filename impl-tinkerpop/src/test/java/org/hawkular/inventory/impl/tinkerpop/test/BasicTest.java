@@ -27,7 +27,7 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -75,14 +75,14 @@ public class BasicTest {
     private void setupData() throws Exception {
         inventory.tenants().create("com.acme.tenant");
         inventory.tenants().get("com.acme.tenant").environments().create("production");
-        inventory.tenants().get("com.acme.tenant").types()
+        inventory.tenants().get("com.acme.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("URL", new Version("1.0")));
-        inventory.tenants().get("com.acme.tenant").metricDefinitions()
-                .create(new MetricDefinition.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
-        inventory.tenants().get("com.acme.tenant").types().get("URL").metricDefinitions().add("ResponseTime");
+        inventory.tenants().get("com.acme.tenant").metricTypes()
+                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().add("ResponseTime");
         inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
                 .create(new Metric.Blueprint(
-                        new MetricDefinition("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
+                        new MetricType("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
                         "host1_ping_response"));
         inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0")));
@@ -91,21 +91,21 @@ public class BasicTest {
 
         inventory.tenants().create("com.example.tenant");
         inventory.tenants().get("com.example.tenant").environments().create("test");
-        inventory.tenants().get("com.example.tenant").types()
+        inventory.tenants().get("com.example.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("Kachna", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").types()
+        inventory.tenants().get("com.example.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("Playroom", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").metricDefinitions()
-                .create(new MetricDefinition.Blueprint("Size", MetricUnit.BYTE));
-        inventory.tenants().get("com.example.tenant").types().get("Playroom").metricDefinitions().add("Size");
+        inventory.tenants().get("com.example.tenant").metricTypes()
+                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE));
+        inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().add("Size");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
-                        new MetricDefinition("com.example.tenant", "Size", MetricUnit.BYTE),
+                        new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
                         "playroom1_size"));
         inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
-                        new MetricDefinition("com.example.tenant", "Size", MetricUnit.BYTE),
+                        new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
                         "playroom2_size"));
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")));
@@ -199,7 +199,7 @@ public class BasicTest {
 
             assert q.hasNext();
 
-            ResourceType rt = inventory.tenants().get(tenantId).types().get(id).entity();
+            ResourceType rt = inventory.tenants().get(tenantId).resourceTypes().get(id).entity();
             assert rt.getId().equals(id);
 
             return null;
@@ -218,12 +218,12 @@ public class BasicTest {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
             GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "metricDefinition")
+                    .has("uid", tenantId).out("contains").has("type", "metricType")
                     .has("uid", id).cast(Vertex.class);
 
             assert q.hasNext();
 
-            MetricDefinition md = inventory.tenants().get(tenantId).metricDefinitions().get(id).entity();
+            MetricType md = inventory.tenants().get(tenantId).metricTypes().get(id).entity();
             assert md.getId().equals(id);
 
             return null;
@@ -232,7 +232,7 @@ public class BasicTest {
         test.apply("com.acme.tenant", "ResponseTime");
         test.apply("com.example.tenant", "Size");
 
-        GraphQuery query = graph.query().has("type", "metricDefinition");
+        GraphQuery query = graph.query().has("type", "metricType");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
@@ -241,13 +241,13 @@ public class BasicTest {
         TriFunction<String, String, String, Void> test = (tenantId, resourceTypeId, id) -> {
             GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
                     .has("uid", tenantId).out("contains").has("type", "resourceType")
-                    .has("uid", resourceTypeId).out("owns").has("type", "metricDefinition").has("uid", id)
+                    .has("uid", resourceTypeId).out("owns").has("type", "metricType").has("uid", id)
                     .cast(Vertex.class);
 
             assert q.hasNext();
 
-            MetricDefinition md = inventory.tenants().get(tenantId).types().get(resourceTypeId)
-                    .metricDefinitions().get(id).entity();
+            MetricType md = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                    .metricTypes().get(id).entity();
             assert md.getId().equals(id);
 
             return null;
@@ -263,12 +263,12 @@ public class BasicTest {
             GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
                     .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
                     .out("contains").has("type", "metric").has("uid", id).as("metric").in("defines")
-                    .has("type", "metricDefinition").has("uid", metricDefId).back("metric").cast(Vertex.class);
+                    .has("type", "metricType").has("uid", metricDefId).back("metric").cast(Vertex.class);
 
             assert q.hasNext();
 
             Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).metrics()
-                    .getAll(Defined.by(new MetricDefinition(tenantId, metricDefId)), With.id(id)).entities().iterator()
+                    .getAll(Defined.by(new MetricType(tenantId, metricDefId)), With.id(id)).entities().iterator()
                     .next();
             assert m.getId().equals(id);
 
@@ -347,13 +347,13 @@ public class BasicTest {
 
     @Test
     public void queryMultipleResourceTypes() throws Exception {
-        Set<ResourceType> types = inventory.tenants().getAll().types().getAll().entities();
+        Set<ResourceType> types = inventory.tenants().getAll().resourceTypes().getAll().entities();
         assert types.size() == 3;
     }
 
     @Test
     public void queryMultipleMetricDefs() throws Exception {
-        Set<MetricDefinition> types = inventory.tenants().getAll().metricDefinitions().getAll().entities();
+        Set<MetricType> types = inventory.tenants().getAll().metricTypes().getAll().entities();
         assert types.size() == 2;
     }
 

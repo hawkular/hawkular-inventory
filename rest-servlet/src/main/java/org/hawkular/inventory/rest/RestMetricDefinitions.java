@@ -18,7 +18,7 @@
 package org.hawkular.inventory.rest;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 
 import javax.inject.Inject;
@@ -50,7 +50,7 @@ public class RestMetricDefinitions {
     @Path("/{tenantId}/metricDefinitions")
     public Response getAll(@PathParam("tenantId") String tenantId) {
         try {
-            return Response.ok(inventory.tenants().get(tenantId).metricDefinitions().getAll()).build();
+            return Response.ok(inventory.tenants().get(tenantId).metricTypes().getAll()).build();
         } catch (Exception e) {
             RestApiLogger.LOGGER.warn(e);
             return Response.serverError().build();
@@ -64,10 +64,10 @@ public class RestMetricDefinitions {
                            @QueryParam("unit") String unit) {
 
         try {
-            MetricDefinition.Blueprint b = new MetricDefinition.Blueprint(metricDefinitionId,
+            MetricType.Blueprint b = new MetricType.Blueprint(metricDefinitionId,
                     MetricUnit.fromDisplayName(unit));
 
-            return Response.ok(inventory.tenants().get(tenantId).metricDefinitions().create(b).entity()).build();
+            return Response.ok(inventory.tenants().get(tenantId).metricTypes().create(b).entity()).build();
         } catch (Exception e) {
             RestApiLogger.LOGGER.warn(e);
             return Response.serverError().build();
@@ -79,7 +79,7 @@ public class RestMetricDefinitions {
     public Response delete(@PathParam("tenantId") String tenantId,
                            @PathParam("metricDefinitionId") String metricDefinitionId) {
         try {
-            inventory.tenants().get(tenantId).metricDefinitions().delete(metricDefinitionId);
+            inventory.tenants().get(tenantId).metricTypes().delete(metricDefinitionId);
             return Response.ok().build();
         } catch (Exception e) {
             RestApiLogger.LOGGER.warn(e);

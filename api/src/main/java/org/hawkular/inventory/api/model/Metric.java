@@ -26,27 +26,27 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public final class Metric extends EnvironmentalEntity {
 
-    private final MetricDefinition definition;
+    private final MetricType type;
 
     /** JAXB support */
     @SuppressWarnings("unused")
     private Metric() {
-        definition = null;
+        type = null;
     }
 
-    public Metric(String tenantId, String environmentId, String id, MetricDefinition definition) {
+    public Metric(String tenantId, String environmentId, String id, MetricType type) {
         super(tenantId, environmentId, id);
-        this.definition = definition;
+        this.type = type;
     }
 
-    public MetricDefinition getDefinition() {
-        return definition;
+    public MetricType getType() {
+        return type;
     }
 
     @Override
     protected void appendToString(StringBuilder toStringBuilder) {
         super.appendToString(toStringBuilder);
-        toStringBuilder.append(", definition=").append(definition);
+        toStringBuilder.append(", definition=").append(type);
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class Metric extends EnvironmentalEntity {
     public static class Blueprint {
         @XmlAttribute
         private final String id;
-        private final MetricDefinition definition;
+        private final MetricType type;
 
         /** JAXB support */
         @SuppressWarnings("unused")
@@ -66,13 +66,13 @@ public final class Metric extends EnvironmentalEntity {
             this(null, null);
         }
 
-        public Blueprint(MetricDefinition definition, String id) {
-            this.definition = definition;
+        public Blueprint(MetricType type, String id) {
+            this.type = type;
             this.id = id;
         }
 
-        public MetricDefinition getDefinition() {
-            return definition;
+        public MetricType getType() {
+            return type;
         }
 
         public String getId() {

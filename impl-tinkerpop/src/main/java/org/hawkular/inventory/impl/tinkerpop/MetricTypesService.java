@@ -18,15 +18,15 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
-import org.hawkular.inventory.api.MetricDefinitions;
+import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Tenant;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricDefinition;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
@@ -34,17 +34,17 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricDefinitionsService
-        extends AbstractSourcedGraphService<MetricDefinitions.Single, MetricDefinitions.Multiple,
-        MetricDefinition, MetricDefinition.Blueprint>
-        implements MetricDefinitions.ReadWrite, MetricDefinitions.ReadRelate {
+final class MetricTypesService
+        extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple,
+        MetricType, MetricType.Blueprint>
+        implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
 
-    MetricDefinitionsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, MetricDefinition.class, ctx);
+    MetricTypesService(TransactionalGraph graph, PathContext ctx) {
+        super(graph, MetricType.class, ctx);
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, MetricDefinition.Blueprint blueprint) {
+    protected Filter[] initNewEntity(Vertex newEntity, MetricType.Blueprint blueprint) {
         Vertex tnt = null;
         //connect to tenants in the source
         for (Vertex t : source().hasType(tenant)) {
@@ -54,27 +54,27 @@ final class MetricDefinitionsService
 
         newEntity.setProperty(Constants.Property.unit.name(), blueprint.getUnit().getDisplayName());
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), With.type(MetricDefinition.class),
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), With.type(MetricType.class),
                 With.id(blueprint.getId())).get();
     }
 
     @Override
-    protected MetricDefinitions.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricDefinitionBrowser(graph, path);
+    protected MetricTypes.Single createSingleBrowser(FilterApplicator... path) {
+        return new MetricTypeBrowser(graph, path);
     }
 
     @Override
-    protected MetricDefinitions.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricDefinitionBrowser(graph, path);
+    protected MetricTypes.Multiple createMultiBrowser(FilterApplicator... path) {
+        return new MetricTypeBrowser(graph, path);
     }
 
     @Override
-    protected String getProposedId(MetricDefinition.Blueprint b) {
+    protected String getProposedId(MetricType.Blueprint b) {
         return b.getId();
     }
 
     @Override
-    public void update(MetricDefinition entity) {
+    public void update(MetricType entity) {
         //TODO implement
 
     }
@@ -90,7 +90,7 @@ final class MetricDefinitionsService
     public void add(String id) {
         //in here I know the source is a resource type...
         Iterable<Vertex> vs = source().in(contains) //up from resource type to tenant
-                .out(contains).hasType(metricDefinition) //down to metric definitions
+                .out(contains).hasType(metricType) //down to metric definitions
                 .hasUid(id);
 
         super.addRelationship(Constants.Type.resourceType, owns, vs);

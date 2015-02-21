@@ -15,18 +15,6 @@
  * limitations under the License.
  */
 package org.hawkular.inventory.rest.test
-
-import groovyx.net.http.HttpResponseException
-import org.hawkular.inventory.api.model.MetricDefinition
-import org.hawkular.inventory.api.model.MetricUnit
-import org.hawkular.inventory.api.model.Resource
-import org.hawkular.inventory.api.model.ResourceType
-import org.junit.Test
-
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertNotEquals
-
-
 /**
  * Test some basic inventory functionality via REST
  * @author Heiko W. Rupp

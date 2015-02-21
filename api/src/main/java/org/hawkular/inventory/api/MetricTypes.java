@@ -14,27 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.api;
 
-package org.hawkular.inventory.impl.tinkerpop;
-
-import com.tinkerpop.blueprints.TransactionalGraph;
-import org.hawkular.inventory.api.MetricDefinitions;
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricDefinitionBrowser extends AbstractBrowser<MetricDefinition> implements MetricDefinitions.Single,
-        MetricDefinitions.Multiple {
+public final class MetricTypes {
 
-    MetricDefinitionBrowser(TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, MetricDefinition.class, path);
+    private MetricTypes() {
+
     }
 
-    @Override
-    public Metrics.Read metrics() {
-        return new MetricsService(graph, pathToHereWithSelect(null));
+    private interface BrowserBase {
+        Metrics.Read metrics();
     }
+
+    public interface Single extends SingleRelatableEntityBrowser<MetricType>, BrowserBase {
+    }
+
+    public interface Multiple extends MultipleRelatableEntityBrowser<MetricType>, BrowserBase {
+    }
+
+    public interface ReadWrite extends ReadWriteInterface<MetricType, MetricType.Blueprint, Single,
+            Multiple> {}
+
+    public interface Read extends ReadInterface<Single, Multiple> {}
+
+    public interface ReadRelate extends Read, RelateInterface {}
 }

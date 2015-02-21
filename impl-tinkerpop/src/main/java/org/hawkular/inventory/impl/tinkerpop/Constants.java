@@ -21,7 +21,7 @@ import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -43,7 +43,7 @@ final class Constants {
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant, environment, feed, resourceType, metricDefinition, resource, metric;
+        tenant, environment, feed, resourceType, metricType, resource, metric;
 
         public static Type of(Entity e) {
             return e.accept(new EntityVisitor<Type, Void>() {
@@ -68,8 +68,8 @@ final class Constants {
                 }
 
                 @Override
-                public Type visitMetricDefinition(MetricDefinition definition, Void parameter) {
-                    return Type.metricDefinition;
+                public Type visitMetricType(MetricType definition, Void parameter) {
+                    return Type.metricType;
                 }
 
                 @Override
@@ -93,8 +93,8 @@ final class Constants {
                 return Type.feed;
             } else if (ec == Metric.class) {
                 return Type.metric;
-            } else if (ec == MetricDefinition.class) {
-                return Type.metricDefinition;
+            } else if (ec == MetricType.class) {
+                return Type.metricType;
             } else if (ec == Resource.class) {
                 return Type.resource;
             } else if (ec == ResourceType.class) {

@@ -30,7 +30,7 @@ public interface EntityVisitor<R, P> {
 
     R visitMetric(Metric metric, P parameter);
 
-    R visitMetricDefinition(MetricDefinition definition, P parameter);
+    R visitMetricType(MetricType definition, P parameter);
 
     R visitResource(Resource resource, P parameter);
 
@@ -71,7 +71,7 @@ public interface EntityVisitor<R, P> {
         }
 
         @Override
-        public R visitMetricDefinition(MetricDefinition definition, P parameter) {
+        public R visitMetricType(MetricType definition, P parameter) {
             return defaultAction();
         }
 

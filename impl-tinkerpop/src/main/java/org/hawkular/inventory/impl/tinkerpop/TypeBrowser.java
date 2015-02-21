@@ -18,14 +18,14 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
-import org.hawkular.inventory.api.MetricDefinitions;
+import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.Types;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 
@@ -43,10 +43,10 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
         super(graph, ResourceType.class, path);
     }
 
-    public static Types.Single single(TransactionalGraph graph, FilterApplicator... path) {
+    public static ResourceTypes.Single single(TransactionalGraph graph, FilterApplicator... path) {
         TypeBrowser b = new TypeBrowser(graph, path);
 
-        return new Types.Single() {
+        return new ResourceTypes.Single() {
 
             @Override
             public ResourceType entity() {
@@ -64,19 +64,19 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
             }
 
             @Override
-            public MetricDefinitions.ReadRelate metricDefinitions() {
-                return b.metricDefinitions();
+            public MetricTypes.ReadRelate metricTypes() {
+                return b.metricTypes();
             }
         };
     }
 
-    public static Types.Multiple multiple(TransactionalGraph graph, FilterApplicator... path) {
+    public static ResourceTypes.Multiple multiple(TransactionalGraph graph, FilterApplicator... path) {
         TypeBrowser b = new TypeBrowser(graph, path);
 
-        return new Types.Multiple() {
+        return new ResourceTypes.Multiple() {
             @Override
-            public MetricDefinitions.Read metricDefinitions() {
-                return b.metricDefinitions();
+            public MetricTypes.Read metricTypes() {
+                return b.metricTypes();
             }
 
             @Override
@@ -101,8 +101,8 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
                 With.type(Resource.class))));
     }
 
-    private MetricDefinitions.ReadRelate metricDefinitions() {
-        return new MetricDefinitionsService(graph, pathToHereWithSelect(Filter.by(Related.by(owns),
-                With.type(MetricDefinition.class))));
+    private MetricTypes.ReadRelate metricTypes() {
+        return new MetricTypesService(graph, pathToHereWithSelect(Filter.by(Related.by(owns),
+                With.type(MetricType.class))));
     }
 }

@@ -28,16 +28,16 @@ public final class Tenants {
 
     }
 
-    private interface BrowserBase<Types, MDs, Envs> {
+    private interface BrowserBase<ResourceTypes, MetricTypes, Envs> {
         /**
-         * @return types API
+         * @return resource types API
          */
-        Types types();
+        ResourceTypes resourceTypes();
 
         /**
-         * @return metric definitions API
+         * @return metric types API
          */
-        MDs metricDefinitions();
+        MetricTypes metricTypes();
 
         /**
          * @return environments API
@@ -47,10 +47,10 @@ public final class Tenants {
     }
 
     public interface Single extends SingleRelatableEntityBrowser<Tenant>,
-            BrowserBase<Types.ReadWrite, MetricDefinitions.ReadWrite, Environments.ReadWrite> {}
+            BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite> {}
 
     public interface Multiple extends MultipleRelatableEntityBrowser<Tenant>,
-            BrowserBase<Types.Read, MetricDefinitions.Read, Environments.Read> {}
+            BrowserBase<ResourceTypes.Read, MetricTypes.Read, Environments.Read> {}
 
     public interface Read extends ReadInterface<Single, Multiple> {}
 

@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDefinition;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -88,11 +88,11 @@ abstract class AbstractGraphService {
                 environmentVertex = getEnvironmentVertexOf(v);
                 Vertex mdv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator()
                         .next();
-                MetricDefinition md = (MetricDefinition) convert(mdv);
+                MetricType md = (MetricType) convert(mdv);
                 return new Metric(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
                         md);
-            case metricDefinition:
-                return new MetricDefinition(getUid(getTenantVertexOf(v)), getUid(v), MetricUnit.fromDisplayName(
+            case metricType:
+                return new MetricType(getUid(getTenantVertexOf(v)), getUid(v), MetricUnit.fromDisplayName(
                         getProperty(v, Constants.Property.unit)));
             case resource:
                 environmentVertex = getEnvironmentVertexOf(v);
@@ -115,7 +115,7 @@ abstract class AbstractGraphService {
 
         switch (type) {
             case environment:
-            case metricDefinition:
+            case metricType:
             case resourceType:
                 return entityVertex.getVertices(Direction.IN, Constants.Relationship.contains.name()).iterator().next();
             case feed:
