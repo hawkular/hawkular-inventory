@@ -217,12 +217,12 @@ public class BasicTest {
         MultipleEntityBrowser kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
         testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("environment").apply(parents).accept(kids);
 
-        kids = inventory.tenants().getAll().types().getAll(Related.asTargetBy("contains"));
+        kids = inventory.tenants().getAll().resourceTypes().getAll(Related.asTargetBy("contains"));
         testHelper.apply(2).apply("tenant").apply("contains").apply(3).apply("resourceType").apply(parents)
                 .accept(kids);
 
-        kids = inventory.tenants().getAll().metricDefinitions().getAll(Related.asTargetBy("contains"));
-        testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("metricDefinition").apply(parents)
+        kids = inventory.tenants().getAll().metricTypes().getAll(Related.asTargetBy("contains"));
+        testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("metricType").apply(parents)
                 .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
@@ -236,7 +236,7 @@ public class BasicTest {
 
         parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
         kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("defines"));
-        testHelper.apply(2).apply("metricDefinition").apply("defines").apply(3).apply("metric").apply(parents)
+        testHelper.apply(2).apply("metricType").apply("defines").apply(3).apply("metric").apply(parents)
                 .accept(kids);
     }
 
