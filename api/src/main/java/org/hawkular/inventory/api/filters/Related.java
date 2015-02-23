@@ -70,8 +70,8 @@ public class Related<T extends Entity> extends Filter {
     }
 
     /**
-     * Overloaded version of {@link #by(String)} that uses the {@link org.hawkular.inventory.api.Relationships.WellKnown}
-     * as the name of the relationship.
+     * Overloaded version of {@link #by(String)} that uses the
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
      *
      * @param relationship the type of the relationship
      * @return a new "related" filter instance
