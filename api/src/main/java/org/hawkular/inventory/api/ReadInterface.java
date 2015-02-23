@@ -19,11 +19,30 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.filters.Filter;
 
 /**
+ * Generic methods for readonly access to entities.
+ *
+ * @param <Single> an interface for traversing and resolving a single entity
+ * @param <Multiple> an interface for traversing and resolving multiple entities
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 interface ReadInterface<Single, Multiple> {
-    Single get(String id);
 
+    /**
+     * Tries to find a single entity in the current position in the inventory traversal.
+     *
+     * @param id the id of the entity to find in the current traversal position
+     * @return access interface to the entity
+     */
+    Single get(String id) throws EntityNotFoundException;
+
+    /**
+     * Returns access interface to all entities conforming to provided filters in the current position in the inventory
+     * traversal.
+     *
+     * @param filters the (possibly empty) list of filters to apply.
+     * @return the (read-only) access interface to the found entities
+     */
     Multiple getAll(Filter... filters);
 }

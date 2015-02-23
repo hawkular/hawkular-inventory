@@ -17,6 +17,10 @@
 package org.hawkular.inventory.api;
 
 /**
+ * Base interface for all browser interfaces over a single entity.
+ *
+ * @param <Entity> the type of the entity being browsed
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

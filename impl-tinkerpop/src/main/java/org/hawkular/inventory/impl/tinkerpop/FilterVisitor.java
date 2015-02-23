@@ -39,11 +39,11 @@ class FilterVisitor {
 
         query.as(step);
 
-        switch (related.getDirection()) {
-            case IN:
+        switch (related.getEntityRole()) {
+            case TARGET:
                 query.in(related.getRelationshipName());
                 break;
-            case OUT:
+            case SOURCE:
                 query.out(related.getRelationshipName());
                 break;
             case ANY:

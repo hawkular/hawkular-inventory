@@ -24,7 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Type of a resource
+ * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
+ * present in the resources of this type.
  *
  * @author Lukas Krejci
  */
@@ -97,6 +98,12 @@ public final class ResourceType extends OwnedEntity {
         toStringBuilder.append(", version=").append(version);
     }
 
+    /**
+     * Data required to create a resource type.
+     *
+     * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     */
     @XmlRootElement
     public static final class Blueprint {
         @XmlAttribute

@@ -17,13 +17,41 @@
 package org.hawkular.inventory.api;
 
 /**
+ * Generic methods to write access to entities.
+ *
+ * @param <Entity> the entity type
+ * @param <Blueprint> the blueprint type that supplies data necessary to create a new entity
+ * @param <Single> the access interface to a single entity
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 interface WriteInterface<Entity, Blueprint, Single> {
-    Single create(Blueprint blueprint);
 
-    void update(Entity entity);
+    /**
+     * Creates a new entity at the current position in the inventory traversal.
+     *
+     * @param blueprint the blueprint to be used to create the new entity
+     * @return access interface to the freshly created entity
+     *
+     * @throws EntityAlreadyExistsException if the entity already exists
+     */
+    Single create(Blueprint blueprint) throws EntityAlreadyExistsException;
 
-    void delete(String id);
+    /**
+     * Persists the provided entity on the current position in the inventory traversal.
+     *
+     * @param entity the entity to update
+     *
+     * @throws EntityNotFoundException if the entity is not found in the database
+     */
+    void update(Entity entity) throws EntityNotFoundException;
+
+    /**
+     * Deletes an entity with the provided id from the current position in the inventory traversal.
+     *
+     * @param id the id of the entity to delete
+     * @throws EntityNotFoundException
+     */
+    void delete(String id) throws EntityNotFoundException;
 }

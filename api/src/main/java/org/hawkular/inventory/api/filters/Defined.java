@@ -22,13 +22,16 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 
 /**
+ * A helper class to create filters on the "defines" relationship. This can also be achieved by using the
+ * {@link Related} filter.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 public final class Defined<T extends Entity> extends Related<T> {
 
     private Defined(T entity) {
-        super(entity, Relationships.WellKnown.defines.name(), Related.Direction.IN);
+        super(entity, Relationships.WellKnown.defines.name(), EntityRole.TARGET);
     }
 
     public static Defined<MetricType> by(MetricType definition) {

@@ -26,7 +26,7 @@ import java.util.Arrays;
  * @author Lukas Krejci
  * @since 1.0
  */
-public class EntityNotFoundException extends RuntimeException {
+public final class EntityNotFoundException extends InventoryException {
 
     private final String entityType;
     private final Filter[] filters;

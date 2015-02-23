@@ -22,13 +22,16 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 
 /**
+ * A helper class to create filters on the "owns" relationship.  This can also be achieved by using the {@link Related}
+ * filter.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 public final class Owned<T extends Entity> extends Related<T> {
 
     private Owned(T entity) {
-        super(entity, Relationships.WellKnown.owns.name(), Related.Direction.IN);
+        super(entity, Relationships.WellKnown.owns.name(), EntityRole.TARGET);
     }
 
     public static Owned<Resource> by(Resource resource) {

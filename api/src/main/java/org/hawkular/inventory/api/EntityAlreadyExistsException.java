@@ -14,29 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
 
-import javax.xml.bind.annotation.XmlRootElement;
+package org.hawkular.inventory.api;
+
+import org.hawkular.inventory.api.filters.Filter;
+
+import java.util.Arrays;
 
 /**
- * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
- * each other.
- *
- * <p>Note that the tenant does not have a dedicated blueprint type (i.e. data required to create a new tenant
- * in some context), because the only data needed to create a new tenant is its ID, which can easily be modelled
- * by a {@code String}.
-
  * @author Lukas Krejci
  * @since 1.0
  */
-@XmlRootElement
-public final class Tenant extends Entity {
-    public Tenant(String id) {
-        super(id);
+public final class EntityAlreadyExistsException extends InventoryException {
+
+    private final String entityId;
+    private final Filter[] path;
+
+    public EntityAlreadyExistsException(String entityId, Filter[] path) {
+        this.entityId = entityId;
+        this.path = path;
+    }
+
+    public EntityAlreadyExistsException(Throwable cause, String entityId, Filter[] path) {
+        super(cause);
+        this.entityId = entityId;
+        this.path = path;
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
-        return visitor.visitTenant(this, parameter);
+    public String getMessage() {
+        return "Entity with id '" + entityId + "' already exists at the position: " + Arrays.toString(path);
     }
 }

@@ -18,9 +18,18 @@
 package org.hawkular.inventory.api;
 
 /**
+ * Base interface of all browser interfaces over multiple entities that can have relations.
+ *
+ * @param <Entity> the type of the entity being browsed
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 interface MultipleRelatableEntityBrowser<Entity> extends ResolvableToMany<Entity> {
+
+    /**
+     * @return the (read) access interface to relationships of the entities on the current position in the inventory
+     * traversal.
+     */
     Relationships.Read relationships();
 }

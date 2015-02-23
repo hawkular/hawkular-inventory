@@ -19,6 +19,8 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.Relationship;
 
 /**
+ * This is a wrapper class to hold various interfaces defining available functionality on relationships.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -68,16 +70,35 @@ public final class Relationships {
         ResourceTypes resourceTypes();
     }
 
+    /**
+     * TODO this is wrong - we should provide the ReadRelate ifaces instead of ReadWrite - meaning that we should be
+     * able to add new entities into a relationship with the current one but not create brand new "target" entities.
+     *
+     * Interface for accessing a single relationship in a writable manner
+     */
     public interface Single extends ResolvableToSingle<Relationship>,
             BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricTypes.ReadWrite,
                     Metrics.ReadWrite, Resources.ReadWrite, ResourceTypes.ReadWrite> {}
 
+    /**
+     * Interface for traversing over a set of relationships.
+     *
+     * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
+     * modification methods, you first need to resolve the traversal to a single entity (using the
+     * {@link ReadInterface#get(String)} method).
+     */
     public interface Multiple extends ResolvableToMany<Relationship>,
             BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricTypes.Read, Metrics.Read,
                     Resources.Read, ResourceTypes.Read> {}
 
+    /**
+     * Provides read-write access to relationships.
+     */
     public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
     }
 
+    /**
+     * Provides read access to relationships.
+     */
     public interface Read extends ReadInterface<Single, Multiple> {}
 }

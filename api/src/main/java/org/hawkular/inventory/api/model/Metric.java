@@ -20,6 +20,10 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
+ * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
+ * in an environment and can be "owned" by {@link Resource resources} (surprisingly, many resources can own a single
+ * metric).
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -54,6 +58,12 @@ public final class Metric extends EnvironmentalEntity {
         return visitor.visitMetric(this, parameter);
     }
 
+    /**
+     * Data required to create a new metric.
+     *
+     * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     */
     @XmlRootElement
     public static class Blueprint {
         @XmlAttribute

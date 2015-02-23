@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.model;
 
 /**
+ * A visitor interface to accept different kinds of entities available in Hawkular.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -36,16 +38,35 @@ public interface EntityVisitor<R, P> {
 
     R visitResourceType(ResourceType type, P parameter);
 
+    /**
+     * A simple implementation of the EntityVisitor interface that returns a default value (provided at construction
+     * time) from the visit methods.
+     */
     public static class Simple<R, P> implements EntityVisitor<R, P> {
         private final R defaultValue;
 
+        /**
+         * Constructs a new simple entity visitor by default returning null from every visit method.
+         */
         public Simple() {
             this(null);
         }
+
+        /**
+         * Constructs a new simple entity visitor by default returning the provided value from every visit method.
+         *
+         * @param defaultValue the default value to return
+         */
         public Simple(R defaultValue) {
             this.defaultValue = defaultValue;
         }
 
+        /**
+         * The default action executed from the visit methods. This returns the default value provided at
+         * the construction time.
+         *
+         * @return the default value
+         */
         protected R defaultAction() {
             return defaultValue;
         }

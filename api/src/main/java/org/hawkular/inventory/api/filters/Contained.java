@@ -22,13 +22,16 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
+ * A helper class to create filters on the "contains" relationship. This can also be achieved by using the
+ * {@link Related} filter.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 public final class Contained<T extends Entity> extends Related<T> {
 
     private Contained(T entity) {
-        super(entity, Relationships.WellKnown.contains.name(), Related.Direction.IN);
+        super(entity, Relationships.WellKnown.contains.name(), EntityRole.TARGET);
     }
 
     public static Contained<Environment> in(Environment environment) {

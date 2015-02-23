@@ -19,6 +19,13 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
+ * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
+ * other Hawkular components like metrics).
+ *
+ * <p>Note that the feed does not have a dedicated blueprint type (i.e. data required to create a new feed
+ * in some context), because the only data needed to create a new feed is its ID, which can easily be modelled
+ * by a {@code String}.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

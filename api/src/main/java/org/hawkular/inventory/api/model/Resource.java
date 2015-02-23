@@ -22,9 +22,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A resource.
+ * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
+ * the data in the resource should look like.
  *
  * @author Heiko Rupp
+ * @author Lukas Krejci
  */
 @XmlRootElement
 public final class Resource extends EnvironmentalEntity {
@@ -65,6 +67,12 @@ public final class Resource extends EnvironmentalEntity {
         toStringBuilder.append(", type=").append(type);
     }
 
+    /**
+     * Data required to create a resource.
+     *
+     * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     */
     @XmlRootElement
     public static final class Blueprint {
         @XmlAttribute
