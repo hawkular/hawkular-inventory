@@ -69,15 +69,18 @@ public final class Relationships {
     }
 
     public interface Single extends SingleEntityBrowser<Relationship>,
-            BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricTypes.ReadWrite,
-                    Metrics.ReadWrite, Resources.ReadWrite, ResourceTypes.ReadWrite> {}
+            BrowserBase<Tenants.ReadRelate, Environments.ReadRelate, Feeds.ReadRelate, MetricTypes.ReadRelate,
+                    Metrics.ReadRelate, Resources.ReadRelate, ResourceTypes.ReadRelate> {}
 
     public interface Multiple extends MultipleEntityBrowser<Relationship>,
             BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricTypes.Read, Metrics.Read,
                     Resources.Read, ResourceTypes.Read> {}
 
     public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
+        Multiple named(String name);
     }
 
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface Read extends ReadInterface<Single, Multiple> {
+        Multiple named(String name);
+    }
 }

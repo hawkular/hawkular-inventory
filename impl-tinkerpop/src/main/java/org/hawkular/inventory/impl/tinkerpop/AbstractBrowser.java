@@ -31,6 +31,7 @@ import java.util.Set;
  * @since 1.0
  */
 abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Void> {
+
     AbstractBrowser(TransactionalGraph graph, Class<E> entityClass, FilterApplicator... path) {
         super(graph, entityClass, new PathContext(path, null));
     }

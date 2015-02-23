@@ -41,4 +41,6 @@ public final class Feeds {
     public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
         Single register(String proposedId);
     }
+
+    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

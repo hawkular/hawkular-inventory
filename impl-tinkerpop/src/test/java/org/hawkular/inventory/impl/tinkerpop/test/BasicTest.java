@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -238,6 +239,46 @@ public class BasicTest {
         kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("defines"));
         testHelper.apply(2).apply("metricType").apply("defines").apply(3).apply("metric").apply(parents)
                 .accept(kids);
+    }
+
+
+    @Test
+    public void testRelationshipServiceGet() throws Exception {
+        Relationship contains = inventory.tenants().getAll().relationships().get("contains").entity();
+        assert "com.acme.tenant" .equals(contains.getSource().getId()) : "Source node of the very first relation " +
+                "going from tenants must have uid equal to 'com.acme.tenant'";
+        assert "production" .equals(contains.getTarget().getId()) : "Target node of the very first relation going  " +
+                "from tenants must have uid equal to 'production'";
+
+        contains = inventory.tenants().getAll().environments().get("test").relationships().get("contains").entity();
+        assert "com.example.tenant" .equals(contains.getSource().getId()) : "Source node of the very first relation " +
+                "going from environments must have uid equal to 'com.example.tenant'. Was: " + contains.getSource()
+                .getId();
+        assert "test" .equals(contains.getTarget().getId()) : "Target node of the very first relation going from" +
+                " environments must have uid equal to 'test'. Was: " + contains.getTarget().getId();
+        assert "contains" .equals(contains.getName()) : "Name of the relation must be 'contains'.";
+    }
+
+    @Test
+    public void testRelationshipServiceNamed() throws Exception {
+        Set<Relationship> contains = inventory.tenants().getAll().relationships().named("contains").entities();
+        assert contains.stream().anyMatch(rel -> "URL".equals(rel.getTarget().getId())) : "Tenant must contain 'URL'.";
+        assert contains.stream().anyMatch(rel -> "production".equals(rel.getTarget().getId())) : "Tenant must contain" +
+                " 'production'.";
+        assert contains.stream().anyMatch(rel -> "ResponseTime".equals(rel.getTarget().getId())) : "Tenant must " +
+                "contain 'ResponseTime'.";
+
+        contains = inventory.tenants().getAll().environments().get("test").relationships().named("contains").entities();
+        assert contains.stream().anyMatch(rel -> "playroom1".equals(rel.getTarget().getId())) : "Environment must " +
+                "contain 'playroom1'.";
+        assert contains.stream().anyMatch(rel -> "playroom2".equals(rel.getTarget().getId())) : "Environment must " +
+                "contain 'playroom2'.";
+        assert contains.stream().anyMatch(rel -> "playroom2_size".equals(rel.getTarget().getId())) : "Environment " +
+                "must contain 'playroom2_size'.";
+        assert contains.stream().anyMatch(rel -> "playroom1_size".equals(rel.getTarget().getId())) : "Environment " +
+                "must contain 'playroom1_size'.";
+        assert contains.stream().anyMatch(rel -> "com.example.tenant".equals(rel.getSource().getId())) : "Environment" +
+                " must be contained by 'com.example.tenant'.";
     }
 
     @Test

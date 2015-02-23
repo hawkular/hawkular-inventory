@@ -31,12 +31,8 @@ public final class Resources {
     }
 
     public interface Single extends SingleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.ReadRelate> {}
-
     public interface Multiple extends MultipleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.Read> {}
-
     public interface Read extends ReadInterface<Single, Multiple> {}
-
-    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {
-
-    }
+    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {}
+    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

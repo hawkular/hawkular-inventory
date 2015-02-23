@@ -42,4 +42,5 @@ public final class ResourceTypes {
 
     public interface Read extends ReadInterface<Single, Multiple> {}
     public interface ReadWrite extends ReadWriteInterface<ResourceType, ResourceType.Blueprint, Single, Multiple> {}
+    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

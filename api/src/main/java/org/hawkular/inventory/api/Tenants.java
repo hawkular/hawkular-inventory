@@ -55,4 +55,6 @@ public final class Tenants {
     public interface Read extends ReadInterface<Single, Multiple> {}
 
     public interface ReadWrite extends ReadWriteInterface<Tenant, String, Single, Multiple> {}
+
+    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

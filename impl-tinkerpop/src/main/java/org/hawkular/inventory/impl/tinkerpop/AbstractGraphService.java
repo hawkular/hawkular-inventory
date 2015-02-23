@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
@@ -67,6 +68,10 @@ abstract class AbstractGraphService {
 
     static String getUid(Vertex v) {
         return getProperty(v, Constants.Property.uid);
+    }
+
+    static String getUid(Edge e) {
+        return e.getProperty(Constants.Property.uid.name());
     }
 
     static String getType(Vertex v) {
