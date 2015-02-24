@@ -21,6 +21,6 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface SingleRelatableEntityBrowser<Entity> extends SingleEntityBrowser<Entity> {
+interface SingleRelatableEntityBrowser<Entity> extends ResolvableToSingle<Entity> {
     Relationships.ReadWrite relationships();
 }

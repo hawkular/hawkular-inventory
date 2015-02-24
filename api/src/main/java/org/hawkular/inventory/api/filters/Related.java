@@ -33,15 +33,15 @@ public class Related<T extends Entity> extends Filter {
     private final Direction direction;
 
     public static Related<Environment> with(Environment environment) {
-        return new Related<>(environment, Relationships.WellKnown.contains.name(), Owned.Direction.ANY);
+        return new Related<>(environment, Relationships.WellKnown.contains.name(), Direction.ANY);
     }
 
     public static Related<Tenant> with(Tenant tenant) {
-        return new Related<>(tenant, Relationships.WellKnown.contains.name(), Owned.Direction.ANY);
+        return new Related<>(tenant, Relationships.WellKnown.contains.name(), Direction.ANY);
     }
 
     public static Related<ResourceType> definedBy(ResourceType resourceType) {
-        return new Related<>(resourceType, Relationships.WellKnown.defines.name(), Owned.Direction.ANY);
+        return new Related<>(resourceType, Relationships.WellKnown.defines.name(), Direction.ANY);
     }
 
     public static <U extends Entity> Related<U> with(U entity, String relationship) {
@@ -76,7 +76,7 @@ public class Related<T extends Entity> extends Filter {
         return new Related<>(null, relationship.name(), Direction.IN);
     }
 
-    Related(T entity, String relationshipName, Direction direction) {
+    protected Related(T entity, String relationshipName, Direction direction) {
         this.entity = entity;
         this.relationshipName = relationshipName;
         this.direction = direction;
