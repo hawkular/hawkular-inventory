@@ -68,11 +68,11 @@ public final class Relationships {
         ResourceTypes resourceTypes();
     }
 
-    public interface Single extends SingleEntityBrowser<Relationship>,
+    public interface Single extends ResolvableToSingle<Relationship>,
             BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricTypes.ReadWrite,
                     Metrics.ReadWrite, Resources.ReadWrite, ResourceTypes.ReadWrite> {}
 
-    public interface Multiple extends MultipleEntityBrowser<Relationship>,
+    public interface Multiple extends ResolvableToMany<Relationship>,
             BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricTypes.Read, Metrics.Read,
                     Resources.Read, ResourceTypes.Read> {}
 

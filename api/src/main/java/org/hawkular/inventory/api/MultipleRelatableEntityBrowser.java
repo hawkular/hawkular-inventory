@@ -21,6 +21,6 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface MultipleRelatableEntityBrowser<Entity> extends MultipleEntityBrowser<Entity> {
+interface MultipleRelatableEntityBrowser<Entity> extends ResolvableToMany<Entity> {
     Relationships.Read relationships();
 }

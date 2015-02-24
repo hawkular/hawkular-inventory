@@ -23,7 +23,7 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
-import org.hawkular.inventory.api.MultipleEntityBrowser;
+import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
@@ -171,7 +171,7 @@ public class BasicTest {
     @Test
     public void testEntitiesByRelationships() throws Exception {
         Function<Integer, Function<String, Function<String, Function<Integer, Function<String,
-                Function<MultipleEntityBrowser, Consumer<MultipleEntityBrowser>>>>>>>
+                Function<ResolvableToMany, Consumer<ResolvableToMany>>>>>>>
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
                     GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
@@ -213,8 +213,8 @@ public class BasicTest {
                     assert !multipleChildrenIterator.hasNext();
                 });
 
-        MultipleEntityBrowser parents = inventory.tenants().getAll(Related.by("contains"));
-        MultipleEntityBrowser kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
+        ResolvableToMany parents = inventory.tenants().getAll(Related.by("contains"));
+        ResolvableToMany kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
         testHelper.apply(2).apply("tenant").apply("contains").apply(2).apply("environment").apply(parents).accept(kids);
 
         kids = inventory.tenants().getAll().resourceTypes().getAll(Related.asTargetBy("contains"));
