@@ -19,6 +19,8 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Base class for entities that are part of an environment.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

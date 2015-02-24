@@ -19,6 +19,8 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.Metric;
 
 /**
+ * This is a wrapper class to hold various interfaces defining available functionality on metrics.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -28,9 +30,33 @@ public final class Metrics {
 
     }
 
+    /**
+     * Interface for accessing a single metric in a writable manner.
+     */
     public interface Single extends SingleRelatableEntityBrowser<Metric> {}
+
+    /**
+     * Interface for traversing over a set of metrics.
+     *
+     * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
+     * modification methods, you first need to resolve the traversal to a single entity (using the
+     * {@link ReadInterface#get(String)} method).
+     */
     public interface Multiple extends MultipleRelatableEntityBrowser<Metric> {}
+
+    /**
+     * Provides read-only access to metrics.
+     */
     public interface Read extends ReadInterface<Single, Multiple> {}
+
+    /**
+     * Provides read-write access to metrics.
+     */
     public interface ReadWrite extends ReadWriteInterface<Metric, Metric.Blueprint, Single, Multiple> {}
+
+    /**
+     * Provides read-only access to metrics with the additional ability to relate the metrics to the current
+     * position in the inventory traversal.
+     */
     public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

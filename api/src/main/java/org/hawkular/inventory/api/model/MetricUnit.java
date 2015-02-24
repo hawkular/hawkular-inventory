@@ -19,6 +19,9 @@ package org.hawkular.inventory.api.model;
 /**
  * Units of a metric
  *
+ * TODO this is limited and probably will be replaced by a dedicated entity type in the future (so that it is possible
+ * to create new units). Possibly we should also look at some more elaborate measurement unit solution like JSR-363.
+ *
  * @author Heiko W. Rupp
  */
 public enum MetricUnit {

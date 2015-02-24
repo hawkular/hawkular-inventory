@@ -22,6 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Represents a relationship between 2 entities. A relationship has a source and target entities (somewhat obviously),
+ * a name, id (multiple relationships of the same name can exist between the same source and target) and also a map of
+ * properties.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -74,6 +78,11 @@ public final class Relationship {
         return target;
     }
 
+    /**
+     * Data required to create an new relationship.
+     *
+     * TODO this is I think not correct because the source can be implied by the path traversal position.
+     */
     @XmlRootElement
     public static final class Blueprint {
         private final Entity source;

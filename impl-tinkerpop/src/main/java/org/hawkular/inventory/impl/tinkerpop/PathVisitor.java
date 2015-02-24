@@ -27,11 +27,11 @@ import org.hawkular.inventory.api.model.Entity;
 class PathVisitor extends FilterVisitor {
     @Override
     public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
-        switch (related.getDirection()) {
-            case IN:
+        switch (related.getEntityRole()) {
+            case TARGET:
                 query.in(related.getRelationshipName());
                 break;
-            case OUT:
+            case SOURCE:
                 query.out(related.getRelationshipName());
                 break;
             case ANY:

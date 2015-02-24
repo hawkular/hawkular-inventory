@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Base class for all Hawkular entities.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -30,6 +32,8 @@ public abstract class Entity {
     @XmlAttribute
     private final String id;
     private Map<String, Object> properties;
+
+    //TODO has this the place in here?
     private Set<Relationship> relationships;
 
     /** JAXB support */
@@ -45,10 +49,16 @@ public abstract class Entity {
         this.id = id;
     }
 
+    /**
+     * The id of the entity.
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * @return a map of arbitrary properties of this entity.
+     */
     public Map<String, Object> getProperties() {
         if (properties == null) {
             properties = new HashMap<>();
@@ -56,6 +66,15 @@ public abstract class Entity {
         return properties;
     }
 
+    /**
+     * Accepts the provided visitor.
+     *
+     * @param visitor the visitor to visit this entity
+     * @param parameter the parameter to pass on to the visitor
+     * @param <R> the return type
+     * @param <P> the type of the parameter
+     * @return the return value provided by the visitor
+     */
     public abstract <R, P> R accept(EntityVisitor<R, P> visitor, P parameter);
 
     /**

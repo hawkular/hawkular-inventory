@@ -20,10 +20,17 @@ package org.hawkular.inventory.api;
 import java.util.Set;
 
 /**
+ * Base interface for all browser interfaces over multiple entities.
+ *
+ * @param <Entity> the type of the entity being browsed
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
 public interface ResolvableToMany<Entity> {
 
+    /**
+     * @return resolves all entities on the current position in the inventory traversal and returns them as a set.
+     */
     Set<Entity> entities();
 }

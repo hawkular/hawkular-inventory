@@ -19,6 +19,8 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Base class for entities in a tenant (i.e. everything but the {@link Tenant tenant}s themselves and relationships).
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

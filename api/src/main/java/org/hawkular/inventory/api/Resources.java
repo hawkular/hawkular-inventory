@@ -19,6 +19,8 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
+ * This is a wrapper class to hold various interfaces defining available functionality on resources.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -27,16 +29,34 @@ public final class Resources {
     private Resources() {}
 
     private interface BrowserBase<Metrics> {
+
+        /**
+         * @return access to metrics owned by the resource(s)
+         */
         Metrics metrics();
     }
 
+    /**
+     * Interface for accessing a single resource in a writable manner.
+     */
     public interface Single extends SingleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.ReadRelate> {}
 
+    /**
+     * Interface for traversing over a set of resources.
+     *
+     * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
+     * modification methods, you first need to resolve the traversal to a single entity (using the
+     * {@link ReadInterface#get(String)} method).
+     */
     public interface Multiple extends MultipleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.Read> {}
 
+    /**
+     * Provides read-only access to resources.
+     */
     public interface Read extends ReadInterface<Single, Multiple> {}
 
-    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {
-
-    }
+    /**
+     * Provides read-write access to resources.
+     */
+    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {}
 }

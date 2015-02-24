@@ -20,9 +20,12 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * Simple definition of a Metric for Inventory purposes
+ * Metric type defines metadata of metrics of the same type. Metric types are owned by
+ * {@link ResourceType resource type}s in the same way as {@link Metric metric}s are owned by {@link Resource resource}s
+ * (i.e. multiple resource types can "own" a single metric type).
  *
  * @author Heiko W. Rupp
+ * @author Lukas Krejci
  */
 @XmlRootElement
 public final class MetricType extends OwnedEntity {
@@ -61,6 +64,12 @@ public final class MetricType extends OwnedEntity {
         toStringBuilder.append(", unit=").append(unit);
     }
 
+    /**
+     * Data required to create a new metric type.
+     *
+     * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     */
     @XmlRootElement
     public static final class Blueprint {
         @XmlAttribute

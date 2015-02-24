@@ -19,6 +19,13 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
+ * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
+ * "testing", "staging", "production", etc.
+ *
+ * <p>Note that the environment does not have a dedicated blueprint type (i.e. data required to create a new environment
+ * in some context), because the only data needed to create a new environment is its ID, which can easily be modelled
+ * by a {@code String}.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

@@ -21,7 +21,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
-import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -89,7 +89,7 @@ public class RestResources {
             Set<Resource> rs;
             if (typeId != null && typeVersion != null) {
                 ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-                rs = rr.getAll(Related.definedBy(rt)).entities();
+                rs = rr.getAll(Defined.by(rt)).entities();
             } else {
                 rs = rr.getAll().entities();
             }

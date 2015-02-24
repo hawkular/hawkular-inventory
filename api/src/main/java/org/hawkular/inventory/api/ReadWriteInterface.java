@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api;
 
 /**
+ * Helper interface that melds {@link ReadInterface} and {@link WriteInterface}.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */

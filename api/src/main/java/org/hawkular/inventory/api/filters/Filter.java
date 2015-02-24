@@ -21,6 +21,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * A base class for filters. Defines no filtering logic in and of itself.
+ *
+ * <p>The implementations of the Hawkular inventory API are supposed to support filtering by {@link Related},
+ * {@link With.Ids} and {@link With.Types}.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
