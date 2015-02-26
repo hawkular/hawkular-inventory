@@ -186,7 +186,7 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
         Filter.Accumulator acc = Filter.by(EdgeFilter.NAMED == filter ? Related.by(value) : Related.byRelationshipWithId
                 (value), With.type(clazz1));
         try {
-            Constructor<S> constructor = clazz2.getConstructor(InventoryContext.class, PathContext.class);
+            Constructor<S> constructor = clazz2.getDeclaredConstructor(InventoryContext.class, PathContext.class);
             return constructor.newInstance(context, pathToHereWithSelect(acc));
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException
                 e) {
@@ -202,6 +202,6 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
     }
 
     private enum EdgeFilter {
-        ID, NAMED;
+        ID, NAMED
     }
 }

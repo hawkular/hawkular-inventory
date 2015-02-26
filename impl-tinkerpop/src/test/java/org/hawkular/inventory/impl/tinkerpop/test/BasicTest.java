@@ -24,6 +24,7 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
@@ -65,6 +66,7 @@ import java.util.stream.StreamSupport;
  * Test some basic functionality
  *
  * @author Lukas Krejci
+ * @author Jirka Kremser
  */
 public class BasicTest {
 
@@ -301,8 +303,8 @@ public class BasicTest {
 
     @Test
     public void testRelationshipServiceNamed2() throws Exception {
-        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
-                ("contains").entities();
+        Set<Relationship> contains = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships().named("contains").entities();
         assert contains.stream().anyMatch(rel -> "playroom1" .equals(rel.getTarget().getId()))
                 : "Environment 'test' must contain 'playroom1'.";
         assert contains.stream().anyMatch(rel -> "playroom2" .equals(rel.getTarget().getId()))
@@ -313,6 +315,35 @@ public class BasicTest {
                 : "Environment 'test' must contain 'playroom1_size'.";
         assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
                 : "Environment 'production' cant be the source of these relationships.";
+    }
+
+    @Test
+    public void testRelationshipServiceCallChaining() throws Exception {
+        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
+                ("contains").entities();
+
+        MetricType metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
+                .relationships().named("owns").metricTypes().get("Size").entity();// not empty
+        assert "Size".equals(metricType.getId()) : "ResourceType[Playroom] -owns-> MetricType[Size] was not found";
+
+        try {
+            metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
+                    .named("contains").metricTypes().get("Size").entity();
+            assert false : "There is no such an entity satisfying the query, this code shouldn't be reachable";
+        } catch (EntityNotFoundException e) {
+            // good
+        }
+
+        Set<Resource> resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
+                .relationships().named
+                ("defines").resources().getAll().entities();
+        assert resources.stream().allMatch(res -> "playroom1".equals(res.getId()) || "playroom2".equals(res.getId()))
+                : "ResourceType[Playroom] -defines-> resources called playroom1 and playroom2";
+
+        resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships().named
+                ("owns").resources().getAll().entities(); // empty
+        assert resources.isEmpty()
+                : "No resources should be found under the relationship called owns from resource type";
     }
 
     @Test
