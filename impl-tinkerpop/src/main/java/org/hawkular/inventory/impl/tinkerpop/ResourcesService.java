@@ -20,6 +20,7 @@ import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
@@ -67,8 +68,9 @@ final class ResourcesService
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), With.type(Environment.class),
-                With.id(getUid(exampleEnv)), With.type(Resource.class), With.id(blueprint.getId())).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getUid(exampleEnv)), Related.by(contains),
+                With.type(Resource.class), With.id(getUid(newEntity))).get();
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
@@ -72,8 +73,9 @@ final class MetricsService
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), With.type(Environment.class),
-                With.id(getUid(exampleEnv)), With.type(Metric.class), With.id(blueprint.getId())).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getUid(exampleEnv)), Related.by(contains),
+                With.type(Metric.class), With.id(getUid(newEntity))).get();
     }
 
     @Override

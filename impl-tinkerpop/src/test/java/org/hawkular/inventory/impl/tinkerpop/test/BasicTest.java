@@ -76,44 +76,52 @@ public class BasicTest {
     }
 
     private void setupData() throws Exception {
-        inventory.tenants().create("com.acme.tenant");
-        inventory.tenants().get("com.acme.tenant").environments().create("production");
-        inventory.tenants().get("com.acme.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("URL", new Version("1.0")));
-        inventory.tenants().get("com.acme.tenant").metricTypes()
-                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
+        assert inventory.tenants().create("com.acme.tenant").entity().getId().equals("com.acme.tenant");
+        assert inventory.tenants().get("com.acme.tenant").environments().create("production").entity().getId()
+                .equals("production");
+        assert inventory.tenants().get("com.acme.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("URL", new Version("1.0"))).entity().getId().equals("URL");
+        assert inventory.tenants().get("com.acme.tenant").metricTypes()
+                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND)).entity().getId()
+                .equals("ResponseTime");
+
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().add("ResponseTime");
-        inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
-                        "host1_ping_response"));
-        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0")));
+                        "host1_ping_response")).entity().getId().equals("host1_ping_response");
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0"))).entity()
+                .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .get("host1").metrics().add("host1_ping_response");
 
-        inventory.tenants().create("com.example.tenant");
-        inventory.tenants().get("com.example.tenant").environments().create("test");
-        inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Kachna", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Playroom", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").metricTypes()
-                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE));
+        assert inventory.tenants().create("com.example.tenant").entity().getId().equals("com.example.tenant");
+        assert inventory.tenants().get("com.example.tenant").environments().create("test").entity().getId()
+                .equals("test");
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("Kachna", new Version("1.0"))).entity().getId().equals("Kachna");
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("Playroom", new Version("1.0"))).entity().getId().equals("Playroom");
+        assert inventory.tenants().get("com.example.tenant").metricTypes()
+                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().add("Size");
 
-        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom1_size"));
-        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+                        "playroom1_size")).entity().getId().equals("playroom1_size");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom2_size"));
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")));
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")));
+                        "playroom2_size")).entity().getId().equals("playroom2_size");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")))
+                .entity().getId().equals("playroom1");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")))
+                .entity().getId().equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom1").metrics().add("playroom1_size");
