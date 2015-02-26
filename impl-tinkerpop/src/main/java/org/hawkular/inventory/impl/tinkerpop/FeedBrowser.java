@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
@@ -33,13 +32,13 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  */
 final class FeedBrowser extends AbstractBrowser<Feed> implements Feeds.Single, Feeds.Multiple {
 
-    FeedBrowser(TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, Feed.class, path);
+    FeedBrowser(InventoryContext context, FilterApplicator... path) {
+        super(context, Feed.class, path);
     }
 
     @Override
     public Resources.Read resources() {
-        return new ResourcesService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
+        return new ResourcesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(Resource.class))));
     }
 }

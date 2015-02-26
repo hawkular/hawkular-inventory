@@ -16,11 +16,11 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
@@ -44,8 +44,8 @@ final class MetricsService
         extends AbstractSourcedGraphService<Metrics.Single, Metrics.Multiple, Metric, Metric.Blueprint>
         implements Metrics.ReadWrite, Metrics.Read, Metrics.ReadRelate {
 
-    MetricsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Metric.class, ctx);
+    MetricsService(InventoryContext context, PathContext ctx) {
+        super(context, Metric.class, ctx);
     }
 
     @Override
@@ -72,13 +72,14 @@ final class MetricsService
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), With.type(Environment.class),
-                With.id(getUid(exampleEnv)), With.type(Metric.class), With.id(blueprint.getId())).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getUid(exampleEnv)), Related.by(contains),
+                With.type(Metric.class), With.id(getUid(newEntity))).get();
     }
 
     @Override
     protected Metrics.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricBrowser(graph, path);
+        return new MetricBrowser(context, path);
     }
 
     @Override
@@ -88,7 +89,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricBrowser(graph, path);
+        return new MetricBrowser(context, path);
     }
 
     @Override
@@ -100,7 +101,7 @@ final class MetricsService
     public void delete(String id) {
         Vertex v = source(FilterApplicator.fromFilter(selectCandidates()).get())
                 .hasUid(id).next();
-        graph.removeVertex(v);
+        context.getGraph().removeVertex(v);
     }
 
     @Override

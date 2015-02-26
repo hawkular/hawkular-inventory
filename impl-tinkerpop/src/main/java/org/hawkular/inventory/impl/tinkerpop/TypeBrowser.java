@@ -17,11 +17,10 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
@@ -39,12 +38,12 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
  * @since 1.0
  */
 final class TypeBrowser extends AbstractBrowser<ResourceType> {
-    private TypeBrowser(TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, ResourceType.class, path);
+    private TypeBrowser(InventoryContext context, FilterApplicator... path) {
+        super(context, ResourceType.class, path);
     }
 
-    public static ResourceTypes.Single single(TransactionalGraph graph, FilterApplicator... path) {
-        TypeBrowser b = new TypeBrowser(graph, path);
+    public static ResourceTypes.Single single(InventoryContext context, FilterApplicator... path) {
+        TypeBrowser b = new TypeBrowser(context, path);
 
         return new ResourceTypes.Single() {
 
@@ -70,8 +69,8 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
         };
     }
 
-    public static ResourceTypes.Multiple multiple(TransactionalGraph graph, FilterApplicator... path) {
-        TypeBrowser b = new TypeBrowser(graph, path);
+    public static ResourceTypes.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+        TypeBrowser b = new TypeBrowser(context, path);
 
         return new ResourceTypes.Multiple() {
             @Override
@@ -97,12 +96,12 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
     }
 
     private Resources.Read resources() {
-        return new ResourcesService(graph, pathToHereWithSelect(Filter.by(Related.by(defines),
+        return new ResourcesService(context, pathToHereWithSelect(Filter.by(Related.by(defines),
                 With.type(Resource.class))));
     }
 
     private MetricTypes.ReadRelate metricTypes() {
-        return new MetricTypesService(graph, pathToHereWithSelect(Filter.by(Related.by(owns),
+        return new MetricTypesService(context, pathToHereWithSelect(Filter.by(Related.by(owns),
                 With.type(MetricType.class))));
     }
 }

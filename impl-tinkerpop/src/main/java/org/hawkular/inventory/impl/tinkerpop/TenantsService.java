@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
@@ -30,8 +29,8 @@ import org.hawkular.inventory.api.model.Tenant;
 final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant, String>
         implements Tenants.ReadWrite, Tenants.Read {
 
-    public TenantsService(TransactionalGraph graph) {
-        super(graph, Tenant.class, new PathContext(FilterApplicator.fromPath().get(),
+    public TenantsService(InventoryContext context) {
+        super(context, Tenant.class, new PathContext(FilterApplicator.fromPath().get(),
                 Filter.by(With.type(Tenant.class)).get()));
     }
 
@@ -42,12 +41,12 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
 
     @Override
     protected Tenants.Single createSingleBrowser(FilterApplicator... path) {
-        return TenantBrowser.single(graph, path);
+        return TenantBrowser.single(context, path);
     }
 
     @Override
     protected Tenants.Multiple createMultiBrowser(FilterApplicator... path) {
-        return TenantBrowser.multiple(graph, path);
+        return TenantBrowser.multiple(context, path);
     }
 
     @Override

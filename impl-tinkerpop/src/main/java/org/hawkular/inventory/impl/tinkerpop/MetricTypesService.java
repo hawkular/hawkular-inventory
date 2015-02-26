@@ -16,10 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -39,8 +39,8 @@ final class MetricTypesService
         MetricType, MetricType.Blueprint>
         implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
 
-    MetricTypesService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, MetricType.class, ctx);
+    MetricTypesService(InventoryContext context, PathContext ctx) {
+        super(context, MetricType.class, ctx);
     }
 
     @Override
@@ -54,18 +54,18 @@ final class MetricTypesService
 
         newEntity.setProperty(Constants.Property.unit.name(), blueprint.getUnit().getDisplayName());
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), With.type(MetricType.class),
-                With.id(blueprint.getId())).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), Related.by(contains),
+                With.type(MetricType.class), With.id(getUid(newEntity))).get();
     }
 
     @Override
     protected MetricTypes.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricTypeBrowser(graph, path);
+        return new MetricTypeBrowser(context, path);
     }
 
     @Override
     protected MetricTypes.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricTypeBrowser(graph, path);
+        return new MetricTypeBrowser(context, path);
     }
 
     @Override

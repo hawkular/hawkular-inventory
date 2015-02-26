@@ -23,11 +23,16 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.ResolvableToMany;
+import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
+import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
@@ -38,9 +43,7 @@ import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +65,6 @@ import java.util.stream.StreamSupport;
  *
  * @author Lukas Krejci
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BasicTest {
 
     TransactionalGraph graph;
@@ -70,50 +72,68 @@ public class BasicTest {
 
     @Before
     public void setup() throws Exception {
-        graph = new DummyTransactionalGraph(new TinkerGraph(new File("./__tinker.graph").getAbsolutePath()));
-        inventory = new InventoryService(graph);
+        Configuration config = Configuration.builder().withFeedIdStrategy(
+                new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
+                .addConfigurationProperty("blueprints.graph",
+                        "org.hawkular.inventory.impl.tinkerpop.test.BasicTest$DummyTransactionalGraph")
+                .addConfigurationProperty("blueprints.tg.directory", new File("./__tinker.graph").getAbsolutePath())
+                .build();
+
+        inventory = new InventoryService();
+        inventory.initialize(config);
+
+        graph = inventory.getGraph();
+
         setupData();
     }
 
     private void setupData() throws Exception {
-        inventory.tenants().create("com.acme.tenant");
-        inventory.tenants().get("com.acme.tenant").environments().create("production");
-        inventory.tenants().get("com.acme.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("URL", new Version("1.0")));
-        inventory.tenants().get("com.acme.tenant").metricTypes()
-                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND));
+        assert inventory.tenants().create("com.acme.tenant").entity().getId().equals("com.acme.tenant");
+        assert inventory.tenants().get("com.acme.tenant").environments().create("production").entity().getId()
+                .equals("production");
+        assert inventory.tenants().get("com.acme.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("URL", new Version("1.0"))).entity().getId().equals("URL");
+        assert inventory.tenants().get("com.acme.tenant").metricTypes()
+                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND)).entity().getId()
+                .equals("ResponseTime");
+
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().add("ResponseTime");
-        inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
-                        "host1_ping_response"));
-        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0")));
+                        "host1_ping_response")).entity().getId().equals("host1_ping_response");
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0"))).entity()
+                .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .get("host1").metrics().add("host1_ping_response");
 
-        inventory.tenants().create("com.example.tenant");
-        inventory.tenants().get("com.example.tenant").environments().create("test");
-        inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Kachna", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Playroom", new Version("1.0")));
-        inventory.tenants().get("com.example.tenant").metricTypes()
-                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE));
+        assert inventory.tenants().create("com.example.tenant").entity().getId().equals("com.example.tenant");
+        assert inventory.tenants().get("com.example.tenant").environments().create("test").entity().getId()
+                .equals("test");
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("Kachna", new Version("1.0"))).entity().getId().equals("Kachna");
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
+                .create(new ResourceType.Blueprint("Playroom", new Version("1.0"))).entity().getId().equals("Playroom");
+        assert inventory.tenants().get("com.example.tenant").metricTypes()
+                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().add("Size");
 
-        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom1_size"));
-        inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+                        "playroom1_size")).entity().getId().equals("playroom1_size");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
                         new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom2_size"));
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")));
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")));
+                        "playroom2_size")).entity().getId().equals("playroom2_size");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")))
+                .entity().getId().equals("playroom1");
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")))
+                .entity().getId().equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom1").metrics().add("playroom1_size");
@@ -124,7 +144,6 @@ public class BasicTest {
     @After
     public void teardown() throws Exception {
         inventory.close();
-        graph.shutdown();
         deleteGraph();
     }
 
@@ -445,94 +464,23 @@ public class BasicTest {
         assert ms.size() == 3;
     }
 
-/*
     @Test
-    public void testAddGetOne() throws Exception {
-        InventoryService inv = new InventoryService(graph);
+    public void testNoTwoFeedsWithSameID() throws Exception {
+        Feeds.ReadAndRegister feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .feeds();
 
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
+        Feed f1 = feeds.register("feed").entity();
+        Feed f2  = feeds.register("feed").entity();
 
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String id = inventory.addResource("test",resource);
-
-        assert id != null;
-        assert !id.isEmpty();
-
-        Resource result = inventory.getResource("test",id);
-        assert result != null;
-        assert result.getId()!=null;
-        assert result.getId().equals(id);
-
-        List<Resource> resources = inventory.getResourcesForType("test",ResourceType.URL);
-        assert resources != null;
-        assert !resources.isEmpty();
-        assert resources.size() == 1 : "Found " + resources.size() + " entries, but expected 1";
-        assert resources.get(0).equals(result);
-
+        assert f1.getId().equals("feed");
+        assert !f1.getId().equals(f2.getId());
     }
 
-    @Test
-    public void testAddGetBadTenant() throws Exception {
+    @SuppressWarnings("UnusedDeclaration")
+    public static class DummyTransactionalGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
 
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
-
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String id = inventory.addResource("test2",resource);
-
-        Resource result = inventory.getResource("bla",id);
-        assert result == null;
-
-    }
-
-    @Test
-    public void testAddMetricsToResource() throws Exception {
-
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
-
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String tenant = "test3";
-        String id = inventory.addResource(tenant,resource);
-
-
-        inventory.addMetricToResource(tenant,id,"vm.user_load");
-        inventory.addMetricToResource(tenant,id,"vm.system_load");
-        inventory.addMetricToResource(tenant,id,"vm.size");
-        List<MetricDefinition> definitions = new ArrayList<>(2);
-        definitions.add(new MetricDefinition("cpu.count1"));
-        definitions.add(new MetricDefinition("cpu.count15"));
-        MetricDefinition def = new MetricDefinition("cpu.load.42", MetricUnit.NONE);
-        def.setDescription("The question, you know :-)");
-        definitions.add(def);
-        inventory.addMetricsToResource(tenant, id, definitions );
-
-        List<MetricDefinition> metrics = inventory.listMetricsForResource(tenant,id);
-
-        assert metrics.size()==6;
-
-        MetricDefinition updateDef = new MetricDefinition("vm.size");
-        updateDef.setUnit(MetricUnit.BYTE);
-        updateDef.setDescription("How much memory does the vm use?");
-
-        boolean updated = inventory.updateMetric(tenant,id,updateDef);
-        assert updated;
-
-        MetricDefinition vmDef = inventory.getMetric(tenant,id,"vm.size");
-        assertNotNull(vmDef);
-        assertEquals("vm.size", vmDef.getName());
-        assertEquals(MetricUnit.BYTE, vmDef.getUnit());
-    }
-*/
-
-    private static class DummyTransactionalGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
-
-        public DummyTransactionalGraph(TinkerGraph baseGraph) {
-            super(baseGraph);
+        public DummyTransactionalGraph(org.apache.commons.configuration.Configuration configuration) {
+            super(new TinkerGraph(configuration));
         }
 
         @Override

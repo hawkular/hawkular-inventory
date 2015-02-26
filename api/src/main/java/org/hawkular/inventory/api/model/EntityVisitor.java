@@ -92,7 +92,7 @@ public interface EntityVisitor<R, P> {
         }
 
         @Override
-        public R visitMetricType(MetricType definition, P parameter) {
+        public R visitMetricType(MetricType type, P parameter) {
             return defaultAction();
         }
 

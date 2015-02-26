@@ -16,10 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -35,8 +35,8 @@ final class TypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint>
         implements ResourceTypes.ReadWrite, ResourceTypes.Read {
 
-    TypesService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, ResourceType.class, ctx);
+    TypesService(InventoryContext context, PathContext ctx) {
+        super(context, ResourceType.class, ctx);
     }
 
     @Override
@@ -49,18 +49,18 @@ final class TypesService extends
 
         newEntity.setProperty(Constants.Property.version.name(), blueprint.getVersion().toString());
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(exampleTnt)), With.type(ResourceType.class),
-                With.id(blueprint.getId())).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(exampleTnt)), Related.by(contains),
+                With.type(ResourceType.class), With.id(getUid(newEntity))).get();
     }
 
     @Override
     protected ResourceTypes.Single createSingleBrowser(FilterApplicator... path) {
-        return TypeBrowser.single(graph, path);
+        return TypeBrowser.single(context, path);
     }
 
     @Override
     protected ResourceTypes.Multiple createMultiBrowser(FilterApplicator... path) {
-        return TypeBrowser.multiple(graph, path);
+        return TypeBrowser.multiple(context, path);
     }
 
     @Override

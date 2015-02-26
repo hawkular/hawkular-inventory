@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.hawkular.inventory.impl.tinkerpop;
+package org.hawkular.inventory.api.feeds;
 
-import org.hawkular.inventory.api.MetricTypes;
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.FeedIdStrategy;
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.model.Feed;
+
+import java.util.UUID;
 
 /**
+ * A simple ID strategy that will return a random UUID. This is useful for feeds that can remember their assigned IDs
+ * and don't have to be pre-configured by the (human) deployer.
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricTypeBrowser extends AbstractBrowser<MetricType> implements MetricTypes.Single,
-        MetricTypes.Multiple {
-
-    MetricTypeBrowser(InventoryContext context, FilterApplicator... path) {
-        super(context, MetricType.class, path);
-    }
-
+public final class RandomUUIDFeedIdStrategy implements FeedIdStrategy {
     @Override
-    public Metrics.Read metrics() {
-        return new MetricsService(context, pathToHereWithSelect(null));
+    @SuppressWarnings("UnusedParameters")
+    public String generate(Inventory inventory, Feed proposedFeed) {
+        return UUID.randomUUID().toString();
     }
 }

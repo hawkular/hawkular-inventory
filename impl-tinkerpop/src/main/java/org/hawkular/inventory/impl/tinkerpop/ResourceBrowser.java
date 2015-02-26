@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
@@ -35,12 +34,12 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
  * @since 1.0
  */
 final class ResourceBrowser extends AbstractBrowser<Resource> {
-    private ResourceBrowser(TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, Resource.class, path);
+    private ResourceBrowser(InventoryContext context, FilterApplicator... path) {
+        super(context, Resource.class, path);
     }
 
-    public static Resources.Single single(TransactionalGraph graph, FilterApplicator... path) {
-        ResourceBrowser b = new ResourceBrowser(graph, path);
+    public static Resources.Single single(InventoryContext context, FilterApplicator... path) {
+        ResourceBrowser b = new ResourceBrowser(context, path);
 
         return new Resources.Single() {
             @Override
@@ -60,8 +59,8 @@ final class ResourceBrowser extends AbstractBrowser<Resource> {
         };
     }
 
-    public static Resources.Multiple multiple(TransactionalGraph graph, FilterApplicator... path) {
-        ResourceBrowser b = new ResourceBrowser(graph, path);
+    public static Resources.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+        ResourceBrowser b = new ResourceBrowser(context, path);
 
         return new Resources.Multiple() {
             @Override
@@ -82,6 +81,6 @@ final class ResourceBrowser extends AbstractBrowser<Resource> {
     }
 
     private MetricsService metrics() {
-        return new MetricsService(graph, pathToHereWithSelect(Filter.by(Related.by(owns), With.type(Metric.class))));
+        return new MetricsService(context, pathToHereWithSelect(Filter.by(Related.by(owns), With.type(Metric.class))));
     }
 }

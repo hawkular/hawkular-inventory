@@ -16,15 +16,15 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
@@ -35,8 +35,8 @@ final class EnvironmentsService extends
         AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, String>
         implements Environments.ReadWrite, Environments.Read {
 
-    public EnvironmentsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Environment.class, ctx);
+    public EnvironmentsService(InventoryContext context, PathContext ctx) {
+        super(context, Environment.class, ctx);
     }
 
     @Override
@@ -50,20 +50,21 @@ final class EnvironmentsService extends
         String tenantId = null;
         for (Vertex sourceTenant : source().hasType(tenant)) {
             tenantId = getUid(sourceTenant);
-            sourceTenant.addEdge(Relationships.WellKnown.contains.name(), newEntity);
+            sourceTenant.addEdge(contains.name(), newEntity);
         }
 
-        return Filter.by(With.type(Tenant.class), With.id(tenantId)).get();
+        return Filter.by(With.type(Tenant.class), With.id(tenantId), Related.by(contains),
+                With.type(Environment.class), With.id(getUid(newEntity))).get();
     }
 
     @Override
     protected Environments.Single createSingleBrowser(FilterApplicator... path) {
-        return EnvironmentBrowser.single(graph, path);
+        return EnvironmentBrowser.single(context, path);
     }
 
     @Override
     protected Environments.Multiple createMultiBrowser(FilterApplicator... path) {
-        return EnvironmentBrowser.multiple(graph, path);
+        return EnvironmentBrowser.multiple(context, path);
     }
 
     @Override

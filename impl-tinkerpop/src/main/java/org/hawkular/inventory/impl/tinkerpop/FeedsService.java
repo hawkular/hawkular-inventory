@@ -16,16 +16,16 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Tenant;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 
 /**
@@ -35,36 +35,47 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
         implements Feeds.ReadAndRegister, Feeds.Read {
 
-    FeedsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Feed.class, ctx);
+    FeedsService(InventoryContext context, PathContext ctx) {
+        super(context, Feed.class, ctx);
     }
 
     @Override
     protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
         Vertex env = null;
         for(Vertex sourceEnv : source().hasType(environment)) {
-            sourceEnv.addEdge(Relationships.WellKnown.contains.name(), newEntity);
+            sourceEnv.addEdge(contains.name(), newEntity);
             env = sourceEnv;
         }
 
         Vertex tenant = getTenantVertexOf(env);
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), With.type(Environment.class),
-                With.id(getUid(env)), With.type(Feed.class), With.id(blueprint)).get();
+        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getUid(env)), Related.by(contains),
+                With.type(Feed.class), With.id(getUid(newEntity))).get();
     }
 
     @Override
     protected FeedBrowser createSingleBrowser(FilterApplicator... path) {
-        return new FeedBrowser(graph, path);
+        return new FeedBrowser(context, path);
     }
 
     @Override
     protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new FeedBrowser(graph, path);
+        return new FeedBrowser(context, path);
     }
 
     @Override
     protected String getProposedId(String b) {
-        return b;
+        Vertex env = null;
+        for(Vertex sourceEnv : source().hasType(environment)) {
+            env = sourceEnv;
+        }
+
+        Vertex tenant = getTenantVertexOf(env);
+
+        String envId = getUid(env);
+        String tenantId = getUid(tenant);
+
+        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b));
     }
 
     @Override
