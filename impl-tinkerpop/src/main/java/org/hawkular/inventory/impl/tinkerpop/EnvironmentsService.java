@@ -33,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  */
 final class EnvironmentsService extends
         AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, String>
-        implements Environments.ReadWrite, Environments.Read {
+        implements Environments.ReadWrite, Environments.Read, Environments.ReadRelate {
 
     public EnvironmentsService(InventoryContext context, PathContext ctx) {
         super(context, Environment.class, ctx);
@@ -82,5 +82,15 @@ final class EnvironmentsService extends
     public void delete(String id) {
         //TODO implement
 
+    }
+
+    @Override
+    public void add(String id) {
+        //TODO implement
+    }
+
+    @Override
+    public void remove(String id) {
+        //TODO implement
     }
 }

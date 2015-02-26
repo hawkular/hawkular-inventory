@@ -30,6 +30,7 @@ import java.util.Set;
  * @since 1.0
  */
 abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Void> {
+
     AbstractBrowser(InventoryContext context, Class<E> entityClass, FilterApplicator... path) {
         super(context, entityClass, new PathContext(path, null));
     }
@@ -53,7 +54,7 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
     }
 
     public RelationshipService relationships() {
-        return new RelationshipService(context.getGraph(), source().next());
+        return new RelationshipService(context.getGraph(), new PathContext(path, Filter.all()), entityClass);
     }
 
     @Override

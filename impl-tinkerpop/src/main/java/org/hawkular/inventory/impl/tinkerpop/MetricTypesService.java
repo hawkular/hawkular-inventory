@@ -36,8 +36,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  */
 final class MetricTypesService
         extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple,
-        MetricType, MetricType.Blueprint>
-        implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
+        MetricType, MetricType.Blueprint> implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
 
     MetricTypesService(InventoryContext context, PathContext ctx) {
         super(context, MetricType.class, ctx);

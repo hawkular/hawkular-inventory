@@ -17,6 +17,8 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
@@ -35,7 +37,7 @@ import org.hawkular.inventory.api.model.Tenant;
  */
 abstract class AbstractGraphService {
     protected final InventoryContext context;
-    private final FilterApplicator[] path;
+    protected final FilterApplicator[] path;
 
     AbstractGraphService(InventoryContext context, FilterApplicator... path) {
         this.context = context;
@@ -58,6 +60,10 @@ abstract class AbstractGraphService {
     }
 
     protected FilterApplicator.Builder pathWith(Filter... filters) {
+        return pathWith(path, filters);
+    }
+
+    public static FilterApplicator.Builder pathWith(FilterApplicator[] path, Filter... filters) {
         return FilterApplicator.from(path).and(FilterApplicator.Type.PATH, filters);
     }
 
@@ -67,6 +73,10 @@ abstract class AbstractGraphService {
 
     static String getUid(Vertex v) {
         return getProperty(v, Constants.Property.uid);
+    }
+
+    static String getUid(Edge e) {
+        return e.getProperty(Constants.Property.uid.name());
     }
 
     static String getType(Vertex v) {

@@ -33,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  */
 final class TypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint>
-        implements ResourceTypes.ReadWrite, ResourceTypes.Read {
+        implements ResourceTypes.ReadWrite, ResourceTypes.Read, ResourceTypes.ReadRelate {
 
     TypesService(InventoryContext context, PathContext ctx) {
         super(context, ResourceType.class, ctx);
@@ -78,5 +78,15 @@ final class TypesService extends
     public void delete(String id) {
         //TODO implement
 
+    }
+
+    @Override
+    public void add(String id) {
+        //TODO implement
+    }
+
+    @Override
+    public void remove(String id) {
+        //TODO implement
     }
 }

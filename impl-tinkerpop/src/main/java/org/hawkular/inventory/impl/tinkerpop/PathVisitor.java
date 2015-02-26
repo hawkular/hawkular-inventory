@@ -29,13 +29,31 @@ class PathVisitor extends FilterVisitor {
     public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
         switch (related.getEntityRole()) {
             case TARGET:
-                query.in(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.in(related.getRelationshipName());
+                }
+                if (null != related.getEdgeId()) {
+                    // TODO test
+                    query.inE().has("id", related.getEdgeId()).inV();
+                }
                 break;
             case SOURCE:
-                query.out(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.out(related.getRelationshipName());
+                }
+                if (null != related.getEdgeId()) {
+                    // TODO test
+                    query.outE().has("id", related.getEdgeId()).outV();
+                }
                 break;
             case ANY:
-                query.both(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.both(related.getRelationshipName());
+                }
+                if (null != related.getEdgeId()) {
+                    // TODO test
+                    query.bothE().has("id", related.getEdgeId()).bothV();
+                }
         }
 
         if (related.getEntity() != null) {

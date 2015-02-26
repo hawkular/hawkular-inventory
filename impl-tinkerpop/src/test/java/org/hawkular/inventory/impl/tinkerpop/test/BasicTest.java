@@ -36,6 +36,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -257,6 +258,62 @@ public class BasicTest {
         kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("defines"));
         testHelper.apply(2).apply("metricType").apply("defines").apply(3).apply("metric").apply(parents)
                 .accept(kids);
+    }
+
+
+    @Test
+    public void testRelationshipServiceGet() throws Exception {
+        // the edge IDs are set deterministically for dummy graph, but this may differ with graph implementation
+        // here we assume the edge IDs in advance to be 10 and 14 and there is not edge with id 13
+
+        Relationship contains = inventory.tenants().get("com.example.tenant").relationships().get("10").entity();
+
+        assert "com.example.tenant".equals(contains.getSource().getId()) : "Source node of the very first relation " +
+                "going from tenants must have uid equal to 'com.acme.tenant'";
+        assert "Kachna".equals(contains.getTarget().getId()) : "Target node of the very first relation going  " +
+                "from tenants must have uid equal to 'production'";
+
+        contains = inventory.tenants().getAll().environments().get("test").relationships().get("14").entity();
+
+        assert "test".equals(contains.getSource().getId()) : "Source node of the very first relation " +
+                "going from environments must have uid equal to 'com.example.tenant'. Was: " + contains.getSource()
+                .getId();
+        assert "playroom1_size" .equals(contains.getTarget().getId()) : "Target node of the very first relation  " +
+            "going from  environments must have uid equal to 'test'. Was: " + contains.getTarget().getId();
+        assert "contains" .equals(contains.getName()) : "Name of the relation must be 'contains'.";
+
+        contains = inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
+        assert contains == null : "There should not be any edge with id 13.";
+    }
+
+    @Test
+    public void testRelationshipServiceNamed1() throws Exception {
+        Set<Relationship> contains = inventory.tenants().getAll().relationships().named("contains").entities();
+        assert contains.stream().anyMatch(rel -> "com.acme.tenant".equals(rel.getSource().getId())
+                && "URL".equals(rel.getTarget().getId()))
+                : "Tenant 'com.acme.tenant' must contain ResourceType 'URL'.";
+        assert contains.stream().anyMatch(rel -> "com.acme.tenant".equals(rel.getSource().getId())
+                && "production" .equals(rel.getTarget().getId()))
+                : "Tenant 'com.acme.tenant' must contain Environment 'production'.";
+        assert contains.stream().anyMatch(rel -> "com.example.tenant".equals(rel.getSource().getId())
+                && "Size".equals(rel.getTarget().getId()))
+                : "Tenant 'com.example.tenant' must contain MetricType 'Size'.";
+    }
+
+    @Test
+    public void testRelationshipServiceNamed2() throws Exception {
+        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
+                ("contains").entities();
+        assert contains.stream().anyMatch(rel -> "playroom1" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom1'.";
+        assert contains.stream().anyMatch(rel -> "playroom2" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom2'.";
+        assert contains.stream().anyMatch(rel -> "playroom2_size" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom2_size'.";
+        assert contains.stream().anyMatch(rel -> "playroom1_size" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom1_size'.";
+        assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
+                : "Environment 'production' cant be the source of these relationships.";
     }
 
     @Test
