@@ -31,6 +31,7 @@ public class Related<T extends Entity> extends Filter {
 
     private final T entity;
     private final String relationshipName;
+    private final String relationshipId;
     private final EntityRole entityRole;
 
     /**
@@ -81,6 +82,17 @@ public class Related<T extends Entity> extends Filter {
     }
 
     /**
+     * Creates a filter for entities that are sources of at least one relationship with the specified id. The target
+     * entity is not specified and can be anything.
+     *
+     * @param relationshipId the id of the relationship
+     * @return a new "related" filter instance
+     */
+    public static Related<?> byRelationshipWithId(String relationshipId) {
+        return new Related<>(null, null, relationshipId, EntityRole.SOURCE);
+    }
+
+    /**
      * Specifies a filter for entities that are targets of a relationship with the specified entity.
      *
      * @param entity the entity that is the source of the relationship
@@ -127,10 +139,15 @@ public class Related<T extends Entity> extends Filter {
         return new Related<>(null, relationship.name(), EntityRole.TARGET);
     }
 
-    protected Related(T entity, String relationshipName, EntityRole entityRole) {
+    protected Related(T entity, String relationshipName, String relationshipId, EntityRole entityRole) {
         this.entity = entity;
         this.relationshipName = relationshipName;
+        this.relationshipId = relationshipId;
         this.entityRole = entityRole;
+    }
+
+    protected Related(T entity, String relationshipName, EntityRole entityRole) {
+        this(entity, relationshipName, null, entityRole);
     }
 
     /**
@@ -145,6 +162,13 @@ public class Related<T extends Entity> extends Filter {
      */
     public String getRelationshipName() {
         return relationshipName;
+    }
+
+    /**
+     * @return the id of the relationship
+     */
+    public String getRelationshipId() {
+        return relationshipId;
     }
 
     /**

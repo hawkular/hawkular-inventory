@@ -41,13 +41,31 @@ class FilterVisitor {
 
         switch (related.getEntityRole()) {
             case TARGET:
-                query.in(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.in(related.getRelationshipName());
+                }
+                if (null != related.getRelationshipId()) {
+                    // TODO test
+                    query.inE().has("id", related.getRelationshipId()).inV();
+                }
                 break;
             case SOURCE:
-                query.out(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.out(related.getRelationshipName());
+                }
+                if (null != related.getRelationshipId()) {
+                    // TODO test
+                    query.outE().has("id", related.getRelationshipId()).outV();
+                }
                 break;
             case ANY:
-                query.both(related.getRelationshipName());
+                if (null != related.getRelationshipName()) {
+                    query.both(related.getRelationshipName());
+                }
+                if (null != related.getRelationshipId()) {
+                    // TODO test
+                    query.bothE().has("id", related.getRelationshipId()).bothV();
+                }
         }
 
         if (related.getEntity() != null) {

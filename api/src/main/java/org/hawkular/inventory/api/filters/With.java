@@ -37,13 +37,13 @@ public final class With {
         return new Ids(ids);
     }
 
-    public static Types type(Class<? extends Entity> type) {
-        return new Types(type);
-    }
-
     @SafeVarargs
     public static Types types(Class<? extends Entity>... types) {
         return new Types(types);
+    }
+
+    public static Types type(Class<? extends Entity> type) {
+        return new Types(type);
     }
 
     public static final class Ids extends Filter {

@@ -71,14 +71,11 @@ public final class Relationships {
     }
 
     /**
-     * TODO this is wrong - we should provide the ReadRelate ifaces instead of ReadWrite - meaning that we should be
-     * able to add new entities into a relationship with the current one but not create brand new "target" entities.
-     *
      * Interface for accessing a single relationship in a writable manner
      */
     public interface Single extends ResolvableToSingle<Relationship>,
-            BrowserBase<Tenants.ReadWrite, Environments.ReadWrite, Feeds.ReadAndRegister, MetricTypes.ReadWrite,
-                    Metrics.ReadWrite, Resources.ReadWrite, ResourceTypes.ReadWrite> {}
+            BrowserBase<Tenants.ReadRelate, Environments.ReadRelate, Feeds.ReadRelate, MetricTypes.ReadRelate,
+                    Metrics.ReadRelate, Resources.ReadRelate, ResourceTypes.ReadRelate> {}
 
     /**
      * Interface for traversing over a set of relationships.
@@ -95,10 +92,13 @@ public final class Relationships {
      * Provides read-write access to relationships.
      */
     public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
+        Multiple named(String name);
     }
 
     /**
      * Provides read access to relationships.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface Read extends ReadInterface<Single, Multiple> {
+        Multiple named(String name);
+    }
 }
