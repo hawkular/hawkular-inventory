@@ -16,6 +16,16 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.EntityVisitor;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +52,54 @@ public abstract class Filter {
 
     public static Filter[] all() {
         return EMPTY;
+    }
+
+    public static Filter[] pathTo(Entity entity) {
+        return entity.accept(new EntityVisitor<Accumulator, Accumulator>() {
+            @Override
+            public Accumulator visitTenant(Tenant tenant, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(tenant.getId()));
+            }
+
+            @Override
+            public Accumulator visitEnvironment(Environment environment, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(environment.getTenantId()))
+                        .and(With.type(Environment.class)).and(With.id(environment.getId()));
+            }
+
+            @Override
+            public Accumulator visitFeed(Feed feed, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(feed.getTenantId()))
+                        .and(With.type(Environment.class)).and(With.id(feed.getEnvironmentId()))
+                        .and(With.type(Feed.class)).and(With.id(feed.getId()));
+            }
+
+            @Override
+            public Accumulator visitMetric(Metric metric, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(metric.getTenantId()))
+                        .and(With.type(Environment.class)).and(With.id(metric.getEnvironmentId()))
+                        .and(With.type(Metric.class)).and(With.id(metric.getId()));
+            }
+
+            @Override
+            public Accumulator visitMetricType(MetricType type, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(type.getTenantId()))
+                        .and(With.type(MetricType.class)).and(With.id(type.getId()));
+            }
+
+            @Override
+            public Accumulator visitResource(Resource resource, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(resource.getTenantId()))
+                        .and(With.type(Environment.class)).and(With.id(resource.getEnvironmentId()))
+                        .and(With.type(Resource.class)).and(With.id(resource.getId()));
+            }
+
+            @Override
+            public Accumulator visitResourceType(ResourceType type, Accumulator acc) {
+                return acc.and(With.type(Tenant.class)).and(With.id(type.getTenantId()))
+                        .and(With.type(ResourceType.class)).and(With.id(type.getId()));
+            }
+        }, by()).get();
     }
 
     public static final class Accumulator {

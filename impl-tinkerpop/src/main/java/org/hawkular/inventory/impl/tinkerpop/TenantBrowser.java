@@ -16,12 +16,11 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
@@ -39,12 +38,12 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @since 1.0
  */
 final class TenantBrowser extends AbstractBrowser<Tenant> {
-    private TenantBrowser(TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, Tenant.class, path);
+    private TenantBrowser(InventoryContext context, FilterApplicator... path) {
+        super(context, Tenant.class, path);
     }
 
-    public static Tenants.Single single(TransactionalGraph graph, FilterApplicator... path) {
-        TenantBrowser b = new TenantBrowser(graph, path);
+    public static Tenants.Single single(InventoryContext context, FilterApplicator... path) {
+        TenantBrowser b = new TenantBrowser(context, path);
 
         return new Tenants.Single() {
             @Override
@@ -74,8 +73,8 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
         };
     }
 
-    public static Tenants.Multiple multiple(TransactionalGraph graph, FilterApplicator... path) {
-        TenantBrowser b = new TenantBrowser(graph, path);
+    public static Tenants.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+        TenantBrowser b = new TenantBrowser(context, path);
         return new Tenants.Multiple() {
             @Override
             public ResourceTypes.Read resourceTypes() {
@@ -105,17 +104,17 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
     }
 
     public EnvironmentsService environments() {
-        return new EnvironmentsService(graph,
+        return new EnvironmentsService(context,
                 pathToHereWithSelect(Filter.by(Related.by(contains), With.type(Environment.class))));
     }
 
     public TypesService types() {
-        return new TypesService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
+        return new TypesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(ResourceType.class))));
     }
 
     public MetricTypesService metricDefinitions() {
-        return new MetricTypesService(graph, pathToHereWithSelect(Filter.by(Related.by(contains),
+        return new MetricTypesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(MetricType.class))));
     }
 }

@@ -16,7 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.GraphFactory;
 import com.tinkerpop.blueprints.TransactionalGraph;
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Tenants;
 
@@ -25,19 +28,32 @@ import org.hawkular.inventory.api.Tenants;
  * @since 1.0
  */
 public final class InventoryService implements Inventory {
-    private final TransactionalGraph graph;
+    private InventoryContext context;
 
-    public InventoryService(TransactionalGraph graph) {
-        this.graph = graph;
+    @Override
+    public void initialize(Configuration configuration) {
+        Graph graph = GraphFactory.open(configuration.getImplementationConfiguration());
+        if (!(graph instanceof TransactionalGraph)) {
+            throw new IllegalArgumentException("Hawkular inventory requires a transactional graph implementation.");
+        }
+
+        context = new InventoryContext(this, configuration.getFeedIdStrategy(), (TransactionalGraph) graph);
     }
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new TenantsService(graph);
+        return new TenantsService(context);
     }
 
     @Override
     public void close() throws Exception {
+        context.getGraph().shutdown();
     }
 
+    /**
+     * Mainly for testing purposes.
+     */
+    public TransactionalGraph getGraph() {
+        return context.getGraph();
+    }
 }

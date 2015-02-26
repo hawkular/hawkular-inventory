@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
@@ -43,8 +42,8 @@ final class ResourcesService
         extends AbstractSourcedGraphService<Resources.Single, Resources.Multiple, Resource, Resource.Blueprint>
         implements Resources.ReadWrite, Resources.Read {
 
-    public ResourcesService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Resource.class, ctx);
+    public ResourcesService(InventoryContext context, PathContext ctx) {
+        super(context, Resource.class, ctx);
     }
 
     @Override
@@ -75,12 +74,12 @@ final class ResourcesService
 
     @Override
     protected Resources.Single createSingleBrowser(FilterApplicator... path) {
-        return ResourceBrowser.single(graph, path);
+        return ResourceBrowser.single(context, path);
     }
 
     @Override
     protected Resources.Multiple createMultiBrowser(FilterApplicator... path) {
-        return ResourceBrowser.multiple(graph, path);
+        return ResourceBrowser.multiple(context, path);
     }
 
     @Override
@@ -96,7 +95,7 @@ final class ResourcesService
 
     @Override
     public void delete(String id) {
-        Iterator<Vertex> vs = graph.getVertices(Constants.Property.uid.name(), id).iterator();
+        Iterator<Vertex> vs = context.getGraph().getVertices(Constants.Property.uid.name(), id).iterator();
         if (!vs.hasNext()) {
             throw new IllegalArgumentException("Resource with id " + id + " doesn't not exist");
         }
@@ -107,7 +106,7 @@ final class ResourcesService
             throw new IllegalStateException("More than 1 resource with id " + id + " exists.");
         }
 
-        graph.removeVertex(v);
-        graph.commit();
+        context.getGraph().removeVertex(v);
+        context.getGraph().commit();
     }
 }

@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.filters.Filter;
@@ -36,8 +35,8 @@ final class EnvironmentsService extends
         AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, String>
         implements Environments.ReadWrite, Environments.Read {
 
-    public EnvironmentsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Environment.class, ctx);
+    public EnvironmentsService(InventoryContext context, PathContext ctx) {
+        super(context, Environment.class, ctx);
     }
 
     @Override
@@ -60,12 +59,12 @@ final class EnvironmentsService extends
 
     @Override
     protected Environments.Single createSingleBrowser(FilterApplicator... path) {
-        return EnvironmentBrowser.single(graph, path);
+        return EnvironmentBrowser.single(context, path);
     }
 
     @Override
     protected Environments.Multiple createMultiBrowser(FilterApplicator... path) {
-        return EnvironmentBrowser.multiple(graph, path);
+        return EnvironmentBrowser.multiple(context, path);
     }
 
     @Override

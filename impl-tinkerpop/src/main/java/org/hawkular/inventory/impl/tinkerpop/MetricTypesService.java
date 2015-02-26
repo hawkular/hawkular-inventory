@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.filters.Filter;
@@ -40,8 +39,8 @@ final class MetricTypesService
         MetricType, MetricType.Blueprint>
         implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
 
-    MetricTypesService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, MetricType.class, ctx);
+    MetricTypesService(InventoryContext context, PathContext ctx) {
+        super(context, MetricType.class, ctx);
     }
 
     @Override
@@ -61,12 +60,12 @@ final class MetricTypesService
 
     @Override
     protected MetricTypes.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricTypeBrowser(graph, path);
+        return new MetricTypeBrowser(context, path);
     }
 
     @Override
     protected MetricTypes.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricTypeBrowser(graph, path);
+        return new MetricTypeBrowser(context, path);
     }
 
     @Override

@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
@@ -45,8 +44,8 @@ final class MetricsService
         extends AbstractSourcedGraphService<Metrics.Single, Metrics.Multiple, Metric, Metric.Blueprint>
         implements Metrics.ReadWrite, Metrics.Read, Metrics.ReadRelate {
 
-    MetricsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Metric.class, ctx);
+    MetricsService(InventoryContext context, PathContext ctx) {
+        super(context, Metric.class, ctx);
     }
 
     @Override
@@ -80,7 +79,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricBrowser(graph, path);
+        return new MetricBrowser(context, path);
     }
 
     @Override
@@ -90,7 +89,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricBrowser(graph, path);
+        return new MetricBrowser(context, path);
     }
 
     @Override
@@ -102,7 +101,7 @@ final class MetricsService
     public void delete(String id) {
         Vertex v = source(FilterApplicator.fromFilter(selectCandidates()).get())
                 .hasUid(id).next();
-        graph.removeVertex(v);
+        context.getGraph().removeVertex(v);
     }
 
     @Override

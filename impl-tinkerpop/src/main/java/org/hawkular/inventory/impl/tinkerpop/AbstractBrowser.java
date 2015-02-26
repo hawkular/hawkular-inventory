@@ -17,7 +17,6 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
@@ -31,8 +30,8 @@ import java.util.Set;
  * @since 1.0
  */
 abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Void> {
-    AbstractBrowser(TransactionalGraph graph, Class<E> entityClass, FilterApplicator... path) {
-        super(graph, entityClass, new PathContext(path, null));
+    AbstractBrowser(InventoryContext context, Class<E> entityClass, FilterApplicator... path) {
+        super(context, entityClass, new PathContext(path, null));
     }
 
     public E entity() {
@@ -54,7 +53,7 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
     }
 
     public RelationshipService relationships() {
-        return new RelationshipService(graph, source().next());
+        return new RelationshipService(context.getGraph(), source().next());
     }
 
     @Override

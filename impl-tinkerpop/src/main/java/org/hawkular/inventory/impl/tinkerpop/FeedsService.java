@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.filters.Filter;
@@ -36,8 +35,8 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
         implements Feeds.ReadAndRegister, Feeds.Read {
 
-    FeedsService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, Feed.class, ctx);
+    FeedsService(InventoryContext context, PathContext ctx) {
+        super(context, Feed.class, ctx);
     }
 
     @Override
@@ -56,17 +55,27 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
 
     @Override
     protected FeedBrowser createSingleBrowser(FilterApplicator... path) {
-        return new FeedBrowser(graph, path);
+        return new FeedBrowser(context, path);
     }
 
     @Override
     protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new FeedBrowser(graph, path);
+        return new FeedBrowser(context, path);
     }
 
     @Override
     protected String getProposedId(String b) {
-        return b;
+        Vertex env = null;
+        for(Vertex sourceEnv : source().hasType(environment)) {
+            env = sourceEnv;
+        }
+
+        Vertex tenant = getTenantVertexOf(env);
+
+        String envId = getUid(env);
+        String tenantId = getUid(tenant);
+
+        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b));
     }
 
     @Override

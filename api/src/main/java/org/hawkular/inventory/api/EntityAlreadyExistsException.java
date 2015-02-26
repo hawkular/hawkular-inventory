@@ -18,6 +18,7 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.Entity;
 
 import java.util.Arrays;
 
@@ -29,6 +30,10 @@ public final class EntityAlreadyExistsException extends InventoryException {
 
     private final String entityId;
     private final Filter[] path;
+
+    public EntityAlreadyExistsException(Entity entity) {
+        this(entity.getId(), Filter.pathTo(entity));
+    }
 
     public EntityAlreadyExistsException(String entityId, Filter[] path) {
         this.entityId = entityId;

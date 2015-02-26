@@ -23,11 +23,16 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.ResolvableToMany;
+import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
+import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
@@ -38,9 +43,7 @@ import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +65,6 @@ import java.util.stream.StreamSupport;
  *
  * @author Lukas Krejci
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BasicTest {
 
     TransactionalGraph graph;
@@ -70,8 +72,18 @@ public class BasicTest {
 
     @Before
     public void setup() throws Exception {
-        graph = new DummyTransactionalGraph(new TinkerGraph(new File("./__tinker.graph").getAbsolutePath()));
-        inventory = new InventoryService(graph);
+        Configuration config = Configuration.builder().withFeedIdStrategy(
+                new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
+                .addConfigurationProperty("blueprints.graph",
+                        "org.hawkular.inventory.impl.tinkerpop.test.BasicTest$DummyTransactionalGraph")
+                .addConfigurationProperty("blueprints.tg.directory", new File("./__tinker.graph").getAbsolutePath())
+                .build();
+
+        inventory = new InventoryService();
+        inventory.initialize(config);
+
+        graph = inventory.getGraph();
+
         setupData();
     }
 
@@ -132,7 +144,6 @@ public class BasicTest {
     @After
     public void teardown() throws Exception {
         inventory.close();
-        graph.shutdown();
         deleteGraph();
     }
 
@@ -453,94 +464,23 @@ public class BasicTest {
         assert ms.size() == 3;
     }
 
-/*
     @Test
-    public void testAddGetOne() throws Exception {
-        InventoryService inv = new InventoryService(graph);
+    public void testNoTwoFeedsWithSameID() throws Exception {
+        Feeds.ReadAndRegister feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .feeds();
 
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
+        Feed f1 = feeds.register("feed").entity();
+        Feed f2  = feeds.register("feed").entity();
 
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String id = inventory.addResource("test",resource);
-
-        assert id != null;
-        assert !id.isEmpty();
-
-        Resource result = inventory.getResource("test",id);
-        assert result != null;
-        assert result.getId()!=null;
-        assert result.getId().equals(id);
-
-        List<Resource> resources = inventory.getResourcesForType("test",ResourceType.URL);
-        assert resources != null;
-        assert !resources.isEmpty();
-        assert resources.size() == 1 : "Found " + resources.size() + " entries, but expected 1";
-        assert resources.get(0).equals(result);
-
+        assert f1.getId().equals("feed");
+        assert !f1.getId().equals(f2.getId());
     }
 
-    @Test
-    public void testAddGetBadTenant() throws Exception {
+    @SuppressWarnings("UnusedDeclaration")
+    public static class DummyTransactionalGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
 
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
-
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String id = inventory.addResource("test2",resource);
-
-        Resource result = inventory.getResource("bla",id);
-        assert result == null;
-
-    }
-
-    @Test
-    public void testAddMetricsToResource() throws Exception {
-
-        InventoryServiceOld inventory = new InventoryServiceOld(conn);
-
-        Resource resource = new Resource();
-        resource.setType(ResourceType.URL);
-        resource.addParameter("url","http://hawkular.org");
-        String tenant = "test3";
-        String id = inventory.addResource(tenant,resource);
-
-
-        inventory.addMetricToResource(tenant,id,"vm.user_load");
-        inventory.addMetricToResource(tenant,id,"vm.system_load");
-        inventory.addMetricToResource(tenant,id,"vm.size");
-        List<MetricDefinition> definitions = new ArrayList<>(2);
-        definitions.add(new MetricDefinition("cpu.count1"));
-        definitions.add(new MetricDefinition("cpu.count15"));
-        MetricDefinition def = new MetricDefinition("cpu.load.42", MetricUnit.NONE);
-        def.setDescription("The question, you know :-)");
-        definitions.add(def);
-        inventory.addMetricsToResource(tenant, id, definitions );
-
-        List<MetricDefinition> metrics = inventory.listMetricsForResource(tenant,id);
-
-        assert metrics.size()==6;
-
-        MetricDefinition updateDef = new MetricDefinition("vm.size");
-        updateDef.setUnit(MetricUnit.BYTE);
-        updateDef.setDescription("How much memory does the vm use?");
-
-        boolean updated = inventory.updateMetric(tenant,id,updateDef);
-        assert updated;
-
-        MetricDefinition vmDef = inventory.getMetric(tenant,id,"vm.size");
-        assertNotNull(vmDef);
-        assertEquals("vm.size", vmDef.getName());
-        assertEquals(MetricUnit.BYTE, vmDef.getUnit());
-    }
-*/
-
-    private static class DummyTransactionalGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
-
-        public DummyTransactionalGraph(TinkerGraph baseGraph) {
-            super(baseGraph);
+        public DummyTransactionalGraph(org.apache.commons.configuration.Configuration configuration) {
+            super(new TinkerGraph(configuration));
         }
 
         @Override

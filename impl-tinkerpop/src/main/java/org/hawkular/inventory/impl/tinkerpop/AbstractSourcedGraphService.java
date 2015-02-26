@@ -18,7 +18,6 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
@@ -35,8 +34,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
     protected final Class<E> entityClass;
     protected final PathContext pathContext;
 
-    AbstractSourcedGraphService(TransactionalGraph graph, Class<E> entityClass, PathContext pathContext) {
-        super(graph, pathContext.path);
+    AbstractSourcedGraphService(InventoryContext context, Class<E> entityClass, PathContext pathContext) {
+        super(context, pathContext.path);
         this.entityClass = entityClass;
         this.pathContext = pathContext;
     }
@@ -68,13 +67,13 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
                     + "' already exists.");
         }
 
-        Vertex v = graph.addVertex(id);
+        Vertex v = context.getGraph().addVertex(id);
         v.setProperty(Constants.Property.type.name(), Constants.Type.of(entityClass).name());
         v.setProperty(Constants.Property.uid.name(), id);
 
         Filter[] path = initNewEntity(v, blueprint);
 
-        graph.commit();
+        context.getGraph().commit();
 
         return createSingleBrowser(FilterApplicator.fromPath(path).get());
     }
@@ -95,7 +94,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
                 .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasUid(targetUid));
 
-        edges.forEach(graph::removeEdge);
+        edges.forEach(context.getGraph()::removeEdge);
     }
 
     protected abstract Single createSingleBrowser(FilterApplicator... path);

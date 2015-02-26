@@ -64,6 +64,12 @@ package org.hawkular.inventory.api;
 public interface Inventory extends AutoCloseable {
 
     /**
+     * Initializes the inventory from the provided configuration object.
+     * @param configuration the configuration to use.
+     */
+    void initialize(Configuration configuration);
+
+    /**
      * Entry point into the inventory. Select one ({@link org.hawkular.inventory.api.Tenants.ReadWrite#get(String)}) or
      * more ({@link org.hawkular.inventory.api.Tenants.ReadWrite#getAll(org.hawkular.inventory.api.filters.Filter...)})
      * tenants and navigate further to the entities of interest.

@@ -17,7 +17,6 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
@@ -35,16 +34,17 @@ import org.hawkular.inventory.api.model.Tenant;
  * @since 1.0
  */
 abstract class AbstractGraphService {
-    protected final TransactionalGraph graph;
+    protected final InventoryContext context;
     private final FilterApplicator[] path;
 
-    AbstractGraphService(TransactionalGraph graph, FilterApplicator... path) {
-        this.graph = graph;
+    AbstractGraphService(InventoryContext context, FilterApplicator... path) {
+        this.context = context;
         this.path = path;
     }
 
     protected HawkularPipeline<?, Vertex> source(FilterApplicator... filters) {
-        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(graph)).V();
+        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
+                .V();
 
         for (FilterApplicator fa : path) {
             fa.applyTo(ret);

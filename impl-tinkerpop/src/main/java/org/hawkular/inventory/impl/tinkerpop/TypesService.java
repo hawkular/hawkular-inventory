@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
@@ -36,8 +35,8 @@ final class TypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint>
         implements ResourceTypes.ReadWrite, ResourceTypes.Read {
 
-    TypesService(TransactionalGraph graph, PathContext ctx) {
-        super(graph, ResourceType.class, ctx);
+    TypesService(InventoryContext context, PathContext ctx) {
+        super(context, ResourceType.class, ctx);
     }
 
     @Override
@@ -56,12 +55,12 @@ final class TypesService extends
 
     @Override
     protected ResourceTypes.Single createSingleBrowser(FilterApplicator... path) {
-        return TypeBrowser.single(graph, path);
+        return TypeBrowser.single(context, path);
     }
 
     @Override
     protected ResourceTypes.Multiple createMultiBrowser(FilterApplicator... path) {
-        return TypeBrowser.multiple(graph, path);
+        return TypeBrowser.multiple(context, path);
     }
 
     @Override
