@@ -18,7 +18,6 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;

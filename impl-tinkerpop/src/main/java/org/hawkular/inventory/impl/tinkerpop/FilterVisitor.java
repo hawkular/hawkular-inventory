@@ -44,27 +44,27 @@ class FilterVisitor {
                 if (null != related.getRelationshipName()) {
                     query.in(related.getRelationshipName());
                 }
-                if (null != related.getEdgeId()) {
+                if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.inE().has("id", related.getEdgeId()).inV();
+                    query.inE().has("id", related.getRelationshipId()).inV();
                 }
                 break;
             case SOURCE:
                 if (null != related.getRelationshipName()) {
                     query.out(related.getRelationshipName());
                 }
-                if (null != related.getEdgeId()) {
+                if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.outE().has("id", related.getEdgeId()).outV();
+                    query.outE().has("id", related.getRelationshipId()).outV();
                 }
                 break;
             case ANY:
                 if (null != related.getRelationshipName()) {
                     query.both(related.getRelationshipName());
                 }
-                if (null != related.getEdgeId()) {
+                if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().has("id", related.getEdgeId()).bothV();
+                    query.bothE().has("id", related.getRelationshipId()).bothV();
                 }
         }
 

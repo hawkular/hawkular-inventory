@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -33,8 +32,8 @@ import org.hawkular.inventory.api.model.Relationship;
 final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
         Relationships.Multiple, E, Relationship.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
 
-    RelationshipService(TransactionalGraph graph, PathContext ctx, Class<E> sourceClass) {
-        super(graph, sourceClass, ctx);
+    RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass) {
+        super(iContext, sourceClass, ctx);
     }
 
     @Override
@@ -53,7 +52,7 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     private Relationships.Single createSingleBrowser(String id, FilterApplicator... path) {
-        return RelationshipBrowser.single(id, source(), entityClass, graph, path);
+        return RelationshipBrowser.single(id, context, entityClass, path);
     }
 
     @Override
@@ -63,7 +62,7 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
     private Relationships.Multiple createMultiBrowser(String named, FilterApplicator... path) {
         // TODO foo
-        return RelationshipBrowser.multiple(named, source(), entityClass, graph, path);
+        return RelationshipBrowser.multiple(named, context, entityClass, path);
     }
 
     @Override

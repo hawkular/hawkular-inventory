@@ -18,8 +18,6 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetricTypes;
@@ -52,22 +50,22 @@ import java.util.stream.StreamSupport;
  */
 final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
-    private RelationshipBrowser(Class<E> sourceClass, TransactionalGraph graph, FilterApplicator... path) {
-        super(graph, sourceClass, path);
+    private RelationshipBrowser(InventoryContext iContext, Class<E> sourceClass, FilterApplicator... path) {
+        super(iContext, sourceClass, path);
     }
 
-    public static Relationships.Single single(String id, HawkularPipeline<?, Vertex> source, Class<? extends Entity>
-            sourceClass, TransactionalGraph graph, FilterApplicator... path) {
-        if (null == id) {
-            throw new NullPointerException("unable to create Relationships.Single without the edge id.");
+    public static Relationships.Single single(String relationshipId, InventoryContext iContext, Class<? extends Entity>
+            sourceClass, FilterApplicator... path) {
+        if (null == relationshipId) {
+            throw new IllegalArgumentException("unable to create Relationships.Single without the edge id.");
         }
-        RelationshipBrowser b = new RelationshipBrowser(sourceClass, graph, path);
+        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, path);
 
         return new Relationships.Single() {
 
             @Override
             public Relationship entity() {
-                HawkularPipeline<?, Edge> edges = b.source().outE().has("id", id).cast(Edge.class);
+                HawkularPipeline<?, Edge> edges = b.source().bothE().has("id", relationshipId).cast(Edge.class);
                 if (!edges.hasNext()) {
                     return null;
                 }
@@ -78,57 +76,58 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
             @Override
             public Tenants.ReadRelate tenants() {
-                return b.tenants(EdgeFilter.ID, id);
+                return b.tenants(EdgeFilter.ID, relationshipId);
             }
 
             @Override
             public Environments.ReadRelate environments() {
-                return (Environments.ReadRelate)b.<EnvironmentsService>getService(EdgeFilter.ID, id, Environment
-                        .class, EnvironmentsService.class);
+                return (Environments.ReadRelate) b.<EnvironmentsService>getService(EdgeFilter.ID, relationshipId,
+                        Environment.class, EnvironmentsService.class);
             }
 
             @Override
             public Feeds.ReadRelate feeds() {
-                return (Feeds.ReadRelate)b.<FeedsService>getService(EdgeFilter.ID, id, Feed.class, FeedsService.class);
+                return (Feeds.ReadRelate)b.<FeedsService>getService(EdgeFilter.ID, relationshipId, Feed.class,
+                        FeedsService.class);
             }
 
             @Override
             public MetricTypes.ReadRelate metricTypes() {
-                return (MetricTypes.ReadRelate)b.<MetricTypesService>getService(EdgeFilter.ID, id, MetricType.class,
-                        MetricTypesService.class);
+                return (MetricTypes.ReadRelate)b.<MetricTypesService>getService(EdgeFilter.ID, relationshipId,
+                        MetricType.class, MetricTypesService.class);
             }
 
             @Override
             public Metrics.ReadRelate metrics() {
-                return (Metrics.ReadRelate)b.<MetricsService>getService(EdgeFilter.ID, id, Metrics.class,
+                return (Metrics.ReadRelate)b.<MetricsService>getService(EdgeFilter.ID, relationshipId, Metrics.class,
                         MetricsService.class);
             }
 
             @Override
             public Resources.ReadRelate resources() {
-                return (Resources.ReadRelate)b.<ResourcesService>getService(EdgeFilter.ID, id, Resource.class,
-                        ResourcesService.class);
+                return (Resources.ReadRelate)b.<ResourcesService>getService(EdgeFilter.ID, relationshipId, Resource
+                                .class, ResourcesService.class);
             }
 
             @Override
             public ResourceTypes.ReadRelate resourceTypes() {
-                return (ResourceTypes.ReadRelate)b.<TypesService>getService(EdgeFilter.ID, id, ResourceType.class,
-                        TypesService.class);
+                return (ResourceTypes.ReadRelate)b.<ResourceTypesService>getService(EdgeFilter.ID, relationshipId,
+                        ResourceType.class,
+                        ResourceTypesService.class);
             }
         };
     }
 
-    public static Relationships.Multiple multiple(String named, HawkularPipeline<?, Vertex> source, Class<? extends
-            Entity> sourceClass, TransactionalGraph graph, FilterApplicator... path) {
+    public static Relationships.Multiple multiple(String named, InventoryContext iContext, Class<? extends Entity>
+            sourceClass, FilterApplicator... path) {
 
-        RelationshipBrowser b = new RelationshipBrowser(sourceClass, graph, path);
+        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, path);
 
         return new Relationships.Multiple() {
             @Override
             public Set<Relationship> entities() {
                 // TODO process filters
 
-                System.out.println("eeeee");
                 HawkularPipeline<?, Edge> edges = null == named ? b.source().bothE() : b.source().bothE(named);
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
@@ -146,37 +145,37 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
             @Override
             @SuppressWarnings("unchecked")
             public Environments.Read environments() {
-                return (Environments.Read)b.<EnvironmentsService>getService(EdgeFilter.NAMED, named, Environment.class,
+                return (Environments.Read) b.<EnvironmentsService>getService(EdgeFilter.NAMED, named, Environment.class,
                         EnvironmentsService.class);
             }
 
             @Override
             public Feeds.Read feeds() {
-                return (Feeds.Read)b.<FeedsService>getService(EdgeFilter.NAMED, named, Feed.class, FeedsService.class);
+                return (Feeds.Read) b.<FeedsService>getService(EdgeFilter.NAMED, named, Feed.class, FeedsService.class);
             }
 
             @Override
             public MetricTypes.Read metricTypes() {
-                return (MetricTypes.Read)b.<MetricTypesService>getService(EdgeFilter.NAMED, named, MetricType.class,
+                return (MetricTypes.Read) b.<MetricTypesService>getService(EdgeFilter.NAMED, named, MetricType.class,
                         MetricTypesService.class);
             }
 
             @Override
             public Metrics.Read metrics() {
-                return (Metrics.Read)b.<MetricsService>getService(EdgeFilter.NAMED, named, Metrics.class,
+                return (Metrics.Read) b.<MetricsService>getService(EdgeFilter.NAMED, named, Metrics.class,
                         MetricsService.class);
             }
 
             @Override
             public Resources.Read resources() {
-                return (Resources.Read)b.<ResourcesService>getService(EdgeFilter.NAMED, named, Resource.class,
+                return (Resources.Read) b.<ResourcesService>getService(EdgeFilter.NAMED, named, Resource.class,
                         ResourcesService.class);
             }
 
             @Override
             public ResourceTypes.Read resourceTypes() {
-                return (ResourceTypes.Read)b.<TypesService>getService(EdgeFilter.NAMED, named, ResourceType.class,
-                        TypesService.class);
+                return (ResourceTypes.Read)b.<ResourceTypesService>getService(EdgeFilter.NAMED, named, ResourceType
+                                .class, ResourceTypesService.class);
             }
         };
     }
@@ -184,11 +183,11 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
     private <S extends AbstractSourcedGraphService> S getService(EdgeFilter filter, String value, Class<? extends
             Entity> clazz1, Class<S> clazz2) {
-        Filter.Accumulator acc = Filter.by(EdgeFilter.NAMED == filter ? Related.by(value) : Related.byEdgeWithId
+        Filter.Accumulator acc = Filter.by(EdgeFilter.NAMED == filter ? Related.by(value) : Related.byRelationshipWithId
                 (value), With.type(clazz1));
         try {
-            Constructor<S> constructor = clazz2.getConstructor(TransactionalGraph.class, PathContext.class);
-            return constructor.newInstance(graph, pathToHereWithSelect(acc));
+            Constructor<S> constructor = clazz2.getConstructor(InventoryContext.class, PathContext.class);
+            return constructor.newInstance(context, pathToHereWithSelect(acc));
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException
                 e) {
             throw new IllegalStateException("Unable to create new instance of " + clazz2.getCanonicalName(), e);

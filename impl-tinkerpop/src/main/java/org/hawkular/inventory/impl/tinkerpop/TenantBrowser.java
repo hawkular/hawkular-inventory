@@ -108,8 +108,8 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
                 pathToHereWithSelect(Filter.by(Related.by(contains), With.type(Environment.class))));
     }
 
-    public TypesService types() {
-        return new TypesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
+    public ResourceTypesService types() {
+        return new ResourceTypesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(ResourceType.class))));
     }
 

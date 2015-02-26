@@ -260,7 +260,6 @@ public class BasicTest {
                 .accept(kids);
     }
 
-
     @Test
     public void testRelationshipServiceGet() throws Exception {
         // the edge IDs are set deterministically for dummy graph, but this may differ with graph implementation

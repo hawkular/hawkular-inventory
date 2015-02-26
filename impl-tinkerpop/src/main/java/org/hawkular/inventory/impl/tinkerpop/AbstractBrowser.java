@@ -54,7 +54,7 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
     }
 
     public RelationshipService relationships() {
-        return new RelationshipService(context.getGraph(), new PathContext(path, Filter.all()), entityClass);
+        return new RelationshipService(context, new PathContext(path, Filter.all()), entityClass);
     }
 
     @Override

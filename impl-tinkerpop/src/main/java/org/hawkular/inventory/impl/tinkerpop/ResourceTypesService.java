@@ -31,11 +31,11 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class TypesService extends
+final class ResourceTypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint>
         implements ResourceTypes.ReadWrite, ResourceTypes.Read, ResourceTypes.ReadRelate {
 
-    TypesService(InventoryContext context, PathContext ctx) {
+    ResourceTypesService(InventoryContext context, PathContext ctx) {
         super(context, ResourceType.class, ctx);
     }
 
