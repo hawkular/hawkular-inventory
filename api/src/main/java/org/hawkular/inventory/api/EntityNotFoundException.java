@@ -28,22 +28,36 @@ import java.util.Arrays;
  */
 public final class EntityNotFoundException extends InventoryException {
 
-    private final String entityType;
+    private final Class<? extends Entity> entityType;
     private final Filter[] filters;
 
     public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters) {
-        this.entityType = entityClass.getSimpleName();
+        this.entityType = entityClass;
         this.filters = filters;
     }
 
     public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters, Throwable cause) {
         super(cause);
-        this.entityType = entityClass.getSimpleName();
+        this.entityType = entityClass;
         this.filters = filters;
+    }
+
+    /**
+     * @return the type of the entity that was not found.
+     */
+    public Class<? extends Entity> getEntityType() {
+        return entityType;
+    }
+
+    /**
+     * The path to the entity that was not found.
+     */
+    public Filter[] getFilters() {
+        return filters;
     }
 
     @Override
     public String getMessage() {
-        return entityType + " not found using filters: " + Arrays.toString(filters);
+        return entityType.getSimpleName() + " not found using filters: " + Arrays.toString(filters);
     }
 }
