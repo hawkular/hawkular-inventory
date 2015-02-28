@@ -1,5 +1,7 @@
 = Hawkular-Inventory
 
+image:https://badges.gitter.im/Join%20Chat.svg[link="https://gitter.im/hawkular/hawkular-inventory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
+
 Hawkular-Inventory is the Inventory module for Hawkular - basically "The Registry" of
 stuff in Hawkular.
 
