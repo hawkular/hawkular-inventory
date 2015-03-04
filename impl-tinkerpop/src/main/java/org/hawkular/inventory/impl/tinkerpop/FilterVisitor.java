@@ -21,6 +21,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.PropertyFilterPipe;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
 class FilterVisitor {
@@ -108,5 +110,31 @@ class FilterVisitor {
         });
 
         query.or(typeChecks);
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids) {
+        if (ids.getIds().length == 1) {
+            query.has(Constants.Property.uid.name(), ids.getIds()[0]);
+            return;
+        }
+
+        Pipe[] idChecks = new Pipe[ids.getIds().length];
+
+        Arrays.setAll(idChecks, i ->
+                new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
+
+        query.or(idChecks);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.Properties filter) {
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.Direction filter) {
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.EntityTypes filter) {
     }
 }

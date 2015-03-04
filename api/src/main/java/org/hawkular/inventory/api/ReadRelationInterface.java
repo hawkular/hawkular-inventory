@@ -19,15 +19,17 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.filters.Filter;
 
 /**
- * Generic methods for readonly access to entities.
+ * Generic methods for readonly access to relationships.
+ * The only difference between this interface and ReadInterface is the getAll method, where
+ * relationship specific filters are expected.
  *
- * @param <Single> an interface for traversing and resolving a single entity
- * @param <Multiple> an interface for traversing and resolving multiple entities
+ * @param <Single> an interface for traversing and resolving a single relationship
+ * @param <Multiple> an interface for traversing and resolving multiple relationships
  *
- * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
-interface ReadInterface<Single, Multiple> {
+interface ReadRelationInterface<Single, Multiple> {
 
     /**
      * Tries to find a single entity in the current position in the inventory traversal.

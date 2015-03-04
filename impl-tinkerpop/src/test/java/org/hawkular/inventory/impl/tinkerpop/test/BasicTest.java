@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -318,16 +319,30 @@ public class BasicTest {
     }
 
     @Test
-    public void testRelationshipServiceCallChaining() throws Exception {
-        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
-                ("contains").entities();
+    public void testRelationshipServiceGetAllFilters() throws Exception {
+        Set<Relationship> contains = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships().getAll(RelationWith.name("foo")).entities();
 
+        assert contains.stream().anyMatch(rel -> "playroom1" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom1'.";
+        assert contains.stream().anyMatch(rel -> "playroom2" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom2'.";
+        assert contains.stream().anyMatch(rel -> "playroom2_size" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom2_size'.";
+        assert contains.stream().anyMatch(rel -> "playroom1_size" .equals(rel.getTarget().getId()))
+                : "Environment 'test' must contain 'playroom1_size'.";
+        assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
+                : "Environment 'production' cant be the source of these relationships.";
+    }
+
+    @Test
+    public void testRelationshipServiceCallChaining() throws Exception {
         MetricType metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named("owns").metricTypes().get("Size").entity();// not empty
         assert "Size".equals(metricType.getId()) : "ResourceType[Playroom] -owns-> MetricType[Size] was not found";
 
         try {
-            metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
+            inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
                     .named("contains").metricTypes().get("Size").entity();
             assert false : "There is no such an entity satisfying the query, this code shouldn't be reachable";
         } catch (EntityNotFoundException e) {

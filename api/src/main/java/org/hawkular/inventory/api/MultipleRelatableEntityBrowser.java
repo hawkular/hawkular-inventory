@@ -23,13 +23,21 @@ package org.hawkular.inventory.api;
  * @param <Entity> the type of the entity being browsed
  *
  * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
 interface MultipleRelatableEntityBrowser<Entity> extends ResolvableToMany<Entity> {
 
     /**
-     * @return the (read) access interface to relationships of the entities on the current position in the inventory
-     * traversal.
+     * @return the (read) access interface to all (outgoing) relationships of the entities on the current position in
+     * the inventory traversal.
      */
     Relationships.Read relationships();
+
+    /**
+     * @param direction the direction of the relation (aka edge) This is needed because direction are not bidirectional.
+     * @return the (read) access interface to all relationships of the entities on the current position in
+     * the inventory traversal.
+     */
+    Relationships.Read relationships(Relationships.Direction direction);
 }

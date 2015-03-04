@@ -18,6 +18,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
@@ -27,6 +28,7 @@ import java.util.List;
 
 /**
  * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
 abstract class FilterApplicator {
@@ -47,8 +49,10 @@ abstract class FilterApplicator {
     }
 
     public static FilterApplicator with(Type type, Filter filter) {
+        // note: this is a static method so this can't be achieved elegantly with polymorphism
+        // (or without using a singleton + polymorphism)
         if (filter == null) {
-            throw new NullPointerException("filter == null");
+            throw new IllegalArgumentException("filter == null");
         }
         if (filter instanceof Related) {
             return new RelatedApplicator((Related<?>)filter, type);
@@ -56,6 +60,14 @@ abstract class FilterApplicator {
             return new WithIdsApplicator((With.Ids) filter, type);
         } else if (filter instanceof With.Types) {
             return new WithTypesApplicator((With.Types) filter, type);
+        } else if (filter instanceof RelationWith.Ids) {
+            return new RelationWithIdsApplicator((RelationWith.Ids) filter, type);
+        } else if (filter instanceof RelationWith.Properties) {
+            return new RelationWithPropertiesApplicator((RelationWith.Properties) filter, type);
+        } else if (filter instanceof RelationWith.Direction) {
+            return new RelationWithDirectionApplicator((RelationWith.Direction) filter, type);
+        } else if (filter instanceof RelationWith.EntityTypes) {
+            return new RelationWithEntityTypesApplicator((RelationWith.EntityTypes) filter, type);
         }
 
         throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
@@ -147,6 +159,78 @@ abstract class FilterApplicator {
 
         Type(FilterVisitor visitor) {
             this.visitor = visitor;
+        }
+    }
+
+    private static final class RelationWithIdsApplicator extends FilterApplicator {
+        private final RelationWith.Ids filter;
+
+        private RelationWithIdsApplicator(RelationWith.Ids filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
+        }
+    }
+
+    private static final class RelationWithPropertiesApplicator extends FilterApplicator {
+        private final RelationWith.Properties filter;
+
+        private RelationWithPropertiesApplicator(RelationWith.Properties filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
+        }
+    }
+
+    private static final class RelationWithDirectionApplicator extends FilterApplicator {
+        private final RelationWith.Direction filter;
+
+        private RelationWithDirectionApplicator(RelationWith.Direction filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
+        }
+    }
+
+    private static final class RelationWithEntityTypesApplicator extends FilterApplicator {
+        private final RelationWith.EntityTypes filter;
+
+        private RelationWithEntityTypesApplicator(RelationWith.EntityTypes filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
         }
     }
 

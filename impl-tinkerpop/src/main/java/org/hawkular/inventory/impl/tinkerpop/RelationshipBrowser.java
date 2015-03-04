@@ -22,6 +22,7 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
@@ -65,9 +66,9 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
             @Override
             public Relationship entity() {
-                HawkularPipeline<?, Edge> edges = b.source().bothE().has("id", relationshipId).cast(Edge.class);
+                HawkularPipeline<?, Edge> edges = b.source().outE().has("id", relationshipId).cast(Edge.class);
                 if (!edges.hasNext()) {
-                    return null;
+                    throw new RelationNotFoundException(sourceClass, relationshipId, FilterApplicator.filters(path));
                 }
                 Edge edge = edges.next();
                 return new Relationship(edge.getId().toString(), edge.getLabel(), convert(edge.getVertex(Direction
@@ -128,7 +129,7 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
             public Set<Relationship> entities() {
                 // TODO process filters
 
-                HawkularPipeline<?, Edge> edges = null == named ? b.source().bothE() : b.source().bothE(named);
+                HawkularPipeline<?, Edge> edges = null == named ? b.source().outE() : b.source().outE(named);
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
                         .map(edge -> new Relationship(edge.getId().toString(), edge.getLabel(),

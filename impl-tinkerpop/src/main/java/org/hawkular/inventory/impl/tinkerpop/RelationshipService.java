@@ -17,12 +17,16 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+
+import java.util.Arrays;
+import java.util.function.Predicate;
 
 /**
  * @author Lukas Krejci
@@ -32,7 +36,8 @@ import org.hawkular.inventory.api.model.Relationship;
 final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
         Relationships.Multiple, E, Relationship.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
 
-    RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass) {
+    RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass, Relationships.Direction
+            direction) {
         super(iContext, sourceClass, ctx);
     }
 
@@ -43,7 +48,12 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
     @Override
     public Relationships.Multiple getAll(Filter... filters) {
-        return createMultiBrowser(null, pathWith(selectCandidates()).get());
+        Filter[] invalidFilters = getInvalidRelationshipsFilters(filters);
+        if (invalidFilters.length != 0) {
+            throw new IllegalArgumentException("Cannot use following filters for filtering the relationships: " +
+                    Arrays.toString(invalidFilters));
+        }
+        return createMultiBrowser(null, pathWith(selectCandidates()).andFilter(filters).get());
     }
 
     @Override
@@ -82,20 +92,33 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public Relationships.Single create(Relationship.Blueprint blueprint) throws EntityAlreadyExistsException {
+    public Relationships.Multiple named(Relationships.WellKnown name) {
+        return createMultiBrowser(name.name(), path);
+    }
+
+    @Override
+    public Relationships.Single create(Relationship.Blueprint blueprint) throws RelationAlreadyExistsException {
         //TODO implement
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void update(Relationship relationship) throws EntityNotFoundException {
+    public void update(Relationship relationship) throws RelationNotFoundException {
         //TODO implement
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void delete(String id) throws EntityNotFoundException {
+    public void delete(String id) throws RelationNotFoundException {
         //TODO implement
         throw new UnsupportedOperationException();
+    }
+
+    private Filter[] getInvalidRelationshipsFilters(Filter[] filters) {
+        if (null != filters || filters.length == 0) {
+            return filters;
+        }
+        Predicate<Filter> isValidFilterForRelation = f -> f instanceof With.Ids;
+        return Arrays.stream(filters).filter(isValidFilterForRelation.negate()).toArray(n -> new Filter[n]);
     }
 }

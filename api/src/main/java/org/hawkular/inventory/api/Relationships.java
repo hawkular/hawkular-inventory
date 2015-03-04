@@ -54,6 +54,32 @@ public final class Relationships {
         owns
     }
 
+
+    /**
+     * The list of possible relationship (aka edges) direction. Relationships are not bidirectional.
+     */
+    public enum Direction {
+        /**
+         * Expresses encapsulation of a set of entities in another entity.
+         * Used for example to express the relationship between a tenant and the set of its environments.
+         */
+        outgoing,
+
+        /**
+         * Expresses "instantiation" of some entity based on the definition provided by "source" entity.
+         * For example, there is a defines relationship between a metric definition and all metrics that
+         * conform to it.
+         */
+        incoming,
+
+        /**
+         * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
+         * of metric definitions. They do not contain it though, because more resources can own a single metric for
+         * example.
+         */
+        both
+    }
+
     private interface BrowserBase<Tenants, Environments, Feeds, MetricTypes, Metrics, Resources, ResourceTypes> {
         Tenants tenants();
 
@@ -93,6 +119,7 @@ public final class Relationships {
      */
     public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
         Multiple named(String name);
+        Multiple named(WellKnown name);
     }
 
     /**
@@ -100,5 +127,6 @@ public final class Relationships {
      */
     public interface Read extends ReadInterface<Single, Multiple> {
         Multiple named(String name);
+        Multiple named(WellKnown name);
     }
 }
