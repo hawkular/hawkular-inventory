@@ -193,7 +193,7 @@ public class BasicTest {
     @Test
     public void testEntitiesByRelationships() throws Exception {
         Function<Integer, Function<String, Function<String, Function<Integer, Function<String,
-                Function<ResolvableToMany, Consumer<ResolvableToMany>>>>>>>
+                Function<ResolvableToMany<?>, Consumer<ResolvableToMany<?>>>>>>>>
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
                     GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
@@ -205,8 +205,8 @@ public class BasicTest {
                             .cast(Vertex.class);
                     Iterator<Vertex> childIterator = q2.iterator();
 
-                    Iterator<Object> multipleParentIterator = multipleParents.entities().iterator();
-                    Iterator<Object> multipleChildrenIterator = multipleChildren.entities().iterator();
+                    Iterator<?> multipleParentIterator = multipleParents.entities().iterator();
+                    Iterator<?> multipleChildrenIterator = multipleChildren.entities().iterator();
 
                     for (int i = 0; i < numberOfParents; i++) {
                         assert parentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
@@ -319,15 +319,15 @@ public class BasicTest {
 
     @Test
     public void testRelationshipServiceCallChaining() throws Exception {
-        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
-                ("contains").entities();
+//        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
+//                ("contains").entities();
 
         MetricType metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named("owns").metricTypes().get("Size").entity();// not empty
         assert "Size".equals(metricType.getId()) : "ResourceType[Playroom] -owns-> MetricType[Size] was not found";
 
         try {
-            metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
+            inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
                     .named("contains").metricTypes().get("Size").entity();
             assert false : "There is no such an entity satisfying the query, this code shouldn't be reachable";
         } catch (EntityNotFoundException e) {
@@ -571,6 +571,7 @@ public class BasicTest {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public void stopTransaction(Conclusion conclusion) {
         }
 

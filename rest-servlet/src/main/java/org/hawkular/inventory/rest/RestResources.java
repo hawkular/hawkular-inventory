@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.rest.json.ResourceJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -50,30 +51,24 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Consumes(value = APPLICATION_JSON)
 public class RestResources {
 
-    @Inject
+    @Inject @ForRest
     private Inventory inventory;
 
     @POST
     @Path("/{tenantId}/{environmentId}/resources")
     public Response addResource(@PathParam("tenantId") String tenantId,
                                 @PathParam("environmentId") String environmentId,
-                                @QueryParam("id") String resourceId,
-                                @QueryParam("resourceType") String resourceTypeId) {
+                                ResourceJSON resource) {
 
-        try {
-            Tenants.Single tb = inventory.tenants().get(tenantId);
-            ResourceType rt = tb.resourceTypes().get(resourceTypeId).entity();
+        Tenants.Single tb = inventory.tenants().get(tenantId);
+        ResourceType rt = tb.resourceTypes().get(resource.getType().getId()).entity();
 
-            Resource.Blueprint b = new Resource.Blueprint(resourceId, rt);
+        Resource.Blueprint b = new Resource.Blueprint(resource.getId(), rt);
 
-            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
-                    .create(b).entity();
+        Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                .create(b).entity();
 
-            return Response.ok(r).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
+        return Response.ok(r).build();
     }
 
 
@@ -83,41 +78,29 @@ public class RestResources {
                                        @PathParam("environmentId") String environmentId,
                                        @QueryParam("type") String typeId,
                                        @QueryParam("typeVersion") String typeVersion) {
-        try {
-            Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId).resources();
+        Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId).resources();
 
-            Set<Resource> rs;
-            if (typeId != null && typeVersion != null) {
-                ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-                rs = rr.getAll(Defined.by(rt)).entities();
-            } else {
-                rs = rr.getAll().entities();
-            }
-            return Response.ok(rs).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
+        Set<Resource> rs;
+        if (typeId != null && typeVersion != null) {
+            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+            rs = rr.getAll(Defined.by(rt)).entities();
+        } else {
+            rs = rr.getAll().entities();
         }
+        return Response.ok(rs).build();
     }
 
     @GET
     @Path("/{tenantId}/{environmentId}/resources/{uid}")
     public Response getResource(@PathParam("tenantId") String tenantId,
                                 @PathParam("environmentId") String environmentId, @PathParam("uid") String uid) {
+        Resource def = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                .get(uid).entity();
 
-        try {
-            Resource def = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
-                    .get(uid).entity();
-
-            if (def != null) {
-                return Response.ok(def).build();
-            } else {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
-
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().build();
+        if (def != null) {
+            return Response.ok(def).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
     }
 
@@ -127,14 +110,8 @@ public class RestResources {
     public Response deleteResource(@PathParam("tenantId") String tenantId,
                                    @PathParam("environmentId") String environmentId,
                                    @PathParam("uid") String uid) {
-
-        try {
-            inventory.tenants().get(tenantId).environments().get(environmentId).resources().delete(uid);
-            return Response.ok().build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().build();
-        }
+        inventory.tenants().get(tenantId).environments().get(environmentId).resources().delete(uid);
+        return Response.ok().build();
     }
 
 
@@ -144,19 +121,12 @@ public class RestResources {
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
                                         Collection<String> metricIds) {
+        Metrics.ReadRelate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
+                .resources().get(resourceId).metrics();
 
+        metricIds.forEach(metricDao::add);
 
-        try {
-            Metrics.ReadRelate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
-                    .resources().get(resourceId).metrics();
-
-            metricIds.forEach(metricDao::add);
-
-            return Response.ok().build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().build();
-        }
+        return Response.ok().build();
     }
 
     @GET
@@ -164,18 +134,10 @@ public class RestResources {
     public Response listMetricsOfResource(@PathParam("tenantId") String tenantId,
                                           @PathParam("environmentId") String environmentID,
                                           @PathParam("resourceId") String resourceId) {
+        Set<Metric> ms = inventory.tenants().get(tenantId).environments().get(environmentID)
+                .resources().get(resourceId).metrics().getAll().entities();
 
-
-        try {
-            Set<Metric> ms = inventory.tenants().get(tenantId).environments().get(environmentID)
-                    .resources().get(resourceId).metrics().getAll().entities();
-
-            return Response.ok(ms).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
-
+        return Response.ok(ms).build();
     }
 
     @GET
@@ -183,17 +145,9 @@ public class RestResources {
     public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
-                                        @PathParam("metricId") String metricId
-    ) {
-
-
-        try {
-            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources().get(resourceId)
-                    .metrics().get(metricId).entity();
-            return Response.ok(m).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
+                                        @PathParam("metricId") String metricId) {
+        Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources().get(resourceId)
+                .metrics().get(metricId).entity();
+        return Response.ok(m).build();
     }
 }

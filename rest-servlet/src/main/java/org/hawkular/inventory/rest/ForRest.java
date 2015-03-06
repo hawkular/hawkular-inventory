@@ -14,28 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.hawkular.inventory.rest;
 
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+
 /**
- * Simple wrapper for Ids
- * @author Heiko Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-public class IdWrapper {
-
-    String id;
-
-    public IdWrapper() {
-    }
-
-    public IdWrapper(String id) {
-        this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+@Qualifier
+@Retention(RetentionPolicy.RUNTIME)
+@Target({FIELD, METHOD, PARAMETER})
+public @interface ForRest {
 }

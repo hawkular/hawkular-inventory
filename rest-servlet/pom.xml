@@ -113,7 +113,7 @@
   </dependencies>
 
   <build>
-    <finalName>hawkular-inventory</finalName>
+    <finalName>hawkular-inventory-${project.version}</finalName>
 
     <plugins>
       <plugin>
