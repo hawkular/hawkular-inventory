@@ -16,29 +16,42 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
 /**
  * Generic methods to write access to relationships.
  *
- * @param <Entity> the entity type
- * @param <Blueprint> the blueprint type that supplies data necessary to create a new relationship
  * @param <Single> the access interface to a single relationship
  *
  * @author Jirka Kremser
  * @since 1.0
  */
-interface WriteRelationshipInterface<Entity, Blueprint, Single> {
+interface WriteRelationshipInterface<Single> {
 
     /**
      * Creates a new relationship at the current position in the inventory traversal.
      *
-     * @param blueprint the blueprint to be used to create the new relationship
+     * @param name the name of the relationship (label)
+     * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
+     *                       entity (based on the hawkular pipeline) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
      */
-//    Single create(Blueprint blueprint) throws RelationNotFoundException;
+    Single linkWith(String name, Entity targetOrSource) throws RelationNotFoundException;
+
+    /**
+     * Creates a new relationship at the current position in the inventory traversal.
+     *
+     * @param name the well known name (Relationships.WellKnown) of the relationship
+     * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
+     *                       entity (based on the hawkular pipeline) will be in the relationship with
+     * @return access interface to the freshly created relationship
+     *
+     * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
+     */
+    Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws RelationNotFoundException;
 
     /**
      * Persists the provided relationship on the current position in the inventory traversal.
@@ -46,6 +59,8 @@ interface WriteRelationshipInterface<Entity, Blueprint, Single> {
      * @param relationship the relationship to update
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship is not found in the database
+     * or if the source/target entity (based on the chosen relationship direction) doesn't correspond with the
+     * current position in the inventory traversal.
      */
     void update(Relationship relationship) throws RelationNotFoundException;
 

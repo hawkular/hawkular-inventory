@@ -60,22 +60,20 @@ public final class Relationships {
      */
     public enum Direction {
         /**
-         * Expresses encapsulation of a set of entities in another entity.
-         * Used for example to express the relationship between a tenant and the set of its environments.
+         * Relative to the current position in the Hawkular pipeline, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a target(s).
          */
         outgoing,
 
         /**
-         * Expresses "instantiation" of some entity based on the definition provided by "source" entity.
-         * For example, there is a defines relationship between a metric definition and all metrics that
-         * conform to it.
+         * Relative to the current position in the Hawkular pipeline, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a source(s).
          */
         incoming,
 
         /**
-         * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
-         * of metric definitions. They do not contain it though, because more resources can own a single metric for
-         * example.
+         * Relative to the current position in the Hawkular pipeline, this value expresses all the relationships
+         * I (the entity(ies) on the current pos) have with other entity(ies).
          */
         both
     }
@@ -99,9 +97,7 @@ public final class Relationships {
     /**
      * Interface for accessing a single relationship in a writable manner
      */
-    public interface Single extends ResolvableToSingle<Relationship>,
-            BrowserBase<Tenants.ReadRelate, Environments.ReadRelate, Feeds.ReadRelate, MetricTypes.ReadRelate,
-                    Metrics.ReadRelate, Resources.ReadRelate, ResourceTypes.ReadRelate> {}
+    public interface Single extends ResolvableToSingle<Relationship> {}
 
     /**
      * Interface for traversing over a set of relationships.
@@ -117,8 +113,7 @@ public final class Relationships {
     /**
      * Provides read-write access to relationships.
      */
-    public interface ReadWrite extends ReadWriteRelationshipsInterface<Relationship, Relationship.Blueprint, Single,
-            Multiple> {
+    public interface ReadWrite extends ReadWriteRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
         Multiple named(WellKnown name);
     }

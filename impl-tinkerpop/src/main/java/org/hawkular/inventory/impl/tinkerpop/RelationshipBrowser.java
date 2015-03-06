@@ -40,7 +40,9 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -60,7 +62,6 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
             sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
-        final Filter goFromEdge = new JumpInOutFilter(direction, true);
         RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
         return new Relationships.Single() {
@@ -72,48 +73,13 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
                     throw new RelationNotFoundException(sourceClass, FilterApplicator.filters(b.path));
                 }
                 Edge edge = edges.next();
-                // todo: copy properties
-                return new Relationship(edge.getId().toString(), edge.getLabel(), convert(edge.getVertex(Direction
+
+                Relationship relationship = new Relationship(edge.getId().toString(), edge.getLabel(), convert(edge.getVertex(Direction
                         .OUT)), convert(edge.getVertex(Direction.IN)));
-            }
-
-            @Override
-            public Tenants.ReadRelate tenants() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Tenant.class));
-                return new TenantsService(b.context, b.pathToHereWithSelect(acc));
-            }
-
-            @Override
-            public Environments.ReadRelate environments() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Environment.class));
-                return new EnvironmentsService(b.context, b.pathToHereWithSelect(acc));
-            }
-
-            @Override
-            public Feeds.ReadRelate feeds() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Feed.class));
-                return new FeedsService(b.context, b.pathToHereWithSelect(acc));            }
-
-            @Override
-            public MetricTypes.ReadRelate metricTypes() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(MetricType.class));
-                return new MetricTypesService(b.context, b.pathToHereWithSelect(acc));
-            }
-
-            @Override
-            public Metrics.ReadRelate metrics() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Metric.class));
-                return new MetricsService(b.context, b.pathToHereWithSelect(acc));            }
-
-            @Override
-            public Resources.ReadRelate resources() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Resource.class));
-                return new ResourcesService(b.context, b.pathToHereWithSelect(acc));            }
-
-            @Override
-            public ResourceTypes.ReadRelate resourceTypes() {
-                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(ResourceType.class));
-                return new ResourceTypesService(b.context, b.pathToHereWithSelect(acc));
+                Map<String, Object> properties = edge.getPropertyKeys().stream().collect(Collectors.toMap(Function
+                        .<String>identity(), key -> edge.<Object>getProperty(key)));
+                relationship.getProperties().putAll(properties);
+                return relationship;
             }
         };
     }
@@ -133,9 +99,16 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
-                        .map(edge -> new Relationship(edge.getId().toString(), edge.getLabel(),
-                                convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN))));
-                // todo: copy properties hashmap
+                        .map(edge -> {
+                            Relationship relationship = new Relationship(edge.getId().toString(), edge.getLabel(),
+                                    convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
+                            // copy the properties
+                            Map<String, Object> properties = edge.getPropertyKeys().stream()
+                                    .collect(Collectors.toMap(Function.<String>identity(),
+                                            key -> edge.<Object>getProperty(key)));
+                            relationship.getProperties().putAll(properties);
+                            return relationship;
+                        });
                 return relationshipStream.collect(Collectors.toSet());
             }
 
@@ -203,7 +176,7 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
         @Override
         public String toString() {
-            return "Jump[" + (fromEdge ? "from " : "to ") + direction.name() + " edge]";
+            return "Jump[" + (fromEdge ? "from " : "to ") + direction.name() + " edges]";
         }
     }
 }

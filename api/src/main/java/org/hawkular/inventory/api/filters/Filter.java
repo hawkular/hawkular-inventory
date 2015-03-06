@@ -34,18 +34,21 @@ import java.util.List;
  * A base class for filters. Defines no filtering logic in and of itself.
  *
  * <p>The implementations of the Hawkular inventory API are supposed to support filtering by {@link Related},
- * {@link With.Ids} and {@link With.Types}.
+ * {@link With.Ids} and {@link With.Types}. There is also a sub-class of filters for the relation filtering {@link
+ * RelationFilter}.
+ *
+ * To create these filters, feel free to use the static helper methods defined on {@link With}.
+ * <p>
+ * Note: Additional information for the library consumers.
+ * Don't extend this class with the hope the new filter will work without any further work, It needs to be registered
+ * and handled properly. See the <code>FilterApplicator</code> class in the referential implementation.
+ * </p>
  *
  * @author Lukas Krejci
  * @since 1.0
  */
 public abstract class Filter {
     private static final Filter[] EMPTY = new Filter[0];
-
-//    we should not prohibit creating sub-classes of Filter in the implementations of this API
-//    public Filter() {
-//
-//    }
 
     public static Accumulator by(Filter... filters) {
         return new Accumulator(filters);

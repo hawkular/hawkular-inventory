@@ -82,6 +82,16 @@ abstract class AbstractGraphService {
         return getProperty(v, Constants.Property.type);
     }
 
+    protected Vertex convert(Entity e) {
+        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
+                .V(Constants.Property.uid.name(), e.getId());
+        Vertex vertex = null;
+        if (ret.hasNext()) {
+            vertex = ret.next();
+        }
+        return vertex;
+    }
+
     static Entity convert(Vertex v) {
         Constants.Type type = Constants.Type.valueOf(getType(v));
 

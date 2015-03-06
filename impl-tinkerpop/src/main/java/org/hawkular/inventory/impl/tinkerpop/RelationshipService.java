@@ -16,8 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import com.tinkerpop.pipes.PipeFunction;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
@@ -25,6 +27,13 @@ import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 /**
  * @author Lukas Krejci
@@ -94,9 +103,49 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public Relationships.Single create(Relationship.Blueprint blueprint) throws RelationAlreadyExistsException {
-        //TODO implement
-        throw new UnsupportedOperationException();
+    public Relationships.Single linkWith(String name, Entity targetOrSource) throws RelationNotFoundException {
+        if (null == name) {
+            throw new IllegalArgumentException("name was null");
+        }
+        if (null == targetOrSource) {
+            throw new IllegalArgumentException("targetOrSource was null");
+        }
+
+        Vertex incidenceVertex = convert(targetOrSource);
+        PipeFunction<Vertex, Object> transformation = v -> {
+            Direction d1 = direction == outgoing ? Direction.OUT : direction == incoming ? Direction.IN : Direction.BOTH;
+            Direction d2 = direction == outgoing ? Direction.IN : direction == incoming ? Direction.OUT : Direction.BOTH;
+            Stream<Edge> edges = StreamSupport.stream(v.getEdges(d1)
+                    .spliterator(), false)
+                    .filter(edge -> name.equals(edge.getLabel())
+                            && targetOrSource.getId().equals(edge
+                            .getVertex(d2).<String>getProperty(Constants.Property.uid.name())));
+
+            return edges.collect(Collectors.toList()).get(0).getId();
+        };
+
+        HawkularPipeline<?, Object> pipe = null;
+        switch (direction) {
+            case outgoing:
+                pipe = source().linkOut(name, incidenceVertex).transform(transformation);
+                break;
+            case incoming:
+                pipe = source().linkIn(name, incidenceVertex).transform(transformation);
+                break;
+            case both:
+                // basically creates a bi-directional relationship
+                pipe = source().linkBoth(name, incidenceVertex).transform(transformation);
+                break;
+        }
+
+        String newId = pipe.cast(String.class).next();
+        return createSingleBrowser(RelationWith.id(newId));
+    }
+
+    @Override
+    public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws
+            RelationNotFoundException {
+        return linkWith(name.name(), targetOrSource);
     }
 
     @Override

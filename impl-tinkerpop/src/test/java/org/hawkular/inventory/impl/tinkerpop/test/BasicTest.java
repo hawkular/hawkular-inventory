@@ -145,6 +145,15 @@ public class BasicTest {
                 .get("playroom1").metrics().add("playroom1_size");
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().add("playroom2_size");
+
+        // some ad-hoc relationships
+        Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .linkWith("yourMom", test);
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.incoming)
+                .linkWith("IamYourFather", test);
     }
 
     @After
@@ -322,6 +331,23 @@ public class BasicTest {
                 : "Environment 'test' must contain 'playroom1_size'.";
         assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
                 : "Environment 'production' cant be the source of these relationships.";
+    }
+
+    @Test
+    public void testRelationshipServiceLinkedWith() throws Exception {
+        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities();
+        assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
+        assert "test".equals(rels.iterator().next().getTarget().getId()) : "Target of relationship 'yourMom' should " +
+                "be the 'test' environment";
+
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.both)
+                .named("IamYourFather").entities();
+        assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
+        assert "test".equals(rels.iterator().next().getSource().getId()) : "Source of relationship 'IamYourFather' " +
+                "should be the 'test' environment";
     }
 
     @Test

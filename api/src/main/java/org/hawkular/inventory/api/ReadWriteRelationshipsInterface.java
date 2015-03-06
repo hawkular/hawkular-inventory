@@ -23,6 +23,6 @@ package org.hawkular.inventory.api;
  * @author Jirka Kremser
  * @since 1.0
  */
-interface ReadWriteRelationshipsInterface<Entity, Blueprint, Single, Multiple> extends
-        ReadRelationshipsInterface<Single, Multiple>, WriteRelationshipInterface<Entity, Blueprint, Single> {
+interface ReadWriteRelationshipsInterface<Single, Multiple> extends
+        ReadRelationshipsInterface<Single, Multiple>, WriteRelationshipInterface<Single> {
 }
