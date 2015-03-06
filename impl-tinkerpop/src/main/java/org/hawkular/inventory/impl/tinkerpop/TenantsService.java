@@ -34,6 +34,10 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
                 Filter.by(With.type(Tenant.class)).get()));
     }
 
+    TenantsService(InventoryContext context, PathContext pathContext) {
+        super(context, Tenant.class, pathContext);
+    }
+
     @Override
     protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
         return Filter.by(With.type(Tenant.class), With.id(blueprint)).get();

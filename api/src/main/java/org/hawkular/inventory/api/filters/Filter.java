@@ -42,9 +42,10 @@ import java.util.List;
 public abstract class Filter {
     private static final Filter[] EMPTY = new Filter[0];
 
-    Filter() {
-
-    }
+//    we should not prohibit creating sub-classes of Filter in the implementations of this API
+//    public Filter() {
+//
+//    }
 
     public static Accumulator by(Filter... filters) {
         return new Accumulator(filters);

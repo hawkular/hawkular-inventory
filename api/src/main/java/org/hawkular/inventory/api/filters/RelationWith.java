@@ -65,12 +65,21 @@ public final class RelationWith {
     }
 
     @SafeVarargs
-    public static EntityTypes entityTypes(Class<? extends Entity>... types) {
-        return new EntityTypes(types);
+    public static SourceOfType sourcesOfTypes(Class<? extends Entity>... types) {
+        return new SourceOfType(types);
     }
 
-    public static EntityTypes entityType(Class<? extends Entity> type) {
-        return new EntityTypes(type);
+    public static SourceOfType sourceOfType(Class<? extends Entity> type) {
+        return new SourceOfType(type);
+    }
+
+    @SafeVarargs
+    public static TargetOfType targetsOfTypes(Class<? extends Entity>... types) {
+        return new TargetOfType(types);
+    }
+
+    public static TargetOfType targetOfType(Class<? extends Entity> type) {
+        return new TargetOfType(type);
     }
 
     public static final class Ids extends RelationFilter {
@@ -87,25 +96,8 @@ public final class RelationWith {
 
         @Override
         public String toString() {
-            return  "Ids" + Arrays.asList(ids).toString();
+            return  "RelationshipIds" + Arrays.asList(ids).toString();
         }
-    }
-
-    public static final class Direction extends RelationFilter {
-        private final Directions value;
-
-        public enum Directions {
-            // todo: consider renaming to targeted, sourced, both
-            INCOMING, OUTGOING, BOTH
-        }
-
-        public Direction(Directions value) {
-            this.value = value;
-        }
-
-        public static Direction incoming = new Direction(Directions.INCOMING);
-        public static Direction outgoing = new Direction(Directions.OUTGOING);
-        public static Direction both = new Direction(Directions.BOTH);
     }
 
     public static final class Properties extends RelationFilter {
@@ -128,15 +120,19 @@ public final class RelationWith {
 
         @Override
         public String toString() {
-            return  "Property: " + getProperty() + "=" + Arrays.asList(values).toString();
+            return  "RelationshipProperty: " + getProperty() + "=" + Arrays.asList(values).toString();
         }
     }
 
-    public static final class EntityTypes extends Filter {
+    public static class SourceOrTargetOfType extends RelationFilter {
         private final Class<? extends Entity>[] types;
 
+        public String getFilterName() {
+            return "SourceOrTargetOfType";
+        }
+
         @SafeVarargs
-        public EntityTypes(Class<? extends Entity>... types) {
+        public SourceOrTargetOfType(Class<? extends Entity>... types) {
             this.types = types;
         }
 
@@ -146,7 +142,7 @@ public final class RelationWith {
 
         @Override
         public String toString() {
-            StringBuilder ret = new StringBuilder("EntityTypes[");
+            StringBuilder ret = new StringBuilder(getFilterName() + "[");
             if (types.length > 0) {
                 ret.append(types[0].getSimpleName());
 
@@ -156,6 +152,32 @@ public final class RelationWith {
             }
             ret.append("]");
             return ret.toString();
+        }
+    }
+
+    public static final class SourceOfType extends SourceOrTargetOfType {
+
+        @SafeVarargs
+        public SourceOfType(Class<? extends Entity>... types) {
+            super(types);
+        }
+
+        @Override
+        public String getFilterName() {
+            return "SourceOfType";
+        }
+    }
+
+    public static final class TargetOfType extends SourceOrTargetOfType {
+
+        @SafeVarargs
+        public TargetOfType(Class<? extends Entity>... types) {
+            super(types);
+        }
+
+        @Override
+        public String getFilterName() {
+            return "TargetOfType";
         }
     }
 

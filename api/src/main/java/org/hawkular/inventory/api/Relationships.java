@@ -117,7 +117,8 @@ public final class Relationships {
     /**
      * Provides read-write access to relationships.
      */
-    public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
+    public interface ReadWrite extends ReadWriteRelationshipsInterface<Relationship, Relationship.Blueprint, Single,
+            Multiple> {
         Multiple named(String name);
         Multiple named(WellKnown name);
     }
@@ -125,7 +126,7 @@ public final class Relationships {
     /**
      * Provides read access to relationships.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {
+    public interface Read extends ReadRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
         Multiple named(WellKnown name);
     }

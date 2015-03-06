@@ -64,10 +64,14 @@ abstract class FilterApplicator {
             return new RelationWithIdsApplicator((RelationWith.Ids) filter, type);
         } else if (filter instanceof RelationWith.Properties) {
             return new RelationWithPropertiesApplicator((RelationWith.Properties) filter, type);
-        } else if (filter instanceof RelationWith.Direction) {
-            return new RelationWithDirectionApplicator((RelationWith.Direction) filter, type);
-        } else if (filter instanceof RelationWith.EntityTypes) {
-            return new RelationWithEntityTypesApplicator((RelationWith.EntityTypes) filter, type);
+        } else if (filter instanceof RelationWith.SourceOfType) {
+            return new RelationWithSourcesOfTypesApplicator((RelationWith.SourceOfType) filter, type);
+        } else if (filter instanceof RelationWith.TargetOfType) {
+            return new RelationWithTargetsOfTypesApplicator((RelationWith.TargetOfType) filter, type);
+        } else if (filter instanceof RelationWith.SourceOrTargetOfType) {
+            return new RelationWithSourcesOrTargetsOfTypesApplicator((RelationWith.SourceOrTargetOfType) filter, type);
+        } else if (filter instanceof RelationshipBrowser.JumpInOutFilter) {
+            return new RelationWithJumpInOutApplicator((RelationshipBrowser.JumpInOutFilter) filter, type);
         }
 
         throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
@@ -198,10 +202,10 @@ abstract class FilterApplicator {
         }
     }
 
-    private static final class RelationWithDirectionApplicator extends FilterApplicator {
-        private final RelationWith.Direction filter;
+    private static final class RelationWithSourcesOfTypesApplicator extends FilterApplicator {
+        private final RelationWith.SourceOfType filter;
 
-        private RelationWithDirectionApplicator(RelationWith.Direction filter, Type type) {
+        private RelationWithSourcesOfTypesApplicator(RelationWith.SourceOfType filter, Type type) {
             super(type);
             this.filter = filter;
         }
@@ -216,10 +220,46 @@ abstract class FilterApplicator {
         }
     }
 
-    private static final class RelationWithEntityTypesApplicator extends FilterApplicator {
-        private final RelationWith.EntityTypes filter;
+    private static final class RelationWithTargetsOfTypesApplicator extends FilterApplicator {
+        private final RelationWith.TargetOfType filter;
 
-        private RelationWithEntityTypesApplicator(RelationWith.EntityTypes filter, Type type) {
+        private RelationWithTargetsOfTypesApplicator(RelationWith.TargetOfType filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
+        }
+    }
+
+    private static final class RelationWithSourcesOrTargetsOfTypesApplicator extends FilterApplicator {
+        private final RelationWith.SourceOrTargetOfType filter;
+
+        private RelationWithSourcesOrTargetsOfTypesApplicator(RelationWith.SourceOrTargetOfType filter, Type type) {
+            super(type);
+            this.filter = filter;
+        }
+
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            type.visitor.visit(query, filter);
+        }
+
+        @Override
+        public Filter filter() {
+            return filter;
+        }
+    }
+
+    private static final class RelationWithJumpInOutApplicator extends FilterApplicator {
+        private final RelationshipBrowser.JumpInOutFilter filter;
+
+        private RelationWithJumpInOutApplicator(RelationshipBrowser.JumpInOutFilter filter, Type type) {
             super(type);
             this.filter = filter;
         }

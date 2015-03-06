@@ -28,18 +28,18 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,158 +51,159 @@ import java.util.stream.StreamSupport;
  */
 final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
 
-    private RelationshipBrowser(InventoryContext iContext, Class<E> sourceClass, FilterApplicator... path) {
+    private RelationshipBrowser(InventoryContext iContext, Class<E> sourceClass,
+                                FilterApplicator... path) {
         super(iContext, sourceClass, path);
     }
 
-    public static Relationships.Single single(String relationshipId, InventoryContext iContext, Class<? extends Entity>
-            sourceClass, FilterApplicator... path) {
-        if (null == relationshipId) {
-            throw new IllegalArgumentException("unable to create Relationships.Single without the edge id.");
-        }
-        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, path);
+    public static Relationships.Single single(InventoryContext iContext, Class<? extends Entity>
+            sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
 
+        final Filter goToEdge = new JumpInOutFilter(direction, false);
+        final Filter goFromEdge = new JumpInOutFilter(direction, true);
+        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, AbstractGraphService.pathWith
+                (path, goToEdge).andFilter(filters).get());
         return new Relationships.Single() {
 
             @Override
             public Relationship entity() {
-                HawkularPipeline<?, Edge> edges = b.source().outE().has("id", relationshipId).cast(Edge.class);
+                HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
                 if (!edges.hasNext()) {
-                    throw new RelationNotFoundException(sourceClass, relationshipId, FilterApplicator.filters(path));
+                    throw new RelationNotFoundException(sourceClass, FilterApplicator.filters(b.path));
                 }
                 Edge edge = edges.next();
+                // todo: copy properties
                 return new Relationship(edge.getId().toString(), edge.getLabel(), convert(edge.getVertex(Direction
                         .OUT)), convert(edge.getVertex(Direction.IN)));
             }
 
             @Override
             public Tenants.ReadRelate tenants() {
-                return b.tenants(EdgeFilter.ID, relationshipId);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Tenant.class));
+                return new TenantsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Environments.ReadRelate environments() {
-                return (Environments.ReadRelate) b.<EnvironmentsService>getService(EdgeFilter.ID, relationshipId,
-                        Environment.class, EnvironmentsService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Environment.class));
+                return new EnvironmentsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Feeds.ReadRelate feeds() {
-                return (Feeds.ReadRelate)b.<FeedsService>getService(EdgeFilter.ID, relationshipId, Feed.class,
-                        FeedsService.class);
-            }
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Feed.class));
+                return new FeedsService(b.context, b.pathToHereWithSelect(acc));            }
 
             @Override
             public MetricTypes.ReadRelate metricTypes() {
-                return (MetricTypes.ReadRelate)b.<MetricTypesService>getService(EdgeFilter.ID, relationshipId,
-                        MetricType.class, MetricTypesService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(MetricType.class));
+                return new MetricTypesService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Metrics.ReadRelate metrics() {
-                return (Metrics.ReadRelate)b.<MetricsService>getService(EdgeFilter.ID, relationshipId, Metrics.class,
-                        MetricsService.class);
-            }
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Metric.class));
+                return new MetricsService(b.context, b.pathToHereWithSelect(acc));            }
 
             @Override
             public Resources.ReadRelate resources() {
-                return (Resources.ReadRelate)b.<ResourcesService>getService(EdgeFilter.ID, relationshipId, Resource
-                                .class, ResourcesService.class);
-            }
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Resource.class));
+                return new ResourcesService(b.context, b.pathToHereWithSelect(acc));            }
 
             @Override
             public ResourceTypes.ReadRelate resourceTypes() {
-                return (ResourceTypes.ReadRelate)b.<ResourceTypesService>getService(EdgeFilter.ID, relationshipId,
-                        ResourceType.class,
-                        ResourceTypesService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(ResourceType.class));
+                return new ResourceTypesService(b.context, b.pathToHereWithSelect(acc));
             }
         };
     }
 
-    public static Relationships.Multiple multiple(String named, InventoryContext iContext, Class<? extends Entity>
-            sourceClass, FilterApplicator... path) {
+    public static Relationships.Multiple multiple(InventoryContext iContext, Class<? extends Entity>
+            sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
 
-        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, path);
+        final Filter goToEdge = new JumpInOutFilter(direction, false);
+        final Filter goFromEdge = new JumpInOutFilter(direction, true);
+        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, AbstractGraphService.pathWith
+                (path, goToEdge).andFilter(filters).get());
 
         return new Relationships.Multiple() {
             @Override
             public Set<Relationship> entities() {
-                // TODO process filters
+                HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
 
-                HawkularPipeline<?, Edge> edges = null == named ? b.source().outE() : b.source().outE(named);
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
                         .map(edge -> new Relationship(edge.getId().toString(), edge.getLabel(),
                                 convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN))));
+                // todo: copy properties hashmap
                 return relationshipStream.collect(Collectors.toSet());
             }
 
             @Override
             public Tenants.Read tenants() {
-                // TODO implement
-                return null;
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Tenant.class));
+                return new TenantsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
-            @SuppressWarnings("unchecked")
             public Environments.Read environments() {
-                return (Environments.Read) b.<EnvironmentsService>getService(EdgeFilter.NAMED, named, Environment.class,
-                        EnvironmentsService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Environment.class));
+                return new EnvironmentsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Feeds.Read feeds() {
-                return (Feeds.Read) b.<FeedsService>getService(EdgeFilter.NAMED, named, Feed.class, FeedsService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Feed.class));
+                return new FeedsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public MetricTypes.Read metricTypes() {
-                return (MetricTypes.Read) b.<MetricTypesService>getService(EdgeFilter.NAMED, named, MetricType.class,
-                        MetricTypesService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(MetricType.class));
+                return new MetricTypesService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Metrics.Read metrics() {
-                return (Metrics.Read) b.<MetricsService>getService(EdgeFilter.NAMED, named, Metrics.class,
-                        MetricsService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Metric.class));
+                return new MetricsService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public Resources.Read resources() {
-                return (Resources.Read) b.<ResourcesService>getService(EdgeFilter.NAMED, named, Resource.class,
-                        ResourcesService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(Resource.class));
+                return new ResourcesService(b.context, b.pathToHereWithSelect(acc));
             }
 
             @Override
             public ResourceTypes.Read resourceTypes() {
-                return (ResourceTypes.Read)b.<ResourceTypesService>getService(EdgeFilter.NAMED, named, ResourceType
-                                .class, ResourceTypesService.class);
+                Filter.Accumulator acc = Filter.by(goFromEdge, With.type(ResourceType.class));
+                return new ResourceTypesService(b.context, b.pathToHereWithSelect(acc));
             }
         };
     }
 
+    // filter used internally by the impl for jumping from a vertex to an edge or back
+    static class JumpInOutFilter extends Filter {
+        private final Relationships.Direction direction;
+        private final boolean fromEdge;
 
-    private <S extends AbstractSourcedGraphService> S getService(EdgeFilter filter, String value, Class<? extends
-            Entity> clazz1, Class<S> clazz2) {
-        Filter.Accumulator acc = Filter.by(EdgeFilter.NAMED == filter ? Related.by(value) : Related.byRelationshipWithId
-                (value), With.type(clazz1));
-        try {
-            Constructor<S> constructor = clazz2.getDeclaredConstructor(InventoryContext.class, PathContext.class);
-            return constructor.newInstance(context, pathToHereWithSelect(acc));
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException
-                e) {
-            throw new IllegalStateException("Unable to create new instance of " + clazz2.getCanonicalName(), e);
+        JumpInOutFilter(Relationships.Direction direction, boolean fromEdge) {
+            this.direction = direction;
+            this.fromEdge = fromEdge;
         }
-    }
 
-    public TenantsService tenants(EdgeFilter filter, String value) {
-        //return new TenantsService(graph, pathToHereWithSelect(Filter.by(Related.by(id),
-        //        With.type(Tenant.class))));
-        // TODO implement
-        return null;
-    }
+        public Relationships.Direction getDirection() {
+            return direction;
+        }
 
-    private enum EdgeFilter {
-        ID, NAMED
+        public boolean isFromEdge() {
+            return fromEdge;
+        }
+
+        @Override
+        public String toString() {
+            return "Jump[" + (fromEdge ? "from " : "to ") + direction.name() + " edge]";
+        }
     }
 }

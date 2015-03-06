@@ -16,12 +16,10 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.RelationFilter;
 
 /**
  * Generic methods for readonly access to relationships.
- * The only difference between this interface and ReadInterface is the getAll method, where
- * relationship specific filters are expected.
  *
  * @param <Single> an interface for traversing and resolving a single relationship
  * @param <Multiple> an interface for traversing and resolving multiple relationships
@@ -29,22 +27,22 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Jirka Kremser
  * @since 1.0
  */
-interface ReadRelationInterface<Single, Multiple> {
+interface ReadRelationshipsInterface<Single, Multiple> {
 
     /**
-     * Tries to find a single entity in the current position in the inventory traversal.
+     * Tries to find a single relationship in the current position in the inventory traversal.
      *
-     * @param id the id of the entity to find in the current traversal position
-     * @return access interface to the entity
+     * @param id the id of the relationship to find in the current traversal position
+     * @return access interface to the relationship
      */
     Single get(String id) throws EntityNotFoundException, RelationNotFoundException;
 
     /**
-     * Returns access interface to all entities conforming to provided filters in the current position in the inventory
-     * traversal.
+     * Returns access interface to all relationships conforming to provided filters in the current position in the
+     * inventory traversal.
      *
-     * @param filters the (possibly empty) list of filters to apply.
-     * @return the (read-only) access interface to the found entities
+     * @param filters the (possibly empty) list of relationship filters to apply.
+     * @return the (read-only) access interface to the found relationships
      */
-    Multiple getAll(Filter... filters);
+    Multiple getAll(RelationFilter... filters);
 }

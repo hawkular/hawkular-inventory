@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -114,27 +115,97 @@ class FilterVisitor {
 
     public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids) {
         if (ids.getIds().length == 1) {
-            query.has(Constants.Property.uid.name(), ids.getIds()[0]);
+            query.has("id", ids.getIds()[0]);
             return;
         }
 
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>("id", Compare.EQUAL, ids.getIds()[i]));
 
         query.or(idChecks);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.Properties filter) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.Properties properties) {
+        if (properties.getValues().length == 1) {
+            query.has(properties.getProperty(), properties.getValues()[0]);
+            return;
+        }
+
+        Pipe[] idChecks = new Pipe[properties.getValues().length];
+
+        Arrays.setAll(idChecks, i ->
+                new PropertyFilterPipe<Element, String>(properties.getProperty(), Compare.EQUAL, properties
+                        .getValues()[i]));
+
+        query.or(idChecks);
     }
 
-    @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.Direction filter) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types) {
+        visit(query, types, true);
     }
 
-    @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.EntityTypes filter) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types) {
+        visit(query, types, false);
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types) {
+        visit(query, types, null);
+    }
+
+    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source) {
+        // look ahead if the type of the incidence vertex is of the desired type(s)
+        String label = UUID.randomUUID().toString();
+        HawkularPipeline<?, ?> q1 = query.as(label);
+        HawkularPipeline<?, ?> q2;
+        if (source == null) {
+            q2 = q1.bothV();
+        } else if (source) {
+            q2 = q1.outV();
+        } else {
+            q2 = q1.inV();
+        }
+        if (types.getTypes().length == 1) {
+            Constants.Type type = Constants.Type.of(types.getTypes()[0]);
+            q2.has(Constants.Property.type.name(), type.name()).back(label);
+            return;
+        }
+
+        Pipe[] typeChecks = new Pipe[types.getTypes().length];
+        Arrays.setAll(typeChecks, i -> {
+            Constants.Type type = Constants.Type.of(types.getTypes()[i]);
+            return new PropertyFilterPipe<Element, String>(Constants.Property.type.name(), Compare.EQUAL, type.name());
+        });
+
+        q2.or(typeChecks).back(label);
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, RelationshipBrowser.JumpInOutFilter filter) {
+        final boolean jumpFromEdge = filter.isFromEdge();
+        switch (filter.getDirection()) {
+            case incoming:
+                if (jumpFromEdge) {
+                    query.outV();
+                } else {
+                    query.inE();
+                }
+                break;
+            case outgoing:
+                if (jumpFromEdge) {
+                    query.inV();
+                } else {
+                    query.outE();
+                }
+                break;
+            case both:
+                if (jumpFromEdge) {
+                    query.bothV();
+                } else {
+                    query.bothE();
+                }
+                break;
+        }
     }
 }

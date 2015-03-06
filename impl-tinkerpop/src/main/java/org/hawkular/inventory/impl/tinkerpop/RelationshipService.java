@@ -21,12 +21,10 @@ import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-
-import java.util.Arrays;
-import java.util.function.Predicate;
 
 /**
  * @author Lukas Krejci
@@ -36,43 +34,42 @@ import java.util.function.Predicate;
 final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
         Relationships.Multiple, E, Relationship.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
 
+    private final Relationships.Direction direction;
+
     RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass, Relationships.Direction
             direction) {
         super(iContext, sourceClass, ctx);
+        this.direction = direction;
     }
 
     @Override
     public Relationships.Single get(String id) {
-        return createSingleBrowser(id, pathWith(selectCandidates()).get());
+        return createSingleBrowser(RelationWith.id(id));
     }
 
     @Override
-    public Relationships.Multiple getAll(Filter... filters) {
-        Filter[] invalidFilters = getInvalidRelationshipsFilters(filters);
-        if (invalidFilters.length != 0) {
-            throw new IllegalArgumentException("Cannot use following filters for filtering the relationships: " +
-                    Arrays.toString(invalidFilters));
-        }
-        return createMultiBrowser(null, pathWith(selectCandidates()).andFilter(filters).get());
+    public Relationships.Multiple getAll(RelationFilter... filters) {
+        return createMultiBrowser(filters);
     }
 
     @Override
     protected Relationships.Single createSingleBrowser(FilterApplicator... path) {
-        return createSingleBrowser(null, path);
+        return createSingleBrowser((RelationFilter[]) null);
     }
 
-    private Relationships.Single createSingleBrowser(String id, FilterApplicator... path) {
-        return RelationshipBrowser.single(id, context, entityClass, path);
+    private Relationships.Single createSingleBrowser(RelationFilter... filters) {
+        return RelationshipBrowser.single(context, entityClass, direction, pathWith(selectCandidates())
+                .get(), filters);
     }
 
     @Override
     protected Relationships.Multiple createMultiBrowser(FilterApplicator... path) {
-        return createMultiBrowser(null, path);
+        return createMultiBrowser((RelationFilter[]) null);
     }
 
-    private Relationships.Multiple createMultiBrowser(String named, FilterApplicator... path) {
-        // TODO foo
-        return RelationshipBrowser.multiple(named, context, entityClass, path);
+    private Relationships.Multiple createMultiBrowser(RelationFilter... filters) {
+        return RelationshipBrowser.multiple(context, entityClass, direction, pathWith(selectCandidates())
+                .get(), filters);
     }
 
     @Override
@@ -88,12 +85,12 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
     @Override
     public Relationships.Multiple named(String name) {
-        return createMultiBrowser(name, path);
+        return createMultiBrowser(RelationWith.name(name));
     }
 
     @Override
     public Relationships.Multiple named(Relationships.WellKnown name) {
-        return createMultiBrowser(name.name(), path);
+        return named(name.name());
     }
 
     @Override
@@ -112,13 +109,5 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     public void delete(String id) throws RelationNotFoundException {
         //TODO implement
         throw new UnsupportedOperationException();
-    }
-
-    private Filter[] getInvalidRelationshipsFilters(Filter[] filters) {
-        if (null != filters || filters.length == 0) {
-            return filters;
-        }
-        Predicate<Filter> isValidFilterForRelation = f -> f instanceof With.Ids;
-        return Arrays.stream(filters).filter(isValidFilterForRelation.negate()).toArray(n -> new Filter[n]);
     }
 }

@@ -26,6 +26,8 @@ import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.RelationNotFoundException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
@@ -284,8 +286,12 @@ public class BasicTest {
             "going from  environments must have uid equal to 'test'. Was: " + contains.getTarget().getId();
         assert "contains" .equals(contains.getName()) : "Name of the relation must be 'contains'.";
 
-        contains = inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
-        assert contains == null : "There should not be any edge with id 13.";
+        try {
+            inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
+            assert 2+2 == 5 : "There should not be any edge with id 13.";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
     }
 
     @Test
@@ -320,19 +326,60 @@ public class BasicTest {
 
     @Test
     public void testRelationshipServiceGetAllFilters() throws Exception {
-        Set<Relationship> contains = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .relationships().getAll(RelationWith.name("foo")).entities();
+        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains")).entities();
+        assert rels != null && rels.size() == 4 : "There should be 4 relationships conforming the filters";
+        assert rels.stream().anyMatch(rel -> "playroom2_size".equals(rel.getTarget().getId()));
+        assert rels.stream().anyMatch(rel -> "playroom1".equals(rel.getTarget().getId()));
 
-        assert contains.stream().anyMatch(rel -> "playroom1" .equals(rel.getTarget().getId()))
-                : "Environment 'test' must contain 'playroom1'.";
-        assert contains.stream().anyMatch(rel -> "playroom2" .equals(rel.getTarget().getId()))
-                : "Environment 'test' must contain 'playroom2'.";
-        assert contains.stream().anyMatch(rel -> "playroom2_size" .equals(rel.getTarget().getId()))
-                : "Environment 'test' must contain 'playroom2_size'.";
-        assert contains.stream().anyMatch(rel -> "playroom1_size" .equals(rel.getTarget().getId()))
-                : "Environment 'test' must contain 'playroom1_size'.";
-        assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
-                : "Environment 'production' cant be the source of these relationships.";
+
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains"), RelationWith
+                        .targetOfType(Metric.class)).entities();
+        assert rels != null && rels.size() == 2 : "There should be 2 relationships conforming the filters";
+        assert rels.stream().allMatch(rel -> Metric.class.equals(rel.getTarget().getClass())) : "The type of all the " +
+                "targets should be the 'Metric'";
+
+
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.incoming).getAll(RelationWith.name("contains")).entities();
+
+        assert rels != null && rels.size() == 1 : "There should be just 1 relationship conforming the filters";
+        assert "com.example.tenant".equals(rels.iterator().next().getSource().getId()) : "Tenant 'com.example" +
+                ".tenant' was not found";
+
+
+        rels = inventory.tenants().getAll().relationships().named
+                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .entities();
+        assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
+        assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getId())
+                || "production".equals(rel.getSource().getId())) : "Source should be either 'test' or 'production'";
+        assert rels.stream().allMatch(rel -> Resource.class.equals(rel.getTarget().getClass())
+                || Metric.class.equals(rel.getTarget().getClass())) : "Target should be either a metric or a " +
+                "resource";
+    }
+
+    @Test
+    public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
+        Metric metric = inventory.tenants().getAll().relationships().named
+                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class)).metrics
+                ().get("playroom1_size").entity();
+        assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
+                "filters";
+
+        try {
+            inventory.tenants().getAll().relationships().named
+                    (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                    .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class)).metrics
+                    ().get("playroom1_size").entity();
+            assert false : "this code should not be reachable. There should be no metric reachable under " +
+                    "'RelationWith.targetsOfTypes(Resource.class))' filter";
+        } catch (EntityNotFoundException e) {
+            // good
+        }
     }
 
     @Test
