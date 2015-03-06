@@ -113,8 +113,10 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
         Vertex incidenceVertex = convert(targetOrSource);
         PipeFunction<Vertex, Object> transformation = v -> {
-            Direction d1 = direction == outgoing ? Direction.OUT : direction == incoming ? Direction.IN : Direction.BOTH;
-            Direction d2 = direction == outgoing ? Direction.IN : direction == incoming ? Direction.OUT : Direction.BOTH;
+            final Direction d1 = direction == outgoing ? Direction.OUT : direction == incoming ? Direction.IN :
+                    Direction.BOTH;
+            final Direction d2 = direction == outgoing ? Direction.IN : direction == incoming ? Direction.OUT :
+                    Direction.BOTH;
             Stream<Edge> edges = StreamSupport.stream(v.getEdges(d1)
                     .spliterator(), false)
                     .filter(edge -> name.equals(edge.getLabel())
