@@ -351,6 +351,67 @@ public class BasicTest {
     }
 
     @Test
+    public void testRelationshipServiceLinkedWithAndDelete() throws Exception {
+        Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
+        Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("host1").relationships(Relationships.Direction.incoming)
+                .linkWith("crossTenantLink", tenant).entity();
+
+        assert inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                .named("crossTenantLink").entities().size() == 1 : "Relation 'crossTenantLink' was not found.";
+        // delete the relationship
+        inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
+        assert inventory.tenants().get("com.example.tenant").relationships()
+                .named("crossTenantLink").entities().size() == 0 : "Relation 'crossTenantLink' was found.";
+
+        // try deleting again
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
+            assert false | true : "It shouldn't be possible to delete the same relationship twice";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceUpdateRelationship() throws Exception {
+        final String someKey = "k3y";
+        final String someValue = "v4lu3";
+        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
+        rel1.getProperties().put(someKey, someValue);
+
+        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert rel1.getId().equals(rel2.getId()) && null == rel2.getProperties().get(someKey) : "There should not be" +
+                " any property with key 'k3y'";
+
+        // persist the change
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .update(rel1);
+
+        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
+                : "There should be the property with key 'k3y' and value 'v4lu3'";
+
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                    .get("playroom2").metrics().get("playroom1_size").relationships(Relationships.Direction.both)
+                    .update(rel1);
+            assert !!!true : "It shouldn't be possible to update an edge that is not on the current position in the " +
+                    "graph traversal.";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
     public void testRelationshipServiceGetAllFilters() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
                 .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains")).entities();

@@ -35,7 +35,7 @@ public final class RelationNotFoundException extends InventoryException {
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
                                      Throwable cause) {
         super(cause);
-        this.sourceEntityType = sourceEntityType.getSimpleName();
+        this.sourceEntityType = sourceEntityType != null ? sourceEntityType.getSimpleName() : null;
         this.filters = filters;
         this.nameOrId = nameOrId;
     }

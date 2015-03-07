@@ -18,7 +18,9 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.pipes.PipeFunction;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
@@ -28,10 +30,12 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
+import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
@@ -41,7 +45,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
  * @since 1.0
  */
 final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
-        Relationships.Multiple, E, Relationship.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
+        Relationships.Multiple, E, Relationship> implements Relationships.ReadWrite, Relationships.Read {
 
     private final Relationships.Direction direction;
 
@@ -82,13 +86,13 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    protected String getProposedId(Relationship.Blueprint b) {
-        //TODO implement
+    protected String getProposedId(Relationship r) {
+        // this doesn't make sense for Relationships
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, Relationship.Blueprint s) {
+    protected Filter[] initNewEntity(Vertex newEntity, Relationship r) {
         return new Filter[0];
     }
 
@@ -152,13 +156,79 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
     @Override
     public void update(Relationship relationship) throws RelationNotFoundException {
-        //TODO implement
-        throw new UnsupportedOperationException();
+        if (null == relationship) {
+            throw new IllegalArgumentException("relationship was null");
+        }
+        if (null == relationship.getId()) {
+            throw new IllegalArgumentException("relationship's ID was null");
+        }
+
+        // check if the source/target vertex of the relationship is on the current position in hawk-pipe. If not use the
+        // `ifThenElse` for returning an empty iterator and fail subsequent querying
+        PipeFunction<Vertex, Boolean> ifFunction = vertex -> {
+            String uid = vertex.getProperty(Constants.Property.uid.name());
+            boolean sourceOk = uid.equals(relationship.getSource().getId());
+            boolean targetOk = uid.equals(relationship.getTarget().getId());
+            boolean retBool = direction == outgoing ? sourceOk : direction ==
+                    incoming ? targetOk : (sourceOk || targetOk);
+            return retBool;
+        };
+        PipeFunction<Vertex, ?> thenFunction = v -> v;
+        PipeFunction<Vertex, ?> elseFunction = v -> Collections.<Vertex>emptyList().iterator();
+        source().ifThenElse(ifFunction, thenFunction, elseFunction);
+
+        HawkularPipeline<?, Edge> pipe = null;
+        switch (direction) {
+            case outgoing:
+                pipe = source().outE(relationship.getName());
+                break;
+            case incoming:
+                pipe = source().inE(relationship.getName());
+                break;
+            case both:
+                pipe = source().bothE(relationship.getName());
+                break;
+        }
+
+        HawkularPipeline<?, Edge> edges = pipe.has("id", relationship.getId()).cast(Edge.class);
+        if (!edges.hasNext()) {
+            throw new RelationNotFoundException(relationship.getId(), null);
+        }
+        Edge edge = edges.next();
+        if (!edge.getLabel().equals(relationship.getName())) {
+            //todo: log properly
+            System.out.println("Name of the relationship cannot be updated!");
+        }
+        final Direction d1 = direction == outgoing ? Direction.IN : Direction.OUT;
+        final Direction d2 = direction == outgoing ? Direction.OUT : Direction.IN;
+        if (direction != both && (!edge.getVertex(d1).equals(relationship.getTarget())
+                || !edge.getVertex(d2).equals(relationship.getSource()))) {
+            //todo: log properly
+            System.out.println("Cannot change the source or target of the relationship!");
+        }
+        ElementHelper.setProperties(edge, relationship.getProperties());
     }
 
     @Override
     public void delete(String id) throws RelationNotFoundException {
-        //TODO implement
-        throw new UnsupportedOperationException();
+        if (null == id) {
+            throw new IllegalArgumentException("relationship's id was null");
+        }
+        HawkularPipeline<?, ? extends Element> pipe = null;
+        switch (direction) {
+            case outgoing:
+                pipe = source().outE().has("id", id);
+                break;
+            case incoming:
+                pipe = source().inE().has("id", id);
+                break;
+            case both:
+                pipe = source().bothE().has("id", id);
+                break;
+        }
+        if (!pipe.hasNext()) {
+            throw new RelationNotFoundException(id, null);
+        }
+        pipe.remove();
     }
 }
