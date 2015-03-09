@@ -163,8 +163,8 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
             throw new IllegalArgumentException("relationship's ID was null");
         }
 
-        // check if the source/target vertex of the relationship is on the current position in hawk-pipe. If not use the
-        // `ifThenElse` for returning an empty iterator and fail subsequent querying
+       // check if the source/target vertex of the relationship is on the current position in hawk-pipe. If not use the
+       // `ifThenElse` for returning an empty iterator and fail subsequent querying
         PipeFunction<Vertex, Boolean> ifFunction = vertex -> {
             String uid = vertex.getProperty(Constants.Property.uid.name());
             boolean sourceOk = uid.equals(relationship.getSource().getId());
@@ -175,18 +175,17 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
         };
         PipeFunction<Vertex, ?> thenFunction = v -> v;
         PipeFunction<Vertex, ?> elseFunction = v -> Collections.<Vertex>emptyList().iterator();
-        source().ifThenElse(ifFunction, thenFunction, elseFunction);
+        HawkularPipeline<?, ?> pipe = source().ifThenElse(ifFunction, thenFunction, elseFunction);
 
-        HawkularPipeline<?, Edge> pipe = null;
         switch (direction) {
             case outgoing:
-                pipe = source().outE(relationship.getName());
+                pipe = pipe.outE(relationship.getName());
                 break;
             case incoming:
-                pipe = source().inE(relationship.getName());
+                pipe = pipe.inE(relationship.getName());
                 break;
             case both:
-                pipe = source().bothE(relationship.getName());
+                pipe = pipe.bothE(relationship.getName());
                 break;
         }
 

@@ -374,7 +374,7 @@ public class BasicTest {
     }
 
     @Test
-    public void testRelationshipServiceUpdateRelationship() throws Exception {
+    public void testRelationshipServiceUpdateRelationship1() throws Exception {
         final String someKey = "k3y";
         final String someValue = "v4lu3";
         Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
@@ -406,6 +406,34 @@ public class BasicTest {
                     .update(rel1);
             assert !!!true : "It shouldn't be possible to update an edge that is not on the current position in the " +
                     "graph traversal.";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceUpdateRelationship2() throws Exception {
+        // invalid target entity, but valid (for the position) relationship id
+        Relationship rel = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+
+        Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
+        Relationship badRel = new Relationship(rel.getId(), rel.getName(), tenant, rel.getTarget());
+        Relationship goodRel = new Relationship(rel.getId(), rel.getName(), rel.getSource(), tenant);
+
+        // persist the allowed change
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .update(goodRel);
+
+        // persist the forbiden change
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                    .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                    .update(badRel);
+            assert true^true : "It shouldn't be possible to update an edge that has source entity different than the" +
+                    "entity on the current position in the graph traversal (for outgoing rels)";
         } catch (RelationNotFoundException e) {
             // good
         }
