@@ -60,19 +60,19 @@ public final class Relationships {
      */
     public enum Direction {
         /**
-         * Relative to the current position in the Hawkular pipeline, this value expresses such relationships
-         * that has me (the entity(ies) on the current pos) as a target(s).
+         * Relative to the current position in the inventory traversal, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a source(s).
          */
         outgoing,
 
         /**
-         * Relative to the current position in the Hawkular pipeline, this value expresses such relationships
-         * that has me (the entity(ies) on the current pos) as a source(s).
+         * Relative to the current position in the inventory traversal, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a target(s).
          */
         incoming,
 
         /**
-         * Relative to the current position in the Hawkular pipeline, this value expresses all the relationships
+         * Relative to the current position in the inventory traversal, this value expresses all the relationships
          * I (the entity(ies) on the current pos) have with other entity(ies).
          */
         both

@@ -34,7 +34,7 @@ interface WriteRelationshipInterface<Single> {
      *
      * @param name the name of the relationship (label)
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
-     *                       entity (based on the hawkular pipeline) will be in the relationship with
+     *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
@@ -46,7 +46,7 @@ interface WriteRelationshipInterface<Single> {
      *
      * @param name the well known name (Relationships.WellKnown) of the relationship
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
-     *                       entity (based on the hawkular pipeline) will be in the relationship with
+     *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists

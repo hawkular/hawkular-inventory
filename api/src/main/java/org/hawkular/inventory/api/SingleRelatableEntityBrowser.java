@@ -35,7 +35,8 @@ interface SingleRelatableEntityBrowser<Entity> extends ResolvableToSingle<Entity
     Relationships.ReadWrite relationships();
 
     /**
-     * @param direction the direction of the relation (aka edge) This is needed because direction are not bidirectional.
+     * @param direction the direction of the relation (aka edge) This is needed because relationships are not
+     *                  bidirectional.
      * @return the (r/w) access interface to all relationships of the entities on the current position in
      * the inventory traversal.
      */
