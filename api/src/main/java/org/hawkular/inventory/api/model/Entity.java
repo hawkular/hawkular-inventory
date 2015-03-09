@@ -33,9 +33,6 @@ public abstract class Entity {
     private final String id;
     private Map<String, Object> properties;
 
-    //TODO has this the place in here?
-    private Set<Relationship> relationships;
-
     /** JAXB support */
     Entity() {
         id = null;

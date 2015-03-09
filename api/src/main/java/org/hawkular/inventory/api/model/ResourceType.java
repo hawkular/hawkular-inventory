@@ -36,8 +36,6 @@ public final class ResourceType extends OwnedEntity {
     @XmlJavaTypeAdapter(VersionAdapter.class)
     private final Version version;
 
-    private Set<MetricType> metricTypes;
-
     /** JAXB support */
     @SuppressWarnings("unused")
     private ResourceType() {
@@ -60,13 +58,6 @@ public final class ResourceType extends OwnedEntity {
 
     public Version getVersion() {
         return version;
-    }
-
-    public Set<MetricType> getMetricTypes() {
-        if (metricTypes == null) {
-            metricTypes = new HashSet<>();
-        }
-        return metricTypes;
     }
 
     @Override

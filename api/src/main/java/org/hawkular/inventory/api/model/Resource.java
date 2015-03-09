@@ -32,7 +32,6 @@ import java.util.Set;
 public final class Resource extends EnvironmentalEntity {
 
     private final ResourceType type;
-    private Set<Metric> metrics;
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -47,13 +46,6 @@ public final class Resource extends EnvironmentalEntity {
 
     public ResourceType getType() {
         return type;
-    }
-
-    public Set<Metric> getMetrics() {
-        if (metrics == null) {
-            metrics = new HashSet<>();
-        }
-        return metrics;
     }
 
     @Override
