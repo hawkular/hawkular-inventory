@@ -1,7 +1,8 @@
-= Hawkular-Inventory
+= Hawkular Inventory
 
-Hawkular-Inventory is the Inventory module for Hawkular - basically "The Registry" of
-stuff in Hawkular.
+toc::[]
+
+This is the inventory module for Hawkular - basically "the registry" of stuff in Hawkular.
 
 Hawkular is a modular systems monitoring suite, that consists of several sub-projects for
 storing of metrics, alerting on incoming events and more. Those projects are developed
@@ -11,77 +12,140 @@ in their own GitHub repositories and integrated in this project.
 ifdef::env-github[]
 [link=https://travis-ci.org/hawkular/hawkular-inventory]
 image:https://travis-ci.org/hawkular/hawkular-inventory.svg["Build Status", link="https://travis-ci
-.org/hawkular/hawkular-inventory"]
+.org/hawkular/hawkular-inventory"]{nbsp}
+image:https://badges.gitter.im/Join%20Chat.svg[link="https://gitter.im/hawkular/hawkular-inventory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
 endif::[]
 
 == About Inventory
 
+Inventory stores "entities" and relationships between them. There are several types of entities that the inventory
+understands and a handful of predefined relationship types. While one cannot declare a new type of entity, one can
+create arbitrary relationships between the entities, not just the predefined ones.
+
+== Contributions
+
+We gladly accept pull requests
+ifdef::env-github[]
+here on github.
+endif::[]
+ifndef::env-github[]
+on http://github.com/hawkular/hawkular-inventory[github].
+endif::[]
+If you find a bug or have a feature you would like to see implemented, please file an issue in our issue tracking system
+https://issues.jboss.org/browse/HWKINVENT[here].
+
+== Structure
+
 The project is divided into several modules
 
-* api: the Java Api of Hawkular-Inventory
-* impl: the Backend implementation of the Inventory service
-* rest-servlet: A JAX-RS servlet implementation that provides a gateway to the Java Api. It creates a .war file that
-contain the Java api and Implementation to be deployed into a WildFly server
+* api: the Java API of Hawkular Inventory
+* impl-tinkerpop: the default implementation of the API on top of http://www.tinkerpop.com[Tinkerpop]
+https://github.com/tinkerpop/gremlin/wiki[Gremlin] 2.6.0.
+* rest-servlet: A JAX-RS servlet implementation that provides a gateway to the Java API. It creates a .war file that
+contain the Java API and implementation to be deployed into a WildFly server.
 * rest-test: Integration tests of the rest-api above
 
 == Setup
 
-The build currently runs inside a WildFly server, that has a H2-DB installed. You can use the following
-snippet to configure this database:
+=== Library
 
-[source,xml]
-----
-<datasource jta="true" jndi-name="java:jboss/datasources/HawkularDS" pool-name="HawkularDS" enabled="true" use-ccm="true">
-    <connection-url>jdbc:h2:standalone/data/hawkular_db</connection-url>
-    <driver-class>org.h2.Driver</driver-class>
-    <driver>h2</driver>
-    <security>
-        <user-name>sa</user-name>
-        <password>sa</password>
-    </security>
-    <validation>
-        <validate-on-match>false</validate-on-match>
-        <background-validation>false</background-validation>
-    </validation>
-    <timeout>
-        <set-tx-query-timeout>false</set-tx-query-timeout>
-        <blocking-timeout-millis>0</blocking-timeout-millis>
-        <idle-timeout-minutes>0</idle-timeout-minutes>
-        <query-timeout>0</query-timeout>
-        <use-try-lock>0</use-try-lock>
-        <allocation-retry>0</allocation-retry>
-        <allocation-retry-wait-millis>0</allocation-retry-wait-millis>
-    </timeout>
-    <statement>
-        <share-prepared-statements>false</share-prepared-statements>
-    </statement>
-</datasource>
-----
+You can either use the inventory as a library - just depend on the `api` module and have the `impl-tinkerpop` module on
+you class path. You can then start using the inventory by calling:
+```java
+Inventory inventory = InventoryFactory.newInstance();
+Configuration cfg = Configuration.builder()....build();
 
-The datasource files will then be created inside the `standalone/data/` directory:
+inventory.initialize(cfg);
 
-----
-wildfly-8.2.0.Final $ ls standalone/data/
-content  hawkular_db.h2.db  timer-service-data  tx-object-store
-----
+//off you go
+```
 
-To clean the database, just remove those `hawkular_db.h2*` files.
+=== Web Application
 
-We will make some automated process available in the future.
+The `rest-servlet` module builds a web application archive `WAR` which is by out-of-the-box deployable to a
+http://wildfly.org[Wildfly] server. Additional libraries might be required on the classpath if deployed into other
+containers (please inspect the `pom.xml` file for the dependencies).
+
+Once deployed to the Wildfly server, the application by default uses an in-memory graph database that is persisted to
+a file on the default location of `$WILDFLY_HOME/standalone/data/hawkular-inventory`.
+
+The web application passes all system properties as the configuration of the inventory and hence it is possible to use
+the system properties to override those defaults. See the <<Configuration>> chapter for details.
+
+=== Configuration
+
+It is possible to use other graph database that supports the Tinkerpop Blueprints API by providing the necessary
+implementation configuration (i.e. use the `Configuration.Builder.withConfiguration()` method or
+`Configuration.Builder.addConfigurationProperty()` method. E.g. for the tinkerpop implementation of the inventory
+(well, there is no other ATM ;) ) use the `blueprints.graph` property to set the graph implementation class to use and
+other properties that are specific to the chosen implementation to configure it. The supplied implementation must
+support the `TransactionalGraph` interface.
+
+== Description of the API
+
+=== Package `org.hawkular.inventory.api`
+
+Contains the interfaces that comprise the API + the entity and filtering classes. The API is not tied in any form to the
+underlying storage mechanism but expresses the graph nature of the inventory. The main idea of the API is that it
+
+* is highly regular
+* needs to express the "walk" through the inventory graph easily.
+
+There are therefore 2 kinds of interfaces:
+
+* ones that express the common operations on various entities (expressed by the generic `ReadInterface`,
+`WriteInterface` and `RelateInterface`),
+* ones that define the possible next steps on walk, divided into so-called `Single` or `Multiple` interfaces (specific
+to each type of the entity) that support traversing from a single entity or from multiple entities respectively.
+
+There is a bunch of final uninstantiable classes in this package with names in the plural of the various entity types.
+These "wrap" the definition of the traversal and operation interfaces for given type of entity. I.e. the `Environments`
+class defines the traversal interfaces `Environments.Single` and `Environments.Multiple` and the operation interfaces
+`Environments.Read`, `Environments.ReadWrite` and `Environments.ReadRelate` as its inner classes.
+
+This pattern is followed for all the other entity types.
+
+While the interfaces might look a bit impenetrable and hard to follow, they provide for a (IMHO) very nice flow when
+composing a traversal through the inventory, which can be illustrated by the following example:
+
+```java
+Set<Metric> metrics = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+   .get("host").metrics().getAll(Related.asTargetWith(metricDefinition, Relationships.Wellknown.defines)).entities();
+```
+
+This will find all the metrics with the type defined by the metricDefinition which are associated with the "host"
+resource in the "production" environment of the "com.acme.tenant" tenant.
+
+=== Package `org.hawkular.inventory.api.model`
+
+Contains the POJOs for various entities understood by the inventory. The POJO entity classes are immutable but should be
+JAXB-friendly. Some of the classes define a `Blueprint` inner class. Such blueprint classes are used when creating
+an entity. You generally don't need to provide all the data that the entity requires because some of it can be deduced
+from the position in the traversal of the graph from where the `create` method is being called.
+
+=== Package `org.hawkular.inventory.filters`
+
+There is a finite set of possible filter types which are captured by the various classes in this package. The base class
+is surprisingly called `Filter` and is basically only a marker class (with some builder-like facilities but no actual
+filtering definitions possible). Other classes express the filtering by various relations in the inventory (with 1
+generic relationship filter - `Related`) or filtering by id or type - the `With` class and its inner classes.
+
+The idea of these filters is that the implementations of the API are not forced to provide some generic filtering
+mechanism but are only required to provide support for this small set of predefined filter types.
 
 == Logger
 
-Hawkular-Inv uses Logger prefix `HAWKINV` for looging wiht JBoss-Logging.
+Hawkular-Inv uses Logger prefix `HAWKINV` for logging with JBoss-Logging.
 
 Code ranges are
 api: 1-999
-impl:  1000-1999
+impl-tinkerpop:  1000-1999
 rest-api : 2000-2999
 
-== Rest-Tests
+== Rest Tests
 
-The rest-tests are not run by default as they need a running WildFly server with above setup.
-To run them manually you can specify not to skip them
+The rest-tests are not run by default as they need a running WildFly server with `rest-servlet` web application
+deployed. To run them manually you can specify not to skip them
 
     mvn -Dmaven.test.skip=false test
 
