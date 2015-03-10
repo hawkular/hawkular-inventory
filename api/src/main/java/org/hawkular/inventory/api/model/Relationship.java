@@ -27,6 +27,7 @@ import java.util.Map;
  * properties.
  *
  * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
 @XmlRootElement
@@ -78,49 +79,15 @@ public final class Relationship {
         return target;
     }
 
-    /**
-     * Data required to create an new relationship.
-     *
-     * TODO this is I think not correct because the source can be implied by the path traversal position.
-     */
-    @XmlRootElement
-    public static final class Blueprint {
-        private final Entity source;
-        private final Entity target;
-        @XmlAttribute
-        private final String name;
-        private Map<String, Object> properties;
-
-
-        /** JAXB support */
-        @SuppressWarnings("unused")
-        private Blueprint() {
-            this(null, null, null);
-        }
-
-        public Blueprint(String name, Entity source, Entity target) {
-            this.name = name;
-            this.source = source;
-            this.target = target;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Map<String, Object> getProperties() {
-            if (properties == null) {
-                properties = new HashMap<>();
-            }
-            return properties;
-        }
-
-        public Entity getSource() {
-            return source;
-        }
-
-        public Entity getTarget() {
-            return target;
-        }
+    @Override
+    public String toString() {
+        StringBuilder bld = new StringBuilder(getClass().getSimpleName());
+        bld.append("[id='").append(id).append('\'');
+        bld.append(", name='").append(name).append('\'');
+        bld.append(", source=").append(source);
+        bld.append(" --").append(name).append("--> ");
+        bld.append(" target=").append(target);
+        bld.append(']');
+        return bld.toString();
     }
 }

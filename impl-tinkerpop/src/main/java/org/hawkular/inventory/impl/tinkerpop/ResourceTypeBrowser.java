@@ -37,13 +37,13 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class TypeBrowser extends AbstractBrowser<ResourceType> {
-    private TypeBrowser(InventoryContext context, FilterApplicator... path) {
+final class ResourceTypeBrowser extends AbstractBrowser<ResourceType> {
+    private ResourceTypeBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, ResourceType.class, path);
     }
 
     public static ResourceTypes.Single single(InventoryContext context, FilterApplicator... path) {
-        TypeBrowser b = new TypeBrowser(context, path);
+        ResourceTypeBrowser b = new ResourceTypeBrowser(context, path);
 
         return new ResourceTypes.Single() {
 
@@ -55,6 +55,11 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
             @Override
             public Relationships.ReadWrite relationships() {
                 return b.relationships();
+            }
+
+            @Override
+            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
             }
 
             @Override
@@ -70,7 +75,7 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
     }
 
     public static ResourceTypes.Multiple multiple(InventoryContext context, FilterApplicator... path) {
-        TypeBrowser b = new TypeBrowser(context, path);
+        ResourceTypeBrowser b = new ResourceTypeBrowser(context, path);
 
         return new ResourceTypes.Multiple() {
             @Override
@@ -86,6 +91,11 @@ final class TypeBrowser extends AbstractBrowser<ResourceType> {
             @Override
             public Relationships.Read relationships() {
                 return b.relationships();
+            }
+
+            @Override
+            public Relationships.Read relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
             }
 
             @Override

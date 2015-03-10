@@ -23,8 +23,22 @@ package org.hawkular.inventory.api;
  * @param <Entity> the type of the entity being browsed
  *
  * @author Lukas Krejci
+ * @author Jirka Kremser
  * @since 1.0
  */
 interface SingleRelatableEntityBrowser<Entity> extends ResolvableToSingle<Entity> {
+
+    /**
+     * @return the (r/w) access interface to all (outgoing) relationships of the entities on the current position in
+     * the inventory traversal.
+     */
     Relationships.ReadWrite relationships();
+
+    /**
+     * @param direction the direction of the relation (aka edge) This is needed because relationships are not
+     *                  bidirectional.
+     * @return the (r/w) access interface to all relationships of the entities on the current position in
+     * the inventory traversal.
+     */
+    Relationships.ReadWrite relationships(Relationships.Direction direction);
 }

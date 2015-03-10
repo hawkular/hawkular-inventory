@@ -19,6 +19,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
 
@@ -52,9 +53,12 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
 
         return ret;
     }
-
     public RelationshipService relationships() {
-        return new RelationshipService(context, new PathContext(path, Filter.all()), entityClass);
+        return relationships(Relationships.Direction.outgoing);
+    }
+
+    public RelationshipService relationships(Relationships.Direction direction) {
+        return new RelationshipService(context, new PathContext(path, Filter.all()), entityClass, direction);
     }
 
     @Override

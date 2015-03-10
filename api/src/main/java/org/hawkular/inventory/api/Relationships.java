@@ -54,6 +54,30 @@ public final class Relationships {
         owns
     }
 
+
+    /**
+     * The list of possible relationship (aka edges) direction. Relationships are not bidirectional.
+     */
+    public enum Direction {
+        /**
+         * Relative to the current position in the inventory traversal, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a source(s).
+         */
+        outgoing,
+
+        /**
+         * Relative to the current position in the inventory traversal, this value expresses such relationships
+         * that has me (the entity(ies) on the current pos) as a target(s).
+         */
+        incoming,
+
+        /**
+         * Relative to the current position in the inventory traversal, this value expresses all the relationships
+         * I (the entity(ies) on the current pos) have with other entity(ies).
+         */
+        both
+    }
+
     private interface BrowserBase<Tenants, Environments, Feeds, MetricTypes, Metrics, Resources, ResourceTypes> {
         Tenants tenants();
 
@@ -73,9 +97,7 @@ public final class Relationships {
     /**
      * Interface for accessing a single relationship in a writable manner
      */
-    public interface Single extends ResolvableToSingle<Relationship>,
-            BrowserBase<Tenants.ReadRelate, Environments.ReadRelate, Feeds.ReadRelate, MetricTypes.ReadRelate,
-                    Metrics.ReadRelate, Resources.ReadRelate, ResourceTypes.ReadRelate> {}
+    public interface Single extends ResolvableToSingle<Relationship> {}
 
     /**
      * Interface for traversing over a set of relationships.
@@ -91,14 +113,16 @@ public final class Relationships {
     /**
      * Provides read-write access to relationships.
      */
-    public interface ReadWrite extends ReadWriteInterface<Relationship, Relationship.Blueprint, Single, Multiple> {
+    public interface ReadWrite extends ReadWriteRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
+        Multiple named(WellKnown name);
     }
 
     /**
      * Provides read access to relationships.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {
+    public interface Read extends ReadRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
+        Multiple named(WellKnown name);
     }
 }

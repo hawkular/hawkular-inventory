@@ -35,7 +35,7 @@ interface ReadInterface<Single, Multiple> {
      * @param id the id of the entity to find in the current traversal position
      * @return access interface to the entity
      */
-    Single get(String id) throws EntityNotFoundException;
+    Single get(String id) throws EntityNotFoundException, RelationNotFoundException;
 
     /**
      * Returns access interface to all entities conforming to provided filters in the current position in the inventory

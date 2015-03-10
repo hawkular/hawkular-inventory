@@ -67,6 +67,11 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment> {
             }
 
             @Override
+            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
             public Environment entity() {
                 return b.entity();
             }
@@ -94,6 +99,11 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment> {
             @Override
             public Relationships.Read relationships() {
                 return b.relationships();
+            }
+
+            @Override
+            public Relationships.Read relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
             }
 
             @Override

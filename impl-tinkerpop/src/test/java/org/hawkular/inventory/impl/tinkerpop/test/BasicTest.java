@@ -26,11 +26,14 @@ import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.RelationNotFoundException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -142,6 +145,15 @@ public class BasicTest {
                 .get("playroom1").metrics().add("playroom1_size");
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().add("playroom2_size");
+
+        // some ad-hoc relationships
+        Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .linkWith("yourMom", test);
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.incoming)
+                .linkWith("IamYourFather", test);
     }
 
     @After
@@ -283,8 +295,12 @@ public class BasicTest {
             "going from  environments must have uid equal to 'test'. Was: " + contains.getTarget().getId();
         assert "contains" .equals(contains.getName()) : "Name of the relation must be 'contains'.";
 
-        contains = inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
-        assert contains == null : "There should not be any edge with id 13.";
+        try {
+            inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
+            assert 2+2 == 5 : "There should not be any edge with id 13.";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
     }
 
     @Test
@@ -318,16 +334,177 @@ public class BasicTest {
     }
 
     @Test
-    public void testRelationshipServiceCallChaining() throws Exception {
-        Set<Relationship> contains = inventory.tenants().getAll().environments().get("test").relationships().named
-                ("contains").entities();
+    public void testRelationshipServiceLinkedWith() throws Exception {
+        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities();
+        assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
+        assert "test".equals(rels.iterator().next().getTarget().getId()) : "Target of relationship 'yourMom' should " +
+                "be the 'test' environment";
 
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.both)
+                .named("IamYourFather").entities();
+        assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
+        assert "test".equals(rels.iterator().next().getSource().getId()) : "Source of relationship 'IamYourFather' " +
+                "should be the 'test' environment";
+    }
+
+    @Test
+    public void testRelationshipServiceLinkedWithAndDelete() throws Exception {
+        Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
+        Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("host1").relationships(Relationships.Direction.incoming)
+                .linkWith("crossTenantLink", tenant).entity();
+
+        assert inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                .named("crossTenantLink").entities().size() == 1 : "Relation 'crossTenantLink' was not found.";
+        // delete the relationship
+        inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
+        assert inventory.tenants().get("com.example.tenant").relationships()
+                .named("crossTenantLink").entities().size() == 0 : "Relation 'crossTenantLink' was found.";
+
+        // try deleting again
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
+            assert false | true : "It shouldn't be possible to delete the same relationship twice";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceUpdateRelationship1() throws Exception {
+        final String someKey = "k3y";
+        final String someValue = "v4lu3";
+        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
+        rel1.getProperties().put(someKey, someValue);
+
+        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert rel1.getId().equals(rel2.getId()) && null == rel2.getProperties().get(someKey) : "There should not be" +
+                " any property with key 'k3y'";
+
+        // persist the change
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .update(rel1);
+
+        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+        assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
+                : "There should be the property with key 'k3y' and value 'v4lu3'";
+
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                    .get("playroom2").metrics().get("playroom1_size").relationships(Relationships.Direction.both)
+                    .update(rel1);
+            assert !!!true : "It shouldn't be possible to update an edge that is not on the current position in the " +
+                    "graph traversal.";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceUpdateRelationship2() throws Exception {
+        // invalid target entity, but valid (for the position) relationship id
+        Relationship rel = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .named("yourMom").entities().iterator().next();
+
+        Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
+        Relationship badRel = new Relationship(rel.getId(), rel.getName(), tenant, rel.getTarget());
+        Relationship goodRel = new Relationship(rel.getId(), rel.getName(), rel.getSource(), tenant);
+
+        // persist the allowed change
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .update(goodRel);
+
+        // persist the forbiden change
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                    .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                    .update(badRel);
+            assert true^true : "It shouldn't be possible to update an edge that has source entity different than the" +
+                    "entity on the current position in the graph traversal (for outgoing rels)";
+        } catch (RelationNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceGetAllFilters() throws Exception {
+        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains")).entities();
+        assert rels != null && rels.size() == 4 : "There should be 4 relationships conforming the filters";
+        assert rels.stream().anyMatch(rel -> "playroom2_size".equals(rel.getTarget().getId()));
+        assert rels.stream().anyMatch(rel -> "playroom1".equals(rel.getTarget().getId()));
+
+
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains"), RelationWith
+                        .targetOfType(Metric.class)).entities();
+        assert rels != null && rels.size() == 2 : "There should be 2 relationships conforming the filters";
+        assert rels.stream().allMatch(rel -> Metric.class.equals(rel.getTarget().getClass())) : "The type of all the " +
+                "targets should be the 'Metric'";
+
+
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .relationships(Relationships.Direction.incoming).getAll(RelationWith.name("contains")).entities();
+
+        assert rels != null && rels.size() == 1 : "There should be just 1 relationship conforming the filters";
+        assert "com.example.tenant".equals(rels.iterator().next().getSource().getId()) : "Tenant 'com.example" +
+                ".tenant' was not found";
+
+
+        rels = inventory.tenants().getAll().relationships().named
+                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .entities();
+        assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
+        assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getId())
+                || "production".equals(rel.getSource().getId())) : "Source should be either 'test' or 'production'";
+        assert rels.stream().allMatch(rel -> Resource.class.equals(rel.getTarget().getClass())
+                || Metric.class.equals(rel.getTarget().getClass())) : "Target should be either a metric or a " +
+                "resource";
+    }
+
+    @Test
+    public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
+        Metric metric = inventory.tenants().getAll().relationships().named
+                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class)).metrics
+                ().get("playroom1_size").entity();
+        assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
+                "filters";
+
+        try {
+            inventory.tenants().getAll().relationships().named
+                    (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                    .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class)).metrics
+                    ().get("playroom1_size").entity();
+            assert false : "this code should not be reachable. There should be no metric reachable under " +
+                    "'RelationWith.targetsOfTypes(Resource.class))' filter";
+        } catch (EntityNotFoundException e) {
+            // good
+        }
+    }
+
+    @Test
+    public void testRelationshipServiceCallChaining() throws Exception {
         MetricType metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named("owns").metricTypes().get("Size").entity();// not empty
         assert "Size".equals(metricType.getId()) : "ResourceType[Playroom] -owns-> MetricType[Size] was not found";
 
         try {
-            metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
+            inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
                     .named("contains").metricTypes().get("Size").entity();
             assert false : "There is no such an entity satisfying the query, this code shouldn't be reachable";
         } catch (EntityNotFoundException e) {

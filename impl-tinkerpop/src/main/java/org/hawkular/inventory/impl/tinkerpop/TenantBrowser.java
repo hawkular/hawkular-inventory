@@ -67,6 +67,11 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
             }
 
             @Override
+            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
             public Tenant entity() {
                 return b.entity();
             }
@@ -94,6 +99,11 @@ final class TenantBrowser extends AbstractBrowser<Tenant> {
             @Override
             public Relationships.Read relationships() {
                 return b.relationships();
+            }
+
+            @Override
+            public Relationships.Read relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
             }
 
             @Override
