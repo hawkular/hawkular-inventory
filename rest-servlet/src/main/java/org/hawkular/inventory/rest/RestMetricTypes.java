@@ -18,8 +18,9 @@
 package org.hawkular.inventory.rest;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.rest.json.IdJSON;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.rest.json.MetricTypeJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -40,30 +41,38 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-public class RestEnvironments {
+public class RestMetricTypes {
 
     @Inject @ForRest
     private Inventory inventory;
 
     @GET
-    @Path("/{tenantId}/environments")
-    public Response getAll(@PathParam("tenantId") String tenantId) throws Exception {
-        return Response.ok(inventory.tenants().get(tenantId).environments().getAll().entities()).build();
+    @Path("/{tenantId}/metricTypes")
+    public Response getAll(@PathParam("tenantId") String tenantId) {
+        return Response.ok(inventory.tenants().get(tenantId).metricTypes().getAll().entities()).build();
+    }
+
+    @GET
+    @Path("/{tenantId}/metricTypes/{metricType}")
+    public MetricType get(@PathParam("tenantId") String tenantId, @PathParam("metricType") String metricType) {
+        return inventory.tenants().get(tenantId).metricTypes().get(metricType).entity();
     }
 
     @POST
-    @Path("/{tenantId}/environments")
-    public Response create(@PathParam("tenantId") String tenantId, IdJSON environmentId) throws Exception {
-        Environment e = inventory.tenants().get(tenantId).environments().create(environmentId.getId()).entity();
-        return Response.ok(e).build();
+    @Path("/{tenantId}/metricTypes")
+    public Response create(@PathParam("tenantId") String tenantId, MetricTypeJSON metricType) {
+        MetricType.Blueprint b = new MetricType.Blueprint(metricType.getId(),
+                MetricUnit.fromDisplayName(metricType.getUnit()));
+
+        return Response.ok(inventory.tenants().get(tenantId).metricTypes().create(b).entity()).build();
     }
 
     @DELETE
-    @Path("/{tenantId}/environments/{environmentId}")
-    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId)
-        throws Exception {
-
-        inventory.tenants().get(tenantId).environments().delete(environmentId);
+    @Path("/{tenantId}/metricTypes/{metricTypeId}")
+    public Response delete(@PathParam("tenantId") String tenantId,
+                           @PathParam("metricTypeId") String metricTypeId) {
+        inventory.tenants().get(tenantId).metricTypes().delete(metricTypeId);
         return Response.ok().build();
     }
+
 }

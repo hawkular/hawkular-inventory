@@ -46,6 +46,14 @@ public final class EntityAlreadyExistsException extends InventoryException {
         this.path = path;
     }
 
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public Filter[] getPath() {
+        return path;
+    }
+
     @Override
     public String getMessage() {
         return "Entity with id '" + entityId + "' already exists at the position: " + Arrays.toString(path);

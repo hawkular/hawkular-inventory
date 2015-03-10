@@ -18,6 +18,7 @@
 package org.hawkular.inventory.rest;
 
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.rest.json.IdJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -27,7 +28,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -37,44 +37,29 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * @since 1.0
  */
 @Path("/tenants")
-@Produces(value = APPLICATION_JSON)
-@Consumes(value = APPLICATION_JSON)
+@Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
 public class RestTenants {
 
-    @Inject
+    @Inject @ForRest
     private Inventory inventory;
 
     @GET
     @Path("/")
     public Response getAll() {
-        try {
-            return Response.ok(inventory.tenants().getAll()).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
+        return Response.ok(inventory.tenants().getAll().entities()).build();
     }
 
     @POST
     @Path("/")
-    public Response create(@QueryParam("tenantId") String tenantId) {
-        try {
-            return Response.ok(inventory.tenants().create(tenantId).entity()).build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
+    public Response create(IdJSON tenantId) {
+        return Response.ok(inventory.tenants().create(tenantId.getId()).entity()).build();
     }
 
     @DELETE
     @Path("/{tenantId}")
     public Response delete(@PathParam("tenantId") String tenantId) {
-        try {
-            inventory.tenants().delete(tenantId);
-            return Response.ok().build();
-        } catch (Exception e) {
-            RestApiLogger.LOGGER.warn(e);
-            return Response.serverError().entity(e).build();
-        }
+        inventory.tenants().delete(tenantId);
+        return Response.ok().build();
     }
 }

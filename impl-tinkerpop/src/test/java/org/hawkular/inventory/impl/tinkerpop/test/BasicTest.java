@@ -205,7 +205,7 @@ public class BasicTest {
     @Test
     public void testEntitiesByRelationships() throws Exception {
         Function<Integer, Function<String, Function<String, Function<Integer, Function<String,
-                Function<ResolvableToMany, Consumer<ResolvableToMany>>>>>>>
+                Function<ResolvableToMany<?>, Consumer<ResolvableToMany<?>>>>>>>>
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
                     GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
@@ -217,8 +217,8 @@ public class BasicTest {
                             .cast(Vertex.class);
                     Iterator<Vertex> childIterator = q2.iterator();
 
-                    Iterator<Object> multipleParentIterator = multipleParents.entities().iterator();
-                    Iterator<Object> multipleChildrenIterator = multipleChildren.entities().iterator();
+                    Iterator<?> multipleParentIterator = multipleParents.entities().iterator();
+                    Iterator<?> multipleChildrenIterator = multipleChildren.entities().iterator();
 
                     for (int i = 0; i < numberOfParents; i++) {
                         assert parentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
@@ -748,6 +748,7 @@ public class BasicTest {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public void stopTransaction(Conclusion conclusion) {
         }
 

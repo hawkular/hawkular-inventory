@@ -14,26 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
 
-import org.hawkular.inventory.api.Inventory;
-
-import javax.inject.Inject;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+package org.hawkular.inventory.rest.json;
 
 /**
- * JAX-RS startup "marker" class
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 1.0
  */
-@ApplicationPath("/")
-public class HawkularRestApi extends Application {
+public class ResourceJSON {
+    private String id;
+    private ResourceTypeJSON type;
 
-    @Inject @ForRest
-    Inventory inventory;
+    public String getId() {
+        return id;
+    }
 
-    public HawkularRestApi() {
-        RestApiLogger.LOGGER.apiStarting();
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public ResourceTypeJSON getType() {
+        return type;
+    }
+
+    public void setType(ResourceTypeJSON type) {
+        this.type = type;
     }
 }
