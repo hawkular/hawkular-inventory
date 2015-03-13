@@ -69,15 +69,8 @@ final class ResourceTypesService extends
     }
 
     @Override
-    public void update(ResourceType entity) {
-        //TODO implement
-
-    }
-
-    @Override
-    public void delete(String id) {
-        //TODO implement
-
+    protected void updateExplicitProperties(ResourceType entity, Vertex vertex) {
+        vertex.setProperty(Constants.Property.version.name(), entity.getVersion().toString());
     }
 
     @Override

@@ -73,17 +73,9 @@ final class MetricTypesService
     }
 
     @Override
-    public void update(MetricType entity) {
-        //TODO implement
-
+    protected void updateExplicitProperties(MetricType entity, Vertex vertex) {
+        vertex.setProperty(Constants.Property.unit.name(), entity.getUnit().getDisplayName());
     }
-
-    @Override
-    public void delete(String id) {
-        //TODO implement
-
-    }
-
 
     @Override
     public void add(String id) {

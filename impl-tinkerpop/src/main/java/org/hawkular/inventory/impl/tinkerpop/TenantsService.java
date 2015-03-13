@@ -59,18 +59,6 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    public void delete(String id) {
-        //TODO implement
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void update(Tenant entity) {
-        //TODO implement
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void add(String id) {
         //TODO implement
         throw new UnsupportedOperationException();

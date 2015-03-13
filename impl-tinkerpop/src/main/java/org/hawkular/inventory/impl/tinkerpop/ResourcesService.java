@@ -26,7 +26,6 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -85,29 +84,6 @@ final class ResourcesService
     @Override
     protected String getProposedId(Resource.Blueprint b) {
         return b.getId();
-    }
-
-    @Override
-    public void update(Resource entity) {
-        //TODO implement
-
-    }
-
-    @Override
-    public void delete(String id) {
-        Iterator<Vertex> vs = context.getGraph().getVertices(Constants.Property.uid.name(), id).iterator();
-        if (!vs.hasNext()) {
-            throw new IllegalArgumentException("Resource with id " + id + " doesn't not exist");
-        }
-
-        Vertex v = vs.next();
-
-        if (vs.hasNext()) {
-            throw new IllegalStateException("More than 1 resource with id " + id + " exists.");
-        }
-
-        context.getGraph().removeVertex(v);
-        context.getGraph().commit();
     }
 
     @Override

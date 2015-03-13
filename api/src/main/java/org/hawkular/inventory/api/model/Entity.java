@@ -19,7 +19,6 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlAttribute;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Base class for all Hawkular entities.

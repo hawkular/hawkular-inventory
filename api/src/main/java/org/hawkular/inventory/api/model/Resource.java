@@ -18,8 +18,6 @@ package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how

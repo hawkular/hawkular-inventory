@@ -20,8 +20,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be

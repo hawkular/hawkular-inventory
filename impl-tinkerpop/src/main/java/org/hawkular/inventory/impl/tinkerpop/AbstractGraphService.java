@@ -30,6 +30,9 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -97,36 +100,54 @@ abstract class AbstractGraphService {
 
         Vertex environmentVertex;
 
+        Entity e;
+
         switch (type) {
             case environment:
-                return new Environment(getUid(getTenantVertexOf(v)), getUid(v));
+                e = new Environment(getUid(getTenantVertexOf(v)), getUid(v));
+                break;
             case feed:
                 environmentVertex = getEnvironmentVertexOf(v);
-                return new Feed(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v));
+                e = new Feed(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v));
+                break;
             case metric:
                 environmentVertex = getEnvironmentVertexOf(v);
                 Vertex mdv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator()
                         .next();
                 MetricType md = (MetricType) convert(mdv);
-                return new Metric(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
+                e = new Metric(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
                         md);
+                break;
             case metricType:
-                return new MetricType(getUid(getTenantVertexOf(v)), getUid(v), MetricUnit.fromDisplayName(
+                e = new MetricType(getUid(getTenantVertexOf(v)), getUid(v), MetricUnit.fromDisplayName(
                         getProperty(v, Constants.Property.unit)));
+                break;
             case resource:
                 environmentVertex = getEnvironmentVertexOf(v);
                 Vertex rtv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator().next();
                 ResourceType rt = (ResourceType) convert(rtv);
-                return new Resource(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
+                e = new Resource(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
                         rt);
+                break;
             case resourceType:
-                return new ResourceType(getUid(getTenantVertexOf(v)), getUid(v), getProperty(v,
+                e = new ResourceType(getUid(getTenantVertexOf(v)), getUid(v), getProperty(v,
                         Constants.Property.version));
+                break;
             case tenant:
-                return new Tenant(getUid(v));
+                e = new Tenant(getUid(v));
+                break;
             default:
                 throw new IllegalArgumentException("Unknown type of vertex");
         }
+
+        Entity ret = e;
+        List<String> mappedProps = Arrays.asList(type.getMappedProperties());
+        v.getPropertyKeys().forEach(k -> {
+            if (!mappedProps.contains(k)) {
+                ret.getProperties().put(k, v.getProperty(k));
+            }
+        });
+        return ret;
     }
 
     static Vertex getTenantVertexOf(Vertex entityVertex) {
