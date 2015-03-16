@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
@@ -14,20 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest.test
+package org.hawkular.inventory.rest.json;
 
-import groovyx.net.http.ContentType
-import groovyx.net.http.RESTClient
-import org.junit.BeforeClass
+import java.util.HashMap;
+import java.util.Map;
 
-class AbstractTestBase {
+/**
+ * @author Lukas Krejci
+ * @since 1.0
+ */
+public class MetricTypeUpdateJSON {
+    private String unit;
+    private Map<String, Object> properties;
 
-  static baseURI = System.getProperty('hawkular.base-uri') ?: 'http://127.0.0.1:8080/hawkular/inventory/'
-  static RESTClient client
+    public Map<String, Object> getProperties() {
+        if (properties == null) {
+            properties = new HashMap<>(0);
+        }
+        return properties;
+    }
 
-  @BeforeClass
-  static void initClient() {
-    client = new RESTClient(baseURI, ContentType.JSON)
-  }
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
 
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
 }
