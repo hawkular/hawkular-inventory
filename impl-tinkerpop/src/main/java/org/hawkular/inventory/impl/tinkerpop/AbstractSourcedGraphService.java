@@ -204,8 +204,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
      * @return a parallel stream of vertices
      */
     protected Stream<Vertex> transitiveClosureOver(Vertex startPoint, Direction direction, String... edgeLabels) {
-        return StreamSupport.stream(new BFSTransitiveClosureSpliterator(Collections.singleton(startPoint).iterator(),
-                direction, edgeLabels), true);
+        return StreamSupport.stream(new DFSBottomUpTransitiveClosureSpliterator(startPoint, direction, edgeLabels),
+                false);
     }
 
     protected void addRelationship(Constants.Type typeInSource, Relationships.WellKnown rel, Iterable<Vertex> others) {
@@ -235,28 +235,62 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
 
-    private static class BFSTransitiveClosureSpliterator implements Spliterator<Vertex> {
+    /**
+     * Assumes no loops or diamonds in the graph.
+     *
+     * Produces a spliterator that traverses the transitive closure over vertices connected with the provided labels in
+     * provided direction. The vertices are traversed in a bottom-up manner, i.e. the leftmost leaf first.
+     */
+    private static class DFSBottomUpTransitiveClosureSpliterator implements Spliterator<Vertex> {
         private final Direction direction;
         private final String[] edgeLabels;
-        Deque<Iterator<Vertex>> pending;
+        private Deque<Vertex> branch;
+        private final Deque<Iterator<Vertex>> siblings;
 
-        private BFSTransitiveClosureSpliterator(Iterator<Vertex> pending, Direction direction,
+        private DFSBottomUpTransitiveClosureSpliterator(Vertex startingPoint, Direction direction,
                                                 String[] edgeLabels) {
             this.direction = direction;
             this.edgeLabels = edgeLabels;
-            this.pending = new ArrayDeque<>(Arrays.asList(pending));
+            this.branch = new ArrayDeque<>();
+            this.siblings = new ArrayDeque<>();
+
+            //after this method, the "branch" will contain the "left-most" branch in the
+            //tree spanning from the starting point down to the left-most leaf.
+            //the "siblings" will contain the siblings of each of the elements in the branch.
+
+            //The branch is used in tryAdvance to exhaust the tree.
+
+            Iterator<Vertex> sibs = Collections.<Vertex>emptySet().iterator();
+
+            this.siblings.push(sibs);
+            this.branch.push(startingPoint);
+
+            pushChildren(startingPoint);
         }
 
         @Override
         public boolean tryAdvance(Consumer<? super Vertex> action) {
-            Iterator<Vertex> queueToProcess = peekNonEmpty();
-            if (queueToProcess == null) {
+            if (branch.isEmpty()) {
                 return false;
             }
 
-            Vertex toProcess = queueToProcess.next();
+            Vertex toProcess = branch.pop();
 
-            pending.add(toProcess.getVertices(direction, edgeLabels).iterator());
+            if (siblings.peek().hasNext()) {
+                //the current leaf has siblings
+                Vertex sibling = siblings.peek().next();
+
+                //replace the current leaf with its sibling
+                branch.push(sibling);
+
+                //and push any children of the sibling onto the stack.
+                //next time we're called, we serve the children first.
+                pushChildren(sibling);
+            } else {
+                //k, this was the last sibling... let's just shorten the pending queue
+                //to match the branch queue in size.
+                siblings.pop();
+            }
 
             action.accept(toProcess);
 
@@ -265,25 +299,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
         @Override
         public Spliterator<Vertex> trySplit() {
-            Iterator<Vertex> firstPending = peekNonEmpty();
-            if (firstPending == null) {
-                return null;
-            }
-
-            //the first pending is what we're currently working with. So let's try to find the next batch of work.
-            pending.poll();
-
-            Iterator<Vertex> secondPending = peekNonEmpty();
-
-            if (secondPending == null) {
-                pending.push(firstPending);
-                return null;
-            } else {
-                pending.poll(); //remove the second pending from our q
-                pending.push(firstPending); //and push our WIP back
-            }
-
-            return new BFSTransitiveClosureSpliterator(secondPending, direction, edgeLabels);
+            return null;
         }
 
         @Override
@@ -293,31 +309,20 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
         @Override
         public int characteristics() {
-            return Spliterator.CONCURRENT | Spliterator.DISTINCT | Spliterator.NONNULL;
+            return Spliterator.DISTINCT | Spliterator.NONNULL;
         }
 
-        private Iterator<Vertex> peekNonEmpty() {
-            if (pending.isEmpty()) {
-                return null;
-            }
-
-            Iterator<Vertex> ret = pending.peek();
-
-            while (!ret.hasNext() && !pending.isEmpty()) {
-                pending.pop();
-
-                if (!pending.isEmpty()) {
-                    ret = pending.peek();
+        private void pushChildren(Vertex startingPoint) {
+            do {
+                Iterator<Vertex> children = startingPoint.getVertices(direction, edgeLabels).iterator();
+                if (children.hasNext()) {
+                    startingPoint = children.next();
+                    branch.push(startingPoint);
+                    siblings.push(children);
                 } else {
-                    return null;
+                    startingPoint = null;
                 }
-            }
-
-            if (!ret.hasNext()) {
-                return null;
-            }
-
-            return ret;
+            } while (startingPoint != null);
         }
     }
 }
