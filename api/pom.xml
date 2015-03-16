@@ -23,13 +23,13 @@
   <parent>
     <artifactId>hawkular-parent</artifactId>
     <groupId>org.hawkular</groupId>
-    <version>5</version>
+    <version>9</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>inventory-api</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <name>inventory-api</name>
 
   <build>
