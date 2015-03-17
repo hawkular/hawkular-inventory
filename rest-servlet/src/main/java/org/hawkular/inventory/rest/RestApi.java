@@ -215,7 +215,7 @@ public class RestApi {
 
     @PUT
     @Path("/{tenantId}/resources/{resourceId}/metrics/{metricId}")
-    public Response getMetricOfResource(@PathParam("tenantId") String tenantId,
+    public Response updateMetricOfResource(@PathParam("tenantId") String tenantId,
                                             @PathParam("resourceId") String resourceId,
                                             MetricDefinition payload) {
 
