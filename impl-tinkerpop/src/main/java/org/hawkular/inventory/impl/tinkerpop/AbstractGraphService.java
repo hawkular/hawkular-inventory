@@ -87,7 +87,7 @@ abstract class AbstractGraphService {
 
     protected Vertex convert(Entity e) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
-                .V(Constants.Property.uid.name(), e.getId());
+                .V().hasType(Constants.Type.of(e)).hasUid(e.getId());
         Vertex vertex = null;
         if (ret.hasNext()) {
             vertex = ret.next();

@@ -36,9 +36,13 @@ public final class Relationships {
         /**
          * Expresses encapsulation of a set of entities in another entity.
          * Used for example to express the relationship between a tenant and the set of its environments.
-         * <p>
-         * <p/>Note that entities that are contained within another entity (by the virtue of there being this
+         *
+         * <p>Note that entities that are contained within another entity (by the virtue of there being this
          * relationship between them) are deleted along with it.
+         *
+         * <p>Note also that it is prohibited to create loops in the contains relationships, i.e. an entity cannot
+         * (indirectly) contain itself. Also, containment is unique and therefore 1 entity cannot be contained in 2 or
+         * more other entities.
          */
         contains,
 

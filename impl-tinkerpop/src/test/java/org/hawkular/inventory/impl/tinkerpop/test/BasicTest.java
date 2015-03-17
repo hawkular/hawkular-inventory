@@ -87,12 +87,31 @@ public class BasicTest {
                 .addConfigurationProperty("blueprints.graph",
                         "org.hawkular.inventory.impl.tinkerpop.test.BasicTest$DummyTransactionalGraph")
                 .addConfigurationProperty("blueprints.tg.directory", new File("./__tinker.graph").getAbsolutePath())
+//quick and dirty way to connect to a running cassandra-based Titan graph on localhost.
+//                .addConfigurationProperty("blueprints.graph",
+//                        "com.thinkaurelius.titan.core.TitanFactory")
+//                .addConfigurationProperty("storage.backend", "cassandra")
                 .build();
 
         inventory = new InventoryService();
         inventory.initialize(config);
 
         graph = inventory.getGraph();
+
+        try {
+            inventory.tenants().delete("com.acme.tenant");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            inventory.tenants().delete("com.example.tenant");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            inventory.tenants().delete("perf0");
+        } catch (Exception ignored) {
+        }
 
         setupData();
     }
@@ -244,7 +263,13 @@ public class BasicTest {
     }
 
     private static void deleteGraph() throws Exception {
-        Files.walkFileTree(Paths.get("./", "__tinker.graph"), new SimpleFileVisitor<Path>() {
+        Path path = Paths.get("./", "__tinker.graph");
+
+        if (!path.toFile().exists()) {
+            return;
+        }
+
+        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
@@ -818,6 +843,68 @@ public class BasicTest {
 
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());
+    }
+
+    @Test
+    public void testContainsLoopsImpossible() throws Exception {
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Self-loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Self-loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test")
+                    .relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Environment("com.example.tenant", "test"));
+
+            Assert.fail("Loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+    }
+
+    @Test
+    public void testContainsDiamondsImpossible() throws Exception {
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new ResourceType("com.acme.tenant", "URL", "1.0"));
+
+            Assert.fail("Entity cannot be contained in 2 or more others");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL")
+                    .relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Entity cannot be contained in 2 or more others");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")

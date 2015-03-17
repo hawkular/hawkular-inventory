@@ -26,18 +26,14 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 /**
  * @author Lukas Krejci
@@ -131,27 +127,26 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
         Vertex v = vs.next();
 
-        // TODO avoid loops and diamonds in contains closures...
-        // diamond avoidance - vertex should have at most 1 incoming contains edge
-        // loop avoidance - go "up" the contains path looking for self
-        // note that these can actually only happen with custom relationships, we could also
-        // just prohibit the creation of "contains" and other well-known relationships through
-        // relationships().
-
         Set<Vertex> verticesToBeDeletedThatDefineSomething = new HashSet<>();
 
         try {
-            transitiveClosureOver(v, Direction.OUT, Relationships.WellKnown.contains.name())
-                    .forEach(c -> {
-                        if (c.getEdges(Direction.OUT, Relationships.WellKnown.defines.name()).iterator().hasNext()) {
-                            verticesToBeDeletedThatDefineSomething.add(c);
-                        } else {
-                            context.getGraph().removeVertex(c);
-                        }
-                    });
+            new HawkularPipeline<>(v).as("start").out(contains).loop("start", (x) -> true, (x) -> true).toList()
+                .forEach(c -> {
+                    if (c.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                        verticesToBeDeletedThatDefineSomething.add(c);
+                    } else {
+                        c.remove();
+                    }
+                });
+
+            if (v.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                verticesToBeDeletedThatDefineSomething.add(v);
+            } else {
+                v.remove();
+            }
 
             for (Vertex d : verticesToBeDeletedThatDefineSomething) {
-                if (d.getEdges(Direction.OUT, Relationships.WellKnown.defines.name()).iterator().hasNext()) {
+                if (d.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
                     context.getGraph().rollback();
 
                     //we avoid the convert() function here because it assumes the containing entities of the passed in
@@ -165,7 +160,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
                             "entities that are not deleted along with it, which would leave them without a " +
                             "definition. This is illegal.");
                 } else {
-                    context.getGraph().removeVertex(d);
+                    d.remove();
                 }
             }
 
@@ -189,23 +184,6 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
      */
     protected void updateExplicitProperties(E entity, Vertex vertex) {
 
-    }
-
-    /**
-     * Returns a stream of vertices that are connected with the startPoint vertex by edge with one of the provided
-     * labels, recursively.
-     *
-     * <p/>The stream returns the vertices in a breadth-first-search manner with the startPoint vertex always being
-     * the first to return.
-     *
-     * @param startPoint the start point to crawl from
-     * @param direction the direction to follow
-     * @param edgeLabels the labels to consider
-     * @return a parallel stream of vertices
-     */
-    protected Stream<Vertex> transitiveClosureOver(Vertex startPoint, Direction direction, String... edgeLabels) {
-        return StreamSupport.stream(new DFSBottomUpTransitiveClosureSpliterator(startPoint, direction, edgeLabels),
-                false);
     }
 
     protected void addRelationship(Constants.Type typeInSource, Relationships.WellKnown rel, Iterable<Vertex> others) {
@@ -234,95 +212,4 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
     protected abstract String getProposedId(Blueprint b);
 
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
-
-    /**
-     * Assumes no loops or diamonds in the graph.
-     *
-     * Produces a spliterator that traverses the transitive closure over vertices connected with the provided labels in
-     * provided direction. The vertices are traversed in a bottom-up manner, i.e. the leftmost leaf first.
-     */
-    private static class DFSBottomUpTransitiveClosureSpliterator implements Spliterator<Vertex> {
-        private final Direction direction;
-        private final String[] edgeLabels;
-        private Deque<Vertex> branch;
-        private final Deque<Iterator<Vertex>> siblings;
-
-        private DFSBottomUpTransitiveClosureSpliterator(Vertex startingPoint, Direction direction,
-                                                String[] edgeLabels) {
-            this.direction = direction;
-            this.edgeLabels = edgeLabels;
-            this.branch = new ArrayDeque<>();
-            this.siblings = new ArrayDeque<>();
-
-            //after this method, the "branch" will contain the "left-most" branch in the
-            //tree spanning from the starting point down to the left-most leaf.
-            //the "siblings" will contain the siblings of each of the elements in the branch.
-
-            //The branch is used in tryAdvance to exhaust the tree.
-
-            Iterator<Vertex> sibs = Collections.<Vertex>emptySet().iterator();
-
-            this.siblings.push(sibs);
-            this.branch.push(startingPoint);
-
-            pushChildren(startingPoint);
-        }
-
-        @Override
-        public boolean tryAdvance(Consumer<? super Vertex> action) {
-            if (branch.isEmpty()) {
-                return false;
-            }
-
-            Vertex toProcess = branch.pop();
-
-            if (siblings.peek().hasNext()) {
-                //the current leaf has siblings
-                Vertex sibling = siblings.peek().next();
-
-                //replace the current leaf with its sibling
-                branch.push(sibling);
-
-                //and push any children of the sibling onto the stack.
-                //next time we're called, we serve the children first.
-                pushChildren(sibling);
-            } else {
-                //k, this was the last sibling... let's just shorten the pending queue
-                //to match the branch queue in size.
-                siblings.pop();
-            }
-
-            action.accept(toProcess);
-
-            return true;
-        }
-
-        @Override
-        public Spliterator<Vertex> trySplit() {
-            return null;
-        }
-
-        @Override
-        public long estimateSize() {
-            return Long.MAX_VALUE;
-        }
-
-        @Override
-        public int characteristics() {
-            return Spliterator.DISTINCT | Spliterator.NONNULL;
-        }
-
-        private void pushChildren(Vertex startingPoint) {
-            do {
-                Iterator<Vertex> children = startingPoint.getVertices(direction, edgeLabels).iterator();
-                if (children.hasNext()) {
-                    startingPoint = children.next();
-                    branch.push(startingPoint);
-                    siblings.push(children);
-                } else {
-                    startingPoint = null;
-                }
-            } while (startingPoint != null);
-        }
-    }
 }
