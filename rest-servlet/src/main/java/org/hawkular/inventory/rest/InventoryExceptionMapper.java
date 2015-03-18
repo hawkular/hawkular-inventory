@@ -20,11 +20,13 @@ package org.hawkular.inventory.rest;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
@@ -37,14 +39,16 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
     @Override
     public Response toResponse(Exception exception) {
         if (exception instanceof EntityNotFoundException) {
-            return Response.status(NOT_FOUND).entity(
-                    EntityTypeAndPath.fromException((EntityNotFoundException) exception)).build();
+            return Response.status(NOT_FOUND).entity(new ApiError(exception.getMessage(),
+                    EntityTypeAndPath.fromException((EntityNotFoundException) exception))).build();
         } else if (exception instanceof EntityAlreadyExistsException) {
-            return Response.status(CONFLICT).entity(
-                    EntityIdAndPath.fromException((EntityAlreadyExistsException) exception)).build();
+            return Response.status(CONFLICT).entity(new ApiError(exception.getMessage(),
+                    EntityIdAndPath.fromException((EntityAlreadyExistsException) exception))).build();
+        } else if (exception instanceof IllegalArgumentException) {
+            return Response.status(BAD_REQUEST).entity(new ApiError(exception.getMessage())).build();
         } else {
             RestApiLogger.LOGGER.warn(exception);
-            return Response.serverError().entity(exception).build();
+            return Response.serverError().entity(new ApiError(exception.getMessage())).build();
         }
     }
 

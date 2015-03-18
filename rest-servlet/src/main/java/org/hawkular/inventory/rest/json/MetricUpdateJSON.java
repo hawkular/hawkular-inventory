@@ -14,24 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.rest.json;
 
-package org.hawkular.inventory.rest;
-
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-@Qualifier
-@Retention(RetentionPolicy.RUNTIME)
-@Target({FIELD, METHOD, PARAMETER})
-public @interface ForRest {
+public class MetricUpdateJSON {
+    private String metricTypeId;
+    private Map<String, Object> properties;
+
+    public String getMetricTypeId() {
+        return metricTypeId;
+    }
+
+    public void setMetricTypeId(String metricTypeId) {
+        this.metricTypeId = metricTypeId;
+    }
+
+    public Map<String, Object> getProperties() {
+        if (properties == null) {
+            properties = new HashMap<>(0);
+        }
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
 }

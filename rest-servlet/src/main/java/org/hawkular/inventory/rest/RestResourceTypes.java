@@ -17,11 +17,16 @@
 
 package org.hawkular.inventory.rest;
 
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Version;
+import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.IdJSON;
 import org.hawkular.inventory.rest.json.ResourceTypeJSON;
 
@@ -33,7 +38,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -45,6 +52,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
+@Api(value = "/", description = "Resource type CRUD")
 public class RestResourceTypes {
 
     @Inject @ForRest
@@ -52,12 +60,26 @@ public class RestResourceTypes {
 
     @GET
     @Path("/{tenantId}/resourceTypes")
+    @ApiOperation("Retrieves all resource types")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of resource types"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response getAll(@PathParam("tenantId") String tenantId) {
         return Response.ok(inventory.tenants().get(tenantId).resourceTypes().getAll().entities()).build();
     }
 
     @GET
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Retrieves a single resource type")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public ResourceType get(@PathParam("tenantId") String tenantId,
                             @PathParam("resourceTypeId") String resourceTypeId) {
         return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).entity();
@@ -65,6 +87,13 @@ public class RestResourceTypes {
 
     @GET
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Retrieves all metric types associated with the resource type")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Set<MetricType> getMetricTypes(@PathParam("tenantId") String tenantId,
                                           @PathParam("resourceTypeId") String resourceTypeId) {
         return inventory.tenants().get("tenantId").resourceTypes().get(resourceTypeId).metricTypes().getAll()
@@ -73,6 +102,13 @@ public class RestResourceTypes {
 
     @GET
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/resources")
+    @ApiOperation("Retrieves all resources with given resource types")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of resources"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Set<Resource> getResources(@PathParam("tenantId") String tenantId,
                                       @PathParam("resourceTypeId") String resourceTypeId) {
 
@@ -82,37 +118,68 @@ public class RestResourceTypes {
 
     @POST
     @Path("/{tenantId}/resourceTypes")
-    public Response create(@PathParam("tenantId") String tenantId, ResourceTypeJSON resourceType) {
+    @ApiOperation("Creates a new resource type")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource type already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response create(@PathParam("tenantId") String tenantId, ResourceTypeJSON resourceType,
+                           @Context UriInfo uriInfo) {
         ResourceType.Blueprint b = new ResourceType.Blueprint(resourceType.getId(),
                 new Version(resourceType.getVersion()));
 
-        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().create(b).entity()).build();
+        inventory.tenants().get(tenantId).resourceTypes().create(b);
+
+        return ResponseUtil.created(uriInfo, resourceType.getId()).build();
     }
 
     @DELETE
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Deletes a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response delete(@PathParam("tenantId") String tenantId,
                            @PathParam("resourceTypeId") String resourceTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().delete(resourceTypeId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     @POST
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Associates a pre-existing metric type with a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, resource type or metric type doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response addMetricType(@PathParam("tenantId") String tenantId,
                                   @PathParam("resourceTypeId") String resourceTypeId,
                                   IdJSON metricTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
                 .add(metricTypeId.getId());
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     @DELETE
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @ApiOperation("Disassociates the resource type with a metric type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, resource type or metric type doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response removeMetricType(@PathParam("tenantId") String tenantId,
                                      @PathParam("resourceTypeId") String resourceTypeId,
                                      @PathParam("metricTypeId") String metricTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().remove(metricTypeId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 }
