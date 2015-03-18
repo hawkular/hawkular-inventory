@@ -44,6 +44,7 @@ interface WriteInterface<Entity, Blueprint, Single> {
      * @param entity the entity to update
      *
      * @throws EntityNotFoundException if the entity is not found in the database
+     * @throws java.lang.IllegalArgumentException if the supplied entity could not be updated for some reason
      */
     void update(Entity entity) throws EntityNotFoundException;
 
@@ -52,6 +53,7 @@ interface WriteInterface<Entity, Blueprint, Single> {
      *
      * @param id the id of the entity to delete
      * @throws EntityNotFoundException
+     * @throws java.lang.IllegalArgumentException if the supplied entity could not be deleted for some reason
      */
     void delete(String id) throws EntityNotFoundException;
 }

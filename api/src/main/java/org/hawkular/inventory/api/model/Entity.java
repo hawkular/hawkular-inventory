@@ -19,7 +19,6 @@ package org.hawkular.inventory.api.model;
 import javax.xml.bind.annotation.XmlAttribute;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Base class for all Hawkular entities.
@@ -32,9 +31,6 @@ public abstract class Entity {
     @XmlAttribute
     private final String id;
     private Map<String, Object> properties;
-
-    //TODO has this the place in here?
-    private Set<Relationship> relationships;
 
     /** JAXB support */
     Entity() {

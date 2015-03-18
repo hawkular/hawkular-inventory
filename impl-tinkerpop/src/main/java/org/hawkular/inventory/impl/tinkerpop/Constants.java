@@ -26,6 +26,11 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
+import java.util.Arrays;
+
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.unit;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.version;
+
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -43,7 +48,16 @@ final class Constants {
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant, environment, feed, resourceType, metricType, resource, metric;
+        tenant, environment, feed, resourceType(version), metricType(unit), resource, metric;
+
+        private final String[] mappedProperties;
+
+
+        private Type(Property... mappedProperties) {
+            this.mappedProperties = new String[mappedProperties.length + 2];
+            Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.type.name() :
+                    (i == 1 ? Property.uid.name() : mappedProperties[i - 2].name()));
+        }
 
         public static Type of(Entity e) {
             return e.accept(new EntityVisitor<Type, Void>() {
@@ -102,6 +116,10 @@ final class Constants {
             } else {
                 throw new IllegalArgumentException("Unsupported entity class " + ec);
             }
+        }
+
+        public String[] getMappedProperties() {
+            return mappedProperties;
         }
     }
 

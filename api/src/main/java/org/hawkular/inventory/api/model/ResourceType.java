@@ -20,8 +20,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -35,8 +33,6 @@ public final class ResourceType extends OwnedEntity {
     @XmlAttribute
     @XmlJavaTypeAdapter(VersionAdapter.class)
     private final Version version;
-
-    private Set<MetricType> metricTypes;
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -60,13 +56,6 @@ public final class ResourceType extends OwnedEntity {
 
     public Version getVersion() {
         return version;
-    }
-
-    public Set<MetricType> getMetricTypes() {
-        if (metricTypes == null) {
-            metricTypes = new HashSet<>();
-        }
-        return metricTypes;
     }
 
     @Override

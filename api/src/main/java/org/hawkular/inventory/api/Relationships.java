@@ -36,6 +36,13 @@ public final class Relationships {
         /**
          * Expresses encapsulation of a set of entities in another entity.
          * Used for example to express the relationship between a tenant and the set of its environments.
+         *
+         * <p>Note that entities that are contained within another entity (by the virtue of there being this
+         * relationship between them) are deleted along with it.
+         *
+         * <p>Note also that it is prohibited to create loops in the contains relationships, i.e. an entity cannot
+         * (indirectly) contain itself. Also, containment is unique and therefore 1 entity cannot be contained in 2 or
+         * more other entities.
          */
         contains,
 
@@ -43,6 +50,8 @@ public final class Relationships {
          * Expresses "instantiation" of some entity based on the definition provided by "source" entity.
          * For example, there is a defines relationship between a metric definition and all metrics that
          * conform to it.
+         *
+         * <p>Note that as long as an entity defines other entities, it cannot be deleted.
          */
         defines,
 
@@ -78,43 +87,41 @@ public final class Relationships {
         both
     }
 
-    private interface BrowserBase<Tenants, Environments, Feeds, MetricTypes, Metrics, Resources, ResourceTypes> {
-        Tenants tenants();
-
-        Environments environments();
-
-        Feeds feeds();
-
-        MetricTypes metricTypes();
-
-        Metrics metrics();
-
-        Resources resources();
-
-        ResourceTypes resourceTypes();
-    }
-
     /**
-     * Interface for accessing a single relationship in a writable manner
+     * Interface for accessing a single relationship.
      */
-    public interface Single extends ResolvableToSingle<Relationship> {}
+    public interface Single extends ResolvableToSingle<Relationship> {
+    }
 
     /**
      * Interface for traversing over a set of relationships.
      *
-     * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
+     * <p/>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends ResolvableToMany<Relationship>,
-            BrowserBase<Tenants.Read, Environments.Read, Feeds.Read, MetricTypes.Read, Metrics.Read,
-                    Resources.Read, ResourceTypes.Read> {}
+    public interface Multiple extends ResolvableToMany<Relationship> {
+        Tenants.Read tenants();
+
+        Environments.Read environments();
+
+        Feeds.Read feeds();
+
+        MetricTypes.Read metricTypes();
+
+        Metrics.Read metrics();
+
+        Resources.Read resources();
+
+        ResourceTypes.Read resourceTypes();
+    }
 
     /**
      * Provides read-write access to relationships.
      */
     public interface ReadWrite extends ReadWriteRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
+
         Multiple named(WellKnown name);
     }
 
@@ -123,6 +130,7 @@ public final class Relationships {
      */
     public interface Read extends ReadRelationshipsInterface<Single, Multiple> {
         Multiple named(String name);
+
         Multiple named(WellKnown name);
     }
 }

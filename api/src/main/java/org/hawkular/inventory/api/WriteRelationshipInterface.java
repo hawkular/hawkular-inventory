@@ -32,17 +32,30 @@ interface WriteRelationshipInterface<Single> {
     /**
      * Creates a new relationship at the current position in the inventory traversal.
      *
+     * <p>Note that there are limitations when working with
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown well-known relationships}. See
+     * {@link #linkWith(org.hawkular.inventory.api.Relationships.WellKnown, org.hawkular.inventory.api.model.Entity)}
+     * for details.
+     *
      * @param name the name of the relationship (label)
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
+     *
+     * @see #linkWith(org.hawkular.inventory.api.Relationships.WellKnown, org.hawkular.inventory.api.model.Entity)
      */
     Single linkWith(String name, Entity targetOrSource) throws RelationNotFoundException;
 
     /**
      * Creates a new relationship at the current position in the inventory traversal.
+     *
+     * <p>Note: please review the comments on the individual well-known relationships (
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains contains},
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#defines defines},
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#owns owns}) for restrictions of usage, especially what
+     * restrictions the relationships impose when deleting entities.
      *
      * @param name the well known name (Relationships.WellKnown) of the relationship
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current

@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -163,5 +165,61 @@ public interface Inventory extends AutoCloseable {
      */
     default ResourceTypes.Single inspect(ResourceType resourceType) throws EntityNotFoundException {
         return tenants().get(resourceType.getTenantId()).resourceTypes().get(resourceType.getId());
+    }
+
+    /**
+     * A generic version of the {@code inspect} methods that accepts an entity and returns the access interface to it.
+     *
+     * <p>If you don't know the type of entity (and therefore cannot deduce access interface type) you can always use
+     * {@link org.hawkular.inventory.api.ResolvableToSingle} type which is guaranteed to be the super interface of
+     * all access interfaces returned from this method (which makes it almost useless but at least you can get the
+     * instance of it).
+     *
+     * @param entity the entity to inspect
+     * @param accessInterface the expected access interface
+     * @param <E> the type of the entity
+     * @param <Single> the type of the access interface
+     * @return the access interface instance
+     *
+     * @throws java.lang.ClassCastException if the provided access interface doesn't match the entity
+     */
+    default <E extends Entity, Single extends ResolvableToSingle<E>> Single inspect(E entity,
+                                                                                    Class<Single> accessInterface) {
+        return entity.accept(new EntityVisitor<Single, Void>() {
+            @Override
+            public Single visitTenant(Tenant tenant, Void ignored) {
+                return accessInterface.cast(inspect(tenant));
+            }
+
+            @Override
+            public Single visitEnvironment(Environment environment, Void ignored) {
+                return accessInterface.cast(inspect(environment));
+            }
+
+            @Override
+            public Single visitFeed(Feed feed, Void ignored) {
+                return accessInterface.cast(inspect(feed));
+            }
+
+            @Override
+            public Single visitMetric(Metric metric, Void ignored) {
+                return accessInterface.cast(inspect(metric));
+            }
+
+            @Override
+            public Single visitMetricType(MetricType definition, Void ignored) {
+                return accessInterface.cast(inspect(definition));
+            }
+
+            @Override
+            public Single visitResource(Resource resource, Void ignored) {
+                return accessInterface.cast(inspect(resource));
+            }
+
+            @Override
+            public Single visitResourceType(ResourceType type, Void ignored) {
+                return accessInterface.cast(inspect(type));
+            }
+        }, null);
     }
 }

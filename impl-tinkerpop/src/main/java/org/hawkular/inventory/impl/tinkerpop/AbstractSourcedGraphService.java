@@ -17,12 +17,23 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 /**
  * @author Lukas Krejci
@@ -76,6 +87,103 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         context.getGraph().commit();
 
         return createSingleBrowser(FilterApplicator.fromPath(path).get());
+    }
+
+    public final void update(E entity) {
+        Constants.Type type = Constants.Type.of(entity);
+        List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
+
+        entity.getProperties().keySet().forEach(k -> {
+            if (mappedProperties.contains(k)) {
+                throw new IllegalArgumentException("Property '" + k + "' is reserved. Cannot set it to a custom value");
+            }
+        });
+
+        Vertex vertex = convert(entity);
+        if (vertex == null) {
+            throw new EntityNotFoundException(entity.getClass(), FilterApplicator.filters(pathContext.path));
+        }
+
+        Set<String> toRemove = vertex.getPropertyKeys();
+        toRemove.removeAll(entity.getProperties().keySet());
+
+        toRemove.forEach(vertex::removeProperty);
+        entity.getProperties().forEach(vertex::setProperty);
+
+        updateExplicitProperties(entity, vertex);
+
+        context.getGraph().commit();
+    }
+
+    public void delete(String id) {
+        Iterator<Vertex> vs = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
+
+        if (!vs.hasNext()) {
+            FilterApplicator[] fullPath = FilterApplicator.from(pathContext.path).andPath(selectCandidates())
+                    .andPath(With.id(id)).get();
+
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(fullPath));
+        }
+
+        Vertex v = vs.next();
+
+        Set<Vertex> verticesToBeDeletedThatDefineSomething = new HashSet<>();
+
+        try {
+            new HawkularPipeline<>(v).as("start").out(contains).loop("start", (x) -> true, (x) -> true).toList()
+                .forEach(c -> {
+                    if (c.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                        verticesToBeDeletedThatDefineSomething.add(c);
+                    } else {
+                        c.remove();
+                    }
+                });
+
+            if (v.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                verticesToBeDeletedThatDefineSomething.add(v);
+            } else {
+                v.remove();
+            }
+
+            for (Vertex d : verticesToBeDeletedThatDefineSomething) {
+                if (d.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                    context.getGraph().rollback();
+
+                    //we avoid the convert() function here because it assumes the containing entities of the passed in
+                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
+                    //entities from the "top" down the containment chain and the entities are immediately deleted.
+                    String rootEntity = "Entity[id=" + getUid(v) + ", type=" + getType(v) + "]";
+                    String definingEntity = "Entity[id=" + getUid(d) + ", type=" + getType(d) + "]";
+
+                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
+                            definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
+                            "entities that are not deleted along with it, which would leave them without a " +
+                            "definition. This is illegal.");
+                } else {
+                    d.remove();
+                }
+            }
+
+            context.getGraph().commit();
+        } catch (Exception e) {
+            context.getGraph().rollback();
+            throw e;
+        }
+    }
+
+    /**
+     * Update vertex properties that are expressed as actual properties on the entity classes.
+     *
+     * <p/> This method must not do anything with the {@link org.hawkular.inventory.api.model.Entity#getProperties()}
+     * which are handled separately in a generic way.
+     *
+     * <p/> This method must not commit the graph.
+     *
+     * @param entity the entity being updated
+     * @param vertex the corresponding vertex
+     */
+    protected void updateExplicitProperties(E entity, Vertex vertex) {
+
     }
 
     protected void addRelationship(Constants.Type typeInSource, Relationships.WellKnown rel, Iterable<Vertex> others) {

@@ -69,6 +69,31 @@
       <artifactId>gremlin-java</artifactId>
       <version>2.6.0</version>
     </dependency>
+
+<!-- Uncomment when testing on Titan. This will move into profile once the BasicTest code accomodates for such
+     possibility in a nice way.
+
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-core</artifactId>
+      <version>0.5.4</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-cassandra</artifactId>
+      <version>0.5.4</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-es</artifactId>
+      <version>0.5.4</version>
+      <scope>runtime</scope>
+    </dependency>
+-->
   </dependencies>
 
 

@@ -73,18 +73,6 @@ final class EnvironmentsService extends
     }
 
     @Override
-    public void update(Environment entity) {
-        //TODO implement
-
-    }
-
-    @Override
-    public void delete(String id) {
-        //TODO implement
-
-    }
-
-    @Override
     public void add(String id) {
         //TODO implement
     }

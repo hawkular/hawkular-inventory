@@ -29,12 +29,14 @@ import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
+import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -47,6 +49,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,6 +66,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -83,12 +87,31 @@ public class BasicTest {
                 .addConfigurationProperty("blueprints.graph",
                         "org.hawkular.inventory.impl.tinkerpop.test.BasicTest$DummyTransactionalGraph")
                 .addConfigurationProperty("blueprints.tg.directory", new File("./__tinker.graph").getAbsolutePath())
+//quick and dirty way to connect to a running cassandra-based Titan graph on localhost.
+//                .addConfigurationProperty("blueprints.graph",
+//                        "com.thinkaurelius.titan.core.TitanFactory")
+//                .addConfigurationProperty("storage.backend", "cassandra")
                 .build();
 
         inventory = new InventoryService();
         inventory.initialize(config);
 
         graph = inventory.getGraph();
+
+        try {
+            inventory.tenants().delete("com.acme.tenant");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            inventory.tenants().delete("com.example.tenant");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            inventory.tenants().delete("perf0");
+        } catch (Exception ignored) {
+        }
 
         setupData();
     }
@@ -156,14 +179,97 @@ public class BasicTest {
                 .linkWith("IamYourFather", test);
     }
 
+    private void teardownData() throws Exception {
+        Tenant t = new Tenant("com.example.tenant");
+        Environment e = new Environment(t.getId(), "test");
+        MetricType sizeType = new MetricType(t.getId(), "Size");
+        ResourceType playRoomType = new ResourceType(t.getId(), "Playroom", "1.0");
+        ResourceType kachnaType = new ResourceType(t.getId(), "Kachna", "1.0");
+        Resource playroom1 = new Resource(t.getId(), e.getId(), "playroom1", playRoomType);
+        Resource playroom2 = new Resource(t.getId(), e.getId(), "playroom2", playRoomType);
+        Metric playroom1Size = new Metric(t.getId(), e.getId(), "playroom1_size", sizeType);
+        Metric playroom2Size = new Metric(t.getId(), e.getId(), "playroom2_size", sizeType);
+
+        inventory.inspect(e).metrics().delete(playroom2Size.getId());
+        assertDoesNotExist(playroom2Size);
+        assertExists(t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
+
+        inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
+        assertDoesNotExist(kachnaType);
+        assertExists(t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
+
+        try {
+            inventory.inspect(t).metricTypes().delete(sizeType.getId());
+            Assert.fail("Deleting a metric type which references some metrics should not be possible.");
+        } catch (IllegalArgumentException ignored) {
+            //good
+        }
+
+        inventory.inspect(e).metrics().delete(playroom1Size.getId());
+        assertDoesNotExist(playroom1Size);
+        assertExists(t, e, sizeType, playRoomType, playroom1, playroom2);
+
+        inventory.inspect(t).metricTypes().delete(sizeType.getId());
+        assertDoesNotExist(sizeType);
+        assertExists(t, e, playRoomType, playroom1, playroom2);
+
+        try {
+            inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
+            Assert.fail("Deleting a resource type which references some resources should not be possible.");
+        } catch (IllegalArgumentException ignored) {
+            //good
+        }
+
+        inventory.inspect(e).resources().delete(playroom1.getId());
+        assertDoesNotExist(playroom1);
+        assertExists(t, e, sizeType, playRoomType, playroom2);
+
+        inventory.tenants().delete(t.getId());
+        assertDoesNotExist(t);
+        assertDoesNotExist(e);
+        assertDoesNotExist(playRoomType);
+        assertDoesNotExist(playroom2);
+    }
+
+    private void assertDoesNotExist(Entity e) {
+        try {
+            inventory.inspect(e, ResolvableToSingle.class).entity();
+            Assert.fail(e + " should have been deleted");
+        } catch (EntityNotFoundException ignored) {
+            //good
+        }
+    }
+
+    private void assertExists(Entity e) {
+        try {
+            inventory.inspect(e, ResolvableToSingle.class);
+        } catch (EntityNotFoundException ignored) {
+            Assert.fail(e + " should have been present in the inventory.");
+        }
+    }
+
+    private void assertExists(Entity... es) {
+        Stream.of(es).forEach(this::assertExists);
+    }
+
     @After
     public void teardown() throws Exception {
-        inventory.close();
-        deleteGraph();
+        try {
+            teardownData();
+        } finally {
+            inventory.close();
+            deleteGraph();
+        }
     }
 
     private static void deleteGraph() throws Exception {
-        Files.walkFileTree(Paths.get("./", "__tinker.graph"), new SimpleFileVisitor<Path>() {
+        Path path = Paths.get("./", "__tinker.graph");
+
+        if (!path.toFile().exists()) {
+            return;
+        }
+
+        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
@@ -201,7 +307,6 @@ public class BasicTest {
         GraphQuery query = graph.query().has("type", "tenant");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
-
     @Test
     public void testEntitiesByRelationships() throws Exception {
         Function<Integer, Function<String, Function<String, Function<Integer, Function<String,
@@ -738,6 +843,68 @@ public class BasicTest {
 
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());
+    }
+
+    @Test
+    public void testContainsLoopsImpossible() throws Exception {
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Self-loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Self-loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").environments().get("test")
+                    .relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Environment("com.example.tenant", "test"));
+
+            Assert.fail("Loops in contains should be disallowed");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+    }
+
+    @Test
+    public void testContainsDiamondsImpossible() throws Exception {
+        try {
+            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+                    .linkWith("contains", new ResourceType("com.acme.tenant", "URL", "1.0"));
+
+            Assert.fail("Entity cannot be contained in 2 or more others");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        try {
+            inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL")
+                    .relationships(Relationships.Direction.incoming)
+                    .linkWith("contains", new Tenant("com.example.tenant"));
+
+            Assert.fail("Entity cannot be contained in 2 or more others");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")

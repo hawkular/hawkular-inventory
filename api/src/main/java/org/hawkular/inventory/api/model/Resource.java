@@ -18,8 +18,6 @@ package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -32,7 +30,6 @@ import java.util.Set;
 public final class Resource extends EnvironmentalEntity {
 
     private final ResourceType type;
-    private Set<Metric> metrics;
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -47,13 +44,6 @@ public final class Resource extends EnvironmentalEntity {
 
     public ResourceType getType() {
         return type;
-    }
-
-    public Set<Metric> getMetrics() {
-        if (metrics == null) {
-            metrics = new HashSet<>();
-        }
-        return metrics;
     }
 
     @Override

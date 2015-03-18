@@ -93,18 +93,6 @@ final class MetricsService
     }
 
     @Override
-    public void update(Metric entity) {
-        //TODO implement - metric can change its definition
-    }
-
-    @Override
-    public void delete(String id) {
-        Vertex v = source(FilterApplicator.fromFilter(selectCandidates()).get())
-                .hasUid(id).next();
-        context.getGraph().removeVertex(v);
-    }
-
-    @Override
     public void add(String id) {
         //in here I know the source is a resource...
         Iterable<Vertex> vs = source().in(contains) //up from resource to environment

@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
@@ -130,6 +131,13 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
             return edges.collect(Collectors.toList()).get(0).getId();
         };
 
+        if (contains.name().equals(name)) {
+            Direction d = direction == outgoing ? Direction.OUT :
+                    (direction == incoming ? Direction.IN : Direction.BOTH);
+
+            checkContains(d, incidenceVertex);
+        }
+
         HawkularPipeline<?, Object> pipe = null;
         switch (direction) {
             case outgoing:
@@ -144,7 +152,7 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
                 break;
         }
 
-        String newId = pipe.cast(String.class).next();
+        String newId = pipe.next().toString();
         return createSingleBrowser(RelationWith.id(newId));
     }
 
@@ -229,5 +237,38 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
             throw new RelationNotFoundException(id, null);
         }
         pipe.remove();
+    }
+
+    private void checkContains(Direction direction, Vertex incidenceVertex) {
+        if (direction == Direction.BOTH) {
+            throw new IllegalArgumentException("2 vertices cannot contain each other.");
+        }
+
+        //check for diamonds
+        if (direction == Direction.OUT && incidenceVertex.getEdges(Direction.IN, contains.name()).iterator()
+                .hasNext()) {
+            throw new IllegalArgumentException("The target is already contained in another entity.");
+        } else if (direction == Direction.IN && source().iterator().next().getEdges(Direction.IN, contains.name())
+                .iterator().hasNext()) {
+            throw new IllegalArgumentException("The source is already contained in another entity.");
+        }
+
+        //check for loops
+        Vertex thisVertex = source().iterator().next();
+        if (thisVertex.getId().equals(incidenceVertex.getId())) {
+            throw new IllegalArgumentException("An entity cannot contain itself.");
+        }
+
+        if (direction == Direction.IN && source().as("source").out(contains.name()).loop("source",
+                (l) -> !l.getObject().getId().equals(incidenceVertex.getId())).count() > 0) {
+
+            throw new IllegalArgumentException("The target (indirectly) contains the source." +
+                    " The source therefore cannot contain the target.");
+        } else if (direction == Direction.OUT && source().as("source").in(contains.name()).loop("source",
+                (l) -> !l.getObject().getId().equals(incidenceVertex.getId())).count() > 0) {
+
+            throw new IllegalArgumentException("The source (indirectly) contains the target." +
+                    " The target therefore cannot contain the source.");
+        }
     }
 }
