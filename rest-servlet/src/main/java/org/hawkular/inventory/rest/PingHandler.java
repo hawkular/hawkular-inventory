@@ -16,17 +16,16 @@
  */
 package org.hawkular.inventory.rest;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_XML;
-
-import java.util.Date;
+import com.wordnik.swagger.annotations.ApiOperation;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+import java.util.Date;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Stefan Negrea
@@ -35,9 +34,9 @@ import javax.ws.rs.core.Response;
 public class PingHandler {
 
     @GET
-    @POST
-    @Consumes({ APPLICATION_JSON, APPLICATION_XML })
-    @Produces({ APPLICATION_JSON, APPLICATION_XML })
+    @Consumes({ APPLICATION_JSON })
+    @Produces({ APPLICATION_JSON })
+    @ApiOperation("A dummy operation returning the current date on the server.")
     public Response ping() {
         return Response.ok(new StringValue(new Date().toString())).build();
     }

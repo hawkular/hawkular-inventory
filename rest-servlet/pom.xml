@@ -25,11 +25,15 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>inventory-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>inventory-rest-api</artifactId>
   <packaging>war</packaging>
+
+  <properties>
+    <version.com.wordnik>1.3.12</version.com.wordnik>
+  </properties>
 
   <dependencyManagement>
     <dependencies>
@@ -42,7 +46,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
 
   <dependencies>
 
@@ -62,15 +65,14 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <artifactId>inventory-impl-blueprints</artifactId>
+      <version>${project.version}</version>
     </dependency>
-
 
     <dependency>
       <groupId>junit</groupId>
@@ -106,10 +108,26 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- docs -->
+
+    <dependency>
+      <groupId>com.wordnik</groupId>
+      <artifactId>swagger-annotations</artifactId>
+      <version>${version.com.wordnik}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.wordnik</groupId>
+      <artifactId>swagger-core_2.10</artifactId>
+      <version>${version.com.wordnik}</version>
+      <scope>provided</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
-    <finalName>hawkular-inventory</finalName>
+    <finalName>hawkular-inventory-${project.version}</finalName>
 
     <plugins>
       <plugin>
