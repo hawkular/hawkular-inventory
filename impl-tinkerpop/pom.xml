@@ -22,24 +22,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.hawkular.inventory</groupId>
-  <artifactId>inventory-impl-blueprints</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-
-  <name>hawkular-inventory-impl-blueprints</name>
-
   <parent>
-    <groupId>org.hawkular</groupId>
-    <artifactId>hawkular-parent</artifactId>
-    <version>5</version>
+    <groupId>org.hawkular.inventory</groupId>
+    <artifactId>inventory-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
   </parent>
+
+  <artifactId>inventory-impl-blueprints</artifactId>
+  <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
