@@ -20,25 +20,32 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>inventory-impl-tinkerpop-parent</artifactId>
+    <groupId>org.hawkular.inventory</groupId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.hawkular.inventory</groupId>
-  <artifactId>inventory-parent</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>pom</packaging>
+  <artifactId>inventory-impl-tinkerpop-spi</artifactId>
 
-  <inceptionYear>2015</inceptionYear>
+  <name>Hawkular Inventory Tinkerpop SPI</name>
 
-  <parent>
-    <groupId>org.hawkular</groupId>
-    <artifactId>hawkular-parent</artifactId>
-    <version>9</version>
-  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
-  <modules>
-    <module>api</module>
-    <module>impl-tinkerpop-parent</module>
-    <module>rest-servlet</module>
-    <module>rest-test</module>
-  </modules>
+    <dependency>
+      <groupId>com.tinkerpop.blueprints</groupId>
+      <artifactId>blueprints-core</artifactId>
+      <version>${version.com.tinkerpop}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>hawkular-${project.artifactId}</finalName>
+  </build>
 </project>

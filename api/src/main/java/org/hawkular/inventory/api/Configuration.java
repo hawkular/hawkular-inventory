@@ -19,6 +19,7 @@ package org.hawkular.inventory.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Lukas Krejci
@@ -63,6 +64,11 @@ public final class Configuration {
             return this;
         }
 
+        public Builder withConfiguration(Properties properties) {
+            Map<String, String> map = new HashMap<>();
+            properties.forEach((k,v) -> map.put(k.toString(), v.toString()));
+            return withConfiguration(map);
+        }
         public Builder addConfigurationProperty(String key, String value) {
             configuration.put(key, value);
             return this;
