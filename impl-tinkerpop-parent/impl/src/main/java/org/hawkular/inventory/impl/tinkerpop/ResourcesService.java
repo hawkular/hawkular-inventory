@@ -60,7 +60,7 @@ final class ResourcesService
 
         //connect to the resource type from the blueprint
         for (Vertex rt : new HawkularPipeline<>(envs).in(contains).out(contains).hasType(resourceType)
-                .hasUid(blueprint.getType().getId())) {
+                .hasUid(blueprint.getType().getId()).cast(Vertex.class)) {
             rt.addEdge(defines.name(), newEntity);
         }
 

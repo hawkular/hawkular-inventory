@@ -82,7 +82,7 @@ final class MetricTypesService
         //in here I know the source is a resource type...
         Iterable<Vertex> vs = source().in(contains) //up from resource type to tenant
                 .out(contains).hasType(metricType) //down to metric definitions
-                .hasUid(id);
+                .hasUid(id).cast(Vertex.class);
 
         super.addRelationship(Constants.Type.resourceType, owns, vs);
     }

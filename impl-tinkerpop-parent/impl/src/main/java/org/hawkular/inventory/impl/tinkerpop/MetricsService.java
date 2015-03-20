@@ -64,7 +64,8 @@ final class MetricsService
         HawkularPipeline<?, Vertex> mds = new HawkularPipeline<>(envs) //from environments we're in
                 .in(contains) //up to tenants
                 .out(contains).hasType(metricType) //down to metric defs
-                .hasUid(blueprint.getType().getId()); //filter on our id
+                .hasUid(blueprint.getType().getId()) //filter on our id
+                .cast(Vertex.class);
 
         for (Vertex md : mds) {
             md.addEdge(Relationships.WellKnown.defines.name(), newEntity);
@@ -97,7 +98,7 @@ final class MetricsService
         //in here I know the source is a resource...
         Iterable<Vertex> vs = source().in(contains) //up from resource to environment
                 .out(contains).hasType(metric) //down to metrics
-                .hasUid(id);
+                .hasUid(id).cast(Vertex.class);
 
         super.addRelationship(Constants.Type.resource, owns, vs);
     }

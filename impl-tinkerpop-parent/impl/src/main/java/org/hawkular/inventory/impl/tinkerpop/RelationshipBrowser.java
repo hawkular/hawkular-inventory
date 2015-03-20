@@ -58,11 +58,11 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
         super(iContext, sourceClass, path);
     }
 
-    public static Relationships.Single single(InventoryContext iContext, Class<? extends Entity>
+    public static <T extends Entity> Relationships.Single single(InventoryContext iContext, Class<T>
             sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
-        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, AbstractGraphService.pathWith
+        RelationshipBrowser<T> b = new RelationshipBrowser<>(iContext, sourceClass, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
         return new Relationships.Single() {
 
@@ -84,12 +84,12 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
         };
     }
 
-    public static Relationships.Multiple multiple(InventoryContext iContext, Class<? extends Entity>
+    public static <T extends Entity> Relationships.Multiple multiple(InventoryContext iContext, Class<T>
             sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
         final Filter goFromEdge = new JumpInOutFilter(direction, true);
-        RelationshipBrowser b = new RelationshipBrowser(iContext, sourceClass, AbstractGraphService.pathWith
+        RelationshipBrowser<T> b = new RelationshipBrowser<>(iContext, sourceClass, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
 
         return new Relationships.Multiple() {
@@ -100,15 +100,16 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
                         .map(edge -> {
-                            Relationship relationship = new Relationship(edge.getId().toString(), edge.getLabel(),
+                            Relationship relationship = new Relationship(getUid(edge), edge.getLabel(),
                                     convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                             // copy the properties
                             Map<String, Object> properties = edge.getPropertyKeys().stream()
-                                    .collect(Collectors.toMap(Function.<String>identity(),
-                                            key -> edge.<Object>getProperty(key)));
+                                    .collect(Collectors.toMap(Function.<String>identity(), edge::<Object>getProperty));
+
                             relationship.getProperties().putAll(properties);
                             return relationship;
                         });
+
                 return relationshipStream.collect(Collectors.toSet());
             }
 

@@ -380,35 +380,6 @@ public class BasicTest {
     }
 
     @Test
-    public void testRelationshipServiceGet() throws Exception {
-        // the edge IDs are set deterministically for dummy graph, but this may differ with graph implementation
-        // here we assume the edge IDs in advance to be 10 and 14 and there is not edge with id 13
-
-        Relationship contains = inventory.tenants().get("com.example.tenant").relationships().get("10").entity();
-
-        assert "com.example.tenant".equals(contains.getSource().getId()) : "Source node of the very first relation " +
-                "going from tenants must have uid equal to 'com.acme.tenant'";
-        assert "Kachna".equals(contains.getTarget().getId()) : "Target node of the very first relation going  " +
-                "from tenants must have uid equal to 'production'";
-
-        contains = inventory.tenants().getAll().environments().get("test").relationships().get("14").entity();
-
-        assert "test".equals(contains.getSource().getId()) : "Source node of the very first relation " +
-                "going from environments must have uid equal to 'com.example.tenant'. Was: " + contains.getSource()
-                .getId();
-        assert "playroom1_size" .equals(contains.getTarget().getId()) : "Target node of the very first relation  " +
-            "going from  environments must have uid equal to 'test'. Was: " + contains.getTarget().getId();
-        assert "contains" .equals(contains.getName()) : "Name of the relation must be 'contains'.";
-
-        try {
-            inventory.tenants().getAll().environments().get("test").relationships().get("13").entity();
-            assert 2+2 == 5 : "There should not be any edge with id 13.";
-        } catch (RelationNotFoundException e) {
-            // good
-        }
-    }
-
-    @Test
     public void testRelationshipServiceNamed1() throws Exception {
         Set<Relationship> contains = inventory.tenants().getAll().relationships().named("contains").entities();
         assert contains.stream().anyMatch(rel -> "com.acme.tenant".equals(rel.getSource().getId())
@@ -523,9 +494,9 @@ public class BasicTest {
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
 
-        Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
-        Relationship badRel = new Relationship(rel.getId(), rel.getName(), tenant, rel.getTarget());
-        Relationship goodRel = new Relationship(rel.getId(), rel.getName(), rel.getSource(), tenant);
+        Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
+        Relationship badRel = new Relationship(rel.getId(), rel.getName(), test, rel.getTarget());
+        Relationship goodRel = new Relationship(rel.getId(), rel.getName(), rel.getSource(), test);
 
         // persist the allowed change
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()

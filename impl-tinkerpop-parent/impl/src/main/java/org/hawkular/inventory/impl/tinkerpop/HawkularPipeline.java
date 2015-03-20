@@ -34,8 +34,10 @@ import com.tinkerpop.pipes.util.structures.Table;
 import com.tinkerpop.pipes.util.structures.Tree;
 import org.hawkular.inventory.api.Relationships;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +46,9 @@ import java.util.Map;
  * @since 1.0
  */
 final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable {
+
+    private int asLabelCount;
+    private final Deque<String> labelStack = new ArrayDeque<>(2);
 
     public HawkularPipeline() {
     }
@@ -56,14 +61,41 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         super(starts, doQueryOptimization);
     }
 
+    /**
+     * Together with {@link #recall()}, this is a simpler replacement of the {@link #as(String)} and
+     * {@link #back(String)} pair.
+     *
+     * <p>The call to this method will translate to an {@code as()} call with a "reasonably random" label.
+     * The subsequent call to {@link #remember()} will call a {@code back()} with that label.
+     *
+     * <p>The pipeline holds a stack of these labels so you can nest the {@code remember()} and {@code recall()} calls.
+     *
+     * @return the pipeline that "remembers" the current step
+     */
+    public HawkularPipeline<S, E> remember() {
+        String label = ")(*)#(*&$(" + asLabelCount++;
+        labelStack.push(label);
+        return as(label);
+    }
+
+    /**
+     * Recalls the last remembered step.
+     *
+     * See {@link #remember()} for a detailed description.
+     *
+     * @return the pipe line emitting the elements from the last remembered step
+     */
+    public HawkularPipeline<S, ?> recall() {
+        return back(labelStack.pop());
+    }
+
     @SuppressWarnings("unchecked")
     public HawkularPipeline<S, Vertex> hasType(Constants.Type type) {
         return (HawkularPipeline<S, Vertex>) has(Constants.Property.type.name(), type.name());
     }
 
-    @SuppressWarnings("unchecked")
-    public HawkularPipeline<S, Vertex> hasUid(String uid) {
-        return (HawkularPipeline<S, Vertex>) has(Constants.Property.uid.name(), uid);
+    public HawkularPipeline<S, ? extends Element> hasUid(String uid) {
+        return cast(has(Constants.Property.uid.name(), uid));
     }
 
     public HawkularPipeline<S, Vertex> out(Relationships.WellKnown... rel) {

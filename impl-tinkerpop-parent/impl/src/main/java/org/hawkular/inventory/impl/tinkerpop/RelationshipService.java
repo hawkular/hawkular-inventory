@@ -31,11 +31,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
 import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -108,7 +104,7 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public Relationships.Single linkWith(String name, Entity targetOrSource) throws RelationNotFoundException {
+    public Relationships.Single linkWith(String name, Entity targetOrSource) {
         if (null == name) {
             throw new IllegalArgumentException("name was null");
         }
@@ -117,19 +113,6 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
         }
 
         Vertex incidenceVertex = convert(targetOrSource);
-        PipeFunction<Vertex, Object> transformation = v -> {
-            final Direction d1 = direction == outgoing ? Direction.OUT : direction == incoming ? Direction.IN :
-                    Direction.BOTH;
-            final Direction d2 = direction == outgoing ? Direction.IN : direction == incoming ? Direction.OUT :
-                    Direction.BOTH;
-            Stream<Edge> edges = StreamSupport.stream(v.getEdges(d1)
-                    .spliterator(), false)
-                    .filter(edge -> name.equals(edge.getLabel())
-                            && targetOrSource.getId().equals(edge
-                            .getVertex(d2).<String>getProperty(Constants.Property.uid.name())));
-
-            return edges.collect(Collectors.toList()).get(0).getId();
-        };
 
         if (contains.name().equals(name)) {
             Direction d = direction == outgoing ? Direction.OUT :
@@ -138,27 +121,31 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
             checkContains(d, incidenceVertex);
         }
 
-        HawkularPipeline<?, Object> pipe = null;
+        HawkularPipeline<?, Edge> pipe = null;
         switch (direction) {
             case outgoing:
-                pipe = source().linkOut(name, incidenceVertex).transform(transformation);
+                pipe = source().linkOut(name, incidenceVertex).cap().cast(Edge.class);
                 break;
             case incoming:
-                pipe = source().linkIn(name, incidenceVertex).transform(transformation);
+                pipe = source().linkIn(name, incidenceVertex).cap().cast(Edge.class);
                 break;
             case both:
                 // basically creates a bi-directional relationship
-                pipe = source().linkBoth(name, incidenceVertex).transform(transformation);
+                pipe = source().linkBoth(name, incidenceVertex).cap().cast(Edge.class);
                 break;
         }
 
-        String newId = pipe.next().toString();
-        return createSingleBrowser(RelationWith.id(newId));
+        Edge newEdge = pipe.next();
+        //believe it or not, Titan cannot filter on ids, hence we need to store the id as a property, too
+        newEdge.setProperty(Constants.Property.uid.name(), newEdge.getId().toString());
+
+        context.getGraph().commit();
+
+        return createSingleBrowser(RelationWith.id(newEdge.getId().toString()));
     }
 
     @Override
-    public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws
-            RelationNotFoundException {
+    public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource) {
         return linkWith(name.name(), targetOrSource);
     }
 
@@ -177,9 +164,8 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
             String uid = vertex.getProperty(Constants.Property.uid.name());
             boolean sourceOk = uid.equals(relationship.getSource().getId());
             boolean targetOk = uid.equals(relationship.getTarget().getId());
-            boolean retBool = direction == outgoing ? sourceOk : direction ==
+            return direction == outgoing ? sourceOk : direction ==
                     incoming ? targetOk : (sourceOk || targetOk);
-            return retBool;
         };
         PipeFunction<Vertex, ?> thenFunction = v -> v;
         PipeFunction<Vertex, ?> elseFunction = v -> Collections.<Vertex>emptyList().iterator();
@@ -197,22 +183,24 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
                 break;
         }
 
-        HawkularPipeline<?, Edge> edges = pipe.has("id", relationship.getId()).cast(Edge.class);
+        HawkularPipeline<?, Edge> edges = pipe.hasUid(relationship.getId()).cast(Edge.class);
         if (!edges.hasNext()) {
-            throw new RelationNotFoundException(relationship.getId(), null);
+            throw new RelationNotFoundException(relationship.getId(), FilterApplicator.filters(path));
         }
         Edge edge = edges.next();
         if (!edge.getLabel().equals(relationship.getName())) {
-            //todo: log properly
-            System.out.println("Name of the relationship cannot be updated!");
+            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
+                    "Cannot update the name of a relationship. Create a new relationship instead.");
         }
         final Direction d1 = direction == outgoing ? Direction.IN : Direction.OUT;
         final Direction d2 = direction == outgoing ? Direction.OUT : Direction.IN;
-        if (direction != both && (!edge.getVertex(d1).equals(relationship.getTarget())
-                || !edge.getVertex(d2).equals(relationship.getSource()))) {
-            //todo: log properly
-            System.out.println("Cannot change the source or target of the relationship!");
+        if (!(matches(edge.getVertex(d1), relationship.getTarget()) && matches(edge.getVertex(d2),
+                relationship.getSource()))) {
+
+            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
+                    "Cannot update the source or target of a relationship. Create a new relationship instead.");
         }
+
         ElementHelper.setProperties(edge, relationship.getProperties());
     }
 
@@ -224,13 +212,13 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
         HawkularPipeline<?, ? extends Element> pipe = null;
         switch (direction) {
             case outgoing:
-                pipe = source().outE().has("id", id);
+                pipe = source().outE().hasUid(id);
                 break;
             case incoming:
-                pipe = source().inE().has("id", id);
+                pipe = source().inE().hasUid(id);
                 break;
             case both:
-                pipe = source().bothE().has("id", id);
+                pipe = source().bothE().hasUid(id);
                 break;
         }
         if (!pipe.hasNext()) {

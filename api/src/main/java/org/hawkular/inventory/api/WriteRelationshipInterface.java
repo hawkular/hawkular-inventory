@@ -42,14 +42,17 @@ interface WriteRelationshipInterface<Single> {
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
-     * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
+     * @throws java.lang.IllegalArgumentException if any of the parameters is null
      *
      * @see #linkWith(org.hawkular.inventory.api.Relationships.WellKnown, org.hawkular.inventory.api.model.Entity)
      */
-    Single linkWith(String name, Entity targetOrSource) throws RelationNotFoundException;
+    Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException;
 
     /**
      * Creates a new relationship at the current position in the inventory traversal.
+     *
+     * <p>It is possible to have multiple relationships with the same name between 2 entities. These relationships will
+     * differ in their ids and can have different properties.
      *
      * <p>Note: please review the comments on the individual well-known relationships (
      * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains contains},
@@ -62,9 +65,9 @@ interface WriteRelationshipInterface<Single> {
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @return access interface to the freshly created relationship
      *
-     * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship already exists
+     * @throws java.lang.IllegalArgumentException if any of the parameters is null
      */
-    Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws RelationNotFoundException;
+    Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws IllegalArgumentException;
 
     /**
      * Persists the provided relationship on the current position in the inventory traversal.
@@ -72,8 +75,9 @@ interface WriteRelationshipInterface<Single> {
      * @param relationship the relationship to update
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship is not found in the database
-     * or if the source/target entity (based on the chosen relationship direction) doesn't correspond with the
-     * current position in the inventory traversal.
+     * @throws java.lang.IllegalArgumentException if the source/target entity (based on the chosen relationship
+     * direction) doesn't correspond with the current position in the inventory traversal or if the name of the
+     * relationship doesn't correspond to what's in the database
      */
     void update(Relationship relationship) throws RelationNotFoundException;
 

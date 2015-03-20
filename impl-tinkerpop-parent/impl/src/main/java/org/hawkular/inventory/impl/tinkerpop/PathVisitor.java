@@ -34,7 +34,7 @@ class PathVisitor extends FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.inE().has("id", related.getRelationshipId()).inV();
+                    query.inE().hasUid(related.getRelationshipId()).inV();
                 }
                 break;
             case SOURCE:
@@ -43,7 +43,7 @@ class PathVisitor extends FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.outE().has("id", related.getRelationshipId()).outV();
+                    query.outE().hasUid(related.getRelationshipId()).outV();
                 }
                 break;
             case ANY:
@@ -52,7 +52,7 @@ class PathVisitor extends FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().has("id", related.getRelationshipId()).bothV();
+                    query.bothE().hasUid(related.getRelationshipId()).bothV();
                 }
         }
 

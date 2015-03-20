@@ -41,20 +41,20 @@ abstract class AbstractGraphService {
     protected final InventoryContext context;
     protected final FilterApplicator[] path;
 
-    AbstractGraphService(InventoryContext context, FilterApplicator... path) {
+    AbstractGraphService(InventoryContext context, FilterApplicator<?>... path) {
         this.context = context;
         this.path = path;
     }
 
-    protected HawkularPipeline<?, Vertex> source(FilterApplicator... filters) {
+    protected HawkularPipeline<?, Vertex> source(FilterApplicator<?>... filters) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
                 .V();
 
-        for (FilterApplicator fa : path) {
+        for (FilterApplicator<?> fa : path) {
             fa.applyTo(ret);
         }
 
-        for (FilterApplicator fa : filters) {
+        for (FilterApplicator<?> fa : filters) {
             fa.applyTo(ret);
         }
 
@@ -65,7 +65,7 @@ abstract class AbstractGraphService {
         return pathWith(path, filters);
     }
 
-    public static FilterApplicator.Builder pathWith(FilterApplicator[] path, Filter... filters) {
+    public static FilterApplicator.Builder pathWith(FilterApplicator<?>[] path, Filter... filters) {
         return FilterApplicator.from(path).and(FilterApplicator.Type.PATH, filters);
     }
 
@@ -87,7 +87,7 @@ abstract class AbstractGraphService {
 
     protected Vertex convert(Entity e) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
-                .V().hasType(Constants.Type.of(e)).hasUid(e.getId());
+                .V().hasType(Constants.Type.of(e)).hasUid(e.getId()).cast(Vertex.class);
         Vertex vertex = null;
         if (ret.hasNext()) {
             vertex = ret.next();
@@ -148,6 +148,11 @@ abstract class AbstractGraphService {
             }
         });
         return ret;
+    }
+
+    static boolean matches(Vertex v, Entity e) {
+        return Constants.Type.valueOf(getType(v)) == Constants.Type.of(e)
+                && getUid(v).equals(e.getId());
     }
 
     static Vertex getTenantVertexOf(Vertex entityVertex) {

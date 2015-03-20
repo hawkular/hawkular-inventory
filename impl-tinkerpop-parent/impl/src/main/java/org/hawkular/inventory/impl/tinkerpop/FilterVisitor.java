@@ -26,8 +26,6 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 
 import java.util.Arrays;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Lukas Krejci
@@ -35,12 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 1.0
  */
 class FilterVisitor {
-    private static AtomicInteger CNT = new AtomicInteger();
-
     public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
-        String step = "filter" + CNT.getAndIncrement();
-
-        query.as(step);
+        query.remember();
 
         switch (related.getEntityRole()) {
             case TARGET:
@@ -49,7 +43,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.inE().has("id", related.getRelationshipId()).inV();
+                    query.inE().hasUid(related.getRelationshipId()).inV();
                 }
                 break;
             case SOURCE:
@@ -58,7 +52,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.outE().has("id", related.getRelationshipId()).outV();
+                    query.outE().hasUid(related.getRelationshipId()).outV();
                 }
                 break;
             case ANY:
@@ -67,7 +61,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().has("id", related.getRelationshipId()).bothV();
+                    query.bothE().hasUid(related.getRelationshipId()).bothV();
                 }
         }
 
@@ -77,7 +71,7 @@ class FilterVisitor {
             query.hasType(desiredType).hasUid(related.getEntity().getId());
         }
 
-        query.back(step);
+        query.recall();
     }
 
     @SuppressWarnings("unchecked")
@@ -113,16 +107,17 @@ class FilterVisitor {
         query.or(typeChecks);
     }
 
+    @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids) {
         if (ids.getIds().length == 1) {
-            query.has("id", ids.getIds()[0]);
+            query.hasUid(ids.getIds()[0]);
             return;
         }
 
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>("id", Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
 
         query.or(idChecks);
     }
@@ -155,10 +150,10 @@ class FilterVisitor {
         visit(query, types, null);
     }
 
+    @SuppressWarnings("unchecked")
     private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source) {
         // look ahead if the type of the incidence vertex is of the desired type(s)
-        String label = UUID.randomUUID().toString();
-        HawkularPipeline<?, ?> q1 = query.as(label);
+        HawkularPipeline<?, ?> q1 = query.remember();
         HawkularPipeline<?, ?> q2;
         if (source == null) {
             q2 = q1.bothV();
@@ -169,7 +164,7 @@ class FilterVisitor {
         }
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            q2.has(Constants.Property.type.name(), type.name()).back(label);
+            q2.has(Constants.Property.type.name(), type.name()).recall();
             return;
         }
 
@@ -179,7 +174,7 @@ class FilterVisitor {
             return new PropertyFilterPipe<Element, String>(Constants.Property.type.name(), Compare.EQUAL, type.name());
         });
 
-        q2.or(typeChecks).back(label);
+        q2.or(typeChecks).recall();
     }
 
     public void visit(HawkularPipeline<?, ?> query, RelationshipBrowser.JumpInOutFilter filter) {
