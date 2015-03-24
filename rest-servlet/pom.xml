@@ -70,7 +70,7 @@
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-blueprints</artifactId>
+      <artifactId>inventory-impl-tinkerpop</artifactId>
       <version>${project.version}</version>
     </dependency>
 

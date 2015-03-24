@@ -33,23 +33,28 @@ public final class RelationNotFoundException extends InventoryException {
     private final String nameOrId;
 
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
-                                     Throwable cause) {
-        super(cause);
+                                     String message, Throwable cause) {
+        super(message, cause);
         this.sourceEntityType = sourceEntityType != null ? sourceEntityType.getSimpleName() : null;
         this.filters = filters;
         this.nameOrId = nameOrId;
     }
 
-    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters) {
-        this(sourceEntityType, nameOrId, filters, null);
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
+                                     Throwable cause) {
+        this(sourceEntityType, nameOrId, filters, null, cause);
+    }
+
+    public RelationNotFoundException(String nameOrId, Filter[] filters, String message) {
+        this(null, nameOrId, filters, message, null);
     }
 
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, Filter[] filters) {
-        this(sourceEntityType, null, filters, null);
+        this(sourceEntityType, null, filters, null, null);
     }
 
     public RelationNotFoundException(String nameOrId, Filter[] filters) {
-        this(null, nameOrId, filters, null);
+        this(null, nameOrId, filters, null, null);
     }
 
     @Override
@@ -57,7 +62,7 @@ public final class RelationNotFoundException extends InventoryException {
         return "Relation"
                 + (sourceEntityType != null ? " with source in " + sourceEntityType : "")
                 + (nameOrId != null ? " with name or id '" + nameOrId + "'" : "")
-                + " not found" +
-                (filters != null ? " using filters: " + Arrays.toString(filters) : ".");
+                + (filters != null ? " searched for using filters: " + Arrays.toString(filters) : "")
+                + (super.getMessage() == null ? ": Was not found." : ": " + super.getMessage());
     }
 }
