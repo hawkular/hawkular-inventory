@@ -166,7 +166,7 @@
                   <locations>org.hawkular.inventory.rest</locations>
                   <apiVersion>0.1</apiVersion>
                   <basePath>http://localhost:8080/hawkular/inventory</basePath>
-                  <outputTemplate>${basedir}/src/main/resources/rest-doc/asciidoc.mustache</outputTemplate>
+                  <outputTemplate>https://raw.githubusercontent.com/hawkular/hawkular.github.io/swagger/asciidoc.mustache</outputTemplate>
                   <swaggerDirectory>${project.build.directory}/generated/swagger-ui</swaggerDirectory>
                   <swaggerInternalFilter>org.hawkular.inventory.rest.swagger.JaxRsFilter</swaggerInternalFilter>
                   <swaggerApiReader>com.wordnik.swagger.jaxrs.reader.DefaultJaxrsApiReader</swaggerApiReader>
