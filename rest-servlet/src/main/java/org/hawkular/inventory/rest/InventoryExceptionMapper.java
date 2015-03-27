@@ -21,6 +21,7 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.rest.json.ApiError;
+import org.jboss.resteasy.spi.DefaultOptionsMethodException;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -38,7 +39,9 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
     @Override
     public Response toResponse(Exception exception) {
-        if (exception instanceof EntityNotFoundException) {
+        if (exception instanceof DefaultOptionsMethodException) {
+            return Response.ok().build();
+        } else if (exception instanceof EntityNotFoundException) {
             return Response.status(NOT_FOUND).entity(new ApiError(exception.getMessage(),
                     EntityTypeAndPath.fromException((EntityNotFoundException) exception))).build();
         } else if (exception instanceof EntityAlreadyExistsException) {

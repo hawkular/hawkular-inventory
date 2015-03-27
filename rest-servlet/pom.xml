@@ -118,7 +118,6 @@
     <dependency>
       <groupId>com.wordnik</groupId>
       <artifactId>swagger-core_2.10</artifactId>
-      <scope>provided</scope>
     </dependency>
 
   </dependencies>
