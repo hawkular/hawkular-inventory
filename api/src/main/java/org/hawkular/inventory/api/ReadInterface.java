@@ -27,7 +27,7 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadInterface<Single, Multiple> {
+public interface ReadInterface<Single, Multiple> {
 
     /**
      * Tries to find a single entity in the current position in the inventory traversal.
