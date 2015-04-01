@@ -72,6 +72,4 @@ public final class Tenants {
      * Provides methods for read-write access to tenants.
      */
     public interface ReadWrite extends ReadWriteInterface<Tenant, String, Single, Multiple> {}
-
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

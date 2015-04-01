@@ -20,6 +20,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
@@ -27,7 +28,7 @@ import org.hawkular.inventory.api.model.Tenant;
 * @since 1.0
 */
 final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant, String>
-        implements Tenants.ReadWrite, Tenants.Read, Tenants.ReadRelate {
+        implements Tenants.ReadWrite, Tenants.Read {
 
     public TenantsService(InventoryContext context) {
         super(context, Tenant.class, new PathContext(FilterApplicator.fromPath().get(),
@@ -56,17 +57,5 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     @Override
     protected String getProposedId(String b) {
         return b;
-    }
-
-    @Override
-    public void add(String id) {
-        //TODO implement
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void remove(String id) {
-        //TODO implement
-        throw new UnsupportedOperationException();
     }
 }

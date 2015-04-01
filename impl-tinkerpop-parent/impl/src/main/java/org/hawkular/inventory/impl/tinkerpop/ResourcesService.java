@@ -39,7 +39,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
  */
 final class ResourcesService
         extends AbstractSourcedGraphService<Resources.Single, Resources.Multiple, Resource, Resource.Blueprint>
-        implements Resources.ReadWrite, Resources.Read, Resources.ReadRelate {
+        implements Resources.ReadWrite, Resources.Read {
 
     public ResourcesService(InventoryContext context, PathContext ctx) {
         super(context, Resource.class, ctx);
@@ -84,15 +84,5 @@ final class ResourcesService
     @Override
     protected String getProposedId(Resource.Blueprint b) {
         return b.getId();
-    }
-
-    @Override
-    public void add(String id) {
-        // TODO implelent
-    }
-
-    @Override
-    public void remove(String id) {
-        // TODO implelent
     }
 }

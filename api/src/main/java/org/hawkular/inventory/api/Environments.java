@@ -74,6 +74,4 @@ public final class Environments {
     public interface ReadWrite extends ReadWriteInterface<Environment, String, Single, Multiple> {
         void copy(String sourceEnvironmentId, String targetEnvironmentId);
     }
-
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

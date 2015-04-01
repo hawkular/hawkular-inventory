@@ -59,9 +59,4 @@ public final class Resources {
      * Provides read-write access to resources.
      */
     public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {}
-
-    /**
-     * Provides read access to relationships of resource.
-     */
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }
