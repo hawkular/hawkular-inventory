@@ -51,6 +51,6 @@ public final class ObservableInventory implements Inventory {
     }
 
     public <E> Observable<E> observable(Interest<E> interest) {
-        return context.getSubject(interest);
+        return context.getObservableFor(interest);
     }
 }

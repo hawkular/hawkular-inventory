@@ -22,7 +22,7 @@ import org.hawkular.inventory.api.observable.Interest;
 import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.junit.Before;
 import org.junit.Test;
-import rx.Observable;
+import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,13 +53,13 @@ public class ObservableInventoryTest {
         List<Tenant> updatedTenants = new ArrayList<>();
         List<Tenant> deletedTenants = new ArrayList<>();
 
-        observableInventory.observable(Interest.inCreate().of(Tenant.class).build())
+        Subscription s1 =observableInventory.observable(Interest.inCreate().of(Tenant.class).build())
                 .subscribe(createdTenants::add);
 
-        observableInventory.observable(Interest.inUpdate().of(Tenant.class).build())
+        Subscription s2 = observableInventory.observable(Interest.inUpdate().of(Tenant.class).build())
                 .subscribe(updatedTenants::add);
 
-        observableInventory.observable(Interest.inDelete().of(Tenant.class).build())
+        Subscription s3 = observableInventory.observable(Interest.inDelete().of(Tenant.class).build())
                 .subscribe(deletedTenants::add);
 
         observableInventory.tenants().create("kachny");
@@ -72,5 +72,11 @@ public class ObservableInventoryTest {
         Assert.assertEquals(prototype, updatedTenants.get(0));
         Assert.assertEquals(1, deletedTenants.size());
         Assert.assertEquals(prototype, deletedTenants.get(0));
+
+        //this is just for debugging that the interest map in the ObservableContext gets indeed cleared. There's no
+        //direct testing possible as that object is an internal impl. detail of ObservableInventory.
+        s1.unsubscribe();
+        s2.unsubscribe();
+        s3.unsubscribe();
     }
 }

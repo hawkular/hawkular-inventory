@@ -16,12 +16,16 @@
  */
 package org.hawkular.inventory.api.observable;
 
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action0;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Lukas Krejci
@@ -30,21 +34,45 @@ import java.util.concurrent.ConcurrentHashMap;
 final class ObservableContext {
     private final Map<Interest<?>, Subject<?, ?>> observables = new ConcurrentHashMap<>();
 
-    public <T> Subject<T, T> getSubject(Interest<T> interest) {
+    public <T> Observable<T> getObservableFor(Interest<T> interest) {
         @SuppressWarnings("unchecked")
-        Subject<T, T> ret = (Subject<T, T>) observables.get(interest);
+        Subject<T, T> sub = (Subject<T, T>) observables.get(interest);
 
-        if (ret == null) {
-            ret = PublishSubject.create();
-            observables.put(interest, ret);
+        if (sub == null) {
+            sub = PublishSubject.<T>create().toSerialized();
+            observables.put(interest, sub);
         }
 
-        return ret;
+        SubscriptionTracker tracker = new SubscriptionTracker(() -> observables.remove(interest));
+
+        return sub.doOnSubscribe(tracker.onSubscribe()).doOnUnsubscribe(tracker.onUnsubscribe());
     }
 
     @SuppressWarnings("unchecked")
     public <T> Iterator<Subject<T, T>> matchingSubjects(Interest.Action action, T object) {
         return observables.entrySet().stream().filter((e) -> e.getKey().matches(action, object))
                 .map((e) -> (Subject<T, T>) e.getValue()).iterator();
+    }
+
+    private static class SubscriptionTracker {
+
+        private final AtomicLong counter = new AtomicLong(0);
+        private final Runnable action;
+
+        public SubscriptionTracker(Runnable action) {
+            this.action = action;
+        }
+
+        public Action0 onSubscribe() {
+            return counter::incrementAndGet;
+        }
+
+        public Action0 onUnsubscribe() {
+            return () -> {
+                if (counter.decrementAndGet() == 0) {
+                    action.run();
+                }
+            };
+        }
     }
 }
