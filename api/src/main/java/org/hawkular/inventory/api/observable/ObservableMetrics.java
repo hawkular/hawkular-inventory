@@ -17,7 +17,9 @@
 package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Relationship;
 
 import java.util.function.BiFunction;
 
@@ -48,11 +50,11 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class ReadRelate
-            extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.ReadRelate>
-            implements Metrics.ReadRelate {
+    public static final class ReadAssociate
+            extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.ReadAssociate>
+            implements Metrics.ReadAssociate {
 
-        ReadRelate(Metrics.ReadRelate wrapped, ObservableContext context) {
+        ReadAssociate(Metrics.ReadAssociate wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
@@ -67,13 +69,18 @@ public final class ObservableMetrics {
         }
 
         @Override
-        public void add(String id) {
-            wrapped.add(id);
+        public Relationship associate(String id) {
+            return wrapped.associate(id);
         }
 
         @Override
-        public void remove(String id) {
-            wrapped.remove(id);
+        public void disassociate(String id) {
+            wrapped.disassociate(id);
+        }
+
+        @Override
+        public Relationship associationWith(String id) throws RelationNotFoundException {
+            return wrapped.associationWith(id);
         }
     }
 

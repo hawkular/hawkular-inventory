@@ -58,5 +58,5 @@ public final class Metrics {
      * Provides read-only access to metrics with the additional ability to relate the metrics to the current
      * position in the inventory traversal.
      */
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
+    public interface ReadAssociate extends ReadInterface<Single, Multiple>, AssociationInterface {}
 }

@@ -126,7 +126,7 @@ public class BasicTest {
                 .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND)).entity().getId()
                 .equals("ResponseTime");
 
-        inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().add("ResponseTime");
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().associate("ResponseTime");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
                 .create(new Metric.Blueprint(
@@ -136,7 +136,7 @@ public class BasicTest {
                 .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0"))).entity()
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .get("host1").metrics().add("host1_ping_response");
+                .get("host1").metrics().associate("host1_ping_response");
 
         assert inventory.tenants().create("com.example.tenant").entity().getId().equals("com.example.tenant");
         assert inventory.tenants().get("com.example.tenant").environments().create("test").entity().getId()
@@ -147,7 +147,7 @@ public class BasicTest {
                 .create(new ResourceType.Blueprint("Playroom", new Version("1.0"))).entity().getId().equals("Playroom");
         assert inventory.tenants().get("com.example.tenant").metricTypes()
                 .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
-        inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().add("Size");
+        inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().associate("Size");
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint(
@@ -165,9 +165,9 @@ public class BasicTest {
                 .entity().getId().equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .get("playroom1").metrics().add("playroom1_size");
+                .get("playroom1").metrics().associate("playroom1_size");
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .get("playroom2").metrics().add("playroom2_size");
+                .get("playroom2").metrics().associate("playroom2_size");
 
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();

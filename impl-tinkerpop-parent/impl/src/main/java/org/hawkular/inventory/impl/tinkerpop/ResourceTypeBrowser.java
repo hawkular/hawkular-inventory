@@ -68,7 +68,7 @@ final class ResourceTypeBrowser extends AbstractBrowser<ResourceType> {
             }
 
             @Override
-            public MetricTypes.ReadRelate metricTypes() {
+            public MetricTypes.ReadAssociate metricTypes() {
                 return b.metricTypes();
             }
         };
@@ -110,7 +110,7 @@ final class ResourceTypeBrowser extends AbstractBrowser<ResourceType> {
                 With.type(Resource.class))));
     }
 
-    private MetricTypes.ReadRelate metricTypes() {
+    private MetricTypes.ReadAssociate metricTypes() {
         return new MetricTypesService(context, pathToHereWithSelect(Filter.by(Related.by(owns),
                 With.type(MetricType.class))));
     }

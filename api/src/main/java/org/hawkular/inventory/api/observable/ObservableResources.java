@@ -74,8 +74,8 @@ public final class ObservableResources {
         }
 
         @Override
-        public ObservableMetrics.ReadRelate metrics() {
-            return wrap(ObservableMetrics.ReadRelate::new, wrapped.metrics());
+        public ObservableMetrics.ReadAssociate metrics() {
+            return wrap(ObservableMetrics.ReadAssociate::new, wrapped.metrics());
         }
     }
 

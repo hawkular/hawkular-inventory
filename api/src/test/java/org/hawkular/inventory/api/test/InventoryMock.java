@@ -51,13 +51,13 @@ public class InventoryMock {
 
     public static Metrics.Multiple metricsMultiple;
     public static Metrics.Read metricsRead;
-    public static Metrics.ReadRelate metricsReadRelate;
+    public static Metrics.ReadAssociate metricsReadAssociate;
     public static Metrics.ReadWrite metricsReadWrite;
     public static Metrics.Single metricsSingle;
 
     public static MetricTypes.Multiple metricTypesMultiple;
     public static MetricTypes.Read metricTypesRead;
-    public static MetricTypes.ReadRelate metricTypesReadRelate;
+    public static MetricTypes.ReadAssociate metricTypesReadAssociate;
     public static MetricTypes.ReadWrite metricTypesReadWrite;
     public static MetricTypes.Single metricTypesSingle;
 
@@ -97,13 +97,13 @@ public class InventoryMock {
 
         metricsMultiple = Mockito.mock(Metrics.Multiple.class);
         metricsRead = Mockito.mock(Metrics.Read.class);
-        metricsReadRelate = Mockito.mock(Metrics.ReadRelate.class);
+        metricsReadAssociate = Mockito.mock(Metrics.ReadAssociate.class);
         metricsReadWrite = Mockito.mock(Metrics.ReadWrite.class);
         metricsSingle = Mockito.mock(Metrics.Single.class);
 
         metricTypesMultiple = Mockito.mock(MetricTypes.Multiple.class);
         metricTypesRead = Mockito.mock(MetricTypes.Read.class);
-        metricTypesReadRelate = Mockito.mock(MetricTypes.ReadRelate.class);
+        metricTypesReadAssociate = Mockito.mock(MetricTypes.ReadAssociate.class);
         metricTypesReadWrite = Mockito.mock(MetricTypes.ReadWrite.class);
         metricTypesSingle = Mockito.mock(MetricTypes.Single.class);
 
@@ -160,8 +160,8 @@ public class InventoryMock {
         when(metricsMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(metricsRead.get(any())).thenReturn(metricsSingle);
         when(metricsRead.getAll(anyVararg())).thenReturn(metricsMultiple);
-        when(metricsReadRelate.get(any())).thenReturn(metricsSingle);
-        when(metricsReadRelate.getAll(anyVararg())).thenReturn(metricsMultiple);
+        when(metricsReadAssociate.get(any())).thenReturn(metricsSingle);
+        when(metricsReadAssociate.getAll(anyVararg())).thenReturn(metricsMultiple);
         when(metricsReadWrite.get(any())).thenReturn(metricsSingle);
         when(metricsReadWrite.getAll(anyVararg())).thenReturn(metricsMultiple);
         when(metricsSingle.relationships()).thenReturn(relationshipsReadWrite);
@@ -172,8 +172,8 @@ public class InventoryMock {
         when(metricTypesMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(metricTypesRead.get(any())).thenReturn(metricTypesSingle);
         when(metricTypesRead.getAll(anyVararg())).thenReturn(metricTypesMultiple);
-        when(metricTypesReadRelate.get(any())).thenReturn(metricTypesSingle);
-        when(metricTypesReadRelate.getAll(anyVararg())).thenReturn(metricTypesMultiple);
+        when(metricTypesReadAssociate.get(any())).thenReturn(metricTypesSingle);
+        when(metricTypesReadAssociate.getAll(anyVararg())).thenReturn(metricTypesMultiple);
         when(metricTypesReadWrite.get(any())).thenReturn(metricTypesSingle);
         when(metricTypesReadWrite.getAll(anyVararg())).thenReturn(metricTypesMultiple);
         when(metricTypesSingle.metrics()).thenReturn(metricsRead);
@@ -201,7 +201,7 @@ public class InventoryMock {
         when(resourcesRead.getAll(anyVararg())).thenReturn(resourcesMultiple);
         when(resourcesReadWrite.get(any())).thenReturn(resourcesSingle);
         when(resourcesReadWrite.getAll(anyVararg())).thenReturn(resourcesMultiple);
-        when(resourcesSingle.metrics()).thenReturn(metricsReadRelate);
+        when(resourcesSingle.metrics()).thenReturn(metricsReadAssociate);
         when(resourcesSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(resourcesSingle.relationships(any())).thenReturn(relationshipsReadWrite);
 
@@ -212,7 +212,7 @@ public class InventoryMock {
         when(resourceTypesRead.getAll(anyVararg())).thenReturn(resourceTypesMultiple);
         when(resourceTypesReadWrite.get(any())).thenReturn(resourceTypesSingle);
         when(resourceTypesReadWrite.getAll(anyVararg())).thenReturn(resourceTypesMultiple);
-        when(resourceTypesSingle.metricTypes()).thenReturn(metricTypesReadRelate);
+        when(resourceTypesSingle.metricTypes()).thenReturn(metricTypesReadAssociate);
         when(resourceTypesSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(resourceTypesSingle.relationships(any())).thenReturn(relationshipsReadWrite);
 

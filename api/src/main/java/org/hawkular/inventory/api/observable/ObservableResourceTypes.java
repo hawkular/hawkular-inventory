@@ -16,17 +16,9 @@
  */
 package org.hawkular.inventory.api.observable;
 
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.MetricTypes;
-import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.ResourceType;
 
-import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -93,8 +85,8 @@ public final class ObservableResourceTypes {
         }
 
         @Override
-        public ObservableMetricTypes.ReadRelate metricTypes() {
-            return wrap(ObservableMetricTypes.ReadRelate::new, wrapped.metricTypes());
+        public ObservableMetricTypes.ReadAssociate metricTypes() {
+            return wrap(ObservableMetricTypes.ReadAssociate::new, wrapped.metricTypes());
         }
     }
 

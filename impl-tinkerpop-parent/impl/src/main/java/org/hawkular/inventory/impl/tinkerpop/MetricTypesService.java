@@ -18,10 +18,12 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.MetricTypes;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -36,7 +38,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  */
 final class MetricTypesService
         extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple,
-        MetricType, MetricType.Blueprint> implements MetricTypes.ReadWrite, MetricTypes.ReadRelate {
+        MetricType, MetricType.Blueprint> implements MetricTypes.ReadWrite, MetricTypes.ReadAssociate {
 
     MetricTypesService(InventoryContext context, PathContext ctx) {
         super(context, MetricType.class, ctx);
@@ -78,17 +80,22 @@ final class MetricTypesService
     }
 
     @Override
-    public void add(String id) {
+    public Relationship associate(String id) {
         //in here I know the source is a resource type...
         Iterable<Vertex> vs = source().in(contains) //up from resource type to tenant
                 .out(contains).hasType(metricType) //down to metric definitions
                 .hasUid(id).cast(Vertex.class);
 
-        super.addRelationship(Constants.Type.resourceType, owns, vs);
+        return super.addAssociation(Constants.Type.resourceType, owns, vs);
     }
 
     @Override
-    public void remove(String id) {
-        removeRelationship(resourceType, owns, id);
+    public void disassociate(String id) {
+        removeAssociation(resourceType, owns, id);
+    }
+
+    @Override
+    public Relationship associationWith(String id) throws RelationNotFoundException {
+        return findAssociation(id, owns.name());
     }
 }

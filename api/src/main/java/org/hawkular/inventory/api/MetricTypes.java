@@ -69,5 +69,5 @@ public final class MetricTypes {
      * Provides read-only access to metric types with the additional ability to relate the metric types to the current
      * position in the inventory traversal.
      */
-    public interface ReadRelate extends Read, RelateInterface {}
+    public interface ReadAssociate extends Read, AssociationInterface {}
 }

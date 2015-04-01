@@ -163,7 +163,7 @@ public class RestResourceTypes {
                                   @PathParam("resourceTypeId") String resourceTypeId,
                                   IdJSON metricTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
-                .add(metricTypeId.getId());
+                .associate(metricTypeId.getId());
         return Response.noContent().build();
     }
 
@@ -179,7 +179,7 @@ public class RestResourceTypes {
     public Response removeMetricType(@PathParam("tenantId") String tenantId,
                                      @PathParam("resourceTypeId") String resourceTypeId,
                                      @PathParam("metricTypeId") String metricTypeId) {
-        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().remove(metricTypeId);
+        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
         return Response.noContent().build();
     }
 }

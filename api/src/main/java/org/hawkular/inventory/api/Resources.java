@@ -39,7 +39,7 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadRelate> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadAssociate> {}
 
     /**
      * Interface for traversing over a set of resources.

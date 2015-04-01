@@ -53,12 +53,13 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
 
         return ret;
     }
-    public RelationshipService relationships() {
+
+    public RelationshipService<E> relationships() {
         return relationships(Relationships.Direction.outgoing);
     }
 
-    public RelationshipService relationships(Relationships.Direction direction) {
-        return new RelationshipService(context, new PathContext(path, Filter.all()), entityClass, direction);
+    public RelationshipService<E> relationships(Relationships.Direction direction) {
+        return new RelationshipService<>(context, new PathContext(path, Filter.all()), entityClass, direction);
     }
 
     @Override
