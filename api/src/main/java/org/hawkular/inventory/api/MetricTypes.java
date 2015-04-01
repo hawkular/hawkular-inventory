@@ -41,7 +41,7 @@ public final class MetricTypes {
     /**
      * Interface for accessing a single metric type in a writable manner.
      */
-    public interface Single extends SingleRelatableEntityBrowser<MetricType>, BrowserBase {
+    public interface Single extends ResolvableToSingleWithRelationships<MetricType>, BrowserBase {
     }
 
     /**
@@ -51,7 +51,7 @@ public final class MetricTypes {
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends MultipleRelatableEntityBrowser<MetricType>, BrowserBase {
+    public interface Multiple extends ResolvableToManyWithRelationships<MetricType>, BrowserBase {
     }
 
     /**

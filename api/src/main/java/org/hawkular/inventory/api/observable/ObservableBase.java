@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.ReadInterface;
+import org.hawkular.inventory.api.Relatable;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.WriteInterface;
@@ -24,6 +26,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -44,20 +47,20 @@ public class ObservableBase<T> {
         return constructor.apply(value, context);
     }
 
-    protected <V extends ResolvableToSingle<?>, I> I wrapAndNotify(BiFunction<V, ObservableContext, I> constructor,
-        V value, Interest.Action action) {
+    protected <E, V extends ResolvableToSingle<E>, I> I wrapAndNotify(BiFunction<V, ObservableContext, I> constructor,
+        V value, Action<E> action) {
 
-        Object e = value.entity();
+        E e = value.entity();
 
         notify(e, action);
 
         return constructor.apply(value, context);
     }
 
-    protected <E> void notify(E entity, Interest.Action action) {
-        Iterator<Subject<Object, Object>> subjects = context.matchingSubjects(action, entity);
+    protected <E> void notify(E entity, Action<E> action) {
+        Iterator<Subject<E, E>> subjects = context.matchingSubjects(action, entity);
         while (subjects.hasNext()) {
-            Subject<Object, Object> s = subjects.next();
+            Subject<E, E> s = subjects.next();
             s.onNext(entity);
         }
     }
@@ -105,18 +108,72 @@ public class ObservableBase<T> {
         }
 
         public Single create(Blueprint b) {
-            return wrapAndNotify(singleCtor(), wrapped.create(b), Interest.Action.CREATE);
+            return wrapAndNotify(singleCtor(), wrapped.create(b), Action.create());
         }
 
         public void update(Entity e) {
             wrapped.update(e);
-            notify(e, Interest.Action.UPDATE);
+            notify(e, Action.update());
         }
 
         public void delete(String id) {
             Entity e = get(id).entity();
             wrapped.delete(id);
-            notify(e, Interest.Action.DELETE);
+            notify(e, Action.delete());
+        }
+    }
+
+    public static abstract class Single<E, T extends ResolvableToSingle<E>> extends ObservableBase<T> {
+
+        Single(T wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        public E entity() {
+            return wrapped.entity();
+        }
+    }
+
+    public static abstract class Multiple<E, T extends ResolvableToMany<E>> extends ObservableBase<T> {
+
+        Multiple(T wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        public Set<E> entities() {
+            return wrapped.entities();
+        }
+    }
+
+    public static abstract class RelatableSingle<E,
+            T extends Relatable<Relationships.ReadWrite> & ResolvableToSingle<E>> extends Single<E, T> {
+
+        RelatableSingle(T wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        public ObservableRelationships.ReadWrite relationships() {
+            return wrap(ObservableRelationships.ReadWrite::new, wrapped.relationships());
+        }
+
+        public ObservableRelationships.ReadWrite relationships(Relationships.Direction direction) {
+            return wrap(ObservableRelationships.ReadWrite::new, wrapped.relationships(direction));
+        }
+    }
+
+    public static abstract class RelatableMultiple<E,
+            T extends Relatable<Relationships.Read> & ResolvableToMany<E>> extends Multiple<E, T> {
+
+        RelatableMultiple(T wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        public ObservableRelationships.Read relationships() {
+            return wrap(ObservableRelationships.Read::new, wrapped.relationships());
+        }
+
+        public ObservableRelationships.Read relationships(Relationships.Direction direction) {
+            return wrap(ObservableRelationships.Read::new, wrapped.relationships(direction));
         }
     }
 }

@@ -45,12 +45,12 @@ public final class ObservableTenants {
 
         @Override
         protected BiFunction<Tenants.Single, ObservableContext, ? extends Tenants.Single> singleCtor() {
-            return Single::new;
+            return ObservableTenants.Single::new;
         }
 
         @Override
         protected BiFunction<Tenants.Multiple, ObservableContext, ? extends Tenants.Multiple> multipleCtor() {
-            return Multiple::new;
+            return ObservableTenants.Multiple::new;
         }
     }
 
@@ -64,96 +64,58 @@ public final class ObservableTenants {
 
         @Override
         protected BiFunction<Tenants.Single, ObservableContext, ? extends Tenants.Single> singleCtor() {
-            return Single::new;
+            return ObservableTenants.Single::new;
         }
 
         @Override
         protected BiFunction<Tenants.Multiple, ObservableContext, ? extends Tenants.Multiple> multipleCtor() {
-            return Multiple::new;
+            return ObservableTenants.Multiple::new;
         }
     }
 
-    public static final class Single extends ObservableBase<Tenants.Single> implements Tenants.Single {
+    public static final class Single extends ObservableBase.RelatableSingle<Tenant, Tenants.Single> 
+            implements Tenants.Single {
 
         Single(Tenants.Single wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public ResourceTypes.ReadWrite resourceTypes() {
-            // return new ObservableResourceTypes.ReadWrite(wrapped.resourceTypes(), context);
-            return null;
+        public ObservableResourceTypes.ReadWrite resourceTypes() {
+            return wrap(ObservableResourceTypes.ReadWrite::new, wrapped.resourceTypes());
         }
 
         @Override
-        public MetricTypes.ReadWrite metricTypes() {
-            // return new ObservableMetricTypes.ReadWrite(wrapped.metricTypes(), context);
-            return null;
+        public ObservableMetricTypes.ReadWrite metricTypes() {
+            return wrap(ObservableMetricTypes.ReadWrite::new, wrapped.metricTypes());
         }
 
         @Override
-        public Environments.ReadWrite environments() {
-            // return new ObservableEnvironments.ReadWrite(wrapped.environments(), context);
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships() {
-            // return new ObservableRelationships.ReadWrite(wrapped.relationships(), context);
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-            // return new ObservableRelationships.ReadWrite(wrapped.relationships(direction), context);
-            return null;
-        }
-
-        @Override
-        public Tenant entity() {
-            return wrapped.entity();
+        public ObservableEnvironments.ReadWrite environments() {
+            return wrap(ObservableEnvironments.ReadWrite::new, wrapped.environments());
         }
     }
 
-    public static final class Multiple extends ObservableBase<Tenants.Multiple> implements Tenants.Multiple {
+    public static final class Multiple extends ObservableBase.RelatableMultiple<Tenant, Tenants.Multiple>
+            implements Tenants.Multiple {
 
         Multiple(Tenants.Multiple wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public ResourceTypes.Read resourceTypes() {
-            // return new ObservableResourceTypes.Read(wrapped.resourceTypes(), context);
-            return null;
+        public ObservableResourceTypes.Read resourceTypes() {
+            return wrap(ObservableResourceTypes.Read::new, wrapped.resourceTypes());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            // return new ObservableMetricTypes.Read(wrapped.metricTypes(), context);
-            return null;
+        public ObservableMetricTypes.Read metricTypes() {
+            return wrap(ObservableMetricTypes.Read::new, wrapped.metricTypes());
         }
 
         @Override
-        public Environments.Read environments() {
-            // return new ObservableEnvironments.Read(wrapped.environments(), context);
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships() {
-            // return new ObservableRelationships.Read(wrapped.relationships(), context);
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships(Relationships.Direction direction) {
-            // return new ObservableRelationships.Read(wrapped.relationships(direction), context);
-            return null;
-        }
-
-        @Override
-        public Set<Tenant> entities() {
-            return wrapped.entities();
+        public ObservableEnvironments.Read environments() {
+            return wrap(ObservableEnvironments.Read::new, wrapped.environments());
         }
     }
 }

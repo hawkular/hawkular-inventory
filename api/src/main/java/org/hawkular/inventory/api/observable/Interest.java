@@ -25,26 +25,26 @@ package org.hawkular.inventory.api.observable;
  * @since 0.0.1
  */
 public final class Interest<E> {
-    private final Action action;
+    private final Action<E> action;
     private final Class<E> entityType;
 
-    public static Builder<?> inCreate() {
-        return in(Action.CREATE);
+    public static <T> Builder<T> inCreate() {
+        return in(Action.create());
     }
 
-    public static Builder<?> inUpdate() {
-        return in(Action.UPDATE);
+    public static <T> Builder<T> inUpdate() {
+        return in(Action.update());
     }
 
-    public static Builder<?> inDelete() {
-        return in(Action.DELETE);
+    public static <T> Builder<T> inDelete() {
+        return in(Action.delete());
     }
 
-    public static Builder<?> in(Action action) {
-        return new Builder(action);
+    public static <T> Builder<T> in(Action<T> action) {
+        return new Builder<>(action);
     }
 
-    public Interest(Action action, Class<E> entityType) {
+    public Interest(Action<E> action, Class<E> entityType) {
         this.action = action;
         this.entityType = entityType;
     }
@@ -56,7 +56,7 @@ public final class Interest<E> {
      * @param object the object to check
      * @return true if the object is of interest to this, false otherwise
      */
-    public boolean matches(Action action, Object object) {
+    public boolean matches(Action<?> action, Object object) {
         return this.action == action && object != null && entityType.isAssignableFrom(object.getClass());
     }
 
@@ -84,15 +84,11 @@ public final class Interest<E> {
         return "Interest[" + "action=" + action + ", entityType=" + entityType + ']';
     }
 
-    public enum Action {
-        CREATE, UPDATE, DELETE
-    }
-
     public static final class Builder<T> {
-        private final Action action;
+        private final Action<T> action;
         private Class<?> entityType;
 
-        private Builder(Action action) {
+        private Builder(Action<T> action) {
             this.action = action;
         }
 

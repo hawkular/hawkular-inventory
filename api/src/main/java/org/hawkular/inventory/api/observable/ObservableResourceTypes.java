@@ -33,7 +33,7 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public class ObservableResourceTypes {
+public final class ObservableResourceTypes {
 
     private ObservableResourceTypes() {
 
@@ -50,12 +50,12 @@ public class ObservableResourceTypes {
 
         @Override
         protected BiFunction<ResourceTypes.Single, ObservableContext, ? extends ResourceTypes.Single> singleCtor() {
-            return Single::new;
+            return ObservableResourceTypes.Single::new;
         }
 
         @Override
         protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple> multipleCtor() {
-            return Multiple::new;
+            return ObservableResourceTypes.Multiple::new;
         }
     }
 
@@ -71,84 +71,48 @@ public class ObservableResourceTypes {
 
         @Override
         protected BiFunction<ResourceTypes.Single, ObservableContext, ? extends ResourceTypes.Single> singleCtor() {
-            return Single::new;
+            return ObservableResourceTypes.Single::new;
         }
 
         @Override
         protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple> multipleCtor() {
-            return Multiple::new;
+            return ObservableResourceTypes.Multiple::new;
         }
     }
 
-    public static final class Single extends ObservableBase<ResourceTypes.Single> implements ResourceTypes.Single {
+    public static final class Single extends ObservableBase.RelatableSingle<ResourceType, ResourceTypes.Single> 
+            implements ResourceTypes.Single {
 
         Single(ResourceTypes.Single wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public Resources.Read resources() {
-            //TODO implement
-            return null;
+        public ObservableResources.Read resources() {
+            return wrap(ObservableResources.Read::new, wrapped.resources());
         }
 
         @Override
-        public MetricTypes.ReadRelate metricTypes() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public ResourceType entity() {
-            return wrapped.entity();
+        public ObservableMetricTypes.ReadRelate metricTypes() {
+            return wrap(ObservableMetricTypes.ReadRelate::new, wrapped.metricTypes());
         }
     }
 
-    public static final class Multiple extends ObservableBase<ResourceTypes.Multiple> implements ResourceTypes.Multiple {
+    public static final class Multiple extends ObservableBase.RelatableMultiple<ResourceType, ResourceTypes.Multiple>
+            implements ResourceTypes.Multiple {
 
         Multiple(ResourceTypes.Multiple wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public Resources.Read resources() {
-            //TODO implement
-            return null;
+        public ObservableResources.Read resources() {
+            return wrap(ObservableResources.Read::new, wrapped.resources());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Set<ResourceType> entities() {
-            return wrapped.entities();
+        public ObservableMetricTypes.Read metricTypes() {
+            return wrap(ObservableMetricTypes.Read::new, wrapped.metricTypes());
         }
     }
 }

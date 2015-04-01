@@ -17,7 +17,6 @@
 package org.hawkular.inventory.api.observable;
 
 import rx.Observable;
-import rx.Subscriber;
 import rx.functions.Action0;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -49,7 +48,7 @@ final class ObservableContext {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Iterator<Subject<T, T>> matchingSubjects(Interest.Action action, T object) {
+    public <T> Iterator<Subject<T, T>> matchingSubjects(Action<T> action, T object) {
         return observables.entrySet().stream().filter((e) -> e.getKey().matches(action, object))
                 .map((e) -> (Subject<T, T>) e.getValue()).iterator();
     }

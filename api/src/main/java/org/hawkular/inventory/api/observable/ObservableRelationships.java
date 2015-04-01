@@ -47,27 +47,27 @@ public final class ObservableRelationships {
 
         @Override
         public Relationships.Multiple named(String name) {
-            return wrap(Multiple::new, wrapped.named(name));
+            return wrap(ObservableRelationships.Multiple::new, wrapped.named(name));
         }
 
         @Override
         public Relationships.Multiple named(Relationships.WellKnown name) {
-            return wrap(Multiple::new, wrapped.named(name));
+            return wrap(ObservableRelationships.Multiple::new, wrapped.named(name));
         }
 
         @Override
         public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrap(Single::new, wrapped.get(id));
+            return wrap(ObservableRelationships.Single::new, wrapped.get(id));
         }
 
         @Override
         public Relationships.Multiple getAll(RelationFilter... filters) {
-            return wrap(Multiple::new, wrapped.getAll(filters));
+            return wrap(ObservableRelationships.Multiple::new, wrapped.getAll(filters));
         }
 
         @Override
         public Relationships.Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException {
-            return wrapAndNotify(Single::new, wrapped.linkWith(name, targetOrSource), Interest.Action.CREATE);
+            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource), Action.create());
         }
 
         @Override
@@ -78,30 +78,54 @@ public final class ObservableRelationships {
         @Override
         public void update(Relationship relationship) throws RelationNotFoundException {
             wrapped.update(relationship);
-            notify(relationship, Interest.Action.UPDATE);
+            notify(relationship, Action.update());
         }
 
         @Override
         public void delete(String id) throws RelationNotFoundException {
             Relationship r = get(id).entity();
             wrapped.delete(id);
-            notify(r, Interest.Action.DELETE);
+            notify(r, Action.delete());
         }
     }
 
-    public static final class Single extends ObservableBase<Relationships.Single> implements Relationships.Single {
+    public static final class Read extends ObservableBase<Relationships.Read>
+            implements Relationships.Read {
 
-        Single(Relationships.Single wrapped, ObservableContext context) {
+        Read(Relationships.Read wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public Relationship entity() {
-            return wrapped.entity();
+        public Relationships.Multiple named(String name) {
+            return wrap(ObservableRelationships.Multiple::new, wrapped.named(name));
+        }
+
+        @Override
+        public Relationships.Multiple named(Relationships.WellKnown name) {
+            return wrap(ObservableRelationships.Multiple::new, wrapped.named(name));
+        }
+
+        @Override
+        public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrap(ObservableRelationships.Single::new, wrapped.get(id));
+        }
+
+        @Override
+        public Relationships.Multiple getAll(RelationFilter... filters) {
+            return wrap(ObservableRelationships.Multiple::new, wrapped.getAll(filters));
         }
     }
 
-    public static final class Multiple extends ObservableBase<Relationships.Multiple>
+    public static final class Single extends ObservableBase.Single<Relationship, Relationships.Single> 
+            implements Relationships.Single {
+
+        Single(Relationships.Single wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+    }
+
+    public static final class Multiple extends ObservableBase.Multiple<Relationship, Relationships.Multiple>
             implements Relationships.Multiple {
 
         Multiple(Relationships.Multiple wrapped, ObservableContext context) {
@@ -109,50 +133,38 @@ public final class ObservableRelationships {
         }
 
         @Override
-        public Tenants.Read tenants() {
-            //TODO implement
-            return null;
+        public ObservableTenants.Read tenants() {
+            return wrap(ObservableTenants.Read::new, wrapped.tenants());
         }
 
         @Override
-        public Environments.Read environments() {
-            //TODO implement
-            return null;
+        public ObservableEnvironments.Read environments() {
+            return wrap(ObservableEnvironments.Read::new, wrapped.environments());
         }
 
         @Override
-        public Feeds.Read feeds() {
-            //TODO implement
-            return null;
+        public ObservableFeeds.Read feeds() {
+            return wrap(ObservableFeeds.Read::new, wrapped.feeds());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            //TODO implement
-            return null;
+        public ObservableMetricTypes.Read metricTypes() {
+            return wrap(ObservableMetricTypes.Read::new, wrapped.metricTypes());
         }
 
         @Override
-        public Metrics.Read metrics() {
-            //TODO implement
-            return null;
+        public ObservableMetrics.Read metrics() {
+            return wrap(ObservableMetrics.Read::new, wrapped.metrics());
         }
 
         @Override
-        public Resources.Read resources() {
-            //TODO implement
-            return null;
+        public ObservableResources.Read resources() {
+            return wrap(ObservableResources.Read::new, wrapped.resources());
         }
 
         @Override
-        public ResourceTypes.Read resourceTypes() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Set<Relationship> entities() {
-            return wrapped.entities();
+        public ObservableResourceTypes.Read resourceTypes() {
+            return wrap(ObservableResourceTypes.Read::new, wrapped.resourceTypes());
         }
     }
 }

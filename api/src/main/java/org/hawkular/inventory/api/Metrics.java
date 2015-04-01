@@ -33,7 +33,7 @@ public final class Metrics {
     /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends SingleRelatableEntityBrowser<Metric> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Metric> {}
 
     /**
      * Interface for traversing over a set of metrics.
@@ -42,7 +42,7 @@ public final class Metrics {
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends MultipleRelatableEntityBrowser<Metric> {}
+    public interface Multiple extends ResolvableToManyWithRelationships<Metric> {}
 
     /**
      * Provides read-only access to metrics.

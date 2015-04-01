@@ -39,7 +39,7 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends SingleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.ReadRelate> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadRelate> {}
 
     /**
      * Interface for traversing over a set of resources.
@@ -48,7 +48,7 @@ public final class Resources {
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends MultipleRelatableEntityBrowser<Resource>, BrowserBase<Metrics.Read> {}
+    public interface Multiple extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read> {}
 
     /**
      * Provides read-only access to resources.

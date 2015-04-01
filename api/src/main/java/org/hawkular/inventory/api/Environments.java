@@ -50,7 +50,7 @@ public final class Environments {
     /**
      * Interface for accessing a single environment in a writable manner.
      */
-    public interface Single extends SingleRelatableEntityBrowser<Environment>,
+    public interface Single extends ResolvableToSingleWithRelationships<Environment>,
             BrowserBase<Feeds.ReadAndRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
 
     /**
@@ -60,7 +60,7 @@ public final class Environments {
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends MultipleRelatableEntityBrowser<Environment>,
+    public interface Multiple extends ResolvableToManyWithRelationships<Environment>,
             BrowserBase<Feeds.Read, Resources.Read, Metrics.Read> {}
 
     /**
