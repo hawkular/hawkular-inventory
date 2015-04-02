@@ -55,7 +55,7 @@ public class ObservableInventoryTest {
         when(InventoryMock.tenantsSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities()).thenReturn(Collections.emptySet());
 
-        runTest(() -> {
+        runTest(Tenant.class, () -> {
             observableInventory.tenants().create("kachny");
             observableInventory.tenants().update(prototype);
             observableInventory.tenants().delete(prototype.getId());
@@ -71,7 +71,7 @@ public class ObservableInventoryTest {
         when(InventoryMock.relationshipsMultiple.entities())
                 .thenReturn(Collections.singleton(new Relationship("r", "contains", new Tenant("t"), prototype)));
 
-        runTest(() -> {
+        runTest(Environment.class, () -> {
             observableInventory.tenants().get("t").environments().create("e");
             observableInventory.tenants().get("t").environments().update(prototype);
             observableInventory.tenants().get("t").environments().delete(prototype.getId());
@@ -80,22 +80,22 @@ public class ObservableInventoryTest {
         observableInventory.observable(Interest.in(Action.copy()).of(Environment.class).build());
     }
 
-    private void runTest(Runnable payload) {
-        List<Tenant> createdTenants = new ArrayList<>();
-        List<Tenant> updatedTenants = new ArrayList<>();
-        List<Tenant> deletedTenants = new ArrayList<>();
+    private <T> void runTest(Class<T> entityClass, Runnable payload) {
+        List<T> createdTenants = new ArrayList<>();
+        List<T> updatedTenants = new ArrayList<>();
+        List<T> deletedTenants = new ArrayList<>();
 
-        Subscription s1 = observableInventory.observable(Interest.inCreate().of(Tenant.class).build())
+        Subscription s1 = observableInventory.observable(Interest.inCreate().of(entityClass).build())
                 .subscribe(createdTenants::add);
 
-        Subscription s2 = observableInventory.observable(Interest.inUpdate().of(Tenant.class).build())
+        Subscription s2 = observableInventory.observable(Interest.inUpdate().of(entityClass).build())
                 .subscribe(updatedTenants::add);
 
-        Subscription s3 = observableInventory.observable(Interest.inDelete().of(Tenant.class).build())
+        Subscription s3 = observableInventory.observable(Interest.inDelete().of(entityClass).build())
                 .subscribe(deletedTenants::add);
 
         //dummy observer just to check that unsubscription works
-        observableInventory.observable(Interest.inCreate().of(Tenant.class).build())
+        observableInventory.observable(Interest.inCreate().of(entityClass).build())
                 .subscribe((t) -> {});
 
         payload.run();
@@ -108,8 +108,8 @@ public class ObservableInventoryTest {
         s2.unsubscribe();
         s3.unsubscribe();
 
-        Assert.assertTrue(observableInventory.hasObservers(Interest.inCreate().of(Tenant.class).build()));
-        Assert.assertFalse(observableInventory.hasObservers(Interest.inUpdate().of(Tenant.class).build()));
-        Assert.assertFalse(observableInventory.hasObservers(Interest.inDelete().of(Tenant.class).build()));
+        Assert.assertTrue(observableInventory.hasObservers(Interest.inCreate().of(entityClass).build()));
+        Assert.assertFalse(observableInventory.hasObservers(Interest.inUpdate().of(entityClass).build()));
+        Assert.assertFalse(observableInventory.hasObservers(Interest.inDelete().of(entityClass).build()));
     }
 }
