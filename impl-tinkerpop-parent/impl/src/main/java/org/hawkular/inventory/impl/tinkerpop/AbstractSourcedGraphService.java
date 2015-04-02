@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -229,7 +230,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
     }
 
-    protected void removeAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
+    protected Relationship removeAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
                                      String targetUid) {
 
         Constants.Type myType = Constants.Type.of(entityClass);
@@ -237,7 +238,18 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
                 .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasUid(targetUid));
 
-        edges.forEach(context.getGraph()::removeEdge);
+        Iterator<Edge> it = edges.iterator();
+
+        if (!it.hasNext()) {
+            throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
+                    FilterApplicator.filters(path), "Relationship does not exist.", null);
+        }
+
+        Edge edge = it.next();
+        Relationship ret = new Relationship(getUid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
+                convert(edge.getVertex(Direction.IN)));
+        context.getGraph().removeEdge(edge);
+        return ret;
     }
 
     protected abstract Single createSingleBrowser(FilterApplicator... path);

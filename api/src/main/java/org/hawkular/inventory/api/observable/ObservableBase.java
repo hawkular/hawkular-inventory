@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.Relationship;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
@@ -86,7 +87,8 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class ReadWrite<Entity, Blueprint, Single extends ResolvableToSingle<Entity>,
+    public static abstract class ReadWrite<Entity, Blueprint,
+            Single extends ResolvableToSingle<Entity> & Relatable<Relationships.ReadWrite>,
             Multiple extends ResolvableToMany<Entity>,
             Iface extends ReadInterface<Single, Multiple> & WriteInterface<Entity, Blueprint, Single>>
             extends ObservableBase<Iface> {
@@ -108,7 +110,16 @@ public class ObservableBase<T> {
         }
 
         public Single create(Blueprint b) {
-            return wrapAndNotify(singleCtor(), wrapped.create(b), Action.create());
+            Single s = wrapped.create(b);
+
+            notify(s.entity(), Action.<Entity>create());
+
+            //there is a possible race here if someone creates a relationship on the entity between the time it
+            //is created above and here. Such relationships would be observed twice...
+            s.relationships(Relationships.Direction.both).getAll().entities()
+                    .forEach((r) -> notify(r, Action.<Relationship>create()));
+
+            return wrap(singleCtor(), s);
         }
 
         public void update(Entity e) {

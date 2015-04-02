@@ -90,8 +90,8 @@ final class MetricTypesService
     }
 
     @Override
-    public void disassociate(String id) {
-        removeAssociation(resourceType, owns, id);
+    public Relationship disassociate(String id) {
+        return removeAssociation(resourceType, owns, id);
     }
 
     @Override

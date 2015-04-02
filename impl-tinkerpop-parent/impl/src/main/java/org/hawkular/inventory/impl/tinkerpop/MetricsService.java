@@ -106,8 +106,8 @@ final class MetricsService
     }
 
     @Override
-    public void disassociate(String id) {
-        removeAssociation(resource, owns, id);
+    public Relationship disassociate(String id) {
+        return removeAssociation(resource, owns, id);
     }
 
     @Override

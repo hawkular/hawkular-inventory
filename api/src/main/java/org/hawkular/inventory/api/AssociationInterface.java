@@ -60,8 +60,10 @@ interface AssociationInterface {
      * @see #associate(String) for explanation of how the current entity and the relation is determined.
      *
      * @param id the id of the entity to remove from the relation with the current entity.
+     *
+     * @return the relationship that was deleted as a result of the disassociation
      */
-    void disassociate(String id) throws EntityNotFoundException;
+    Relationship disassociate(String id) throws EntityNotFoundException;
 
     /**
      * Finds the relationship with the entity with the provided id.
