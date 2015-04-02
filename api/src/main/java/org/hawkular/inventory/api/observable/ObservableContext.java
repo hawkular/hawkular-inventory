@@ -31,26 +31,38 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 0.0.1
  */
 final class ObservableContext {
-    private final Map<Interest<?>, Subject<?, ?>> observables = new ConcurrentHashMap<>();
+    private final Map<Interest<?>, SubjectAndWrapper<?>> observables = new ConcurrentHashMap<>();
 
     public <T> Observable<T> getObservableFor(Interest<T> interest) {
-        @SuppressWarnings("unchecked")
-        Subject<T, T> sub = (Subject<T, T>) observables.get(interest);
+        SubjectAndWrapper<T> sub = getSubjectAndWrapper(interest, true);
+        return sub.wrapper;
+    }
 
-        if (sub == null) {
-            sub = PublishSubject.<T>create().toSerialized();
-            observables.put(interest, sub);
-        }
-
-        SubscriptionTracker tracker = new SubscriptionTracker(() -> observables.remove(interest));
-
-        return sub.doOnSubscribe(tracker.onSubscribe()).doOnUnsubscribe(tracker.onUnsubscribe());
+    public boolean isObserved(Interest<?> interest) {
+        return observables.containsKey(interest);
     }
 
     @SuppressWarnings("unchecked")
     public <T> Iterator<Subject<T, T>> matchingSubjects(Action<T> action, T object) {
         return observables.entrySet().stream().filter((e) -> e.getKey().matches(action, object))
-                .map((e) -> (Subject<T, T>) e.getValue()).iterator();
+                .map((e) -> ((SubjectAndWrapper<T>) e.getValue()).subject).iterator();
+    }
+
+    private <T> SubjectAndWrapper<T> getSubjectAndWrapper(Interest<T> interest, boolean initialize) {
+        @SuppressWarnings("unchecked")
+        SubjectAndWrapper<T> sub = (SubjectAndWrapper<T>) observables.get(interest);
+
+        if (initialize && sub == null) {
+            SubscriptionTracker tracker = new SubscriptionTracker(() -> observables.remove(interest));
+            Subject<T, T> subject = PublishSubject.<T>create().toSerialized();
+            Observable<T> wrapper = subject.doOnSubscribe(tracker.onSubscribe())
+                    .doOnUnsubscribe(tracker.onUnsubscribe());
+
+            sub = new SubjectAndWrapper<>(subject, wrapper);
+            observables.put(interest, sub);
+        }
+
+        return sub;
     }
 
     private static class SubscriptionTracker {
@@ -72,6 +84,16 @@ final class ObservableContext {
                     action.run();
                 }
             };
+        }
+    }
+
+    private static class SubjectAndWrapper<T> {
+        final Subject<T, T> subject;
+        final Observable<T> wrapper;
+
+        private SubjectAndWrapper(Subject<T, T> subject, Observable<T> wrapper) {
+            this.subject = subject;
+            this.wrapper = wrapper;
         }
     }
 }
