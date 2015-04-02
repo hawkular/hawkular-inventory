@@ -91,14 +91,14 @@ public final class ObservableMetricTypes {
         @Override
         public Relationship associate(String id) {
             Relationship ret = wrapped.associate(id);
-            notify(ret, Action.create());
+            notify(ret, Action.created());
             return ret;
         }
 
         @Override
         public Relationship disassociate(String id) {
             Relationship ret = wrapped.associate(id);
-            notify(ret, Action.delete());
+            notify(ret, Action.deleted());
             return ret;
         }
 

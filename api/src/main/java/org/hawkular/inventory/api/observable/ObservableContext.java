@@ -31,31 +31,31 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 0.0.1
  */
 final class ObservableContext {
-    private final Map<Interest<?>, SubjectAndWrapper<?>> observables = new ConcurrentHashMap<>();
+    private final Map<Interest<?, ?>, SubjectAndWrapper<?>> observables = new ConcurrentHashMap<>();
 
-    public <T> Observable<T> getObservableFor(Interest<T> interest) {
-        SubjectAndWrapper<T> sub = getSubjectAndWrapper(interest, true);
+    public <C> Observable<C> getObservableFor(Interest<C, ?> interest) {
+        SubjectAndWrapper<C> sub = getSubjectAndWrapper(interest, true);
         return sub.wrapper;
     }
 
-    public boolean isObserved(Interest<?> interest) {
+    public boolean isObserved(Interest<?, ?> interest) {
         return observables.containsKey(interest);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Iterator<Subject<T, T>> matchingSubjects(Action<T> action, T object) {
+    public <C, T> Iterator<Subject<C, C>> matchingSubjects(Action<C, T> action, T object) {
         return observables.entrySet().stream().filter((e) -> e.getKey().matches(action, object))
-                .map((e) -> ((SubjectAndWrapper<T>) e.getValue()).subject).iterator();
+                .map((e) -> ((SubjectAndWrapper<C>) e.getValue()).subject).iterator();
     }
 
-    private <T> SubjectAndWrapper<T> getSubjectAndWrapper(Interest<T> interest, boolean initialize) {
+    private <C> SubjectAndWrapper<C> getSubjectAndWrapper(Interest<C, ?> interest, boolean initialize) {
         @SuppressWarnings("unchecked")
-        SubjectAndWrapper<T> sub = (SubjectAndWrapper<T>) observables.get(interest);
+        SubjectAndWrapper<C> sub = (SubjectAndWrapper<C>) observables.get(interest);
 
         if (initialize && sub == null) {
             SubscriptionTracker tracker = new SubscriptionTracker(() -> observables.remove(interest));
-            Subject<T, T> subject = PublishSubject.<T>create().toSerialized();
-            Observable<T> wrapper = subject.doOnSubscribe(tracker.onSubscribe())
+            Subject<C, C> subject = PublishSubject.<C>create().toSerialized();
+            Observable<C> wrapper = subject.doOnSubscribe(tracker.onSubscribe())
                     .doOnUnsubscribe(tracker.onUnsubscribe());
 
             sub = new SubjectAndWrapper<>(subject, wrapper);

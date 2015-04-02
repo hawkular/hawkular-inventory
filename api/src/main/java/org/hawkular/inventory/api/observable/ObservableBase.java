@@ -23,12 +23,12 @@ import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.Relationship;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * @author Lukas Krejci
@@ -48,21 +48,27 @@ public class ObservableBase<T> {
         return constructor.apply(value, context);
     }
 
-    protected <E, V extends ResolvableToSingle<E>, I> I wrapAndNotify(BiFunction<V, ObservableContext, I> constructor,
-        V value, Action<E> action) {
+    protected <C, E, V extends ResolvableToSingle<E>, I> I wrapAndNotify(
+            BiFunction<V, ObservableContext, I> constructor, V value, Function<V, C> contextProducer,
+            Action<C, E> action) {
 
         E e = value.entity();
+        C c = contextProducer.apply(value);
 
-        notify(e, action);
+        notify(e, c, action);
 
         return constructor.apply(value, context);
     }
 
-    protected <E> void notify(E entity, Action<E> action) {
-        Iterator<Subject<E, E>> subjects = context.matchingSubjects(action, entity);
+    protected <E> void notify(E entity, Action<E, E> action) {
+        notify(entity, entity, action);
+    }
+
+    protected <C, E> void notify(E entity, C actionContext, Action<C, E> action) {
+        Iterator<Subject<C, C>> subjects = context.matchingSubjects(action, entity);
         while (subjects.hasNext()) {
-            Subject<E, E> s = subjects.next();
-            s.onNext(entity);
+            Subject<C, C> s = subjects.next();
+            s.onNext(actionContext);
         }
     }
 
@@ -112,25 +118,27 @@ public class ObservableBase<T> {
         public Single create(Blueprint b) {
             Single s = wrapped.create(b);
 
-            notify(s.entity(), Action.create());
+            Entity e = s.entity();
+
+            notify(e, e, Action.created());
 
             //there is a possible race here if someone creates a relationship on the entity between the time it
             //is created above and here. Such relationships would be observed twice...
             s.relationships(Relationships.Direction.both).getAll().entities()
-                    .forEach((r) -> notify(r, Action.create()));
+                    .forEach((r) -> notify(r, r, Action.created()));
 
             return wrap(singleCtor(), s);
         }
 
         public void update(Entity e) {
             wrapped.update(e);
-            notify(e, Action.update());
+            notify(e, e, Action.updated());
         }
 
         public void delete(String id) {
             Entity e = get(id).entity();
             wrapped.delete(id);
-            notify(e, Action.delete());
+            notify(e, e, Action.deleted());
         }
     }
 

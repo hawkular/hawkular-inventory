@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.observable;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
@@ -59,7 +60,7 @@ public final class ObservableRelationships {
         @Override
         public Relationships.Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException {
             return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource),
-                    Action.create());
+                    ResolvableToSingle::entity, Action.created());
         }
 
         @Override
@@ -71,14 +72,14 @@ public final class ObservableRelationships {
         @Override
         public void update(Relationship relationship) throws RelationNotFoundException {
             wrapped.update(relationship);
-            notify(relationship, Action.update());
+            notify(relationship, relationship, Action.updated());
         }
 
         @Override
         public void delete(String id) throws RelationNotFoundException {
             Relationship r = get(id).entity();
             wrapped.delete(id);
-            notify(r, Action.delete());
+            notify(r, Action.deleted());
         }
     }
 

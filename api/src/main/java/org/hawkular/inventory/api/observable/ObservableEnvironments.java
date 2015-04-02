@@ -72,8 +72,8 @@ public final class ObservableEnvironments {
             wrapped.copy(sourceEnvironmentId, targetEnvironmentId);
             Environment s = get(sourceEnvironmentId).entity();
             Environment t = get(targetEnvironmentId).entity();
-            notify(t, Action.create());
-            notify(new Action.EnvironmentCopy(s, t), Action.copy());
+            notify(t, Action.created());
+            notify(s, new Action.EnvironmentCopy(s, t), Action.copied());
         }
     }
 

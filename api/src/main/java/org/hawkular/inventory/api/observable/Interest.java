@@ -19,32 +19,21 @@ package org.hawkular.inventory.api.observable;
 /**
  * Expresses what the user is interested in observing.
  *
+ * @param <C> the type of the action context that will be passed to the observers
  * @param <E> the type of the entity.
  *
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class Interest<E> {
-    private final Action<E> action;
+public final class Interest<C, E> {
+    private final Action<C, E> action;
     private final Class<E> entityType;
 
-    public static <T> Builder<T> inCreate() {
-        return in(Action.create());
+    public static <T> Builder<T> in(Class<T> entity) {
+        return new Builder<>(entity);
     }
 
-    public static <T> Builder<T> inUpdate() {
-        return in(Action.update());
-    }
-
-    public static <T> Builder<T> inDelete() {
-        return in(Action.delete());
-    }
-
-    public static <T> Builder<T> in(Action<T> action) {
-        return new Builder<>(action);
-    }
-
-    public Interest(Action<E> action, Class<E> entityType) {
+    public Interest(Action<C, E> action, Class<E> entityType) {
         this.action = action;
         this.entityType = entityType;
     }
@@ -56,7 +45,7 @@ public final class Interest<E> {
      * @param object the object to check
      * @return true if the object is of interest to this, false otherwise
      */
-    public boolean matches(Action<?> action, Object object) {
+    public boolean matches(Action<?, ?> action, Object object) {
         return this.action == action && object != null && entityType.isAssignableFrom(object.getClass());
     }
 
@@ -65,7 +54,7 @@ public final class Interest<E> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Interest<?> interest = (Interest<?>) o;
+        Interest<?, ?> interest = (Interest<?, ?>) o;
 
         if (action != interest.action) return false;
         return entityType.equals(interest.entityType);
@@ -84,26 +73,15 @@ public final class Interest<E> {
         return "Interest[" + "action=" + action + ", entityType=" + entityType + ']';
     }
 
-    public static final class Builder<T> {
-        private final Action<T> action;
-        private Class<?> entityType;
+    public static final class Builder<E> {
+        private final Class<E> entityType;
 
-        private Builder(Action<T> action) {
-            this.action = action;
-        }
-
-        public <E> Builder<E> of(Class<E> entityType) {
+        private Builder(Class<E> entityType) {
             this.entityType = entityType;
-            return cast(this);
         }
 
-        public Interest<T> build() {
-            return new Interest<>(action, cast(entityType));
-        }
-
-        @SuppressWarnings("unchecked")
-        private <U> U cast(Object o) {
-            return (U) o;
+        public <C> Interest<C, E> being(Action<C, E> action) {
+            return new Interest<>(action, entityType);
         }
     }
 }

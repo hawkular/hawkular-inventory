@@ -25,12 +25,17 @@ import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Observable;
 import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hawkular.inventory.api.observable.Action.copied;
+import static org.hawkular.inventory.api.observable.Action.created;
+import static org.hawkular.inventory.api.observable.Action.deleted;
+import static org.hawkular.inventory.api.observable.Action.updated;
 import static org.mockito.Mockito.when;
 
 /**
@@ -77,7 +82,7 @@ public class ObservableInventoryTest {
             observableInventory.tenants().get("t").environments().delete(prototype.getId());
         });
 
-        observableInventory.observable(Interest.in(Action.copy()).of(Environment.class).build());
+        observableInventory.observable(Interest.in(Environment.class).being(copied()));
     }
 
     private <T> void runTest(Class<T> entityClass, Runnable payload) {
@@ -85,18 +90,17 @@ public class ObservableInventoryTest {
         List<T> updatedTenants = new ArrayList<>();
         List<T> deletedTenants = new ArrayList<>();
 
-        Subscription s1 = observableInventory.observable(Interest.inCreate().of(entityClass).build())
+        Subscription s1 = observableInventory.observable(Interest.in(entityClass).<T>being(created()))
                 .subscribe(createdTenants::add);
 
-        Subscription s2 = observableInventory.observable(Interest.inUpdate().of(entityClass).build())
+        Subscription s2 = observableInventory.observable(Interest.in(entityClass).<T>being(updated()))
                 .subscribe(updatedTenants::add);
 
-        Subscription s3 = observableInventory.observable(Interest.inDelete().of(entityClass).build())
+        Subscription s3 = observableInventory.observable(Interest.in(entityClass).<T>being(deleted()))
                 .subscribe(deletedTenants::add);
 
         //dummy observer just to check that unsubscription works
-        observableInventory.observable(Interest.inCreate().of(entityClass).build())
-                .subscribe((t) -> {});
+        observableInventory.observable(Interest.in(entityClass).<T>being(created())).subscribe((t) -> {});
 
         payload.run();
 
@@ -108,8 +112,8 @@ public class ObservableInventoryTest {
         s2.unsubscribe();
         s3.unsubscribe();
 
-        Assert.assertTrue(observableInventory.hasObservers(Interest.inCreate().of(entityClass).build()));
-        Assert.assertFalse(observableInventory.hasObservers(Interest.inUpdate().of(entityClass).build()));
-        Assert.assertFalse(observableInventory.hasObservers(Interest.inDelete().of(entityClass).build()));
+        Assert.assertTrue(observableInventory.hasObservers(Interest.in(entityClass).being(created())));
+        Assert.assertFalse(observableInventory.hasObservers(Interest.in(entityClass).being(updated())));
+        Assert.assertFalse(observableInventory.hasObservers(Interest.in(entityClass).being(deleted())));
     }
 }

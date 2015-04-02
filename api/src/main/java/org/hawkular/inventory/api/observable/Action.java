@@ -24,34 +24,34 @@ import org.hawkular.inventory.api.model.Feed;
  * @since 0.0.1
  */
 @SuppressWarnings("unchecked")
-public final class Action<T> {
-    private static final Action<?> CREATE = new Action<>();
-    private static final Action<?> UPDATE = new Action<>();
-    private static final Action<?> DELETE = new Action<>();
-    private static final Action<EnvironmentCopy> COPY = new Action<>();
-    private static final Action<Feed> REGISTER = new Action<>();
+public final class Action<C, E> {
+    private static final Action<?, ?> CREATE = new Action<>();
+    private static final Action<?, ?> UPDATE = new Action<>();
+    private static final Action<?, ?> DELETE = new Action<>();
+    private static final Action<EnvironmentCopy, Environment> COPY = new Action<>();
+    private static final Action<Feed, Feed> REGISTER = new Action<>();
 
     private Action() {
 
     }
 
-    public static <T> Action<T> create() {
-        return (Action<T>) CREATE;
+    public static <C, E> Action<C, E> created() {
+        return (Action<C, E>) CREATE;
     }
 
-    public static <T> Action<T> update() {
-        return (Action<T>) UPDATE;
+    public static <C, E> Action<C, E> updated() {
+        return (Action<C, E>) UPDATE;
     }
 
-    public static <T> Action<T> delete() {
-        return (Action<T>) DELETE;
+    public static <C, E> Action<C, E> deleted() {
+        return (Action<C, E>) DELETE;
     }
 
-    public static Action<EnvironmentCopy> copy() {
+    public static Action<EnvironmentCopy, Environment> copied() {
         return COPY;
     }
 
-    public static Action<Feed> register() {
+    public static Action<Feed, Feed> registered() {
         return REGISTER;
     }
 
