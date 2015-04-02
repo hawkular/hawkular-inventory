@@ -66,7 +66,7 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class Read<Single extends ResolvableToSingle<?>,
+    public abstract static class Read<Single extends ResolvableToSingle<?>,
             Multiple extends ResolvableToMany<?>, Iface extends ReadInterface<Single, Multiple>>
             extends ObservableBase<Iface> {
 
@@ -87,7 +87,7 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class ReadWrite<Entity, Blueprint,
+    public abstract static class ReadWrite<Entity, Blueprint,
             Single extends ResolvableToSingle<Entity> & Relatable<Relationships.ReadWrite>,
             Multiple extends ResolvableToMany<Entity>,
             Iface extends ReadInterface<Single, Multiple> & WriteInterface<Entity, Blueprint, Single>>
@@ -112,12 +112,12 @@ public class ObservableBase<T> {
         public Single create(Blueprint b) {
             Single s = wrapped.create(b);
 
-            notify(s.entity(), Action.<Entity>create());
+            notify(s.entity(), Action.create());
 
             //there is a possible race here if someone creates a relationship on the entity between the time it
             //is created above and here. Such relationships would be observed twice...
             s.relationships(Relationships.Direction.both).getAll().entities()
-                    .forEach((r) -> notify(r, Action.<Relationship>create()));
+                    .forEach((r) -> notify(r, Action.create()));
 
             return wrap(singleCtor(), s);
         }
@@ -134,9 +134,9 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class Single<E, T extends ResolvableToSingle<E>> extends ObservableBase<T> {
+    public abstract static class SingleBase<E, T extends ResolvableToSingle<E>> extends ObservableBase<T> {
 
-        Single(T wrapped, ObservableContext context) {
+        SingleBase(T wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
@@ -145,9 +145,9 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class Multiple<E, T extends ResolvableToMany<E>> extends ObservableBase<T> {
+    public abstract static class MultipleBase<E, T extends ResolvableToMany<E>> extends ObservableBase<T> {
 
-        Multiple(T wrapped, ObservableContext context) {
+        MultipleBase(T wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
@@ -156,8 +156,8 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class RelatableSingle<E,
-            T extends Relatable<Relationships.ReadWrite> & ResolvableToSingle<E>> extends Single<E, T> {
+    public abstract static class RelatableSingle<E,
+            T extends Relatable<Relationships.ReadWrite> & ResolvableToSingle<E>> extends SingleBase<E, T> {
 
         RelatableSingle(T wrapped, ObservableContext context) {
             super(wrapped, context);
@@ -172,8 +172,8 @@ public class ObservableBase<T> {
         }
     }
 
-    public static abstract class RelatableMultiple<E,
-            T extends Relatable<Relationships.Read> & ResolvableToMany<E>> extends Multiple<E, T> {
+    public abstract static class RelatableMultiple<E,
+            T extends Relatable<Relationships.Read> & ResolvableToMany<E>> extends MultipleBase<E, T> {
 
         RelatableMultiple(T wrapped, ObservableContext context) {
             super(wrapped, context);

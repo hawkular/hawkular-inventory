@@ -16,14 +16,9 @@
  */
 package org.hawkular.inventory.api.observable;
 
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.MetricTypes;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.Tenant;
 
-import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -73,7 +68,7 @@ public final class ObservableTenants {
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<Tenant, Tenants.Single> 
+    public static final class Single extends ObservableBase.RelatableSingle<Tenant, Tenants.Single>
             implements Tenants.Single {
 
         Single(Tenants.Single wrapped, ObservableContext context) {

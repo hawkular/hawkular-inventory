@@ -17,20 +17,11 @@
 package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.MetricTypes;
-import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-
-import java.util.Set;
 
 /**
  * @author Lukas Krejci
@@ -67,11 +58,13 @@ public final class ObservableRelationships {
 
         @Override
         public Relationships.Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException {
-            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource), Action.create());
+            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource),
+                    Action.create());
         }
 
         @Override
-        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws IllegalArgumentException {
+        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource)
+                throws IllegalArgumentException {
             return linkWith(name.name(), targetOrSource);
         }
 
@@ -117,7 +110,7 @@ public final class ObservableRelationships {
         }
     }
 
-    public static final class Single extends ObservableBase.Single<Relationship, Relationships.Single> 
+    public static final class Single extends ObservableBase.SingleBase<Relationship, Relationships.Single>
             implements Relationships.Single {
 
         Single(Relationships.Single wrapped, ObservableContext context) {
@@ -125,7 +118,7 @@ public final class ObservableRelationships {
         }
     }
 
-    public static final class Multiple extends ObservableBase.Multiple<Relationship, Relationships.Multiple>
+    public static final class Multiple extends ObservableBase.MultipleBase<Relationship, Relationships.Multiple>
             implements Relationships.Multiple {
 
         Multiple(Relationships.Multiple wrapped, ObservableContext context) {

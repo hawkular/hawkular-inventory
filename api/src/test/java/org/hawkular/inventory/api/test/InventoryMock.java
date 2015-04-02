@@ -193,6 +193,8 @@ public class InventoryMock {
         when(relationshipsRead.named(Mockito.<Relationships.WellKnown>any())).thenReturn(relationshipsMultiple);
         when(relationshipsReadWrite.named(anyString())).thenReturn(relationshipsMultiple);
         when(relationshipsReadWrite.named(Mockito.<Relationships.WellKnown>any())).thenReturn(relationshipsMultiple);
+        when(relationshipsReadWrite.get(any())).thenReturn(relationshipsSingle);
+        when(relationshipsReadWrite.getAll(anyVararg())).thenReturn(relationshipsMultiple);
 
         when(resourcesMultiple.metrics()).thenReturn(metricsRead);
         when(resourcesMultiple.relationships()).thenReturn(relationshipsRead);

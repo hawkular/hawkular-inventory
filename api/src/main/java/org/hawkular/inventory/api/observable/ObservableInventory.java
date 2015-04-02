@@ -53,4 +53,8 @@ public final class ObservableInventory implements Inventory {
     public <E> Observable<E> observable(Interest<E> interest) {
         return context.getObservableFor(interest);
     }
+
+    public boolean hasObservers(Interest<?> interest) {
+        return context.isObserved(interest);
+    }
 }

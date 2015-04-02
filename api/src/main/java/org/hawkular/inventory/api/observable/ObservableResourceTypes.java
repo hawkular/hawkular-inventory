@@ -46,7 +46,9 @@ public final class ObservableResourceTypes {
         }
 
         @Override
-        protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple> multipleCtor() {
+        protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple>
+            multipleCtor() {
+
             return ObservableResourceTypes.Multiple::new;
         }
     }
@@ -67,12 +69,14 @@ public final class ObservableResourceTypes {
         }
 
         @Override
-        protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple> multipleCtor() {
+        protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple>
+            multipleCtor() {
+
             return ObservableResourceTypes.Multiple::new;
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<ResourceType, ResourceTypes.Single> 
+    public static final class Single extends ObservableBase.RelatableSingle<ResourceType, ResourceTypes.Single>
             implements ResourceTypes.Single {
 
         Single(ResourceTypes.Single wrapped, ObservableContext context) {
