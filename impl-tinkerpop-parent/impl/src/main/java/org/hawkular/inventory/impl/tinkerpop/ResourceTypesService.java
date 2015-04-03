@@ -21,7 +21,6 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 

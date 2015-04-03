@@ -82,7 +82,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricBrowser(context, path);
+        return MetricBrowser.single(context, path);
     }
 
     @Override
@@ -92,7 +92,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricBrowser(context, path);
+        return MetricBrowser.multiple(context, path);
     }
 
     @Override

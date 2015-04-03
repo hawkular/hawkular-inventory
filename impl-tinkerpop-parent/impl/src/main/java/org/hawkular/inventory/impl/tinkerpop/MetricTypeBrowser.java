@@ -19,20 +19,75 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.MetricType;
+
+import java.util.Set;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricTypeBrowser extends AbstractBrowser<MetricType> implements MetricTypes.Single,
-        MetricTypes.Multiple {
+final class MetricTypeBrowser extends AbstractBrowser<MetricType> {
+
+    public static MetricTypes.Single single(InventoryContext context, FilterApplicator... path) {
+        MetricTypeBrowser b = new MetricTypeBrowser(context, path);
+
+        return new MetricTypes.Single() {
+
+            @Override
+            public MetricType entity() {
+                return b.entity();
+            }
+
+            @Override
+            public Relationships.ReadWrite relationships() {
+                return b.relationships();
+            }
+
+            @Override
+            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
+            public Metrics.Read metrics() {
+                return b.metrics();
+            }
+        };
+    }
+
+    public static MetricTypes.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+        MetricTypeBrowser b = new MetricTypeBrowser(context, path);
+
+        return new MetricTypes.Multiple() {
+
+            @Override
+            public Set<MetricType> entities() {
+                return b.entities();
+            }
+
+            @Override
+            public Relationships.Read relationships() {
+                return b.relationships();
+            }
+
+            @Override
+            public Relationships.Read relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
+            public Metrics.Read metrics() {
+                return b.metrics();
+            }
+        };
+    }
 
     MetricTypeBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, MetricType.class, path);
     }
 
-    @Override
     public Metrics.Read metrics() {
         return new MetricsService(context, pathToHereWithSelect(null));
     }

@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -24,19 +25,74 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Resource;
 
+import java.util.Set;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-final class FeedBrowser extends AbstractBrowser<Feed> implements Feeds.Single, Feeds.Multiple {
+final class FeedBrowser extends AbstractBrowser<Feed> {
+
+    public static Feeds.Single single(InventoryContext context, FilterApplicator... path) {
+        FeedBrowser b = new FeedBrowser(context, path);
+
+        return new Feeds.Single() {
+
+            @Override
+            public Feed entity() {
+                return b.entity();
+            }
+
+            @Override
+            public Relationships.ReadWrite relationships() {
+                return b.relationships();
+            }
+
+            @Override
+            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
+            public Resources.Read resources() {
+                return b.resources();
+            }
+        };
+    }
+
+    public static Feeds.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+        FeedBrowser b = new FeedBrowser(context, path);
+
+        return new Feeds.Multiple() {
+
+            @Override
+            public Set<Feed> entities() {
+                return b.entities();
+            }
+
+            @Override
+            public Relationships.Read relationships() {
+                return b.relationships();
+            }
+
+            @Override
+            public Relationships.Read relationships(Relationships.Direction direction) {
+                return b.relationships(direction);
+            }
+
+            @Override
+            public Resources.Read resources() {
+                return b.resources();
+            }
+        };
+    }
 
     FeedBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, Feed.class, path);
     }
 
-    @Override
     public Resources.Read resources() {
         return new ResourcesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(Resource.class))));

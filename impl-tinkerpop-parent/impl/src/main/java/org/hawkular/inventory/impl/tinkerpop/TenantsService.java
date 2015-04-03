@@ -20,7 +20,6 @@ import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
