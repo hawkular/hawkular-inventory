@@ -35,6 +35,8 @@ public final class Action<C, E> {
 
     }
 
+    //theses should really be Action<E, E> but I get a stack overflow in javac 8_u40 if I do that...
+    //didn't isolate the cause of this yet.. :(
     public static <C, E> Action<C, E> created() {
         return (Action<C, E>) CREATE;
     }
