@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
@@ -32,6 +34,7 @@ public final class ResourceType extends OwnedEntity {
 
     @XmlAttribute
     @XmlJavaTypeAdapter(VersionAdapter.class)
+    @Expose
     private final Version version;
 
     /** JAXB support */

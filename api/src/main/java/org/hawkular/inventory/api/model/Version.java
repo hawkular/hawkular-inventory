@@ -34,6 +34,8 @@
 
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
@@ -78,6 +80,7 @@ import java.util.Stack;
 @XmlJavaTypeAdapter(Version.JaxbAdapter.class)
 public final class Version {
 
+    @Expose
     private final String value;
 
     private final String canonical;

@@ -40,5 +40,6 @@
     <module>impl-tinkerpop-parent</module>
     <module>rest-servlet</module>
     <module>rest-test</module>
+    <module>bus</module>
   </modules>
 </project>

@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.observable;
 
+import com.google.gson.annotations.Expose;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 
@@ -58,7 +59,10 @@ public final class Action<C, E> {
     }
 
     public static final class EnvironmentCopy {
+        @Expose
         private final Environment source;
+
+        @Expose
         private final Environment target;
 
         public EnvironmentCopy(Environment source, Environment target) {

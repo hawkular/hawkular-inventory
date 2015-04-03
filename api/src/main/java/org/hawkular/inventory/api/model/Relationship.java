@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.HashMap;
@@ -34,13 +36,20 @@ import java.util.Map;
 public final class Relationship {
 
     @XmlAttribute
+    @Expose
     private final String id;
 
     @XmlAttribute
+    @Expose
     private final String name;
 
+    @Expose
     private Map<String, Object> properties;
+
+    @Expose
     private final Entity source;
+
+    @Expose
     private final Entity target;
 
     /** JAXB support */

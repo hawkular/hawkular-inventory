@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -31,6 +33,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public final class MetricType extends OwnedEntity {
 
     @XmlAttribute
+    @Expose
     private final MetricUnit unit;
 
     /** JAXB support */
