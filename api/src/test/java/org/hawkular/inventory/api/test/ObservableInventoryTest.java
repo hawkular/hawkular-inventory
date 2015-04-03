@@ -168,7 +168,8 @@ public class ObservableInventoryTest {
         when(InventoryMock.resourcesReadWrite.create(any())).thenReturn(InventoryMock.resourcesSingle);
         when(InventoryMock.resourcesSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities())
-                .thenReturn(Collections.singleton(new Relationship("r", "contains", new Environment("t", "e"), prototype)));
+                .thenReturn(Collections.singleton(new Relationship("r", "contains", new Environment("t", "e"),
+                        prototype)));
 
         runTest(Resource.class, true, () -> {
             observableInventory.tenants().get("t").environments().get("e").resources()
