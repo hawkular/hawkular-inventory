@@ -44,4 +44,10 @@ public interface RestApiLogger {
     @Message(id = 2001, value = "Something bad has happened")
     void warn(@Cause Throwable t);
 
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2002, value = "Bus Integration initialization failed. Inventory will not notify about changes on " +
+            "the Hawkular message bus. Cause: [%s]")
+    void busInitializationFailed(String message);
+
+
 }

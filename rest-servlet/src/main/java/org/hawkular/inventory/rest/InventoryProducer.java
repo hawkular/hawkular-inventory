@@ -17,20 +17,11 @@
 
 package org.hawkular.inventory.rest;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
-import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
-import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * @author Lukas Krejci
@@ -39,51 +30,13 @@ import java.util.Map;
 @ApplicationScoped
 public class InventoryProducer {
 
+    @Inject @ForRest
+    private BusIntegrationProducer.InventoryWithBus busIntegration;
+
     @Produces @ApplicationScoped @ForRest
     public Inventory getInventory() {
-        // TODO this is crude and ties REST API to tinkerpop impl.
-        // Once we have a more established way of configuring hawkular components, we can rewrite this to use a more
-        // generic approach using ServiceLoader.
+        return busIntegration.getInventory();
 
-        Map<String, String> config = new HashMap<>();
-        System.getProperties().forEach((k,v) -> config.put(k.toString(), v == null ? null : v.toString()));
-
-        if (config.get("blueprints.graph") == null) {
-            config.put("blueprints.graph", DummyTransactionalGraph.class.getName());
-        }
-
-        if (config.get("blueprints.tg.directory") == null) {
-            config.put("blueprints.tg.directory", new File(config.get("jboss.server.data.dir"), "hawkular-inventory")
-                    .getAbsolutePath());
-        }
-
-        Inventory i = new InventoryService();
-
-        i.initialize(Configuration.builder()
-                .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
-                .withConfiguration(config).build());
-
-        return i;
     }
 
-    public void closeInventory(@Disposes @ForRest Inventory inventory) throws Exception {
-        inventory.close();
-    }
-
-    public static class DummyTransactionalGraph extends TinkerGraph implements TransactionalGraph {
-        public DummyTransactionalGraph(org.apache.commons.configuration.Configuration configuration) {
-            super(configuration);
-        }
-        @Override
-        public void commit() {
-        }
-
-        @Override
-        public void stopTransaction(Conclusion conclusion) {
-        }
-
-        @Override
-        public void rollback() {
-        }
-    }
 }
