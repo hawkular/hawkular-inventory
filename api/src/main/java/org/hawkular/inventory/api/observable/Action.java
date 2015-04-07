@@ -26,36 +26,58 @@ import org.hawkular.inventory.api.model.Feed;
  */
 @SuppressWarnings("unchecked")
 public final class Action<C, E> {
-    private static final Action<?, ?> CREATE = new Action<>();
-    private static final Action<?, ?> UPDATE = new Action<>();
-    private static final Action<?, ?> DELETE = new Action<>();
-    private static final Action<EnvironmentCopy, Environment> COPY = new Action<>();
-    private static final Action<Feed, Feed> REGISTER = new Action<>();
+    private static final Action<?, ?> _CREATED = new Action<>();
+    private static final Action<?, ?> _UPDATED = new Action<>();
+    private static final Action<?, ?> _DELETED = new Action<>();
+    private static final Action<EnvironmentCopy, Environment> _COPIED = new Action<>();
+    private static final Action<Feed, Feed> _REGISTERED = new Action<>();
+
+    public static <E> Action<E, E> created() {
+        return (Action<E, E>) _CREATED;
+    }
+
+    public static <E> Action<E, E> updated() {
+        return (Action<E, E>) _UPDATED;
+    }
+
+    public static <E> Action<E, E> deleted() {
+        return (Action<E, E>) _DELETED;
+    }
+
+    public static Action<EnvironmentCopy, Environment> copied() {
+        return _COPIED;
+    }
+
+    public static Action<Feed, Feed> registered() {
+        return _REGISTERED;
+    }
 
     private Action() {
 
     }
 
-    //theses should really be Action<E, E> but I get a stack overflow in javac 8_u40 if I do that...
-    //didn't isolate the cause of this yet.. :(
-    public static <E> Action<E, E> created() {
-        return (Action<E, E>) CREATE;
+    public Enumerated asEnum() {
+        return Enumerated.from(this);
     }
 
-    public static <E> Action<E, E> updated() {
-        return (Action<E, E>) UPDATE;
-    }
+    public enum Enumerated {
+        CREATED(_CREATED), UPDATED(_UPDATED), DELETED(_DELETED), COPIED(_COPIED), REGISTERED(_REGISTERED);
 
-    public static <E> Action<E, E> deleted() {
-        return (Action<E, E>) DELETE;
-    }
+        private final Action<?, ?> action;
 
-    public static Action<EnvironmentCopy, Environment> copied() {
-        return COPY;
-    }
+        Enumerated(Action<?, ?> action) {
+            this.action = action;
+        }
 
-    public static Action<Feed, Feed> registered() {
-        return REGISTER;
+        public static Enumerated from(Action<?, ?> action) {
+            for (Enumerated e : values()) {
+                if (e.action == action) {
+                    return e;
+                }
+            }
+
+            throw new AssertionError("Unknown action");
+        }
     }
 
     public static final class EnvironmentCopy {

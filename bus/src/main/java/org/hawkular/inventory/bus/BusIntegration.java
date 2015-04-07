@@ -46,8 +46,7 @@ import java.util.Set;
 public final class BusIntegration {
 
     private final ObservableInventory inventory;
-    private MessageSender entityMessageSender;
-    private MessageSender relationshipMessageSender;
+    private MessageSender messageSender;
     private final Set<Subscription> subscriptions = new HashSet<>();
     private Configuration configuration;
     private InitialContext namingContext;
@@ -73,12 +72,8 @@ public final class BusIntegration {
         ConnectionContextFactory ccf = new ConnectionContextFactory(tcf);
 
         ProducerConnectionContext pcc = ccf.createProducerConnectionContext(new Endpoint(Endpoint.Type.TOPIC,
-                configuration.getEntityChangesTopicName()));
-        this.entityMessageSender = new MessageSender(pcc);
-
-        pcc = ccf.createProducerConnectionContext(new Endpoint(Endpoint.Type.TOPIC,
-                configuration.getRelationshipChangesTopicName()));
-        this.relationshipMessageSender = new MessageSender(pcc);
+                configuration.getInventoryChangesTopicName()));
+        this.messageSender = new MessageSender(pcc);
 
         install();
     }
@@ -90,14 +85,14 @@ public final class BusIntegration {
     }
 
     private void install() {
-        install(inventory, subscriptions, Tenant.class, entityMessageSender);
-        install(inventory, subscriptions, ResourceType.class, entityMessageSender);
-        install(inventory, subscriptions, MetricType.class, entityMessageSender);
-        install(inventory, subscriptions, Environment.class, entityMessageSender, Action.copied());
-        install(inventory, subscriptions, Feed.class, entityMessageSender, Action.registered());
-        install(inventory, subscriptions, Resource.class, entityMessageSender);
-        install(inventory, subscriptions, Metric.class, entityMessageSender);
-        install(inventory, subscriptions, Relationship.class, relationshipMessageSender);
+        install(inventory, subscriptions, Tenant.class, messageSender);
+        install(inventory, subscriptions, ResourceType.class, messageSender);
+        install(inventory, subscriptions, MetricType.class, messageSender);
+        install(inventory, subscriptions, Environment.class, messageSender, Action.copied());
+        install(inventory, subscriptions, Feed.class, messageSender, Action.registered());
+        install(inventory, subscriptions, Resource.class, messageSender);
+        install(inventory, subscriptions, Metric.class, messageSender);
+        install(inventory, subscriptions, Relationship.class, messageSender);
     }
 
     private void uninstall() {
@@ -117,7 +112,10 @@ public final class BusIntegration {
 
     private static <C, T> void installAction(ObservableInventory inventory, Set<Subscription> subscriptions,
             Class<T> entityClass, MessageSender sender, Action<C, T> action) {
-        Subscription s = inventory.observable(Interest.in(entityClass).being(action)).subscribe(sender::send);
+
+        Interest<C, T> interest = Interest.in(entityClass).being(action);
+
+        Subscription s = inventory.observable(interest).subscribe(new PartiallyApplied<>(sender::send, interest));
         subscriptions.add(s);
     }
 }

@@ -32,7 +32,6 @@ public final class Configuration {
 
     private final String connectionFactoryJndiName;
     private final String entityChangesTopicName;
-    private final String relationshipChangesTopicName;
 
     public static Configuration fromProperties(Properties properties) {
         Map<String, String> map = new HashMap<>();
@@ -58,7 +57,6 @@ public final class Configuration {
     public static Configuration fromEnumMap(Map<Property, String> map) {
         String connectionFactoryJndiName = null;
         String entityChangesTopicName = null;
-        String relationshipChangesTopicName = null;
 
         for (Property p : Property.values()) {
             String value = map.get(p);
@@ -70,16 +68,13 @@ public final class Configuration {
                 case CONNECTION_FACTORY_JNDI_NAME:
                     connectionFactoryJndiName = value;
                     break;
-                case ENTITY_CHANGES_TOPIC_NAME:
+                case INVENTORY_CHANGES_TOPIC_NAME:
                     entityChangesTopicName = value;
-                    break;
-                case RELATIONSHIP_CHANGES_TOPIC_NAME:
-                    relationshipChangesTopicName = value;
                     break;
             }
         }
 
-        return new Configuration(connectionFactoryJndiName, entityChangesTopicName, relationshipChangesTopicName);
+        return new Configuration(connectionFactoryJndiName, entityChangesTopicName);
     }
 
     public static Configuration getDefaultConfiguration() {
@@ -90,23 +85,17 @@ public final class Configuration {
         return new Builder();
     }
 
-    private Configuration(String connectionFactoryJndiName, String entityChangesTopicName,
-                          String relationshipChangesTopicName) {
+    private Configuration(String connectionFactoryJndiName, String entityChangesTopicName) {
         this.connectionFactoryJndiName = connectionFactoryJndiName;
         this.entityChangesTopicName = entityChangesTopicName;
-        this.relationshipChangesTopicName = relationshipChangesTopicName;
     }
 
     public String getConnectionFactoryJndiName() {
         return connectionFactoryJndiName;
     }
 
-    public String getEntityChangesTopicName() {
+    public String getInventoryChangesTopicName() {
         return entityChangesTopicName;
-    }
-
-    public String getRelationshipChangesTopicName() {
-        return relationshipChangesTopicName;
     }
 
     public Builder modify() {
@@ -120,8 +109,7 @@ public final class Configuration {
         Map<String, String> ret = new HashMap<>();
 
         ret.put(Property.CONNECTION_FACTORY_JNDI_NAME.propertyName, connectionFactoryJndiName);
-        ret.put(Property.ENTITY_CHANGES_TOPIC_NAME.propertyName, entityChangesTopicName);
-        ret.put(Property.RELATIONSHIP_CHANGES_TOPIC_NAME.propertyName, relationshipChangesTopicName);
+        ret.put(Property.INVENTORY_CHANGES_TOPIC_NAME.propertyName, entityChangesTopicName);
 
         return ret;
     }
@@ -129,10 +117,8 @@ public final class Configuration {
     public enum Property {
         CONNECTION_FACTORY_JNDI_NAME("java:/HawkularBusConnectionFactory",
                 "hawkular.inventory.bus.connectionFactoryJndiName"),
-        ENTITY_CHANGES_TOPIC_NAME("java:/topic/HawkularInventoryEntityChanges",
-                "hawkular.inventory.bus.entityChangesTopicName"),
-        RELATIONSHIP_CHANGES_TOPIC_NAME("java:/topic/HawkularInventoryRelationshipChanges",
-                "hawkular.inventory.bus.relationshipChangesTopicName");
+        INVENTORY_CHANGES_TOPIC_NAME("java:/topic/HawkularInventoryChanges",
+                "hawkular.inventory.bus.inventoryChangesTopicName");
 
         private final String defaultValue;
         private final String propertyName;

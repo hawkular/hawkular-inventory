@@ -38,6 +38,14 @@ public final class Interest<C, E> {
         this.entityType = entityType;
     }
 
+    public Action<C, E> getAction() {
+        return action;
+    }
+
+    public Class<E> getEntityType() {
+        return entityType;
+    }
+
     /**
      * Checks whether given object is of interest to this interest instance.
      *
