@@ -162,10 +162,10 @@ public class RestResources {
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
                                         Collection<String> metricIds) {
-        Metrics.ReadRelate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
+        Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .resources().get(resourceId).metrics();
 
-        metricIds.forEach(metricDao::add);
+        metricIds.forEach(metricDao::associate);
 
         return Response.noContent().build();
     }

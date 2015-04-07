@@ -17,18 +17,20 @@
 
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Relationship;
+
 /**
  * An interface providing methods to add a pre-existing entity into relation with the single entity in the current
  * position on the inventory traversal.
  *
  * <p>Note that this interface should never be inherited by the actual {@code Single} interface together with the
- * {@link WriteInterface}. Having both {@code create} and {@code add} or {@code remove} and {@code delete} methods
- * would be semantically incorrect (in addition to being confusing to the API consumer).
+ * {@link WriteInterface}. Having both {@code create} and {@code associate} or {@code disassociate} and {@code delete}
+ * methods would be semantically incorrect (in addition to being confusing to the API consumer).
  *
  * @author Lukas Krejci
  * @since 1.0
  */
-interface RelateInterface {
+interface AssociationInterface {
 
     /**
      * Adds a pre-existing entity into the relation with the current entity.
@@ -37,16 +39,17 @@ interface RelateInterface {
      * being related to it. Consider this example:
      *
      * <pre><code>
-     * inventory.tenants().get(tenantId).environments().get(envId).resources().get(rId).metrics().add(metricId);
+     * inventory.tenants().get(tenantId).environments().get(envId).resources().get(rId).metrics().associate(metricId);
      * </code></pre>
      *
-     * <p>In here the {@code add} method will add a new metric (identified by the {@code metricId}) to the resource
-     * identified by the {@code rId}.
+     * <p>In here the {@code associate} method will add a new metric (identified by the {@code metricId}) to the
+     * resource identified by the {@code rId}.
      *
      * @param id the id of a pre-existing entity to be related to the entity on the current position in the inventory
-     *           traversal.s
+     *           traversal.
+     * @return the relationship that was created as the consequence of the association.
      */
-    void add(String id);
+    Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException;
 
     /**
      * Removes an entity from the relation with the current entity.
@@ -54,9 +57,24 @@ interface RelateInterface {
      * The current entity and the type of the entity to remove from the relation is determined by the current position
      * in the inventory traversal.
      *
-     * @see #add(String) for explanation of how the current entity and the relation is determined.
+     * @see #associate(String) for explanation of how the current entity and the relation is determined.
      *
      * @param id the id of the entity to remove from the relation with the current entity.
+     *
+     * @return the relationship that was deleted as a result of the disassociation
      */
-    void remove(String id);
+    Relationship disassociate(String id) throws EntityNotFoundException;
+
+    /**
+     * Finds the relationship with the entity with the provided id.
+     *
+     * @see #associate(String) for the discussion of how the entity and the relationship is determined
+     *
+     * @param id the id of the entity to find the relation with
+     *
+     * @return the relationship found
+     *
+     * @throws RelationNotFoundException
+     */
+    Relationship associationWith(String id) throws RelationNotFoundException;
 }

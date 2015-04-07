@@ -48,12 +48,15 @@ final class Constants {
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant, environment, feed, resourceType(version), metricType(unit), resource, metric;
+        tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
+        resourceType(ResourceType.class, version), metricType(MetricType.class, unit), resource(Resource.class),
+        metric(Metric.class);
 
         private final String[] mappedProperties;
+        private final Class<? extends Entity> entityType;
 
-
-        private Type(Property... mappedProperties) {
+        private Type(Class<? extends Entity> entityType, Property... mappedProperties) {
+            this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 2];
             Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.type.name() :
                     (i == 1 ? Property.uid.name() : mappedProperties[i - 2].name()));
@@ -116,6 +119,10 @@ final class Constants {
             } else {
                 throw new IllegalArgumentException("Unsupported entity class " + ec);
             }
+        }
+
+        public Class<? extends Entity> getEntityType() {
+            return entityType;
         }
 
         public String[] getMappedProperties() {

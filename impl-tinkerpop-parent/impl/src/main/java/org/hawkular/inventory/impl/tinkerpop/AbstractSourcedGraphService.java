@@ -21,10 +21,14 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Relationship;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -186,23 +190,65 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
 
     }
 
-    protected void addRelationship(Constants.Type typeInSource, Relationships.WellKnown rel, Iterable<Vertex> others) {
+    protected Relationship addAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
+                                          Iterable<Vertex> others) {
+        //noinspection LoopStatementThatDoesntLoop
         for (Vertex v : source().hasType(typeInSource)) {
+            //noinspection LoopStatementThatDoesntLoop
             for (Vertex o : others) {
-                v.addEdge(rel.name(), o);
+                for (Edge e : v.getEdges(Direction.OUT, rel.name())) {
+                    if (e.getVertex(Direction.IN).equals(o)) {
+                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(path));
+                    }
+                }
+
+                Edge e = v.addEdge(rel.name(), o);
+
+                return new Relationship(getUid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
+                        convert(e.getVertex(Direction.IN)));
             }
+
+            throw new EntityNotFoundException(entityClass,
+                    FilterApplicator.filters(FilterApplicator.from(path).andPath(Related.by(rel)).get()));
         }
+
+        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(path));
     }
 
-    protected void removeRelationship(Constants.Type typeInSource, Relationships.WellKnown rel,
-                                      String targetUid) {
+    protected Relationship findAssociation(String targetId, String label) {
+        Vertex source = source().next();
+
+        for(Edge e : source.getEdges(Direction.OUT, label)) {
+            Vertex target = e.getVertex(Direction.IN);
+            if (getUid(target).equals(targetId)) {
+                return new Relationship(getUid(e), label, convert(source), convert(target));
+            }
+        }
+
+        throw new RelationNotFoundException(label, FilterApplicator.filters(path));
+
+    }
+
+    protected Relationship removeAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
+                                     String targetUid) {
 
         Constants.Type myType = Constants.Type.of(entityClass);
 
         Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
                 .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasUid(targetUid));
 
-        edges.forEach(context.getGraph()::removeEdge);
+        Iterator<Edge> it = edges.iterator();
+
+        if (!it.hasNext()) {
+            throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
+                    FilterApplicator.filters(path), "Relationship does not exist.", null);
+        }
+
+        Edge edge = it.next();
+        Relationship ret = new Relationship(getUid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
+                convert(edge.getVertex(Direction.IN)));
+        context.getGraph().removeEdge(edge);
+        return ret;
     }
 
     protected abstract Single createSingleBrowser(FilterApplicator... path);

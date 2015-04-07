@@ -32,15 +32,13 @@ public final class Feeds {
         Resources.Read resources();
     }
 
-    public interface Single extends SingleRelatableEntityBrowser<Feed>, BrowserBase {}
+    public interface Single extends ResolvableToSingleWithRelationships<Feed>, BrowserBase {}
 
-    public interface Multiple extends MultipleRelatableEntityBrowser<Feed>, BrowserBase {}
+    public interface Multiple extends ResolvableToManyWithRelationships<Feed>, BrowserBase {}
 
     public interface Read extends ReadInterface<Single, Multiple> {}
 
     public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
         Single register(String proposedId);
     }
-
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

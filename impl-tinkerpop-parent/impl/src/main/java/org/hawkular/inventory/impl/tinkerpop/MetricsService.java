@@ -18,12 +18,14 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.ArrayList;
@@ -42,7 +44,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
  */
 final class MetricsService
         extends AbstractSourcedGraphService<Metrics.Single, Metrics.Multiple, Metric, Metric.Blueprint>
-        implements Metrics.ReadWrite, Metrics.Read, Metrics.ReadRelate {
+        implements Metrics.ReadWrite, Metrics.Read, Metrics.ReadAssociate {
 
     MetricsService(InventoryContext context, PathContext ctx) {
         super(context, Metric.class, ctx);
@@ -80,7 +82,7 @@ final class MetricsService
 
     @Override
     protected Metrics.Single createSingleBrowser(FilterApplicator... path) {
-        return new MetricBrowser(context, path);
+        return MetricBrowser.single(context, path);
     }
 
     @Override
@@ -90,21 +92,26 @@ final class MetricsService
 
     @Override
     protected Metrics.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new MetricBrowser(context, path);
+        return MetricBrowser.multiple(context, path);
     }
 
     @Override
-    public void add(String id) {
+    public Relationship associate(String id) {
         //in here I know the source is a resource...
         Iterable<Vertex> vs = source().in(contains) //up from resource to environment
                 .out(contains).hasType(metric) //down to metrics
                 .hasUid(id).cast(Vertex.class);
 
-        super.addRelationship(Constants.Type.resource, owns, vs);
+        return super.addAssociation(Constants.Type.resource, owns, vs);
     }
 
     @Override
-    public void remove(String id) {
-        removeRelationship(resource, owns, id);
+    public Relationship disassociate(String id) {
+        return removeAssociation(resource, owns, id);
+    }
+
+    @Override
+    public Relationship associationWith(String id) throws RelationNotFoundException {
+        return findAssociation(id, owns.name());
     }
 }

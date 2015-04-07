@@ -43,7 +43,7 @@ final class ResourceBrowser extends AbstractBrowser<Resource> {
 
         return new Resources.Single() {
             @Override
-            public Metrics.ReadRelate metrics() {
+            public Metrics.ReadAssociate metrics() {
                 return b.metrics();
             }
 

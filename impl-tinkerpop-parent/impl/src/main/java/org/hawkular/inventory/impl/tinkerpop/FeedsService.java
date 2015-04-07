@@ -33,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
  * @since 1.0
  */
 final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
-        implements Feeds.ReadAndRegister, Feeds.Read, Feeds.ReadRelate {
+        implements Feeds.ReadAndRegister, Feeds.Read {
 
     FeedsService(InventoryContext context, PathContext ctx) {
         super(context, Feed.class, ctx);
@@ -54,13 +54,13 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected FeedBrowser createSingleBrowser(FilterApplicator... path) {
-        return new FeedBrowser(context, path);
+    protected Feeds.Single createSingleBrowser(FilterApplicator... path) {
+        return FeedBrowser.single(context, path);
     }
 
     @Override
     protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
-        return new FeedBrowser(context, path);
+        return FeedBrowser.multiple(context, path);
     }
 
     @Override
@@ -81,15 +81,5 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     @Override
     public Feeds.Single register(String proposedId) {
         return super.create(proposedId);
-    }
-
-    @Override
-    public void add(String id) {
-        //TODO implement
-    }
-
-    @Override
-    public void remove(String id) {
-        //TODO implement
     }
 }

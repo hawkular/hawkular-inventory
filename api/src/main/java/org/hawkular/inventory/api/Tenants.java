@@ -50,7 +50,7 @@ public final class Tenants {
     /**
      * Interface for accessing a single tenant in a writable manner.
      */
-    public interface Single extends SingleRelatableEntityBrowser<Tenant>,
+    public interface Single extends ResolvableToSingleWithRelationships<Tenant>,
             BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite> {}
 
     /**
@@ -60,7 +60,7 @@ public final class Tenants {
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */
-    public interface Multiple extends MultipleRelatableEntityBrowser<Tenant>,
+    public interface Multiple extends ResolvableToManyWithRelationships<Tenant>,
             BrowserBase<ResourceTypes.Read, MetricTypes.Read, Environments.Read> {}
 
     /**
@@ -72,6 +72,4 @@ public final class Tenants {
      * Provides methods for read-write access to tenants.
      */
     public interface ReadWrite extends ReadWriteInterface<Tenant, String, Single, Multiple> {}
-
-    public interface ReadRelate extends ReadInterface<Single, Multiple>, RelateInterface {}
 }

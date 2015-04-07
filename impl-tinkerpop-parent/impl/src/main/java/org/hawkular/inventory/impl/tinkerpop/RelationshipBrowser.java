@@ -74,7 +74,7 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
                 }
                 Edge edge = edges.next();
 
-                Relationship relationship = new Relationship(edge.getId().toString(), edge.getLabel(), convert(edge
+                Relationship relationship = new Relationship(getUid(edge), edge.getLabel(), convert(edge
                          .getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                 Map<String, Object> properties = edge.getPropertyKeys().stream().collect(Collectors.toMap(Function
                         .<String>identity(), key -> edge.<Object>getProperty(key)));

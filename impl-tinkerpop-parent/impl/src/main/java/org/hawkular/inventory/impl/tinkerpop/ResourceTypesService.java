@@ -33,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  */
 final class ResourceTypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint>
-        implements ResourceTypes.ReadWrite, ResourceTypes.Read, ResourceTypes.ReadRelate {
+        implements ResourceTypes.ReadWrite, ResourceTypes.Read {
 
     ResourceTypesService(InventoryContext context, PathContext ctx) {
         super(context, ResourceType.class, ctx);
@@ -71,15 +71,5 @@ final class ResourceTypesService extends
     @Override
     protected void updateExplicitProperties(ResourceType entity, Vertex vertex) {
         vertex.setProperty(Constants.Property.version.name(), entity.getVersion().toString());
-    }
-
-    @Override
-    public void add(String id) {
-        //TODO implement
-    }
-
-    @Override
-    public void remove(String id) {
-        //TODO implement
     }
 }
