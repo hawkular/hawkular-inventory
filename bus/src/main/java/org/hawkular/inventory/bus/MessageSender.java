@@ -27,7 +27,7 @@ import static org.hawkular.inventory.bus.Log.LOG;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class MessageSender<T> {
+public final class MessageSender {
     private final ProducerConnectionContext producerConnectionContext;
     private final MessageProcessor messageProcessor;
 
@@ -36,7 +36,7 @@ public final class MessageSender<T> {
         this.messageProcessor = new MessageProcessor();
     }
 
-    public void send(T inventoryEvent) {
+    public void send(Object inventoryEvent) {
         InventoryEvent message = new InventoryEvent(inventoryEvent);
         try {
             messageProcessor.send(producerConnectionContext, message);

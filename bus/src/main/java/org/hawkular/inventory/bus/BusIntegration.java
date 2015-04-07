@@ -19,7 +19,6 @@ package org.hawkular.inventory.bus;
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -47,8 +46,8 @@ import java.util.Set;
 public final class BusIntegration {
 
     private final ObservableInventory inventory;
-    private MessageSender<? extends Entity> entityMessageSender;
-    private MessageSender<Relationship> relationshipMessageSender;
+    private MessageSender entityMessageSender;
+    private MessageSender relationshipMessageSender;
     private final Set<Subscription> subscriptions = new HashSet<>();
     private Configuration configuration;
     private InitialContext namingContext;
@@ -75,11 +74,11 @@ public final class BusIntegration {
 
         ProducerConnectionContext pcc = ccf.createProducerConnectionContext(new Endpoint(Endpoint.Type.TOPIC,
                 configuration.getEntityChangesTopicName()));
-        this.entityMessageSender = new MessageSender<>(pcc);
+        this.entityMessageSender = new MessageSender(pcc);
 
         pcc = ccf.createProducerConnectionContext(new Endpoint(Endpoint.Type.TOPIC,
                 configuration.getRelationshipChangesTopicName()));
-        this.relationshipMessageSender = new MessageSender<>(pcc);
+        this.relationshipMessageSender = new MessageSender(pcc);
 
         install();
     }
@@ -91,13 +90,13 @@ public final class BusIntegration {
     }
 
     private void install() {
-        install(inventory, subscriptions, Tenant.class, cast(entityMessageSender));
-        install(inventory, subscriptions, ResourceType.class, cast(entityMessageSender));
-        install(inventory, subscriptions, MetricType.class, cast(entityMessageSender));
-        install(inventory, subscriptions, Environment.class, cast(entityMessageSender), Action.copied());
-        install(inventory, subscriptions, Feed.class, cast(entityMessageSender), Action.registered());
-        install(inventory, subscriptions, Resource.class, cast(entityMessageSender));
-        install(inventory, subscriptions, Metric.class, cast(entityMessageSender));
+        install(inventory, subscriptions, Tenant.class, entityMessageSender);
+        install(inventory, subscriptions, ResourceType.class, entityMessageSender);
+        install(inventory, subscriptions, MetricType.class, entityMessageSender);
+        install(inventory, subscriptions, Environment.class, entityMessageSender, Action.copied());
+        install(inventory, subscriptions, Feed.class, entityMessageSender, Action.registered());
+        install(inventory, subscriptions, Resource.class, entityMessageSender);
+        install(inventory, subscriptions, Metric.class, entityMessageSender);
         install(inventory, subscriptions, Relationship.class, relationshipMessageSender);
     }
 
@@ -105,29 +104,20 @@ public final class BusIntegration {
         subscriptions.forEach(Subscription::unsubscribe);
     }
 
-    // this needs to be either static or final for it to compile with @SafeVarargs.
-    // If this method was final, checkstyle wouldn't let it through because it thinks "final is redundant" because
-    // this is a final class. Well, eff you checkstyle. Howgh.
-    @SafeVarargs
-    private static <C, T> void install(ObservableInventory inventory, Set<Subscription> subscriptions,
-            Class<T> entityClass, MessageSender<? super C> sender, Action<C, T>... additionalActions) {
+    private static <T> void install(ObservableInventory inventory, Set<Subscription> subscriptions,
+            Class<T> entityClass, MessageSender sender, Action<?, T>... additionalActions) {
 
         installAction(inventory, subscriptions, entityClass, sender, Action.created());
         installAction(inventory, subscriptions, entityClass, sender, Action.updated());
         installAction(inventory, subscriptions, entityClass, sender, Action.deleted());
-        for (Action<C, T> a : additionalActions) {
+        for (Action<?, T> a : additionalActions) {
             installAction(inventory, subscriptions, entityClass, sender, a);
         }
     }
 
     private static <C, T> void installAction(ObservableInventory inventory, Set<Subscription> subscriptions,
-            Class<T> entityClass, MessageSender<? super C> sender, Action<C, T> action) {
+            Class<T> entityClass, MessageSender sender, Action<C, T> action) {
         Subscription s = inventory.observable(Interest.in(entityClass).being(action)).subscribe(sender::send);
         subscriptions.add(s);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> MessageSender<T> cast(MessageSender<?> sender) {
-        return (MessageSender<T>) sender;
     }
 }
