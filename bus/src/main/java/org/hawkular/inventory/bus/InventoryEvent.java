@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.bus;
 
-package org.hawkular.inventory.rest;
-
-import org.hawkular.inventory.api.Inventory;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import com.google.gson.annotations.Expose;
+import org.hawkular.bus.common.BasicMessage;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-@ApplicationScoped
-public class InventoryProducer {
+public final class InventoryEvent extends BasicMessage {
+    @Expose
+    private final Object payload;
 
-    @Inject @ForRest
-    private BusIntegrationProducer.InventoryWithBus busIntegration;
-
-    @Produces @ApplicationScoped @ForRest
-    public Inventory getInventory() {
-        return busIntegration.getInventory();
-
+    public InventoryEvent(Object payload) {
+        this.payload = payload;
     }
 
+    public Object getPayload() {
+        return payload;
+    }
+
+    @Override
+    public String toString() {
+        return "InventoryMessage[" + "payload=" + payload + ']';
+    }
 }

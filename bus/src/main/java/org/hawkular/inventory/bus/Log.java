@@ -14,40 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
-
+package org.hawkular.inventory.bus;
 
 import org.jboss.logging.Logger;
-import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+import org.jboss.logging.annotations.ValidIdRange;
 
 /**
- * Logger definitions for Jboss Logging for the rest api
- *
- * Code range is 2000-2999
- *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 0.0.1
  */
-@MessageLogger(projectCode = "HAWKINV")
-public interface RestApiLogger {
-
-    RestApiLogger LOGGER = Logger.getMessageLogger(RestApiLogger.class, "org.hawkular.inventory.rest");
-
+@MessageLogger(projectCode = "HWKINVENT")
+@ValidIdRange(min = 310000, max = 319999)
+public interface Log {
+    Log LOG = Logger.getMessageLogger(Log.class, Log.class.getPackage().getName());
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 2000, value = "Hawkular-Inventory REST Api is starting...")
-    void apiStarting();
+    @Message(id = 310000, value = "Unknown configuration property [%s]")
+    void unknownConfigurationProperty(String propertyName);
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 2001, value = "Something bad has happened")
-    void warn(@Cause Throwable t);
-
-    @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 2002, value = "Bus Integration initialization failed. Inventory will not notify about changes on " +
-            "the Hawkular message bus. Cause: [%s]")
-    void busInitializationFailed(String message);
-
-
+    @Message(id = 310001, value = "Failed to send message: %s")
+    void failedToSendMessage(String message);
 }

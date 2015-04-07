@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.observable;
 
+import com.google.gson.annotations.Expose;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 
@@ -37,16 +38,16 @@ public final class Action<C, E> {
 
     //theses should really be Action<E, E> but I get a stack overflow in javac 8_u40 if I do that...
     //didn't isolate the cause of this yet.. :(
-    public static <C, E> Action<C, E> created() {
-        return (Action<C, E>) CREATE;
+    public static <E> Action<E, E> created() {
+        return (Action<E, E>) CREATE;
     }
 
-    public static <C, E> Action<C, E> updated() {
-        return (Action<C, E>) UPDATE;
+    public static <E> Action<E, E> updated() {
+        return (Action<E, E>) UPDATE;
     }
 
-    public static <C, E> Action<C, E> deleted() {
-        return (Action<C, E>) DELETE;
+    public static <E> Action<E, E> deleted() {
+        return (Action<E, E>) DELETE;
     }
 
     public static Action<EnvironmentCopy, Environment> copied() {
@@ -58,7 +59,10 @@ public final class Action<C, E> {
     }
 
     public static final class EnvironmentCopy {
+        @Expose
         private final Environment source;
+
+        @Expose
         private final Environment target;
 
         public EnvironmentCopy(Environment source, Environment target) {

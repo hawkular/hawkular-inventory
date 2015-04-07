@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +31,10 @@ import java.util.Map;
 public abstract class Entity {
 
     @XmlAttribute
+    @Expose
     private final String id;
+
+    @Expose
     private Map<String, Object> properties;
 
     /** JAXB support */
