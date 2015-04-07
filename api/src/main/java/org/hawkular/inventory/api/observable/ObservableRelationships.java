@@ -60,7 +60,7 @@ public final class ObservableRelationships {
         @Override
         public Relationships.Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException {
             return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource),
-                    ResolvableToSingle::entity, Action.created());
+                    Relationships.Single::entity, Action.created());
         }
 
         @Override

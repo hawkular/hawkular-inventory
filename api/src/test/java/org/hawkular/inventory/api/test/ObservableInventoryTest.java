@@ -118,7 +118,7 @@ public class ObservableInventoryTest {
 
         List<Relationship> createdRelatonships = new ArrayList<>();
 
-        observableInventory.observable(Interest.in(Relationship.class).<Relationship>being(created()))
+        observableInventory.observable(Interest.in(Relationship.class).being(created()))
                 .subscribe(createdRelatonships::add);
 
         observableInventory.tenants().get("t").resourceTypes().get("rt").metricTypes().associate("mt");
@@ -184,7 +184,7 @@ public class ObservableInventoryTest {
 
         List<Relationship> createdRelatonships = new ArrayList<>();
 
-        observableInventory.observable(Interest.in(Relationship.class).<Relationship>being(created()))
+        observableInventory.observable(Interest.in(Relationship.class).being(created()))
                 .subscribe(createdRelatonships::add);
 
         observableInventory.tenants().get("t").environments().get("e").resources().get("rt").metrics().associate("m");
@@ -198,20 +198,20 @@ public class ObservableInventoryTest {
         List<T> deletedTenants = new ArrayList<>();
         List<Relationship> createdRelationships = new ArrayList<>();
 
-        Subscription s1 = observableInventory.observable(Interest.in(entityClass).<T>being(created()))
+        Subscription s1 = observableInventory.observable(Interest.in(entityClass).being(created()))
                 .subscribe(createdTenants::add);
 
-        Subscription s2 = observableInventory.observable(Interest.in(entityClass).<T>being(updated()))
+        Subscription s2 = observableInventory.observable(Interest.in(entityClass).being(updated()))
                 .subscribe(updatedTenants::add);
 
-        Subscription s3 = observableInventory.observable(Interest.in(entityClass).<T>being(deleted()))
+        Subscription s3 = observableInventory.observable(Interest.in(entityClass).being(deleted()))
                 .subscribe(deletedTenants::add);
 
-        observableInventory.observable(Interest.in(Relationship.class).<Relationship>being(created()))
+        observableInventory.observable(Interest.in(Relationship.class).being(created()))
                 .subscribe(createdRelationships::add);
 
         //dummy observer just to check that unsubscription works
-        observableInventory.observable(Interest.in(entityClass).<T>being(created())).subscribe((t) -> {});
+        observableInventory.observable(Interest.in(entityClass).being(created())).subscribe((t) -> {});
 
         payload.run();
 
