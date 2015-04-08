@@ -38,7 +38,7 @@ interface Log {
     void warn(String s);
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HawkularNotifications' bound?), not " +
+    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HawkularInventoryChanges' bound?), not " +
             "sending")
     void wNoTopicConnection();
 }

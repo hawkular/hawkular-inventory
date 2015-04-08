@@ -17,6 +17,7 @@
 package org.hawkular.inventory.bus;
 
 import org.hawkular.bus.common.MessageProcessor;
+import org.hawkular.bus.common.ObjectMessage;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.observable.Interest;
 
@@ -41,10 +42,13 @@ public final class MessageSender {
     }
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
-        InventoryEvent message = new InventoryEvent(inventoryEvent);
+        ObjectMessage message = new ObjectMessage(inventoryEvent);
         try {
             Map<String, String> headers = toHeaders(interest);
             messageProcessor.send(producerConnectionContext, message, headers);
+
+            Log.LOG.debugf("Sent message %s with headers %s to %s", message, headers,
+                    producerConnectionContext.getDestination());
         } catch (JMSException e) {
             LOG.failedToSendMessage(message.toString());
         }
