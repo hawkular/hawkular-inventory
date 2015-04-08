@@ -82,7 +82,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
                     + "' already exists.");
         }
 
-        Vertex v = context.getGraph().addVertex(id);
+        Vertex v = context.getGraph().addVertex(null);
         v.setProperty(Constants.Property.type.name(), Constants.Type.of(entityClass).name());
         v.setProperty(Constants.Property.uid.name(), id);
 
