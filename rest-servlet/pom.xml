@@ -188,5 +188,83 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>dev</id>
+      <properties>
+        <wf.home>${project.build.directory}/wildfly-${version.org.wildfly}</wf.home>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.wildfly</groupId>
+          <artifactId>wildfly-dist</artifactId>
+          <version>${version.org.wildfly}</version>
+          <type>zip</type>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <!-- download and unzip wildfly -->
+          <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-wildfly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                  <includeGroupIds>org.wildfly</includeGroupIds>
+                  <includeArtifactIds>wildfly-dist</includeArtifactIds>
+                  <outputDirectory>${project.build.directory}/</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- deploy the war -->
+          <plugin>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>deploy-war</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${wf.home}/standalone/deployments/</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>*.war</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- echo the usage -->
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>install</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <tasks>
+                    <echo>Run the server with inventory by${line.separator}${wf.home}/bin/standalone.sh${line.separator}${line.separator}</echo>
+                  </tasks>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
