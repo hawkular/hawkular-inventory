@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -57,6 +58,9 @@ final class ResourcesService
             envs.add(env);
             exampleEnv = env;
         }
+
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
 
         //connect to the resource type from the blueprint
         for (Vertex rt : new HawkularPipeline<>(envs).in(contains).out(contains).hasType(resourceType)

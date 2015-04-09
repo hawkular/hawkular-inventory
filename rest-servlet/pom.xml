@@ -257,7 +257,7 @@
                 </goals>
                 <configuration>
                   <tasks>
-                    <echo>Run the server with inventory by${line.separator}${wf.home}/bin/standalone.sh${line.separator}${line.separator}</echo>
+                    <echo>Run the server with inventory by${line.separator}${wf.home}/bin/standalone.sh [--debug]${line.separator}${line.separator}</echo>
                   </tasks>
                 </configuration>
               </execution>
