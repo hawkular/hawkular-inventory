@@ -27,19 +27,13 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>inventory-bus</artifactId>
-  <name>Hawkular Inventory Bus Integration</name>
+  <artifactId>bus-api</artifactId>
+  <name>Hawkular Inventory Bus API</name>
 
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>${version.hawkular-inventory}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>bus-api</artifactId>
       <version>${version.hawkular-inventory}</version>
     </dependency>
 
@@ -50,19 +44,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging-annotations</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging-processor</artifactId>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${version.com.google.code.gson}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
