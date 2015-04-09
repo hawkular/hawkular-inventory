@@ -86,7 +86,7 @@ public class RestMetrics {
 
         MetricType mt = inventory.tenants().get(tenantId).metricTypes().get(metric.getMetricTypeId()).entity();
 
-        Metric.Blueprint b = new Metric.Blueprint(mt, metric.getId());
+        Metric.Blueprint b = new Metric.Blueprint(mt, metric.getId(), metric.getProperties());
 
         inventory.tenants().get(tenantId).environments().get(environmentId).metrics().create(b);
 

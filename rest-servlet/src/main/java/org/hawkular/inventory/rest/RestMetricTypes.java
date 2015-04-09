@@ -97,7 +97,7 @@ public class RestMetricTypes {
                            @Context UriInfo uriInfo) {
 
         MetricType.Blueprint b = new MetricType.Blueprint(metricType.getId(),
-                MetricUnit.fromDisplayName(metricType.getUnit()));
+                MetricUnit.fromDisplayName(metricType.getUnit()), metricType.getProperties());
 
         inventory.tenants().get(tenantId).metricTypes().create(b);
 

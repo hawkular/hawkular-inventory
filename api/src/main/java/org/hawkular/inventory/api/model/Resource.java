@@ -20,6 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -67,7 +69,7 @@ public final class Resource extends EnvironmentalEntity {
      * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
+    public static final class Blueprint extends Entity.AbstractBlueprint {
         @XmlAttribute
         private final String id;
         private final ResourceType type;
@@ -79,6 +81,11 @@ public final class Resource extends EnvironmentalEntity {
         }
 
         public Blueprint(String id, ResourceType type) {
+            this(id, type, new HashMap<>());
+        }
+
+        public Blueprint(String id, ResourceType type, Map<String, Object> properties) {
+            super(properties);
             this.id = id;
             this.type = type;
         }

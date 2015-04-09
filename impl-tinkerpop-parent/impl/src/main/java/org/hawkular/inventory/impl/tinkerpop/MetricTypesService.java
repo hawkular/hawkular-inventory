@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
@@ -54,6 +55,8 @@ final class MetricTypesService
         }
 
         newEntity.setProperty(Constants.Property.unit.name(), blueprint.getUnit().getDisplayName());
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
 
         return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), Related.by(contains),
                 With.type(MetricType.class), With.id(getUid(newEntity))).get();

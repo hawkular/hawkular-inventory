@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
@@ -44,5 +46,22 @@ public final class Feed extends EnvironmentalEntity {
     @Override
     public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
         return visitor.visitFeed(this, parameter);
+    }
+
+    public static class Blueprint extends Entity.AbstractBlueprint {
+        private final String id;
+
+        public Blueprint(String id) {
+            this(id, new HashMap<>());
+        }
+
+        public Blueprint(String id, Map<String, Object> properties) {
+            super(properties);
+            this.id = id;
+        }
+
+        public String getId() {
+            return id;
+        }
     }
 }

@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
@@ -26,7 +27,8 @@ import org.hawkular.inventory.api.model.Tenant;
 * @author Lukas Krejci
 * @since 1.0
 */
-final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant, String>
+final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant,
+        Tenant.Blueprint>
         implements Tenants.ReadWrite, Tenants.Read {
 
     public TenantsService(InventoryContext context) {
@@ -39,8 +41,10 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
-        return Filter.by(With.type(Tenant.class), With.id(blueprint)).get();
+    protected Filter[] initNewEntity(Vertex newEntity, Tenant.Blueprint blueprint) {
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
+        return Filter.by(With.type(Tenant.class), With.id(blueprint.getId())).get();
     }
 
     @Override
@@ -54,7 +58,7 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    protected String getProposedId(String b) {
-        return b;
+    protected String getProposedId(Tenant.Blueprint b) {
+        return b.getId();
     }
 }

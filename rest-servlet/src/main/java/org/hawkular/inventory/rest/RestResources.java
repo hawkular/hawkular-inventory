@@ -81,7 +81,7 @@ public class RestResources {
         Tenants.Single tb = inventory.tenants().get(tenantId);
         ResourceType rt = tb.resourceTypes().get(resource.getType().getId()).entity();
 
-        Resource.Blueprint b = new Resource.Blueprint(resource.getId(), rt);
+        Resource.Blueprint b = new Resource.Blueprint(resource.getId(), rt, resource.getProperties());
 
         inventory.tenants().get(tenantId).environments().get(environmentId).resources()
                 .create(b);

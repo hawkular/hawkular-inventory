@@ -59,7 +59,11 @@ public class RestEnvironments {
 
     @GET
     @Path("/{tenantId}/environments")
-    @ApiOperation("Returns all environments under given tenant.")
+    @ApiOperation(nickname = "getAllEnvironments",
+            value = "Returns all environments under given tenant.",
+            notes = "",
+            responseContainer = "Set<Environment>",
+            response = Environment.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
             @ApiResponse(code = 404, message = "Tenant not found", response = ApiError.class),
@@ -94,7 +98,8 @@ public class RestEnvironments {
     public Response create(@PathParam("tenantId") String tenantId, @ApiParam(required = true) IdJSON environmentId,
                            @Context UriInfo uriInfo)
             throws Exception {
-        inventory.tenants().get(tenantId).environments().create(environmentId.getId());
+        inventory.tenants().get(tenantId).environments().create(new Environment.Blueprint(environmentId.getId(),
+                environmentId.getProperties()));
         return ResponseUtil.created(uriInfo, environmentId.getId()).build();
     }
 

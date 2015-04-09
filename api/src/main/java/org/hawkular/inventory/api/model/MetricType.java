@@ -20,6 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by
@@ -74,7 +76,7 @@ public final class MetricType extends OwnedEntity {
      * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
+    public static final class Blueprint extends Entity.AbstractBlueprint {
         @XmlAttribute
         private final String id;
         @XmlAttribute
@@ -83,11 +85,15 @@ public final class MetricType extends OwnedEntity {
         /** JAXB support */
         @SuppressWarnings("unused")
         private Blueprint() {
-            id = null;
-            unit = null;
+            this(null, null);
         }
 
         public Blueprint(String id, MetricUnit unit) {
+            this(id, unit, new HashMap<>());
+        }
+
+        public Blueprint(String id, MetricUnit unit, Map<String, Object> properties) {
+            super(properties);
             this.id = id;
             this.unit = unit;
         }

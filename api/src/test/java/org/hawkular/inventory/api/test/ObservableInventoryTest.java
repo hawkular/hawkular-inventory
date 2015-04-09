@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import rx.Subscription;
 
 import java.util.ArrayList;
@@ -62,6 +63,8 @@ public class ObservableInventoryTest {
     public void testTenants() throws Exception {
         Tenant prototype = new Tenant("kachny");
 
+        when(InventoryMock.tenantsReadWrite.create(Mockito.<Tenant.Blueprint>any()))
+                .thenReturn(InventoryMock.tenantsSingle);
         when(InventoryMock.tenantsReadWrite.create("kachny")).thenReturn(InventoryMock.tenantsSingle);
         when(InventoryMock.tenantsSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities()).thenReturn(Collections.emptySet());
@@ -77,6 +80,8 @@ public class ObservableInventoryTest {
     public void testEnvironments() throws Exception {
         Environment prototype = new Environment("t", "e");
 
+        when(InventoryMock.environmentsReadWrite.create(Mockito.<Environment.Blueprint>any()))
+                .thenReturn(InventoryMock.environmentsSingle);
         when(InventoryMock.environmentsReadWrite.create("e")).thenReturn(InventoryMock.environmentsSingle);
         when(InventoryMock.environmentsSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities())

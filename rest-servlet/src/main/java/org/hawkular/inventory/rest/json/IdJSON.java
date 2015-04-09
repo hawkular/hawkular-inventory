@@ -16,13 +16,17 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Simple wrapper for Ids
  * @author Heiko Rupp
  */
 public class IdJSON {
 
-    String id;
+    private String id;
+    private Map<String, Object> properties;
 
     public IdJSON() {
     }
@@ -37,5 +41,13 @@ public class IdJSON {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties == null ? new HashMap<>() : properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

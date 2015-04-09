@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
@@ -54,6 +55,9 @@ final class MetricsService
     protected Filter[] initNewEntity(Vertex newEntity, Metric.Blueprint blueprint) {
         Vertex exampleEnv = null;
         List<Vertex> envs = new ArrayList<>();
+
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
 
         //connect to all environments in the source
         for (Vertex e : source().hasType(environment)) {
