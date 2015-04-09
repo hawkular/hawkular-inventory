@@ -50,8 +50,8 @@ public final class ObservableTenants {
     }
 
     public static final class ReadWrite
-            extends ObservableBase.ReadWrite<Tenant, String, Tenants.Single, Tenants.Multiple, Tenants.ReadWrite>
-            implements Tenants.ReadWrite {
+            extends ObservableBase.ReadWrite<Tenant, Tenant.Blueprint, Tenants.Single, Tenants.Multiple,
+            Tenants.ReadWrite> implements Tenants.ReadWrite {
 
         public ReadWrite(Tenants.ReadWrite wrapped, ObservableContext context) {
             super(wrapped, context);

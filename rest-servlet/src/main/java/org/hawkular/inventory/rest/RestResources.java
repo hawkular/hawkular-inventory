@@ -25,13 +25,11 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.ResourceJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -75,16 +73,11 @@ public class RestResources {
     })
     public Response addResource(@PathParam("tenantId") String tenantId,
                                 @PathParam("environmentId") String environmentId,
-                                @ApiParam(required =  true) ResourceJSON resource,
+                                @ApiParam(required =  true) Resource.Blueprint resource,
                                 @Context UriInfo uriInfo) {
 
-        Tenants.Single tb = inventory.tenants().get(tenantId);
-        ResourceType rt = tb.resourceTypes().get(resource.getType().getId()).entity();
-
-        Resource.Blueprint b = new Resource.Blueprint(resource.getId(), rt);
-
         inventory.tenants().get(tenantId).environments().get(environmentId).resources()
-                .create(b);
+                .create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }

@@ -32,7 +32,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @since 1.0
  */
 final class EnvironmentsService extends
-        AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, String>
+        AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, Environment.Blueprint>
         implements Environments.ReadWrite, Environments.Read {
 
     public EnvironmentsService(InventoryContext context, PathContext ctx) {
@@ -46,7 +46,7 @@ final class EnvironmentsService extends
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
+    protected Filter[] initNewEntity(Vertex newEntity, Environment.Blueprint blueprint) {
         String tenantId = null;
         for (Vertex sourceTenant : source().hasType(tenant)) {
             tenantId = getUid(sourceTenant);
@@ -68,7 +68,7 @@ final class EnvironmentsService extends
     }
 
     @Override
-    protected String getProposedId(String b) {
-        return b;
+    protected String getProposedId(Environment.Blueprint b) {
+        return b.getId();
     }
 }

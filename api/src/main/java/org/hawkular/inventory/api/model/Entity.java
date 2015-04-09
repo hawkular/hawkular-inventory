@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,5 +116,53 @@ public abstract class Entity {
         bld.append(']');
 
         return bld.toString();
+    }
+
+    public abstract static class Blueprint {
+        @XmlAttribute
+        private final String id;
+
+        @XmlElement
+        private final Map<String, Object> properties;
+
+        protected Blueprint(String id, Map<String, Object> properties) {
+            this.id = id;
+            this.properties = properties;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Map<String, Object> getProperties() {
+            return properties;
+        }
+
+        public abstract static class Builder<B, This extends Builder<B, This>> {
+            protected String id;
+            protected Map<String, Object> properties = new HashMap<>();
+
+            public This withId(String id) {
+                this.id = id;
+                return castThis();
+            }
+
+            public This withProperty(String key, Object value) {
+                this.properties.put(key, value);
+                return castThis();
+            }
+
+            public This withProperties(Map<String, Object> properties) {
+                this.properties.putAll(properties);
+                return castThis();
+            }
+
+            public abstract B build();
+
+            @SuppressWarnings("unchecked")
+            protected This castThis() {
+                return (This) this;
+            }
+        }
     }
 }

@@ -26,7 +26,6 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.MetricJSON;
 import org.hawkular.inventory.rest.json.MetricUpdateJSON;
 
 import javax.inject.Inject;
@@ -69,7 +68,7 @@ public class RestMetrics {
     })
     public Response createMetric(@PathParam("tenantId") String tenantId,
                                  @PathParam("environmentId") String environmentId,
-                                 @ApiParam(required = true) MetricJSON metric,
+                                 @ApiParam(required = true) Metric.Blueprint metric,
                                  @Context UriInfo uriInfo) {
 
         if (metric == null) {
@@ -84,11 +83,7 @@ public class RestMetrics {
             throw new IllegalArgumentException("metric type id not specified");
         }
 
-        MetricType mt = inventory.tenants().get(tenantId).metricTypes().get(metric.getMetricTypeId()).entity();
-
-        Metric.Blueprint b = new Metric.Blueprint(mt, metric.getId());
-
-        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().create(b);
+        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().create(metric);
 
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }

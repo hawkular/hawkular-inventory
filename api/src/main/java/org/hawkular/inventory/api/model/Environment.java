@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
@@ -44,5 +46,34 @@ public final class Environment extends OwnedEntity {
     @Override
     public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
         return visitor.visitEnvironment(this, parameter);
+    }
+
+    public static final class Blueprint extends Entity.Blueprint {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Blueprint() {
+            this(null, null);
+        }
+
+        public Blueprint(String id) {
+            this(id, Collections.emptyMap());
+        }
+
+        public Blueprint(String id, Map<String, Object> properties) {
+            super(id, properties);
+        }
+
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(id, properties);
+            }
+        }
     }
 }

@@ -22,6 +22,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -94,28 +96,48 @@ public final class ResourceType extends OwnedEntity {
      * Data required to create a resource type.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
+    public static final class Blueprint extends Entity.Blueprint {
         @XmlAttribute
-        private final String id;
+        private final String version;
 
-        @XmlAttribute
-        @XmlJavaTypeAdapter(VersionAdapter.class)
-        private final Version version;
+        public static Builder builder() {
+            return new Builder();
+        }
 
-        public Blueprint(String id, Version version) {
-            this.id = id;
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Blueprint() {
+            this(null, null, null);
+        }
+
+        public Blueprint(String id, String version) {
+            this(id, version, Collections.emptyMap());
+        }
+
+        public Blueprint(String id, String version, Map<String, Object> properties) {
+            super(id, properties);
             this.version = version;
         }
 
-        public String getId() {
-            return id;
+        public String getVersion() {
+            return version;
         }
 
-        public Version getVersion() {
-            return version;
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+            private String version;
+
+            public Builder withVersion(String version) {
+                this.version = version;
+                return this;
+            }
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(id, version, properties);
+            }
         }
     }
 

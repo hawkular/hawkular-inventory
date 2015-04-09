@@ -30,7 +30,7 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Void> {
+abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphService<Void, Void, E, Entity.Blueprint> {
 
     AbstractBrowser(InventoryContext context, Class<E> entityClass, FilterApplicator... path) {
         super(context, entityClass, new PathContext(path, null));
@@ -73,12 +73,12 @@ abstract class AbstractBrowser<E extends Entity> extends AbstractSourcedGraphSer
     }
 
     @Override
-    protected final String getProposedId(Void b) {
+    protected final String getProposedId(Entity.Blueprint b) {
         throw new IllegalStateException("This method is not valid on a browser interface.");
     }
 
     @Override
-    protected final Filter[] initNewEntity(Vertex newEntity, Void blueprint) {
+    protected final Filter[] initNewEntity(Vertex newEntity, Entity.Blueprint blueprint) {
         throw new IllegalStateException("This method is not valid on a browser interface.");
     }
 }

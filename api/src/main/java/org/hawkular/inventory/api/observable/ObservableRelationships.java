@@ -23,6 +23,8 @@ import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
+import java.util.Map;
+
 /**
  * @author Lukas Krejci
  * @since 0.0.1
@@ -57,15 +59,17 @@ public final class ObservableRelationships {
         }
 
         @Override
-        public Relationships.Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException {
-            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource),
+        public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, String> properties)
+                throws IllegalArgumentException {
+            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource, null),
                     Relationships.Single::entity, Action.created());
         }
 
         @Override
-        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource)
+        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource,
+                                             Map<String, String> properties)
                 throws IllegalArgumentException {
-            return linkWith(name.name(), targetOrSource);
+            return linkWith(name.name(), targetOrSource, null);
         }
 
         @Override

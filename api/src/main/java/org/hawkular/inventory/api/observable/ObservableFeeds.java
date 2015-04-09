@@ -22,6 +22,7 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Feed;
 
+import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
@@ -60,8 +61,8 @@ public final class ObservableFeeds {
         }
 
         @Override
-        public Feeds.Single register(String proposedId) {
-            return wrap(ObservableFeeds.Single::new, wrapped.register(proposedId));
+        public Feeds.Single register(String proposedId, Map<String, Object> properties) {
+            return wrap(ObservableFeeds.Single::new, wrapped.register(proposedId, null));
         }
 
         @Override

@@ -25,7 +25,6 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.IdJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -77,9 +76,9 @@ public class RestTenants {
             @ApiResponse(code = 409, message = "Tenant already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(IdJSON tenantId, @Context UriInfo uriInfo) {
-        inventory.tenants().create(tenantId.getId());
-        return ResponseUtil.created(uriInfo, tenantId.getId()).build();
+    public Response create(Tenant.Blueprint tenant, @Context UriInfo uriInfo) {
+        inventory.tenants().create(tenant);
+        return ResponseUtil.created(uriInfo, tenant.getId()).build();
     }
 
     @PUT

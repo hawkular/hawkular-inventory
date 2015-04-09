@@ -26,7 +26,6 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.MetricTypeJSON;
 import org.hawkular.inventory.rest.json.MetricTypeUpdateJSON;
 
 import javax.inject.Inject;
@@ -93,13 +92,10 @@ public class RestMetricTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(@PathParam("tenantId") String tenantId,
-                           @ApiParam(required = true) MetricTypeJSON metricType,
+                           @ApiParam(required = true) MetricType.Blueprint metricType,
                            @Context UriInfo uriInfo) {
 
-        MetricType.Blueprint b = new MetricType.Blueprint(metricType.getId(),
-                MetricUnit.fromDisplayName(metricType.getUnit()));
-
-        inventory.tenants().get(tenantId).metricTypes().create(b);
+        inventory.tenants().get(tenantId).metricTypes().create(metricType);
 
         return ResponseUtil.created(uriInfo, metricType.getId()).build();
     }

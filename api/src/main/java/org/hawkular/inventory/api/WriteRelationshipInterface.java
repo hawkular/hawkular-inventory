@@ -19,6 +19,8 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
+import java.util.Map;
+
 /**
  * Generic methods to write access to relationships.
  *
@@ -34,19 +36,20 @@ interface WriteRelationshipInterface<Single> {
      *
      * <p>Note that there are limitations when working with
      * {@link org.hawkular.inventory.api.Relationships.WellKnown well-known relationships}. See
-     * {@link #linkWith(org.hawkular.inventory.api.Relationships.WellKnown, org.hawkular.inventory.api.model.Entity)}
+     * {@link #linkWith(Relationships.WellKnown, Entity, Map)}
      * for details.
      *
      * @param name the name of the relationship (label)
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
+     * @param properties the properties of the newly created relationship or null if none specified
      * @return access interface to the freshly created relationship
      *
-     * @throws java.lang.IllegalArgumentException if any of the parameters is null
+     * @throws java.lang.IllegalArgumentException if any of the parameters (but properties) is null
      *
-     * @see #linkWith(org.hawkular.inventory.api.Relationships.WellKnown, org.hawkular.inventory.api.model.Entity)
+     * @see #linkWith(Relationships.WellKnown, Entity, Map)
      */
-    Single linkWith(String name, Entity targetOrSource) throws IllegalArgumentException;
+    Single linkWith(String name, Entity targetOrSource, Map<String, String> properties) throws IllegalArgumentException;
 
     /**
      * Creates a new relationship at the current position in the inventory traversal.
@@ -63,11 +66,13 @@ interface WriteRelationshipInterface<Single> {
      * @param name the well known name (Relationships.WellKnown) of the relationship
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
+     * @param properties the properties of the newly created relationship or null if none specified
      * @return access interface to the freshly created relationship
      *
      * @throws java.lang.IllegalArgumentException if any of the parameters is null
      */
-    Single linkWith(Relationships.WellKnown name, Entity targetOrSource) throws IllegalArgumentException;
+    Single linkWith(Relationships.WellKnown name, Entity targetOrSource, Map<String, String> properties)
+            throws IllegalArgumentException;
 
     /**
      * Persists the provided relationship on the current position in the inventory traversal.

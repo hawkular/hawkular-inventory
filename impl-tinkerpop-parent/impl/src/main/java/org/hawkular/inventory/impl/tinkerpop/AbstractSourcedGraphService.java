@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -43,7 +44,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, Blueprint>
+abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, Blueprint extends Entity.Blueprint>
         extends AbstractGraphService {
 
     protected final Class<E> entityClass;
@@ -75,33 +76,39 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
     public Single create(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        Iterable<Vertex> check = source(pathWith(selectCandidates()).andFilter(With.ids(id)).get());
+        Iterable<Vertex> check = source(FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get());
 
         if (check.iterator().hasNext()) {
             throw new IllegalArgumentException("Entity with type '" + entityClass.getSimpleName() + " ' and id '" + id
                     + "' already exists.");
         }
 
+        checkProperties(blueprint.getProperties());
+
         Vertex v = context.getGraph().addVertex(null);
         v.setProperty(Constants.Property.type.name(), Constants.Type.of(entityClass).name());
         v.setProperty(Constants.Property.uid.name(), id);
 
-        Filter[] path = initNewEntity(v, blueprint);
+        if (blueprint.getProperties() != null) {
+            for (Map.Entry<String, Object> e : blueprint.getProperties().entrySet()) {
+                v.setProperty(e.getKey(), e.getValue());
+            }
+        }
 
-        context.getGraph().commit();
+        try {
+            Filter[] path = initNewEntity(v, blueprint);
 
-        return createSingleBrowser(FilterApplicator.fromPath(path).get());
+            context.getGraph().commit();
+
+            return createSingleBrowser(FilterApplicator.fromPath(path).get());
+        } catch (Throwable e) {
+            context.getGraph().rollback();
+            throw e;
+        }
     }
 
     public final void update(E entity) {
-        Constants.Type type = Constants.Type.of(entity);
-        List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
-
-        entity.getProperties().keySet().forEach(k -> {
-            if (mappedProperties.contains(k)) {
-                throw new IllegalArgumentException("Property '" + k + "' is reserved. Cannot set it to a custom value");
-            }
-        });
+        checkProperties(entity.getProperties());
 
         Vertex vertex = convert(entity);
         if (vertex == null) {
@@ -258,4 +265,19 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
     protected abstract String getProposedId(Blueprint b);
 
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
+
+    private void checkProperties(Map<String, Object> properties) {
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+
+        Constants.Type type = Constants.Type.of(entityClass);
+        List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
+
+        properties.keySet().forEach(k -> {
+            if (mappedProperties.contains(k)) {
+                throw new IllegalArgumentException("Property '" + k + "' is reserved. Cannot set it to a custom value");
+            }
+        });
+    }
 }

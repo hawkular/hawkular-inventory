@@ -16,13 +16,13 @@
  */
 package org.hawkular.inventory.rest.swagger;
 
-import java.util.List;
-import java.util.Map;
-
 import com.wordnik.swagger.core.filter.SwaggerSpecFilter;
 import com.wordnik.swagger.model.ApiDescription;
 import com.wordnik.swagger.model.Operation;
 import com.wordnik.swagger.model.Parameter;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Filter out AsyncResponse from swagger-json

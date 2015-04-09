@@ -28,6 +28,7 @@ import org.hawkular.inventory.api.Tenants;
 import org.mockito.Mockito;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.when;
@@ -151,7 +152,7 @@ public class InventoryMock {
         when(feedsRead.getAll(anyVararg())).thenReturn(feedsMultiple);
         when(feedsReadAndRegister.get(any())).thenReturn(feedsSingle);
         when(feedsReadAndRegister.getAll(anyVararg())).thenReturn(feedsMultiple);
-        when(feedsReadAndRegister.register(any())).thenReturn(feedsSingle);
+        when(feedsReadAndRegister.register(any(), anyMap())).thenReturn(feedsSingle);
         when(feedsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(feedsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
         when(feedsSingle.resources()).thenReturn(resourcesRead);

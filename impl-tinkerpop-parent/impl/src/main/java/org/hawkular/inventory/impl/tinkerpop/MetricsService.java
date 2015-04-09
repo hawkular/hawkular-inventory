@@ -66,7 +66,7 @@ final class MetricsService
         HawkularPipeline<?, Vertex> mds = new HawkularPipeline<>(envs) //from environments we're in
                 .in(contains) //up to tenants
                 .out(contains).hasType(metricType) //down to metric defs
-                .hasUid(blueprint.getType().getId()) //filter on our id
+                .hasUid(blueprint.getMetricTypeId()) //filter on our id
                 .cast(Vertex.class);
 
         for (Vertex md : mds) {
