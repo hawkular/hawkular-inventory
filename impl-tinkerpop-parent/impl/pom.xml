@@ -55,21 +55,18 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging-annotations</artifactId>
       <scope>provided</scope>
-      <optional>true</optional>
     </dependency>
 
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging-processor</artifactId>
       <scope>provided</scope>
-      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -77,11 +74,6 @@
       <artifactId>gremlin-java</artifactId>
       <version>${version.com.tinkerpop}</version>
     </dependency>
-
-<!-- Uncomment when testing on Titan. This will move into profile once the BasicTest code accomodates for such
-     possibility in a nice way.
-
--->
   </dependencies>
 
 

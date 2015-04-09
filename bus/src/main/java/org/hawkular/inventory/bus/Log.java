@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.bus;
 
+import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
@@ -28,7 +29,7 @@ import org.jboss.logging.annotations.ValidIdRange;
  */
 @MessageLogger(projectCode = "HWKINVENT")
 @ValidIdRange(min = 310000, max = 319999)
-public interface Log {
+public interface Log extends BasicLogger {
     Log LOG = Logger.getMessageLogger(Log.class, Log.class.getPackage().getName());
 
     @LogMessage(level = Logger.Level.INFO)
