@@ -58,7 +58,11 @@ public class RestTenants {
 
     @GET
     @Path("/")
-    @ApiOperation("Lists all tenants")
+    @ApiOperation(nickname = "getAllTenants",
+            value = "Lists all tenants",
+            notes = "",
+            responseContainer = "Set<Tenant>",
+            response = Tenant.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of tenants"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
@@ -70,7 +74,9 @@ public class RestTenants {
 
     @POST
     @Path("/")
-    @ApiOperation("Creates a new tenant")
+    @ApiOperation(nickname = "createTenant",
+            value = "Creates a new tenant",
+            notes = "")
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
@@ -78,7 +84,7 @@ public class RestTenants {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(IdJSON tenantId, @Context UriInfo uriInfo) {
-        inventory.tenants().create(tenantId.getId());
+        inventory.tenants().create(new Tenant.Blueprint(tenantId.getId(), tenantId.getProperties()));
         return ResponseUtil.created(uriInfo, tenantId.getId()).build();
     }
 

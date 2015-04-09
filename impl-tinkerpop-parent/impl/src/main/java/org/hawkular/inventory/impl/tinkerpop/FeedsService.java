@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -32,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
+final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, Feed.Blueprint>
         implements Feeds.ReadAndRegister, Feeds.Read {
 
     FeedsService(InventoryContext context, PathContext ctx) {
@@ -40,8 +41,12 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
+    protected Filter[] initNewEntity(Vertex newEntity, Feed.Blueprint blueprint) {
         Vertex env = null;
+
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
+
         for(Vertex sourceEnv : source().hasType(environment)) {
             sourceEnv.addEdge(contains.name(), newEntity);
             env = sourceEnv;
@@ -64,7 +69,7 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected String getProposedId(String b) {
+    protected String getProposedId(Feed.Blueprint b) {
         Vertex env = null;
         for(Vertex sourceEnv : source().hasType(environment)) {
             env = sourceEnv;
@@ -75,11 +80,11 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
         String envId = getUid(env);
         String tenantId = getUid(tenant);
 
-        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b));
+        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b.getId()));
     }
 
     @Override
     public Feeds.Single register(String proposedId) {
-        return super.create(proposedId);
+        return super.create(new Feed.Blueprint(proposedId));
     }
 }

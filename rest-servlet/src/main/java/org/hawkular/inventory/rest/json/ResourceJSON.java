@@ -48,4 +48,8 @@ public class ResourceJSON {
     public Map<String, Object> getProperties() {
         return properties == null ? new HashMap<>() : properties;
     }
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
+
 }

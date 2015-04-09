@@ -116,4 +116,16 @@ public abstract class Entity {
 
         return bld.toString();
     }
+
+    public abstract static class AbstractBlueprint {
+        private final Map<String, Object> properties;
+
+        public AbstractBlueprint(Map<String, Object> properties) {
+            this.properties = properties;
+        }
+
+        public Map<String, Object> getProperties() {
+            return properties;
+        }
+    }
 }

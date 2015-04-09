@@ -129,7 +129,7 @@ public class RestResourceTypes {
     public Response create(@PathParam("tenantId") String tenantId, ResourceTypeJSON resourceType,
                            @Context UriInfo uriInfo) {
         ResourceType.Blueprint b = new ResourceType.Blueprint(resourceType.getId(),
-                new Version(resourceType.getVersion()));
+                new Version(resourceType.getVersion()), resourceType.getProperties());
 
         inventory.tenants().get(tenantId).resourceTypes().create(b);
 

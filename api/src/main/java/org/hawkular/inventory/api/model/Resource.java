@@ -69,11 +69,10 @@ public final class Resource extends EnvironmentalEntity {
      * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
+    public static final class Blueprint extends Entity.AbstractBlueprint {
         @XmlAttribute
         private final String id;
         private final ResourceType type;
-        private final Map<String, Object> properties;
 
         /** JAXB support */
         @SuppressWarnings("unused")
@@ -86,9 +85,9 @@ public final class Resource extends EnvironmentalEntity {
         }
 
         public Blueprint(String id, ResourceType type, Map<String, Object> properties) {
+            super(properties);
             this.id = id;
             this.type = type;
-            this.properties = properties;
         }
 
         public String getId() {
@@ -97,10 +96,6 @@ public final class Resource extends EnvironmentalEntity {
 
         public ResourceType getType() {
             return type;
-        }
-
-        public Map<String, Object> getProperties() {
-            return properties;
         }
     }
 }

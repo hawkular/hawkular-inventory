@@ -22,6 +22,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -97,7 +99,7 @@ public final class ResourceType extends OwnedEntity {
      * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
+    public static final class Blueprint extends Entity.AbstractBlueprint{
         @XmlAttribute
         private final String id;
 
@@ -105,9 +107,14 @@ public final class ResourceType extends OwnedEntity {
         @XmlJavaTypeAdapter(VersionAdapter.class)
         private final Version version;
 
-        public Blueprint(String id, Version version) {
+        public Blueprint(String id, Version version, Map<String, Object> properties) {
+            super(properties);
             this.id = id;
             this.version = version;
+        }
+
+        public Blueprint(String id, Version version) {
+            this(id, version, new HashMap<>());
         }
 
         public String getId() {

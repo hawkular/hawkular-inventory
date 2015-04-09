@@ -71,7 +71,11 @@ public final class Environments {
     /**
      * Provides methods for read-write access to environments.
      */
-    public interface ReadWrite extends ReadWriteInterface<Environment, String, Single, Multiple> {
+    public interface ReadWrite extends ReadWriteInterface<Environment, Environment.Blueprint, Single, Multiple> {
         void copy(String sourceEnvironmentId, String targetEnvironmentId);
+
+        default Single create(String id) throws EntityAlreadyExistsException {
+            return create(new Environment.Blueprint(id));
+        }
     }
 }

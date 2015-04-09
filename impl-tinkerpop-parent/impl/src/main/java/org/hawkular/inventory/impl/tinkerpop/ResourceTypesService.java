@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -48,6 +49,8 @@ final class ResourceTypesService extends
         }
 
         newEntity.setProperty(Constants.Property.version.name(), blueprint.getVersion().toString());
+        // copy the properties
+        ElementHelper.setProperties(newEntity, blueprint.getProperties());
 
         return Filter.by(With.type(Tenant.class), With.id(getUid(exampleTnt)), Related.by(contains),
                 With.type(ResourceType.class), With.id(getUid(newEntity))).get();

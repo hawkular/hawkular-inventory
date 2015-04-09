@@ -17,6 +17,9 @@
 
 package org.hawkular.inventory.rest.json;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -24,6 +27,7 @@ package org.hawkular.inventory.rest.json;
 public class MetricTypeJSON {
     private String id;
     private String unit;
+    private Map<String, Object> properties;
 
     public String getId() {
         return id;
@@ -39,5 +43,13 @@ public class MetricTypeJSON {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties == null ? new HashMap<>() : properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

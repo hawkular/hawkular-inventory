@@ -20,6 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
@@ -68,7 +70,7 @@ public final class Metric extends EnvironmentalEntity {
      * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
      */
     @XmlRootElement
-    public static class Blueprint {
+    public static class Blueprint extends Entity.AbstractBlueprint {
         @XmlAttribute
         private final String id;
         private final MetricType type;
@@ -80,6 +82,11 @@ public final class Metric extends EnvironmentalEntity {
         }
 
         public Blueprint(MetricType type, String id) {
+            this(type, id, new HashMap<>());
+        }
+
+        public Blueprint(MetricType type, String id, Map<String, Object> properties) {
+            super(properties);
             this.type = type;
             this.id = id;
         }

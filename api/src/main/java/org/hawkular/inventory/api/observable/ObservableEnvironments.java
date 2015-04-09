@@ -50,8 +50,8 @@ public final class ObservableEnvironments {
     }
 
     public static final class ReadWrite
-            extends ObservableBase.ReadWrite<Environment, String, Environments.Single, Environments.Multiple,
-                Environments.ReadWrite> implements Environments.ReadWrite {
+            extends ObservableBase.ReadWrite<Environment, Environment.Blueprint, Environments.Single,
+                    Environments.Multiple, Environments.ReadWrite> implements Environments.ReadWrite {
 
         ReadWrite(Environments.ReadWrite wrapped, ObservableContext context) {
             super(wrapped, context);
