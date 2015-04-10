@@ -26,7 +26,7 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface WriteInterface<Entity, Blueprint, Single> {
+public interface WriteInterface<Entity, Blueprint extends org.hawkular.inventory.api.model.Entity.Blueprint, Single> {
 
     /**
      * Creates a new entity at the current position in the inventory traversal.

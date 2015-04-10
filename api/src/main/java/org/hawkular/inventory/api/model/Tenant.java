@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
@@ -38,5 +40,34 @@ public final class Tenant extends Entity {
     @Override
     public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
         return visitor.visitTenant(this, parameter);
+    }
+
+    public static final class Blueprint extends Entity.Blueprint {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Blueprint() {
+            this(null, null);
+        }
+
+        public Blueprint(String id) {
+            super(id, Collections.emptyMap());
+        }
+
+        public Blueprint(String id, Map<String, Object> properties) {
+            super(id, properties);
+        }
+
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(id, properties);
+            }
+        }
     }
 }

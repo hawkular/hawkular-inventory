@@ -45,7 +45,7 @@ class RestTest extends AbstractTestBase {
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/resourceTypes/URL", response.headers.Location)
 
-        response = client.post(path: "$tenantId/metricTypes", body: '{"id":"ResponseTime", "unit" : "ms"}')
+        response = client.post(path: "$tenantId/metricTypes", body: '{"id":"ResponseTime", "unit" : "MILLI_SECOND"}')
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/metricTypes/ResponseTime", response.headers.Location)
 
@@ -59,7 +59,7 @@ class RestTest extends AbstractTestBase {
         assertEquals(baseURI + "$tenantId/$environmentId/metrics/host1_ping_response", response.headers.Location)
 
         response = client.post(path: "$tenantId/$environmentId/resources",
-            body: "{\"id\": \"host1\", \"type\": {\"id\": \"URL\", \"version\": \"1.0\"}}")
+            body: "{\"id\": \"host1\", \"resourceTypeId\": \"URL\"}")
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/$environmentId/resources/host1", response.headers.Location)
 
@@ -87,7 +87,7 @@ class RestTest extends AbstractTestBase {
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/resourceTypes/Playroom", response.headers.Location)
 
-        response = client.post(path: "$tenantId/metricTypes", body: '{"id":"Size", "unit":"b"}')
+        response = client.post(path: "$tenantId/metricTypes", body: '{"id":"Size", "unit":"BYTE"}')
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/metricTypes/Size", response.headers.Location)
 
@@ -106,12 +106,12 @@ class RestTest extends AbstractTestBase {
         assertEquals(baseURI + "$tenantId/$environmentId/metrics/playroom2_size", response.headers.Location)
 
         response = client.post(path: "$tenantId/$environmentId/resources",
-                body: "{\"id\": \"playroom1\", \"type\": {\"id\": \"Playroom\", \"version\": \"1.0\"}}")
+                body: "{\"id\": \"playroom1\", \"resourceTypeId\": \"Playroom\"}")
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/$environmentId/resources/playroom1", response.headers.Location)
 
         response = client.post(path: "$tenantId/$environmentId/resources",
-                body: "{\"id\": \"playroom2\", \"type\": {\"id\": \"Playroom\", \"version\": \"1.0\"}}")
+                body: "{\"id\": \"playroom2\", \"resourceTypeId\": \"Playroom\"}")
         assertEquals(201, response.status)
         assertEquals(baseURI + "$tenantId/$environmentId/resources/playroom2", response.headers.Location)
 
@@ -126,12 +126,11 @@ class RestTest extends AbstractTestBase {
 
     @AfterClass
     static void deleteEverything() {
-        // TODO uncomment once HWKINVENT-7 lands
-//        def response = client.delete(path : "tenants/com.acme.tenant")
-//        assertEquals(204, response.status)
-//
-//        response = client.delete(path : "tenants/com.example.tenant")
-//        assertEquals(204, response.status)
+        def response = client.delete(path : "tenants/com.acme.tenant")
+        assertEquals(204, response.status)
+
+        response = client.delete(path : "tenants/com.example.tenant")
+        assertEquals(204, response.status)
     }
 
     @Test

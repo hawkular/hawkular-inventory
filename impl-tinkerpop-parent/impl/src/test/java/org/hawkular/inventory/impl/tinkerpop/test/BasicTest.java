@@ -46,7 +46,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import org.junit.After;
 import org.junit.Assert;
@@ -117,11 +116,13 @@ public class BasicTest {
     }
 
     private void setupData() throws Exception {
-        assert inventory.tenants().create("com.acme.tenant").entity().getId().equals("com.acme.tenant");
-        assert inventory.tenants().get("com.acme.tenant").environments().create("production").entity().getId()
-                .equals("production");
+        assert inventory.tenants()
+                .create(Tenant.Blueprint.builder().withId("com.acme.tenant").withProperty("kachny", "moc").build())
+                .entity().getId().equals("com.acme.tenant");
+        assert inventory.tenants().get("com.acme.tenant").environments().create(new Environment.Blueprint("production"))
+                .entity().getId().equals("production");
         assert inventory.tenants().get("com.acme.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("URL", new Version("1.0"))).entity().getId().equals("URL");
+                .create(new ResourceType.Blueprint("URL", "1.0")).entity().getId().equals("URL");
         assert inventory.tenants().get("com.acme.tenant").metricTypes()
                 .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND)).entity().getId()
                 .equals("ResponseTime");
@@ -129,40 +130,34 @@ public class BasicTest {
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().associate("ResponseTime");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
-                .create(new Metric.Blueprint(
-                        new MetricType("com.acme.tenant", "ResponseTime", MetricUnit.MILLI_SECOND),
-                        "host1_ping_response")).entity().getId().equals("host1_ping_response");
+                .create(new Metric.Blueprint("ResponseTime", "host1_ping_response")).entity().getId()
+                .equals("host1_ping_response");
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .create(new Resource.Blueprint("host1", new ResourceType("com.acme.tenant", "URL", "1.0"))).entity()
+                .create(new Resource.Blueprint("host1", "URL")).entity()
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .get("host1").metrics().associate("host1_ping_response");
 
-        assert inventory.tenants().create("com.example.tenant").entity().getId().equals("com.example.tenant");
-        assert inventory.tenants().get("com.example.tenant").environments().create("test").entity().getId()
-                .equals("test");
+        assert inventory.tenants().create(new Tenant.Blueprint("com.example.tenant")).entity().getId()
+                .equals("com.example.tenant");
+        assert inventory.tenants().get("com.example.tenant").environments().create(new Environment.Blueprint("test"))
+                .entity().getId().equals("test");
         assert inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Kachna", new Version("1.0"))).entity().getId().equals("Kachna");
+                .create(new ResourceType.Blueprint("Kachna", "1.0")).entity().getId().equals("Kachna");
         assert inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Playroom", new Version("1.0"))).entity().getId().equals("Playroom");
+                .create(new ResourceType.Blueprint("Playroom", "1.0")).entity().getId().equals("Playroom");
         assert inventory.tenants().get("com.example.tenant").metricTypes()
                 .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().associate("Size");
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
-                .create(new Metric.Blueprint(
-                        new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom1_size")).entity().getId().equals("playroom1_size");
+                .create(new Metric.Blueprint("Size", "playroom1_size")).entity().getId().equals("playroom1_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
-                .create(new Metric.Blueprint(
-                        new MetricType("com.example.tenant", "Size", MetricUnit.BYTE),
-                        "playroom2_size")).entity().getId().equals("playroom2_size");
+                .create(new Metric.Blueprint("Size", "playroom2_size")).entity().getId().equals("playroom2_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom1", new ResourceType("com.example.tenant", "Playroom", "1.0")))
-                .entity().getId().equals("playroom1");
+                .create(new Resource.Blueprint("playroom1", "Playroom")).entity().getId().equals("playroom1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .create(new Resource.Blueprint("playroom2", new ResourceType("com.example.tenant", "Playroom", "1.0")))
-                .entity().getId().equals("playroom2");
+                .create(new Resource.Blueprint("playroom2", "Playroom")).entity().getId().equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom1").metrics().associate("playroom1_size");
@@ -173,10 +168,10 @@ public class BasicTest {
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                .linkWith("yourMom", test);
+                .linkWith("yourMom", test, null);
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.incoming)
-                .linkWith("IamYourFather", test);
+                .linkWith("IamYourFather", test, null);
     }
 
     private void teardownData() throws Exception {
@@ -405,7 +400,7 @@ public class BasicTest {
                 : "Environment 'test' must contain 'playroom2_size'.";
         assert contains.stream().anyMatch(rel -> "playroom1_size" .equals(rel.getTarget().getId()))
                 : "Environment 'test' must contain 'playroom1_size'.";
-        assert contains.stream().allMatch(rel -> !"production" .equals(rel.getSource().getId()))
+        assert contains.stream().allMatch(rel -> !"production".equals(rel.getSource().getId()))
                 : "Environment 'production' cant be the source of these relationships.";
     }
 
@@ -431,7 +426,7 @@ public class BasicTest {
         Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
         Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .get("host1").relationships(Relationships.Direction.incoming)
-                .linkWith("crossTenantLink", tenant).entity();
+                .linkWith("crossTenantLink", tenant, null).entity();
 
         assert inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
                 .named("crossTenantLink").entities().size() == 1 : "Relation 'crossTenantLink' was not found.";
@@ -809,18 +804,43 @@ public class BasicTest {
         Feeds.ReadAndRegister feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
                 .feeds();
 
-        Feed f1 = feeds.register("feed").entity();
-        Feed f2  = feeds.register("feed").entity();
+        Feed f1 = feeds.register("feed", null).entity();
+        Feed f2  = feeds.register("feed", null).entity();
 
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());
     }
 
     @Test
+    public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
+        try {
+            inventory.tenants().create(new Tenant.Blueprint("com.acme.tenant"));
+            Assert.fail("Creating tenant with existing ID should fail");
+        } catch (Exception e) {
+            //good
+        }
+
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().create(new Environment.Blueprint("production"));
+            Assert.fail("Creating environment with existing ID should fail");
+        } catch (Exception e) {
+            //good
+        }
+
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                    .create(new Resource.Blueprint("host1", "URL"));
+            Assert.fail("Creating resource with existing ID should fail");
+        } catch (Exception e) {
+            //good
+        }
+    }
+
+    @Test
     public void testContainsLoopsImpossible() throws Exception {
         try {
             inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
-                    .linkWith("contains", new Tenant("com.example.tenant"));
+                    .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Self-loops in contains should be disallowed");
         } catch (IllegalArgumentException e) {
@@ -829,7 +849,7 @@ public class BasicTest {
 
         try {
             inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
-                    .linkWith("contains", new Tenant("com.example.tenant"));
+                    .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Self-loops in contains should be disallowed");
         } catch (IllegalArgumentException e) {
@@ -839,7 +859,7 @@ public class BasicTest {
         try {
             inventory.tenants().get("com.example.tenant").environments().get("test")
                     .relationships(Relationships.Direction.outgoing)
-                    .linkWith("contains", new Tenant("com.example.tenant"));
+                    .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Loops in contains should be disallowed");
         } catch (IllegalArgumentException e) {
@@ -848,7 +868,7 @@ public class BasicTest {
 
         try {
             inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
-                    .linkWith("contains", new Environment("com.example.tenant", "test"));
+                    .linkWith("contains", new Environment("com.example.tenant", "test"), null);
 
             Assert.fail("Loops in contains should be disallowed");
         } catch (IllegalArgumentException e) {
@@ -860,7 +880,7 @@ public class BasicTest {
     public void testContainsDiamondsImpossible() throws Exception {
         try {
             inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
-                    .linkWith("contains", new ResourceType("com.acme.tenant", "URL", "1.0"));
+                    .linkWith("contains", new ResourceType("com.acme.tenant", "URL", "1.0"), null);
 
             Assert.fail("Entity cannot be contained in 2 or more others");
         } catch (IllegalArgumentException e) {
@@ -870,12 +890,20 @@ public class BasicTest {
         try {
             inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL")
                     .relationships(Relationships.Direction.incoming)
-                    .linkWith("contains", new Tenant("com.example.tenant"));
+                    .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Entity cannot be contained in 2 or more others");
         } catch (IllegalArgumentException e) {
             //expected
         }
+    }
+
+    @Test
+    public void testPropertiesCreated() throws Exception {
+        Tenant t = inventory.tenants().get("com.acme.tenant").entity();
+
+        Assert.assertEquals(1, t.getProperties().size());
+        Assert.assertEquals("moc", t.getProperties().get("kachny"));
     }
 
     @SuppressWarnings("UnusedDeclaration")

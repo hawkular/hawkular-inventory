@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
@@ -42,7 +43,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @since 1.0
  */
 final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
-        Relationships.Multiple, E, Relationship> implements Relationships.ReadWrite, Relationships.Read {
+        Relationships.Multiple, E, Entity.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
 
     private final Relationships.Direction direction;
 
@@ -83,13 +84,13 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    protected String getProposedId(Relationship r) {
+    protected String getProposedId(Entity.Blueprint r) {
         // this doesn't make sense for Relationships
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, Relationship r) {
+    protected Filter[] initNewEntity(Vertex newEntity, Entity.Blueprint r) {
         return new Filter[0];
     }
 
@@ -104,7 +105,7 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public Relationships.Single linkWith(String name, Entity targetOrSource) {
+    public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, String> properties) {
         if (null == name) {
             throw new IllegalArgumentException("name was null");
         }
@@ -145,8 +146,9 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource) {
-        return linkWith(name.name(), targetOrSource);
+    public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource,
+                                         Map<String, String> properties) {
+        return linkWith(name.name(), targetOrSource, null);
     }
 
     @Override

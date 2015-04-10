@@ -24,7 +24,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.api.observable.Action;
 import org.hawkular.inventory.api.observable.Interest;
 import org.hawkular.inventory.api.observable.ObservableInventory;
@@ -62,12 +61,15 @@ public class ObservableInventoryTest {
     public void testTenants() throws Exception {
         Tenant prototype = new Tenant("kachny");
 
-        when(InventoryMock.tenantsReadWrite.create("kachny")).thenReturn(InventoryMock.tenantsSingle);
+        Tenant.Blueprint blueprint = new Tenant.Blueprint("kachny");
+
+        when(InventoryMock.tenantsReadWrite.create(blueprint))
+                .thenReturn(InventoryMock.tenantsSingle);
         when(InventoryMock.tenantsSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities()).thenReturn(Collections.emptySet());
 
         runTest(Tenant.class, false, () -> {
-            observableInventory.tenants().create("kachny");
+            observableInventory.tenants().create(blueprint);
             observableInventory.tenants().update(prototype);
             observableInventory.tenants().delete(prototype.getId());
         });
@@ -77,13 +79,16 @@ public class ObservableInventoryTest {
     public void testEnvironments() throws Exception {
         Environment prototype = new Environment("t", "e");
 
-        when(InventoryMock.environmentsReadWrite.create("e")).thenReturn(InventoryMock.environmentsSingle);
+        Environment.Blueprint blueprint = new Environment.Blueprint("e");
+
+        when(InventoryMock.environmentsReadWrite.create(blueprint))
+                .thenReturn(InventoryMock.environmentsSingle);
         when(InventoryMock.environmentsSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities())
                 .thenReturn(Collections.singleton(new Relationship("r", "contains", new Tenant("t"), prototype)));
 
         runTest(Environment.class, true, () -> {
-            observableInventory.tenants().get("t").environments().create("e");
+            observableInventory.tenants().get("t").environments().create(blueprint);
             observableInventory.tenants().get("t").environments().update(prototype);
             observableInventory.tenants().get("t").environments().delete(prototype.getId());
         });
@@ -108,7 +113,7 @@ public class ObservableInventoryTest {
 
         runTest(ResourceType.class, true, () -> {
             observableInventory.tenants().get("t").resourceTypes()
-                    .create(new ResourceType.Blueprint("rt", new Version("1.0")));
+                    .create(new ResourceType.Blueprint("rt", "1.0"));
             observableInventory.tenants().get("t").resourceTypes().update(prototype);
             observableInventory.tenants().get("t").resourceTypes().delete(prototype.getId());
         });
@@ -155,7 +160,7 @@ public class ObservableInventoryTest {
 
         runTest(Metric.class, true, () -> {
             observableInventory.tenants().get("t").environments().get("e").metrics()
-                    .create(new Metric.Blueprint(new MetricType("t", "mt"), "m"));
+                    .create(new Metric.Blueprint("mt", "m"));
             observableInventory.tenants().get("t").environments().get("e").metrics().update(prototype);
             observableInventory.tenants().get("t").environments().get("e").metrics().delete(prototype.getId());
         });
@@ -173,7 +178,7 @@ public class ObservableInventoryTest {
 
         runTest(Resource.class, true, () -> {
             observableInventory.tenants().get("t").environments().get("e").resources()
-                    .create(new Resource.Blueprint("r", new ResourceType("t", "rt", "1.0")));
+                    .create(new Resource.Blueprint("r", "rt"));
             observableInventory.tenants().get("t").environments().get("e").resources().update(prototype);
             observableInventory.tenants().get("t").environments().get("e").resources().delete(prototype.getId());
         });

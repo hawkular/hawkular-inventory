@@ -18,8 +18,9 @@ package org.hawkular.inventory.api.model;
 
 import com.google.gson.annotations.Expose;
 
-import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -64,31 +65,47 @@ public final class Resource extends EnvironmentalEntity {
      * Data required to create a resource.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
-        @XmlAttribute
-        private final String id;
-        private final ResourceType type;
+    public static final class Blueprint extends Entity.Blueprint {
+        private final String resourceTypeId;
+
+        public static Builder builder() {
+            return new Builder();
+        }
 
         /** JAXB support */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
+            this(null, null, null);
         }
 
-        public Blueprint(String id, ResourceType type) {
-            this.id = id;
-            this.type = type;
+        public Blueprint(String id, String resourceTypeId) {
+            this(id, resourceTypeId, Collections.emptyMap());
         }
 
-        public String getId() {
-            return id;
+        public Blueprint(String id, String resourceTypeId, Map<String, Object> properties) {
+            super(id, properties);
+            this.resourceTypeId = resourceTypeId;
         }
 
-        public ResourceType getType() {
-            return type;
+        public String getResourceTypeId() {
+            return resourceTypeId;
+        }
+
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+            private String resourceTypeId;
+
+            public Builder withResourceType(String resourceTypeId) {
+                this.resourceTypeId = resourceTypeId;
+                return this;
+            }
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(id, resourceTypeId, properties);
+            }
         }
     }
 }

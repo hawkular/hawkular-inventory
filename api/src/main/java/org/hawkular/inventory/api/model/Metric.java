@@ -20,6 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
@@ -65,31 +67,48 @@ public final class Metric extends EnvironmentalEntity {
      * Data required to create a new metric.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
-    public static class Blueprint {
+    public static final class Blueprint extends Entity.Blueprint {
         @XmlAttribute
-        private final String id;
-        private final MetricType type;
+        private final String metricTypeId;
+
+        public static Builder builder() {
+            return new Builder();
+        }
 
         /** JAXB support */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
+            this(null, null, null);
         }
 
-        public Blueprint(MetricType type, String id) {
-            this.type = type;
-            this.id = id;
+        public Blueprint(String metricTypeId, String id) {
+            this(metricTypeId, id, Collections.emptyMap());
         }
 
-        public MetricType getType() {
-            return type;
+        public Blueprint(String metricTypeId, String id, Map<String, Object> properties) {
+            super(id, properties);
+            this.metricTypeId = metricTypeId;
         }
 
-        public String getId() {
-            return id;
+        public String getMetricTypeId() {
+            return metricTypeId;
+        }
+
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+            private String metricTypeId;
+
+            public Builder withMetricTypeId(String metricTypeId) {
+                this.metricTypeId = metricTypeId;
+                return this;
+            }
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(metricTypeId, id, properties);
+            }
         }
     }
 }

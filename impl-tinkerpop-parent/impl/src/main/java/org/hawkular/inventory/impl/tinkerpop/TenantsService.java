@@ -26,8 +26,8 @@ import org.hawkular.inventory.api.model.Tenant;
 * @author Lukas Krejci
 * @since 1.0
 */
-final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant, String>
-        implements Tenants.ReadWrite, Tenants.Read {
+final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant,
+        Tenant.Blueprint> implements Tenants.ReadWrite, Tenants.Read {
 
     public TenantsService(InventoryContext context) {
         super(context, Tenant.class, new PathContext(FilterApplicator.fromPath().get(),
@@ -39,8 +39,8 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
-        return Filter.by(With.type(Tenant.class), With.id(blueprint)).get();
+    protected Filter[] initNewEntity(Vertex newEntity, Tenant.Blueprint blueprint) {
+        return Filter.by(With.type(Tenant.class), With.id(blueprint.getId())).get();
     }
 
     @Override
@@ -54,7 +54,7 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    protected String getProposedId(String b) {
-        return b;
+    protected String getProposedId(Tenant.Blueprint b) {
+        return b.getId();
     }
 }

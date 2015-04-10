@@ -25,7 +25,6 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.IdJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -91,11 +90,12 @@ public class RestEnvironments {
             @ApiResponse(code = 409, message = "Environment already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("tenantId") String tenantId, @ApiParam(required = true) IdJSON environmentId,
+    public Response create(@PathParam("tenantId") String tenantId,
+                           @ApiParam(required = true) Environment.Blueprint environmentBlueprint,
                            @Context UriInfo uriInfo)
             throws Exception {
-        inventory.tenants().get(tenantId).environments().create(environmentId.getId());
-        return ResponseUtil.created(uriInfo, environmentId.getId()).build();
+        inventory.tenants().get(tenantId).environments().create(environmentBlueprint);
+        return ResponseUtil.created(uriInfo, environmentBlueprint.getId()).build();
     }
 
     @PUT

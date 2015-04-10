@@ -25,6 +25,8 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Tenant;
 
+import java.util.Map;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 
@@ -32,7 +34,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, String>
+final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, Feed.Blueprint>
         implements Feeds.ReadAndRegister, Feeds.Read {
 
     FeedsService(InventoryContext context, PathContext ctx) {
@@ -40,7 +42,7 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected Filter[] initNewEntity(Vertex newEntity, String blueprint) {
+    protected Filter[] initNewEntity(Vertex newEntity, Feed.Blueprint blueprint) {
         Vertex env = null;
         for(Vertex sourceEnv : source().hasType(environment)) {
             sourceEnv.addEdge(contains.name(), newEntity);
@@ -64,7 +66,7 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected String getProposedId(String b) {
+    protected String getProposedId(Feed.Blueprint b) {
         Vertex env = null;
         for(Vertex sourceEnv : source().hasType(environment)) {
             env = sourceEnv;
@@ -75,11 +77,11 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
         String envId = getUid(env);
         String tenantId = getUid(tenant);
 
-        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b));
+        return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b.getId()));
     }
 
     @Override
-    public Feeds.Single register(String proposedId) {
-        return super.create(proposedId);
+    public Feeds.Single register(String proposedId, Map<String, Object> properties) {
+        return super.create(new Feed.Blueprint(proposedId, properties));
     }
 }

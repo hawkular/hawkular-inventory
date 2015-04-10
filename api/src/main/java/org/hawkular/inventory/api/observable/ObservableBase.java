@@ -93,7 +93,7 @@ public class ObservableBase<T> {
         }
     }
 
-    public abstract static class ReadWrite<Entity, Blueprint,
+    public abstract static class ReadWrite<Entity, Blueprint extends org.hawkular.inventory.api.model.Entity.Blueprint,
             Single extends ResolvableToSingle<Entity> & Relatable<Relationships.ReadWrite>,
             Multiple extends ResolvableToMany<Entity>,
             Iface extends ReadInterface<Single, Multiple> & WriteInterface<Entity, Blueprint, Single>>

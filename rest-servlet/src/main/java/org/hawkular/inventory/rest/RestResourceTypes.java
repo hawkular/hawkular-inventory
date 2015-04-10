@@ -25,10 +25,8 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Version;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.IdJSON;
-import org.hawkular.inventory.rest.json.ResourceTypeJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -126,12 +124,9 @@ public class RestResourceTypes {
             @ApiResponse(code = 409, message = "Resource type already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("tenantId") String tenantId, ResourceTypeJSON resourceType,
+    public Response create(@PathParam("tenantId") String tenantId, ResourceType.Blueprint resourceType,
                            @Context UriInfo uriInfo) {
-        ResourceType.Blueprint b = new ResourceType.Blueprint(resourceType.getId(),
-                new Version(resourceType.getVersion()));
-
-        inventory.tenants().get(tenantId).resourceTypes().create(b);
+        inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
     }

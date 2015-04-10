@@ -20,6 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by
@@ -71,33 +73,48 @@ public final class MetricType extends OwnedEntity {
      * Data required to create a new metric type.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Object)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
-    public static final class Blueprint {
-        @XmlAttribute
-        private final String id;
+    public static final class Blueprint extends Entity.Blueprint {
         @XmlAttribute
         private final MetricUnit unit;
+
+        public static Builder builder() {
+            return new Builder();
+        }
 
         /** JAXB support */
         @SuppressWarnings("unused")
         private Blueprint() {
-            id = null;
-            unit = null;
+            this(null, null, null);
         }
 
         public Blueprint(String id, MetricUnit unit) {
-            this.id = id;
-            this.unit = unit;
+            this(id, unit, Collections.emptyMap());
         }
 
-        public String getId() {
-            return id;
+        public Blueprint(String id, MetricUnit unit, Map<String, Object> properties) {
+            super(id, properties);
+            this.unit = unit;
         }
 
         public MetricUnit getUnit() {
             return unit;
+        }
+
+        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+            private MetricUnit unit;
+
+            public Builder withUnit(MetricUnit unit) {
+                this.unit = unit;
+                return this;
+            }
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(id, unit, properties);
+            }
         }
     }
 }
