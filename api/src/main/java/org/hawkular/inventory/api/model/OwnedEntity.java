@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
@@ -27,6 +29,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 abstract class OwnedEntity extends Entity {
 
     @XmlAttribute(name = "tenant")
+    @Expose
     private final String tenantId;
 
     /** JAXB support */
