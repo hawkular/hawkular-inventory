@@ -156,7 +156,7 @@ public class RestMetrics {
                                  @PathParam("environmentId") String environmentId,
                                  @PathParam("metricId") String metricId) {
 
-        inventory.tenants().get("tenantId").environments().get("environmentId").metrics().delete(metricId);
+        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().delete(metricId);
         return Response.noContent().build();
     }
 }

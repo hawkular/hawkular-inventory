@@ -94,7 +94,7 @@ public class RestResourceTypes {
     })
     public Set<MetricType> getMetricTypes(@PathParam("tenantId") String tenantId,
                                           @PathParam("resourceTypeId") String resourceTypeId) {
-        return inventory.tenants().get("tenantId").resourceTypes().get(resourceTypeId).metricTypes().getAll()
+        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().getAll()
                 .entities();
     }
 
