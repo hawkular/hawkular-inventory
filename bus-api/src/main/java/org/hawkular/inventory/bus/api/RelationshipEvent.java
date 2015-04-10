@@ -14,27 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.bus;
+package org.hawkular.inventory.bus.api;
 
-import rx.functions.Action1;
-
-import java.util.function.BiConsumer;
+import com.google.gson.annotations.Expose;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.observable.Action;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class PartiallyApplied<P, T> implements Action1<T> {
-    private final P parameter;
-    private final BiConsumer<P, T> target;
+public final class RelationshipEvent extends InventoryEvent<Relationship> {
+    @Expose
+    private Relationship object;
 
-    public PartiallyApplied(BiConsumer<P, T> target, P parameter) {
-        this.parameter = parameter;
-        this.target = target;
+    public RelationshipEvent() {
+    }
+
+    public RelationshipEvent(Action.Enumerated action, Relationship object) {
+        super(action);
+        this.object = object;
     }
 
     @Override
-    public void call(T t) {
-        target.accept(parameter, t);
+    public Relationship getObject() {
+        return object;
+    }
+
+    @Override
+    public void setObject(Relationship object) {
+        this.object = object;
     }
 }

@@ -35,11 +35,16 @@
     <version>10</version>
   </parent>
 
+  <properties>
+    <version.hawkular-inventory>0.0.1-SNAPSHOT</version.hawkular-inventory>
+  </properties>
+
   <modules>
     <module>api</module>
     <module>impl-tinkerpop-parent</module>
     <module>rest-servlet</module>
     <module>rest-test</module>
     <module>bus</module>
+    <module>bus-api</module>
   </modules>
 </project>

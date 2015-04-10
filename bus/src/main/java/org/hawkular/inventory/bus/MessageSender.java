@@ -17,12 +17,11 @@
 package org.hawkular.inventory.bus;
 
 import org.hawkular.bus.common.MessageProcessor;
-import org.hawkular.bus.common.ObjectMessage;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.observable.Interest;
+import org.hawkular.inventory.bus.api.InventoryEvent;
 
 import javax.jms.JMSException;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +31,7 @@ import static org.hawkular.inventory.bus.Log.LOG;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class MessageSender {
+final class MessageSender {
     private final ProducerConnectionContext producerConnectionContext;
     private final MessageProcessor messageProcessor;
 
@@ -42,7 +41,7 @@ public final class MessageSender {
     }
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
-        ObjectMessage message = new ObjectMessage(inventoryEvent);
+        InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
         try {
             Map<String, String> headers = toHeaders(interest);
             messageProcessor.send(producerConnectionContext, message, headers);
