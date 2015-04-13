@@ -39,7 +39,7 @@
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>bus-api</artifactId>
+      <artifactId>inventory-bus-api</artifactId>
       <version>${version.hawkular-inventory}</version>
     </dependency>
 
@@ -66,4 +66,8 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+  </build>
 </project>
