@@ -50,7 +50,7 @@ final class EnvironmentsService extends
         String tenantId = null;
         for (Vertex sourceTenant : source().hasType(tenant)) {
             tenantId = getUid(sourceTenant);
-            sourceTenant.addEdge(contains.name(), newEntity);
+            addEdge(sourceTenant, contains.name(), newEntity);
         }
 
         return Filter.by(With.type(Tenant.class), With.id(tenantId), Related.by(contains),

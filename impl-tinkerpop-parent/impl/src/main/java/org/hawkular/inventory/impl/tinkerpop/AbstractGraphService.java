@@ -85,6 +85,12 @@ abstract class AbstractGraphService {
         return getProperty(v, Constants.Property.type);
     }
 
+    protected Edge addEdge(Vertex source, String label, Vertex target) {
+        Edge e = source.addEdge(label, target);
+        e.setProperty(Constants.Property.uid.name(), e.getId());
+        return e;
+    }
+
     protected Vertex convert(Entity e) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
                 .V().hasType(Constants.Type.of(e)).hasUid(e.getId()).cast(Vertex.class);

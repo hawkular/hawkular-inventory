@@ -386,6 +386,10 @@ public class BasicTest {
         assert contains.stream().anyMatch(rel -> "com.example.tenant".equals(rel.getSource().getId())
                 && "Size".equals(rel.getTarget().getId()))
                 : "Tenant 'com.example.tenant' must contain MetricType 'Size'.";
+
+        contains.forEach((r) -> {
+            assert r.getId() != null;
+        });
     }
 
     @Test
@@ -402,6 +406,10 @@ public class BasicTest {
                 : "Environment 'test' must contain 'playroom1_size'.";
         assert contains.stream().allMatch(rel -> !"production".equals(rel.getSource().getId()))
                 : "Environment 'production' cant be the source of these relationships.";
+
+        contains.forEach((r) -> {
+            assert r.getId() != null;
+        });
     }
 
     @Test

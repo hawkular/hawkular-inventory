@@ -57,7 +57,7 @@ final class MetricsService
 
         //connect to all environments in the source
         for (Vertex e : source().hasType(environment)) {
-            e.addEdge(contains.name(), newEntity);
+            addEdge(e, contains.name(), newEntity);
             envs.add(e);
             exampleEnv = e;
         }
@@ -70,7 +70,7 @@ final class MetricsService
                 .cast(Vertex.class);
 
         for (Vertex md : mds) {
-            md.addEdge(Relationships.WellKnown.defines.name(), newEntity);
+            addEdge(md, Relationships.WellKnown.defines.name(), newEntity);
         }
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
