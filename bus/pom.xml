@@ -66,4 +66,8 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+  </build>
 </project>

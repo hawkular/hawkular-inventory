@@ -29,6 +29,7 @@
   </parent>
 
   <artifactId>inventory-rest-test</artifactId>
+  <name>Hawkular Inventory REST API test application</name>
 
   <dependencies>
     <dependency>

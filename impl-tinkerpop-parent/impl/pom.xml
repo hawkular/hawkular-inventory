@@ -78,7 +78,7 @@
 
 
   <build>
-    <finalName>hawkular-inventory-impl-blueprints</finalName>
+    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
 
     <testResources>
       <testResource>

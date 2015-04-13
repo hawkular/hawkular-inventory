@@ -60,7 +60,7 @@
   </dependencies>
 
   <build>
-    <finalName>hawkular-inventory-api</finalName>
+    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
   </build>
 
 </project>

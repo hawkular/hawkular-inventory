@@ -43,6 +43,6 @@
   </dependencies>
 
   <build>
-    <finalName>hawkular-${project.artifactId}</finalName>
+    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
   </build>
 </project>
