@@ -45,7 +45,7 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     protected Filter[] initNewEntity(Vertex newEntity, Feed.Blueprint blueprint) {
         Vertex env = null;
         for(Vertex sourceEnv : source().hasType(environment)) {
-            sourceEnv.addEdge(contains.name(), newEntity);
+            addEdge(sourceEnv, contains.name(), newEntity);
             env = sourceEnv;
         }
 

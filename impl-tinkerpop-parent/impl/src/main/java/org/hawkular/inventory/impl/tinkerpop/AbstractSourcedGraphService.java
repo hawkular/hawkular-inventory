@@ -209,7 +209,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
                     }
                 }
 
-                Edge e = v.addEdge(rel.name(), o);
+                Edge e = addEdge(v, rel.name(), o);
 
                 return new Relationship(getUid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
                         convert(e.getVertex(Direction.IN)));

@@ -44,7 +44,7 @@ final class ResourceTypesService extends
     protected Filter[] initNewEntity(Vertex newEntity, ResourceType.Blueprint blueprint) {
         Vertex exampleTnt = null;
         for (Vertex t : source().hasType(tenant)) {
-            t.addEdge(contains.name(), newEntity);
+            addEdge(t, contains.name(), newEntity);
             exampleTnt = t;
         }
 

@@ -49,7 +49,7 @@ final class MetricTypesService
         Vertex tnt = null;
         //connect to tenants in the source
         for (Vertex t : source().hasType(tenant)) {
-            t.addEdge(contains.name(), newEntity);
+            addEdge(t, contains.name(), newEntity);
             tnt = t;
         }
 

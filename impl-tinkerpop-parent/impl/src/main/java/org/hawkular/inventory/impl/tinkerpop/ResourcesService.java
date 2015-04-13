@@ -53,7 +53,7 @@ final class ResourcesService
 
         //connect to all environments in the source
         for (Vertex env : source().hasType(environment)) {
-            env.addEdge(contains.name(), newEntity);
+            addEdge(env, contains.name(), newEntity);
             envs.add(env);
             exampleEnv = env;
         }
@@ -61,7 +61,7 @@ final class ResourcesService
         //connect to the resource type from the blueprint
         for (Vertex rt : new HawkularPipeline<>(envs).in(contains).out(contains).hasType(resourceType)
                 .hasUid(blueprint.getResourceTypeId()).cast(Vertex.class)) {
-            rt.addEdge(defines.name(), newEntity);
+            addEdge(rt, defines.name(), newEntity);
         }
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
