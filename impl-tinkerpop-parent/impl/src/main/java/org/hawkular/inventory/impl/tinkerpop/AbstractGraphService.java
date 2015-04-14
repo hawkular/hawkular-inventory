@@ -112,37 +112,43 @@ abstract class AbstractGraphService {
                     }
 
                     @Override
-                    public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment, Void ignored) {
+                    public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment,
+                            Void ignored) {
                         return ret.hasType(Type.tenant).hasUid(environment.getTenantId()).out(contains)
                                 .hasType(Type.environment);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains).hasType(Type.environment)
-                                .hasUid(feed.getEnvironmentId()).out(contains).hasType(Type.feed);
+                        return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(feed.getEnvironmentId()).out(contains)
+                                .hasType(Type.feed);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains).hasType(Type.environment)
-                                .hasUid(metric.getEnvironmentId()).out(contains).hasType(Type.metric);
+                        return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(metric.getEnvironmentId()).out(contains)
+                                .hasType(Type.metric);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitMetricType(MetricType type, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.metricType);
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                                .hasType(Type.metricType);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains).hasType(Type.environment)
-                                .hasUid(resource.getEnvironmentId()).out(contains).hasType(Type.resource);
+                        return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(resource.getEnvironmentId()).out(contains)
+                                .hasType(Type.resource);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitResourceType(ResourceType type, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.resourceType);
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                                .hasType(Type.resourceType);
                     }
                 }, null);
 
