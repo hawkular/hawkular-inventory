@@ -114,10 +114,17 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
         Vertex vertex = it.next();
 
-        Set<String> toRemove = vertex.getPropertyKeys();
-        toRemove.removeAll(update.getProperties().keySet());
+        Set<String> mapped = new HashSet<>(Arrays.asList(Constants.Type.of(entityClass).getMappedProperties()));
 
-        toRemove.forEach(vertex::removeProperty);
+        //remove all non-mapped properties, that are not in the update
+        String[] toRemove = vertex.getPropertyKeys().stream()
+                .filter((p) -> !mapped.contains(p) && !update.getProperties().containsKey(p)).toArray(String[]::new);
+
+        for(String p : toRemove) {
+            vertex.removeProperty(p);
+        }
+
+        //update and add new the properties
         update.getProperties().forEach(vertex::setProperty);
 
         updateExplicitProperties(update, vertex);
@@ -273,10 +280,12 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         Constants.Type type = Constants.Type.of(entityClass);
         List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
 
-        properties.keySet().forEach(k -> {
-            if (mappedProperties.contains(k)) {
-                throw new IllegalArgumentException("Property '" + k + "' is reserved. Cannot set it to a custom value");
-            }
-        });
+        HashSet<String> disallowed = new HashSet<>(properties.keySet());
+        disallowed.retainAll(mappedProperties);
+
+        if (!disallowed.isEmpty()) {
+            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
+                    + mappedProperties);
+        }
     }
 }
