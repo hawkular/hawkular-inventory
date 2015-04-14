@@ -40,6 +40,8 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -79,6 +81,8 @@ final class RelationshipBrowser extends AbstractGraphService {
                 Map<String, Object> properties = edge.getPropertyKeys().stream().collect(Collectors.toMap(Function
                         .<String>identity(), edge::getProperty));
 
+                Arrays.asList(RelationshipService.MAPPED_PROPERTIES).forEach(properties::remove);
+
                 return relationship.update().with(Relationship.Update.builder().withProperties(properties).build());
             }
         };
@@ -97,6 +101,8 @@ final class RelationshipBrowser extends AbstractGraphService {
             public Set<Relationship> entities() {
                 HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
 
+                List<String> mappedProperties = Arrays.asList(RelationshipService.MAPPED_PROPERTIES);
+
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
                         .map(edge -> {
@@ -105,6 +111,8 @@ final class RelationshipBrowser extends AbstractGraphService {
                             // copy the properties
                             Map<String, Object> properties = edge.getPropertyKeys().stream()
                                     .collect(Collectors.toMap(Function.<String>identity(), edge::getProperty));
+
+                            mappedProperties.forEach(properties::remove);
 
                             return relationship.update().with(Relationship.Update.builder().withProperties(properties)
                                     .build());

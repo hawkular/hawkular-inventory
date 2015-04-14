@@ -114,19 +114,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
         Vertex vertex = it.next();
 
-        Set<String> mapped = new HashSet<>(Arrays.asList(Constants.Type.of(entityClass).getMappedProperties()));
-
-        //remove all non-mapped properties, that are not in the update
-        String[] toRemove = vertex.getPropertyKeys().stream()
-                .filter((p) -> !mapped.contains(p) && !update.getProperties().containsKey(p)).toArray(String[]::new);
-
-        for(String p : toRemove) {
-            vertex.removeProperty(p);
-        }
-
-        //update and add new the properties
-        update.getProperties().forEach(vertex::setProperty);
-
+        updateProperties(vertex, update.getProperties(), Constants.Type.of(entityClass).getMappedProperties());
         updateExplicitProperties(update, vertex);
 
         context.getGraph().commit();
@@ -273,19 +261,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
 
     private void checkProperties(Map<String, Object> properties) {
-        if (properties == null || properties.isEmpty()) {
-            return;
-        }
-
         Constants.Type type = Constants.Type.of(entityClass);
-        List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
-
-        HashSet<String> disallowed = new HashSet<>(properties.keySet());
-        disallowed.retainAll(mappedProperties);
-
-        if (!disallowed.isEmpty()) {
-            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
-                    + mappedProperties);
-        }
+        checkProperties(properties, type.getMappedProperties());
     }
 }

@@ -43,6 +43,8 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 final class RelationshipService<E extends Entity<B, U>, B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends AbstractGraphService implements Relationships.ReadWrite, Relationships.Read {
 
+    static final String[] MAPPED_PROPERTIES = new String[]{Constants.Property.uid.name()};
+
     private final InventoryContext context;
     private final Relationships.Direction direction;
     private final PathContext pathContext;
@@ -138,7 +140,8 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
     public void update(String id, Relationship.Update update) throws RelationNotFoundException {
         Edge edge = context.getGraph().getEdge(id);
 
-        ElementHelper.setProperties(edge, update.getProperties());
+        checkProperties(update.getProperties(), MAPPED_PROPERTIES);
+        updateProperties(edge, update.getProperties(), MAPPED_PROPERTIES);
 
         context.getGraph().commit();
     }

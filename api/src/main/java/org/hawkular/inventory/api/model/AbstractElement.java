@@ -105,6 +105,9 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
         }
 
         public Map<String, Object> getProperties() {
+            if (properties == null) {
+                return Collections.emptyMap();
+            }
             return properties;
         }
 

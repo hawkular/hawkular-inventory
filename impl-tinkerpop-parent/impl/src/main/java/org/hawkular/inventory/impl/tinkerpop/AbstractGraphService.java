@@ -35,8 +35,10 @@ import org.hawkular.inventory.impl.tinkerpop.Constants.Type;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
@@ -104,45 +106,45 @@ abstract class AbstractGraphService {
         HawkularPipeline<?, ? extends Element> vs =
                 e.accept(new EntityVisitor<HawkularPipeline<?, ? extends Element>, Void>() {
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitTenant(Tenant tenant, Void ignored) {
-                return ret.hasType(Type.tenant);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitTenant(Tenant tenant, Void ignored) {
+                        return ret.hasType(Type.tenant);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(environment.getTenantId()).out(contains)
-                        .hasType(Type.environment);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(environment.getTenantId()).out(contains)
+                                .hasType(Type.environment);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains).hasType(Type.environment)
-                        .hasUid(feed.getEnvironmentId()).out(contains).hasType(Type.feed);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains).hasType(Type.environment)
+                                .hasUid(feed.getEnvironmentId()).out(contains).hasType(Type.feed);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains).hasType(Type.environment)
-                        .hasUid(metric.getEnvironmentId()).out(contains).hasType(Type.metric);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains).hasType(Type.environment)
+                                .hasUid(metric.getEnvironmentId()).out(contains).hasType(Type.metric);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitMetricType(MetricType type, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.metricType);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitMetricType(MetricType type, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.metricType);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains).hasType(Type.environment)
-                        .hasUid(resource.getEnvironmentId()).out(contains).hasType(Type.resource);
-            }
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains).hasType(Type.environment)
+                                .hasUid(resource.getEnvironmentId()).out(contains).hasType(Type.resource);
+                    }
 
-            @Override
-            public HawkularPipeline<?, ? extends Element> visitResourceType(ResourceType type, Void ignored) {
-                return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.resourceType);
-            }
-        }, null);
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitResourceType(ResourceType type, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains).hasType(Type.resourceType);
+                    }
+                }, null);
 
         vs = vs.hasUid(e.getId());
 
@@ -278,5 +280,38 @@ abstract class AbstractGraphService {
 
     protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
         return new PathContext(pathWith().get(), select == null ? null : select.get());
+    }
+
+    protected static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
+        Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
+
+        //remove all non-mapped properties, that are not in the update
+        String[] toRemove = e.getPropertyKeys().stream()
+                .filter((p) -> !disallowed.contains(p) && !properties.containsKey(p)).toArray(String[]::new);
+
+        for(String p : toRemove) {
+            e.removeProperty(p);
+        }
+
+        //update and add new the properties
+        properties.forEach((p, v) -> {
+            if (!disallowed.contains(p)) {
+                e.setProperty(p, v);
+            }
+        });
+    }
+
+    protected static void checkProperties(Map<String, Object> properties, String[] disallowedProperties) {
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+
+        HashSet<String> disallowed = new HashSet<>(properties.keySet());
+        disallowed.retainAll(Arrays.asList(disallowedProperties));
+
+        if (!disallowed.isEmpty()) {
+            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
+                    + Arrays.asList(disallowedProperties));
+        }
     }
 }

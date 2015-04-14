@@ -875,6 +875,48 @@ public class BasicTest {
         Assert.assertEquals("moc", t.getProperties().get("kachny"));
     }
 
+    @Test
+    public void testPropertiesUpdatedOnEntities() throws Exception {
+
+        inventory.tenants().update("com.acme.tenant", Tenant.Update.builder().withProperty("ducks", "many")
+                .withProperty("hammer", "nails").build());
+
+        Tenant t = inventory.tenants().get("com.acme.tenant").entity();
+
+        Assert.assertEquals(2, t.getProperties().size());
+        Assert.assertEquals("many", t.getProperties().get("ducks"));
+        Assert.assertEquals("nails", t.getProperties().get("hammer"));
+
+        //reset the change we made back...
+        inventory.tenants().update("com.acme.tenant", Tenant.Update.builder().withProperty("kachny", "moc").build());
+        testPropertiesCreated();
+    }
+
+    @Test
+    public void testPropertiesUpdatedOnRelationships() throws Exception {
+
+        Relationship r = inventory.tenants().get("com.acme.tenant").relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
+        inventory.tenants().get("com.acme.tenant").relationships().update(r.getId(),
+                Relationship.Update.builder().withProperty("ducks", "many").withProperty("hammer", "nails").build());
+
+        r = inventory.tenants().get("com.acme.tenant").relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
+        Assert.assertEquals(2, r.getProperties().size());
+        Assert.assertEquals("many", r.getProperties().get("ducks"));
+        Assert.assertEquals("nails", r.getProperties().get("hammer"));
+
+        //reset the change we made back...
+        inventory.tenants().get("com.acme.tenant").relationships().update(r.getId(), new Relationship.Update(null));
+
+        r = inventory.tenants().get("com.acme.tenant").relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
+        Assert.assertEquals(0, r.getProperties().size());
+    }
+
     @SuppressWarnings("UnusedDeclaration")
     public static class DummyTransactionalGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
 
