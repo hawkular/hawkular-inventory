@@ -44,8 +44,8 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, Blueprint extends Entity.Blueprint>
-        extends AbstractGraphService {
+abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Blueprint, Update>,
+        Blueprint extends Entity.Blueprint, Update extends Entity.Update> extends AbstractGraphService {
 
     protected final Class<E> entityClass;
     protected final PathContext pathContext;
@@ -54,10 +54,6 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         super(context, pathContext.path);
         this.entityClass = entityClass;
         this.pathContext = pathContext;
-    }
-
-    protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
-        return new PathContext(pathWith().get(), select == null ? null : select.get());
     }
 
     protected final Filter[] selectCandidates() {
@@ -107,21 +103,24 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         }
     }
 
-    public final void update(E entity) {
-        checkProperties(entity.getProperties());
+    public void update(String id, Update update) {
+        checkProperties(update.getProperties());
 
-        Vertex vertex = convert(entity);
-        if (vertex == null) {
-            throw new EntityNotFoundException(entity.getClass(), FilterApplicator.filters(pathContext.path));
+        Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
+
+        if (!it.hasNext()) {
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
         }
 
+        Vertex vertex = it.next();
+
         Set<String> toRemove = vertex.getPropertyKeys();
-        toRemove.removeAll(entity.getProperties().keySet());
+        toRemove.removeAll(update.getProperties().keySet());
 
         toRemove.forEach(vertex::removeProperty);
-        entity.getProperties().forEach(vertex::setProperty);
+        update.getProperties().forEach(vertex::setProperty);
 
-        updateExplicitProperties(entity, vertex);
+        updateExplicitProperties(update, vertex);
 
         context.getGraph().commit();
     }
@@ -190,10 +189,10 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
      *
      * <p/> This method must not commit the graph.
      *
-     * @param entity the entity being updated
+     * @param update the updates to the entity
      * @param vertex the corresponding vertex
      */
-    protected void updateExplicitProperties(E entity, Vertex vertex) {
+    protected void updateExplicitProperties(Update update, Vertex vertex) {
 
     }
 

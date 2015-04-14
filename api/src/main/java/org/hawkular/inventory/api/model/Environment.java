@@ -32,7 +32,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Environment extends OwnedEntity {
+public final class Environment extends OwnedEntity<Environment.Blueprint, Environment.Update> {
 
     @SuppressWarnings("unused")
     private Environment() {
@@ -41,6 +41,15 @@ public final class Environment extends OwnedEntity {
 
     public Environment(String tenantId, String id) {
         super(tenantId, id);
+    }
+
+    public Environment(String tenantId, String id, Map<String, Object> properties) {
+        super(tenantId, id, properties);
+    }
+
+    @Override
+    public Updater<Update, Environment> update() {
+        return new Updater<>((u) -> new Environment(getTenantId(), getId(), u.getProperties()));
     }
 
     @Override
@@ -73,6 +82,29 @@ public final class Environment extends OwnedEntity {
             @Override
             public Blueprint build() {
                 return new Blueprint(id, properties);
+            }
+        }
+    }
+
+    public static final class Update extends AbstractElement.Update {
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null);
+        }
+
+        public Update(Map<String, Object> properties) {
+            super(properties);
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            @Override
+            public Update build() {
+                return new Update(properties);
             }
         }
     }

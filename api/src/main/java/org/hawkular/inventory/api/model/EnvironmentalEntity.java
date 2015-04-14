@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import java.util.Map;
 
 /**
  * Base class for entities that are part of an environment.
@@ -26,7 +27,8 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class EnvironmentalEntity extends OwnedEntity {
+abstract class EnvironmentalEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
+        extends OwnedEntity<B, U> {
 
     @XmlAttribute(name = "environment")
     @Expose
@@ -44,6 +46,11 @@ abstract class EnvironmentalEntity extends OwnedEntity {
             throw new IllegalArgumentException("environmentId == null");
         }
 
+        this.environmentId = environmentId;
+    }
+
+    EnvironmentalEntity(String tenantId, String environmentId, String id, Map<String, Object> properties) {
+        super(tenantId, id, properties);
         this.environmentId = environmentId;
     }
 

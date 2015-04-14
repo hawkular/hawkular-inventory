@@ -42,7 +42,7 @@ public interface EntityVisitor<R, P> {
      * A simple implementation of the EntityVisitor interface that returns a default value (provided at construction
      * time) from the visit methods.
      */
-    public static class Simple<R, P> implements EntityVisitor<R, P> {
+    class Simple<R, P> implements EntityVisitor<R, P> {
         private final R defaultValue;
 
         /**

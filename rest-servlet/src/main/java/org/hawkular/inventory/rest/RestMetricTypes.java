@@ -24,9 +24,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.MetricTypeUpdateJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -110,14 +108,10 @@ public class RestMetricTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId,
-                       @ApiParam(required = true) MetricTypeUpdateJSON update)
+                       @ApiParam(required = true) MetricType.Update update)
             throws Exception {
 
-        MetricType mt = new MetricType(tenantId, metricTypeId, MetricUnit.fromDisplayName(update.getUnit()));
-        mt.getProperties().putAll(update.getProperties());
-
-        inventory.tenants().get(tenantId).metricTypes().update(mt);
-
+        inventory.tenants().get(tenantId).metricTypes().update(metricTypeId, update);
         return Response.noContent().build();
     }
 

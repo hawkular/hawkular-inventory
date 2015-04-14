@@ -73,9 +73,10 @@ public final class ObservableRelationships {
         }
 
         @Override
-        public void update(Relationship relationship) throws RelationNotFoundException {
-            wrapped.update(relationship);
-            notify(relationship, relationship, Action.updated());
+        public void update(String id, Relationship.Update update) throws RelationNotFoundException {
+            Relationship r = wrapped.get(id).entity();
+            wrapped.update(id, update);
+            notify(r, new Action.Update<>(r, update), Action.updated());
         }
 
         @Override

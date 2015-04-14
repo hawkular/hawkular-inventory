@@ -21,6 +21,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -31,7 +32,9 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lukas Krejci
@@ -101,12 +104,13 @@ abstract class AbstractGraphService {
         return vertex;
     }
 
+    static Entity<?, ?> convert(Vertex v) {
     static Entity convert(Vertex v) {
         Constants.Type type = Constants.Type.valueOf(getType(v));
 
         Vertex environmentVertex;
 
-        Entity e;
+        Entity<?, ?> e;
 
         switch (type) {
             case environment:
@@ -146,14 +150,51 @@ abstract class AbstractGraphService {
                 throw new IllegalArgumentException("Unknown type of vertex");
         }
 
-        Entity ret = e;
         List<String> mappedProps = Arrays.asList(type.getMappedProperties());
+        Map<String, Object> filteredProperties = new HashMap<>();
         v.getPropertyKeys().forEach(k -> {
             if (!mappedProps.contains(k)) {
-                ret.getProperties().put(k, v.getProperty(k));
+                filteredProperties.put(k, v.getProperty(k));
             }
         });
-        return ret;
+
+        return e.accept(new EntityVisitor<Entity<?, ?>, Void>() {
+            @Override
+            public Entity<?, ?> visitTenant(Tenant tenant, Void ignored) {
+                return tenant.update().with(Tenant.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitEnvironment(Environment environment, Void ignored) {
+                return environment.update().with(Environment.Update.builder().withProperties(filteredProperties)
+                        .build());
+            }
+
+            @Override
+            public Entity<?, ?> visitFeed(Feed feed, Void ignored) {
+                return feed.update().with(Feed.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitMetric(Metric metric, Void ignored) {
+                return metric.update().with(Metric.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitMetricType(MetricType metricType, Void ignored) {
+                return metricType.update().with(MetricType.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitResource(Resource resource, Void ignored) {
+                return resource.update().with(Resource.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitResourceType(ResourceType type, Void ignored) {
+                return type.update().with(ResourceType.Update.builder().withProperties(filteredProperties).build());
+            }
+        }, null);
     }
 
     static boolean matches(Vertex v, Entity e) {
@@ -189,5 +230,9 @@ abstract class AbstractGraphService {
             default:
                 return null;
         }
+    }
+
+    protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
+        return new PathContext(pathWith().get(), select == null ? null : select.get());
     }
 }

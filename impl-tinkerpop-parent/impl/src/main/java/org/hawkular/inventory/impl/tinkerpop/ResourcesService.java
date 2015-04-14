@@ -38,8 +38,8 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
  * @since 1.0
  */
 final class ResourcesService
-        extends AbstractSourcedGraphService<Resources.Single, Resources.Multiple, Resource, Resource.Blueprint>
-        implements Resources.ReadWrite, Resources.Read {
+        extends AbstractSourcedGraphService<Resources.Single, Resources.Multiple, Resource, Resource.Blueprint,
+        Resource.Update> implements Resources.ReadWrite, Resources.Read {
 
     public ResourcesService(InventoryContext context, PathContext ctx) {
         super(context, Resource.class, ctx);

@@ -19,6 +19,7 @@ package org.hawkular.inventory.bus;
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -99,8 +100,9 @@ public final class BusIntegration {
         subscriptions.forEach(Subscription::unsubscribe);
     }
 
-    private static <T> void install(ObservableInventory inventory, Set<Subscription> subscriptions,
-            Class<T> entityClass, MessageSender sender, Action<?, T>... additionalActions) {
+    private static <U extends AbstractElement.Update, T extends AbstractElement<?, U>>
+            void install(ObservableInventory inventory, Set<Subscription> subscriptions, Class<T> entityClass,
+            MessageSender sender, Action<?, T>... additionalActions) {
 
         installAction(inventory, subscriptions, entityClass, sender, Action.created());
         installAction(inventory, subscriptions, entityClass, sender, Action.updated());

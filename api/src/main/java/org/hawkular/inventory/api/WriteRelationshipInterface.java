@@ -77,14 +77,15 @@ interface WriteRelationshipInterface<Single> {
     /**
      * Persists the provided relationship on the current position in the inventory traversal.
      *
-     * @param relationship the relationship to update
+     * @param id the id of the relationship to update
+     * @param update the update
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship is not found in the database
      * @throws java.lang.IllegalArgumentException if the source/target entity (based on the chosen relationship
      * direction) doesn't correspond with the current position in the inventory traversal or if the name of the
      * relationship doesn't correspond to what's in the database
      */
-    void update(Relationship relationship) throws RelationNotFoundException;
+    void update(String id, Relationship.Update update) throws RelationNotFoundException;
 
     /**
      * Deletes an relationship with the provided id from the current position in the inventory traversal.

@@ -28,7 +28,7 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class MetricTypeBrowser extends AbstractBrowser<MetricType> {
+final class MetricTypeBrowser extends AbstractBrowser<MetricType, MetricType.Blueprint, MetricType.Update> {
 
     public static MetricTypes.Single single(InventoryContext context, FilterApplicator... path) {
         MetricTypeBrowser b = new MetricTypeBrowser(context, path);

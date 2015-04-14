@@ -32,7 +32,7 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class MetricType extends OwnedEntity {
+public final class MetricType extends OwnedEntity<MetricType.Blueprint, MetricType.Update> {
 
     @XmlAttribute
     @Expose
@@ -54,8 +54,19 @@ public final class MetricType extends OwnedEntity {
         this.unit = unit;
     }
 
+    public MetricType(String tenantId, String id, MetricUnit unit, Map<String, Object> properties) {
+        super(tenantId, id, properties);
+        this.unit = unit;
+    }
+
     public MetricUnit getUnit() {
         return unit;
+    }
+
+    @Override
+    public Updater<Update, MetricType> update() {
+        return new Updater<>((u) -> new MetricType(getTenantId(), getId(), valueOrDefault(u.unit, this.unit),
+                u.getProperties()));
     }
 
     @Override
@@ -114,6 +125,43 @@ public final class MetricType extends OwnedEntity {
             @Override
             public Blueprint build() {
                 return new Blueprint(id, unit, properties);
+            }
+        }
+    }
+
+    public static final class Update extends AbstractElement.Update {
+        private final MetricUnit unit;
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null, null);
+        }
+
+        public Update(Map<String, Object> properties, MetricUnit unit) {
+            super(properties);
+            this.unit = unit;
+        }
+
+        public MetricUnit getUnit() {
+            return unit;
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            private MetricUnit unit;
+
+            public Builder withUnit(MetricUnit unit) {
+                this.unit = unit;
+                return this;
+            }
+
+            @Override
+            public Update build() {
+                return new Update(properties, unit);
             }
         }
     }

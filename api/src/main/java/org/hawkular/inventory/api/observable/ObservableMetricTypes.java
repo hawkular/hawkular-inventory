@@ -52,8 +52,8 @@ public final class ObservableMetricTypes {
     }
 
     public static final class ReadWrite
-        extends ObservableBase.ReadWrite<MetricType, MetricType.Blueprint, MetricTypes.Single, MetricTypes.Multiple,
-            MetricTypes.ReadWrite> implements MetricTypes.ReadWrite {
+        extends ObservableBase.ReadWrite<MetricType, MetricType.Blueprint, MetricType.Update, MetricTypes.Single,
+            MetricTypes.Multiple, MetricTypes.ReadWrite> implements MetricTypes.ReadWrite {
 
         ReadWrite(MetricTypes.ReadWrite wrapped, ObservableContext context) {
             super(wrapped, context);

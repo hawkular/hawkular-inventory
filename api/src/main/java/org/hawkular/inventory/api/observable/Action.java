@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.observable;
 
 import com.google.gson.annotations.Expose;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 
@@ -36,8 +37,9 @@ public final class Action<C, E> {
         return (Action<E, E>) _CREATED;
     }
 
-    public static <E> Action<E, E> updated() {
-        return (Action<E, E>) _UPDATED;
+    public static <U extends AbstractElement.Update, E extends AbstractElement<?, U>>
+    Action<Update<E, U>, E> updated() {
+        return (Action<Update<E, U>, E>) _UPDATED;
     }
 
     public static <E> Action<E, E> deleted() {
@@ -98,6 +100,27 @@ public final class Action<C, E> {
 
         public Environment getTarget() {
             return target;
+        }
+    }
+
+    public static final class Update<E, U> {
+        @Expose
+        private final E originalEntity;
+
+        @Expose
+        private final U update;
+
+        public Update(E originalEntity, U update) {
+            this.originalEntity = originalEntity;
+            this.update = update;
+        }
+
+        public E getOriginalEntity() {
+            return originalEntity;
+        }
+
+        public U getUpdate() {
+            return update;
         }
     }
 }

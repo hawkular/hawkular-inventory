@@ -54,8 +54,8 @@ public final class ObservableResourceTypes {
     }
 
     public static final class ReadWrite
-            extends ObservableBase.ReadWrite<ResourceType, ResourceType.Blueprint, ResourceTypes.Single,
-                ResourceTypes.Multiple, ResourceTypes.ReadWrite>
+            extends ObservableBase.ReadWrite<ResourceType, ResourceType.Blueprint, ResourceType.Update,
+                ResourceTypes.Single, ResourceTypes.Multiple, ResourceTypes.ReadWrite>
             implements ResourceTypes.ReadWrite {
 
 

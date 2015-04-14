@@ -51,18 +51,18 @@ import java.util.stream.StreamSupport;
  * @author Jirka Kremser
  * @since 1.0
  */
-final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
+final class RelationshipBrowser extends AbstractGraphService {
 
-    private RelationshipBrowser(InventoryContext iContext, Class<E> sourceClass,
-                                FilterApplicator... path) {
-        super(iContext, sourceClass, path);
+    private RelationshipBrowser(InventoryContext iContext, FilterApplicator... path) {
+        super(iContext, path);
     }
 
-    public static <T extends Entity> Relationships.Single single(InventoryContext iContext, Class<T>
-            sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
+    public static <T extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
+        Relationships.Single single(InventoryContext iContext, Class<T> sourceClass, Relationships.Direction direction,
+                                    FilterApplicator[] path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
-        RelationshipBrowser<T> b = new RelationshipBrowser<>(iContext, sourceClass, AbstractGraphService.pathWith
+        RelationshipBrowser b = new RelationshipBrowser(iContext, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
         return new Relationships.Single() {
 
@@ -77,19 +77,19 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
                 Relationship relationship = new Relationship(getUid(edge), edge.getLabel(), convert(edge
                          .getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                 Map<String, Object> properties = edge.getPropertyKeys().stream().collect(Collectors.toMap(Function
-                        .<String>identity(), key -> edge.<Object>getProperty(key)));
-                relationship.getProperties().putAll(properties);
-                return relationship;
+                        .<String>identity(), edge::getProperty));
+
+                return relationship.update().with(Relationship.Update.builder().withProperties(properties).build());
             }
         };
     }
 
-    public static <T extends Entity> Relationships.Multiple multiple(InventoryContext iContext, Class<T>
-            sourceClass, Relationships.Direction direction, FilterApplicator[] path, RelationFilter[] filters) {
+    public static Relationships.Multiple multiple(InventoryContext iContext, Relationships.Direction direction,
+            FilterApplicator[] path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
         final Filter goFromEdge = new JumpInOutFilter(direction, true);
-        RelationshipBrowser<T> b = new RelationshipBrowser<>(iContext, sourceClass, AbstractGraphService.pathWith
+        RelationshipBrowser b = new RelationshipBrowser(iContext, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
 
         return new Relationships.Multiple() {
@@ -104,10 +104,10 @@ final class RelationshipBrowser<E extends Entity> extends AbstractBrowser<E> {
                                     convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                             // copy the properties
                             Map<String, Object> properties = edge.getPropertyKeys().stream()
-                                    .collect(Collectors.toMap(Function.<String>identity(), edge::<Object>getProperty));
+                                    .collect(Collectors.toMap(Function.<String>identity(), edge::getProperty));
 
-                            relationship.getProperties().putAll(properties);
-                            return relationship;
+                            return relationship.update().with(Relationship.Update.builder().withProperties(properties)
+                                    .build());
                         });
 
                 return relationshipStream.collect(Collectors.toSet());

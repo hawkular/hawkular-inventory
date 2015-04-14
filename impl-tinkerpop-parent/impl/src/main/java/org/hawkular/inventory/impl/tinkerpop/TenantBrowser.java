@@ -37,7 +37,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class TenantBrowser extends AbstractBrowser<Tenant> {
+final class TenantBrowser extends AbstractBrowser<Tenant, Tenant.Blueprint, Tenant.Update> {
     private TenantBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, Tenant.class, path);
     }

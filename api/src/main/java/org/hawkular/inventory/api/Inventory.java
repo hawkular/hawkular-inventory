@@ -183,8 +183,8 @@ public interface Inventory extends AutoCloseable {
      *
      * @throws java.lang.ClassCastException if the provided access interface doesn't match the entity
      */
-    default <E extends Entity, Single extends ResolvableToSingle<E>> Single inspect(E entity,
-                                                                                    Class<Single> accessInterface) {
+    default <E extends Entity<?, ?>, Single extends ResolvableToSingle<E>> Single inspect(E entity,
+            Class<Single> accessInterface) {
         return entity.accept(new EntityVisitor<Single, Void>() {
             @Override
             public Single visitTenant(Tenant tenant, Void ignored) {

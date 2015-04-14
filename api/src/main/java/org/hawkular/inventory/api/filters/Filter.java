@@ -59,7 +59,7 @@ public abstract class Filter {
         return EMPTY;
     }
 
-    public static Filter[] pathTo(Entity entity) {
+    public static Filter[] pathTo(Entity<?, ?> entity) {
         return entity.accept(new EntityVisitor<Accumulator, Accumulator>() {
             @Override
             public Accumulator visitTenant(Tenant tenant, Accumulator acc) {

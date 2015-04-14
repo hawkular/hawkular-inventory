@@ -58,5 +58,5 @@ public final class Resources {
     /**
      * Provides read-write access to resources.
      */
-    public interface ReadWrite extends ReadWriteInterface<Resource, Resource.Blueprint, Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple> {}
 }

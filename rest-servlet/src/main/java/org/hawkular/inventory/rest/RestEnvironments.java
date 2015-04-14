@@ -38,7 +38,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Map;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -108,11 +107,8 @@ public class RestEnvironments {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public void update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
-                           @ApiParam(required = true) Map<String, Object> properties) throws Exception {
-        Environment env = new Environment(tenantId, environmentId);
-        env.getProperties().putAll(properties);
-
-        inventory.tenants().get(tenantId).environments().update(env);
+                           @ApiParam(required = true) Environment.Update update) throws Exception {
+        inventory.tenants().get(tenantId).environments().update(environmentId, update);
     }
 
     @DELETE

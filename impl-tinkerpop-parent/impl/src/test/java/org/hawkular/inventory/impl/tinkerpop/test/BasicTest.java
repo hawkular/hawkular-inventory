@@ -460,7 +460,6 @@ public class BasicTest {
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
         assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
-        rel1.getProperties().put(someKey, someValue);
 
         Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
@@ -471,51 +470,13 @@ public class BasicTest {
         // persist the change
         inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                .update(rel1);
+                .update(rel1.getId(), Relationship.Update.builder().withProperty(someKey, someValue).build());
 
         Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
                 : "There should be the property with key 'k3y' and value 'v4lu3'";
-
-        try {
-            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                    .get("playroom2").metrics().get("playroom1_size").relationships(Relationships.Direction.both)
-                    .update(rel1);
-            assert !!!true : "It shouldn't be possible to update an edge that is not on the current position in the " +
-                    "graph traversal.";
-        } catch (RelationNotFoundException e) {
-            // good
-        }
-    }
-
-    @Test
-    public void testRelationshipServiceUpdateRelationship2() throws Exception {
-        // invalid target entity, but valid (for the position) relationship id
-        Relationship rel = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                .named("yourMom").entities().iterator().next();
-
-        Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
-        Relationship badRel = new Relationship(rel.getId(), rel.getName(), test, rel.getTarget());
-        Relationship goodRel = new Relationship(rel.getId(), rel.getName(), rel.getSource(), test);
-
-        // persist the allowed change
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                .update(goodRel);
-
-        // persist the forbiden change
-        try {
-            inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                    .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                    .update(badRel);
-            assert true^true : "It shouldn't be possible to update an edge that has source entity different than the" +
-                    "entity on the current position in the graph traversal (for outgoing rels)";
-        } catch (RelationNotFoundException e) {
-            // good
-        }
     }
 
     @Test

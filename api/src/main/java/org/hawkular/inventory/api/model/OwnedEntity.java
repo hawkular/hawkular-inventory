@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import java.util.Map;
 
 /**
  * Base class for entities in a tenant (i.e. everything but the {@link Tenant tenant}s themselves and relationships).
@@ -26,7 +27,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class OwnedEntity extends Entity {
+abstract class OwnedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update> extends Entity<B, U> {
 
     @XmlAttribute(name = "tenant")
     @Expose
@@ -43,6 +44,11 @@ abstract class OwnedEntity extends Entity {
             throw new IllegalArgumentException("tenantId == null");
         }
 
+        this.tenantId = tenantId;
+    }
+
+    OwnedEntity(String tenantId, String id, Map<String, Object> properties) {
+        super(id, properties);
         this.tenantId = tenantId;
     }
 
