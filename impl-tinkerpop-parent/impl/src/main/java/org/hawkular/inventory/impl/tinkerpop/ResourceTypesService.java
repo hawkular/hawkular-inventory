@@ -49,10 +49,10 @@ final class ResourceTypesService extends
         }
 
         //pass the version through the Version object to verify it's well-formed.
-        newEntity.setProperty(Constants.Property.version.name(), new Version(blueprint.getVersion()).toString());
+        newEntity.setProperty(Constants.Property.__version.name(), new Version(blueprint.getVersion()).toString());
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(exampleTnt)), Related.by(contains),
-                With.type(ResourceType.class), With.id(getUid(newEntity))).get();
+        return Filter.by(With.type(Tenant.class), With.id(getEid(exampleTnt)), Related.by(contains),
+                With.type(ResourceType.class), With.id(getEid(newEntity))).get();
     }
 
     @Override
@@ -72,6 +72,6 @@ final class ResourceTypesService extends
 
     @Override
     protected void updateExplicitProperties(ResourceType.Update update, Vertex vertex) {
-        vertex.setProperty(Constants.Property.version.name(), update.getVersion());
+        vertex.setProperty(Constants.Property.__version.name(), update.getVersion());
     }
 }

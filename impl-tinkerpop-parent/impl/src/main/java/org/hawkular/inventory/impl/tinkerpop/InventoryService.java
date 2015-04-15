@@ -43,11 +43,11 @@ public final class InventoryService implements Inventory {
         gp.ensureIndices(graph,
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
-                        .withProperty(Constants.Property.type.name(), String.class)
-                        .withProperty(Constants.Property.uid.name(), String.class).build(),
+                        .withProperty(Constants.Property.__type.name(), String.class)
+                        .withProperty(Constants.Property.__eid.name(), String.class).build(),
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
-                        .withProperty(Constants.Property.type.name(), String.class).build());
+                        .withProperty(Constants.Property.__type.name(), String.class).build());
 
         context = new InventoryContext(this, configuration.getFeedIdStrategy(), graph);
     }

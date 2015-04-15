@@ -50,9 +50,9 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
         }
 
         Vertex tenant = getTenantVertexOf(env);
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
-                With.type(Environment.class), With.id(getUid(env)), Related.by(contains),
-                With.type(Feed.class), With.id(getUid(newEntity))).get();
+        return Filter.by(With.type(Tenant.class), With.id(getEid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getEid(env)), Related.by(contains),
+                With.type(Feed.class), With.id(getEid(newEntity))).get();
     }
 
     @Override
@@ -74,8 +74,8 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
 
         Vertex tenant = getTenantVertexOf(env);
 
-        String envId = getUid(env);
-        String tenantId = getUid(tenant);
+        String envId = getEid(env);
+        String tenantId = getEid(tenant);
 
         return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b.getId()));
     }

@@ -76,7 +76,7 @@ final class RelationshipBrowser extends AbstractGraphService {
                 }
                 Edge edge = edges.next();
 
-                Relationship relationship = new Relationship(getUid(edge), edge.getLabel(), convert(edge
+                Relationship relationship = new Relationship(getEid(edge), edge.getLabel(), convert(edge
                          .getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                 Map<String, Object> properties = edge.getPropertyKeys().stream().collect(Collectors.toMap(Function
                         .<String>identity(), edge::getProperty));
@@ -106,7 +106,7 @@ final class RelationshipBrowser extends AbstractGraphService {
                 Stream<Relationship> relationshipStream = StreamSupport
                         .stream(edges.spliterator(), false)
                         .map(edge -> {
-                            Relationship relationship = new Relationship(getUid(edge), edge.getLabel(),
+                            Relationship relationship = new Relationship(getEid(edge), edge.getLabel(),
                                     convert(edge.getVertex(Direction.OUT)), convert(edge.getVertex(Direction.IN)));
                             // copy the properties
                             Map<String, Object> properties = edge.getPropertyKeys().stream()

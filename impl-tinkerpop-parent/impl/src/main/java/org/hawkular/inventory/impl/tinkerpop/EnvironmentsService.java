@@ -49,12 +49,12 @@ final class EnvironmentsService extends
     protected Filter[] initNewEntity(Vertex newEntity, Environment.Blueprint blueprint) {
         String tenantId = null;
         for (Vertex sourceTenant : source().hasType(tenant)) {
-            tenantId = getUid(sourceTenant);
+            tenantId = getEid(sourceTenant);
             addEdge(sourceTenant, contains.name(), newEntity);
         }
 
         return Filter.by(With.type(Tenant.class), With.id(tenantId), Related.by(contains),
-                With.type(Environment.class), With.id(getUid(newEntity))).get();
+                With.type(Environment.class), With.id(getEid(newEntity))).get();
     }
 
     @Override

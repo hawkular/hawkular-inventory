@@ -82,21 +82,21 @@ abstract class AbstractGraphService {
         return v.getProperty(property.name());
     }
 
-    static String getUid(Vertex v) {
-        return getProperty(v, Constants.Property.uid);
+    static String getEid(Vertex v) {
+        return getProperty(v, Constants.Property.__eid);
     }
 
-    static String getUid(Edge e) {
-        return e.getProperty(Constants.Property.uid.name());
+    static String getEid(Edge e) {
+        return e.getProperty(Constants.Property.__eid.name());
     }
 
     static String getType(Vertex v) {
-        return getProperty(v, Constants.Property.type);
+        return getProperty(v, Constants.Property.__type);
     }
 
     protected Edge addEdge(Vertex source, String label, Vertex target) {
         Edge e = source.addEdge(label, target);
-        e.setProperty(Constants.Property.uid.name(), e.getId());
+        e.setProperty(Constants.Property.__eid.name(), e.getId());
         return e;
     }
 
@@ -114,45 +114,45 @@ abstract class AbstractGraphService {
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment,
                             Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(environment.getTenantId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(environment.getTenantId()).out(contains)
                                 .hasType(Type.environment);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasUid(feed.getEnvironmentId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(feed.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasEid(feed.getEnvironmentId()).out(contains)
                                 .hasType(Type.feed);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasUid(metric.getEnvironmentId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(metric.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasEid(metric.getEnvironmentId()).out(contains)
                                 .hasType(Type.metric);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitMetricType(MetricType type, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(type.getTenantId()).out(contains)
                                 .hasType(Type.metricType);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasUid(resource.getEnvironmentId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(resource.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasEid(resource.getEnvironmentId()).out(contains)
                                 .hasType(Type.resource);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitResourceType(ResourceType type, Void ignored) {
-                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                        return ret.hasType(Type.tenant).hasEid(type.getTenantId()).out(contains)
                                 .hasType(Type.resourceType);
                     }
                 }, null);
 
-        vs = vs.hasUid(e.getId());
+        vs = vs.hasEid(e.getId());
 
         return vs.hasNext() ? vs.cast(Vertex.class).next() : null;
     }
@@ -166,37 +166,37 @@ abstract class AbstractGraphService {
 
         switch (type) {
             case environment:
-                e = new Environment(getUid(getTenantVertexOf(v)), getUid(v));
+                e = new Environment(getEid(getTenantVertexOf(v)), getEid(v));
                 break;
             case feed:
                 environmentVertex = getEnvironmentVertexOf(v);
-                e = new Feed(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v));
+                e = new Feed(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v));
                 break;
             case metric:
                 environmentVertex = getEnvironmentVertexOf(v);
                 Vertex mdv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator()
                         .next();
                 MetricType md = (MetricType) convert(mdv);
-                e = new Metric(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
+                e = new Metric(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
                         md);
                 break;
             case metricType:
-                e = new MetricType(getUid(getTenantVertexOf(v)), getUid(v), MetricUnit.fromDisplayName(
-                        getProperty(v, Constants.Property.unit)));
+                e = new MetricType(getEid(getTenantVertexOf(v)), getEid(v), MetricUnit.fromDisplayName(
+                        getProperty(v, Constants.Property.__unit)));
                 break;
             case resource:
                 environmentVertex = getEnvironmentVertexOf(v);
                 Vertex rtv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator().next();
                 ResourceType rt = (ResourceType) convert(rtv);
-                e = new Resource(getUid(getTenantVertexOf(environmentVertex)), getUid(environmentVertex), getUid(v),
+                e = new Resource(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
                         rt);
                 break;
             case resourceType:
-                e = new ResourceType(getUid(getTenantVertexOf(v)), getUid(v), getProperty(v,
-                        Constants.Property.version));
+                e = new ResourceType(getEid(getTenantVertexOf(v)), getEid(v), getProperty(v,
+                        Constants.Property.__version));
                 break;
             case tenant:
-                e = new Tenant(getUid(v));
+                e = new Tenant(getEid(v));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown type of vertex");
@@ -251,7 +251,7 @@ abstract class AbstractGraphService {
 
     static boolean matches(Vertex v, Entity e) {
         return Type.valueOf(getType(v)) == Type.of(e)
-                && getUid(v).equals(e.getId());
+                && getEid(v).equals(e.getId());
     }
 
     static Vertex getTenantVertexOf(Vertex entityVertex) {
