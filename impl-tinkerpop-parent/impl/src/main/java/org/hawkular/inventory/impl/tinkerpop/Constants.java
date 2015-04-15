@@ -41,7 +41,29 @@ final class Constants {
      * The vertices in the graph have certain well-known properties.
      */
     enum Property {
-        __type, __eid, __version, __unit
+        /**
+         * This is the name of the property that we use to store the type of the entity represented by the vertex
+         */
+        __type,
+
+        /**
+         * This is the name of the property that we use to store the user-defined ID of the entity represented by the
+         * vertex. These ID are required to be unique only amongst their "siblings" as determined by the "contains"
+         * hierarchy.
+         */
+        __eid,
+
+        /**
+         * Present on the resource type entity, this is the name of the property that we use to store the version
+         * of the resource type represented by the vertex.
+         */
+        __version,
+
+        /**
+         * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
+         * represented by the vertex.
+         */
+        __unit
     }
 
     /**
