@@ -20,6 +20,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
@@ -174,7 +175,7 @@ abstract class AbstractGraphService {
                 break;
             case metric:
                 environmentVertex = getEnvironmentVertexOf(v);
-                Vertex mdv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator()
+                Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
                         .next();
                 MetricType md = (MetricType) convert(mdv);
                 e = new Metric(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
@@ -186,7 +187,7 @@ abstract class AbstractGraphService {
                 break;
             case resource:
                 environmentVertex = getEnvironmentVertexOf(v);
-                Vertex rtv = v.getVertices(Direction.IN, Constants.Relationship.defines.name()).iterator().next();
+                Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
                 ResourceType rt = (ResourceType) convert(rtv);
                 e = new Resource(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
                         rt);
@@ -261,7 +262,8 @@ abstract class AbstractGraphService {
             case environment:
             case metricType:
             case resourceType:
-                return entityVertex.getVertices(Direction.IN, Constants.Relationship.contains.name()).iterator().next();
+                return entityVertex.getVertices(Direction.IN, Relationships.WellKnown.contains.name()).iterator()
+                        .next();
             case feed:
             case resource:
             case metric:
@@ -278,7 +280,8 @@ abstract class AbstractGraphService {
             case feed:
             case resource:
             case metric:
-                return entityVertex.getVertices(Direction.IN, Constants.Relationship.contains.name()).iterator().next();
+                return entityVertex.getVertices(Direction.IN, Relationships.WellKnown.contains.name()).iterator()
+                        .next();
             default:
                 return null;
         }

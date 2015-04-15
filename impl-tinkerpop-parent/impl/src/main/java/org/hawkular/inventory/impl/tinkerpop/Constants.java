@@ -152,30 +152,6 @@ final class Constants {
         }
     }
 
-    /**
-     * The list of well-known relationships (aka edges) between entities (aka vertices).
-     */
-    enum Relationship {
-        /**
-         * Expresses encapsulation of a set of entities in another entity.
-         * Used for example to express the relationship between a tenant and the set of its environments.
-         */
-        contains,
-
-        /**
-         * Expresses "instantiation" of some entity based on the definition provided by "source" entity.
-         * For example, there is a defines relationship between a metric definition and all metrics that
-         * conform to it.
-         */
-        defines,
-
-        /**
-         * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
-         * of metric definitions.
-         */
-        owns
-    }
-
     private Constants() {
         //no instances, thank you
     }
