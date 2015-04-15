@@ -31,7 +31,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Feed extends EnvironmentalEntity {
+public final class Feed extends EnvironmentalEntity<Feed.Blueprint, Feed.Update> {
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -40,6 +40,16 @@ public final class Feed extends EnvironmentalEntity {
 
     public Feed(String tenantId, String environmentId, String id) {
         super(tenantId, environmentId, id);
+    }
+
+    public Feed(String tenantId, String environmentId, String id, Map<String, Object> properties) {
+        super(tenantId, environmentId, id, properties);
+    }
+
+    @Override
+    public Updater<Update, Feed> update() {
+        return new Updater<>((u) -> new Feed(this.getTenantId(), this.getEnvironmentId(), this.getId(),
+                u.getProperties()));
     }
 
     @Override
@@ -68,6 +78,30 @@ public final class Feed extends EnvironmentalEntity {
             @Override
             public Blueprint build() {
                 return new Blueprint(id, properties);
+            }
+        }
+    }
+
+    public static final class Update extends AbstractElement.Update {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null);
+        }
+
+        public Update(Map<String, Object> properties) {
+            super(properties);
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            @Override
+            public Update build() {
+                return new Update(properties);
             }
         }
     }

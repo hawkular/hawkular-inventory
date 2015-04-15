@@ -32,8 +32,8 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @since 1.0
  */
 final class EnvironmentsService extends
-        AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, Environment.Blueprint>
-        implements Environments.ReadWrite, Environments.Read {
+        AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, Environment.Blueprint,
+                Environment.Update> implements Environments.ReadWrite, Environments.Read {
 
     public EnvironmentsService(InventoryContext context, PathContext ctx) {
         super(context, Environment.class, ctx);

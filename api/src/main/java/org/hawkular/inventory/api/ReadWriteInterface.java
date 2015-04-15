@@ -16,12 +16,14 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Entity;
+
 /**
  * Helper interface that melds {@link ReadInterface} and {@link WriteInterface}.
  *
  * @author Lukas Krejci
  * @since 1.0
  */
-interface ReadWriteInterface<Entity, Blueprint extends org.hawkular.inventory.api.model.Entity.Blueprint, Single,
-        Multiple> extends ReadInterface<Single, Multiple>, WriteInterface<Entity, Blueprint, Single> {
+interface ReadWriteInterface<Update, Blueprint extends Entity.Blueprint, Single, Multiple>
+        extends ReadInterface<Single, Multiple>, WriteInterface<Update, Blueprint, Single> {
 }

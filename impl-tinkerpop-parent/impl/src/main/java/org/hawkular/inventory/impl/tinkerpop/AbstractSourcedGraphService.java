@@ -30,10 +30,8 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,8 +42,8 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, Blueprint extends Entity.Blueprint>
-        extends AbstractGraphService {
+abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Blueprint, Update>,
+        Blueprint extends Entity.Blueprint, Update extends Entity.Update> extends AbstractGraphService {
 
     protected final Class<E> entityClass;
     protected final PathContext pathContext;
@@ -54,10 +52,6 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         super(context, pathContext.path);
         this.entityClass = entityClass;
         this.pathContext = pathContext;
-    }
-
-    protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
-        return new PathContext(pathWith().get(), select == null ? null : select.get());
     }
 
     protected final Filter[] selectCandidates() {
@@ -107,21 +101,19 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
         }
     }
 
-    public final void update(E entity) {
-        checkProperties(entity.getProperties());
+    public void update(String id, Update update) {
+        checkProperties(update.getProperties());
 
-        Vertex vertex = convert(entity);
-        if (vertex == null) {
-            throw new EntityNotFoundException(entity.getClass(), FilterApplicator.filters(pathContext.path));
+        Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
+
+        if (!it.hasNext()) {
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
         }
 
-        Set<String> toRemove = vertex.getPropertyKeys();
-        toRemove.removeAll(entity.getProperties().keySet());
+        Vertex vertex = it.next();
 
-        toRemove.forEach(vertex::removeProperty);
-        entity.getProperties().forEach(vertex::setProperty);
-
-        updateExplicitProperties(entity, vertex);
+        updateProperties(vertex, update.getProperties(), Constants.Type.of(entityClass).getMappedProperties());
+        updateExplicitProperties(update, vertex);
 
         context.getGraph().commit();
     }
@@ -190,10 +182,10 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
      *
      * <p/> This method must not commit the graph.
      *
-     * @param entity the entity being updated
+     * @param update the updates to the entity
      * @param vertex the corresponding vertex
      */
-    protected void updateExplicitProperties(E entity, Vertex vertex) {
+    protected void updateExplicitProperties(Update update, Vertex vertex) {
 
     }
 
@@ -267,17 +259,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity, B
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
 
     private void checkProperties(Map<String, Object> properties) {
-        if (properties == null || properties.isEmpty()) {
-            return;
-        }
-
         Constants.Type type = Constants.Type.of(entityClass);
-        List<String> mappedProperties = Arrays.asList(type.getMappedProperties());
-
-        properties.keySet().forEach(k -> {
-            if (mappedProperties.contains(k)) {
-                throw new IllegalArgumentException("Property '" + k + "' is reserved. Cannot set it to a custom value");
-            }
-        });
+        checkProperties(properties, type.getMappedProperties());
     }
 }

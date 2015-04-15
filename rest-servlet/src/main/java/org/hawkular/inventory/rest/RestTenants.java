@@ -38,7 +38,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -91,12 +90,8 @@ public class RestTenants {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("tenantId") String tenantId,
-                           @ApiParam(required = true) Map<String, Object> properties) {
-        Tenant t = new Tenant(tenantId);
-        t.getProperties().putAll(properties);
-
-        inventory.tenants().update(t);
-
+                           @ApiParam(required = true) Tenant.Update update) {
+        inventory.tenants().update(tenantId, update);
         return Response.noContent().build();
     }
 

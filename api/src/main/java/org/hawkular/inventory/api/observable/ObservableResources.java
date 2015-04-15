@@ -48,8 +48,8 @@ public final class ObservableResources {
         }
     }
 
-    public static final class ReadWrite extends ObservableBase.ReadWrite<Resource, Resource.Blueprint, Resources.Single,
-            Resources.Multiple, Resources.ReadWrite> implements Resources.ReadWrite {
+    public static final class ReadWrite extends ObservableBase.ReadWrite<Resource, Resource.Blueprint, Resource.Update,
+            Resources.Single, Resources.Multiple, Resources.ReadWrite> implements Resources.ReadWrite {
 
         ReadWrite(Resources.ReadWrite wrapped, ObservableContext context) {
             super(wrapped, context);

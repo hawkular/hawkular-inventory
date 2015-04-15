@@ -18,9 +18,11 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -29,9 +31,16 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.impl.tinkerpop.Constants.Type;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
@@ -91,22 +100,69 @@ abstract class AbstractGraphService {
         return e;
     }
 
-    protected Vertex convert(Entity e) {
-        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
-                .V().hasType(Constants.Type.of(e)).hasUid(e.getId()).cast(Vertex.class);
-        Vertex vertex = null;
-        if (ret.hasNext()) {
-            vertex = ret.next();
-        }
-        return vertex;
+    protected Vertex convert(Entity<?, ?> e) {
+        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(context.getGraph())
+                .V();
+        HawkularPipeline<?, ? extends Element> vs =
+                e.accept(new EntityVisitor<HawkularPipeline<?, ? extends Element>, Void>() {
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitTenant(Tenant tenant, Void ignored) {
+                        return ret.hasType(Type.tenant);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment,
+                            Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(environment.getTenantId()).out(contains)
+                                .hasType(Type.environment);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(feed.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(feed.getEnvironmentId()).out(contains)
+                                .hasType(Type.feed);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(metric.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(metric.getEnvironmentId()).out(contains)
+                                .hasType(Type.metric);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitMetricType(MetricType type, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                                .hasType(Type.metricType);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(resource.getTenantId()).out(contains)
+                                .hasType(Type.environment).hasUid(resource.getEnvironmentId()).out(contains)
+                                .hasType(Type.resource);
+                    }
+
+                    @Override
+                    public HawkularPipeline<?, ? extends Element> visitResourceType(ResourceType type, Void ignored) {
+                        return ret.hasType(Type.tenant).hasUid(type.getTenantId()).out(contains)
+                                .hasType(Type.resourceType);
+                    }
+                }, null);
+
+        vs = vs.hasUid(e.getId());
+
+        return vs.hasNext() ? vs.cast(Vertex.class).next() : null;
     }
 
-    static Entity convert(Vertex v) {
-        Constants.Type type = Constants.Type.valueOf(getType(v));
+    static Entity<?, ?> convert(Vertex v) {
+        Type type = Type.valueOf(getType(v));
 
         Vertex environmentVertex;
 
-        Entity e;
+        Entity<?, ?> e;
 
         switch (type) {
             case environment:
@@ -146,23 +202,60 @@ abstract class AbstractGraphService {
                 throw new IllegalArgumentException("Unknown type of vertex");
         }
 
-        Entity ret = e;
         List<String> mappedProps = Arrays.asList(type.getMappedProperties());
+        Map<String, Object> filteredProperties = new HashMap<>();
         v.getPropertyKeys().forEach(k -> {
             if (!mappedProps.contains(k)) {
-                ret.getProperties().put(k, v.getProperty(k));
+                filteredProperties.put(k, v.getProperty(k));
             }
         });
-        return ret;
+
+        return e.accept(new EntityVisitor<Entity<?, ?>, Void>() {
+            @Override
+            public Entity<?, ?> visitTenant(Tenant tenant, Void ignored) {
+                return tenant.update().with(Tenant.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitEnvironment(Environment environment, Void ignored) {
+                return environment.update().with(Environment.Update.builder().withProperties(filteredProperties)
+                        .build());
+            }
+
+            @Override
+            public Entity<?, ?> visitFeed(Feed feed, Void ignored) {
+                return feed.update().with(Feed.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitMetric(Metric metric, Void ignored) {
+                return metric.update().with(Metric.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitMetricType(MetricType metricType, Void ignored) {
+                return metricType.update().with(MetricType.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitResource(Resource resource, Void ignored) {
+                return resource.update().with(Resource.Update.builder().withProperties(filteredProperties).build());
+            }
+
+            @Override
+            public Entity<?, ?> visitResourceType(ResourceType type, Void ignored) {
+                return type.update().with(ResourceType.Update.builder().withProperties(filteredProperties).build());
+            }
+        }, null);
     }
 
     static boolean matches(Vertex v, Entity e) {
-        return Constants.Type.valueOf(getType(v)) == Constants.Type.of(e)
+        return Type.valueOf(getType(v)) == Type.of(e)
                 && getUid(v).equals(e.getId());
     }
 
     static Vertex getTenantVertexOf(Vertex entityVertex) {
-        Constants.Type type = Constants.Type.valueOf(getType(entityVertex));
+        Type type = Type.valueOf(getType(entityVertex));
 
         switch (type) {
             case environment:
@@ -179,7 +272,7 @@ abstract class AbstractGraphService {
     }
 
     static Vertex getEnvironmentVertexOf(Vertex entityVertex) {
-        Constants.Type type = Constants.Type.valueOf(getType(entityVertex));
+        Type type = Type.valueOf(getType(entityVertex));
 
         switch (type) {
             case feed:
@@ -188,6 +281,43 @@ abstract class AbstractGraphService {
                 return entityVertex.getVertices(Direction.IN, Constants.Relationship.contains.name()).iterator().next();
             default:
                 return null;
+        }
+    }
+
+    protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
+        return new PathContext(pathWith().get(), select == null ? null : select.get());
+    }
+
+    protected static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
+        Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
+
+        //remove all non-mapped properties, that are not in the update
+        String[] toRemove = e.getPropertyKeys().stream()
+                .filter((p) -> !disallowed.contains(p) && !properties.containsKey(p)).toArray(String[]::new);
+
+        for(String p : toRemove) {
+            e.removeProperty(p);
+        }
+
+        //update and add new the properties
+        properties.forEach((p, v) -> {
+            if (!disallowed.contains(p)) {
+                e.setProperty(p, v);
+            }
+        });
+    }
+
+    protected static void checkProperties(Map<String, Object> properties, String[] disallowedProperties) {
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+
+        HashSet<String> disallowed = new HashSet<>(properties.keySet());
+        disallowed.retainAll(Arrays.asList(disallowedProperties));
+
+        if (!disallowed.isEmpty()) {
+            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
+                    + Arrays.asList(disallowedProperties));
         }
     }
 }

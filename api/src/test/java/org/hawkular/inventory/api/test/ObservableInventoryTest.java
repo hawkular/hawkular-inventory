@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.test;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -70,7 +71,7 @@ public class ObservableInventoryTest {
 
         runTest(Tenant.class, false, () -> {
             observableInventory.tenants().create(blueprint);
-            observableInventory.tenants().update(prototype);
+            observableInventory.tenants().update(prototype.getId(), Tenant.Update.builder().build());
             observableInventory.tenants().delete(prototype.getId());
         });
     }
@@ -81,6 +82,8 @@ public class ObservableInventoryTest {
 
         Environment.Blueprint blueprint = new Environment.Blueprint("e");
 
+        Environment.Update update = new Environment.Update(null);
+
         when(InventoryMock.environmentsReadWrite.create(blueprint))
                 .thenReturn(InventoryMock.environmentsSingle);
         when(InventoryMock.environmentsSingle.entity()).thenReturn(prototype);
@@ -89,7 +92,7 @@ public class ObservableInventoryTest {
 
         runTest(Environment.class, true, () -> {
             observableInventory.tenants().get("t").environments().create(blueprint);
-            observableInventory.tenants().get("t").environments().update(prototype);
+            observableInventory.tenants().get("t").environments().update(prototype.getId(), update);
             observableInventory.tenants().get("t").environments().delete(prototype.getId());
         });
 
@@ -106,6 +109,8 @@ public class ObservableInventoryTest {
     public void testResourceTypes() throws Exception {
         ResourceType prototype = new ResourceType("t", "rt", "1.0.0");
 
+        ResourceType.Update update = new ResourceType.Update(null, "2.0.0");
+
         when(InventoryMock.resourceTypesReadWrite.create(any())).thenReturn(InventoryMock.resourceTypesSingle);
         when(InventoryMock.resourceTypesSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities())
@@ -114,7 +119,7 @@ public class ObservableInventoryTest {
         runTest(ResourceType.class, true, () -> {
             observableInventory.tenants().get("t").resourceTypes()
                     .create(new ResourceType.Blueprint("rt", "1.0"));
-            observableInventory.tenants().get("t").resourceTypes().update(prototype);
+            observableInventory.tenants().get("t").resourceTypes().update(prototype.getId(), update);
             observableInventory.tenants().get("t").resourceTypes().delete(prototype.getId());
         });
 
@@ -135,6 +140,8 @@ public class ObservableInventoryTest {
     public void testMetricTypes() throws Exception {
         MetricType prototype = new MetricType("t", "rt", MetricUnit.BYTE);
 
+        MetricType.Update update = new MetricType.Update(null, MetricUnit.MILLI_SECOND);
+
         when(InventoryMock.metricTypesReadWrite.create(any())).thenReturn(InventoryMock.metricTypesSingle);
         when(InventoryMock.metricTypesSingle.entity()).thenReturn(prototype);
         when(InventoryMock.relationshipsMultiple.entities())
@@ -143,7 +150,7 @@ public class ObservableInventoryTest {
         runTest(MetricType.class, true, () -> {
             observableInventory.tenants().get("t").metricTypes()
                     .create(new MetricType.Blueprint("rt", MetricUnit.BYTE));
-            observableInventory.tenants().get("t").metricTypes().update(prototype);
+            observableInventory.tenants().get("t").metricTypes().update(prototype.getId(), update);
             observableInventory.tenants().get("t").metricTypes().delete(prototype.getId());
         });
     }
@@ -151,6 +158,8 @@ public class ObservableInventoryTest {
     @Test
     public void testMetrics() throws Exception {
         Metric prototype = new Metric("t", "e", "m", new MetricType("t", "mt"));
+
+        Metric.Update update = new Metric.Update(null);
 
         when(InventoryMock.metricsReadWrite.create(any())).thenReturn(InventoryMock.metricsSingle);
         when(InventoryMock.metricsSingle.entity()).thenReturn(prototype);
@@ -161,7 +170,7 @@ public class ObservableInventoryTest {
         runTest(Metric.class, true, () -> {
             observableInventory.tenants().get("t").environments().get("e").metrics()
                     .create(new Metric.Blueprint("mt", "m"));
-            observableInventory.tenants().get("t").environments().get("e").metrics().update(prototype);
+            observableInventory.tenants().get("t").environments().get("e").metrics().update(prototype.getId(), update);
             observableInventory.tenants().get("t").environments().get("e").metrics().delete(prototype.getId());
         });
     }
@@ -169,6 +178,8 @@ public class ObservableInventoryTest {
     @Test
     public void testResources() throws Exception {
         Resource prototype = new Resource("t", "e", "r", new ResourceType("t", "rt", "1.0"));
+
+        Resource.Update update = new Resource.Update(null);
 
         when(InventoryMock.resourcesReadWrite.create(any())).thenReturn(InventoryMock.resourcesSingle);
         when(InventoryMock.resourcesSingle.entity()).thenReturn(prototype);
@@ -179,7 +190,8 @@ public class ObservableInventoryTest {
         runTest(Resource.class, true, () -> {
             observableInventory.tenants().get("t").environments().get("e").resources()
                     .create(new Resource.Blueprint("r", "rt"));
-            observableInventory.tenants().get("t").environments().get("e").resources().update(prototype);
+            observableInventory.tenants().get("t").environments().get("e").resources().update(prototype.getId(),
+                    update);
             observableInventory.tenants().get("t").environments().get("e").resources().delete(prototype.getId());
         });
 
@@ -197,9 +209,11 @@ public class ObservableInventoryTest {
         Assert.assertEquals(1, createdRelatonships.size());
     }
 
-    private <T> void runTest(Class<T> entityClass, boolean watchRelationships, Runnable payload) {
+    private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
+        void runTest(Class<T> entityClass, boolean watchRelationships, Runnable payload) {
+
         List<T> createdTenants = new ArrayList<>();
-        List<T> updatedTenants = new ArrayList<>();
+        List<Action.Update<T, U>> updatedTenants = new ArrayList<>();
         List<T> deletedTenants = new ArrayList<>();
         List<Relationship> createdRelationships = new ArrayList<>();
 

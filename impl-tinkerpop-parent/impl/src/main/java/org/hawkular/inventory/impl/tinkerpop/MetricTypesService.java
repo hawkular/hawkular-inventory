@@ -37,8 +37,8 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @since 1.0
  */
 final class MetricTypesService
-        extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple,
-        MetricType, MetricType.Blueprint> implements MetricTypes.ReadWrite, MetricTypes.ReadAssociate {
+        extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple, MetricType, MetricType.Blueprint,
+        MetricType.Update> implements MetricTypes.ReadWrite, MetricTypes.ReadAssociate {
 
     MetricTypesService(InventoryContext context, PathContext ctx) {
         super(context, MetricType.class, ctx);
@@ -75,7 +75,7 @@ final class MetricTypesService
     }
 
     @Override
-    protected void updateExplicitProperties(MetricType entity, Vertex vertex) {
+    protected void updateExplicitProperties(MetricType.Update entity, Vertex vertex) {
         vertex.setProperty(Constants.Property.unit.name(), entity.getUnit().getDisplayName());
     }
 

@@ -30,7 +30,7 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class Resource extends EnvironmentalEntity {
+public final class Resource extends EnvironmentalEntity<Resource.Blueprint, Resource.Update> {
 
     @Expose
     private final ResourceType type;
@@ -44,6 +44,19 @@ public final class Resource extends EnvironmentalEntity {
     public Resource(String tenantId, String environmentId, String id, ResourceType type) {
         super(tenantId, environmentId, id);
         this.type = type;
+    }
+
+    public Resource(String tenantId, String environmentId, String id, ResourceType type,
+                    Map<String, Object> properties) {
+
+        super(tenantId, environmentId, id, properties);
+        this.type = type;
+    }
+
+    @Override
+    public Updater<Update, Resource> update() {
+        return new Updater<>((u) -> new Resource(getTenantId(), getEnvironmentId(), getId(), getType(),
+                u.getProperties()));
     }
 
     public ResourceType getType() {
@@ -105,6 +118,30 @@ public final class Resource extends EnvironmentalEntity {
             @Override
             public Blueprint build() {
                 return new Blueprint(id, resourceTypeId, properties);
+            }
+        }
+    }
+
+    public static final class Update extends AbstractElement.Update {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null);
+        }
+
+        public Update(Map<String, Object> properties) {
+            super(properties);
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            @Override
+            public Update build() {
+                return new Update(properties);
             }
         }
     }

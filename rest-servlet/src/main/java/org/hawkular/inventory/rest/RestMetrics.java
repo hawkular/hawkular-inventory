@@ -24,9 +24,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.MetricUpdateJSON;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -132,13 +130,8 @@ public class RestMetrics {
     public Response updateMetric(@PathParam("tenantId") String tenantId,
                                  @PathParam("environmentId") String environmentId,
                                  @PathParam("metricId") String metricId,
-                                 MetricUpdateJSON updates) {
-        MetricType mt = inventory.tenants().get(tenantId).metricTypes().get(updates.getMetricTypeId()).entity();
-
-        Metric updatedMetric = new Metric(tenantId, environmentId, metricId, mt);
-        updatedMetric.getProperties().putAll(updates.getProperties());
-
-        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().update(updatedMetric);
+                                 Metric.Update update) {
+        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().update(metricId, update);
         return Response.noContent().build();
     }
 

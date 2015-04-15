@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import java.util.HashMap;
@@ -29,43 +27,19 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 1.0
  */
-public abstract class Entity {
-
-    @XmlAttribute
-    @Expose
-    private final String id;
-
-    @Expose
-    private Map<String, Object> properties;
+public abstract class Entity<B extends Entity.Blueprint, U extends AbstractElement.Update>
+        extends AbstractElement<B, U> {
 
     /** JAXB support */
     Entity() {
-        id = null;
     }
 
     Entity(String id) {
-        if (id == null) {
-            throw new IllegalArgumentException("id == null");
-        }
-
-        this.id = id;
+        this(id, null);
     }
 
-    /**
-     * The id of the entity.
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
-     * @return a map of arbitrary properties of this entity.
-     */
-    public Map<String, Object> getProperties() {
-        if (properties == null) {
-            properties = new HashMap<>();
-        }
-        return properties;
+    Entity(String id, Map<String, Object> properties) {
+        super(id, properties);
     }
 
     /**
@@ -94,24 +68,9 @@ public abstract class Entity {
 
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Entity entity = (Entity) o;
-
-        return id.equals(entity.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
     public final String toString() {
         StringBuilder bld = new StringBuilder(getClass().getSimpleName());
-        bld.append("[id='").append(id).append('\'');
+        bld.append("[id='").append(getId()).append('\'');
         appendToString(bld);
         bld.append(']');
 

@@ -37,7 +37,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class EnvironmentBrowser extends AbstractBrowser<Environment> {
+final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.Blueprint, Environment.Update> {
 
     private EnvironmentBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, Environment.class, path);

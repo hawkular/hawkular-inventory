@@ -37,7 +37,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
  * @author Lukas Krejci
  * @since 1.0
  */
-final class ResourceTypeBrowser extends AbstractBrowser<ResourceType> {
+final class ResourceTypeBrowser extends AbstractBrowser<ResourceType, ResourceType.Blueprint, ResourceType.Update> {
     private ResourceTypeBrowser(InventoryContext context, FilterApplicator... path) {
         super(context, ResourceType.class, path);
     }

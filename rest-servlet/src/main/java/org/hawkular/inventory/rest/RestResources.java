@@ -36,6 +36,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -123,7 +124,21 @@ public class RestResources {
         return inventory.tenants().get(tenantId).environments().get(environmentId).resources()
                 .get(uid).entity();
     }
-
+    @PUT
+    @Path("{tenantId}/{environmentId}/resources/{resourceId}")
+    @ApiOperation("Update a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Resource doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
+                           @PathParam("resourceId") String resourceId,
+                           @ApiParam(required = true) Resource.Update update) {
+        inventory.tenants().get(tenantId).environments().get(environmentId).resources().update(resourceId, update);
+        return Response.noContent().build();
+    }
 
     @DELETE
     @Path("/{tenantId}/{environmentId}/resources/{resourceId}")

@@ -20,17 +20,14 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
-import com.tinkerpop.pipes.PipeFunction;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
@@ -42,15 +39,23 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Jiri Kremser
  * @since 1.0
  */
-final class RelationshipService<E extends Entity> extends AbstractSourcedGraphService<Relationships.Single,
-        Relationships.Multiple, E, Entity.Blueprint> implements Relationships.ReadWrite, Relationships.Read {
+final class RelationshipService<E extends Entity<B, U>, B extends Entity.Blueprint, U extends AbstractElement.Update>
+        extends AbstractGraphService implements Relationships.ReadWrite, Relationships.Read {
 
+    static final String[] MAPPED_PROPERTIES = new String[]{Constants.Property.uid.name()};
+
+    private final InventoryContext context;
     private final Relationships.Direction direction;
+    private final PathContext pathContext;
+    private final Class<E> sourceEntityClass;
 
     RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass, Relationships.Direction
             direction) {
-        super(iContext, sourceClass, ctx);
+        super(iContext, ctx.path);
+        this.context = iContext;
+        this.pathContext = ctx;
         this.direction = direction;
+        this.sourceEntityClass = sourceClass;
     }
 
     @Override
@@ -63,35 +68,14 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
         return createMultiBrowser(filters);
     }
 
-    @Override
-    protected Relationships.Single createSingleBrowser(FilterApplicator... path) {
-        return createSingleBrowser((RelationFilter[]) null);
-    }
-
     private Relationships.Single createSingleBrowser(RelationFilter... filters) {
-        return RelationshipBrowser.single(context, entityClass, direction, pathWith(selectCandidates())
+        return RelationshipBrowser.single(context, sourceEntityClass, direction, pathWith(pathContext.candidatesFilter)
                 .get(), filters);
-    }
-
-    @Override
-    protected Relationships.Multiple createMultiBrowser(FilterApplicator... path) {
-        return createMultiBrowser((RelationFilter[]) null);
     }
 
     private Relationships.Multiple createMultiBrowser(RelationFilter... filters) {
-        return RelationshipBrowser.multiple(context, entityClass, direction, pathWith(selectCandidates())
+        return RelationshipBrowser.multiple(context, direction, pathWith(pathContext.candidatesFilter)
                 .get(), filters);
-    }
-
-    @Override
-    protected String getProposedId(Entity.Blueprint r) {
-        // this doesn't make sense for Relationships
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected Filter[] initNewEntity(Vertex newEntity, Entity.Blueprint r) {
-        return new Filter[0];
     }
 
     @Override
@@ -152,58 +136,13 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
     }
 
     @Override
-    public void update(Relationship relationship) throws RelationNotFoundException {
-        if (null == relationship) {
-            throw new IllegalArgumentException("relationship was null");
-        }
-        if (null == relationship.getId()) {
-            throw new IllegalArgumentException("relationship's ID was null");
-        }
+    public void update(String id, Relationship.Update update) throws RelationNotFoundException {
+        Edge edge = context.getGraph().getEdge(id);
 
-       // check if the source/target vertex of the relationship is on the current position in hawk-pipe. If not use the
-       // `ifThenElse` for returning an empty iterator and fail subsequent querying
-        PipeFunction<Vertex, Boolean> ifFunction = vertex -> {
-            String uid = vertex.getProperty(Constants.Property.uid.name());
-            boolean sourceOk = uid.equals(relationship.getSource().getId());
-            boolean targetOk = uid.equals(relationship.getTarget().getId());
-            return direction == outgoing ? sourceOk : direction ==
-                    incoming ? targetOk : (sourceOk || targetOk);
-        };
-        PipeFunction<Vertex, ?> thenFunction = v -> v;
-        PipeFunction<Vertex, ?> elseFunction = v -> Collections.<Vertex>emptyList().iterator();
-        HawkularPipeline<?, ?> pipe = source().ifThenElse(ifFunction, thenFunction, elseFunction);
+        checkProperties(update.getProperties(), MAPPED_PROPERTIES);
+        updateProperties(edge, update.getProperties(), MAPPED_PROPERTIES);
 
-        switch (direction) {
-            case outgoing:
-                pipe = pipe.outE(relationship.getName());
-                break;
-            case incoming:
-                pipe = pipe.inE(relationship.getName());
-                break;
-            case both:
-                pipe = pipe.bothE(relationship.getName());
-                break;
-        }
-
-        HawkularPipeline<?, Edge> edges = pipe.hasUid(relationship.getId()).cast(Edge.class);
-        if (!edges.hasNext()) {
-            throw new RelationNotFoundException(relationship.getId(), FilterApplicator.filters(path));
-        }
-        Edge edge = edges.next();
-        if (!edge.getLabel().equals(relationship.getName())) {
-            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
-                    "Cannot update the name of a relationship. Create a new relationship instead.");
-        }
-        final Direction d1 = direction == outgoing ? Direction.IN : Direction.OUT;
-        final Direction d2 = direction == outgoing ? Direction.OUT : Direction.IN;
-        if (!(matches(edge.getVertex(d1), relationship.getTarget()) && matches(edge.getVertex(d2),
-                relationship.getSource()))) {
-
-            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
-                    "Cannot update the source or target of a relationship. Create a new relationship instead.");
-        }
-
-        ElementHelper.setProperties(edge, relationship.getProperties());
+        context.getGraph().commit();
     }
 
     @Override

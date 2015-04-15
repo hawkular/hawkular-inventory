@@ -23,6 +23,8 @@ import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Entity;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
@@ -93,10 +95,10 @@ public class ObservableBase<T> {
         }
     }
 
-    public abstract static class ReadWrite<Entity, Blueprint extends org.hawkular.inventory.api.model.Entity.Blueprint,
-            Single extends ResolvableToSingle<Entity> & Relatable<Relationships.ReadWrite>,
-            Multiple extends ResolvableToMany<Entity>,
-            Iface extends ReadInterface<Single, Multiple> & WriteInterface<Entity, Blueprint, Single>>
+    public abstract static class ReadWrite<E extends AbstractElement<B, U>, B extends Entity.Blueprint,
+            U extends AbstractElement.Update, Single extends ResolvableToSingle<E> & Relatable<Relationships.ReadWrite>,
+            Multiple extends ResolvableToMany<E>,
+            Iface extends ReadInterface<Single, Multiple> & WriteInterface<U, B, Single>>
             extends ObservableBase<Iface> {
 
         ReadWrite(Iface wrapped, ObservableContext context) {
@@ -115,10 +117,10 @@ public class ObservableBase<T> {
             return wrap(multipleCtor(), wrapped.getAll(filters));
         }
 
-        public Single create(Blueprint b) {
+        public Single create(B b) {
             Single s = wrapped.create(b);
 
-            Entity e = s.entity();
+            E e = s.entity();
 
             notify(e, e, Action.created());
 
@@ -130,13 +132,14 @@ public class ObservableBase<T> {
             return wrap(singleCtor(), s);
         }
 
-        public void update(Entity e) {
-            wrapped.update(e);
-            notify(e, e, Action.updated());
+        public void update(String id, U u) {
+            E e = wrapped.get(id).entity();
+            wrapped.update(id, u);
+            notify(e, new Action.Update<>(e, u), Action.updated());
         }
 
         public void delete(String id) {
-            Entity e = get(id).entity();
+            E e = get(id).entity();
             wrapped.delete(id);
             notify(e, e, Action.deleted());
         }

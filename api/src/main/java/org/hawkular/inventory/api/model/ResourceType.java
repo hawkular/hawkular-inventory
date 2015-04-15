@@ -32,7 +32,7 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends OwnedEntity {
+public final class ResourceType extends OwnedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     @XmlAttribute
     @XmlJavaTypeAdapter(VersionAdapter.class)
@@ -57,6 +57,17 @@ public final class ResourceType extends OwnedEntity {
 
     public ResourceType(String tenantId, String id, String version) {
         this(tenantId, id, new Version(version));
+    }
+
+    public ResourceType(String tenantId, String id, Version version, Map<String, Object> properties) {
+        super(tenantId, id, properties);
+        this.version = version;
+    }
+
+    @Override
+    public Updater<Update, ResourceType> update() {
+        return new Updater<>((u) -> new ResourceType(getTenantId(), getId(),
+                u.version == null ? this.version : new Version(u.version), u.getProperties()));
     }
 
     public Version getVersion() {
@@ -137,6 +148,44 @@ public final class ResourceType extends OwnedEntity {
             @Override
             public Blueprint build() {
                 return new Blueprint(id, version, properties);
+            }
+        }
+    }
+
+
+    public static final class Update extends AbstractElement.Update {
+        private final String version;
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null, null);
+        }
+
+        public Update(Map<String, Object> properties, String version) {
+            super(properties);
+            this.version = version;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            private String version;
+
+            public Builder withVersion(String version) {
+                this.version = version;
+                return this;
+            }
+
+            @Override
+            public Update build() {
+                return new Update(properties, version);
             }
         }
     }

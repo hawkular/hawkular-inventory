@@ -20,7 +20,6 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -33,18 +32,10 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Relationship {
-
-    @XmlAttribute
-    @Expose
-    private final String id;
-
+public final class Relationship extends AbstractElement<Void, Relationship.Update> {
     @XmlAttribute
     @Expose
     private final String name;
-
-    @Expose
-    private Map<String, Object> properties;
 
     @Expose
     private final Entity source;
@@ -55,29 +46,27 @@ public final class Relationship {
     /** JAXB support */
     @SuppressWarnings("unused")
     private Relationship() {
-        this(null, null, null, null);
+        this(null, null, null, null, null);
     }
 
     public Relationship(String id, String name, Entity source, Entity target) {
-        this.id = id;
+        this(id, name, source, target, null);
+    }
+
+    public Relationship(String id, String name, Entity source, Entity target, Map<String, Object> properties) {
+        super(id, properties);
         this.name = name;
         this.source = source;
         this.target = target;
     }
 
-    public String getId() {
-        return id;
+    @Override
+    public Updater<Update, Relationship> update() {
+        return new Updater<>((u) -> new Relationship(getId(), getName(), getSource(), getTarget(), u.getProperties()));
     }
 
     public String getName() {
         return name;
-    }
-
-    public Map<String, Object> getProperties() {
-        if (properties == null) {
-            properties = new HashMap<>();
-        }
-        return properties;
     }
 
     public Entity getSource() {
@@ -98,5 +87,29 @@ public final class Relationship {
         bld.append(" target=").append(target);
         bld.append(']');
         return bld.toString();
+    }
+
+    public static final class Update extends AbstractElement.Update {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        //JAXB support
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null);
+        }
+
+        public Update(Map<String, Object> properties) {
+            super(properties);
+        }
+
+        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+            @Override
+            public Update build() {
+                return new Update(properties);
+            }
+        }
     }
 }

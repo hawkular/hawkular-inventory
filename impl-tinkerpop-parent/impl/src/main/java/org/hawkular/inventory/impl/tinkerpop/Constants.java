@@ -62,7 +62,7 @@ final class Constants {
                     (i == 1 ? Property.uid.name() : mappedProperties[i - 2].name()));
         }
 
-        public static Type of(Entity e) {
+        public static Type of(Entity<?, ?> e) {
             return e.accept(new EntityVisitor<Type, Void>() {
                 @Override
                 public Type visitTenant(Tenant tenant, Void parameter) {

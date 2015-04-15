@@ -19,6 +19,7 @@ package org.hawkular.inventory.rest;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
@@ -33,6 +34,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -129,6 +131,21 @@ public class RestResourceTypes {
         inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
+    }
+
+    @PUT
+    @Path("{tenantId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Update a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response update(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId,
+                           @ApiParam(required = true) ResourceType.Update update) {
+        inventory.tenants().get(tenantId).resourceTypes().update(resourceTypeId, update);
+        return Response.noContent().build();
     }
 
     @DELETE
