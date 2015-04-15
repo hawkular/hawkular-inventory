@@ -282,7 +282,7 @@ public class BasicTest {
     @Test
     public void testTenants() throws Exception {
         Function<String, Void> test = (id) -> {
-            GraphQuery q = graph.query().has("type", "tenant").has("uid", id);
+            GraphQuery q = graph.query().has("__type", "tenant").has("__eid", id);
 
             Iterator<Vertex> evs = q.vertices().iterator();
             assert evs.hasNext();
@@ -291,7 +291,7 @@ public class BasicTest {
 
             Tenant t = inventory.tenants().get(id).entity();
 
-            assert ev.getProperty("uid").equals(id);
+            assert ev.getProperty("__eid").equals(id);
             assert t.getId().equals(id);
             return null;
         };
@@ -299,7 +299,7 @@ public class BasicTest {
         test.apply("com.acme.tenant");
         test.apply("com.example.tenant");
 
-        GraphQuery query = graph.query().has("type", "tenant");
+        GraphQuery query = graph.query().has("__type", "tenant");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
     @Test
@@ -309,11 +309,11 @@ public class BasicTest {
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
                     GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
-                            .V().has("type", parentType).cast(Vertex.class);
+                            .V().has("__type", parentType).cast(Vertex.class);
                     Iterator<Vertex> parentIterator = q1.iterator();
 
                     GremlinPipeline<Graph, Vertex> q2 = new GremlinPipeline<Graph, Vertex>(graph)
-                            .V().has("type", parentType).out(edgeLabel).has("type", childType)
+                            .V().has("__type", parentType).out(edgeLabel).has("__type", childType)
                             .cast(Vertex.class);
                     Iterator<Vertex> childIterator = q2.iterator();
 
@@ -567,8 +567,8 @@ public class BasicTest {
     public void testEnvironments() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
             GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph)
-                    .V().has("type", "tenant").has("uid", tenantId).out("contains")
-                    .has("type", "environment").has("uid", id).cast(Vertex.class);
+                    .V().has("__type", "tenant").has("__eid", tenantId).out("contains")
+                    .has("__type", "environment").has("__eid", id).cast(Vertex.class);
 
             Iterator<Vertex> envs = q.iterator();
             assert envs.hasNext();
@@ -585,16 +585,16 @@ public class BasicTest {
         test.apply("com.acme.tenant", "production");
         test.apply("com.example.tenant", "test");
 
-        GraphQuery query = graph.query().has("type", "environment");
+        GraphQuery query = graph.query().has("__type", "environment");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
     @Test
     public void testResourceTypes() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "resourceType").has("uid", id)
-                    .has("version", "1.0").cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "resourceType").has("__eid", id)
+                    .has("__version", "1.0").cast(Vertex.class);
 
             assert q.hasNext();
 
@@ -608,7 +608,7 @@ public class BasicTest {
         test.apply("com.example.tenant", "Kachna");
         test.apply("com.example.tenant", "Playroom");
 
-        GraphQuery query = graph.query().has("type", "resourceType");
+        GraphQuery query = graph.query().has("__type", "resourceType");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
@@ -616,9 +616,9 @@ public class BasicTest {
     public void testMetricDefinitions() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "metricType")
-                    .has("uid", id).cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "metricType")
+                    .has("__eid", id).cast(Vertex.class);
 
             assert q.hasNext();
 
@@ -631,16 +631,16 @@ public class BasicTest {
         test.apply("com.acme.tenant", "ResponseTime");
         test.apply("com.example.tenant", "Size");
 
-        GraphQuery query = graph.query().has("type", "metricType");
+        GraphQuery query = graph.query().has("__type", "metricType");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
     }
 
     @Test
     public void testMetricDefsLinkedToResourceTypes() throws Exception {
         TriFunction<String, String, String, Void> test = (tenantId, resourceTypeId, id) -> {
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "resourceType")
-                    .has("uid", resourceTypeId).out("owns").has("type", "metricType").has("uid", id)
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "resourceType")
+                    .has("__eid", resourceTypeId).out("owns").has("__type", "metricType").has("__eid", id)
                     .cast(Vertex.class);
 
             assert q.hasNext();
@@ -659,10 +659,10 @@ public class BasicTest {
     @Test
     public void testMetrics() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, metricDefId, id) -> {
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
-                    .out("contains").has("type", "metric").has("uid", id).as("metric").in("defines")
-                    .has("type", "metricType").has("uid", metricDefId).back("metric").cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "environment").has("__eid", environmentId)
+                    .out("contains").has("__type", "metric").has("__eid", id).as("metric").in("defines")
+                    .has("__type", "metricType").has("__eid", metricDefId).back("metric").cast(Vertex.class);
 
             assert q.hasNext();
 
@@ -678,17 +678,17 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Size", "playroom1_size");
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
-        GraphQuery query = graph.query().has("type", "metric");
+        GraphQuery query = graph.query().has("__type", "metric");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
     @Test
     public void testResources() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
-                    .out("contains").has("type", "resource").has("uid", id).as("resource").in("defines")
-                    .has("type", "resourceType").has("uid", resourceTypeId).back("resource").cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "environment").has("__eid", environmentId)
+                    .out("contains").has("__type", "resource").has("__eid", id).as("resource").in("defines")
+                    .has("__type", "resourceType").has("__eid", resourceTypeId).back("resource").cast(Vertex.class);
 
             assert q.hasNext();
 
@@ -704,17 +704,17 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Playroom", "playroom1");
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
-        GraphQuery query = graph.query().has("type", "resource");
+        GraphQuery query = graph.query().has("__type", "resource");
         assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
     }
 
     @Test
     public void testAssociateMetricWithResource() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceId, metricId) -> {
-            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("type", "tenant")
-                    .has("uid", tenantId).out("contains").has("type", "environment").has("uid", environmentId)
-                    .out("contains").has("type", "resource").has("uid", resourceId).out("owns")
-                    .has("type", "metric").has("uid", metricId).cast(Vertex.class);
+            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph).V().has("__type", "tenant")
+                    .has("__eid", tenantId).out("contains").has("__type", "environment").has("__eid", environmentId)
+                    .out("contains").has("__type", "resource").has("__eid", resourceId).out("owns")
+                    .has("__type", "metric").has("__eid", metricId).cast(Vertex.class);
 
             assert q.hasNext();
 

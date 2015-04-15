@@ -84,7 +84,8 @@ class FilterVisitor {
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
+                        ids.getIds()[i]));
 
         query.or(idChecks);
     }
@@ -101,7 +102,8 @@ class FilterVisitor {
 
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL, type.name());
+            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
+                    type.name());
         });
 
         query.or(typeChecks);
@@ -117,7 +119,8 @@ class FilterVisitor {
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
+                        ids.getIds()[i]));
 
         query.or(idChecks);
     }
@@ -171,7 +174,8 @@ class FilterVisitor {
         Pipe[] typeChecks = new Pipe[types.getTypes().length];
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL, type.name());
+            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
+                    type.name());
         });
 
         q2.or(typeChecks).recall();
