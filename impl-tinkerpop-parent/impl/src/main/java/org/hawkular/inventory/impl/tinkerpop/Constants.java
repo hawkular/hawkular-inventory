@@ -28,8 +28,8 @@ import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.Arrays;
 
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.unit;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.version;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__version;
 
 /**
  * @author Lukas Krejci
@@ -41,7 +41,29 @@ final class Constants {
      * The vertices in the graph have certain well-known properties.
      */
     enum Property {
-        type, uid, version, unit
+        /**
+         * This is the name of the property that we use to store the type of the entity represented by the vertex
+         */
+        __type,
+
+        /**
+         * This is the name of the property that we use to store the user-defined ID of the entity represented by the
+         * vertex. These ID are required to be unique only amongst their "siblings" as determined by the "contains"
+         * hierarchy.
+         */
+        __eid,
+
+        /**
+         * Present on the resource type entity, this is the name of the property that we use to store the version
+         * of the resource type represented by the vertex.
+         */
+        __version,
+
+        /**
+         * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
+         * represented by the vertex.
+         */
+        __unit
     }
 
     /**
@@ -49,7 +71,7 @@ final class Constants {
      */
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
-        resourceType(ResourceType.class, version), metricType(MetricType.class, unit), resource(Resource.class),
+        resourceType(ResourceType.class, __version), metricType(MetricType.class, __unit), resource(Resource.class),
         metric(Metric.class);
 
         private final String[] mappedProperties;
@@ -58,8 +80,8 @@ final class Constants {
         private Type(Class<? extends Entity> entityType, Property... mappedProperties) {
             this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 2];
-            Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.type.name() :
-                    (i == 1 ? Property.uid.name() : mappedProperties[i - 2].name()));
+            Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.__type.name() :
+                    (i == 1 ? Property.__eid.name() : mappedProperties[i - 2].name()));
         }
 
         public static Type of(Entity<?, ?> e) {
@@ -128,30 +150,6 @@ final class Constants {
         public String[] getMappedProperties() {
             return mappedProperties;
         }
-    }
-
-    /**
-     * The list of well-known relationships (aka edges) between entities (aka vertices).
-     */
-    enum Relationship {
-        /**
-         * Expresses encapsulation of a set of entities in another entity.
-         * Used for example to express the relationship between a tenant and the set of its environments.
-         */
-        contains,
-
-        /**
-         * Expresses "instantiation" of some entity based on the definition provided by "source" entity.
-         * For example, there is a defines relationship between a metric definition and all metrics that
-         * conform to it.
-         */
-        defines,
-
-        /**
-         * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
-         * of metric definitions.
-         */
-        owns
     }
 
     private Constants() {

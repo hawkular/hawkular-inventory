@@ -42,7 +42,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 final class RelationshipService<E extends Entity<B, U>, B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends AbstractGraphService implements Relationships.ReadWrite, Relationships.Read {
 
-    static final String[] MAPPED_PROPERTIES = new String[]{Constants.Property.uid.name()};
+    static final String[] MAPPED_PROPERTIES = new String[]{Constants.Property.__eid.name()};
 
     private final InventoryContext context;
     private final Relationships.Direction direction;
@@ -122,7 +122,7 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
 
         Edge newEdge = pipe.next();
         //believe it or not, Titan cannot filter on ids, hence we need to store the id as a property, too
-        newEdge.setProperty(Constants.Property.uid.name(), newEdge.getId().toString());
+        newEdge.setProperty(Constants.Property.__eid.name(), newEdge.getId().toString());
 
         context.getGraph().commit();
 
@@ -153,13 +153,13 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
         HawkularPipeline<?, ? extends Element> pipe = null;
         switch (direction) {
             case outgoing:
-                pipe = source().outE().hasUid(id);
+                pipe = source().outE().hasEid(id);
                 break;
             case incoming:
-                pipe = source().inE().hasUid(id);
+                pipe = source().inE().hasEid(id);
                 break;
             case both:
-                pipe = source().bothE().hasUid(id);
+                pipe = source().bothE().hasEid(id);
                 break;
         }
         if (!pipe.hasNext()) {

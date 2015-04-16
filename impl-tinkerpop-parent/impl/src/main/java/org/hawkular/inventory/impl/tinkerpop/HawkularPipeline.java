@@ -91,11 +91,11 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @SuppressWarnings("unchecked")
     public HawkularPipeline<S, Vertex> hasType(Constants.Type type) {
-        return (HawkularPipeline<S, Vertex>) has(Constants.Property.type.name(), type.name());
+        return (HawkularPipeline<S, Vertex>) has(Constants.Property.__type.name(), type.name());
     }
 
-    public HawkularPipeline<S, ? extends Element> hasUid(String uid) {
-        return cast(has(Constants.Property.uid.name(), uid));
+    public HawkularPipeline<S, ? extends Element> hasEid(String eid) {
+        return cast(has(Constants.Property.__eid.name(), eid));
     }
 
     public HawkularPipeline<S, Vertex> out(Relationships.WellKnown... rel) {

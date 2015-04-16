@@ -80,8 +80,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         checkProperties(blueprint.getProperties());
 
         Vertex v = context.getGraph().addVertex(null);
-        v.setProperty(Constants.Property.type.name(), Constants.Type.of(entityClass).name());
-        v.setProperty(Constants.Property.uid.name(), id);
+        v.setProperty(Constants.Property.__type.name(), Constants.Type.of(entityClass).name());
+        v.setProperty(Constants.Property.__eid.name(), id);
 
         if (blueprint.getProperties() != null) {
             for (Map.Entry<String, Object> e : blueprint.getProperties().entrySet()) {
@@ -155,8 +155,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
                     //we avoid the convert() function here because it assumes the containing entities of the passed in
                     //entity exist. This might not be true during the delete because the transitive closure "walks" the
                     //entities from the "top" down the containment chain and the entities are immediately deleted.
-                    String rootEntity = "Entity[id=" + getUid(v) + ", type=" + getType(v) + "]";
-                    String definingEntity = "Entity[id=" + getUid(d) + ", type=" + getType(d) + "]";
+                    String rootEntity = "Entity[id=" + getEid(v) + ", type=" + getType(v) + "]";
+                    String definingEntity = "Entity[id=" + getEid(d) + ", type=" + getType(d) + "]";
 
                     throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
                             definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
@@ -203,7 +203,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
                 Edge e = addEdge(v, rel.name(), o);
 
-                return new Relationship(getUid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
+                return new Relationship(getEid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
                         convert(e.getVertex(Direction.IN)));
             }
 
@@ -219,8 +219,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
         for(Edge e : source.getEdges(Direction.OUT, label)) {
             Vertex target = e.getVertex(Direction.IN);
-            if (getUid(target).equals(targetId)) {
-                return new Relationship(getUid(e), label, convert(source), convert(target));
+            if (getEid(target).equals(targetId)) {
+                return new Relationship(getEid(e), label, convert(source), convert(target));
             }
         }
 
@@ -234,7 +234,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         Constants.Type myType = Constants.Type.of(entityClass);
 
         Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
-                .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasUid(targetUid));
+                .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasEid(targetUid));
 
         Iterator<Edge> it = edges.iterator();
 
@@ -244,7 +244,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         }
 
         Edge edge = it.next();
-        Relationship ret = new Relationship(getUid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
+        Relationship ret = new Relationship(getEid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
                 convert(edge.getVertex(Direction.IN)));
         context.getGraph().removeEdge(edge);
         return ret;

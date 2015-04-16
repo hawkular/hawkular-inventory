@@ -60,15 +60,15 @@ final class ResourcesService
 
         //connect to the resource type from the blueprint
         for (Vertex rt : new HawkularPipeline<>(envs).in(contains).out(contains).hasType(resourceType)
-                .hasUid(blueprint.getResourceTypeId()).cast(Vertex.class)) {
+                .hasEid(blueprint.getResourceTypeId()).cast(Vertex.class)) {
             addEdge(rt, defines.name(), newEntity);
         }
 
         Vertex tenant = getTenantVertexOf(exampleEnv);
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tenant)), Related.by(contains),
-                With.type(Environment.class), With.id(getUid(exampleEnv)), Related.by(contains),
-                With.type(Resource.class), With.id(getUid(newEntity))).get();
+        return Filter.by(With.type(Tenant.class), With.id(getEid(tenant)), Related.by(contains),
+                With.type(Environment.class), With.id(getEid(exampleEnv)), Related.by(contains),
+                With.type(Resource.class), With.id(getEid(newEntity))).get();
     }
 
     @Override

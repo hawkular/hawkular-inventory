@@ -43,7 +43,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.inE().hasUid(related.getRelationshipId()).inV();
+                    query.inE().hasEid(related.getRelationshipId()).inV();
                 }
                 break;
             case SOURCE:
@@ -52,7 +52,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.outE().hasUid(related.getRelationshipId()).outV();
+                    query.outE().hasEid(related.getRelationshipId()).outV();
                 }
                 break;
             case ANY:
@@ -61,14 +61,14 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().hasUid(related.getRelationshipId()).bothV();
+                    query.bothE().hasEid(related.getRelationshipId()).bothV();
                 }
         }
 
         if (related.getEntity() != null) {
             Constants.Type desiredType = Constants.Type.of(related.getEntity());
 
-            query.hasType(desiredType).hasUid(related.getEntity().getId());
+            query.hasType(desiredType).hasEid(related.getEntity().getId());
         }
 
         query.recall();
@@ -77,14 +77,15 @@ class FilterVisitor {
     @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, With.Ids ids) {
         if (ids.getIds().length == 1) {
-            query.has(Constants.Property.uid.name(), ids.getIds()[0]);
+            query.has(Constants.Property.__eid.name(), ids.getIds()[0]);
             return;
         }
 
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
+                        ids.getIds()[i]));
 
         query.or(idChecks);
     }
@@ -93,7 +94,7 @@ class FilterVisitor {
     public void visit(HawkularPipeline<?, ?> query, With.Types types) {
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            query.has(Constants.Property.type.name(), type.name());
+            query.has(Constants.Property.__type.name(), type.name());
             return;
         }
 
@@ -101,7 +102,8 @@ class FilterVisitor {
 
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.type.name(), Compare.EQUAL, type.name());
+            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
+                    type.name());
         });
 
         query.or(typeChecks);
@@ -110,14 +112,15 @@ class FilterVisitor {
     @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids) {
         if (ids.getIds().length == 1) {
-            query.hasUid(ids.getIds()[0]);
+            query.hasEid(ids.getIds()[0]);
             return;
         }
 
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.uid.name(), Compare.EQUAL, ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
+                        ids.getIds()[i]));
 
         query.or(idChecks);
     }
@@ -164,14 +167,15 @@ class FilterVisitor {
         }
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            q2.has(Constants.Property.type.name(), type.name()).recall();
+            q2.has(Constants.Property.__type.name(), type.name()).recall();
             return;
         }
 
         Pipe[] typeChecks = new Pipe[types.getTypes().length];
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.type.name(), Compare.EQUAL, type.name());
+            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
+                    type.name());
         });
 
         q2.or(typeChecks).recall();

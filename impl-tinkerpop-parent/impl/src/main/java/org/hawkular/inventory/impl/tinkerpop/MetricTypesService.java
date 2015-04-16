@@ -53,10 +53,10 @@ final class MetricTypesService
             tnt = t;
         }
 
-        newEntity.setProperty(Constants.Property.unit.name(), blueprint.getUnit().getDisplayName());
+        newEntity.setProperty(Constants.Property.__unit.name(), blueprint.getUnit().getDisplayName());
 
-        return Filter.by(With.type(Tenant.class), With.id(getUid(tnt)), Related.by(contains),
-                With.type(MetricType.class), With.id(getUid(newEntity))).get();
+        return Filter.by(With.type(Tenant.class), With.id(getEid(tnt)), Related.by(contains),
+                With.type(MetricType.class), With.id(getEid(newEntity))).get();
     }
 
     @Override
@@ -76,7 +76,7 @@ final class MetricTypesService
 
     @Override
     protected void updateExplicitProperties(MetricType.Update entity, Vertex vertex) {
-        vertex.setProperty(Constants.Property.unit.name(), entity.getUnit().getDisplayName());
+        vertex.setProperty(Constants.Property.__unit.name(), entity.getUnit().getDisplayName());
     }
 
     @Override
@@ -84,7 +84,7 @@ final class MetricTypesService
         //in here I know the source is a resource type...
         Iterable<Vertex> vs = source().in(contains) //up from resource type to tenant
                 .out(contains).hasType(metricType) //down to metric definitions
-                .hasUid(id).cast(Vertex.class);
+                .hasEid(id).cast(Vertex.class);
 
         return super.addAssociation(Constants.Type.resourceType, owns, vs);
     }
