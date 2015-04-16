@@ -23,6 +23,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -112,8 +113,9 @@ public class RestResourceTypes {
     public Set<Resource> getResources(@PathParam("tenantId") String tenantId,
                                       @PathParam("resourceTypeId") String resourceTypeId) {
 
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .resources().getAll().entities();
+        ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
+        single.entity(); // check whether it exists
+        return single.resources().getAll().entities();
     }
 
     @POST
