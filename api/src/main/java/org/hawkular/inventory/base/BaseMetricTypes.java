@@ -23,15 +23,15 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -61,13 +61,12 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity,
-                MetricType.Blueprint blueprint, CanonicalPath parentPath,
-                BE parent) {
+        protected EntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity, MetricType.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
-            return new NewEntityAndPendingNotifications<>(new MetricType(parentPath.getTenantId(),
-                    context.backend.extractId(entity), blueprint.getUnit(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new MetricType(parentPath.extend(MetricType.class,
+                    context.backend.extractId(entity)).get(), blueprint.getUnit(), blueprint.getProperties()));
         }
 
         @Override
@@ -121,7 +120,7 @@ public final class BaseMetricTypes {
 
             BE metric = getSingle(getMetric, MetricType.class);
 
-            return createAssociation(ResourceType.class, owns, metric);
+            return createAssociation(ResourceType.class, incorporates, metric);
         }
 
         @Override
@@ -131,12 +130,12 @@ public final class BaseMetricTypes {
 
             BE metric = getSingle(getMetric, MetricType.class);
 
-            return deleteAssociation(ResourceType.class, owns, MetricType.class, metric);
+            return deleteAssociation(ResourceType.class, incorporates, metric);
         }
 
         @Override
         public Relationship associationWith(String id) throws RelationNotFoundException {
-            return getAssociation(ResourceType.class, id, MetricType.class, owns);
+            return getAssociation(ResourceType.class, id, MetricType.class, incorporates);
         }
 
         @Override

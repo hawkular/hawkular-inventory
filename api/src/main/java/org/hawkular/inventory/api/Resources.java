@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
@@ -34,6 +35,37 @@ public final class Resources {
          * @return access to metrics owned by the resource(s)
          */
         Metrics metrics();
+
+        /**
+         * @return access to children that are existentially bound to this resource
+         */
+        ReadWrite containedChildren();
+
+        /**
+         * Access to all children.
+         *
+         * Note that children that are existentially bound to this resource (i.e. in addition to
+         * {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} there also exists the
+         * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains} relationship) cannot be disassociated
+         * using this interface.
+         *
+         * @return access to all children of this resource (superset of {@link #containedChildren()}, also includes
+         * the resources bound merely by {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf}).
+         * @see org.hawkular.inventory.api.Resources.ReadAssociate
+         */
+        ReadAssociate allChildren();
+
+        /**
+         * @return access to the parent resource (if any) that contains the resource on the current position in the
+         * path traversal. This resource will not exist for top-level resources living directly under an environment or
+         * feed.
+         */
+        Single parent();
+
+        /**
+         * @return the parent resource(s) of the current resource(s)
+         */
+        Read parents();
     }
 
     /**
@@ -59,4 +91,28 @@ public final class Resources {
      * Provides read-write access to resources.
      */
     public interface ReadWrite extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple> {}
+
+    /**
+     * This interface enables the creation of "alternative" tree hierarchies of resources using the
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} relationship. Resources can be contained
+     * within each other, which causes such child resources to be deleted along with their parent resources (such
+     * resources also implicitly have the {@code isParentOf} relationship between each other). If there is only the
+     * {@code isParentOf} relationship between the two resources they form a tree structure but deleting the parent
+     * does not affect the child - the link between them just disappears.
+     */
+    public interface ReadAssociate extends Read, AssociationInterface {
+
+        /**
+         * Removes the {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} relationship between the
+         * two resources.
+         *
+         * @param id the id of the entity to remove from the relation with the current entity.
+         * @return the relationship that was deleted as a result of the disassociation
+         * @throws EntityNotFoundException  if a resource with given id doesn't exist
+         * @throws IllegalArgumentException if the resource with the supplied id is existentially bound to its parent
+         *                                  resource
+         */
+        @Override
+        Relationship disassociate(String id) throws EntityNotFoundException, IllegalArgumentException;
+    }
 }

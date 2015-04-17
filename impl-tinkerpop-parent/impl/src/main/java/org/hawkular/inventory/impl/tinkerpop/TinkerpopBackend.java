@@ -24,6 +24,7 @@ import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
@@ -40,10 +41,8 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,19 +53,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toSet;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Lukas Krejci
@@ -86,16 +77,24 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Element find(CanonicalPath element) throws ElementNotFoundException {
-        Iterator<Element> it = navigate(element);
-        if (!it.hasNext()) {
+        HawkularPipeline<?, ? extends Element> q = translate(Query.to(element));
+        if (!q.hasNext()) {
             throw new ElementNotFoundException();
         } else {
-            return it.next();
+            return q.next();
         }
     }
 
     @Override
     public Page<Element> query(Query query, Pager pager) {
+        HawkularPipeline<?, ? extends Element> q = translate(query);
+
+        q.counter("total").page(pager);
+
+        return new Page<>(q.cast(Element.class).toList(), pager, q.getCount("total"));
+    }
+
+    private HawkularPipeline<?, ? extends Element> translate(Query query) {
         HawkularPipeline<?, ? extends Element> q;
         if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
             q = new HawkularPipeline<>(context.getGraph()).E();
@@ -105,9 +104,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         FilterApplicator.applyAll(query, q);
 
-        q.counter("total").page(pager);
-
-        return new Page<>(q.cast(Element.class).toList(), pager, q.getCount("total"));
+        return q;
     }
 
     @Override
@@ -252,6 +249,21 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
+    public String extractRelationshipName(Element relationship) {
+        return ((Edge) relationship).getLabel();
+    }
+
+    @Override
+    public Element getRelationshipSource(Element relationship) {
+        return ((Edge) relationship).getVertex(Direction.OUT);
+    }
+
+    @Override
+    public Element getRelationshipTarget(Element relationship) {
+        return ((Edge) relationship).getVertex(Direction.IN);
+    }
+
+    @Override
     public String extractId(Element entityRepresentation) {
         return entityRepresentation.getProperty(Constants.Property.__eid.name());
     }
@@ -263,6 +275,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         } else {
             return getType((Vertex) entityRepresentation).getEntityType();
         }
+    }
+
+    @Override
+    public CanonicalPath extractCanonicalPath(Element entityRepresentation) {
+        return CanonicalPath.fromString(entityRepresentation.getProperty(Constants.Property.__cp.name()));
     }
 
     @Override
@@ -285,46 +302,32 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             switch (type) {
                 case environment:
-                    e = new Environment(extractId(getTenantVertexOf(v)), extractId(v));
+                    e = new Environment(extractCanonicalPath(v));
                     break;
                 case feed:
-                    environmentVertex = getEnvironmentVertexOf(v);
-                    e = new Feed(extractId(getTenantVertexOf(environmentVertex)), extractId(environmentVertex),
-                            extractId(v));
+                    e = new Feed(extractCanonicalPath(v));
                     break;
                 case metric:
-                    environmentVertex = getEnvironmentVertexOrNull(v);
-                    feedVertex = getFeedVertexOrNull(v);
-                    if (environmentVertex == null) {
-                        environmentVertex = getEnvironmentVertexOf(feedVertex);
-                    }
                     Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
                             .next();
                     MetricType md = convert(mdv, MetricType.class);
-                    e = new Metric(extractId(getTenantVertexOf(environmentVertex)), extractId(environmentVertex),
-                            feedVertex == null ? null : extractId(feedVertex), extractId(v), md);
+                    e = new Metric(extractCanonicalPath(v), md);
                     break;
                 case metricType:
-                    e = new MetricType(extractId(getTenantVertexOf(v)), extractId(v), MetricUnit.fromDisplayName(
+                    e = new MetricType(extractCanonicalPath(v), MetricUnit.fromDisplayName(
                             v.getProperty(Constants.Property.__unit.name())));
                     break;
                 case resource:
-                    environmentVertex = getEnvironmentVertexOrNull(v);
-                    feedVertex = getFeedVertexOrNull(v);
-                    if (environmentVertex == null) {
-                        environmentVertex = getEnvironmentVertexOf(feedVertex);
-                    }
                     Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
                     ResourceType rt = convert(rtv, ResourceType.class);
-                    e = new Resource(extractId(getTenantVertexOf(environmentVertex)), extractId(environmentVertex),
-                            feedVertex == null ? null : extractId(feedVertex), extractId(v), rt);
+                    e = new Resource(extractCanonicalPath(v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractId(getTenantVertexOf(v)), extractId(v), (String) v.getProperty(
+                    e = new ResourceType(extractCanonicalPath(v), (String) v.getProperty(
                             Constants.Property.__version.name()));
                     break;
                 case tenant:
-                    e = new Tenant(extractId(v));
+                    e = new Tenant(extractCanonicalPath(v));
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown type of vertex");
@@ -410,42 +413,42 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element persist(String id, AbstractElement.Blueprint blueprint) {
+    public Element persist(CanonicalPath path, AbstractElement.Blueprint blueprint) {
         return blueprint.accept(new ElementBlueprintVisitor.Simple<Element, Void>() {
 
             @Override
             public Element visitTenant(Tenant.Blueprint tenant, Void parameter) {
-                return common(blueprint.getProperties(), Tenant.class);
+                return common(path, blueprint.getProperties(), Tenant.class);
             }
 
             @Override
             public Element visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return common(blueprint.getProperties(), Environment.class);
+                return common(path, blueprint.getProperties(), Environment.class);
             }
 
             @Override
             public Element visitFeed(Feed.Blueprint feed, Void parameter) {
-                return common(blueprint.getProperties(), Feed.class);
+                return common(path, blueprint.getProperties(), Feed.class);
             }
 
             @Override
             public Element visitMetric(Metric.Blueprint metric, Void parameter) {
-                return common(blueprint.getProperties(), Metric.class);
+                return common(path, blueprint.getProperties(), Metric.class);
             }
 
             @Override
             public Element visitMetricType(MetricType.Blueprint definition, Void parameter) {
-                return common(blueprint.getProperties(), MetricType.class);
+                return common(path, blueprint.getProperties(), MetricType.class);
             }
 
             @Override
             public Element visitResource(Resource.Blueprint resource, Void parameter) {
-                return common(blueprint.getProperties(), Resource.class);
+                return common(path, blueprint.getProperties(), Resource.class);
             }
 
             @Override
             public Element visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return common(blueprint.getProperties(), ResourceType.class);
+                return common(path, blueprint.getProperties(), ResourceType.class);
             }
 
             @Override
@@ -453,12 +456,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new IllegalArgumentException("Relationships cannot be persisted using the persist() method.");
             }
 
-            private Element common(Map<String, Object> properties, Class<? extends AbstractElement<?, ?>> cls) {
+            private Element common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
+                    Class<? extends AbstractElement<?, ?>> cls) {
                 checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
                 Vertex v = context.getGraph().addVertex(null);
                 v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
-                v.setProperty(Constants.Property.__eid.name(), id);
+                v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
+                v.setProperty(Constants.Property.__cp.name(), path.toString());
 
                 if (properties != null) {
                     ElementHelper.setProperties(v, properties);
@@ -553,50 +558,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public void close() throws Exception {
         context.getGraph().shutdown();
-    }
-
-    private HawkularPipeline<?, Element> navigate(CanonicalPath path) {
-        HawkularPipeline<?, Element> ret = new HawkularPipeline<>(context.getGraph());
-        if (path.getRelationshipId() != null) {
-            ret.E().hasEid(path.getRelationshipId());
-            return ret;
-        } else if (path.getTenantId() != null) {
-            ret.V().hasType(tenant).hasEid(path.getTenantId());
-
-            if (path.getEnvironmentId() != null) {
-                ret.out(contains).hasType(environment).hasEid(path.getEnvironmentId());
-                if (path.getFeedId() != null) {
-                    ret.out(contains).hasType(feed).hasEid(path.getFeedId());
-                    if (path.getMetricId() != null) {
-                        ret.out(contains).hasType(metric).hasEid(path.getMetricId());
-                        return ret;
-                    } else if (path.getResourceId() != null) {
-                        ret.out(contains).hasType(resource).hasEid(path.getResourceId());
-                        return ret;
-                    } else {
-                        return ret;
-                    }
-                } else if (path.getMetricId() != null) {
-                    ret.out(contains).hasType(metric).hasEid(path.getMetricId());
-                    return ret;
-                } else if (path.getResourceId() != null) {
-                    ret.out(contains).hasType(resource).hasEid(path.getResourceId());
-                    return ret;
-                } else {
-                    return ret;
-                }
-            } else if (path.getMetricTypeId() != null) {
-                ret.out(contains).hasType(metricType).hasEid(path.getMetricTypeId());
-                return ret;
-            } else if (path.getResourceTypeId() != null) {
-                ret.out(contains).hasType(resourceType).hasEid(path.getResourceTypeId());
-                return ret;
-            } else {
-                return ret;
-            }
-        }
-
-        throw new IllegalArgumentException("Unexpected canonical path: " + path);
     }
 
     /**

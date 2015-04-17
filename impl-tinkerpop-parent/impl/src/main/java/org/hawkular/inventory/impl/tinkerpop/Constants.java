@@ -65,7 +65,12 @@ final class Constants {
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
-        __unit;
+        __unit,
+
+        /**
+         * Property used to store the canonical path of an element.
+         */
+        __cp;
 
         public static String mapUserDefined(String property) {
             if (AbstractElement.ID_PROPERTY.equals(property)) {
@@ -89,9 +94,19 @@ final class Constants {
 
         Type(Class<? extends AbstractElement<?, ?>> entityType, Property... mappedProperties) {
             this.entityType = entityType;
-            this.mappedProperties = new String[mappedProperties.length + 2];
-            Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.__type.name() :
-                    (i == 1 ? Property.__eid.name() : mappedProperties[i - 2].name()));
+            this.mappedProperties = new String[mappedProperties.length + 3];
+            Arrays.setAll(this.mappedProperties, i -> {
+                switch (i) {
+                    case 0:
+                        return Property.__type.name();
+                    case 1:
+                        return Property.__eid.name();
+                    case 2:
+                        return Property.__cp.name();
+                    default:
+                        return mappedProperties[i - 3].name();
+                }
+            });
         }
 
         public static Type of(AbstractElement<?, ?> e) {

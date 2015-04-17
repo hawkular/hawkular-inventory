@@ -27,11 +27,11 @@ import java.util.Map;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
- * in an environment and can be "owned" by {@link Resource resources} (surprisingly, many resources can own a single
- * metric).
+ * in an environment and can be "incorporated" by {@link Resource resources} (surprisingly, many resources can
+ * incorporate a single metric).
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 @XmlRootElement
 public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Update> {
@@ -47,25 +47,21 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
         type = null;
     }
 
-    public Metric(String tenantId, String environmentId, String feedId, String id, MetricType type) {
-        super(tenantId, environmentId, feedId, id);
-        this.type = type;
+    public Metric(CanonicalPath path, MetricType type) {
+        this(path, type, null);
     }
 
     @JsonCreator
-    public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("feed") String feedId, @JsonProperty("id") String id,
-            @JsonProperty("type") MetricType type,
+    public Metric(@JsonProperty("path") CanonicalPath path, @JsonProperty("type") MetricType type,
             @JsonProperty("properties") Map<String, Object> properties) {
 
-        super(tenantId, environmentId, feedId, id, properties);
+        super(path, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
-                u.getProperties()));
+        return new Updater<>((u) -> new Metric(getPath(), getType(), u.getProperties()));
     }
 
     public MetricType getType() {

@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import rx.Observable;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
@@ -29,8 +30,6 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import rx.Observable;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -892,6 +891,27 @@ public class EmptyInventory implements Inventory {
             return new MetricsReadAssociate();
         }
 
+
+        @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ResourcesReadAssociate();
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ResourcesReadWrite();
+        }
+
+        @Override
+        public Resources.Single parent() {
+            return new ResourcesSingle();
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new ResourcesRead();
+        }
+
         @Override
         public Relationships.ReadWrite relationships() {
             return new RelationshipsReadWrite();
@@ -916,6 +936,26 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ResourcesReadAssociate();
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ResourcesReadWrite();
+        }
+
+        @Override
+        public Resources.Single parent() {
+            return new ResourcesSingle();
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new ResourcesRead();
+        }
+
+        @Override
         public Relationships.Read relationships() {
             return new RelationshipsRead();
         }
@@ -928,6 +968,34 @@ public class EmptyInventory implements Inventory {
         @Override
         public Page<Resource> entities(Pager pager) {
             return emptyPage(pager);
+        }
+    }
+
+    public static class ResourcesReadAssociate implements Resources.ReadAssociate {
+
+        @Override
+        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship disassociate(String id) throws EntityNotFoundException, IllegalArgumentException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship associationWith(String id) throws RelationNotFoundException {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new ResourcesMultiple();
+        }
+
+        @Override
+        public Resources.Single get(String id) throws EntityNotFoundException {
+            return new ResourcesSingle();
         }
     }
 }

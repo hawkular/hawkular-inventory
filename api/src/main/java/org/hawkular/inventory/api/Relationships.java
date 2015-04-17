@@ -56,13 +56,39 @@ public final class Relationships {
         defines,
 
         /**
-         * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
-         * of metric definitions. They do not contain it though, because more resources can own a single metric for
-         * example.
+         * Expresses inclusion. For example a resource incorporates a set of metrics, or a resource type incorporates a
+         * set of metric definitions. They do not contain it though, because more resources can incorporate a single
+         * metric for example.
          */
-        owns
-    }
+        incorporates,
 
+        /**
+         * Used to express hierarchy of resources.
+         *
+         * <p> There are 2 separate concepts that need to be understood when examining resource hierarchy:
+         * <ol>
+         *     <li>The embedding of resources into each other - i.e. the child resources are inseparable from their
+         *     parent, because they are its parts - e. g. memory subsystem of JVM. These are modelled using 2 separate
+         *     relationships in inventory. The containment aspect is modelled by the {@link #contains} relationship and
+         *     the hierarchy aspect is modelled by the {@code isParentOf} relationship. When a {@link #contains}
+         *     relationship is established between 2 resources, the {@code isParentOf} is automagically added by the
+         *     inventory.
+         *
+         *     <li>Custom hierarchies can be defined between arbitrary resources, regardless of their containment in
+         *     other resources. These can be useful to compose ad-hoc "groupings" of resources
+         * </ol>
+         *
+         * <p>This relationship cannot form loops (similarly to {@link #contains}) but allows for 1 resource having more
+         * than 1 parent. This is allowed so that custom/parallel resource hierarchies can be created that share the
+         * same resources (the most obvious example of this is that a resource that has been discovered and
+         * "hierarchized" by a feed can also be put "under" a custom, user-defined, resource).
+         *
+         *
+         * <p>When deleting a resource, all its contained child resources are deleted along with it as mandated by the
+         * contract of the {@link #contains} relationship.
+         */
+        isParentOf
+    }
 
     /**
      * The list of possible relationship (aka edges) direction. Relationships are not bidirectional.

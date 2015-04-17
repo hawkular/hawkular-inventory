@@ -17,15 +17,25 @@
 package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.ElementType;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.NoopFilter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * Represents a tree of filters.
@@ -106,6 +116,32 @@ public final class Query {
             }
             workingPath.remove(workingPath.size() - 1);
         }
+    }
+
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    public static Query to(CanonicalPath entity) {
+        SymmetricExtender bld = Query.path();
+
+        Iterator<CanonicalPath.Segment> it = entity.getPath().iterator();
+
+        if (it.hasNext()) {
+            CanonicalPath.Segment s = it.next();
+            if (s.getElementType() == ElementType.RELATIONSHIP) {
+                bld.with(RelationWith.id(s.getElementId()));
+                //early return - no further querying needed for relationships
+                return bld.get();
+            } else {
+                bld.with(type((Class<? extends Entity<?, ?>>) s.getElementType().getType()), id(s.getElementId()));
+            }
+        }
+
+        while (it.hasNext()) {
+            CanonicalPath.Segment s = it.next();
+            bld.with(Related.by(contains), type((Class<? extends Entity<?, ?>>) s.getElementType().getType()),
+                    id(s.getElementId()));
+        }
+
+        return bld.get();
     }
 
     /**

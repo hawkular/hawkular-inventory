@@ -37,18 +37,19 @@ import java.util.Map;
 @XmlRootElement
 public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
-    public Tenant(String id) {
-        super(id);
+    public Tenant(CanonicalPath path) {
+        this(path, null);
     }
 
     @JsonCreator
-    public Tenant(@JsonProperty("id") String id, @JsonProperty("properties") Map<String, Object> properties) {
-        super(id, properties);
+    public Tenant(@JsonProperty("path") CanonicalPath path,
+            @JsonProperty("properties") Map<String, Object> properties) {
+        super(path, properties);
     }
 
     @Override
     public Updater<Update, Tenant> update() {
-        return new Updater<>((u) -> new Tenant(getId(), u.getProperties()));
+        return new Updater<>((u) -> new Tenant(getPath(), u.getProperties()));
     }
 
     @Override

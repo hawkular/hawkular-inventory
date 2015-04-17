@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -41,16 +42,9 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.SwitchElementType;
-
-import java.util.Iterator;
 import java.util.Map;
-
-import static org.hawkular.inventory.api.Relationships.Direction.incoming;
-import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
@@ -109,7 +103,7 @@ public final class BaseRelationships {
             return mutating((transaction) -> {
                 BE incidenceObject;
                 try {
-                    incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
+                    incidenceObject = context.backend.find(targetOrSource.getPath());
                 } catch (ElementNotFoundException e) {
                     throw new EntityNotFoundException(targetOrSource.getClass(), Filter.pathTo(targetOrSource));
                 }
@@ -121,9 +115,8 @@ public final class BaseRelationships {
 
                 BE origin = origins.get(0);
 
-                if (Relationships.WellKnown.contains.name().equals(name)) {
-                    checkContains(origin, direction, incidenceObject);
-                }
+                // if this is a well-known relationship, there might be some semantic checks for it...
+                RelationshipRules.checkCreate(context.backend, origin, direction, name, incidenceObject);
 
                 BE relationshipObject;
 
@@ -161,8 +154,8 @@ public final class BaseRelationships {
             //TODO this doesn't respect the current position in the graph
             mutating((transaction) -> {
                 try {
-                    BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id)
-                            .build());
+                    BE relationshipObject = context.backend.find(CanonicalPath.of().relationship(id)
+                            .get());
                     context.backend.update(relationshipObject, update);
                     context.backend.commit(transaction);
 
@@ -177,11 +170,17 @@ public final class BaseRelationships {
         @Override
         public void delete(String id) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
-            //TODO this probably should not allow to delete "contains" and other semantically-rich rels
             mutating((transaction) -> {
                 try {
-                    BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id)
-                            .build());
+                    BE relationshipObject = context.backend.find(CanonicalPath.of().relationship(id).get());
+
+                    BE source = context.backend.getRelationshipSource(relationshipObject);
+                    BE target = context.backend.getRelationshipTarget(relationshipObject);
+                    String relationshipName = context.backend.extractRelationshipName(relationshipObject);
+
+                    RelationshipRules.checkDelete(context.backend, source, Relationships.Direction.outgoing,
+                            relationshipName, target);
+
                     context.backend.delete(relationshipObject);
                     context.backend.commit(transaction);
 
@@ -191,50 +190,6 @@ public final class BaseRelationships {
                             Query.filters(context.select().with(RelationWith.id(id)).get()));
                 }
             });
-        }
-
-
-        private void checkContains(BE origin, Relationships.Direction direction, BE incidenceObject) {
-            if (direction == Relationships.Direction.both) {
-                throw new IllegalArgumentException("2 vertices cannot contain each other.");
-            }
-
-            //check for diamonds
-            if (direction == outgoing && context.backend
-                    .hasRelationship(incidenceObject, Relationships.Direction.incoming, contains.name())) {
-                throw new IllegalArgumentException("The target is already contained in another entity.");
-            } else if (direction == Relationships.Direction.incoming) {
-                if (context.backend.hasRelationship(origin, Relationships.Direction.incoming, contains.name())) {
-                    throw new IllegalArgumentException("The source is already contained in another entity.");
-                }
-            }
-
-            //check for loops
-            if (origin.equals(incidenceObject)) {
-                throw new IllegalArgumentException("An entity cannot contain itself.");
-            }
-
-            if (direction == Relationships.Direction.incoming) {
-                Iterator<BE> containees = context.backend.getTransitiveClosureOver(origin, contains.name(), outgoing);
-
-                while (containees.hasNext()) {
-                    BE containee = containees.next();
-                    if (containee.equals(incidenceObject)) {
-                        throw new IllegalArgumentException("The target (indirectly) contains the source." +
-                                " The source therefore cannot contain the target.");
-                    }
-                }
-            } else if (direction == outgoing) {
-                Iterator<BE> containers = context.backend.getTransitiveClosureOver(origin, contains.name(), incoming);
-
-                while (containers.hasNext()) {
-                    BE container = containers.next();
-                    if (container.equals(incidenceObject)) {
-                        throw new IllegalArgumentException("The source (indirectly) contains the target." +
-                                " The target therefore cannot contain the source.");
-                    }
-                }
-            }
         }
     }
 

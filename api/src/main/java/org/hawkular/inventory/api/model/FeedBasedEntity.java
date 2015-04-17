@@ -16,11 +16,7 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-
-import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author Lukas Krejci
@@ -29,25 +25,19 @@ import java.util.Objects;
 public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends EnvironmentBasedEntity<B, U> {
 
-    @XmlAttribute(name = "feed")
-    @Expose
-    private final String feedId;
-
     FeedBasedEntity() {
-        //JAXB support
-        feedId = null;
     }
 
-    protected FeedBasedEntity(String tenantId, String environmentId, String feedId, String id) {
-        super(tenantId, environmentId, id);
-        this.feedId = feedId;
+    protected FeedBasedEntity(CanonicalPath path) {
+        this(path, null);
     }
 
-    public FeedBasedEntity(String tenantId, String environmentId, String feedId, String id,
-            Map<String, Object> properties) {
-
-        super(tenantId, environmentId, id, properties);
-        this.feedId = feedId;
+    public FeedBasedEntity(CanonicalPath path, Map<String, Object> properties) {
+        super(path, properties);
+        if (path.getDepth() < 2) {
+            throw new IllegalArgumentException("A feed-based entity must be contained either in an environment or a" +
+                    " feed. The supplied path is too short for that.");
+        }
     }
 
     /**
@@ -58,29 +48,7 @@ public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends Abst
      * @return the id of the feed this entity lives under or null if this entity lives directly under an environment
      */
     public String getFeedId() {
-        return feedId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!super.equals(o)) return false;
-
-        FeedBasedEntity that = (FeedBasedEntity) o;
-
-        return Objects.equals(feedId, that.feedId);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(feedId);
-        return result;
-    }
-
-    @Override
-    protected void appendToString(StringBuilder toStringBuilder) {
-        super.appendToString(toStringBuilder);
-        toStringBuilder.append(", feedId='").append(feedId).append('\'');
+        CanonicalPath.Segment seg = getPath().getRoot().down().down().getSegment();
+        return seg.getElementType() == ElementType.FEED ? seg.getElementId() : null;
     }
 }

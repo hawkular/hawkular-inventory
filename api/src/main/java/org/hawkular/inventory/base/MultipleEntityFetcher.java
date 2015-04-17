@@ -37,7 +37,6 @@ class MultipleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
     }
 
     public Relationships.Read relationships(Relationships.Direction direction) {
-        return new BaseRelationships.Read<>(context.proceedToRelationships(direction).get()
-        );
+        return new BaseRelationships.Read<>(context.proceedToRelationships(direction).get());
     }
 }

@@ -24,11 +24,11 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -58,11 +58,10 @@ public final class BaseEnvironments {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity,
-                Environment.Blueprint blueprint, CanonicalPath parentPath,
-                BE parent) {
-            return new NewEntityAndPendingNotifications<>(new Environment(parentPath.getTenantId(),
-                    context.backend.extractId(entity), blueprint.getProperties()));
+        protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
+            return new EntityAndPendingNotifications<>(new Environment(parentPath.extend(Environment.class,
+                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override

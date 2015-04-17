@@ -18,7 +18,6 @@ package org.hawkular.inventory.api.model;
 
 import com.google.gson.annotations.Expose;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -35,6 +34,10 @@ import java.util.Map;
  */
 @XmlRootElement
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
+    @XmlAttribute
+    @Expose
+    private final String id;
+
     @XmlAttribute
     @Expose
     private final String name;
@@ -61,7 +64,8 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
     }
 
     public Relationship(String id, String name, Entity source, Entity target, Map<String, Object> properties) {
-        super(id, properties);
+        super(CanonicalPath.of().relationship(id).get(), properties);
+        this.id = id;
         this.name = name;
         this.source = source;
         this.target = target;
@@ -70,6 +74,11 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
     @Override
     public Updater<Update, Relationship> update() {
         return new Updater<>((u) -> new Relationship(getId(), getName(), getSource(), getTarget(), u.getProperties()));
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 
     public String getName() {

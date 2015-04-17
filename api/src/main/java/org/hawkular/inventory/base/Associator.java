@@ -16,17 +16,12 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
-import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.filters.With.type;
 
 /**
@@ -44,73 +39,34 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,
             Relationships.WellKnown relationship, BE target) {
 
-        return mutating((t) -> {
-            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-            BE source = getSingle(sourceQuery, sourceType);
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
 
-            if (context.backend.hasRelationship(source, target, relationship.name())) {
-                throw new RelationAlreadyExistsException(relationship.name(), Query.filters(sourceQuery));
-            }
+        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context.backend, sourceQuery,
+                sourceType, relationship.name(), target);
 
-            BE relationshipObject = context.backend.relate(source, target, relationship.name(), null);
+        context.notifyAll(rel);
 
-            context.backend.commit(t);
-
-            Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
-
-            context.notify(ret, created());
-
-            return ret;
-        });
+        return rel.getEntity();
     }
 
     protected Relationship deleteAssociation(Class<? extends Entity<?, ?>> sourceType,
-            Relationships.WellKnown relationship, Class<? extends Entity<?, ?>> targetType, BE target) {
+            Relationships.WellKnown relationship, BE target) {
 
-        return mutating((t) -> {
-            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-            BE source = getSingle(sourceQuery, sourceType);
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
+        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context.backend, sourceQuery,
+                sourceType, relationship.name(), target);
 
-            BE relationshipObject;
+        context.notifyAll(rel);
 
-            try {
-                relationshipObject = context.backend.getRelationship(source, target, relationship.name());
-            } catch (ElementNotFoundException e) {
-                throw new RelationNotFoundException(sourceType, relationship.name(), Query.filters(sourceQuery),
-                        null, null);
-            }
-
-            Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
-
-            context.backend.delete(relationshipObject);
-
-            context.backend.commit(t);
-
-            context.notify(ret, deleted());
-
-            return ret;
-        });
+        return rel.getEntity();
     }
 
     protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, String targetId,
             Class<? extends Entity<?, ?>> targetType, Relationships.WellKnown rel) {
-        return readOnly(() -> {
-            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-            Query targetQuery = context.sourcePath.extend().path().with(type(sourceType), Related.by(rel))
-                    .filter().with(With.type(targetType), With.id(targetId)).get();
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
+        Query targetQuery = context.sourcePath.extend().path().with(type(sourceType), Related.by(rel))
+                .filter().with(With.type(targetType), With.id(targetId)).get();
 
-            BE source = getSingle(sourceQuery, sourceType);
-            BE target = getSingle(targetQuery, targetType);
-
-            BE relationship;
-            try {
-                relationship = context.backend.getRelationship(source, target, rel.name());
-            } catch (ElementNotFoundException e) {
-                throw new RelationNotFoundException(sourceType, rel.name(), Query.filters(sourceQuery),
-                        null, null);
-            }
-
-            return context.backend.convert(relationship, Relationship.class);
-        });
+        return Util.getAssociation(context.backend, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }
 }

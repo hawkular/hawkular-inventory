@@ -22,13 +22,13 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.id;
 
 /**
@@ -55,13 +55,13 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<ResourceType> wireUpNewEntity(BE entity,
+        protected EntityAndPendingNotifications<ResourceType> wireUpNewEntity(BE entity,
                 ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
 
             context.backend.update(entity, ResourceType.Update.builder().withVersion(blueprint.getVersion()).build());
 
-            return new NewEntityAndPendingNotifications<>(new ResourceType(parentPath.getTenantId(),
-                    context.backend.extractId(entity), blueprint.getVersion(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new ResourceType(parentPath.extend(ResourceType.class,
+                    context.backend.extractId(entity)).get(), blueprint.getVersion(), blueprint.getProperties()));
         }
 
         @Override
@@ -110,7 +110,7 @@ public final class BaseResourceTypes {
 
         @Override
         public MetricTypes.ReadAssociate metricTypes() {
-            return new BaseMetricTypes.ReadAssociate<>(context.proceedTo(owns, MetricType.class).get());
+            return new BaseMetricTypes.ReadAssociate<>(context.proceedTo(incorporates, MetricType.class).get());
         }
     }
 
@@ -128,7 +128,7 @@ public final class BaseResourceTypes {
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new BaseMetricTypes.Read<>(context.proceedTo(owns, MetricType.class).get());
+            return new BaseMetricTypes.Read<>(context.proceedTo(incorporates, MetricType.class).get());
         }
     }
 }

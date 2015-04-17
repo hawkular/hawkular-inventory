@@ -18,7 +18,6 @@ package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-
 import java.util.Map;
 
 /**
@@ -63,8 +62,8 @@ interface WriteRelationshipInterface<Single> {
      * <p>Note: please review the comments on the individual well-known relationships (
      * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains contains},
      * {@link org.hawkular.inventory.api.Relationships.WellKnown#defines defines},
-     * {@link org.hawkular.inventory.api.Relationships.WellKnown#owns owns}) for restrictions of usage, especially what
-     * restrictions the relationships impose when deleting entities.
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#incorporates incorporates}) for restrictions of usage,
+     * especially what restrictions the relationships impose when deleting entities.
      *
      * @param name the well known name (Relationships.WellKnown) of the relationship
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current

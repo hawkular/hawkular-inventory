@@ -19,7 +19,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Owned;
+import org.hawkular.inventory.api.filters.Incorporated;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -53,7 +53,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(Related.class, RelatedApplicator.class);
         applicators.put(Contained.class, RelatedApplicator.class);
         applicators.put(Defined.class, RelatedApplicator.class);
-        applicators.put(Owned.class, RelatedApplicator.class);
+        applicators.put(Incorporated.class, RelatedApplicator.class);
         applicators.put(With.Ids.class, WithIdsApplicator.class);
         applicators.put(With.Types.class, WithTypesApplicator.class);
         applicators.put(RelationWith.Ids.class, RelationWithIdsApplicator.class);

@@ -21,13 +21,13 @@ import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -67,14 +67,14 @@ public final class BaseFeeds {
             String tenantId = env.getTenantId();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory,
-                    new Feed(tenantId, envId, blueprint.getId()));
+                    new Feed(CanonicalPath.of().tenant(tenantId).environment(envId).feed(blueprint.getId()).get()));
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
+        protected EntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
-            return new NewEntityAndPendingNotifications<>(new Feed(parentPath.getTenantId(),
-                    parentPath.getEnvironmentId(), context.backend.extractId(entity), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new Feed(parentPath.extend(Feed.class,
+                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override

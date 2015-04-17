@@ -20,8 +20,6 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 import java.util.function.Function;
@@ -63,13 +61,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @throws EntityNotFoundException if the query doesn't return any results
      */
     protected BE getSingle(Query query, Class<? extends Entity<?, ?>> entityType) {
-        Page<BE> results = context.backend.query(query, Pager.single());
-
-        if (results.isEmpty()) {
-            throw new EntityNotFoundException(entityType, Query.filters(query));
-        }
-
-        return results.get(0);
+        return Util.getSingle(context.backend, query, entityType);
     }
 
     /**
@@ -97,17 +89,6 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
     }
 
     private <R> R inTransaction(boolean readOnly, Function<InventoryBackend.Transaction, R> payload) {
-        InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
-        try {
-            R ret = payload.apply(t);
-            if (readOnly) {
-                context.backend.commit(t);
-            }
-
-            return ret;
-        } catch (Throwable e) {
-            context.backend.rollback(t);
-            throw e;
-        }
+        return Util.runInTransaction(context.backend, readOnly, payload);
     }
 }

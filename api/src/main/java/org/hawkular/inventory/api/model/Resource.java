@@ -45,24 +45,21 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
         type = null;
     }
 
-    public Resource(String tenantId, String environmentId, String feedId, String id, ResourceType type) {
-        super(tenantId, environmentId, feedId, id);
-        this.type = type;
+    public Resource(CanonicalPath path, ResourceType type) {
+        this(path, type, null);
     }
 
     @JsonCreator
-    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("feed") String feedId, @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
+    public Resource(@JsonProperty("path") CanonicalPath path, @JsonProperty("type") ResourceType type,
             @JsonProperty("properties") Map<String, Object> properties) {
 
-        super(tenantId, environmentId, feedId, id, properties);
+        super(path, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Resource> update() {
-        return new Updater<>((u) -> new Resource(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
-                u.getProperties()));
+        return new Updater<>((u) -> new Resource(getPath(), getType(), u.getProperties()));
     }
 
     public ResourceType getType() {

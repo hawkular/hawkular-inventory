@@ -23,11 +23,11 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -55,11 +55,11 @@ public final class BaseTenants {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+        protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
 
-            return new NewEntityAndPendingNotifications<>(new Tenant(context.backend.extractId(entity),
-                    blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new Tenant(CanonicalPath.of()
+                    .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override

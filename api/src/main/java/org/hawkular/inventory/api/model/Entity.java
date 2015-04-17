@@ -28,16 +28,23 @@ import java.util.Map;
 public abstract class Entity<B extends AbstractElement.Blueprint, U extends AbstractElement.Update>
         extends AbstractElement<B, U> {
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     Entity() {
     }
 
-    Entity(String id) {
-        this(id, null);
+    Entity(CanonicalPath path) {
+        this(path, null);
     }
 
-    Entity(String id, Map<String, Object> properties) {
-        super(id, properties);
+    Entity(CanonicalPath path, Map<String, Object> properties) {
+        super(path, properties);
+        if (!this.getClass().equals(path.getSegment().getElementType().getType())) {
+            throw new IllegalArgumentException("Invalid path specified. Trying to create " +
+                    this.getClass().getSimpleName() + " but the path points to " +
+                    path.getSegment().getElementType().getType().getSimpleName());
+        }
     }
 
     /**
@@ -53,11 +60,10 @@ public abstract class Entity<B extends AbstractElement.Blueprint, U extends Abst
 
     }
 
-
     @Override
     public final String toString() {
         StringBuilder bld = new StringBuilder(getClass().getSimpleName());
-        bld.append("[id='").append(getId()).append('\'');
+        bld.append("[path='").append(getPath()).append('\'');
         appendToString(bld);
         bld.append(']');
 
@@ -88,4 +94,5 @@ public abstract class Entity<B extends AbstractElement.Blueprint, U extends Abst
             }
         }
     }
+
 }

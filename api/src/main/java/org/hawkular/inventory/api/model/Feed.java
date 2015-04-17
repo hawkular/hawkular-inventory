@@ -43,20 +43,18 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
     private Feed() {
     }
 
-    public Feed(String tenantId, String environmentId, String id) {
-        super(tenantId, environmentId, id);
+    public Feed(CanonicalPath path) {
+        this(path, null);
     }
 
     @JsonCreator
-    public Feed(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("id") String id, @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, environmentId, id, properties);
+    public Feed(@JsonProperty("path") CanonicalPath path, @JsonProperty("properties") Map<String, Object> properties) {
+        super(path, properties);
     }
 
     @Override
     public Updater<Update, Feed> update() {
-        return new Updater<>((u) -> new Feed(this.getTenantId(), this.getEnvironmentId(), this.getId(),
-                u.getProperties()));
+        return new Updater<>((u) -> new Feed(getPath(), u.getProperties()));
     }
 
     @Override

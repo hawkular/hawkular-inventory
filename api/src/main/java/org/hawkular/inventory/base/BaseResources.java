@@ -19,22 +19,28 @@ package org.hawkular.inventory.base;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.TenantBasedEntity;
-import org.hawkular.inventory.base.NewEntityAndPendingNotifications.Notification;
-import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-
 import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
+import static org.hawkular.inventory.api.filters.Related.asTargetBy;
+import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -59,35 +65,41 @@ public final class BaseResources {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
+        protected EntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
                 Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
-
-            Class<? extends AbstractElement<?, ?>> parentType = context.backend.extractType(parent);
-
-            @SuppressWarnings("unchecked")
-            TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
-                    (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
             BE resourceTypeObject;
             try {
-                resourceTypeObject = context.backend.find(CanonicalPath.builder()
-                        .withTenantId(parentEntity.getTenantId()).withResourceTypeId(blueprint.getResourceTypeId())
-                        .build());
+                resourceTypeObject = context.backend.find(CanonicalPath.of()
+                        .tenant(parentPath.getRoot().getSegment().getElementId())
+                        .resourceType(blueprint.getResourceTypeId()).get());
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypeId() + "' not found" +
-                        " in tenant '" + parentEntity.getTenantId() + "'.");
+                        " in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
             }
 
-            BE r = context.backend.relate(resourceTypeObject, entity, defines.name(), null);
+            BE r = relate(resourceTypeObject, entity, defines.name());
 
             ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
 
-            Resource ret = new Resource(parentPath.getTenantId(), parentPath.getEnvironmentId(), parentPath.getFeedId(),
-                    context.backend.extractId(entity), resourceType, blueprint.getProperties());
+            Resource ret = new Resource(parentPath.extend(Resource.class, context.backend.extractId(entity)).get(),
+                    resourceType, blueprint.getProperties());
 
             Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), resourceType, ret);
 
-            return new NewEntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
+            if (context.backend.extractType(parent).equals(Resource.class)) {
+                //we're creating a child resource... need to also create the implicit isParentOf
+                r = relate(parent, entity, isParentOf.name());
+                Resource parentResource = context.backend.convert(parent, Resource.class);
+
+                Relationship parentRel = new Relationship(context.backend.extractId(r), isParentOf.name(),
+                        parentResource, ret);
+
+                return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()),
+                        new Notification<>(parentRel, parentRel, created()));
+            } else {
+                return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
+            }
         }
 
         @Override
@@ -123,6 +135,55 @@ public final class BaseResources {
         }
     }
 
+    public static class ReadAssociate<BE> extends Read<BE> implements Resources.ReadAssociate {
+        public ReadAssociate(TraversalContext<BE, Resource> context) {
+            super(context);
+        }
+
+        @Override
+        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
+            // FIXME currently we are bound to search for the other resource id within the same parent as this resource
+            // that is unacceptably narrow.
+
+            Query sourceQuery = context.sourcePath;
+            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
+                    type(Resource.class), id(id)).get();
+
+            BE targetEntity = getSingle(targetResource, Resource.class);
+
+            EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context.backend, sourceQuery,
+                    Resource.class, isParentOf.name(), targetEntity);
+
+            context.notifyAll(rel);
+            return rel.getEntity();
+        }
+
+        @Override
+        public Relationship disassociate(String id) throws EntityNotFoundException, IllegalArgumentException {
+            Query sourceQuery = context.select().get();
+            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
+                    type(Resource.class), id(id)).get();
+
+            BE targetEntity = getSingle(targetResource, Resource.class);
+
+            EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context.backend, sourceQuery,
+                    Resource.class, isParentOf.name(), targetEntity);
+
+            context.notifyAll(rel);
+            return rel.getEntity();
+        }
+
+        @Override
+        public Relationship associationWith(String id) throws RelationNotFoundException {
+            Query sourceQuery = context.select().get();
+            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
+                    type(Resource.class), id(id)).get();
+
+            return Util.getAssociation(context.backend, sourceQuery, Resource.class, targetResource, Resource.class,
+                    isParentOf.name());
+        }
+    }
+
     public static class Single<BE> extends SingleEntityFetcher<BE, Resource> implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
@@ -131,7 +192,27 @@ public final class BaseResources {
 
         @Override
         public Metrics.ReadAssociate metrics() {
-            return new BaseMetrics.ReadAssociate<>(context.proceedTo(owns, Metric.class).get());
+            return new BaseMetrics.ReadAssociate<>(context.proceedTo(incorporates, Metric.class).get());
+        }
+
+        @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.Single parent() {
+            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
         }
     }
 
@@ -143,7 +224,27 @@ public final class BaseResources {
 
         @Override
         public Metrics.Read metrics() {
-            return new BaseMetrics.Read<>(context.proceedTo(owns, Metric.class).get());
+            return new BaseMetrics.Read<>(context.proceedTo(incorporates, Metric.class).get());
+        }
+
+        @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.Single parent() {
+            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
         }
     }
 }

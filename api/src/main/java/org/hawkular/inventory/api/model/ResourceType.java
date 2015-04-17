@@ -46,20 +46,14 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         this.version = null;
     }
 
-    public ResourceType(String tenantId, String id, String version) {
-        super(tenantId, id);
-
-        if (version == null) {
-            throw new IllegalArgumentException("version == null");
-        }
-
-        this.version = version;
+    public ResourceType(CanonicalPath path, String version) {
+        this(path, version, null);
     }
 
     @JsonCreator
-    public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
-            @JsonProperty("version") String version, @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, id, properties);
+    public ResourceType(@JsonProperty("path") CanonicalPath path, @JsonProperty("version") String version,
+            @JsonProperty("properties") Map<String, Object> properties) {
+        super(path, properties);
 
         if (version == null) {
             throw new IllegalArgumentException("version == null");
@@ -70,7 +64,7 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
 
     @Override
     public Updater<Update, ResourceType> update() {
-        return new Updater<>((u) -> new ResourceType(getTenantId(), getId(),
+        return new Updater<>((u) -> new ResourceType(getPath(),
                 u.version == null ? this.version : u.version, u.getProperties()));
     }
 

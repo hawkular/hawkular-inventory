@@ -18,8 +18,6 @@ package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * A helper class to create filters on the "contains" relationship. This can also be achieved by using the
@@ -28,17 +26,13 @@ import org.hawkular.inventory.api.model.Tenant;
  * @author Lukas Krejci
  * @since 1.0
  */
-public final class Contained<T extends Entity> extends Related<T> {
+public final class Contained<T extends Entity<?, ?>> extends Related<T> {
 
     private Contained(T entity) {
         super(entity, Relationships.WellKnown.contains.name(), EntityRole.TARGET);
     }
 
-    public static Contained<Environment> in(Environment environment) {
-        return new Contained<>(environment);
-    }
-
-    public static Contained<Tenant> in(Tenant tenant) {
-        return new Contained<>(tenant);
+    public static <T extends Entity<?, ?>> Contained<T> in(T entity) {
+        return new Contained<>(entity);
     }
 }
