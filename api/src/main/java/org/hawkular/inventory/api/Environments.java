@@ -37,21 +37,21 @@ public final class Environments {
         Feeds feeds();
 
         /**
-         * @return resources in the environment(s)
+         * @return resources in the environment(s) that do not come from any feed
          */
-        Resources resources();
+        Resources feedlessResources();
 
         /**
-         * @return metrics in the environment(s)
+         * @return metrics in the environment(s) that do not come from any feed
          */
-        Metrics metrics();
+        Metrics feedlessMetrics();
     }
 
     /**
      * Interface for accessing a single environment in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Environment>,
-            BrowserBase<Feeds.ReadAndRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
+            BrowserBase<Feeds.ReadUpdateRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
 
     /**
      * Interface for traversing over a set of environments.

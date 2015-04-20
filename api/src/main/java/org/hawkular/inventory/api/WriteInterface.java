@@ -37,6 +37,8 @@ public interface WriteInterface<Update, Blueprint extends Entity.Blueprint, Sing
      * @return access interface to the freshly created entity
      *
      * @throws EntityAlreadyExistsException if the entity already exists
+     * @throws IllegalArgumentException if the blueprint or context in which the entity is being create is somehow
+     *                                  invalid
      */
     Single create(Blueprint blueprint) throws EntityAlreadyExistsException;
 

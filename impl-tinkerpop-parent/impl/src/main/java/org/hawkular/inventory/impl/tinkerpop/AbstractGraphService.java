@@ -37,11 +37,14 @@ import org.hawkular.inventory.impl.tinkerpop.Constants.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
 
 /**
  * @author Lukas Krejci
@@ -114,7 +117,7 @@ abstract class AbstractGraphService {
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment,
-                            Void ignored) {
+                                                                                   Void ignored) {
                         return ret.hasType(Type.tenant).hasEid(environment.getTenantId()).out(contains)
                                 .hasType(Type.environment);
                     }
@@ -122,15 +125,21 @@ abstract class AbstractGraphService {
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitFeed(Feed feed, Void ignored) {
                         return ret.hasType(Type.tenant).hasEid(feed.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasEid(feed.getEnvironmentId()).out(contains)
+                                .hasType(environment).hasEid(feed.getEnvironmentId()).out(contains)
                                 .hasType(Type.feed);
                     }
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitMetric(Metric metric, Void ignored) {
-                        return ret.hasType(Type.tenant).hasEid(metric.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasEid(metric.getEnvironmentId()).out(contains)
-                                .hasType(Type.metric);
+                        if (metric.getFeedId() == null) {
+                            return ret.hasType(Type.tenant).hasEid(metric.getTenantId()).out(contains)
+                                    .hasType(environment).hasEid(metric.getEnvironmentId()).out(contains)
+                                    .hasType(Type.metric);
+                        } else {
+                            return ret.hasType(Type.tenant).hasEid(metric.getTenantId()).out(contains)
+                                    .hasType(environment).hasEid(metric.getEnvironmentId()).out(contains)
+                                    .hasType(feed).hasEid(metric.getFeedId()).hasType(Type.metric);
+                        }
                     }
 
                     @Override
@@ -141,9 +150,15 @@ abstract class AbstractGraphService {
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitResource(Resource resource, Void ignored) {
-                        return ret.hasType(Type.tenant).hasEid(resource.getTenantId()).out(contains)
-                                .hasType(Type.environment).hasEid(resource.getEnvironmentId()).out(contains)
-                                .hasType(Type.resource);
+                        if (resource.getFeedId() == null) {
+                            return ret.hasType(Type.tenant).hasEid(resource.getTenantId()).out(contains)
+                                    .hasType(environment).hasEid(resource.getEnvironmentId()).out(contains)
+                                    .hasType(Type.resource);
+                        } else {
+                            return ret.hasType(Type.tenant).hasEid(resource.getTenantId()).out(contains)
+                                    .hasType(environment).hasEid(resource.getEnvironmentId()).out(contains)
+                                    .hasType(feed).hasEid(resource.getFeedId()).hasType(Type.resource);
+                        }
                     }
 
                     @Override
@@ -162,6 +177,7 @@ abstract class AbstractGraphService {
         Type type = Type.valueOf(getType(v));
 
         Vertex environmentVertex;
+        Vertex feedVertex;
 
         Entity<?, ?> e;
 
@@ -174,23 +190,31 @@ abstract class AbstractGraphService {
                 e = new Feed(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v));
                 break;
             case metric:
-                environmentVertex = getEnvironmentVertexOf(v);
+                environmentVertex = getEnvironmentVertexOrNull(v);
+                feedVertex = getFeedVertexOrNull(v);
+                if (environmentVertex == null) {
+                    environmentVertex = getEnvironmentVertexOf(feedVertex);
+                }
                 Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
                         .next();
                 MetricType md = (MetricType) convert(mdv);
-                e = new Metric(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
-                        md);
+                e = new Metric(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex),
+                        feedVertex == null ? null : getEid(feedVertex), getEid(v),md);
                 break;
             case metricType:
                 e = new MetricType(getEid(getTenantVertexOf(v)), getEid(v), MetricUnit.fromDisplayName(
                         getProperty(v, Constants.Property.__unit)));
                 break;
             case resource:
-                environmentVertex = getEnvironmentVertexOf(v);
+                environmentVertex = getEnvironmentVertexOrNull(v);
+                feedVertex = getFeedVertexOrNull(v);
+                if (environmentVertex == null) {
+                    environmentVertex = getEnvironmentVertexOf(feedVertex);
+                }
                 Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
                 ResourceType rt = (ResourceType) convert(rtv);
-                e = new Resource(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex), getEid(v),
-                        rt);
+                e = new Resource(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex),
+                        feedVertex == null ? null : getEid(feedVertex), getEid(v), rt);
                 break;
             case resourceType:
                 e = new ResourceType(getEid(getTenantVertexOf(v)), getEid(v), getProperty(v,
@@ -280,8 +304,41 @@ abstract class AbstractGraphService {
             case feed:
             case resource:
             case metric:
-                return entityVertex.getVertices(Direction.IN, Relationships.WellKnown.contains.name()).iterator()
-                        .next();
+                return new HawkularPipeline<>(entityVertex).in(contains).hasType(environment).iterator().next();
+            default:
+                return null;
+        }
+    }
+
+    static Vertex getEnvironmentVertexOrNull(Vertex entityVertex) {
+        Type type = Type.valueOf(getType(entityVertex));
+
+        switch (type) {
+            case feed:
+            case resource:
+            case metric:
+                Iterator<Vertex> envs = new HawkularPipeline<>(entityVertex).in(contains).hasType(environment)
+                        .iterator();
+                if (envs.hasNext()) {
+                    return envs.next();
+                }
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    static Vertex getFeedVertexOrNull(Vertex entityVertex) {
+        Type type = Type.valueOf(getType(entityVertex));
+
+        switch (type) {
+            case resource:
+            case metric:
+                Iterator<Vertex> feeds = new HawkularPipeline<>(entityVertex).in(contains).hasType(feed).iterator();
+                if (feeds.hasNext()) {
+                    return feeds.next();
+                }
+                return null;
             default:
                 return null;
         }

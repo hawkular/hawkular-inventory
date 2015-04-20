@@ -17,12 +17,14 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 
 import java.util.Set;
@@ -56,8 +58,13 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
             }
 
             @Override
-            public Resources.Read resources() {
+            public Resources.ReadWrite resources() {
                 return b.resources();
+            }
+
+            @Override
+            public Metrics.ReadWrite metrics() {
+                return b.metrics();
             }
         };
     }
@@ -86,6 +93,11 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
             public Resources.Read resources() {
                 return b.resources();
             }
+
+            @Override
+            public Metrics.Read metrics() {
+                return b.metrics();
+            }
         };
     }
 
@@ -93,8 +105,13 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
         super(context, Feed.class, path);
     }
 
-    public Resources.Read resources() {
+    public ResourcesService resources() {
         return new ResourcesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(Resource.class))));
+    }
+
+    public MetricsService metrics() {
+        return new MetricsService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
+                With.type(Metric.class))));
     }
 }

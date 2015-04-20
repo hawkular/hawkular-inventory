@@ -30,17 +30,21 @@ public final class Feeds {
 
     }
 
-    private interface BrowserBase {
-        Resources.Read resources();
+    private interface BrowserBase<Resources, Metrics> {
+        Resources resources();
+
+        Metrics metrics();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed>, BrowserBase {}
+    public interface Single extends ResolvableToSingleWithRelationships<Feed>,
+            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
 
-    public interface Multiple extends ResolvableToManyWithRelationships<Feed>, BrowserBase {}
+    public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
+            BrowserBase<Resources.Read, Metrics.Read> {}
 
     public interface Read extends ReadInterface<Single, Multiple> {}
 
-    public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
+    public interface ReadUpdateRegister extends ReadInterface<Single, Multiple> {
         /**
          * Registers a new feed.
          * The proposed ID is merely a suggestion and does not need to be honored by the server. The caller is advised
@@ -51,5 +55,16 @@ public final class Feeds {
          * @return the access interface to the newly created feed
          */
         Single register(String proposedId, Map<String, Object> properties);
+
+        /**
+         * Updates the feed.
+         *
+         * @param id the id of the feed
+         * @param update the update data
+         *
+         * @throws EntityNotFoundException if the entity is not found in the database
+         * @throws java.lang.IllegalArgumentException if the supplied entity could not be updated for some reason
+         */
+        void update(String id, Feed.Update update) throws EntityNotFoundException, IllegalArgumentException;
     }
 }

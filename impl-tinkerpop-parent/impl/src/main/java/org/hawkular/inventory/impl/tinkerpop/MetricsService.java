@@ -24,16 +24,18 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
@@ -52,32 +54,56 @@ final class MetricsService
 
     @Override
     protected Filter[] initNewEntity(Vertex newEntity, Metric.Blueprint blueprint) {
-        Vertex exampleEnv = null;
-        List<Vertex> envs = new ArrayList<>();
-
-        //connect to all environments in the source
-        for (Vertex e : source().hasType(environment)) {
-            addEdge(e, contains.name(), newEntity);
-            envs.add(e);
-            exampleEnv = e;
+        //find an environment in the source, of which there should be at most one.
+        Vertex envVertex = null;
+        Iterator<Vertex> envs = source().hasType(environment);
+        if (envs.hasNext()) {
+            envVertex = envs.next();
         }
+
+        //find a feed in the source, of which there should be at most one.
+        Vertex feedVertex = null;
+        Iterator<Vertex> fs = source().hasType(feed);
+        if (fs.hasNext()) {
+            feedVertex = fs.next();
+        }
+
+        if (feedVertex != null && envVertex != null) {
+            throw new IllegalStateException("Found both a feed and an environment as a containing entity when " +
+                    "creating a metric under path: " + Arrays.toString(FilterApplicator.filters(path)));
+        }
+
+        if (feedVertex == null && envVertex == null) {
+            throw new IllegalArgumentException("No feed or environment found to create the metric under path: " +
+                    Arrays.toString(FilterApplicator.filters(path)));
+        }
+
+        //everything seems to be fine, create the edge to the containing vertex
+        addEdge(envVertex == null ? feedVertex : envVertex, contains.name(), newEntity);
+
+        Vertex tenant = getTenantVertexOf(envVertex == null ? feedVertex : envVertex);
 
         //connect to the metric def in the blueprint
-        HawkularPipeline<?, Vertex> mds = new HawkularPipeline<>(envs) //from environments we're in
-                .in(contains) //up to tenants
-                .out(contains).hasType(metricType) //down to metric defs
-                .hasEid(blueprint.getMetricTypeId()) //filter on our id
-                .cast(Vertex.class);
-
-        for (Vertex md : mds) {
-            addEdge(md, Relationships.WellKnown.defines.name(), newEntity);
+        Iterator<Vertex> mds = new HawkularPipeline<>(tenant).out(contains).hasType(metricType)
+                .hasEid(blueprint.getMetricTypeId()).cast(Vertex.class);
+        if (mds.hasNext()) {
+            addEdge(mds.next(), Relationships.WellKnown.defines.name(), newEntity);
+        } else {
+            throw new IllegalArgumentException("Could not find metric type with id: " + blueprint.getMetricTypeId());
         }
 
-        Vertex tenant = getTenantVertexOf(exampleEnv);
+        //return the path to the new resource
+        Filter.Accumulator f = Filter.by(With.type(Tenant.class), With.id(getEid(tenant)), Related.by(contains),
+                With.type(Environment.class));
 
-        return Filter.by(With.type(Tenant.class), With.id(getEid(tenant)), Related.by(contains),
-                With.type(Environment.class), With.id(getEid(exampleEnv)), Related.by(contains),
-                With.type(Metric.class), With.id(getEid(newEntity))).get();
+        if (feedVertex == null) {
+            f.and(With.id(getEid(envVertex)));
+        } else {
+            Vertex env = getEnvironmentVertexOf(feedVertex);
+            f.and(With.id(getEid(env)), Related.by(contains), With.type(Feed.class), With.id(getEid(feedVertex)));
+        }
+
+        return f.and(Related.by(contains), With.type(Metric.class), With.id(getEid(newEntity))).get();
     }
 
     @Override

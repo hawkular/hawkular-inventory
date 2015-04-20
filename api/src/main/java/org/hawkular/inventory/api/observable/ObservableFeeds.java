@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Feed;
@@ -53,10 +54,10 @@ public final class ObservableFeeds {
         }
     }
 
-    public static final class ReadAndRegister extends ObservableBase<Feeds.ReadAndRegister>
-            implements Feeds.ReadAndRegister {
+    public static final class ReadUpdateRegister extends ObservableBase<Feeds.ReadUpdateRegister>
+            implements Feeds.ReadUpdateRegister {
 
-        ReadAndRegister(Feeds.ReadAndRegister wrapped, ObservableContext context) {
+        ReadUpdateRegister(Feeds.ReadUpdateRegister wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
@@ -74,6 +75,13 @@ public final class ObservableFeeds {
         public Feeds.Multiple getAll(Filter... filters) {
             return wrap(ObservableFeeds.Multiple::new, wrapped.getAll(filters));
         }
+
+        @Override
+        public void update(String id, Feed.Update update) throws EntityNotFoundException, IllegalArgumentException {
+            Feed e = wrapped.get(id).entity();
+            wrapped.update(id, update);
+            notify(e, new Action.Update<>(e, update), Action.updated());
+        }
     }
 
     public static final class Single extends ObservableBase.RelatableSingle<Feed, Feeds.Single>
@@ -84,8 +92,13 @@ public final class ObservableFeeds {
         }
 
         @Override
-        public ObservableResources.Read resources() {
-            return wrap(ObservableResources.Read::new, wrapped.resources());
+        public ObservableResources.ReadWrite resources() {
+            return wrap(ObservableResources.ReadWrite::new, wrapped.resources());
+        }
+
+        @Override
+        public ObservableMetrics.ReadWrite metrics() {
+            return wrap(ObservableMetrics.ReadWrite::new, wrapped.metrics());
         }
     }
 
@@ -99,6 +112,11 @@ public final class ObservableFeeds {
         @Override
         public ObservableResources.Read resources() {
             return wrap(ObservableResources.Read::new, wrapped.resources());
+        }
+
+        @Override
+        public Metrics.Read metrics() {
+            return wrap(ObservableMetrics.Read::new, wrapped.metrics());
         }
     }
 }

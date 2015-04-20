@@ -77,7 +77,7 @@ public class RestResources {
                                 @ApiParam(required =  true) Resource.Blueprint resource,
                                 @Context UriInfo uriInfo) {
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                 .create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
@@ -98,7 +98,8 @@ public class RestResources {
                                        @PathParam("environmentId") String environmentId,
                                        @QueryParam("type") String typeId,
                                        @QueryParam("typeVersion") String typeVersion) {
-        Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId).resources();
+        Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId)
+                .feedlessResources();
 
         Set<Resource> rs;
         if (typeId != null && typeVersion != null) {
@@ -121,7 +122,7 @@ public class RestResources {
     })
     public Resource getResource(@PathParam("tenantId") String tenantId,
                                 @PathParam("environmentId") String environmentId, @PathParam("resourceId") String uid) {
-        return inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+        return inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                 .get(uid).entity();
     }
     @PUT
@@ -136,7 +137,8 @@ public class RestResources {
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
                            @PathParam("resourceId") String resourceId,
                            @ApiParam(required = true) Resource.Update update) {
-        inventory.tenants().get(tenantId).environments().get(environmentId).resources().update(resourceId, update);
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().update(resourceId,
+                update);
         return Response.noContent().build();
     }
 
@@ -152,7 +154,7 @@ public class RestResources {
     public Response deleteResource(@PathParam("tenantId") String tenantId,
                                    @PathParam("environmentId") String environmentId,
                                    @PathParam("resourceId") String resourceId) {
-        inventory.tenants().get(tenantId).environments().get(environmentId).resources().delete(resourceId);
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().delete(resourceId);
         return Response.noContent().build();
     }
 
@@ -171,7 +173,7 @@ public class RestResources {
                                         @PathParam("resourceId") String resourceId,
                                         Collection<String> metricIds) {
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
-                .resources().get(resourceId).metrics();
+                .feedlessResources().get(resourceId).metrics();
 
         metricIds.forEach(metricDao::associate);
 
@@ -191,7 +193,7 @@ public class RestResources {
                                           @PathParam("environmentId") String environmentID,
                                           @PathParam("resourceId") String resourceId) {
         Set<Metric> ms = inventory.tenants().get(tenantId).environments().get(environmentID)
-                .resources().get(resourceId).metrics().getAll().entities();
+                .feedlessResources().get(resourceId).metrics().getAll().entities();
 
         return Response.ok(ms).build();
     }
@@ -211,8 +213,8 @@ message = "Tenant, environment, resource or metric doesn't exist or if the metri
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
                                         @PathParam("metricId") String metricId) {
-        Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources().get(resourceId)
-                .metrics().get(metricId).entity();
+        Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
+                .get(resourceId).metrics().get(metricId).entity();
         return Response.ok(m).build();
     }
 }

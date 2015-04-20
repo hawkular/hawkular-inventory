@@ -85,18 +85,18 @@ public final class ObservableEnvironments {
         }
 
         @Override
-        public ObservableFeeds.ReadAndRegister feeds() {
-            return wrap(ObservableFeeds.ReadAndRegister::new, wrapped.feeds());
+        public ObservableFeeds.ReadUpdateRegister feeds() {
+            return wrap(ObservableFeeds.ReadUpdateRegister::new, wrapped.feeds());
         }
 
         @Override
-        public ObservableResources.ReadWrite resources() {
-            return wrap(ObservableResources.ReadWrite::new, wrapped.resources());
+        public ObservableResources.ReadWrite feedlessResources() {
+            return wrap(ObservableResources.ReadWrite::new, wrapped.feedlessResources());
         }
 
         @Override
-        public ObservableMetrics.ReadWrite metrics() {
-            return wrap(ObservableMetrics.ReadWrite::new, wrapped.metrics());
+        public ObservableMetrics.ReadWrite feedlessMetrics() {
+            return wrap(ObservableMetrics.ReadWrite::new, wrapped.feedlessMetrics());
         }
     }
 
@@ -113,13 +113,13 @@ public final class ObservableEnvironments {
         }
 
         @Override
-        public ObservableResources.Read resources() {
-            return wrap(ObservableResources.Read::new, wrapped.resources());
+        public ObservableResources.Read feedlessResources() {
+            return wrap(ObservableResources.Read::new, wrapped.feedlessResources());
         }
 
         @Override
-        public ObservableMetrics.Read metrics() {
-            return wrap(ObservableMetrics.Read::new, wrapped.metrics());
+        public ObservableMetrics.Read feedlessMetrics() {
+            return wrap(ObservableMetrics.Read::new, wrapped.feedlessMetrics());
         }
     }
 }

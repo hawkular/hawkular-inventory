@@ -32,7 +32,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Metric extends EnvironmentalEntity<Metric.Blueprint, Metric.Update> {
+public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Update> {
 
     @Expose
     private final MetricType type;
@@ -43,19 +43,21 @@ public final class Metric extends EnvironmentalEntity<Metric.Blueprint, Metric.U
         type = null;
     }
 
-    public Metric(String tenantId, String environmentId, String id, MetricType type) {
-        super(tenantId, environmentId, id);
+    public Metric(String tenantId, String environmentId, String feedId, String id, MetricType type) {
+        super(tenantId, environmentId, feedId, id);
         this.type = type;
     }
 
-    public Metric(String tenantId, String environmentId, String id, MetricType type, Map<String, Object> properties) {
-        super(tenantId, environmentId, id, properties);
+    public Metric(String tenantId, String environmentId, String feedId, String id, MetricType type,
+        Map<String, Object> properties) {
+
+        super(tenantId, environmentId, feedId, id, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(getTenantId(), getEnvironmentId(), getId(), getType(),
+        return new Updater<>((u) -> new Metric(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
                 u.getProperties()));
     }
 

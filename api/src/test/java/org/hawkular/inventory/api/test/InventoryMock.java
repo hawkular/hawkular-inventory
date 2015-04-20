@@ -28,7 +28,6 @@ import org.hawkular.inventory.api.Tenants;
 import org.mockito.Mockito;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.when;
@@ -47,7 +46,7 @@ public class InventoryMock {
 
     public static Feeds.Multiple feedsMultiple;
     public static Feeds.Read feedsRead;
-    public static Feeds.ReadAndRegister feedsReadAndRegister;
+    public static Feeds.ReadUpdateRegister feedsReadUpdateRegister;
     public static Feeds.Single feedsSingle;
 
     public static Metrics.Multiple metricsMultiple;
@@ -93,7 +92,7 @@ public class InventoryMock {
 
         feedsMultiple = Mockito.mock(Feeds.Multiple.class);
         feedsRead = Mockito.mock(Feeds.Read.class);
-        feedsReadAndRegister = Mockito.mock(Feeds.ReadAndRegister.class);
+        feedsReadUpdateRegister = Mockito.mock(Feeds.ReadUpdateRegister.class);
         feedsSingle = Mockito.mock(Feeds.Single.class);
 
         metricsMultiple = Mockito.mock(Metrics.Multiple.class);
@@ -131,31 +130,33 @@ public class InventoryMock {
         when(inventory.tenants()).thenReturn(tenantsReadWrite);
 
         when(environmentsMultiple.feeds()).thenReturn(feedsRead);
-        when(environmentsMultiple.metrics()).thenReturn(metricsRead);
+        when(environmentsMultiple.feedlessMetrics()).thenReturn(metricsRead);
         when(environmentsMultiple.relationships()).thenReturn(relationshipsRead);
         when(environmentsMultiple.relationships(any())).thenReturn(relationshipsRead);
-        when(environmentsMultiple.resources()).thenReturn(resourcesRead);
+        when(environmentsMultiple.feedlessResources()).thenReturn(resourcesRead);
         when(environmentsRead.get(any())).thenReturn(environmentsSingle);
         when(environmentsRead.getAll(anyVararg())).thenReturn(environmentsMultiple);
         when(environmentsReadWrite.get(any())).thenReturn(environmentsSingle);
         when(environmentsReadWrite.getAll(anyVararg())).thenReturn(environmentsMultiple);
-        when(environmentsSingle.feeds()).thenReturn(feedsReadAndRegister);
-        when(environmentsSingle.metrics()).thenReturn(metricsReadWrite);
+        when(environmentsSingle.feeds()).thenReturn(feedsReadUpdateRegister);
+        when(environmentsSingle.feedlessMetrics()).thenReturn(metricsReadWrite);
         when(environmentsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(environmentsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
-        when(environmentsSingle.resources()).thenReturn(resourcesReadWrite);
+        when(environmentsSingle.feedlessResources()).thenReturn(resourcesReadWrite);
 
         when(feedsMultiple.relationships()).thenReturn(relationshipsRead);
         when(feedsMultiple.relationships(anyVararg())).thenReturn(relationshipsRead);
         when(feedsMultiple.resources()).thenReturn(resourcesRead);
+        when(feedsMultiple.metrics()).thenReturn(metricsRead);
         when(feedsRead.get(any())).thenReturn(feedsSingle);
         when(feedsRead.getAll(anyVararg())).thenReturn(feedsMultiple);
-        when(feedsReadAndRegister.get(any())).thenReturn(feedsSingle);
-        when(feedsReadAndRegister.getAll(anyVararg())).thenReturn(feedsMultiple);
-        when(feedsReadAndRegister.register(any(), anyMap())).thenReturn(feedsSingle);
+        when(feedsReadUpdateRegister.get(any())).thenReturn(feedsSingle);
+        when(feedsReadUpdateRegister.getAll(anyVararg())).thenReturn(feedsMultiple);
+        when(feedsReadUpdateRegister.register(any(), any())).thenReturn(feedsSingle);
         when(feedsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(feedsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
-        when(feedsSingle.resources()).thenReturn(resourcesRead);
+        when(feedsSingle.resources()).thenReturn(resourcesReadWrite);
+        when(feedsSingle.metrics()).thenReturn(metricsReadWrite);
 
         when(metricsMultiple.relationships()).thenReturn(relationshipsRead);
         when(metricsMultiple.relationships(any())).thenReturn(relationshipsRead);

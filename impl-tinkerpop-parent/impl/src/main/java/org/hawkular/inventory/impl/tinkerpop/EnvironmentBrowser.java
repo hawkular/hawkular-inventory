@@ -47,17 +47,17 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
         EnvironmentBrowser b = new EnvironmentBrowser(context, path);
         return new Environments.Single() {
             @Override
-            public Feeds.ReadAndRegister feeds() {
+            public Feeds.ReadUpdateRegister feeds() {
                 return b.feeds();
             }
 
             @Override
-            public Resources.ReadWrite resources() {
+            public Resources.ReadWrite feedlessResources() {
                 return b.resources();
             }
 
             @Override
-            public Metrics.ReadWrite metrics() {
+            public Metrics.ReadWrite feedlessMetrics() {
                 return b.metrics();
             }
 
@@ -87,12 +87,12 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
             }
 
             @Override
-            public Resources.Read resources() {
+            public Resources.Read feedlessResources() {
                 return b.resources();
             }
 
             @Override
-            public Metrics.Read metrics() {
+            public Metrics.Read feedlessMetrics() {
                 return b.metrics();
             }
 

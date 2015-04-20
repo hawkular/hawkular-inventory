@@ -81,7 +81,7 @@ public class RestMetrics {
             throw new IllegalArgumentException("metric type id not specified");
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().create(metric);
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().create(metric);
 
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }
@@ -99,7 +99,8 @@ public class RestMetrics {
                             @PathParam("environmentId") String environmentId,
                             @PathParam("metricId") String metricId) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).metrics().get(metricId).entity();
+        return inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().get(metricId)
+                .entity();
     }
 
     @GET
@@ -114,7 +115,8 @@ public class RestMetrics {
     public Set<Metric> getMetrics(@PathParam("tenantId") String tenantId,
                                   @PathParam("environmentId") String environmentId) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).metrics().getAll().entities();
+        return inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().getAll()
+                .entities();
     }
 
     @PUT
@@ -131,7 +133,7 @@ public class RestMetrics {
                                  @PathParam("environmentId") String environmentId,
                                  @PathParam("metricId") String metricId,
                                  Metric.Update update) {
-        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().update(metricId, update);
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().update(metricId, update);
         return Response.noContent().build();
     }
 
@@ -149,7 +151,7 @@ public class RestMetrics {
                                  @PathParam("environmentId") String environmentId,
                                  @PathParam("metricId") String metricId) {
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).metrics().delete(metricId);
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().delete(metricId);
         return Response.noContent().build();
     }
 }
