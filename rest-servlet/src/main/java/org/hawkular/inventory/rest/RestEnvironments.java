@@ -127,4 +127,8 @@ public class RestEnvironments {
         inventory.tenants().get(tenantId).environments().delete(environmentId);
         return Response.noContent().build();
     }
+
+    public static String getUrl(Environment environment) {
+        return String.format("/%s/environments/%s", environment.getTenantId(), environment.getId());
+    }
 }

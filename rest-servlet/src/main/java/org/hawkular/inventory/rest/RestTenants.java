@@ -92,6 +92,18 @@ public class RestTenants {
         return Response.ok(inventory.tenants().get(tenantId).entity()).build();
     }
 
+    @GET
+    @Path("/{tenantId}/relationships")
+    @ApiOperation("Retrieves all relationships of given tenant.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getTenantRelations(@PathParam("tenantId") String tenantId) {
+        return Response.ok(inventory.tenants().get(tenantId).relationships().getAll().entities()).build();
+    }
+
     @PUT
     @Path("/{tenantId}")
     @ApiOperation("Updates properties of a tenant")
@@ -118,5 +130,9 @@ public class RestTenants {
     public Response delete(@PathParam("tenantId") String tenantId) {
         inventory.tenants().delete(tenantId);
         return Response.noContent().build();
+    }
+
+    public static String getUrl(Tenant tenant) {
+        return String.format("/tenants/%s", tenant.getId());
     }
 }
