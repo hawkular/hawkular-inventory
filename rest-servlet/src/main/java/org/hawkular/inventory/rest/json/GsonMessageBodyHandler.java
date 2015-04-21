@@ -41,7 +41,7 @@ import java.lang.reflect.Type;
 
 /**
  * @author jkremser
- * since 0.0.2
+ * @since 0.0.2
  *
  */
 @Provider

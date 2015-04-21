@@ -37,7 +37,7 @@ import static org.hawkular.inventory.rest.json.RelationshipSerializer.VOCAB_PREF
 
 /**
  * @author jkremser
- * since 0.0.2
+ * @since 0.0.2
  *
  * See the JSON-LD example in {@link org.hawkular.inventory.rest.json.RelationshipSerializer}
  */

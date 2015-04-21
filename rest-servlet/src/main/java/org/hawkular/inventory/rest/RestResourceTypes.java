@@ -23,7 +23,9 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -33,12 +35,14 @@ import org.hawkular.inventory.rest.json.IdJSON;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -49,7 +53,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * @author Lukas Krejci
  * @author jkremser
- * @since 0.0.2
+ * @since 0.0.1
  */
 @Path("/")
 @Produces(APPLICATION_JSON)
@@ -174,9 +178,22 @@ public class RestResourceTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
-                                            @PathParam("resourceTypeId") String resourceTypeId) {
-        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).relationships()
-                .getAll().entities()).build();
+                                            @PathParam("resourceTypeId") String resourceTypeId,
+                                            @DefaultValue("both") @QueryParam("direction") String direction,
+                                            @DefaultValue("") @QueryParam("property") String propertyName,
+                                            @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                                            @DefaultValue("") @QueryParam("named") String named,
+                                            @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                                            @DefaultValue("") @QueryParam("targetType") String targetType,
+                                            @Context UriInfo info) {
+
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+
+        // this will throw IllegalArgumentException on undefined values
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                .relationships(directed).getAll(filters).entities()).build();
     }
 
     @POST

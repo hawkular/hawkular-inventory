@@ -23,12 +23,10 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.filters.RelationWith;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.RelationshipDeserializer;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -45,15 +43,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
  * @author jkremser
- * @since 0.0.2
+ * @since 0.0.1
  */
 @Path("/tenants")
 @Produces(APPLICATION_JSON)
@@ -111,15 +106,20 @@ public class RestTenants {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getTenantRelations(@PathParam("tenantId") String tenantId,
+                                       @DefaultValue("both") @QueryParam("direction") String direction,
                                        @DefaultValue("") @QueryParam("property") String propertyName,
                                        @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
                                        @DefaultValue("") @QueryParam("named") String named,
                                        @DefaultValue("") @QueryParam("sourceType") String sourceType,
                                        @DefaultValue("") @QueryParam("targetType") String targetType,
                                        @Context UriInfo info) {
+
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, info);
-        return Response.ok(inventory.tenants().get(tenantId).relationships()
+
+        // this will throw IllegalArgumentException on undefined values
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        return Response.ok(inventory.tenants().get(tenantId).relationships(directed)
                 .getAll(filters)
                 .entities()).build();
     }

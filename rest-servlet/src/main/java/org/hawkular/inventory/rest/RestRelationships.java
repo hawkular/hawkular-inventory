@@ -19,24 +19,21 @@ package org.hawkular.inventory.rest;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.RelationshipDeserializer;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -44,7 +41,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,18 +61,44 @@ public class RestRelationships {
 
     @GET
     @Path("/")
-    @ApiOperation("Lists all tenants")
+    @ApiOperation("Lists all relationships")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of tenants"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll() {
-        return Response.ok(inventory.tenants().getAll().entities()).build();
+    public Response getAll(@DefaultValue("both") @QueryParam("direction") String direction,
+                           @DefaultValue("") @QueryParam("property") String propertyName,
+                           @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                           @DefaultValue("") @QueryParam("named") String named,
+                           @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                           @DefaultValue("") @QueryParam("targetType") String targetType,
+                           @Context UriInfo info) {
+
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+
+        // this will throw IllegalArgumentException on undefined values
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+
+        return Response.ok(inventory.tenants().getAll().relationships(directed).getAll(filters).entities()).build();
     }
 
-    public static String getUrl(Tenant tenant) {
-        return String.format("/tenants/%s", tenant.getId());
+    @GET
+    @Path("/{relationshipId}")
+    @ApiOperation("Lists all relationships")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of tenants"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Relationship getRelationship(@PathParam("relationshipId") String relationshipId) {
+        // this method assumes all entities to be connected with at least 1 tenant
+        return inventory.tenants().getAll().relationships().get(relationshipId).entity();
+    }
+
+    public static String getUrl(String id) {
+        return String.format("/relationships/%s", id);
     }
 
     public static RelationFilter[] extractFilters(String propertyName,

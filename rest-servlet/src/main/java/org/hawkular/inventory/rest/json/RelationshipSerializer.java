@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.rest.RestEnvironments;
 import org.hawkular.inventory.rest.RestMetricTypes;
 import org.hawkular.inventory.rest.RestMetrics;
+import org.hawkular.inventory.rest.RestRelationships;
 import org.hawkular.inventory.rest.RestResourceTypes;
 import org.hawkular.inventory.rest.RestResources;
 import org.hawkular.inventory.rest.RestTenants;
@@ -41,7 +42,7 @@ import java.util.Map;
 
 /**
  * @author jkremser
- * since 0.0.2
+ * @since 0.0.2
  *
  * Example:<pre>
  * {
@@ -90,7 +91,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
             jsonSerializationContext) {
         JsonObject object = new JsonObject();
         object.add("@context", CONTEXT);
-        object.addProperty("@id", "baseUrl:");
+        object.addProperty("@id", "baseUrl:" + RestRelationships.getUrl(relationship.getId()));
         object.addProperty(VOCAB_PREFIX + ":shortId", relationship.getId());
         object.addProperty("@type", "inv:Relationship");
         object.add(VOCAB_PREFIX + ":source", serializeIncidenceVertex(relationship.getSource()));
