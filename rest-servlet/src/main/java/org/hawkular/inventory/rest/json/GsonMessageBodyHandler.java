@@ -41,6 +41,8 @@ import java.lang.reflect.Type;
 
 /**
  * @author jkremser
+ * since 0.0.2
+ *
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
@@ -57,8 +59,9 @@ public class GsonMessageBodyHandler implements MessageBodyWriter<Object>,
     private Gson getGson() {
         if (gson == null) {
             final GsonBuilder gsonBuilder = new GsonBuilder();
-            gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipSerializer(info, "0.0.1"));
-            gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipDeserializer());
+            gsonBuilder.registerTypeHierarchyAdapter(Relationship.class, new RelationshipSerializer(info, "0.0.1"));
+            gsonBuilder.registerTypeHierarchyAdapter(Relationship.class, new RelationshipDeserializer());
+            gsonBuilder.disableHtmlEscaping();
             gson = gsonBuilder.create();
         }
         return gson;

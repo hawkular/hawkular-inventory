@@ -44,7 +44,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.2
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
@@ -132,4 +133,21 @@ public class RestMetricTypes {
         return Response.noContent().build();
     }
 
+    public static String getUrl(MetricType metricType) {
+        return String.format("/%s/metricTypes/%s", metricType.getTenantId(), metricType.getId());
+    }
+
+    @GET
+    @Path("/{tenantId}/metricTypes/{metricTypeId}/relationships")
+    @ApiOperation("Retrieves all relationships of given metric type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or metric type not found", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceTypeId") String resourceTypeId) {
+        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).relationships()
+                .getAll().entities()).build();
+    }
 }

@@ -44,7 +44,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.2
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
@@ -126,6 +127,20 @@ public class RestEnvironments {
 
         inventory.tenants().get(tenantId).environments().delete(environmentId);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{tenantId}/environments/{environmentId}/relationships")
+    @ApiOperation("Retrieves all relationships of given environment.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or environment not found", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("environmentId") String environmentId) {
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).relationships().getAll
+                ().entities()).build();
     }
 
     public static String getUrl(Environment environment) {

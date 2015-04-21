@@ -51,7 +51,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.2
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
@@ -156,6 +157,21 @@ public class RestResources {
         return Response.noContent().build();
     }
 
+    @GET
+    @Path("/{tenantId}/{environmentId}/resources/{resourceId}/relationships")
+    @ApiOperation("Retrieves all relationships of given resource.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("environmentId") String environmentId,
+                                            @PathParam("resourceId") String resourceId) {
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                .get(resourceId).relationships().getAll().entities()).build();
+    }
 
     @POST
     @Path("/{tenantId}/{environmentId}/resources/{resourceId}/metrics/")
@@ -214,5 +230,10 @@ message = "Tenant, environment, resource or metric doesn't exist or if the metri
         Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources().get(resourceId)
                 .metrics().get(metricId).entity();
         return Response.ok(m).build();
+    }
+
+    public static String getUrl(Resource resource) {
+        return String.format("/%s/%s/resources/%s", resource.getTenantId(), resource.getEnvironmentId(), resource
+                .getId());
     }
 }

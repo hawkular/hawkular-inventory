@@ -48,7 +48,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.2
  */
 @Path("/")
 @Produces(APPLICATION_JSON)
@@ -164,6 +165,20 @@ public class RestResourceTypes {
         return Response.noContent().build();
     }
 
+    @GET
+    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/relationships")
+    @ApiOperation("Retrieves all relationships of given resource type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or resource type not found", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceTypeId") String resourceTypeId) {
+        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).relationships()
+                .getAll().entities()).build();
+    }
+
     @POST
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
     @ApiOperation("Associates a pre-existing metric type with a resource type")
@@ -195,5 +210,9 @@ public class RestResourceTypes {
                                      @PathParam("metricTypeId") String metricTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
         return Response.noContent().build();
+    }
+
+    public static String getUrl(ResourceType resourceType) {
+        return String.format("/%s/resourceTypes/%s", resourceType.getTenantId(), resourceType.getId());
     }
 }
