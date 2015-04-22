@@ -177,7 +177,7 @@ public class RestResourceTypes {
             @ApiResponse(code = 404, message = "Tenant or resource type not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+    public Response getResourceTypeRelations(@PathParam("tenantId") String tenantId,
                                             @PathParam("resourceTypeId") String resourceTypeId,
                                             @DefaultValue("both") @QueryParam("direction") String direction,
                                             @DefaultValue("") @QueryParam("property") String propertyName,

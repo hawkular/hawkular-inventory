@@ -149,7 +149,7 @@ public class RestMetricTypes {
             @ApiResponse(code = 404, message = "Tenant or metric type not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+    public Response getMetricTypeRelations(@PathParam("tenantId") String tenantId,
                                             @PathParam("metricTypeId") String metricTypeId,
                                             @DefaultValue("both") @QueryParam("direction") String direction,
                                             @DefaultValue("") @QueryParam("property") String propertyName,

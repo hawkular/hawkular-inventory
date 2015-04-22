@@ -169,7 +169,7 @@ public class RestResources {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
+    public Response getResourceRelations(@PathParam("tenantId") String tenantId,
                                             @PathParam("environmentId") String environmentId,
                                             @PathParam("resourceId") String resourceId,
                                             @DefaultValue("both") @QueryParam("direction") String direction,

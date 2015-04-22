@@ -57,7 +57,7 @@ public final class Relationships {
 
         /**
          * Expresses ownership. For example a resource owns a set of metrics, or a resource type owns a set
-         * of metric definitions. They do not contain it though, because more resources can own a single metric for
+         * of metric types. They do not contain it though, because more resources can own a single metric for
          * example.
          */
         owns

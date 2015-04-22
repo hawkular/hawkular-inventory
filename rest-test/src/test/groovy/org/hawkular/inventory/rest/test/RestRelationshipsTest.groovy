@@ -17,8 +17,6 @@
 package org.hawkular.inventory.rest.test
 import org.junit.Test
 
-import static org.junit.Assert.assertEquals
-
 /**
  * Test some basic inventory functionality regarding the relationships via REST
  * @author jkremser
@@ -26,74 +24,77 @@ import static org.junit.Assert.assertEquals
  */
 class RestRelationshipsTest extends RestTest {
 
-
-    @Test
-    void ping() {
-        def response = client.get(path: "")
-        assertEquals(200, response.status)
-    }
-
     @Test
     void testTenantsContainEnvironments() {
-        assertRelationshipExists("tenants/relationships", "com.acme.tenant", "contains", "production")
-        assertRelationshipExists("com.example.tenant/environments/relationships", "com.example.tenant",
+        assertRelationshipExists("relationships", "com.acme.tenant", "contains", "production")
+        assertRelationshipExists("tenants/com.example.tenant/relationships", "com.example.tenant",
                 "contains", "test")
     }
 
     @Test
     void testTenantsContainResourceTypes() {
-        assertRelationshipExists("com.acme.tenant/relationships", "com.acme.tenant", "contains", "URL")
+        assertRelationshipExists("tenants/com.acme.tenant/relationships", "com.acme.tenant", "contains", "URL")
         assertRelationshipExists("com.example.tenant/resourceTypes/Kachna/relationships", "com.example.tenant",
                 "contains", "Kachna")
         assertRelationshipExists("relationships", "com.example.tenant", "contains", "Playroom")
     }
 
-
     @Test
     void testTenantsContainMetricTypes() {
         assertRelationshipExists("com.acme.tenant/metricTypes/ResponseTime/relationships", "com.acme.tenant",
                 "contains", "ResponseTime")
-        assertRelationshipExists("com.example.tenant/relationships", "contains", "Size")
+        assertRelationshipExists("tenants/com.example.tenant/relationships", "com.example.tenant", "contains", "Size")
     }
 
-//    @Test
-//    void testMetricTypesLinked() {
-//        assertEntitiesExist("com.acme.tenant/resourceTypes/URL/metricTypes", ["ResponseTime"])
-//        assertEntitiesExist("com.example.tenant/resourceTypes/Playroom/metricTypes", ["Size"])
-//    }
-//
-//    @Test
-//    void testResourcesCreated() {
-//        assertEntityExists("com.acme.tenant/production/resources/host1", "host1")
-//        assertEntitiesExist("com.acme.tenant/production/resources", ["host1"])
-//
-//        assertEntityExists("com.example.tenant/test/resources/playroom1", "playroom1")
-//        assertEntityExists("com.example.tenant/test/resources/playroom2", "playroom2")
-//        assertEntitiesExist("com.example.tenant/test/resources", ["playroom1", "playroom2"])
-//    }
-//
-//    @Test
-//    void testMetricsCreated() {
-//        assertEntityExists("com.acme.tenant/production/metrics/host1_ping_response", "host1_ping_response")
-//        assertEntitiesExist("com.acme.tenant/production/metrics", ["host1_ping_response"])
-//
-//        assertEntityExists("com.example.tenant/test/metrics/playroom1_size", "playroom1_size")
-//        assertEntityExists("com.example.tenant/test/metrics/playroom2_size", "playroom2_size")
-//        assertEntitiesExist("com.example.tenant/test/metrics", ["playroom1_size", "playroom2_size"])
-//    }
-//
-//    @Test
-//    void testMetricsLinked() {
-//        assertEntitiesExist("com.acme.tenant/production/resources/host1/metrics", ["host1_ping_response"])
-//        assertEntitiesExist("com.example.tenant/test/resources/playroom1/metrics", ["playroom1_size"])
-//        assertEntitiesExist("com.example.tenant/test/resources/playroom2/metrics", ["playroom2_size"])
-//    }
+    @Test
+    void testResourceTypesOwnMetricTypes() {
+        assertRelationshipExists("com.acme.tenant/resourceTypes/URL/relationships", "URL", "owns", "ResponseTime")
+        assertRelationshipExists("com.example.tenant/resourceTypes/Playroom/relationships", "Playroom", "owns","Size")
+    }
 
-    private static void assertRelationshipExists(path, source, label, target) {
-        def response = client.get(path: path)
-        def needle = new Tuple(source, label, target);
-        def haystack = response.data.collect{ new Tuple(it["inv:source"]["inv:shortId"], it["inv:label"],
-                it[["inv:target"]["inv:shortId"]])  }
-        assert haystack.any{it.equals()} : "Following edge not found: " + needle
+    @Test
+    void testEnvironmentsContainResources() {
+        assertRelationshipExists("com.acme.tenant/environments/production/relationships", "production", "contains",
+                "host1")
+        assertRelationshipExists("com.example.tenant/environments/test/relationships", "test", "contains", "playroom1")
+        assertRelationshipExists("com.example.tenant/environments/test/relationships", "test", "contains", "playroom2")
+    }
+
+    @Test
+    void testEnvironmentsContainMetrics() {
+        assertRelationshipExists("com.acme.tenant/environments/production/relationships", "production", "contains",
+                "host1_ping_response")
+        assertRelationshipExists("com.example.tenant/environments/test/relationships", "test", "contains", "playroom1")
+        assertRelationshipExists("com.example.tenant/environments/test/relationships", "test", "contains", "playroom2")
+    }
+
+    @Test
+    void testResourcesOwnMetrics() {
+        assertRelationshipExists("com.acme.tenant/production/resources/host1/relationships", "host1", "owns",
+                "host1_ping_response")
+        assertRelationshipExists("com.example.tenant/test/resources/playroom1/relationships", "playroom1", "owns",
+                "playroom1_size")
+        assertRelationshipExists("com.example.tenant/test/resources/playroom2/relationships", "playroom2", "owns",
+                "playroom2_size")
+    }
+
+    @Test
+    void testResourceTypesDefinesResources() {
+        assertRelationshipExists("com.example.tenant/resourceTypes/Playroom/relationships", "Playroom", "defines",
+                "playroom1")
+        assertRelationshipExists("com.example.tenant/resourceTypes/Playroom/relationships", "Playroom", "defines",
+                "playroom2")
+        assertRelationshipExists("com.acme.tenant/resourceTypes/URL/relationships", "URL", "defines",
+                "host1")
+    }
+
+    @Test
+    void testMetricTypesDefinesMetrics() {
+        assertRelationshipExists("com.acme.tenant/metricTypes/ResponseTime/relationships", "ResponseTime", "defines",
+                "host1_ping_response")
+        assertRelationshipExists("com.example.tenant/metricTypes/Size/relationships", "Size", "defines",
+                "playroom1_size")
+        assertRelationshipExists("com.example.tenant/metricTypes/Size/relationships", "Size", "defines",
+                "playroom2_size")
     }
 }

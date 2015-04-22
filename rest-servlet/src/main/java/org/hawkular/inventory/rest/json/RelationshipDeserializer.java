@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2015 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
@@ -31,6 +32,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.hawkular.inventory.rest.json.RelationshipSerializer.VOCAB_PREFIX;
@@ -45,12 +47,17 @@ public class RelationshipDeserializer implements JsonDeserializer<Relationship> 
 
     public static Map<String, Class<? extends Entity>> entityMap;
     static {
-        entityMap.put(Tenant.class.getSimpleName(), Tenant.class);
-        entityMap.put(Environment.class.getSimpleName(), Environment.class);
-        entityMap.put(ResourceType.class.getSimpleName(), ResourceType.class);
-        entityMap.put(MetricType.class.getSimpleName(), MetricType.class);
-        entityMap.put(Resource.class.getSimpleName(), Resource.class);
-        entityMap.put(Metric.class.getSimpleName(), Metric.class);
+        try {
+            entityMap = new HashMap<>(6);
+            entityMap.put(Tenant.class.getSimpleName(), Tenant.class);
+            entityMap.put(Environment.class.getSimpleName(), Environment.class);
+            entityMap.put(ResourceType.class.getSimpleName(), ResourceType.class);
+            entityMap.put(MetricType.class.getSimpleName(), MetricType.class);
+            entityMap.put(Resource.class.getSimpleName(), Resource.class);
+            entityMap.put(Metric.class.getSimpleName(), Metric.class);
+        } catch (Exception e) {
+            // just to make sure class loading can't fail
+        }
     }
 
     @Override

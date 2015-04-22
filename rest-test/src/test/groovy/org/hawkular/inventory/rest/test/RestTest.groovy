@@ -139,75 +139,12 @@ class RestTest extends AbstractTestBase {
         assertEquals(200, response.status)
     }
 
-    @Test
-    void testTenantsCreated() {
-        assertEntitiesExist("tenants", ["com.acme.tenant", "com.example.tenant"])
-    }
-
-    @Test
-    void testEnvironmentsCreated() {
-        assertEntitiesExist("com.acme.tenant/environments", ["production"])
-        assertEntitiesExist("com.example.tenant/environments", ["test"])
-    }
-
-    @Test
-    void testResourceTypesCreated() {
-        assertEntityExists("com.acme.tenant/resourceTypes/URL", "URL")
-        assertEntitiesExist("com.acme.tenant/resourceTypes", ["URL"])
-
-        assertEntityExists("com.example.tenant/resourceTypes/Kachna", "Kachna")
-        assertEntityExists("com.example.tenant/resourceTypes/Playroom", "Playroom")
-        assertEntitiesExist("com.example.tenant/resourceTypes", ["Playroom", "Kachna"])
-    }
-
-    @Test
-    void testMetricTypesCreated() {
-        assertEntityExists("com.acme.tenant/metricTypes/ResponseTime", "ResponseTime")
-        assertEntitiesExist("com.acme.tenant/metricTypes", ["ResponseTime"])
-
-        assertEntityExists("com.example.tenant/metricTypes/Size", "Size")
-        assertEntitiesExist("com.example.tenant/metricTypes", ["Size"])
-    }
-
-    @Test
-    void testMetricTypesLinked() {
-        assertEntitiesExist("com.acme.tenant/resourceTypes/URL/metricTypes", ["ResponseTime"])
-        assertEntitiesExist("com.example.tenant/resourceTypes/Playroom/metricTypes", ["Size"])
-    }
-
-    @Test
-    void testResourcesCreated() {
-        assertEntityExists("com.acme.tenant/production/resources/host1", "host1")
-        assertEntitiesExist("com.acme.tenant/production/resources", ["host1"])
-
-        assertEntityExists("com.example.tenant/test/resources/playroom1", "playroom1")
-        assertEntityExists("com.example.tenant/test/resources/playroom2", "playroom2")
-        assertEntitiesExist("com.example.tenant/test/resources", ["playroom1", "playroom2"])
-    }
-
-    @Test
-    void testMetricsCreated() {
-        assertEntityExists("com.acme.tenant/production/metrics/host1_ping_response", "host1_ping_response")
-        assertEntitiesExist("com.acme.tenant/production/metrics", ["host1_ping_response"])
-
-        assertEntityExists("com.example.tenant/test/metrics/playroom1_size", "playroom1_size")
-        assertEntityExists("com.example.tenant/test/metrics/playroom2_size", "playroom2_size")
-        assertEntitiesExist("com.example.tenant/test/metrics", ["playroom1_size", "playroom2_size"])
-    }
-
-    @Test
-    void testMetricsLinked() {
-        assertEntitiesExist("com.acme.tenant/production/resources/host1/metrics", ["host1_ping_response"])
-        assertEntitiesExist("com.example.tenant/test/resources/playroom1/metrics", ["playroom1_size"])
-        assertEntitiesExist("com.example.tenant/test/resources/playroom2/metrics", ["playroom2_size"])
-    }
-
-    private static void assertEntityExists(path, id) {
+    public static void assertEntityExists(path, id) {
         def response = client.get(path: path)
         assert id.equals(response.data.id)
     }
 
-    private static void assertEntitiesExist(path, ids) {
+    public static void assertEntitiesExist(path, ids) {
         def response = client.get(path: path)
 
         //noinspection GroovyAssignabilityCheck
@@ -217,5 +154,14 @@ class RestTest extends AbstractTestBase {
 
         assert entityIds.empty : "Unexpected entities with ids: " + entityIds
         assert expectedIds.empty : "Following entities not found: " + expectedIds
+    }
+
+    public static void assertRelationshipExists(path, source, label, target) {
+        def response = client.get(path: path)
+        def needle = new Tuple(source, label, target);
+        def haystack = response.data.collect{ new Tuple(it["inv:source"]["inv:shortId"], it["inv:label"],
+                it["inv:target"]["inv:shortId"])  }
+        assert haystack.any{it == needle} : "Following edge not found: " + needle
+        haystack.clear()
     }
 }
