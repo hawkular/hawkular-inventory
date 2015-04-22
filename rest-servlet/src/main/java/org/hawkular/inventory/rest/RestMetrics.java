@@ -169,7 +169,7 @@ public class RestMetrics {
     })
     public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
                                             @PathParam("environmentId") String environmentId,
-                                            @PathParam("metricId") String metricId,
+                                            @PathParam("resourceId") String resourceId,
                                             @DefaultValue("both") @QueryParam("direction") String direction,
                                             @DefaultValue("") @QueryParam("property") String propertyName,
                                             @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
@@ -184,8 +184,8 @@ public class RestMetrics {
         // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
 
-        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).metrics().get(metricId)
-                .relationships(directed).getAll(filters).entities()).build();
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                .get(resourceId).relationships(directed).getAll(filters).entities()).build();
     }
 
     public static String getUrl(Metric metric) {

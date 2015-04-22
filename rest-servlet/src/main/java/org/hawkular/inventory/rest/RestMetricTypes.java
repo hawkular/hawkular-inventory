@@ -150,7 +150,7 @@ public class RestMetricTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getEnvironmentRelations(@PathParam("tenantId") String tenantId,
-                                            @PathParam("resourceTypeId") String resourceTypeId,
+                                            @PathParam("metricTypeId") String metricTypeId,
                                             @DefaultValue("both") @QueryParam("direction") String direction,
                                             @DefaultValue("") @QueryParam("property") String propertyName,
                                             @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
@@ -164,7 +164,7 @@ public class RestMetricTypes {
 
         // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
-        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+        return Response.ok(inventory.tenants().get(tenantId).metricTypes().get(metricTypeId)
                 .relationships(directed).getAll(filters).entities()).build();
     }
 }
