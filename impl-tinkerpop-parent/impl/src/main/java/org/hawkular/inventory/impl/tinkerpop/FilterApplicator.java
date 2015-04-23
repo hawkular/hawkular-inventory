@@ -26,11 +26,16 @@ import org.hawkular.inventory.api.filters.With;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author Lukas Krejci
@@ -46,6 +51,34 @@ abstract class FilterApplicator<T extends Filter> {
         this.filter = f;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <S, E> void applyAll(Tree filterTree, HawkularPipeline<S, E> q) {
+        if (filterTree == null) {
+            return;
+        }
+
+        for (FilterApplicator<?> fa : filterTree.filters) {
+            fa.applyTo(q);
+        }
+
+        if (filterTree.subTrees.isEmpty()) {
+            return;
+        }
+
+        if (filterTree.subTrees.size() == 1) {
+            applyAll(filterTree.subTrees.get(0), q);
+        } else {
+            List<HawkularPipeline<E, ?>> branches = new ArrayList<>();
+            for (Tree t : filterTree.subTrees) {
+                HawkularPipeline<E, ?> branch = new HawkularPipeline<>();
+                applyAll(t, branch);
+                branches.add(branch);
+            }
+
+            q.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge();
+        }
+    }
+
     public static Filter[] filters(FilterApplicator... applicators) {
         Filter[] ret = new Filter[applicators.length];
 
@@ -53,6 +86,42 @@ abstract class FilterApplicator<T extends Filter> {
             ret[i] = applicators[i].filter();
         }
 
+        return ret;
+    }
+
+    public static Filter[][] filters(FilterApplicator.Tree applicators) {
+        List<List<Filter>> paths = new ArrayList<>();
+
+        Deque<Filter[]> path = new ArrayDeque<>();
+        Deque<Iterator<Tree>> traversalPosition = new ArrayDeque<>();
+
+        path.add(filters(applicators.filters));
+        traversalPosition.push(applicators.subTrees.iterator());
+
+        while (!traversalPosition.isEmpty()) {
+            Iterator<Tree> currentPos = traversalPosition.peek();
+            if (currentPos.hasNext()) {
+                Tree child = currentPos.next();
+                if (child.subTrees.isEmpty()) {
+                    //we have a leaf here
+                    List<Filter> pathToLeaf = new ArrayList<>();
+                    for (Filter[] fs : path) {
+                        Collections.addAll(pathToLeaf, fs);
+                    }
+                    Collections.addAll(pathToLeaf, filters(child.filters));
+                    paths.add(pathToLeaf);
+                } else {
+                    path.add(filters(child.filters));
+                    traversalPosition.push(child.subTrees.iterator());
+                }
+            } else {
+                traversalPosition.pop();
+                path.removeLast();
+            }
+        }
+
+        Filter[][] ret = new Filter[paths.size()][];
+        Arrays.setAll(ret, (i) -> paths.get(i).toArray(new Filter[paths.get(i).size()]));
         return ret;
     }
 
@@ -74,7 +143,13 @@ abstract class FilterApplicator<T extends Filter> {
 
     }
 
-    public static FilterApplicator with(Type type, Filter filter) {
+    public static FilterApplicator<?>[] with(Type type, Filter... filters) {
+        FilterApplicator<?>[] ret = new FilterApplicator[filters.length];
+        Arrays.setAll(ret, (i) -> FilterApplicator.with(type, filters[i]));
+        return ret;
+    }
+
+    public static FilterApplicator<?> with(Type type, Filter filter) {
         if (filter == null) {
             throw new IllegalArgumentException("filter == null");
         }
@@ -102,20 +177,22 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    public static Builder from(Type type, Filter... filters) {
-        return new Builder(type, filters);
+    public static SymmetricTreeExtender from(Type type, Filter[][] filters) {
+        return new SymmetricTreeExtender(type, filters);
     }
 
-    public static Builder fromFilter(Filter... filters) {
-        return from(Type.FILTER, filters);
-    }
-
-    public static Builder fromPath(Filter... filters) {
+    public static SymmetricTreeExtender fromPath(Filter[][] filters) {
         return from(Type.PATH, filters);
     }
 
-    public static Builder from(FilterApplicator... filters) {
-        return new Builder(filters);
+    public static SymmetricTreeExtender fromPath(Filter... filters) {
+        Filter[][] fs = new Filter[1][];
+        fs[0] = filters;
+        return fromPath(fs);
+    }
+
+    public static SymmetricTreeExtender from(FilterApplicator.Tree filters) {
+        return new SymmetricTreeExtender(filters);
     }
 
     public abstract void applyTo(HawkularPipeline<?, ?> query);
@@ -238,37 +315,129 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    static class Builder {
-        private List<FilterApplicator> filters;
+    static class SymmetricTreeExtender {
+        private Tree.Builder filters;
 
-        private Builder(Type type, Filter... filters) {
-            this.filters = new ArrayList<>();
+        private SymmetricTreeExtender(Type type, Filter[][] filters) {
+            this.filters = new Tree.Builder();
             and(type, filters);
         }
 
-        private Builder(FilterApplicator... filters) {
-            this.filters = new ArrayList<>();
-            Collections.addAll(this.filters, filters);
+        private SymmetricTreeExtender(FilterApplicator.Tree filters) {
+            this.filters = filters.asBuilder();
         }
 
-        public Builder and(Type type, Filter... filters) {
-            for (Filter f : filters) {
-                this.filters.add(FilterApplicator.with(type, f));
-            }
-
+        public SymmetricTreeExtender and(Type type, Filter[][] filters) {
+            onLeaves(this.filters, (t) -> {
+                for(Filter[] fs : filters) {
+                    t.branch().with(FilterApplicator.with(type, fs));
+                }
+            });
             return this;
         }
 
-        public Builder andFilter(Filter... filters) {
+        public SymmetricTreeExtender and(Type type, Filter... filters) {
+            onLeaves(this.filters, (t) -> t.with(FilterApplicator.with(type, filters)));
+            return this;
+        }
+
+        public SymmetricTreeExtender andFilter(Filter... filters) {
             return and(Type.FILTER, filters);
         }
 
-        public Builder andPath(Filter... path) {
+        public SymmetricTreeExtender andPath(Filter... path) {
             return and(Type.PATH, path);
         }
 
-        public FilterApplicator[] get() {
-            return filters.toArray(new FilterApplicator[filters.size()]);
+        public SymmetricTreeExtender andPath(Filter[][] path) {
+            return and(Type.PATH, path);
+        }
+
+        public FilterApplicator.Tree get() {
+            return filters.build();
+        }
+
+        private void onLeaves(Tree.Builder root, Consumer<Tree.Builder> leafMutator) {
+            if (root.children.isEmpty()) {
+                leafMutator.accept(root);
+            } else {
+                for(Tree.Builder c : root.children) {
+                    onLeaves(c, leafMutator);
+                }
+            }
+        }
+    }
+
+    public static final class Tree {
+        FilterApplicator<?>[] filters;
+        List<Tree> subTrees = new ArrayList<>();
+
+        private Tree() {}
+
+        public Builder asBuilder() {
+            Builder b = new Builder();
+            b.filters = new ArrayList<>(Arrays.asList(filters));
+            for (Tree subTree : subTrees) {
+                Builder childBuilder = subTree.asBuilder();
+                childBuilder.parent = b;
+                b.children.add(childBuilder);
+            }
+
+            return b;
+        }
+
+        public static final class Builder {
+            List<FilterApplicator<?>> filters = new ArrayList<>();
+            Tree tree = new Tree();
+            Builder parent;
+            List<Builder> children = new ArrayList<>();
+            boolean done;
+
+            Builder branch() {
+                Builder child = new Builder();
+                child.parent = this;
+                children.add(child);
+
+                return child;
+            }
+
+            Builder done() {
+                if (done) {
+                    return parent;
+                }
+
+                this.tree.filters = filters.toArray(new FilterApplicator[filters.size()]);
+                if (parent != null) {
+                    parent.tree.subTrees.add(this.tree);
+                    parent.children.remove(this);
+                }
+
+                //done will remove the child from the children, so we'd get concurrent modification exceptions
+                //avoid that stupidly by working on a copy of children
+                new ArrayList<>(children).forEach(Tree.Builder::done);
+
+                done = true;
+
+                return parent;
+            }
+
+            Builder with(FilterApplicator<?>... filters) {
+                Collections.addAll(this.filters, filters);
+                return this;
+            }
+
+            Tree build() {
+                Tree.Builder root = this;
+                while (true) {
+                    if (root.parent == null) {
+                        break;
+                    }
+                    root = root.parent;
+                }
+
+                root.done();
+                return root.tree;
+            }
         }
     }
 }

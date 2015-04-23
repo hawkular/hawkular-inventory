@@ -20,6 +20,7 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -39,11 +40,11 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  */
 final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.Blueprint, Environment.Update> {
 
-    private EnvironmentBrowser(InventoryContext context, FilterApplicator... path) {
+    private EnvironmentBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Environment.class, path);
     }
 
-    public static Environments.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Environments.Single single(InventoryContext context, FilterApplicator.Tree path) {
         EnvironmentBrowser b = new EnvironmentBrowser(context, path);
         return new Environments.Single() {
             @Override
@@ -72,13 +73,23 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
             }
 
             @Override
+            public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+                return b.allMetrics();
+            }
+
+            @Override
+            public ResolvingToMultiple<Resources.Multiple> allResources() {
+                return b.allResources();
+            }
+
+            @Override
             public Environment entity() {
                 return b.entity();
             }
         };
     }
 
-    public static Environments.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Environments.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         EnvironmentBrowser b = new EnvironmentBrowser(context, path);
         return new Environments.Multiple() {
             @Override
@@ -110,6 +121,16 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
             public Set<Environment> entities() {
                 return b.entities();
             }
+
+            @Override
+            public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+                return b.allMetrics();
+            }
+
+            @Override
+            public ResolvingToMultiple<Resources.Multiple> allResources() {
+                return b.allResources();
+            }
         };
     }
 
@@ -125,5 +146,19 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
     public MetricsService metrics() {
         return new MetricsService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(Metric.class))));
+    }
+
+    public ResourcesService allResources() {
+        return new ResourcesService(context, pathToHereWithSelects(
+                Filter.by(Related.by(contains), With.type(Resource.class)),
+                Filter.by(Related.by(contains), With.type(Feed.class), Related.by(contains),
+                        With.type(Resource.class))));
+    }
+
+    public MetricsService allMetrics() {
+        return new MetricsService(context, pathToHereWithSelects(
+                Filter.by(Related.by(contains), With.type(Metric.class)),
+                Filter.by(Related.by(contains), With.type(Feed.class), Related.by(contains),
+                        With.type(Metric.class))));
     }
 }

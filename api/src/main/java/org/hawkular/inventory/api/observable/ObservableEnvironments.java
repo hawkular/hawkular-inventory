@@ -17,6 +17,9 @@
 package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.ResolvingToMultiple;
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.Environment;
 
 import java.util.function.BiFunction;
@@ -98,6 +101,16 @@ public final class ObservableEnvironments {
         public ObservableMetrics.ReadWrite feedlessMetrics() {
             return wrap(ObservableMetrics.ReadWrite::new, wrapped.feedlessMetrics());
         }
+
+        @Override
+        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+            return wrap(ObservableMetrics.ReadMultiple::new, wrapped.allMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Resources.Multiple> allResources() {
+            return wrap(ObservableResources.ReadMultiple::new, wrapped.allResources());
+        }
     }
 
     public static final class Multiple extends ObservableBase.RelatableMultiple<Environment, Environments.Multiple>
@@ -120,6 +133,16 @@ public final class ObservableEnvironments {
         @Override
         public ObservableMetrics.Read feedlessMetrics() {
             return wrap(ObservableMetrics.Read::new, wrapped.feedlessMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+            return wrap(ObservableMetrics.ReadMultiple::new, wrapped.allMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Resources.Multiple> allResources() {
+            return wrap(ObservableResources.ReadMultiple::new, wrapped.allResources());
         }
     }
 }

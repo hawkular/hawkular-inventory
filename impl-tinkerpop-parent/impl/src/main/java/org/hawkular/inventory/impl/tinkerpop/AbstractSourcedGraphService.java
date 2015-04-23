@@ -49,13 +49,13 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     protected final PathContext pathContext;
 
     AbstractSourcedGraphService(InventoryContext context, Class<E> entityClass, PathContext pathContext) {
-        super(context, pathContext.path);
+        super(context, pathContext.sourcePath);
         this.entityClass = entityClass;
         this.pathContext = pathContext;
     }
 
-    protected final Filter[] selectCandidates() {
-        return pathContext.candidatesFilter;
+    protected final Filter[][] selectCandidates() {
+        return pathContext.candidatesFilters;
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -107,7 +107,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
 
         if (!it.hasNext()) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
         }
 
         Vertex vertex = it.next();
@@ -122,7 +122,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         Iterator<Vertex> vs = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
 
         if (!vs.hasNext()) {
-            FilterApplicator[] fullPath = FilterApplicator.from(pathContext.path).andPath(selectCandidates())
+            FilterApplicator.Tree fullPath = FilterApplicator.from(pathContext.sourcePath).andPath(selectCandidates())
                     .andPath(With.id(id)).get();
 
             throw new EntityNotFoundException(entityClass, FilterApplicator.filters(fullPath));
@@ -197,7 +197,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             for (Vertex o : others) {
                 for (Edge e : v.getEdges(Direction.OUT, rel.name())) {
                     if (e.getVertex(Direction.IN).equals(o)) {
-                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(path));
+                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(sourcePaths));
                     }
                 }
 
@@ -208,10 +208,10 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             }
 
             throw new EntityNotFoundException(entityClass,
-                    FilterApplicator.filters(FilterApplicator.from(path).andPath(Related.by(rel)).get()));
+                    FilterApplicator.filters(FilterApplicator.from(sourcePaths).andPath(Related.by(rel)).get()));
         }
 
-        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(path));
+        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(sourcePaths));
     }
 
     protected Relationship findAssociation(String targetId, String label) {
@@ -224,7 +224,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             }
         }
 
-        throw new RelationNotFoundException(label, FilterApplicator.filters(path));
+        throw new RelationNotFoundException(label, FilterApplicator.filters(sourcePaths));
 
     }
 
@@ -240,7 +240,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
         if (!it.hasNext()) {
             throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
-                    FilterApplicator.filters(path), "Relationship does not exist.", null);
+                    FilterApplicator.filters(sourcePaths), "Relationship does not exist.", null);
         }
 
         Edge edge = it.next();
@@ -250,9 +250,9 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         return ret;
     }
 
-    protected abstract Single createSingleBrowser(FilterApplicator... path);
+    protected abstract Single createSingleBrowser(FilterApplicator.Tree path);
 
-    protected abstract Multiple createMultiBrowser(FilterApplicator... path);
+    protected abstract Multiple createMultiBrowser(FilterApplicator.Tree path);
 
     protected abstract String getProposedId(Blueprint b);
 

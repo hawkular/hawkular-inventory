@@ -22,6 +22,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -51,7 +52,7 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
 
     RelationshipService(InventoryContext iContext, PathContext ctx, Class<E> sourceClass, Relationships.Direction
             direction) {
-        super(iContext, ctx.path);
+        super(iContext, ctx.sourcePath);
         this.context = iContext;
         this.pathContext = ctx;
         this.direction = direction;
@@ -69,12 +70,12 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
     }
 
     private Relationships.Single createSingleBrowser(RelationFilter... filters) {
-        return RelationshipBrowser.single(context, sourceEntityClass, direction, pathWith(pathContext.candidatesFilter)
+        return RelationshipBrowser.single(context, sourceEntityClass, direction, pathWith(pathContext.candidatesFilters)
                 .get(), filters);
     }
 
     private Relationships.Multiple createMultiBrowser(RelationFilter... filters) {
-        return RelationshipBrowser.multiple(context, direction, pathWith(pathContext.candidatesFilter)
+        return RelationshipBrowser.multiple(context, direction, pathWith(pathContext.candidatesFilters)
                 .get(), filters);
     }
 
@@ -163,7 +164,7 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
                 break;
         }
         if (!pipe.hasNext()) {
-            throw new RelationNotFoundException(id, null);
+            throw new RelationNotFoundException(id, (Filter[]) null);
         }
         pipe.remove();
     }

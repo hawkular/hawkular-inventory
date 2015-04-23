@@ -33,15 +33,15 @@ import java.util.Set;
 abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
         extends AbstractSourcedGraphService<Void, Void, E, B, U> {
 
-    AbstractBrowser(InventoryContext context, Class<E> entityClass, FilterApplicator... path) {
-        super(context, entityClass, new PathContext(path, null));
+    AbstractBrowser(InventoryContext context, Class<E> entityClass, FilterApplicator.Tree path) {
+        super(context, entityClass, new PathContext(path, (Filter[]) null));
     }
 
     public E entity() {
         HawkularPipeline<?, Vertex> q = source();
 
         if (!q.hasNext()) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
         }
 
         return entityClass.cast(convert(q.next()));
@@ -60,16 +60,16 @@ abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprin
     }
 
     public RelationshipService<E, B, U> relationships(Relationships.Direction direction) {
-        return new RelationshipService<>(context, new PathContext(path, Filter.all()), entityClass, direction);
+        return new RelationshipService<>(context, new PathContext(sourcePaths, (Filter[]) null), entityClass, direction);
     }
 
     @Override
-    protected final Void createSingleBrowser(FilterApplicator... path) {
+    protected final Void createSingleBrowser(FilterApplicator.Tree path) {
         throw new IllegalStateException("This method is not valid on a browser interface.");
     }
 
     @Override
-    protected final Void createMultiBrowser(FilterApplicator... path) {
+    protected final Void createMultiBrowser(FilterApplicator.Tree path) {
         throw new IllegalStateException("This method is not valid on a browser interface.");
     }
 

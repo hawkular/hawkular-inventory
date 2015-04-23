@@ -56,12 +56,12 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected Feeds.Single createSingleBrowser(FilterApplicator... path) {
+    protected Feeds.Single createSingleBrowser(FilterApplicator.Tree path) {
         return FeedBrowser.single(context, path);
     }
 
     @Override
-    protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Feeds.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return FeedBrowser.multiple(context, path);
     }
 

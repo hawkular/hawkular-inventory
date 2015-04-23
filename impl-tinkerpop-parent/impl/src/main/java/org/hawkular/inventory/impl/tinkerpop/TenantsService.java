@@ -44,12 +44,12 @@ final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, T
     }
 
     @Override
-    protected Tenants.Single createSingleBrowser(FilterApplicator... path) {
+    protected Tenants.Single createSingleBrowser(FilterApplicator.Tree path) {
         return TenantBrowser.single(context, path);
     }
 
     @Override
-    protected Tenants.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Tenants.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return TenantBrowser.multiple(context, path);
     }
 

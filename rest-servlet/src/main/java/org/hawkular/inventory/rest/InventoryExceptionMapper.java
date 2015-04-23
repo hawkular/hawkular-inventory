@@ -57,23 +57,23 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
 
     public static class EntityTypeAndPath {
         private final String entityType;
-        private final Filter[] path;
+        private final Filter[][] paths;
 
         public static EntityTypeAndPath fromException(EntityNotFoundException e) {
             return new EntityTypeAndPath(e.getEntityType().getSimpleName(), e.getFilters());
         }
 
-        public EntityTypeAndPath(String entityType, Filter[] path) {
+        public EntityTypeAndPath(String entityType, Filter[][] paths) {
             this.entityType = entityType;
-            this.path = path;
+            this.paths = paths;
         }
 
         public String getEntityType() {
             return entityType;
         }
 
-        public Filter[] getPath() {
-            return path;
+        public Filter[][] getPath() {
+            return paths;
         }
     }
 

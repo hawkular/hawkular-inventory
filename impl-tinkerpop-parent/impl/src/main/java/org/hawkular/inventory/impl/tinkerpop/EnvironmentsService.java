@@ -58,12 +58,12 @@ final class EnvironmentsService extends
     }
 
     @Override
-    protected Environments.Single createSingleBrowser(FilterApplicator... path) {
+    protected Environments.Single createSingleBrowser(FilterApplicator.Tree path) {
         return EnvironmentBrowser.single(context, path);
     }
 
     @Override
-    protected Environments.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Environments.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return EnvironmentBrowser.multiple(context, path);
     }
 

@@ -65,12 +65,12 @@ final class ResourcesService
 
         if (feedVertex != null && envVertex != null) {
             throw new IllegalStateException("Found both a feed and an environment as a containing entity when " +
-                    "creating a resource under path: " + Arrays.toString(FilterApplicator.filters(path)));
+                    "creating a resource under path: " + Arrays.deepToString(FilterApplicator.filters(sourcePaths)));
         }
 
         if (feedVertex == null && envVertex == null) {
             throw new IllegalArgumentException("No feed or environment found to create the resource under path: " +
-                    Arrays.toString(FilterApplicator.filters(path)));
+                    Arrays.deepToString(FilterApplicator.filters(sourcePaths)));
         }
 
         //everything seems to be fine, create the edge to the containing vertex
@@ -103,12 +103,12 @@ final class ResourcesService
     }
 
     @Override
-    protected Resources.Single createSingleBrowser(FilterApplicator... path) {
+    protected Resources.Single createSingleBrowser(FilterApplicator.Tree path) {
         return ResourceBrowser.single(context, path);
     }
 
     @Override
-    protected Resources.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Resources.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return ResourceBrowser.multiple(context, path);
     }
 

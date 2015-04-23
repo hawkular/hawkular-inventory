@@ -33,6 +33,7 @@ import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -68,6 +69,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
 /**
  * Test some basic functionality
@@ -138,6 +142,25 @@ public class BasicTest {
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .get("host1").metrics().associate("host1_ping_response");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
+                .register("feed1", null).entity().getId().equals("feed1");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource1", "URL")).entity().getId()
+                .equals("feedResource1");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource2", "URL")).entity().getId()
+                .equals("feedResource2");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource3", "URL")).entity().getId()
+                .equals("feedResource3");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .metrics().create(new Metric.Blueprint("ResponseTime", "feedMetric1")).entity().getId()
+                .equals("feedMetric1");
 
         assert inventory.tenants().create(new Tenant.Blueprint("com.example.tenant")).entity().getId()
                 .equals("com.example.tenant");
@@ -372,9 +395,9 @@ public class BasicTest {
                 (kids);
 
         parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
-        kids = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll(
+        kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(
                 Related.asTargetBy("defines"));
-        testHelper.apply(2).apply("metricType").apply("defines").apply(3).apply("metric").apply(parents)
+        testHelper.apply(2).apply("metricType").apply("defines").apply(4).apply("metric").apply(parents)
                 .accept(kids);
     }
 
@@ -509,7 +532,7 @@ public class BasicTest {
 
 
         rels = inventory.tenants().getAll().relationships().named
-                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                (contains).environments().getAll().relationships().getAll(RelationWith
                 .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
                 .entities();
         assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
@@ -523,7 +546,7 @@ public class BasicTest {
     @Test
     public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
         Metric metric = inventory.tenants().getAll().relationships().named
-                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                (contains).environments().getAll().relationships().getAll(RelationWith
                 .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class)).metrics
                 ().get("playroom1_size").entity();
         assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
@@ -531,7 +554,7 @@ public class BasicTest {
 
         try {
             inventory.tenants().getAll().relationships().named
-                    (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                    (contains).environments().getAll().relationships().getAll(RelationWith
                     .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class)).metrics
                     ().get("playroom1_size").entity();
             assert false : "this code should not be reachable. There should be no metric reachable under " +
@@ -683,7 +706,7 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
         GraphQuery query = graph.query().has("__type", "metric");
-        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
+        Assert.assertEquals(4, StreamSupport.stream(query.vertices().spliterator(), false).count());
     }
 
     @Test
@@ -709,7 +732,7 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
         GraphQuery query = graph.query().has("__type", "resource");
-        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
+        Assert.assertEquals(6, StreamSupport.stream(query.vertices().spliterator(), false).count());
     }
 
     @Test
@@ -919,6 +942,46 @@ public class BasicTest {
                 .getAll(RelationWith.name("contains")).entities().iterator().next();
 
         Assert.assertEquals(0, r.getProperties().size());
+    }
+
+    @Test
+    public void testGettingResourcesFromFeedsUsingEnvironments() throws Exception {
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allResources()
+                .getAll().entities();
+
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "host1".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource1".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource2".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource3".equals(r.getId())));
+    }
+
+
+    @Test
+    public void testGettingMetricsFromFeedsUsingEnvironments() throws Exception {
+        Set<Metric> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allMetrics()
+                .getAll().entities();
+
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "host1_ping_response".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedMetric1".equals(r.getId())));
+    }
+
+    @Test
+    public void testAllPathsMentionedInExceptions() throws Exception {
+        try {
+            inventory.tenants().get("non-tenant").environments().get("non-env").allResources().getAll().metrics()
+                    .get("m").entity();
+            Assert.fail("Fetching non-existant entity should have failed");
+        } catch (EntityNotFoundException e) {
+            Filter[][] paths = e.getFilters();
+            Assert.assertEquals(2, paths.length);
+            Assert.assertArrayEquals(Filter.by(With.type(Tenant.class), With.id("non-tenant"), Related.by(contains),
+                    With.type(Environment.class), With.id("non-env"), Related.by(contains), With.type(Resource.class),
+                    Related.by(owns), With.type(Metric.class), With.id("m")).get(), paths[0]);
+            Assert.assertArrayEquals(Filter.by(With.type(Tenant.class), With.id("non-tenant"), Related.by(contains),
+                    With.type(Environment.class), With.id("non-env"), Related.by(contains), With.type(Feed.class),
+                    Related.by(contains), With.type(Resource.class), Related.by(owns), With.type(Metric.class),
+                    With.id("m")).get(), paths[1]);
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")

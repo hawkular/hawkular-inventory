@@ -52,34 +52,45 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
  */
 abstract class AbstractGraphService {
     protected final InventoryContext context;
-    protected final FilterApplicator[] path;
+    protected final FilterApplicator.Tree sourcePaths;
 
-    AbstractGraphService(InventoryContext context, FilterApplicator<?>... path) {
+    AbstractGraphService(InventoryContext context, FilterApplicator.Tree sourcePaths) {
         this.context = context;
-        this.path = path;
+        this.sourcePaths = sourcePaths;
     }
 
-    protected HawkularPipeline<?, Vertex> source(FilterApplicator<?>... filters) {
-        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(new ResettableSingletonPipe<>(context.getGraph()))
-                .V();
+    protected HawkularPipeline<?, Vertex> source() {
+        return source(null);
+    }
 
-        for (FilterApplicator<?> fa : path) {
-            fa.applyTo(ret);
-        }
+    protected HawkularPipeline<?, Vertex> source(FilterApplicator.Tree filters) {
+        HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(context.getGraph()).V();
 
-        for (FilterApplicator<?> fa : filters) {
-            fa.applyTo(ret);
-        }
+        FilterApplicator.applyAll(sourcePaths, ret);
+
+        FilterApplicator.applyAll(filters, ret);
 
         return ret;
     }
 
-    protected FilterApplicator.Builder pathWith(Filter... filters) {
-        return pathWith(path, filters);
+    protected FilterApplicator.SymmetricTreeExtender pathWith(Filter... filters) {
+        Filter[][] fs = new Filter[1][];
+        fs[0] = filters;
+        return pathWith(sourcePaths, fs);
     }
 
-    public static FilterApplicator.Builder pathWith(FilterApplicator<?>[] path, Filter... filters) {
-        return FilterApplicator.from(path).and(FilterApplicator.Type.PATH, filters);
+    protected FilterApplicator.SymmetricTreeExtender pathWith(Filter[][] filters) {
+        return pathWith(sourcePaths, filters);
+    }
+
+    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths, Filter[][] filters) {
+        return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, filters);
+    }
+
+    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths, Filter... filters) {
+        Filter[][] fs = new Filter[1][];
+        fs[0] = filters;
+        return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, fs);
     }
 
     static String getProperty(Vertex v, Constants.Property property) {
@@ -345,7 +356,21 @@ abstract class AbstractGraphService {
     }
 
     protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
-        return new PathContext(pathWith().get(), select == null ? null : select.get());
+        Filter[][] selects = null;
+        if (select != null) {
+            selects = new Filter[1][];
+            selects[0] = select.get();
+        }
+        return new PathContext(pathWith().get(), selects);
+    }
+
+    protected PathContext pathToHereWithSelects(Filter.Accumulator... selects) {
+        Filter[][] sa = new Filter[selects.length][];
+        for (int i = 0; i < selects.length; ++i) {
+            sa[i] = selects[i].get();
+        }
+
+        return new PathContext(pathWith().get(), sa);
     }
 
     protected static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {

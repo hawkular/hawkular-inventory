@@ -28,7 +28,7 @@ import java.util.Set;
  */
 final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metric.Update> {
 
-    public static Metrics.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Metrics.Single single(InventoryContext context, FilterApplicator.Tree path) {
         MetricBrowser b = new MetricBrowser(context, path);
 
         return new Metrics.Single() {
@@ -50,7 +50,7 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         };
     }
 
-    public static Metrics.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Metrics.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         MetricBrowser b = new MetricBrowser(context, path);
 
         return new Metrics.Multiple() {
@@ -72,7 +72,7 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         };
     }
 
-    MetricBrowser(InventoryContext context, FilterApplicator... path) {
+    MetricBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Metric.class, path);
     }
 }

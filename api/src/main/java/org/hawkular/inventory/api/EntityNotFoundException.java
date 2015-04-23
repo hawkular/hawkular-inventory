@@ -29,9 +29,15 @@ import java.util.Arrays;
 public final class EntityNotFoundException extends InventoryException {
 
     private final Class<? extends Entity> entityType;
-    private final Filter[] filters;
+    private final Filter[][] filters;
 
     public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters) {
+        this.entityType = entityClass;
+        this.filters = new Filter[1][];
+        this.filters[0] = filters;
+    }
+
+    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[][] filters) {
         this.entityType = entityClass;
         this.filters = filters;
     }
@@ -39,7 +45,8 @@ public final class EntityNotFoundException extends InventoryException {
     public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters, Throwable cause) {
         super(cause);
         this.entityType = entityClass;
-        this.filters = filters;
+        this.filters = new Filter[1][];
+        this.filters[0] = filters;
     }
 
     /**
@@ -50,14 +57,14 @@ public final class EntityNotFoundException extends InventoryException {
     }
 
     /**
-     * The path to the entity that was not found.
+     * The considered paths to the entity that was not found.
      */
-    public Filter[] getFilters() {
+    public Filter[][] getFilters() {
         return filters;
     }
 
     @Override
     public String getMessage() {
-        return entityType.getSimpleName() + " not found using filters: " + Arrays.toString(filters);
+        return entityType.getSimpleName() + " not found on any of the following paths: " + Arrays.deepToString(filters);
     }
 }

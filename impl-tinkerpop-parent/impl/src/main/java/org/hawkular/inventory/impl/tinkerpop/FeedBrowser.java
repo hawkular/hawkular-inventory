@@ -37,7 +37,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  */
 final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Update> {
 
-    public static Feeds.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Feeds.Single single(InventoryContext context, FilterApplicator.Tree path) {
         FeedBrowser b = new FeedBrowser(context, path);
 
         return new Feeds.Single() {
@@ -69,7 +69,7 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
         };
     }
 
-    public static Feeds.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Feeds.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         FeedBrowser b = new FeedBrowser(context, path);
 
         return new Feeds.Multiple() {
@@ -101,7 +101,7 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
         };
     }
 
-    FeedBrowser(InventoryContext context, FilterApplicator... path) {
+    FeedBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Feed.class, path);
     }
 

@@ -60,12 +60,12 @@ final class MetricTypesService
     }
 
     @Override
-    protected MetricTypes.Single createSingleBrowser(FilterApplicator... path) {
+    protected MetricTypes.Single createSingleBrowser(FilterApplicator.Tree path) {
         return MetricTypeBrowser.single(context, path);
     }
 
     @Override
-    protected MetricTypes.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected MetricTypes.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return MetricTypeBrowser.multiple(context, path);
     }
 

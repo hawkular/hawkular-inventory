@@ -56,12 +56,12 @@ final class ResourceTypesService extends
     }
 
     @Override
-    protected ResourceTypes.Single createSingleBrowser(FilterApplicator... path) {
+    protected ResourceTypes.Single createSingleBrowser(FilterApplicator.Tree path) {
         return ResourceTypeBrowser.single(context, path);
     }
 
     @Override
-    protected ResourceTypes.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected ResourceTypes.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return ResourceTypeBrowser.multiple(context, path);
     }
 
