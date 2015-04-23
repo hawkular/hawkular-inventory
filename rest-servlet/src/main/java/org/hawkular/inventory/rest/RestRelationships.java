@@ -125,9 +125,9 @@ public class RestRelationships {
                 throw new IllegalArgumentException("Malformed URL param, the right format is: " +
                         "sourceType=type1&sourceType=type2&sourceType=typeN");
             }
-            Class<? extends Entity>[] types = (Class<? extends Entity>[]) sourceParam.stream()
+            Class<? extends Entity>[] types = sourceParam.stream()
                     .map(typeString -> RelationshipDeserializer.entityMap.get(typeString))
-                    .toArray();
+                    .toArray(size -> new Class[size]);
             if (!sourceParam.isEmpty()) {
                 filters.add(RelationWith.sourcesOfTypes(types));
             }

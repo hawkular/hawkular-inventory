@@ -62,6 +62,11 @@ public class GsonMessageBodyHandler implements MessageBodyWriter<Object>,
             gsonBuilder.registerTypeHierarchyAdapter(Relationship.class, new RelationshipSerializer(info, "0.0.1"));
             gsonBuilder.registerTypeHierarchyAdapter(Relationship.class, new RelationshipDeserializer());
             gsonBuilder.disableHtmlEscaping();
+
+            String prettyJson = System.getProperty("prettyJson");
+            if ("true".equals(prettyJson)) {
+                gsonBuilder.setPrettyPrinting();
+            }
             gson = gsonBuilder.create();
         }
         return gson;
@@ -108,7 +113,7 @@ public class GsonMessageBodyHandler implements MessageBodyWriter<Object>,
         OutputStreamWriter writer = new OutputStreamWriter(entityStream, UTF_8);
         try {
             Type jsonType;
-            if (type.equals(genericType)) {
+            if (type.equals(genericType) || genericType == null) {
                 jsonType = type;
             } else {
                 jsonType = genericType;
