@@ -51,7 +51,7 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
     }
 
     @JsonCreator
-    public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId, 
+    public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
             @JsonProperty("feed") String feedId, @JsonProperty("id") String id,
             @JsonProperty("type") MetricType type,
             @JsonProperty("properties") Map<String, Object> properties) {

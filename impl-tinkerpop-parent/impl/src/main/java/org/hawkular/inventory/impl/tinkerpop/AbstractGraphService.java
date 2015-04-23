@@ -83,11 +83,13 @@ abstract class AbstractGraphService {
         return pathWith(sourcePaths, filters);
     }
 
-    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths, Filter[][] filters) {
+    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths,
+            Filter[][] filters) {
         return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, filters);
     }
 
-    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths, Filter... filters) {
+    public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths,
+            Filter... filters) {
         Filter[][] fs = new Filter[1][];
         fs[0] = filters;
         return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, fs);

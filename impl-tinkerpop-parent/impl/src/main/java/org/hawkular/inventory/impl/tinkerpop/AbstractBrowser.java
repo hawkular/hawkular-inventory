@@ -60,7 +60,8 @@ abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprin
     }
 
     public RelationshipService<E, B, U> relationships(Relationships.Direction direction) {
-        return new RelationshipService<>(context, new PathContext(sourcePaths, (Filter[]) null), entityClass, direction);
+        return new RelationshipService<>(context, new PathContext(sourcePaths, (Filter[]) null), entityClass,
+                direction);
     }
 
     @Override

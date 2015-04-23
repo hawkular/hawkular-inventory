@@ -49,7 +49,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     }
 
     @JsonCreator
-    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId, 
+    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
             @JsonProperty("feed") String feedId, @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
             @JsonProperty("properties") Map<String, Object> properties) {
 
