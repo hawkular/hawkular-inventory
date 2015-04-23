@@ -16,10 +16,13 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -48,7 +51,11 @@ public final class Metric extends EnvironmentalEntity<Metric.Blueprint, Metric.U
         this.type = type;
     }
 
-    public Metric(String tenantId, String environmentId, String id, MetricType type, Map<String, Object> properties) {
+    /** JSON serialization support */
+    @JsonCreator
+    public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
+            @JsonProperty("id") String id, @JsonProperty("type") MetricType type,
+            @JsonProperty("properties") Map<String, Object> properties) {
         super(tenantId, environmentId, id, properties);
         this.type = type;
     }
