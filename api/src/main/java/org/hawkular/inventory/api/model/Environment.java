@@ -17,6 +17,10 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -43,7 +47,10 @@ public final class Environment extends OwnedEntity<Environment.Blueprint, Enviro
         super(tenantId, id);
     }
 
-    public Environment(String tenantId, String id, Map<String, Object> properties) {
+    /** JSON serialization support */
+    @JsonCreator
+    public Environment(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
+            @JsonProperty("properties") Map<String, Object> properties) {
         super(tenantId, id, properties);
     }
 

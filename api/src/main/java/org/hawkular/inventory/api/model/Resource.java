@@ -16,9 +16,12 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -46,9 +49,11 @@ public final class Resource extends EnvironmentalEntity<Resource.Blueprint, Reso
         this.type = type;
     }
 
-    public Resource(String tenantId, String environmentId, String id, ResourceType type,
-                    Map<String, Object> properties) {
-
+    /** JSON serialization support */
+    @JsonCreator
+    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
+            @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
+            @JsonProperty("properties") Map<String, Object> properties) {
         super(tenantId, environmentId, id, properties);
         this.type = type;
     }
