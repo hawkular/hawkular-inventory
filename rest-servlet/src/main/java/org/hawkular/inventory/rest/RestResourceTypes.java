@@ -23,6 +23,9 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -32,12 +35,14 @@ import org.hawkular.inventory.rest.json.IdJSON;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -47,7 +52,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.1
  */
 @Path("/")
 @Produces(APPLICATION_JSON)
@@ -112,8 +118,9 @@ public class RestResourceTypes {
     public Set<Resource> getResources(@PathParam("tenantId") String tenantId,
                                       @PathParam("resourceTypeId") String resourceTypeId) {
 
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .resources().getAll().entities();
+        ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
+        single.entity(); // check whether it exists
+        return single.resources().getAll().entities();
     }
 
     @POST
@@ -162,6 +169,33 @@ public class RestResourceTypes {
         return Response.noContent().build();
     }
 
+    @GET
+    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/relationships")
+    @ApiOperation("Retrieves all relationships of given resource type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or resource type not found", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getResourceTypeRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("resourceTypeId") String resourceTypeId,
+                                            @DefaultValue("both") @QueryParam("direction") String direction,
+                                            @DefaultValue("") @QueryParam("property") String propertyName,
+                                            @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                                            @DefaultValue("") @QueryParam("named") String named,
+                                            @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                                            @DefaultValue("") @QueryParam("targetType") String targetType,
+                                            @Context UriInfo info) {
+
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+
+        // this will throw IllegalArgumentException on undefined values
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                .relationships(directed).getAll(filters).entities()).build();
+    }
+
     @POST
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
     @ApiOperation("Associates a pre-existing metric type with a resource type")
@@ -193,5 +227,9 @@ public class RestResourceTypes {
                                      @PathParam("metricTypeId") String metricTypeId) {
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
         return Response.noContent().build();
+    }
+
+    public static String getUrl(ResourceType resourceType) {
+        return String.format("/%s/resourceTypes/%s", resourceType.getTenantId(), resourceType.getId());
     }
 }

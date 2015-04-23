@@ -111,7 +111,6 @@
     </dependency>
 
     <!-- docs -->
-
     <dependency>
       <groupId>com.wordnik</groupId>
       <artifactId>swagger-annotations</artifactId>

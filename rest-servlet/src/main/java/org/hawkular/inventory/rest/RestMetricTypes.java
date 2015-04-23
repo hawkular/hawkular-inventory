@@ -23,18 +23,22 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -44,7 +48,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author jkremser
+ * @since 0.0.1
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
@@ -132,4 +137,34 @@ public class RestMetricTypes {
         return Response.noContent().build();
     }
 
+    public static String getUrl(MetricType metricType) {
+        return String.format("/%s/metricTypes/%s", metricType.getTenantId(), metricType.getId());
+    }
+
+    @GET
+    @Path("/{tenantId}/metricTypes/{metricTypeId}/relationships")
+    @ApiOperation("Retrieves all relationships of given metric type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or metric type not found", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getMetricTypeRelations(@PathParam("tenantId") String tenantId,
+                                            @PathParam("metricTypeId") String metricTypeId,
+                                            @DefaultValue("both") @QueryParam("direction") String direction,
+                                            @DefaultValue("") @QueryParam("property") String propertyName,
+                                            @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                                            @DefaultValue("") @QueryParam("named") String named,
+                                            @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                                            @DefaultValue("") @QueryParam("targetType") String targetType,
+                                            @Context UriInfo info) {
+
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+
+        // this will throw IllegalArgumentException on undefined values
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        return Response.ok(inventory.tenants().get(tenantId).metricTypes().get(metricTypeId)
+                .relationships(directed).getAll(filters).entities()).build();
+    }
 }

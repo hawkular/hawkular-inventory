@@ -25,7 +25,7 @@ import java.io.IOException;
 
 /**
  * @author Stefan Negrea
- *
+ * @since 0.0.1
  */
 @Provider
 public class CorsFilter implements ContainerResponseFilter {
