@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -46,8 +48,10 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
         this.type = type;
     }
 
-    public Resource(String tenantId, String environmentId, String feedId, String id, ResourceType type,
-                    Map<String, Object> properties) {
+    @JsonCreator
+    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId, 
+            @JsonProperty("feed") String feedId, @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
+            @JsonProperty("properties") Map<String, Object> properties) {
 
         super(tenantId, environmentId, feedId, id, properties);
         this.type = type;

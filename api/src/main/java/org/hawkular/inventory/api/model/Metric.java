@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -48,8 +50,11 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
         this.type = type;
     }
 
-    public Metric(String tenantId, String environmentId, String feedId, String id, MetricType type,
-        Map<String, Object> properties) {
+    @JsonCreator
+    public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId, 
+            @JsonProperty("feed") String feedId, @JsonProperty("id") String id,
+            @JsonProperty("type") MetricType type,
+            @JsonProperty("properties") Map<String, Object> properties) {
 
         super(tenantId, environmentId, feedId, id, properties);
         this.type = type;
