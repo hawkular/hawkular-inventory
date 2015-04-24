@@ -29,33 +29,40 @@ import java.util.Arrays;
 public final class EntityAlreadyExistsException extends InventoryException {
 
     private final String entityId;
-    private final Filter[] path;
+    private final Filter[][] paths;
 
     public EntityAlreadyExistsException(Entity entity) {
-        this(entity.getId(), Filter.pathTo(entity));
+        this(entity.getId(), asPaths(entity));
     }
 
-    public EntityAlreadyExistsException(String entityId, Filter[] path) {
+    public EntityAlreadyExistsException(String entityId, Filter[][] paths) {
         this.entityId = entityId;
-        this.path = path;
+        this.paths = paths;
     }
 
-    public EntityAlreadyExistsException(Throwable cause, String entityId, Filter[] path) {
+    public EntityAlreadyExistsException(Throwable cause, String entityId, Filter[][] paths) {
         super(cause);
         this.entityId = entityId;
-        this.path = path;
+        this.paths = paths;
     }
 
     public String getEntityId() {
         return entityId;
     }
 
-    public Filter[] getPath() {
-        return path;
+    public Filter[][] getPaths() {
+        return paths;
     }
 
     @Override
     public String getMessage() {
-        return "Entity with id '" + entityId + "' already exists at the position: " + Arrays.toString(path);
+        return "Entity with id '" + entityId + "' already exists at some of the positions: "
+                + Arrays.deepToString(paths);
+    }
+
+    private static Filter[][] asPaths(Entity entity) {
+        Filter[][] ret = new Filter[1][];
+        ret[0] = Filter.pathTo(entity);
+        return ret;
     }
 }

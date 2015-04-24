@@ -73,7 +73,7 @@ public final class Environments {
      * Interface for accessing a single environment in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Environment>,
-            BrowserBase<Feeds.ReadUpdateRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
+            BrowserBase<Feeds.ReadWrite, Resources.ReadWrite, Metrics.ReadWrite> {}
 
     /**
      * Interface for traversing over a set of environments.

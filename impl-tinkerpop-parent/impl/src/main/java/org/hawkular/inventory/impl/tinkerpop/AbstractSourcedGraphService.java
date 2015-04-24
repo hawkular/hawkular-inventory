@@ -20,6 +20,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -70,11 +71,12 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     public Single create(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        Iterable<Vertex> check = source(FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get());
+        FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get();
+
+        Iterable<Vertex> check = source(checkPath);
 
         if (check.iterator().hasNext()) {
-            throw new IllegalArgumentException("Entity with type '" + entityClass.getSimpleName() + " ' and id '" + id
-                    + "' already exists.");
+            throw new EntityAlreadyExistsException(id, FilterApplicator.filters(checkPath));
         }
 
         checkProperties(blueprint.getProperties());

@@ -18,8 +18,6 @@ package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Feed;
 
-import java.util.Map;
-
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -44,27 +42,16 @@ public final class Feeds {
 
     public interface Read extends ReadInterface<Single, Multiple> {}
 
-    public interface ReadUpdateRegister extends ReadInterface<Single, Multiple> {
-        /**
-         * Registers a new feed.
-         * The proposed ID is merely a suggestion and does not need to be honored by the server. The caller is advised
-         * to use the returned access interface to check what the actual ID was assigned to the feed.
-         *
-         * @param proposedId the ID the feed would like to have
-         * @param properties the properties of the feed (or null if none needed)
-         * @return the access interface to the newly created feed
-         */
-        Single register(String proposedId, Map<String, Object> properties);
+    public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
 
         /**
-         * Updates the feed.
+         * Registers a new feed.
+         * The id in the blueprint is merely a suggestion and does not need to be honored by the server. The caller is
+         * advised to use the returned access interface to check what the actual ID was assigned to the feed.
          *
-         * @param id the id of the feed
-         * @param update the update data
-         *
-         * @throws EntityNotFoundException if the entity is not found in the database
-         * @throws java.lang.IllegalArgumentException if the supplied entity could not be updated for some reason
+         * @param blueprint the blueprint of the feed
+         * @return the access interface to the newly created feed
          */
-        void update(String id, Feed.Update update) throws EntityNotFoundException, IllegalArgumentException;
+        Single create(Feed.Blueprint blueprint);
     }
 }

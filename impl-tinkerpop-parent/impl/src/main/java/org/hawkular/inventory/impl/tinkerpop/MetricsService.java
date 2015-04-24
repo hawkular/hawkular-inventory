@@ -124,7 +124,7 @@ final class MetricsService
     @Override
     public Relationship associate(String id) {
         //in here I know the source is a resource...
-        Iterable<Vertex> vs = source().in(contains) //up from resource to environment
+        Iterable<Vertex> vs = source().in(contains) //up from resource to environment (or feed)
                 .out(contains).hasType(metric) //down to metrics
                 .hasEid(id).cast(Vertex.class);
 

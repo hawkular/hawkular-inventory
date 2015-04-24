@@ -16,14 +16,10 @@
  */
 package org.hawkular.inventory.api.observable;
 
-import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Feed;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
@@ -54,33 +50,21 @@ public final class ObservableFeeds {
         }
     }
 
-    public static final class ReadUpdateRegister extends ObservableBase<Feeds.ReadUpdateRegister>
-            implements Feeds.ReadUpdateRegister {
+    public static final class ReadWrite extends ObservableBase.ReadWrite<Feed, Feed.Blueprint, Feed.Update,
+            Feeds.Single, Feeds.Multiple, Feeds.ReadWrite> implements Feeds.ReadWrite {
 
-        ReadUpdateRegister(Feeds.ReadUpdateRegister wrapped, ObservableContext context) {
+        ReadWrite(Feeds.ReadWrite wrapped, ObservableContext context) {
             super(wrapped, context);
         }
 
         @Override
-        public Feeds.Single register(String proposedId, Map<String, Object> properties) {
-            return wrap(ObservableFeeds.Single::new, wrapped.register(proposedId, null));
+        protected BiFunction<Feeds.Single, ObservableContext, ? extends Feeds.Single> singleCtor() {
+            return ObservableFeeds.Single::new;
         }
 
         @Override
-        public Feeds.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrap(ObservableFeeds.Single::new, wrapped.get(id));
-        }
-
-        @Override
-        public Feeds.Multiple getAll(Filter... filters) {
-            return wrap(ObservableFeeds.Multiple::new, wrapped.getAll(filters));
-        }
-
-        @Override
-        public void update(String id, Feed.Update update) throws EntityNotFoundException, IllegalArgumentException {
-            Feed e = wrapped.get(id).entity();
-            wrapped.update(id, update);
-            notify(e, new Action.Update<>(e, update), Action.updated());
+        protected BiFunction<Feeds.Multiple, ObservableContext, ? extends Feeds.Multiple> multipleCtor() {
+            return ObservableFeeds.Multiple::new;
         }
     }
 

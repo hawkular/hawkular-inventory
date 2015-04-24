@@ -79,23 +79,23 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
 
     public static class EntityIdAndPath {
         private final String entityId;
-        private final Filter[] path;
+        private final Filter[][] paths;
 
         public static EntityIdAndPath fromException(EntityAlreadyExistsException e) {
-            return new EntityIdAndPath(e.getEntityId(), e.getPath());
+            return new EntityIdAndPath(e.getEntityId(), e.getPaths());
         }
 
-        public EntityIdAndPath(String entityId, Filter[] path) {
+        public EntityIdAndPath(String entityId, Filter[][] paths) {
             this.entityId = entityId;
-            this.path = path;
+            this.paths = paths;
         }
 
         public String getEntityId() {
             return entityId;
         }
 
-        public Filter[] getPath() {
-            return path;
+        public Filter[][] getPaths() {
+            return paths;
         }
     }
 }

@@ -88,8 +88,8 @@ public final class ObservableEnvironments {
         }
 
         @Override
-        public ObservableFeeds.ReadUpdateRegister feeds() {
-            return wrap(ObservableFeeds.ReadUpdateRegister::new, wrapped.feeds());
+        public ObservableFeeds.ReadWrite feeds() {
+            return wrap(ObservableFeeds.ReadWrite::new, wrapped.feeds());
         }
 
         @Override

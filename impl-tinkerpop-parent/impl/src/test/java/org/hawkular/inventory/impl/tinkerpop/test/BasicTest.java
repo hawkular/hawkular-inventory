@@ -144,7 +144,7 @@ public class BasicTest {
                 .get("host1").metrics().associate("host1_ping_response");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
-                .register("feed1", null).entity().getId().equals("feed1");
+                .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
                 .resources().create(new Resource.Blueprint("feedResource1", "URL")).entity().getId()
@@ -797,11 +797,11 @@ public class BasicTest {
 
     @Test
     public void testNoTwoFeedsWithSameID() throws Exception {
-        Feeds.ReadUpdateRegister feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
+        Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
                 .feeds();
 
-        Feed f1 = feeds.register("feed", null).entity();
-        Feed f2  = feeds.register("feed", null).entity();
+        Feed f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+        Feed f2  = feeds.create(new Feed.Blueprint("feed", null)).entity();
 
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());

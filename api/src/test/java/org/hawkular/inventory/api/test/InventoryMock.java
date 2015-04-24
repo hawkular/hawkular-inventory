@@ -46,7 +46,7 @@ public class InventoryMock {
 
     public static Feeds.Multiple feedsMultiple;
     public static Feeds.Read feedsRead;
-    public static Feeds.ReadUpdateRegister feedsReadUpdateRegister;
+    public static Feeds.ReadWrite feedsReadWrite;
     public static Feeds.Single feedsSingle;
 
     public static Metrics.Multiple metricsMultiple;
@@ -92,7 +92,7 @@ public class InventoryMock {
 
         feedsMultiple = Mockito.mock(Feeds.Multiple.class);
         feedsRead = Mockito.mock(Feeds.Read.class);
-        feedsReadUpdateRegister = Mockito.mock(Feeds.ReadUpdateRegister.class);
+        feedsReadWrite = Mockito.mock(Feeds.ReadWrite.class);
         feedsSingle = Mockito.mock(Feeds.Single.class);
 
         metricsMultiple = Mockito.mock(Metrics.Multiple.class);
@@ -138,7 +138,7 @@ public class InventoryMock {
         when(environmentsRead.getAll(anyVararg())).thenReturn(environmentsMultiple);
         when(environmentsReadWrite.get(any())).thenReturn(environmentsSingle);
         when(environmentsReadWrite.getAll(anyVararg())).thenReturn(environmentsMultiple);
-        when(environmentsSingle.feeds()).thenReturn(feedsReadUpdateRegister);
+        when(environmentsSingle.feeds()).thenReturn(feedsReadWrite);
         when(environmentsSingle.feedlessMetrics()).thenReturn(metricsReadWrite);
         when(environmentsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(environmentsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
@@ -150,9 +150,8 @@ public class InventoryMock {
         when(feedsMultiple.metrics()).thenReturn(metricsRead);
         when(feedsRead.get(any())).thenReturn(feedsSingle);
         when(feedsRead.getAll(anyVararg())).thenReturn(feedsMultiple);
-        when(feedsReadUpdateRegister.get(any())).thenReturn(feedsSingle);
-        when(feedsReadUpdateRegister.getAll(anyVararg())).thenReturn(feedsMultiple);
-        when(feedsReadUpdateRegister.register(any(), any())).thenReturn(feedsSingle);
+        when(feedsReadWrite.get(any())).thenReturn(feedsSingle);
+        when(feedsReadWrite.getAll(anyVararg())).thenReturn(feedsMultiple);
         when(feedsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(feedsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
         when(feedsSingle.resources()).thenReturn(resourcesReadWrite);
