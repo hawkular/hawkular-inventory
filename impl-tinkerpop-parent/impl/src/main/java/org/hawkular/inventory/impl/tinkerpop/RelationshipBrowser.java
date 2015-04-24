@@ -51,7 +51,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
 final class RelationshipBrowser extends AbstractGraphService {
 

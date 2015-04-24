@@ -47,11 +47,24 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
 
 /**
+ * Abstract base class providing the basic context and utility methods needed to translate the inventory traversals into
+ * gremlin queries and the conversion of the model entities into vertices and edges and back.
+ *
+ * <p>An instance is initialized to operate on a particular position in the inventory traversal, represented
+ * by the {@link #sourcePaths} field.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 abstract class AbstractGraphService {
     protected final InventoryContext context;
+
+    /**
+     * Represents the position in the inventory traversal this instance is operating on. The position is actually not
+     * a single "point" in the traversal but a set of them (represented by the paths from the root to all the leaves
+     * in the tree). When extending this position, all leaves are modified in the same way using
+     * {@link org.hawkular.inventory.impl.tinkerpop.FilterApplicator.SymmetricTreeExtender}.
+     */
     protected final FilterApplicator.Tree sourcePaths;
 
     AbstractGraphService(InventoryContext context, FilterApplicator.Tree sourcePaths) {
@@ -59,10 +72,20 @@ abstract class AbstractGraphService {
         this.sourcePaths = sourcePaths;
     }
 
+    /**
+     * Convenience overload for {@link #source(FilterApplicator.Tree)}, calling it with a {@code null}.
+     */
     protected HawkularPipeline<?, Vertex> source() {
         return source(null);
     }
 
+    /**
+     * Creates a query that will resolve all elements in the {@link #sourcePaths} and then will filter the result
+     * using the provided {@code filters}.
+     *
+     * @param filters the filters to apply to the elements on the {@link #sourcePaths} or null if no filtering required
+     * @return a new instance of a Gremlin query corresponding to the traversal
+     */
     protected HawkularPipeline<?, Vertex> source(FilterApplicator.Tree filters) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(context.getGraph()).V();
 
@@ -73,21 +96,51 @@ abstract class AbstractGraphService {
         return ret;
     }
 
+    /**
+     * Converts the provided filters into 1 element 2-dimensional array and calls {@link #pathWith(Filter[][])}.
+     *
+     * @param filters the filters to extend the path with
+     * @return the tree extender that can be used to further modify the path tree
+     * @see #pathWith(Filter[][])
+     */
     protected FilterApplicator.SymmetricTreeExtender pathWith(Filter... filters) {
         Filter[][] fs = new Filter[1][];
         fs[0] = filters;
         return pathWith(sourcePaths, fs);
     }
 
+    /**
+     * Takes the {@link #sourcePaths} and creates a new tree extender from it, extending each of the leaves of the tree
+     * with the provided list of filters (each filter creates a new branch in the tree).
+     *
+     * @param filters the set of filters to extend the path with
+     * @return the tree extender that can be used to further modify the path tree
+     */
     protected FilterApplicator.SymmetricTreeExtender pathWith(Filter[][] filters) {
         return pathWith(sourcePaths, filters);
     }
 
+    /**
+     * Takes the {@code sourcePaths} and creates a new tree extender from it, extending each of the leaves of the tree
+     * with the provided list of filters (each filter creates a new branch in the tree).
+     *
+     * @param sourcePaths the path tree to extend
+     * @param filters     the set of filters to extend the path with
+     * @return the tree extender that can be used to further modify the path tree
+     */
     public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths,
             Filter[][] filters) {
         return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, filters);
     }
 
+    /**
+     * Converts the provided {@code filters} into 1-element 2-dimensional array and calls
+     * {@link #pathWith(FilterApplicator.Tree, Filter[][])}.
+     *
+     * @param sourcePaths the path tree to extend
+     * @param filters     the filters to apply
+     * @return the tree extender that can be used to further modify the path tree
+     */
     public static FilterApplicator.SymmetricTreeExtender pathWith(FilterApplicator.Tree sourcePaths,
             Filter... filters) {
         Filter[][] fs = new Filter[1][];
@@ -95,28 +148,59 @@ abstract class AbstractGraphService {
         return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, fs);
     }
 
+    /**
+     * Gets the value of the property from the vertex
+     */
     static String getProperty(Vertex v, Constants.Property property) {
         return v.getProperty(property.name());
     }
 
+    /**
+     * Gets the user-assigned entity ID from the vertex.
+     */
     static String getEid(Vertex v) {
         return getProperty(v, Constants.Property.__eid);
     }
 
+    /**
+     * Gets the generated relationship ID from the edge.
+     */
     static String getEid(Edge e) {
         return e.getProperty(Constants.Property.__eid.name());
     }
 
+    /**
+     * Gets the type of the entity that the provided vertex represents.
+     */
     static String getType(Vertex v) {
         return getProperty(v, Constants.Property.__type);
     }
 
+    /**
+     * Adds an edge with the provided label from the provided source to the provided target.
+     * Makes sure that the edge ID is properly stored (some of the tinkerpop impls cannot query by edge id, which we
+     * need, and so we have to work around that limitation by storing the edge's unique ID as an additional property
+     * on the edge).
+     *
+     * <p>Note that this does NOT commit the changes to the graph!
+     *
+     * @param source the source vertex
+     * @param label  the label of the edge
+     * @param target the target of the edge
+     * @return the created edge
+     */
     protected Edge addEdge(Vertex source, String label, Vertex target) {
         Edge e = source.addEdge(label, target);
         e.setProperty(Constants.Property.__eid.name(), e.getId());
         return e;
     }
 
+    /**
+     * Finds the provided entity in the graph and returns the pre-existing vertex representing it.
+     *
+     * @param e the entity to convert
+     * @return the vertex representing the entity
+     */
     protected Vertex convert(Entity<?, ?> e) {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(context.getGraph())
                 .V();
@@ -130,7 +214,7 @@ abstract class AbstractGraphService {
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitEnvironment(Environment environment,
-                                                                                   Void ignored) {
+                            Void ignored) {
                         return ret.hasType(Type.tenant).hasEid(environment.getTenantId()).out(contains)
                                 .hasType(Type.environment);
                     }
@@ -186,6 +270,13 @@ abstract class AbstractGraphService {
         return vs.hasNext() ? vs.cast(Vertex.class).next() : null;
     }
 
+    /**
+     * Converts the vertex into an entity with all fields and properties initialized according to the data from the
+     * vertex.
+     *
+     * @param v the vertex to convert
+     * @return the entity corresponding to the vertex
+     */
     static Entity<?, ?> convert(Vertex v) {
         Type type = Type.valueOf(getType(v));
 
@@ -212,7 +303,7 @@ abstract class AbstractGraphService {
                         .next();
                 MetricType md = (MetricType) convert(mdv);
                 e = new Metric(getEid(getTenantVertexOf(environmentVertex)), getEid(environmentVertex),
-                        feedVertex == null ? null : getEid(feedVertex), getEid(v),md);
+                        feedVertex == null ? null : getEid(feedVertex), getEid(v), md);
                 break;
             case metricType:
                 e = new MetricType(getEid(getTenantVertexOf(v)), getEid(v), MetricUnit.fromDisplayName(
@@ -287,11 +378,9 @@ abstract class AbstractGraphService {
         }, null);
     }
 
-    static boolean matches(Vertex v, Entity e) {
-        return Type.valueOf(getType(v)) == Type.of(e)
-                && getEid(v).equals(e.getId());
-    }
-
+    /**
+     * Returns the vertex of the tenant of the entity represented by the provided vertex or null if not applicable.
+     */
     static Vertex getTenantVertexOf(Vertex entityVertex) {
         Type type = Type.valueOf(getType(entityVertex));
 
@@ -357,6 +446,12 @@ abstract class AbstractGraphService {
         }
     }
 
+    /**
+     * Returns a new path context with the current {@link #sourcePaths} extended by the provided "select" filter.
+     *
+     * @param select the select to advance the path further
+     * @return a new path context instance
+     */
     protected PathContext pathToHereWithSelect(Filter.Accumulator select) {
         Filter[][] selects = null;
         if (select != null) {
@@ -366,6 +461,13 @@ abstract class AbstractGraphService {
         return new PathContext(pathWith().get(), selects);
     }
 
+    /**
+     * Return a new path context with the current {@link #sourcePaths} extended by all the provided select filters.
+     * This essentially creates branches in the traversal.
+     *
+     * @param selects the selects to branch the source path with
+     * @return a new path context instance
+     */
     protected PathContext pathToHereWithSelects(Filter.Accumulator... selects) {
         Filter[][] sa = new Filter[selects.length][];
         for (int i = 0; i < selects.length; ++i) {
@@ -375,6 +477,15 @@ abstract class AbstractGraphService {
         return new PathContext(pathWith().get(), sa);
     }
 
+    /**
+     * Updates the properties of the element, disregarding any changes of the disallowed properties
+     *
+     * <p> The list of the disallowed properties will usually come from {@link Type#getMappedProperties()}.
+     *
+     * @param e                    the element to update properties of
+     * @param properties           the properties to update
+     * @param disallowedProperties the list of properties that are not allowed to change.
+     */
     protected static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
         Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
 
@@ -382,7 +493,7 @@ abstract class AbstractGraphService {
         String[] toRemove = e.getPropertyKeys().stream()
                 .filter((p) -> !disallowed.contains(p) && !properties.containsKey(p)).toArray(String[]::new);
 
-        for(String p : toRemove) {
+        for (String p : toRemove) {
             e.removeProperty(p);
         }
 
@@ -394,6 +505,13 @@ abstract class AbstractGraphService {
         });
     }
 
+    /**
+     * If the properties map contains a key from the disallowed properties, throw an exception.
+     *
+     * @param properties           the properties to check
+     * @param disallowedProperties the list of property names that cannot appear in the provided map
+     * @throws IllegalArgumentException if the map contains one or more disallowed keys
+     */
     protected static void checkProperties(Map<String, Object> properties, String[] disallowedProperties) {
         if (properties == null || properties.isEmpty()) {
             return;

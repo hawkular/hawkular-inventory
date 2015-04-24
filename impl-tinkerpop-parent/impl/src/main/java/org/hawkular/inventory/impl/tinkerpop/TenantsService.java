@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.model.Tenant;
 
 /**
 * @author Lukas Krejci
-* @since 1.0
+ * @since 0.0.1
 */
 final class TenantsService extends AbstractSourcedGraphService<Tenants.Single, Tenants.Multiple, Tenant,
         Tenant.Blueprint, Tenant.Update> implements Tenants.ReadWrite, Tenants.Read {

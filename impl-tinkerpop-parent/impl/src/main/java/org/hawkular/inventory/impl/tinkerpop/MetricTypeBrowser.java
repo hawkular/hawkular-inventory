@@ -26,7 +26,7 @@ import java.util.Set;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class MetricTypeBrowser extends AbstractBrowser<MetricType, MetricType.Blueprint, MetricType.Update> {
 

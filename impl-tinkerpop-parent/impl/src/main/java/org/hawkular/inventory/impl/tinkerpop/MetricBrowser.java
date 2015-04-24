@@ -24,7 +24,7 @@ import java.util.Set;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metric.Update> {
 

@@ -42,7 +42,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class MetricsService
         extends AbstractSourcedGraphService<Metrics.Single, Metrics.Multiple, Metric, Metric.Blueprint, Metric.Update>

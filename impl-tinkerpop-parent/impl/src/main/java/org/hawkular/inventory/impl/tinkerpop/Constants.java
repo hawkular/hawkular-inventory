@@ -33,7 +33,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__version
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class Constants {
 
@@ -77,7 +77,7 @@ final class Constants {
         private final String[] mappedProperties;
         private final Class<? extends Entity> entityType;
 
-        private Type(Class<? extends Entity> entityType, Property... mappedProperties) {
+        Type(Class<? extends Entity> entityType, Property... mappedProperties) {
             this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 2];
             Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.__type.name() :
@@ -147,6 +147,9 @@ final class Constants {
             return entityType;
         }
 
+        /**
+         * @return list of properties that are explicitly mapped to entity class properties.
+         */
         public String[] getMappedProperties() {
             return mappedProperties;
         }

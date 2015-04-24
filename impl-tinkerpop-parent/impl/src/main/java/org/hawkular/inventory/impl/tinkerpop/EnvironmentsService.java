@@ -29,7 +29,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class EnvironmentsService extends
         AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, Environment.Blueprint,

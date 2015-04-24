@@ -38,7 +38,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 /**
  * @author Lukas Krejci
  * @author Jiri Kremser
- * @since 1.0
+ * @since 0.0.1
  */
 final class RelationshipService<E extends Entity<B, U>, B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends AbstractGraphService implements Relationships.ReadWrite, Relationships.Read {

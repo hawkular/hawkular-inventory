@@ -27,8 +27,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * An abstract base class for all browser interface implementations. Browsers are interfaces like
+ * {@link org.hawkular.inventory.api.Environments.Single} that the user can use to proceed with the traversal across
+ * the inventory. Unlike the browsers, the "access" interfaces like {@link org.hawkular.inventory.api.Environments.Read}
+ * to filter the the elements at the current position in the traversal.
+ *
+ * <p>For the sake of code reuse this class inherits from {@link AbstractSourcedGraphService} even though some of the
+ * abstract methods defined there don't make sense in a browser interface and thus are implemented as final here and
+ * throw exceptions.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
         extends AbstractSourcedGraphService<Void, Void, E, B, U> {

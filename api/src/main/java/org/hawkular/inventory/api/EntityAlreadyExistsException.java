@@ -50,6 +50,9 @@ public final class EntityAlreadyExistsException extends InventoryException {
         return entityId;
     }
 
+    /**
+     * The exception occurred when trying to access at least one of the provided paths.
+     */
     public Filter[][] getPaths() {
         return paths;
     }

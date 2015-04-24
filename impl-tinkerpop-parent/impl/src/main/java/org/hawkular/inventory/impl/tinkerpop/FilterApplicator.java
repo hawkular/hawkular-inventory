@@ -38,9 +38,17 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
+ * A filter applicator applies a filter to a Gremlin query.
+ *
+ * <p>There is a difference in how certain filters are applied if the query being constructed is considered to be a path
+ * to a certain entity or if the filter is used to trim down the number of results.
+ *
+ * @see PathVisitor
+ * @see FilterVisitor
+ *
  * @author Lukas Krejci
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
 abstract class FilterApplicator<T extends Filter> {
     protected final Type type;
@@ -51,6 +59,14 @@ abstract class FilterApplicator<T extends Filter> {
         this.filter = f;
     }
 
+    /**
+     * Applies all the filters from the applicator tree to the provided Gremlin query.
+     *
+     * @param filterTree the tree of filters to apply to the query
+     * @param q          the query to update with filters from the tree
+     * @param <S>        type of the source of the query
+     * @param <E>        type of the output of the query
+     */
     @SuppressWarnings("unchecked")
     public static <S, E> void applyAll(Tree filterTree, HawkularPipeline<S, E> q) {
         if (filterTree == null) {
@@ -79,16 +95,29 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    public static Filter[] filters(FilterApplicator... applicators) {
+    /**
+     * Converts the list of applicators to the list of filters.
+     *
+     * @param applicators the list of applicators
+     * @return the list of corresponding filters
+     */
+    private static Filter[] filters(FilterApplicator... applicators) {
         Filter[] ret = new Filter[applicators.length];
 
         for(int i = 0; i < applicators.length; ++i) {
-            ret[i] = applicators[i].filter();
+            ret[i] = applicators[i].filter;
         }
 
         return ret;
     }
 
+    /**
+     * Converts the provided filter tree to a list of paths (array of filters). Each of the paths in the result
+     * represent 1 branch from the tree from root to some leaf.
+     *
+     * @param applicators the tree of filters
+     * @return the list of paths
+     */
     public static Filter[][] filters(FilterApplicator.Tree applicators) {
         List<List<Filter>> paths = new ArrayList<>();
 
@@ -143,13 +172,13 @@ abstract class FilterApplicator<T extends Filter> {
 
     }
 
-    public static FilterApplicator<?>[] with(Type type, Filter... filters) {
+    private static FilterApplicator<?>[] with(Type type, Filter... filters) {
         FilterApplicator<?>[] ret = new FilterApplicator[filters.length];
         Arrays.setAll(ret, (i) -> FilterApplicator.with(type, filters[i]));
         return ret;
     }
 
-    public static FilterApplicator<?> with(Type type, Filter filter) {
+    private static FilterApplicator<?> with(Type type, Filter filter) {
         if (filter == null) {
             throw new IllegalArgumentException("filter == null");
         }
@@ -177,6 +206,13 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
+    /**
+     * Creates a new symmetric tree extender that start off from the provided list of paths.
+     *
+     * @param type    the type of the traversal
+     * @param filters the list of paths
+     * @return an extender that can be used to further extend the provided paths
+     */
     public static SymmetricTreeExtender from(Type type, Filter[][] filters) {
         return new SymmetricTreeExtender(type, filters);
     }
@@ -195,6 +231,12 @@ abstract class FilterApplicator<T extends Filter> {
         return new SymmetricTreeExtender(filters);
     }
 
+    /**
+     * To be implemented by inheritors, this applies the filter this applicator holds to the provided query taking into
+     * the account the type of the filter.
+     *
+     * @param query the query to update with filter
+     */
     public abstract void applyTo(HawkularPipeline<?, ?> query);
 
     public Filter filter() {
@@ -203,10 +245,10 @@ abstract class FilterApplicator<T extends Filter> {
 
     @Override
     public String toString() {
-        return "FilterApplicator[type=" + type + ", filter=" + filter() + "]";
+        return "FilterApplicator[type=" + type + ", filter=" + filter + "]";
     }
 
-    private static final class RelatedApplicator<T extends Related> extends FilterApplicator<Related> {
+    private static final class RelatedApplicator<T extends Related<?>> extends FilterApplicator<Related<?>> {
 
         private RelatedApplicator(T filter, Type type) {
             super(type, filter);
@@ -315,6 +357,9 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
+    /**
+     * Constructs an filter applicator tree by extending all the leaves with a uniform set of filters at a time.
+     */
     static class SymmetricTreeExtender {
         private Tree.Builder filters;
 
@@ -368,6 +413,17 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
+    /**
+     * Represents a tree of filter applicators.
+     * The applicators that are used to represent a Gremlin query (so that new query instances can be generated at will)
+     * form a tree because of the fact, environments can both contain resources or metrics directly or they can contain
+     * feeds that in turn contain the metrics and resources.
+     *
+     * <p>The API contains a method to traverse both of these kinds of "placement" of metrics or resources
+     * simultaneously. This is nice from a user perspective but creates problems in the impl, because using the
+     * relationships of the resources or metrics, one can construct queries, the would be able to branch multiple times
+     * and hence form a tree.
+     */
     public static final class Tree {
         FilterApplicator<?>[] filters;
         List<Tree> subTrees = new ArrayList<>();
@@ -393,6 +449,9 @@ abstract class FilterApplicator<T extends Filter> {
             List<Builder> children = new ArrayList<>();
             boolean done;
 
+            /**
+             * Creates a new branch in the tree and returns a builder of that branch.
+             */
             Builder branch() {
                 Builder child = new Builder();
                 child.parent = this;
@@ -401,6 +460,9 @@ abstract class FilterApplicator<T extends Filter> {
                 return child;
             }
 
+            /**
+             * Concludes the work on a branch and returns a builder of the parent "node", if any.
+             */
             Builder done() {
                 if (done) {
                     return parent;
@@ -421,11 +483,20 @@ abstract class FilterApplicator<T extends Filter> {
                 return parent;
             }
 
+            /**
+             * Sets the filters to be used on the current node in the tree.
+             * @param filters the list of filters to apply to the query at this position in the tree.
+             * @return
+             */
             Builder with(FilterApplicator<?>... filters) {
                 Collections.addAll(this.filters, filters);
                 return this;
             }
 
+            /**
+             * Builds the <b>whole</b> tree regardless of where in the tree the current builder "operates".
+             * @return the fully built tree
+             */
             Tree build() {
                 Tree.Builder root = this;
                 while (true) {

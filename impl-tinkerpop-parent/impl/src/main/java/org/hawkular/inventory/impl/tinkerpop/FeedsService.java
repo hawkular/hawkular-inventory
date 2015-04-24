@@ -30,7 +30,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, Feed.Blueprint,
         Feed.Update> implements Feeds.ReadWrite, Feeds.Read {

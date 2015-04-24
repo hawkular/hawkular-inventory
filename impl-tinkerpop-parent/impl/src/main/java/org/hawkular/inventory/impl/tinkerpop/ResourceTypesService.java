@@ -30,7 +30,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class ResourceTypesService extends
         AbstractSourcedGraphService<ResourceTypes.Single, ResourceTypes.Multiple, ResourceType, ResourceType.Blueprint,

@@ -33,7 +33,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Update> {
 
