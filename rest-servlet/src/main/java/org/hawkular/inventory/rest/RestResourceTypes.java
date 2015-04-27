@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.IdJSON;
 
@@ -41,9 +42,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 /**
  * @author Lukas Krejci
@@ -60,15 +62,18 @@ public class RestResourceTypes {
 
     @GET
     @Path("/{tenantId}/resourceTypes")
-    @ApiOperation("Retrieves all resource types")
+    @ApiOperation("Retrieves all resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resource types"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("tenantId") String tenantId) {
-        return Response.ok(inventory.tenants().get(tenantId).resourceTypes().getAll().entities()).build();
+    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uriInfo) {
+        Page<ResourceType> ret = inventory.tenants().get(tenantId).resourceTypes().getAll()
+                .entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -87,33 +92,37 @@ public class RestResourceTypes {
 
     @GET
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
-    @ApiOperation("Retrieves all metric types associated with the resource type")
+    @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<MetricType> getMetricTypes(@PathParam("tenantId") String tenantId,
-                                          @PathParam("resourceTypeId") String resourceTypeId) {
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().getAll()
-                .entities();
+    public Response getMetricTypes(@PathParam("tenantId") String tenantId,
+            @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+        Page<MetricType> ret = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
+                .getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
     @Path("/{tenantId}/resourceTypes/{resourceTypeId}/resources")
-    @ApiOperation("Retrieves all resources with given resource types")
+    @ApiOperation("Retrieves all resources with given resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resources"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Resource> getResources(@PathParam("tenantId") String tenantId,
-                                      @PathParam("resourceTypeId") String resourceTypeId) {
+    public Response getResources(@PathParam("tenantId") String tenantId,
+            @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
 
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .resources().getAll().entities();
+        Page<Resource> ret = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).resources().getAll()
+                .entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @POST

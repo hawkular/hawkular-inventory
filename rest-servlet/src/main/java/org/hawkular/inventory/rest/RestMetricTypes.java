@@ -24,6 +24,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
@@ -38,9 +39,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 /**
  * @author Lukas Krejci
@@ -57,14 +58,17 @@ public class RestMetricTypes {
 
     @GET
     @Path("/{tenantId}/metricTypes")
-    @ApiOperation("Retrieves all metric types")
+    @ApiOperation("Retrieves all metric types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<MetricType> getAll(@PathParam("tenantId") String tenantId) {
-        return inventory.tenants().get(tenantId).metricTypes().getAll().entities();
+    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uriInfo) {
+        Page<MetricType> ret = inventory.tenants().get(tenantId).metricTypes().getAll()
+                .entities(extractPaging(uriInfo));
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET

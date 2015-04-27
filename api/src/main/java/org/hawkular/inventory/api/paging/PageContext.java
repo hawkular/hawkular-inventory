@@ -35,7 +35,7 @@ public class PageContext {
         if (orders.length == 0) {
             throw new IllegalArgumentException("At least one order specification must be supplied.");
         }
-        this.pageNumber = pageNumber;
+        this.pageNumber = pageSize >= 0 ? pageNumber : 0;
         this.pageSize = pageSize;
         List<Order> tmp = new ArrayList<>();
         Collections.addAll(tmp, orders);
@@ -43,7 +43,7 @@ public class PageContext {
     }
 
     public PageContext(int pageNumber, int pageSize, Iterable<Order> orders) {
-        this.pageNumber = pageNumber;
+        this.pageNumber = pageSize >= 0 ? pageNumber : 0;
         this.pageSize = pageSize;
         List<Order> tmp = new ArrayList<>();
         orders.forEach(tmp::add);

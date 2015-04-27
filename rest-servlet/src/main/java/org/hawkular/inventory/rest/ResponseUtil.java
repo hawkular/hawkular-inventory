@@ -19,17 +19,11 @@ package org.hawkular.inventory.rest;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.rest.json.Link;
-import org.hawkular.inventory.rest.json.PagingCollection;
 
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,9 +32,6 @@ import java.util.List;
  * @since 0.0.1
  */
 final class ResponseUtil {
-
-    public static final MediaType WRAPPED_COLLECTION_JSON_TYPE = new MediaType("application",
-            "vnd.hawkular.wrapped+json");
 
     /**
      * This method exists solely to concentrate usage of {@link javax.ws.rs.core.Response#created(java.net.URI)} into
@@ -54,75 +45,23 @@ final class ResponseUtil {
         return Response.status(Response.Status.CREATED).location(info.getRequestUriBuilder().path(id).build());
     }
 
-    /**
-     * Add the first acceptable media type from the provided headers to the response builder.
-     *
-     * @param builder the response builder
-     * @param headers the headers containing the acceptable media types
-     * @return the response builder
-     */
-    public static Response.ResponseBuilder withMediaType(Response.ResponseBuilder builder, HttpHeaders headers) {
-        MediaType mediaType = headers.getAcceptableMediaTypes().get(0);
-        builder.type(mediaType);
-        return builder;
-    }
+    public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
+            Page<T> page) {
 
-    /**
-     * Creates a response builder with "ok" response containing the provided list and applied pagination
-     * as prescribed by the {@code page}.
-     *
-     * @param headers     the http headers
-     * @param uriInfo     uri info
-     * @param page        the "original" list coming from the backend containing the paging info
-     * @param results     the result list with REST-ready entities
-     * @param elementType the type of the entities contained in the result list
-     * @param <T>         the type of the entities contained in the result list
-     * @return the builder for the response
-     */
-    public static <T> Response.ResponseBuilder paginate(HttpHeaders headers, UriInfo uriInfo, Page<?> page,
-            List<T> results, final Class<T> elementType) {
-        Response.ResponseBuilder builder = Response.ok();
-        withMediaType(builder, headers);
+        //extract the data out of the page
+        List<T> data = new ArrayList<>(page);
 
-        MediaType mediaType = headers.getAcceptableMediaTypes().get(0);
+        response.entity(data);
 
-        if (mediaType.equals(WRAPPED_COLLECTION_JSON_TYPE)) {
-            wrapForPaging(builder, uriInfo, page, results);
-        } else {
-            ParameterizedType myType = new ParameterizedType() {
-                final Type[] params = new Type[]{elementType};
+        createPagingHeader(response, uriInfo, page);
 
-                @Override
-                public Type[] getActualTypeArguments() {
-                    return params;
-                }
-
-                @Override
-                public Type getRawType() {
-                    return List.class;
-                }
-
-                @Override
-                public Type getOwnerType() {
-                    return null;
-                }
-            };
-            GenericEntity<List<T>> list = new GenericEntity<>(results, myType);
-            builder.entity(list);
-            createPagingHeader(builder, uriInfo, page);
-        }
-
-        return builder;
+        return response;
     }
 
     /**
      * Create the paging headers for collections and attach them to the passed builder. Those are represented as
      * <i>Link:</i> http headers that carry the URL for the pages and the respective relation.
      * <br/>In addition a <i>X-Total-Count</i> header is created that contains the whole collection size.
-     * <p/>
-     * If you need no further "building" of the response apart from paginating, you should look into using
-     * the {@link #paginate(javax.ws.rs.core.HttpHeaders, javax.ws.rs.core.UriInfo,
-     * org.hawkular.inventory.api.paging.Page, java.util.List, Class)}.
      *
      * @param builder    The ResponseBuilder that receives the headers
      * @param uriInfo    The uriInfo of the incoming request to build the urls
@@ -166,57 +105,5 @@ final class ResponseUtil {
 
         // Create a total size header
         builder.header("X-Total-Count", resultList.getTotalSize());
-    }
-
-    /**
-     * Wrap the passed collection #resultList in an object with paging information
-     * <p/>
-     * If you need no further "building" of the response apart from paginating, you should look into using
-     * the {@link #paginate(javax.ws.rs.core.HttpHeaders, javax.ws.rs.core.UriInfo,
-     * org.hawkular.inventory.api.paging.Page, java.util.List, Class)}.
-     *
-     * @param builder      ResponseBuilder to add the entity to
-     * @param uriInfo      UriInfo to construct paging links
-     * @param originalList The original list to obtain the paging info from
-     * @param resultList   The list of result items
-     */
-    public static <T> void wrapForPaging(Response.ResponseBuilder builder, UriInfo uriInfo, final Page<?> originalList,
-            final Collection<T> resultList) {
-
-        PagingCollection<T> pColl = new PagingCollection<T>(resultList);
-        pColl.setTotalSize(originalList.getTotalSize());
-        PageContext pageControl = originalList.getPageContext();
-        pColl.setPageSize(pageControl.getPageSize());
-        int page = pageControl.getPageNumber();
-        pColl.setCurrentPage(page);
-        long lastPage = (originalList.getTotalSize() / pageControl.getPageSize()) - 1; // -1 as page # is 0 based
-        pColl.setLastPage(lastPage);
-
-        UriBuilder uriBuilder;
-        if (originalList.getTotalSize() > (page + 1) * pageControl.getPageSize()) {
-            int nextPage = page + 1;
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
-            uriBuilder.replaceQueryParam("page", nextPage);
-            pColl.addLink(new Link("next", uriBuilder.build().toString()));
-        }
-        if (page > 0) {
-            int prevPage = page - 1;
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
-            uriBuilder.replaceQueryParam("page", prevPage);
-            pColl.addLink(new Link("prev", uriBuilder.build().toString()));
-        }
-
-        // A link to the last page
-        if (pageControl.isLimited()) {
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
-            uriBuilder.replaceQueryParam("page", lastPage);
-            pColl.addLink(new Link("last", uriBuilder.build().toString()));
-        }
-
-        // A link to the current page
-        uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
-        pColl.addLink(new Link("current", uriBuilder.build().toString()));
-
-        builder.entity(pColl);
     }
 }

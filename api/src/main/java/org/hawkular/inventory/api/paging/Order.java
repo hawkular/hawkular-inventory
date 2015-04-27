@@ -24,17 +24,17 @@ public final class Order {
     private final String field;
     private final Direction direction;
 
+    public Order(String field, Direction direction) {
+        this.field = field;
+        this.direction = direction;
+    }
+
     public static Order by(String field, Direction direction) {
         return new Order(field, direction);
     }
 
     public static Order unspecified() {
         return new Order(null, Direction.ASCENDING);
-    }
-
-    public Order(String field, Direction direction) {
-        this.field = field;
-        this.direction = direction;
     }
 
     public Direction getDirection() {
@@ -76,6 +76,28 @@ public final class Order {
     }
 
     public enum Direction {
-        ASCENDING, DESCENDING
+        ASCENDING("asc"), DESCENDING("desc");
+
+        private final String shortString;
+
+        Direction(String shortString) {
+            this.shortString = shortString;
+        }
+
+        public static Direction fromShortString(String shortString) {
+            switch (shortString) {
+                case "asc":
+                    return ASCENDING;
+                case "desc":
+                    return DESCENDING;
+                default:
+                    throw new IllegalArgumentException("Unkown short ordering direction representation: " +
+                            shortString);
+            }
+        }
+
+        public String getShortString() {
+            return shortString;
+        }
     }
 }

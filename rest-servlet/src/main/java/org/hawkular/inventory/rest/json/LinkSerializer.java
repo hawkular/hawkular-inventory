@@ -17,7 +17,6 @@
 package org.hawkular.inventory.rest.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
@@ -37,7 +36,7 @@ public class LinkSerializer extends JsonSerializer<Link> {
 
     @Override
     public void serialize(Link link, JsonGenerator jsonGenerator,
-            SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
+            SerializerProvider serializerProvider) throws IOException {
 
         jsonGenerator.writeStartObject();
         jsonGenerator.writeFieldName(link.getRel());

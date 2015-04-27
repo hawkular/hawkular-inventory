@@ -47,7 +47,7 @@ public class LinkDeserializer extends JsonDeserializer<Link> {
     Pattern textPattern = Pattern.compile("\\S+"); // Non whitespace; could possibly be narrowed
 
     @Override
-    public Link deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public Link deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
 
         String tmp = jp.getText(); // {
         validate(jp, tmp, "{");

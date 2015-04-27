@@ -75,7 +75,7 @@ public final class Pager extends PageContext {
      * @return a new pager instance
      */
     public Pager nextPage() {
-        if (getPageSize() > 0) {
+        if (getPageSize() >= 0) {
             return new Pager(getPageNumber() + 1, getPageSize(), getOrder());
         } else {
             return this;
@@ -92,7 +92,7 @@ public final class Pager extends PageContext {
      * @return a new pager instance
      */
     public Pager previousPage() {
-        if (getPageNumber() > 0 && getPageSize() > 0) {
+        if (getPageNumber() > 0 && getPageSize() >= 0) {
             return new Pager(getPageNumber() - 1, getPageSize(), getOrder());
         } else {
             return this;
