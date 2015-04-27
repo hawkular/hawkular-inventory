@@ -26,6 +26,7 @@ import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
@@ -46,6 +47,9 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import org.junit.After;
 import org.junit.Assert;
@@ -915,6 +919,37 @@ public class BasicTest {
                 .getAll(RelationWith.name("contains")).entities().iterator().next();
 
         Assert.assertEquals(0, r.getProperties().size());
+    }
+
+    @Test
+    public void testPaging() throws Exception {
+        Page<Metric> allResults = inventory.tenants().getAll().environments().getAll().metrics().getAll()
+                .entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING)));
+
+        assert allResults.size() == 3;
+
+        Pager firstPage = new Pager(0, 1, Order.by("id", Order.Direction.DESCENDING));
+
+        Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().metrics().getAll();
+
+        Page<Metric> ms = metrics.entities(firstPage);
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert ms.get(0).equals(allResults.get(0));
+
+        ms = metrics.entities(firstPage.nextPage());
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert ms.get(0).equals(allResults.get(1));
+
+        ms = metrics.entities(firstPage.nextPage().nextPage());
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert ms.get(0).equals(allResults.get(2));
+
+        ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
+        assert ms.getTotalSize() == 3;
+        assert ms.size() == 0;
     }
 
     @SuppressWarnings("UnusedDeclaration")

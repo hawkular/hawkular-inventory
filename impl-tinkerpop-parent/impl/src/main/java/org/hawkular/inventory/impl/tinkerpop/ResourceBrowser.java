@@ -24,8 +24,8 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
@@ -84,8 +84,8 @@ final class ResourceBrowser extends AbstractBrowser<Resource, Resource.Blueprint
             }
 
             @Override
-            public Set<Resource> entities() {
-                return b.entities();
+            public Page<Resource> entities(Pager pager) {
+                return b.entities(pager);
             }
         };
     }

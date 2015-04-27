@@ -39,11 +39,12 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -98,8 +99,8 @@ final class RelationshipBrowser extends AbstractGraphService {
 
         return new Relationships.Multiple() {
             @Override
-            public Set<Relationship> entities() {
-                HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
+            public Page<Relationship> entities(Pager pager) {
+                HawkularPipeline<?, Edge> edges = b.source().counter("total").page(pager).cast(Edge.class);
 
                 List<String> mappedProperties = Arrays.asList(RelationshipService.MAPPED_PROPERTIES);
 
@@ -118,7 +119,7 @@ final class RelationshipBrowser extends AbstractGraphService {
                                     .build());
                         });
 
-                return relationshipStream.collect(Collectors.toSet());
+                return new Page<>(relationshipStream.collect(Collectors.toList()), pager, edges.getCount("total"));
             }
 
             @Override

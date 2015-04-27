@@ -25,10 +25,11 @@ import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -162,8 +163,8 @@ public class ObservableBase<T> {
             super(wrapped, context);
         }
 
-        public Set<E> entities() {
-            return wrapped.entities();
+        public Page<E> entities(Pager pager) {
+            return wrapped.entities(pager);
         }
     }
 

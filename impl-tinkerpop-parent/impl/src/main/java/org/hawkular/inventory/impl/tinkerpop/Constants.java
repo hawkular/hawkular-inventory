@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -63,7 +64,15 @@ final class Constants {
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
-        __unit
+        __unit;
+
+        public static String mapUserDefined(String property) {
+            if (AbstractElement.ID_PROPERTY.equals(property)) {
+                return __eid.name();
+            } else {
+                return property;
+            }
+        }
     }
 
     /**

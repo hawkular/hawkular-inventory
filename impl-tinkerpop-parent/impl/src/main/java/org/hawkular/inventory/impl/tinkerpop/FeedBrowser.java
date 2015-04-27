@@ -24,8 +24,8 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Resource;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
@@ -68,8 +68,8 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
         return new Feeds.Multiple() {
 
             @Override
-            public Set<Feed> entities() {
-                return b.entities();
+            public Page<Feed> entities(Pager pager) {
+                return b.entities(pager);
             }
 
             @Override

@@ -28,8 +28,8 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
@@ -107,8 +107,8 @@ final class TenantBrowser extends AbstractBrowser<Tenant, Tenant.Blueprint, Tena
             }
 
             @Override
-            public Set<Tenant> entities() {
-                return b.entities();
+            public Page<Tenant> entities(Pager pager) {
+                return b.entities(pager);
             }
         };
     }
