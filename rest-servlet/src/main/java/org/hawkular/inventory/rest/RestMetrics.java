@@ -138,8 +138,9 @@ public class RestMetrics {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Metric getMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("metricId") String metricId) {
+                            @PathParam("environmentId") String environmentId,
+                            @PathParam("feedId") String feedId,
+                            @PathParam("metricId") String metricId) {
 
         return inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
                 .get(metricId).entity();
@@ -154,10 +155,10 @@ public class RestMetrics {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Metric> getMetrics(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId,
-            @QueryParam("feedless") @DefaultValue("false") boolean feedless,
-            @Context UriInfo uriInfo) {
+    public Response getMetrics(@PathParam("tenantId") String tenantId,
+                               @PathParam("environmentId") String environmentId,
+                               @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+                               @Context UriInfo uriInfo) {
 
         Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
 
@@ -175,9 +176,10 @@ public class RestMetrics {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Metric> getMetrics(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @Context UriInfo uriInfo) {
+    public Response getMetrics(@PathParam("tenantId") String tenantId,
+                                  @PathParam("environmentId") String environmentId,
+                                  @PathParam("feedId") String feedId,
+                                  @Context UriInfo uriInfo) {
 
         Page<Metric> ret = inventory.tenants().get(tenantId).environments().get(environmentId).feeds()
                 .get(feedId).metrics().getAll().entities(RequestUtil.extractPaging(uriInfo));

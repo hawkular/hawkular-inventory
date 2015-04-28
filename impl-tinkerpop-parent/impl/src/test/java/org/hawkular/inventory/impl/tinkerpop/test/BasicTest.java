@@ -950,14 +950,14 @@ public class BasicTest {
 
     @Test
     public void testPaging() throws Exception {
-        Page<Metric> allResults = inventory.tenants().getAll().environments().getAll().metrics().getAll()
+        Page<Metric> allResults = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll()
                 .entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING)));
 
         assert allResults.size() == 3;
 
         Pager firstPage = new Pager(0, 1, Order.by("id", Order.Direction.DESCENDING));
 
-        Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().metrics().getAll();
+        Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll();
 
         Page<Metric> ms = metrics.entities(firstPage);
         assert ms.size() == 1;
