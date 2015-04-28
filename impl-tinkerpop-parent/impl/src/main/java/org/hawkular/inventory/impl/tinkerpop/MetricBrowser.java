@@ -19,8 +19,8 @@ package org.hawkular.inventory.impl.tinkerpop;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Metric;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
@@ -56,8 +56,8 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         return new Metrics.Multiple() {
 
             @Override
-            public Set<Metric> entities() {
-                return b.entities();
+            public Page<Metric> entities(Pager pager) {
+                return b.entities(pager);
             }
 
             @Override

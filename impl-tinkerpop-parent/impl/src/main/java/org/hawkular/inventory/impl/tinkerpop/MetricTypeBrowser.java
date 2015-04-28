@@ -21,8 +21,8 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.MetricType;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
@@ -63,8 +63,8 @@ final class MetricTypeBrowser extends AbstractBrowser<MetricType, MetricType.Blu
         return new MetricTypes.Multiple() {
 
             @Override
-            public Set<MetricType> entities() {
-                return b.entities();
+            public Page<MetricType> entities(Pager pager) {
+                return b.entities(pager);
             }
 
             @Override

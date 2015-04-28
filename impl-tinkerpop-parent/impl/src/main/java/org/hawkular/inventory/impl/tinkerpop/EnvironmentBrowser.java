@@ -28,8 +28,8 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
@@ -107,8 +107,8 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
             }
 
             @Override
-            public Set<Environment> entities() {
-                return b.entities();
+            public Page<Environment> entities(Pager pager) {
+                return b.entities(pager);
             }
         };
     }

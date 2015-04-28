@@ -22,9 +22,11 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Lukas Krejci
@@ -47,12 +49,13 @@ abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprin
         return entityClass.cast(convert(q.next()));
     }
 
-    public Set<E> entities() {
-        Set<E> ret = new HashSet<>();
+    public Page<E> entities(Pager pager) {
+        List<E> ret = new ArrayList<>();
 
-        source().forEach(v -> ret.add(entityClass.cast(convert(v))));
+        HawkularPipeline<?, Vertex> q = source().counter("total").page(pager);
+        q.forEach(v -> ret.add(entityClass.cast(convert(v))));
 
-        return ret;
+        return new Page<>(ret, pager, q.getCount("total"));
     }
 
     public RelationshipService<E, B, U> relationships() {

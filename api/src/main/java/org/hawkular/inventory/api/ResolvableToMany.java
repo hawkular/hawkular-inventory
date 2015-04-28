@@ -17,6 +17,11 @@
 
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
+
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -30,7 +35,16 @@ import java.util.Set;
 public interface ResolvableToMany<Entity> {
 
     /**
-     * @return resolves all entities on the current position in the inventory traversal and returns them as a set.
+     * @param pager the pager object describing the subset of the entities to return
+     * @return resolves all entities on the current position in the inventory traversal and produces a single "page"
+     * of those entities according to the provided pager
      */
-    Set<Entity> entities();
+    Page<Entity> entities(Pager pager);
+
+    /**
+     * @return all the entities on the current position in the traversal and returns them as a set.
+     */
+    default Set<Entity> entities() {
+        return new HashSet<>(entities(Pager.unlimited(Order.unspecified())));
+    }
 }

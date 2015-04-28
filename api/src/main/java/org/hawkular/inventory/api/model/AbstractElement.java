@@ -34,6 +34,8 @@ import java.util.function.Function;
  * @since 0.0.1
  */
 public abstract class AbstractElement<B, U extends AbstractElement.Update> {
+    public static final String ID_PROPERTY = "id";
+
     @XmlAttribute
     @Expose
     protected final String id;
@@ -52,7 +54,12 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
         }
 
         this.id = id;
-        this.properties = properties;
+        if (properties == null) {
+            this.properties = null;
+        } else {
+            this.properties = new HashMap<>(properties);
+            this.properties.remove(ID_PROPERTY);
+        }
     }
 
     /**

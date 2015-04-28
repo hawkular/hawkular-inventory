@@ -24,6 +24,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
@@ -38,7 +39,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -104,17 +104,20 @@ public class RestMetrics {
 
     @GET
     @Path("/{tenantId}/{environmentId}/metrics")
-    @ApiOperation("Retrieves all metrics in an environment")
+    @ApiOperation("Retrieves all metrics in an environment. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant or environment doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Metric> getMetrics(@PathParam("tenantId") String tenantId,
-                                  @PathParam("environmentId") String environmentId) {
+    public Response getMetrics(@PathParam("tenantId") String tenantId,
+            @PathParam("environmentId") String environmentId, @Context UriInfo uriInfo) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).metrics().getAll().entities();
+        Page<Metric> ret = inventory.tenants().get(tenantId).environments().get(environmentId).metrics().getAll()
+                .entities(RequestUtil.extractPaging(uriInfo));
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @PUT
