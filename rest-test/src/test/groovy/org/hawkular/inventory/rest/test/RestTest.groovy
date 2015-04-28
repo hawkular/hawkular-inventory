@@ -67,6 +67,9 @@ class RestTest extends AbstractTestBase {
             body: "[\"host1_ping_response\"]");
         assertEquals(204, response.status)
 
+        response = client.post(path: "$tenantId/$environmentId/feeds", body: '{"id" : "feed1"}')
+        assertEquals(201, response.status)
+        assertEquals(baseURI + "$tenantId/$environmentId/feeds/feed1", response.headers.Location)
 
         tenantId = "com.example.tenant"
         environmentId = "test"

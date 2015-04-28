@@ -17,6 +17,9 @@
 package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.ResolvingToMultiple;
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.Environment;
 
 import java.util.function.BiFunction;
@@ -85,18 +88,28 @@ public final class ObservableEnvironments {
         }
 
         @Override
-        public ObservableFeeds.ReadAndRegister feeds() {
-            return wrap(ObservableFeeds.ReadAndRegister::new, wrapped.feeds());
+        public ObservableFeeds.ReadWrite feeds() {
+            return wrap(ObservableFeeds.ReadWrite::new, wrapped.feeds());
         }
 
         @Override
-        public ObservableResources.ReadWrite resources() {
-            return wrap(ObservableResources.ReadWrite::new, wrapped.resources());
+        public ObservableResources.ReadWrite feedlessResources() {
+            return wrap(ObservableResources.ReadWrite::new, wrapped.feedlessResources());
         }
 
         @Override
-        public ObservableMetrics.ReadWrite metrics() {
-            return wrap(ObservableMetrics.ReadWrite::new, wrapped.metrics());
+        public ObservableMetrics.ReadWrite feedlessMetrics() {
+            return wrap(ObservableMetrics.ReadWrite::new, wrapped.feedlessMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+            return wrap(ObservableMetrics.ReadMultiple::new, wrapped.allMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Resources.Multiple> allResources() {
+            return wrap(ObservableResources.ReadMultiple::new, wrapped.allResources());
         }
     }
 
@@ -113,13 +126,23 @@ public final class ObservableEnvironments {
         }
 
         @Override
-        public ObservableResources.Read resources() {
-            return wrap(ObservableResources.Read::new, wrapped.resources());
+        public ObservableResources.Read feedlessResources() {
+            return wrap(ObservableResources.Read::new, wrapped.feedlessResources());
         }
 
         @Override
-        public ObservableMetrics.Read metrics() {
-            return wrap(ObservableMetrics.Read::new, wrapped.metrics());
+        public ObservableMetrics.Read feedlessMetrics() {
+            return wrap(ObservableMetrics.Read::new, wrapped.feedlessMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+            return wrap(ObservableMetrics.ReadMultiple::new, wrapped.allMetrics());
+        }
+
+        @Override
+        public ResolvingToMultiple<Resources.Multiple> allResources() {
+            return wrap(ObservableResources.ReadMultiple::new, wrapped.allResources());
         }
     }
 }

@@ -28,7 +28,7 @@ import java.util.ServiceLoader;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public final class InventoryService implements Inventory {
     private InventoryContext context;

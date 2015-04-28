@@ -31,14 +31,14 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class ResourceBrowser extends AbstractBrowser<Resource, Resource.Blueprint, Resource.Update> {
-    private ResourceBrowser(InventoryContext context, FilterApplicator... path) {
+    private ResourceBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Resource.class, path);
     }
 
-    public static Resources.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Resources.Single single(InventoryContext context, FilterApplicator.Tree path) {
         ResourceBrowser b = new ResourceBrowser(context, path);
 
         return new Resources.Single() {
@@ -64,7 +64,7 @@ final class ResourceBrowser extends AbstractBrowser<Resource, Resource.Blueprint
         };
     }
 
-    public static Resources.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Resources.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         ResourceBrowser b = new ResourceBrowser(context, path);
 
         return new Resources.Multiple() {

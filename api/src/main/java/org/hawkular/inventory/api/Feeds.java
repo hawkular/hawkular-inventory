@@ -18,8 +18,6 @@ package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Feed;
 
-import java.util.Map;
-
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -30,26 +28,30 @@ public final class Feeds {
 
     }
 
-    private interface BrowserBase {
-        Resources.Read resources();
+    private interface BrowserBase<Resources, Metrics> {
+        Resources resources();
+
+        Metrics metrics();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed>, BrowserBase {}
+    public interface Single extends ResolvableToSingleWithRelationships<Feed>,
+            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
 
-    public interface Multiple extends ResolvableToManyWithRelationships<Feed>, BrowserBase {}
+    public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
+            BrowserBase<Resources.Read, Metrics.Read> {}
 
     public interface Read extends ReadInterface<Single, Multiple> {}
 
-    public interface ReadAndRegister extends ReadInterface<Single, Multiple> {
+    public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
+
         /**
          * Registers a new feed.
-         * The proposed ID is merely a suggestion and does not need to be honored by the server. The caller is advised
-         * to use the returned access interface to check what the actual ID was assigned to the feed.
+         * The id in the blueprint is merely a suggestion and does not need to be honored by the server. The caller is
+         * advised to use the returned access interface to check what the actual ID was assigned to the feed.
          *
-         * @param proposedId the ID the feed would like to have
-         * @param properties the properties of the feed (or null if none needed)
+         * @param blueprint the blueprint of the feed
          * @return the access interface to the newly created feed
          */
-        Single register(String proposedId, Map<String, Object> properties);
+        Single create(Feed.Blueprint blueprint);
     }
 }

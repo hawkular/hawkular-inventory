@@ -34,7 +34,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class MetricTypesService
         extends AbstractSourcedGraphService<MetricTypes.Single, MetricTypes.Multiple, MetricType, MetricType.Blueprint,
@@ -60,12 +60,12 @@ final class MetricTypesService
     }
 
     @Override
-    protected MetricTypes.Single createSingleBrowser(FilterApplicator... path) {
+    protected MetricTypes.Single createSingleBrowser(FilterApplicator.Tree path) {
         return MetricTypeBrowser.single(context, path);
     }
 
     @Override
-    protected MetricTypes.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected MetricTypes.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return MetricTypeBrowser.multiple(context, path);
     }
 

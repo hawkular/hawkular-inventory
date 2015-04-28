@@ -20,6 +20,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -39,8 +40,17 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 /**
+ * An abstract base class for filtering services - a dual to {@link AbstractBrowser} which is a base class for browser
+ * implementations.
+ *
+ * @param <Single> the browser interface for a single entity
+ * @param <Multiple> the browser interface for multiple entities at once
+ * @param <E> the type of the entity
+ * @param <Blueprint> the blueprint type used for creating new entities
+ * @param <Update> the update type used for updating existing entities
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Blueprint, Update>,
         Blueprint extends Entity.Blueprint, Update extends Entity.Update> extends AbstractGraphService {
@@ -49,32 +59,58 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     protected final PathContext pathContext;
 
     AbstractSourcedGraphService(InventoryContext context, Class<E> entityClass, PathContext pathContext) {
-        super(context, pathContext.path);
+        super(context, pathContext.sourcePath);
         this.entityClass = entityClass;
         this.pathContext = pathContext;
     }
 
-    protected final Filter[] selectCandidates() {
-        return pathContext.candidatesFilter;
+    protected final Filter[][] selectCandidates() {
+        return pathContext.candidatesFilters;
     }
 
+    /**
+     * The implementation of the {@link org.hawkular.inventory.api.ResolvingToMultiple#getAll(Filter...)} method.
+     *
+     * <p>Even though this class doesn't implement that interface it provides a default implementation of the method for
+     * the inheriting classes.
+     *
+     * @param filters the set of filters to limit the results with.
+     * @return the browser interface for the found entities
+     */
     @SuppressWarnings("UnusedDeclaration")
     public Multiple getAll(Filter... filters) {
         return createMultiBrowser(pathWith(selectCandidates()).andFilter(filters).get());
     }
 
+    /**
+     * The implementation of the {@link org.hawkular.inventory.api.ResolvingToSingle#get(String)} method.
+     *
+     * <p>Even though this class doesn't implement that interface it provides a default implementation of the method for
+     * the inheriting classes.
+     *
+     * @param id the id of the entity to return browser of
+     * @return the browser interface for the found entity
+     */
     public Single get(String id) {
         return createSingleBrowser(pathWith(selectCandidates()).andPath(With.ids(id)).get());
     }
 
+    /**
+     * A default implementation of the {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)}
+     * method.
+     *
+     * @param blueprint the blueprint to create the entity with
+     * @return browser interface for the newly created entity
+     */
     public Single create(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        Iterable<Vertex> check = source(FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get());
+        FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get();
+
+        Iterable<Vertex> check = source(checkPath);
 
         if (check.iterator().hasNext()) {
-            throw new IllegalArgumentException("Entity with type '" + entityClass.getSimpleName() + " ' and id '" + id
-                    + "' already exists.");
+            throw new EntityAlreadyExistsException(id, FilterApplicator.filters(checkPath));
         }
 
         checkProperties(blueprint.getProperties());
@@ -101,13 +137,19 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         }
     }
 
+    /**
+     * A default implementation of the {@link org.hawkular.inventory.api.WriteInterface#update(String, Object)} method.
+     *
+     * @param id     the id of the entity to update (must be amongst the {@link #selectCandidates()}).
+     * @param update the object with the updates to the entity
+     */
     public void update(String id, Update update) {
         checkProperties(update.getProperties());
 
         Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
 
         if (!it.hasNext()) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.path));
+            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
         }
 
         Vertex vertex = it.next();
@@ -118,11 +160,16 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         context.getGraph().commit();
     }
 
+    /**
+     * Default implementation of the {@link org.hawkular.inventory.api.WriteInterface#delete(String)} method.
+     *
+     * @param id the id of the entity to delete (must be amongst the {@link #selectCandidates()}).
+     */
     public void delete(String id) {
         Iterator<Vertex> vs = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
 
         if (!vs.hasNext()) {
-            FilterApplicator[] fullPath = FilterApplicator.from(pathContext.path).andPath(selectCandidates())
+            FilterApplicator.Tree fullPath = FilterApplicator.from(pathContext.sourcePath).andPath(selectCandidates())
                     .andPath(With.id(id)).get();
 
             throw new EntityNotFoundException(entityClass, FilterApplicator.filters(fullPath));
@@ -177,10 +224,10 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     /**
      * Update vertex properties that are expressed as actual properties on the entity classes.
      *
-     * <p/> This method must not do anything with the {@link org.hawkular.inventory.api.model.Entity#getProperties()}
+     * <p> This method must not do anything with the {@link org.hawkular.inventory.api.model.Entity#getProperties()}
      * which are handled separately in a generic way.
      *
-     * <p/> This method must not commit the graph.
+     * <p> This method must not commit the graph.
      *
      * @param update the updates to the entity
      * @param vertex the corresponding vertex
@@ -189,6 +236,15 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
     }
 
+    /**
+     * A helper method to add an association from one entity to another. This is for example used to add association
+     * from resource types to metric types, etc.
+     *
+     * @param typeInSource the type of the entity to look for in the {@link #source()}.
+     * @param rel          the type of the relationship representing the association
+     * @param others       a 1 element iterable of the vertices to create the association to
+     * @return the relationship representing the new association
+     */
     protected Relationship addAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
                                           Iterable<Vertex> others) {
         //noinspection LoopStatementThatDoesntLoop
@@ -197,7 +253,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             for (Vertex o : others) {
                 for (Edge e : v.getEdges(Direction.OUT, rel.name())) {
                     if (e.getVertex(Direction.IN).equals(o)) {
-                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(path));
+                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(sourcePaths));
                     }
                 }
 
@@ -208,12 +264,20 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             }
 
             throw new EntityNotFoundException(entityClass,
-                    FilterApplicator.filters(FilterApplicator.from(path).andPath(Related.by(rel)).get()));
+                    FilterApplicator.filters(FilterApplicator.from(sourcePaths).andPath(Related.by(rel)).get()));
         }
 
-        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(path));
+        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(sourcePaths));
     }
 
+    /**
+     * Tries to find the association labeled by the provided lable from the {@link #source()} to the entity with the
+     * provided id.
+     *
+     * @param targetId the id of the entity being in association with the {@link #source()}.
+     * @param label    the label of the association
+     * @return the relationship representing the association
+     */
     protected Relationship findAssociation(String targetId, String label) {
         Vertex source = source().next();
 
@@ -224,10 +288,18 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             }
         }
 
-        throw new RelationNotFoundException(label, FilterApplicator.filters(path));
+        throw new RelationNotFoundException(label, FilterApplicator.filters(sourcePaths));
 
     }
 
+    /**
+     * Removes the association between entities of given type in the {@link #source()}.
+     *
+     * @param typeInSource the type of the entities in the {@link #source()}
+     * @param rel the relationship type representing the association
+     * @param targetUid the ID of the target of the association
+     * @return the relationship representing the removed association
+     */
     protected Relationship removeAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
                                      String targetUid) {
 
@@ -240,7 +312,7 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
 
         if (!it.hasNext()) {
             throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
-                    FilterApplicator.filters(path), "Relationship does not exist.", null);
+                    FilterApplicator.filters(sourcePaths), "Relationship does not exist.", null);
         }
 
         Edge edge = it.next();
@@ -250,14 +322,49 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
         return ret;
     }
 
-    protected abstract Single createSingleBrowser(FilterApplicator... path);
+    /**
+     * To be implemented by subclasses, this method creates a browser interface instance for a single entity targeted
+     * by the provided path.
+     *
+     * @param path the path to the single entity
+     * @return a new instance of the single entity browser
+     */
+    protected abstract Single createSingleBrowser(FilterApplicator.Tree path);
 
-    protected abstract Multiple createMultiBrowser(FilterApplicator... path);
+    /**
+     * To be implemented by subclasses, this method creates a browser interface instance for multiple entities targeted
+     * by the provided path.
+     *
+     * @param path the path to the multiple entities
+     * @return a new instance of the multiple entities browser
+     */
+    protected abstract Multiple createMultiBrowser(FilterApplicator.Tree path);
 
+    /**
+     * To be implemented by subclasses, this extracts the proposed ID from the blueprint.
+     *
+     * @param b the blueprint of the entity being created
+     * @return the proposed ID of the new entity as defined in the blueprint
+     */
     protected abstract String getProposedId(Blueprint b);
 
+    /**
+     * After a vertex for the given entity is created, this method is called to properly initialize it according to the
+     * requirements of the type of the entity.
+     *
+     * <p>This method is called from {@link #create(Entity.Blueprint)}.
+     *
+     * @param newEntity the vertex of the new entity
+     * @param blueprint the blueprint used to create the entity
+     * @return the path to the new entity in the inventory. This doesn't have to extend the current {@link #sourcePaths}
+     */
     protected abstract Filter[] initNewEntity(Vertex newEntity, Blueprint blueprint);
 
+    /**
+     * Checks properties that they don't contain any disallowed keys for the {@link #entityClass} this filter interface
+     * accesses.
+     * @param properties the properties
+     */
     private void checkProperties(Map<String, Object> properties) {
         Constants.Type type = Constants.Type.of(entityClass);
         checkProperties(properties, type.getMappedProperties());

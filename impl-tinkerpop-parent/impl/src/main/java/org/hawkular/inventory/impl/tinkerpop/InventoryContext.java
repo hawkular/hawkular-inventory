@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.FeedIdStrategy;
  * Data needed by various services. Mostly coming from configuration.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class InventoryContext {
 

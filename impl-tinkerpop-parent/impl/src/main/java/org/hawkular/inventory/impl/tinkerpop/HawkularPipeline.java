@@ -42,8 +42,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * A slight extension of the Gremlin pipeline providing a couple of utility overloads of existing methods that accept
+ * Hawkular specific arguments.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable {
 

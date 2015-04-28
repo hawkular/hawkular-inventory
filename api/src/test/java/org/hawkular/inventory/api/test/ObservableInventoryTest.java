@@ -157,7 +157,7 @@ public class ObservableInventoryTest {
 
     @Test
     public void testMetrics() throws Exception {
-        Metric prototype = new Metric("t", "e", "m", new MetricType("t", "mt"));
+        Metric prototype = new Metric("t", "e", null, "m", new MetricType("t", "mt"));
 
         Metric.Update update = new Metric.Update(null);
 
@@ -168,16 +168,17 @@ public class ObservableInventoryTest {
                         prototype)));
 
         runTest(Metric.class, true, () -> {
-            observableInventory.tenants().get("t").environments().get("e").metrics()
+            observableInventory.tenants().get("t").environments().get("e").feedlessMetrics()
                     .create(new Metric.Blueprint("mt", "m"));
-            observableInventory.tenants().get("t").environments().get("e").metrics().update(prototype.getId(), update);
-            observableInventory.tenants().get("t").environments().get("e").metrics().delete(prototype.getId());
+            observableInventory.tenants().get("t").environments().get("e").feedlessMetrics().update(prototype.getId(),
+                    update);
+            observableInventory.tenants().get("t").environments().get("e").feedlessMetrics().delete(prototype.getId());
         });
     }
 
     @Test
     public void testResources() throws Exception {
-        Resource prototype = new Resource("t", "e", "r", new ResourceType("t", "rt", "1.0"));
+        Resource prototype = new Resource("t", "e", null, "r", new ResourceType("t", "rt", "1.0"));
 
         Resource.Update update = new Resource.Update(null);
 
@@ -188,23 +189,25 @@ public class ObservableInventoryTest {
                         prototype)));
 
         runTest(Resource.class, true, () -> {
-            observableInventory.tenants().get("t").environments().get("e").resources()
+            observableInventory.tenants().get("t").environments().get("e").feedlessResources()
                     .create(new Resource.Blueprint("r", "rt"));
-            observableInventory.tenants().get("t").environments().get("e").resources().update(prototype.getId(),
+            observableInventory.tenants().get("t").environments().get("e").feedlessResources().update(prototype.getId(),
                     update);
-            observableInventory.tenants().get("t").environments().get("e").resources().delete(prototype.getId());
+            observableInventory.tenants().get("t").environments().get("e").feedlessResources()
+                    .delete(prototype.getId());
         });
 
         when(InventoryMock.metricsReadAssociate.associate("m"))
                 .thenReturn(new Relationship("asdf", "owns", prototype,
-                        new Metric("t", "e", "mt", new MetricType("t", "mt"))));
+                        new Metric("t", "e", null, "m", new MetricType("t", "mt"))));
 
         List<Relationship> createdRelatonships = new ArrayList<>();
 
         observableInventory.observable(Interest.in(Relationship.class).being(created()))
                 .subscribe(createdRelatonships::add);
 
-        observableInventory.tenants().get("t").environments().get("e").resources().get("rt").metrics().associate("m");
+        observableInventory.tenants().get("t").environments().get("e").feedlessResources().get("rt").metrics()
+                .associate("m");
 
         Assert.assertEquals(1, createdRelatonships.size());
     }
