@@ -29,7 +29,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class EnvironmentsService extends
         AbstractSourcedGraphService<Environments.Single, Environments.Multiple, Environment, Environment.Blueprint,
@@ -58,12 +58,12 @@ final class EnvironmentsService extends
     }
 
     @Override
-    protected Environments.Single createSingleBrowser(FilterApplicator... path) {
+    protected Environments.Single createSingleBrowser(FilterApplicator.Tree path) {
         return EnvironmentBrowser.single(context, path);
     }
 
     @Override
-    protected Environments.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Environments.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return EnvironmentBrowser.multiple(context, path);
     }
 

@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -72,6 +73,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
 /**
  * Test some basic functionality
@@ -120,6 +124,7 @@ public class BasicTest {
     }
 
     private void setupData() throws Exception {
+        //noinspection AssertWithSideEffects
         assert inventory.tenants()
                 .create(Tenant.Blueprint.builder().withId("com.acme.tenant").withProperty("kachny", "moc").build())
                 .entity().getId().equals("com.acme.tenant");
@@ -133,14 +138,33 @@ public class BasicTest {
 
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().associate("ResponseTime");
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessMetrics()
                 .create(new Metric.Blueprint("ResponseTime", "host1_ping_response")).entity().getId()
                 .equals("host1_ping_response");
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .create(new Resource.Blueprint("host1", "URL")).entity()
                 .getId().equals("host1");
-        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+        inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .get("host1").metrics().associate("host1_ping_response");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
+                .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource1", "URL")).entity().getId()
+                .equals("feedResource1");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource2", "URL")).entity().getId()
+                .equals("feedResource2");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .resources().create(new Resource.Blueprint("feedResource3", "URL")).entity().getId()
+                .equals("feedResource3");
+
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+                .metrics().create(new Metric.Blueprint("ResponseTime", "feedMetric1")).entity().getId()
+                .equals("feedMetric1");
 
         assert inventory.tenants().create(new Tenant.Blueprint("com.example.tenant")).entity().getId()
                 .equals("com.example.tenant");
@@ -154,26 +178,26 @@ public class BasicTest {
                 .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().associate("Size");
 
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
                 .create(new Metric.Blueprint("Size", "playroom1_size")).entity().getId().equals("playroom1_size");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
                 .create(new Metric.Blueprint("Size", "playroom2_size")).entity().getId().equals("playroom2_size");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .create(new Resource.Blueprint("playroom1", "Playroom")).entity().getId().equals("playroom1");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .create(new Resource.Blueprint("playroom2", "Playroom")).entity().getId().equals("playroom2");
 
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").metrics().associate("playroom1_size");
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().associate("playroom2_size");
 
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .linkWith("yourMom", test, null);
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.incoming)
                 .linkWith("IamYourFather", test, null);
     }
@@ -184,12 +208,12 @@ public class BasicTest {
         MetricType sizeType = new MetricType(t.getId(), "Size");
         ResourceType playRoomType = new ResourceType(t.getId(), "Playroom", "1.0");
         ResourceType kachnaType = new ResourceType(t.getId(), "Kachna", "1.0");
-        Resource playroom1 = new Resource(t.getId(), e.getId(), "playroom1", playRoomType);
-        Resource playroom2 = new Resource(t.getId(), e.getId(), "playroom2", playRoomType);
-        Metric playroom1Size = new Metric(t.getId(), e.getId(), "playroom1_size", sizeType);
-        Metric playroom2Size = new Metric(t.getId(), e.getId(), "playroom2_size", sizeType);
+        Resource playroom1 = new Resource(t.getId(), e.getId(), null, "playroom1", playRoomType);
+        Resource playroom2 = new Resource(t.getId(), e.getId(), null, "playroom2", playRoomType);
+        Metric playroom1Size = new Metric(t.getId(), e.getId(), null, "playroom1_size", sizeType);
+        Metric playroom2Size = new Metric(t.getId(), e.getId(), null, "playroom2_size", sizeType);
 
-        inventory.inspect(e).metrics().delete(playroom2Size.getId());
+        inventory.inspect(e).feedlessMetrics().delete(playroom2Size.getId());
         assertDoesNotExist(playroom2Size);
         assertExists(t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
 
@@ -204,7 +228,7 @@ public class BasicTest {
             //good
         }
 
-        inventory.inspect(e).metrics().delete(playroom1Size.getId());
+        inventory.inspect(e).feedlessMetrics().delete(playroom1Size.getId());
         assertDoesNotExist(playroom1Size);
         assertExists(t, e, sizeType, playRoomType, playroom1, playroom2);
 
@@ -219,7 +243,7 @@ public class BasicTest {
             //good
         }
 
-        inventory.inspect(e).resources().delete(playroom1.getId());
+        inventory.inspect(e).feedlessResources().delete(playroom1.getId());
         assertDoesNotExist(playroom1);
         assertExists(t, e, sizeType, playRoomType, playroom2);
 
@@ -364,17 +388,20 @@ public class BasicTest {
                 .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
-        kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("contains"));
+        kids = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll(
+                Related.asTargetBy("contains"));
         testHelper.apply(2).apply("environment").apply("contains").apply(3).apply("metric").apply(parents).
                 accept(kids);
 
-        kids = inventory.tenants().getAll().environments().getAll().resources().getAll(Related.asTargetBy("contains"));
+        kids = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll(
+                Related.asTargetBy("contains"));
         testHelper.apply(2).apply("environment").apply("contains").apply(3).apply("resource").apply(parents).accept
                 (kids);
 
         parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
-        kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(Related.asTargetBy("defines"));
-        testHelper.apply(2).apply("metricType").apply("defines").apply(3).apply("metric").apply(parents)
+        kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(
+                Related.asTargetBy("defines"));
+        testHelper.apply(2).apply("metricType").apply("defines").apply(4).apply("metric").apply(parents)
                 .accept(kids);
     }
 
@@ -418,14 +445,14 @@ public class BasicTest {
 
     @Test
     public void testRelationshipServiceLinkedWith() throws Exception {
-        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
-                .named("yourMom").entities();
+        Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().get("playroom2").metrics().get("playroom2_size")
+                .relationships(Relationships.Direction.outgoing).named("yourMom").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
         assert "test".equals(rels.iterator().next().getTarget().getId()) : "Target of relationship 'yourMom' should " +
                 "be the 'test' environment";
 
-        rels = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.both)
                 .named("IamYourFather").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
@@ -436,8 +463,8 @@ public class BasicTest {
     @Test
     public void testRelationshipServiceLinkedWithAndDelete() throws Exception {
         Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
-        Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
-                .get("host1").relationships(Relationships.Direction.incoming)
+        Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .feedlessResources().get("host1").relationships(Relationships.Direction.incoming)
                 .linkWith("crossTenantLink", tenant, null).entity();
 
         assert inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
@@ -450,7 +477,7 @@ public class BasicTest {
         // try deleting again
         try {
             inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
-            assert false | true : "It shouldn't be possible to delete the same relationship twice";
+            assert true : "It shouldn't be possible to delete the same relationship twice";
         } catch (RelationNotFoundException e) {
             // good
         }
@@ -460,23 +487,23 @@ public class BasicTest {
     public void testRelationshipServiceUpdateRelationship1() throws Exception {
         final String someKey = "k3y";
         final String someValue = "v4lu3";
-        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
         assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
 
-        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel2.getId()) && null == rel2.getProperties().get(someKey) : "There should not be" +
                 " any property with key 'k3y'";
 
         // persist the change
-        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .update(rel1.getId(), Relationship.Update.builder().withProperty(someKey, someValue).build());
 
-        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
                 .named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
@@ -509,7 +536,7 @@ public class BasicTest {
 
 
         rels = inventory.tenants().getAll().relationships().named
-                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                (contains).environments().getAll().relationships().getAll(RelationWith
                 .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
                 .entities();
         assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
@@ -523,7 +550,7 @@ public class BasicTest {
     @Test
     public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
         Metric metric = inventory.tenants().getAll().relationships().named
-                (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                (contains).environments().getAll().relationships().getAll(RelationWith
                 .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class)).metrics
                 ().get("playroom1_size").entity();
         assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
@@ -531,7 +558,7 @@ public class BasicTest {
 
         try {
             inventory.tenants().getAll().relationships().named
-                    (Relationships.WellKnown.contains).environments().getAll().relationships().getAll(RelationWith
+                    (contains).environments().getAll().relationships().getAll(RelationWith
                     .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class)).metrics
                     ().get("playroom1_size").entity();
             assert false : "this code should not be reachable. There should be no metric reachable under " +
@@ -670,7 +697,7 @@ public class BasicTest {
 
             assert q.hasNext();
 
-            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).metrics()
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
                     .getAll(Defined.by(new MetricType(tenantId, metricDefId)), With.id(id)).entities().iterator()
                     .next();
             assert m.getId().equals(id);
@@ -683,7 +710,7 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
         GraphQuery query = graph.query().has("__type", "metric");
-        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
+        Assert.assertEquals(4, StreamSupport.stream(query.vertices().spliterator(), false).count());
     }
 
     @Test
@@ -696,7 +723,7 @@ public class BasicTest {
 
             assert q.hasNext();
 
-            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                     .getAll(Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0")), With.id(id)).entities()
                     .iterator().next();
             assert r.getId().equals(id);
@@ -709,7 +736,7 @@ public class BasicTest {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
         GraphQuery query = graph.query().has("__type", "resource");
-        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 3;
+        Assert.assertEquals(6, StreamSupport.stream(query.vertices().spliterator(), false).count());
     }
 
     @Test
@@ -722,7 +749,7 @@ public class BasicTest {
 
             assert q.hasNext();
 
-            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                     .get(resourceId).metrics().get(metricId).entity();
             assert metricId.equals(m.getId());
 
@@ -762,23 +789,23 @@ public class BasicTest {
 
     @Test
     public void queryMultipleResources() throws Exception {
-        Set<Resource> rs = inventory.tenants().getAll().environments().getAll().resources().getAll().entities();
+        Set<Resource> rs = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll().entities();
         assert rs.size() == 3;
     }
 
     @Test
     public void queryMultipleMetrics() throws Exception {
-        Set<Metric> ms = inventory.tenants().getAll().environments().getAll().metrics().getAll().entities();
+        Set<Metric> ms = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll().entities();
         assert ms.size() == 3;
     }
 
     @Test
     public void testNoTwoFeedsWithSameID() throws Exception {
-        Feeds.ReadAndRegister feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
+        Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
                 .feeds();
 
-        Feed f1 = feeds.register("feed", null).entity();
-        Feed f2  = feeds.register("feed", null).entity();
+        Feed f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+        Feed f2  = feeds.create(new Feed.Blueprint("feed", null)).entity();
 
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());
@@ -801,7 +828,7 @@ public class BasicTest {
         }
 
         try {
-            inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+            inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                     .create(new Resource.Blueprint("host1", "URL"));
             Assert.fail("Creating resource with existing ID should fail");
         } catch (Exception e) {
@@ -950,6 +977,45 @@ public class BasicTest {
         ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
         assert ms.getTotalSize() == 3;
         assert ms.size() == 0;
+    }
+
+    @Test
+    public void testGettingResourcesFromFeedsUsingEnvironments() throws Exception {
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allResources()
+                .getAll().entities();
+
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "host1".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource1".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource2".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource3".equals(r.getId())));
+    }
+
+    @Test
+    public void testGettingMetricsFromFeedsUsingEnvironments() throws Exception {
+        Set<Metric> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allMetrics()
+                .getAll().entities();
+
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "host1_ping_response".equals(r.getId())));
+        Assert.assertTrue(rs.stream().anyMatch((r) -> "feedMetric1".equals(r.getId())));
+    }
+
+    @Test
+    public void testAllPathsMentionedInExceptions() throws Exception {
+        try {
+            inventory.tenants().get("non-tenant").environments().get("non-env").allResources().getAll().metrics()
+                    .get("m").entity();
+            Assert.fail("Fetching non-existant entity should have failed");
+        } catch (EntityNotFoundException e) {
+            Filter[][] paths = e.getFilters();
+            Assert.assertEquals(2, paths.length);
+            Assert.assertArrayEquals(Filter.by(With.type(Tenant.class), With.id("non-tenant"), Related.by(contains),
+                    With.type(Environment.class), With.id("non-env"), Related.by(contains), With.type(Resource.class),
+                    Related.by(owns), With.type(Metric.class), With.id("m")).get(), paths[0]);
+            Assert.assertArrayEquals(Filter.by(With.type(Tenant.class), With.id("non-tenant"), Related.by(contains),
+                    With.type(Environment.class), With.id("non-env"), Related.by(contains), With.type(Feed.class),
+                    Related.by(contains), With.type(Resource.class), Related.by(owns), With.type(Metric.class),
+                    With.id("m")).get(), paths[1]);
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")

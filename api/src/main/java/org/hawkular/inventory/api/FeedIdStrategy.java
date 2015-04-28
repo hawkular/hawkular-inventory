@@ -23,7 +23,7 @@ import org.hawkular.inventory.api.model.Feed;
  * A {@code FeedIdStrategy} is a service that can supply unique IDs for feeds registering with the inventory.
  *
  * <p>Implementations of this interface are fed to the Inventory, which then uses it in the implementation of the
- * {@link Feeds.ReadAndRegister#register(String, java.util.Map)} method.
+ * {@link Feeds.ReadWrite#create(Feed.Blueprint)} method.
  *
  * @author Lukas Krejci
  * @since 1.0

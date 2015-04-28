@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
+import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
 
@@ -30,6 +31,20 @@ import java.util.function.BiFunction;
 public final class ObservableMetrics {
     private ObservableMetrics() {
 
+    }
+
+    public static final class ReadMultiple
+            extends ObservableBase.ReadMultiple<Metrics.Multiple, ResolvingToMultiple<Metrics.Multiple>>
+            implements ResolvingToMultiple<Metrics.Multiple> {
+
+        ReadMultiple(ResolvingToMultiple<Metrics.Multiple> wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        @Override
+        protected BiFunction<Metrics.Multiple, ObservableContext, ? extends Metrics.Multiple> multipleCtor() {
+            return ObservableMetrics.Multiple::new;
+        }
     }
 
     public static final class Read extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.Read>

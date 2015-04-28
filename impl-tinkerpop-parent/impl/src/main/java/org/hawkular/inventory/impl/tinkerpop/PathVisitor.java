@@ -22,7 +22,7 @@ import org.hawkular.inventory.api.model.Entity;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 class PathVisitor extends FilterVisitor {
     @Override

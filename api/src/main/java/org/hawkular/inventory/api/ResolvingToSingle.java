@@ -17,13 +17,21 @@
 package org.hawkular.inventory.api;
 
 /**
- * Generic methods for readonly access to entities.
+ * This is the most generic interface for positions in the graph traversal from which one can resolve a single entity
+ * using its id.
  *
- * @param <Single> an interface for traversing and resolving a single entity
- * @param <Multiple> an interface for traversing and resolving multiple entities
+ * @param <Single> the access interface to the entity
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public interface ReadInterface<Single, Multiple> extends ResolvingToSingle<Single>, ResolvingToMultiple<Multiple> {
+public interface ResolvingToSingle<Single> {
+
+    /**
+     * Tries to find a single entity in the current position in the inventory traversal.
+     *
+     * @param id the id of the entity to find in the current traversal position
+     * @return access interface to the entity
+     */
+    Single get(String id) throws EntityNotFoundException;
 }

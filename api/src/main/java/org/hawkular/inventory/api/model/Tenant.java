@@ -16,11 +16,10 @@
  */
 package org.hawkular.inventory.api.model;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collections;
 import java.util.Map;
 

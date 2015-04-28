@@ -20,17 +20,35 @@ package org.hawkular.inventory.impl.tinkerpop;
 import org.hawkular.inventory.api.filters.Filter;
 
 /**
+ * Represents a position in the inventory traversal together with the list of filters that limit the possible
+ * elements represented by a filtering service.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class PathContext {
 
-    final FilterApplicator[] path;
+    final FilterApplicator.Tree sourcePath;
 
-    final Filter[] candidatesFilter;
+    final Filter[][] candidatesFilters;
 
-    PathContext(FilterApplicator[] path, Filter[] candidatesFilter) {
-        this.candidatesFilter = candidatesFilter;
-        this.path = path;
+    PathContext(FilterApplicator.Tree sourcePath, Filter[][] candidatesFilters) {
+        if (candidatesFilters == null) {
+            this.candidatesFilters = new Filter[0][];
+        } else {
+            this.candidatesFilters = candidatesFilters;
+        }
+        this.sourcePath = sourcePath;
+    }
+
+    PathContext(FilterApplicator.Tree sourcePath, Filter... candidatesFilters) {
+        if (candidatesFilters == null) {
+            this.candidatesFilters = new Filter[0][];
+        } else {
+            Filter[][] fs = new Filter[1][];
+            fs[0] = candidatesFilters;
+            this.candidatesFilters = fs;
+        }
+        this.sourcePath = sourcePath;
     }
 }

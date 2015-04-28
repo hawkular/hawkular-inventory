@@ -23,6 +23,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -119,9 +120,9 @@ public class RestResourceTypes {
     public Response getResources(@PathParam("tenantId") String tenantId,
             @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
 
-        Page<Resource> ret = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).resources().getAll()
-                .entities(extractPaging(uriInfo));
-
+        ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
+        single.entity(); // check whether it exists
+        Page<Resource> ret = single.resources().getAll().entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 

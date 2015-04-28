@@ -85,6 +85,18 @@ public class RestTenants {
         return ResponseUtil.created(uriInfo, tenant.getId()).build();
     }
 
+    @GET
+    @Path("/{tenantId}")
+    @ApiOperation("Retrieves a single tenant")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getTenant(@PathParam("tenantId") String tenantId) {
+        return Response.ok(inventory.tenants().get(tenantId).entity()).build();
+    }
+
     @PUT
     @Path("/{tenantId}")
     @ApiOperation("Updates properties of a tenant")

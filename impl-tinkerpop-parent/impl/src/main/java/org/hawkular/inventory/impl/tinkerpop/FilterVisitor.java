@@ -30,7 +30,7 @@ import java.util.Arrays;
 /**
  * @author Lukas Krejci
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
 class FilterVisitor {
     public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {

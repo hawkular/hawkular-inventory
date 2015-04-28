@@ -17,12 +17,14 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -31,11 +33,11 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Update> {
 
-    public static Feeds.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Feeds.Single single(InventoryContext context, FilterApplicator.Tree path) {
         FeedBrowser b = new FeedBrowser(context, path);
 
         return new Feeds.Single() {
@@ -56,13 +58,18 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
             }
 
             @Override
-            public Resources.Read resources() {
+            public Resources.ReadWrite resources() {
                 return b.resources();
+            }
+
+            @Override
+            public Metrics.ReadWrite metrics() {
+                return b.metrics();
             }
         };
     }
 
-    public static Feeds.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Feeds.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         FeedBrowser b = new FeedBrowser(context, path);
 
         return new Feeds.Multiple() {
@@ -86,15 +93,25 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
             public Resources.Read resources() {
                 return b.resources();
             }
+
+            @Override
+            public Metrics.Read metrics() {
+                return b.metrics();
+            }
         };
     }
 
-    FeedBrowser(InventoryContext context, FilterApplicator... path) {
+    FeedBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Feed.class, path);
     }
 
-    public Resources.Read resources() {
+    public ResourcesService resources() {
         return new ResourcesService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
                 With.type(Resource.class))));
+    }
+
+    public MetricsService metrics() {
+        return new MetricsService(context, pathToHereWithSelect(Filter.by(Related.by(contains),
+                With.type(Metric.class))));
     }
 }

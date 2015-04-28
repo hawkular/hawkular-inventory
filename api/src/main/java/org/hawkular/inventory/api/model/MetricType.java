@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-
 import java.util.Collections;
 import java.util.Map;
 

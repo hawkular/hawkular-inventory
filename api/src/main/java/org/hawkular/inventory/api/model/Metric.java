@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -35,7 +34,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Metric extends EnvironmentalEntity<Metric.Blueprint, Metric.Update> {
+public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Update> {
 
     @Expose
     private final MetricType type;
@@ -46,23 +45,24 @@ public final class Metric extends EnvironmentalEntity<Metric.Blueprint, Metric.U
         type = null;
     }
 
-    public Metric(String tenantId, String environmentId, String id, MetricType type) {
-        super(tenantId, environmentId, id);
+    public Metric(String tenantId, String environmentId, String feedId, String id, MetricType type) {
+        super(tenantId, environmentId, feedId, id);
         this.type = type;
     }
 
-    /** JSON serialization support */
     @JsonCreator
     public Metric(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("id") String id, @JsonProperty("type") MetricType type,
+            @JsonProperty("feed") String feedId, @JsonProperty("id") String id,
+            @JsonProperty("type") MetricType type,
             @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, environmentId, id, properties);
+
+        super(tenantId, environmentId, feedId, id, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(getTenantId(), getEnvironmentId(), getId(), getType(),
+        return new Updater<>((u) -> new Metric(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
                 u.getProperties()));
     }
 

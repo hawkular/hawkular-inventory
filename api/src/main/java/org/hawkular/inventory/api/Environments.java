@@ -37,21 +37,43 @@ public final class Environments {
         Feeds feeds();
 
         /**
-         * @return resources in the environment(s)
+         * @return resources in the environment(s) that do not come from any feed
          */
-        Resources resources();
+        Resources feedlessResources();
 
         /**
-         * @return metrics in the environment(s)
+         * @return metrics in the environment(s) that do not come from any feed
          */
-        Metrics metrics();
+        Metrics feedlessMetrics();
+
+        /**
+         * Returns access to all resources in this environment regardless of whether they are under some feed or
+         * directly under the environment.
+         *
+         * <p>Note that it is not possible to get a single resource from this access interface because the id is not
+         * guaranteed to be unique amongst resources under different feeds.
+         *
+         * @return the access interface to all resources in this environment
+         */
+        ResolvingToMultiple<org.hawkular.inventory.api.Resources.Multiple> allResources();
+
+        /**
+         * Returns access to all metrics in this environment regardless of whether they are under some feed or
+         * directly under the environment.
+         *
+         * <p>Note that it is not possible to get a single metric from this access interface because the id is not
+         * guaranteed to be unique amongst metrics under different feeds.
+         *
+         * @return the access interface to all metrics in this environment
+         */
+        ResolvingToMultiple<org.hawkular.inventory.api.Metrics.Multiple> allMetrics();
     }
 
     /**
      * Interface for accessing a single environment in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Environment>,
-            BrowserBase<Feeds.ReadAndRegister, Resources.ReadWrite, Metrics.ReadWrite> {}
+            BrowserBase<Feeds.ReadWrite, Resources.ReadWrite, Metrics.ReadWrite> {}
 
     /**
      * Interface for traversing over a set of environments.

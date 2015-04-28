@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlRootElement;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -33,7 +32,7 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class Resource extends EnvironmentalEntity<Resource.Blueprint, Resource.Update> {
+public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource.Update> {
 
     @Expose
     private final ResourceType type;
@@ -44,23 +43,23 @@ public final class Resource extends EnvironmentalEntity<Resource.Blueprint, Reso
         type = null;
     }
 
-    public Resource(String tenantId, String environmentId, String id, ResourceType type) {
-        super(tenantId, environmentId, id);
+    public Resource(String tenantId, String environmentId, String feedId, String id, ResourceType type) {
+        super(tenantId, environmentId, feedId, id);
         this.type = type;
     }
 
-    /** JSON serialization support */
     @JsonCreator
     public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
+            @JsonProperty("feed") String feedId, @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
             @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, environmentId, id, properties);
+
+        super(tenantId, environmentId, feedId, id, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Resource> update() {
-        return new Updater<>((u) -> new Resource(getTenantId(), getEnvironmentId(), getId(), getType(),
+        return new Updater<>((u) -> new Resource(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
                 u.getProperties()));
     }
 
