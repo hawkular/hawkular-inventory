@@ -126,7 +126,7 @@ public class RestTenants {
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         return Response.ok(inventory.tenants().get(tenantId).relationships(directed)
                 .getAll(filters)
-                .entities()).build();
+                .entities(extractPaging(info))).build();
     }
 
     @PUT
@@ -159,5 +159,16 @@ public class RestTenants {
 
     public static String getUrl(Tenant tenant) {
         return String.format("/tenants/%s", tenant.getId());
+    }
+
+    public static Tenant getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length != 2) {
+            throw new IllegalArgumentException("Cannot convert malformed url " + url);
+        }
+        return new Tenant(chunks[1]);
     }
 }

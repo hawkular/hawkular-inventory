@@ -30,7 +30,9 @@ import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
@@ -103,8 +105,10 @@ public class RestResources {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response addResource(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @ApiParam(required =  true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
+                                @PathParam("environmentId") String environmentId,
+                                @PathParam("feedId") String feedId,
+                                @ApiParam(required =  true) Resource.Blueprint resource,
+                                @Context UriInfo uriInfo) {
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
                 .create(resource);
@@ -131,17 +135,9 @@ public class RestResources {
                                        @QueryParam("feedless") @DefaultValue("false") boolean feedless,
                                        @Context UriInfo uriInfo) {
 
-        Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
-
-        ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.feedlessResources() : envs.allResources();
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, feedless, typeId, typeVersion);
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-            rs = rr.getAll(Defined.by(rt)).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        Page<Resource> rs = mult.entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
@@ -159,16 +155,10 @@ public class RestResources {
                                        @QueryParam("type") String typeId,
                                        @QueryParam("typeVersion") String typeVersion,
                                        @Context UriInfo uriInfo) {
-        Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId)
-                .feeds().get(feedId).resources();
+
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, false, typeId, typeVersion);
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-            rs = rr.getAll(Defined.by(rt)).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        Page<Resource> rs = mult.entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
@@ -265,6 +255,9 @@ public class RestResources {
     public Response getResourceRelations(@PathParam("tenantId") String tenantId,
                                             @PathParam("environmentId") String environmentId,
                                             @PathParam("resourceId") String resourceId,
+                                            @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+                                            @QueryParam("type") String typeId,
+                                            @QueryParam("typeVersion") String typeVersion,
                                             @DefaultValue("both") @QueryParam("direction") String direction,
                                             @DefaultValue("") @QueryParam("property") String propertyName,
                                             @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
@@ -273,15 +266,83 @@ public class RestResources {
                                             @DefaultValue("") @QueryParam("targetType") String targetType,
                                             @Context UriInfo info) {
 
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, feedless, typeId, typeVersion);
+        Pager pager = extractPaging(info);
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, info);
-
-        // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
 
-        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).resources()
-                .get(resourceId)
-                .relationships(directed).getAll(filters).entities()).build();
+        Page<Relationship> rs = mult.relationships(directed).getAll(filters).entities(pager);
+        return pagedResponse(Response.ok(), info, rs).build();
+    }
+
+    @GET
+    @Path("/{tenantId}/{environmentId}/{feedId}/resources/{resourceId}/relationships")
+    @ApiOperation("Retrieves all relationships of given resource.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getResourceRelations(@PathParam("tenantId") String tenantId,
+                                         @PathParam("environmentId") String environmentId,
+                                         @PathParam("feedId") String feedId,
+                                         @PathParam("resourceId") String resourceId,
+                                         @QueryParam("type") String typeId,
+                                         @QueryParam("typeVersion") String typeVersion,
+                                         @DefaultValue("both") @QueryParam("direction") String direction,
+                                         @DefaultValue("") @QueryParam("property") String propertyName,
+                                         @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                                         @DefaultValue("") @QueryParam("named") String named,
+                                         @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                                         @DefaultValue("") @QueryParam("targetType") String targetType,
+                                         @Context UriInfo info) {
+
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, false, typeId, typeVersion);
+        Pager pager = extractPaging(info);
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+
+        Page<Relationship> rs = mult.relationships(directed).getAll(filters).entities(pager);
+        return pagedResponse(Response.ok(), info, rs).build();
+    }
+
+    @POST
+    @Path("/{tenantId}/{environmentId}/{feedId}/resources/{resourceId}/relationships")
+    @ApiOperation("Creates a new resource")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Resource successfully created"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response addResourceRelation(@PathParam("tenantId") String tenantId,
+                                        @PathParam("environmentId") String environmentId,
+                                        @PathParam("feedId") String feedId,
+                                        @PathParam("resourceId") String resourceId,
+                                        @ApiParam(required =  true) Relationship relation,
+                                        @Context UriInfo info) {
+
+        Relationships.Direction directed;
+        Entity theOtherSide;
+        if (relation.getSource().getId() == resourceId) {
+            directed = Relationships.Direction.outgoing;
+            theOtherSide = relation.getTarget();
+        } else if (relation.getTarget().getId() == resourceId) {
+            directed = Relationships.Direction.incoming;
+            theOtherSide = relation.getSource();
+        } else {
+            throw new IllegalArgumentException("Either source or target of the relationship must correspond with the " +
+                    "resource being modified.");
+        }
+        Relationships.Single single = inventory.tenants().get(tenantId).environments().get(environmentId).feeds()
+                .get(feedId).resources().get(resourceId).relationships(directed).linkWith(relation.getName(),
+                        theOtherSide, relation.getProperties());
+
+        return ResponseUtil.created(info, single.entity().getId()).build();
     }
 
     @DELETE
@@ -421,7 +482,45 @@ message = "Tenant, environment, resource or metric doesn't exist or if the metri
     }
 
     public static String getUrl(Resource resource) {
+        if (resource.getFeedId() != null) {
+            return String.format("/%s/%s/%s/resources/%s", resource.getTenantId(), resource.getEnvironmentId(),
+                    resource.getFeedId(), resource.getId());
+        }
         return String.format("/%s/%s/resources/%s", resource.getTenantId(), resource.getEnvironmentId(), resource
                 .getId());
+    }
+
+    public static Resource getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length == 4) {
+            return new Resource(chunks[0], chunks[1], null, chunks[3], null);
+        } else if (chunks.length == 5) {
+            return new Resource(chunks[0], chunks[1], chunks[2], chunks[4], null);
+        }
+        throw new IllegalArgumentException("Cannot convert malformed url " + url);
+    }
+
+    private Resources.Multiple getResourcesMultiple(String tenantId, String environmentId, String feedId, boolean
+            feedless, String typeId, String typeVersion) {
+        Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
+        ResolvingToMultiple<Resources.Multiple> rr;
+        if (feedId == null) {
+            rr = feedless ? envs.feedlessResources() : envs.allResources();
+        } else {
+            rr = envs.feeds().get(feedId).resources();
+        }
+
+        Resources.Multiple ret;
+        if (typeId != null && typeVersion != null) {
+            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+            ret = rr.getAll(Defined.by(rt));
+        } else {
+            ret = rr.getAll();
+        }
+
+        return ret;
     }
 }

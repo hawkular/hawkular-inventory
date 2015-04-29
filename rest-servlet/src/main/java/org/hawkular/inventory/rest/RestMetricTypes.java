@@ -141,10 +141,6 @@ public class RestMetricTypes {
         return Response.noContent().build();
     }
 
-    public static String getUrl(MetricType metricType) {
-        return String.format("/%s/metricTypes/%s", metricType.getTenantId(), metricType.getId());
-    }
-
     @GET
     @Path("/{tenantId}/metricTypes/{metricTypeId}/relationships")
     @ApiOperation("Retrieves all relationships of given metric type.")
@@ -169,6 +165,21 @@ public class RestMetricTypes {
         // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         return Response.ok(inventory.tenants().get(tenantId).metricTypes().get(metricTypeId)
-                .relationships(directed).getAll(filters).entities()).build();
+                .relationships(directed).getAll(filters).entities(extractPaging(info))).build();
+    }
+
+    public static String getUrl(MetricType metricType) {
+        return String.format("/%s/metricTypes/%s", metricType.getTenantId(), metricType.getId());
+    }
+
+    public static MetricType getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length != 3) {
+            throw new IllegalArgumentException("Cannot convert malformed url " + url);
+        }
+        return new MetricType(chunks[0], chunks[2], null);
     }
 }

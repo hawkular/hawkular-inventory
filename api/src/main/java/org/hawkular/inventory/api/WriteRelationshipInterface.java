@@ -49,7 +49,7 @@ interface WriteRelationshipInterface<Single> {
      *
      * @see #linkWith(Relationships.WellKnown, Entity, Map)
      */
-    Single linkWith(String name, Entity targetOrSource, Map<String, String> properties) throws IllegalArgumentException;
+    Single linkWith(String name, Entity targetOrSource, Map<String, Object> properties) throws IllegalArgumentException;
 
     /**
      * Creates a new relationship at the current position in the inventory traversal.
@@ -71,7 +71,7 @@ interface WriteRelationshipInterface<Single> {
      *
      * @throws java.lang.IllegalArgumentException if any of the parameters is null
      */
-    Single linkWith(Relationships.WellKnown name, Entity targetOrSource, Map<String, String> properties)
+    Single linkWith(Relationships.WellKnown name, Entity targetOrSource, Map<String, Object> properties)
             throws IllegalArgumentException;
 
     /**

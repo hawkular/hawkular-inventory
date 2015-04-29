@@ -59,17 +59,17 @@ public final class ObservableRelationships {
         }
 
         @Override
-        public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, String> properties)
+        public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, Object> properties)
                 throws IllegalArgumentException {
-            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource, null),
-                    Relationships.Single::entity, Action.created());
+            return wrapAndNotify(ObservableRelationships.Single::new, wrapped.linkWith(name, targetOrSource,
+                            properties), Relationships.Single::entity, Action.created());
         }
 
         @Override
         public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource,
-                                             Map<String, String> properties)
+                                             Map<String, Object> properties)
                 throws IllegalArgumentException {
-            return linkWith(name.name(), targetOrSource, null);
+            return linkWith(name.name(), targetOrSource, properties);
         }
 
         @Override

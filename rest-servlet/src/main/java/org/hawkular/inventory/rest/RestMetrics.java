@@ -246,7 +246,7 @@ public class RestMetrics {
     }
 
     @DELETE
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/{tenantId}/{environmentId}/metrics/{metricId}")
     @ApiOperation("Deletes a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -266,47 +266,16 @@ public class RestMetrics {
 
     @GET
     @Path("/{tenantId}/{environmentId}/metrics/{metricId}/relationships")
-    @ApiOperation("Retrieves all relationships of given metric.")
+    @ApiOperation("Retrieves all relationships of given metric. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant, environment or metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricRelations2(@PathParam("tenantId") String tenantId,
-                                            @PathParam("environmentId") String environmentId,
-                                            @PathParam("metricId") String metricId,
-                                            @DefaultValue("both") @QueryParam("direction") String direction,
-                                            @DefaultValue("") @QueryParam("property") String propertyName,
-                                            @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
-                                            @DefaultValue("") @QueryParam("named") String named,
-                                            @DefaultValue("") @QueryParam("sourceType") String sourceType,
-                                            @DefaultValue("") @QueryParam("targetType") String targetType,
-                                            @Context UriInfo info) {
-
-        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
-                targetType, info);
-
-        // this will throw IllegalArgumentException on undefined values
-        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
-
-        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
-                .get(metricId).relationships(directed).getAll(filters).entities()).build();
-    }
-
-
-    @GET
-    @Path("/{tenantId}/{environmentId}/metrics")
-    @ApiOperation("Retrieves all metrics in an environment. Accepts paging query parameters.")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist",
-                    response = ApiError.class),
-            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-    })
     public Response getMetricRelations(@PathParam("tenantId") String tenantId,
                                @PathParam("environmentId") String environmentId,
-                               @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+                               @PathParam("metricId") String metricId,
                                @DefaultValue("both") @QueryParam("direction") String direction,
                                @DefaultValue("") @QueryParam("property") String propertyName,
                                @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
@@ -315,25 +284,28 @@ public class RestMetrics {
                                @DefaultValue("") @QueryParam("targetType") String targetType,
                                @Context UriInfo uriInfo) {
 
-        Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
-
-        Page<Metric> ret = (feedless ? envs.feedlessMetrics() : envs.allMetrics())
-                .getAll().entities(RequestUtil.extractPaging(uriInfo));
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, uriInfo);
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        Page<Relationship> ret = inventory.tenants().get(tenantId).environments().get(environmentId)
+                .feedlessMetrics().get(metricId).relationships(directed).getAll(filters)
+                .entities(RequestUtil.extractPaging(uriInfo));
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics")
-    @ApiOperation("Retrieves all metrics in a feed")
+    @Path("/{tenantId}/{environmentId}/{feedId}/metrics/{metricId}/relationships")
+    @ApiOperation("Retrieves all relationships of given metric in a feed. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist",
+            @ApiResponse(code = 404, message = "Tenant, environment, feed or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetricRelations(@PathParam("tenantId") String tenantId,
                                @PathParam("environmentId") String environmentId,
                                @PathParam("feedId") String feedId,
+                               @PathParam("metricId") String metricId,
                                @DefaultValue("both") @QueryParam("direction") String direction,
                                @DefaultValue("") @QueryParam("property") String propertyName,
                                @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
@@ -353,6 +325,24 @@ public class RestMetrics {
     }
 
     public static String getUrl(Metric metric) {
-        return String.format("/%s/%s/metrics/%s", metric.getTenantId(), metric.getEnvironmentId(), metric.getId());
+        if (metric.getFeedId() != null) {
+            return String.format("/%s/%s/%s/metrics/%s", metric.getTenantId(), metric.getEnvironmentId(),
+                    metric.getFeedId(), metric.getId());
+        }
+        return String.format("/%s/%s/metrics/%s", metric.getTenantId(), metric.getEnvironmentId(), metric
+                .getId());
+    }
+
+    public static Metric getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length == 4) {
+            return new Metric(chunks[0], chunks[1], null, chunks[3], null);
+        } else if (chunks.length == 5) {
+            return new Metric(chunks[0], chunks[1], chunks[2], chunks[4], null);
+        }
+        throw new IllegalArgumentException("Cannot convert malformed url " + url);
     }
 }

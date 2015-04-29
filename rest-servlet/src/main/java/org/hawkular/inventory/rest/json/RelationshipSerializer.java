@@ -22,6 +22,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -29,6 +30,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.rest.RestEnvironments;
+import org.hawkular.inventory.rest.RestFeeds;
 import org.hawkular.inventory.rest.RestMetricTypes;
 import org.hawkular.inventory.rest.RestMetrics;
 import org.hawkular.inventory.rest.RestRelationships;
@@ -145,6 +147,8 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
             return RestResourceTypes.getUrl((ResourceType) vertex);
         } else if (vertex.getClass() == MetricType.class) {
             return RestMetricTypes.getUrl((MetricType) vertex);
+        } else if (vertex.getClass() == Feed.class) {
+            return RestFeeds.getUrl((Feed) vertex);
         }
         throw new IllegalStateException("Unknown entity type: " + vertex.getClass().getName());
     }

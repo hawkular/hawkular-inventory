@@ -201,7 +201,7 @@ public class RestResourceTypes {
         // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         return Response.ok(inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .relationships(directed).getAll(filters).entities()).build();
+                .relationships(directed).getAll(filters).entities(extractPaging(info))).build();
     }
 
     @POST
@@ -239,5 +239,16 @@ public class RestResourceTypes {
 
     public static String getUrl(ResourceType resourceType) {
         return String.format("/%s/resourceTypes/%s", resourceType.getTenantId(), resourceType.getId());
+    }
+
+    public static ResourceType getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length != 3) {
+            throw new IllegalArgumentException("Cannot convert malformed url " + url);
+        }
+        return new ResourceType(chunks[0], chunks[2], (String) null);
     }
 }

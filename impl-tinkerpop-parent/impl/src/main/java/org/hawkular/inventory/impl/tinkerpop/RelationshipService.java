@@ -90,7 +90,7 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
     }
 
     @Override
-    public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, String> properties) {
+    public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, Object> properties) {
         if (null == name) {
             throw new IllegalArgumentException("name was null");
         }
@@ -132,7 +132,7 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
 
     @Override
     public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource,
-                                         Map<String, String> properties) {
+                                         Map<String, Object> properties) {
         return linkWith(name.name(), targetOrSource, null);
     }
 

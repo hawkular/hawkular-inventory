@@ -162,10 +162,21 @@ public class RestEnvironments {
         // this will throw IllegalArgumentException on undefined values
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId)
-                .relationships(directed).getAll(filters).entities()).build();
+                .relationships(directed).getAll(filters).entities(extractPaging(info))).build();
     }
 
     public static String getUrl(Environment environment) {
         return String.format("/%s/environments/%s", environment.getTenantId(), environment.getId());
+    }
+
+    public static Environment getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length != 3) {
+            throw new IllegalArgumentException("Cannot convert malformed url " + url);
+        }
+        return new Environment(chunks[0], chunks[2]);
     }
 }

@@ -21,20 +21,26 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Set;
+
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 /**
  * @author Lukas Krejci
@@ -122,5 +128,46 @@ public class RestFeeds {
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().delete(feedId);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("{tenantId}/{environmentId}/feeds/{feedId}/relationships")
+    @ApiOperation("Return a single feed by its ID.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "OK", response = Set.class),
+            @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getRelations(@PathParam("tenantId") String tenantId,
+                                 @PathParam("environmentId") String environmentId,
+                                 @PathParam("feedId") String feedId,
+                                 @DefaultValue("both") @QueryParam("direction") String direction,
+                                 @DefaultValue("") @QueryParam("property") String propertyName,
+                                 @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
+                                 @DefaultValue("") @QueryParam("named") String named,
+                                 @DefaultValue("") @QueryParam("sourceType") String sourceType,
+                                 @DefaultValue("") @QueryParam("targetType") String targetType,
+                                 @Context UriInfo info) {
+        RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
+                targetType, info);
+        Relationships.Direction directed = Relationships.Direction.valueOf(direction);
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
+                .relationships(directed).getAll(filters).entities(extractPaging(info))).build();
+    }
+
+    public static String getUrl(Feed feed) {
+        return String.format("/%s/%s/feeds/%s", feed.getTenantId(), feed.getEnvironmentId(), feed.getId());
+    }
+
+    public static Feed getEntity(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty url");
+        }
+        String[] chunks = (url.startsWith("/") ? url.substring(1) : url).split("/");
+        if (chunks.length != 3) {
+            throw new IllegalArgumentException("Cannot convert malformed url " + url);
+        }
+        return new Feed(chunks[0], chunks[1], chunks[3]);
     }
 }

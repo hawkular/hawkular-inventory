@@ -86,4 +86,26 @@ class RestEntitiesTest extends RestTest {
         assertEntitiesExist("com.example.tenant/test/resources/playroom1/metrics", ["playroom1_size"])
         assertEntitiesExist("com.example.tenant/test/resources/playroom2/metrics", ["playroom2_size"])
     }
+
+    @Test
+    void testPaging() {
+        def response = client.get(path: "com.example.tenant/test/metrics", query: [page: 0, per_page: 2, sort: "id"])
+        assert response.data.size() == 2
+
+        def first = response.data.get(0)
+        def second = response.data.get(1)
+
+        response = client.get(path: "com.example.tenant/test/metrics", query: [page: 0, per_page: 1, sort: "id"])
+        assert response.data.size() == 1
+        assert first.equals(response.data.get(0))
+
+        response = client.get(path: "com.example.tenant/test/metrics", query: [page: 1, per_page: 1, sort: "id"])
+        assert response.data.size() == 1
+        assert second.equals(response.data.get(0))
+
+        response = client.get(path: "com.example.tenant/test/metrics", query: [page : 1, per_page: 1, sort: "id",
+                                                                               order: "desc"])
+        assert response.data.size() == 1
+        assert first.equals(response.data.get(0))
+    }
 }

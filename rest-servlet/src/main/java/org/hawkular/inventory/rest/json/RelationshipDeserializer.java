@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.rest.UrlUtil;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -74,23 +75,8 @@ public class RelationshipDeserializer implements JsonDeserializer<Relationship> 
     }
 
     private Entity deserializeEntity(JsonObject json) {
-        // there is no need to fully re-construct the original object, all is needed is the id. The reason is
-        // following: When 'CRUDing' the Relationship it should not be possible to update the incidence entity
+        final String url = json.getAsJsonPrimitive("@id").getAsString();
         final String type = json.getAsJsonPrimitive("@type").getAsString();
-        final String id = json.getAsJsonPrimitive(VOCAB_PREFIX + ":shortId").getAsString();
-        if (type.equals(VOCAB_PREFIX + ":" + Tenant.class.getSimpleName())) {
-            return new Tenant(id);
-        } else if (type.equals(VOCAB_PREFIX + ":" + Environment.class.getSimpleName())) {
-            return new Environment(null, id);
-        } else if (type.equals(VOCAB_PREFIX + ":" + Resource.class.getSimpleName())) {
-            return new Resource(null, null, id, null);
-        } else if (type.equals(VOCAB_PREFIX + ":" + Metric.class.getSimpleName())) {
-            return new Metric(null, null, id, null);
-        } else if (type.equals(VOCAB_PREFIX + ":" + ResourceType.class.getSimpleName())) {
-            return new ResourceType(null, id, (String) null);
-        } else if (type.equals(VOCAB_PREFIX + ":" + MetricType.class.getSimpleName())) {
-            return new MetricType(null, id);
-        }
-        throw new IllegalStateException("Unknown entity type: " + type);
+        return UrlUtil.getEntityFromUrl(url, type.contains(":") ? type.split(":")[0] : type);
     }
 }
