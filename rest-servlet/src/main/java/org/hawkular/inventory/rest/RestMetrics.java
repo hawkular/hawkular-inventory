@@ -319,7 +319,7 @@ public class RestMetrics {
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
 
         Page<Relationship> ret = inventory.tenants().get(tenantId).environments().get(environmentId).feeds()
-                .get(feedId).metrics().getAll().relationships(directed).getAll(filters)
+                .get(feedId).metrics().get(metricId).relationships(directed).getAll(filters)
                 .entities(RequestUtil.extractPaging(uriInfo));
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }

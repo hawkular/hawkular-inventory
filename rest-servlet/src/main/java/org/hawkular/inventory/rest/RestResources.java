@@ -29,7 +29,9 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
@@ -53,7 +55,10 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
@@ -135,7 +140,8 @@ public class RestResources {
                                        @QueryParam("feedless") @DefaultValue("false") boolean feedless,
                                        @Context UriInfo uriInfo) {
 
-        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, feedless, typeId, typeVersion);
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, null, feedless, typeId,
+                typeVersion);
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs = mult.entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
@@ -156,7 +162,8 @@ public class RestResources {
                                        @QueryParam("typeVersion") String typeVersion,
                                        @Context UriInfo uriInfo) {
 
-        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, false, typeId, typeVersion);
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, null, false, typeId,
+                typeVersion);
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs = mult.entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
@@ -266,7 +273,8 @@ public class RestResources {
                                             @DefaultValue("") @QueryParam("targetType") String targetType,
                                             @Context UriInfo info) {
 
-        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, feedless, typeId, typeVersion);
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, null, resourceId, feedless, typeId,
+                typeVersion);
         Pager pager = extractPaging(info);
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, info);
@@ -299,7 +307,8 @@ public class RestResources {
                                          @DefaultValue("") @QueryParam("targetType") String targetType,
                                          @Context UriInfo info) {
 
-        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, false, typeId, typeVersion);
+        Resources.Multiple mult = getResourcesMultiple(tenantId, environmentId, feedId, resourceId, false, typeId,
+                typeVersion);
         Pager pager = extractPaging(info);
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, info);
@@ -307,6 +316,47 @@ public class RestResources {
 
         Page<Relationship> rs = mult.relationships(directed).getAll(filters).entities(pager);
         return pagedResponse(Response.ok(), info, rs).build();
+    }
+
+    @POST
+    @Path("/{tenantId}/{environmentId}/resources/{resourceId}/relationships")
+    @ApiOperation("Creates a new resource")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Resource successfully created"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response addResourceRelation(@PathParam("tenantId") String tenantId,
+                                        @PathParam("environmentId") String environmentId,
+                                        @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+                                        @PathParam("resourceId") String resourceId,
+                                        @ApiParam(required =  true) Relationship relation,
+                                        @Context UriInfo info) {
+
+        if (Arrays.asList(Relationships.WellKnown.values()).contains(relation.getName())) {
+            throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
+                    "names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
+        Relationships.Direction directed;
+        Entity theOtherSide;
+        if (relation.getSource().getId() == resourceId) {
+            directed = Relationships.Direction.outgoing;
+            theOtherSide = relation.getTarget();
+        } else if (relation.getTarget().getId() == resourceId) {
+            directed = Relationships.Direction.incoming;
+            theOtherSide = relation.getSource();
+        } else {
+            throw new IllegalArgumentException("Either source or target of the relationship must correspond with the " +
+                    "resource being modified.");
+        }
+        Environments.Single single = inventory.tenants().get(tenantId).environments().get(environmentId);
+        (feedless ? single.feedlessResources() : single.allResources()).getAll(With.id(resourceId))
+                .relationships(directed);
+//                .linkWith(relation.getName(), theOtherSide, relation.getProperties());
+
+        return ResponseUtil.created(info, single.entity().getId()).build();
     }
 
     @POST
@@ -326,6 +376,10 @@ public class RestResources {
                                         @ApiParam(required =  true) Relationship relation,
                                         @Context UriInfo info) {
 
+        if (Arrays.asList(Relationships.WellKnown.values()).contains(relation.getName())) {
+            throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
+                    "names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
         Relationships.Direction directed;
         Entity theOtherSide;
         if (relation.getSource().getId() == resourceId) {
@@ -343,6 +397,33 @@ public class RestResources {
                         theOtherSide, relation.getProperties());
 
         return ResponseUtil.created(info, single.entity().getId()).build();
+    }
+
+    @DELETE
+    @Path("/{tenantId}/{environmentId}/{feedId}/resources/{resourceId}/relationships")
+    @ApiOperation("Creates a new resource")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Resource successfully created"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response deleteResourceRelation(@PathParam("tenantId") String tenantId,
+                                           @PathParam("environmentId") String environmentId,
+                                           @PathParam("feedId") String feedId,
+                                           @PathParam("resourceId") String resourceId,
+                                           @ApiParam(required =  true) Relationship relation,
+                                           @Context UriInfo info) {
+
+        if (Arrays.asList(Relationships.WellKnown.values()).contains(relation.getName())) {
+            throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
+                    "names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
+        inventory.tenants().get(tenantId).environments().get(environmentId).feeds()
+                .get(feedId).resources().get(resourceId).relationships().delete(relation.getId());
+
+        return Response.noContent().build();
     }
 
     @DELETE
@@ -503,8 +584,8 @@ message = "Tenant, environment, resource or metric doesn't exist or if the metri
         throw new IllegalArgumentException("Cannot convert malformed url " + url);
     }
 
-    private Resources.Multiple getResourcesMultiple(String tenantId, String environmentId, String feedId, boolean
-            feedless, String typeId, String typeVersion) {
+    private Resources.Multiple getResourcesMultiple(String tenantId, String environmentId, String feedId, String
+            resourceId, boolean feedless, String typeId, String typeVersion) {
         Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
         ResolvingToMultiple<Resources.Multiple> rr;
         if (feedId == null) {
@@ -516,9 +597,14 @@ message = "Tenant, environment, resource or metric doesn't exist or if the metri
         Resources.Multiple ret;
         if (typeId != null && typeVersion != null) {
             ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-            ret = rr.getAll(Defined.by(rt));
+            List<Filter> filters = new ArrayList<>();
+            filters.add(Defined.by(rt));
+            if (resourceId != null) {
+                filters.add(With.id(resourceId));
+            }
+            ret = rr.getAll(filters.toArray(new Filter[filters.size()]));
         } else {
-            ret = rr.getAll();
+            ret = rr.getAll(resourceId == null ? Filter.all() : new Filter[] {With.id(resourceId)});
         }
 
         return ret;
