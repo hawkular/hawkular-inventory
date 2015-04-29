@@ -25,17 +25,15 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Tenant;
 
-import java.util.Map;
-
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds.Multiple, Feed, Feed.Blueprint,
-        Feed.Update> implements Feeds.ReadAndRegister, Feeds.Read {
+        Feed.Update> implements Feeds.ReadWrite, Feeds.Read {
 
     FeedsService(InventoryContext context, PathContext ctx) {
         super(context, Feed.class, ctx);
@@ -56,12 +54,12 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
     }
 
     @Override
-    protected Feeds.Single createSingleBrowser(FilterApplicator... path) {
+    protected Feeds.Single createSingleBrowser(FilterApplicator.Tree path) {
         return FeedBrowser.single(context, path);
     }
 
     @Override
-    protected Feeds.Multiple createMultiBrowser(FilterApplicator... path) {
+    protected Feeds.Multiple createMultiBrowser(FilterApplicator.Tree path) {
         return FeedBrowser.multiple(context, path);
     }
 
@@ -78,10 +76,5 @@ final class FeedsService extends AbstractSourcedGraphService<Feeds.Single, Feeds
         String tenantId = getEid(tenant);
 
         return context.getFeedIdStrategy().generate(context.getInventory(), new Feed(tenantId, envId, b.getId()));
-    }
-
-    @Override
-    public Feeds.Single register(String proposedId, Map<String, Object> properties) {
-        return super.create(new Feed.Blueprint(proposedId, properties));
     }
 }

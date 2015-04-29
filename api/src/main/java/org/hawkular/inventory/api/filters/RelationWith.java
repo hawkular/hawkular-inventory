@@ -98,6 +98,21 @@ public final class RelationWith {
         public String toString() {
             return  "RelationshipIds" + Arrays.asList(ids).toString();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Ids)) return false;
+
+            Ids other = (Ids) o;
+
+            return Arrays.equals(ids, other.ids);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(ids);
+        }
     }
 
     public static final class Properties extends RelationFilter {
@@ -121,6 +136,23 @@ public final class RelationWith {
         @Override
         public String toString() {
             return  "RelationshipProperty: " + getProperty() + "=" + Arrays.asList(values).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Properties)) return false;
+
+            Properties that = (Properties) o;
+
+            return property.equals(that.property) && Arrays.equals(values, that.values);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = property.hashCode();
+            result = 31 * result + Arrays.hashCode(values);
+            return result;
         }
     }
 
@@ -152,6 +184,21 @@ public final class RelationWith {
             }
             ret.append("]");
             return ret.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SourceOrTargetOfType)) return false;
+
+            SourceOrTargetOfType that = (SourceOrTargetOfType) o;
+
+            return Arrays.equals(types, that.types);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(types);
         }
     }
 

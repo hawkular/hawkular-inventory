@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -54,7 +56,10 @@ public final class MetricType extends OwnedEntity<MetricType.Blueprint, MetricTy
         this.unit = unit;
     }
 
-    public MetricType(String tenantId, String id, MetricUnit unit, Map<String, Object> properties) {
+    /** JSON serialization support */
+    @JsonCreator
+    public MetricType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
+            @JsonProperty("unit") MetricUnit unit, @JsonProperty("properties") Map<String, Object> properties) {
         super(tenantId, id, properties);
         this.unit = unit;
     }

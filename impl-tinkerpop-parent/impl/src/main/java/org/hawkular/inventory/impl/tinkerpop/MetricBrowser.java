@@ -19,16 +19,16 @@ package org.hawkular.inventory.impl.tinkerpop;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Metric;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metric.Update> {
 
-    public static Metrics.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Metrics.Single single(InventoryContext context, FilterApplicator.Tree path) {
         MetricBrowser b = new MetricBrowser(context, path);
 
         return new Metrics.Single() {
@@ -50,14 +50,14 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         };
     }
 
-    public static Metrics.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Metrics.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         MetricBrowser b = new MetricBrowser(context, path);
 
         return new Metrics.Multiple() {
 
             @Override
-            public Set<Metric> entities() {
-                return b.entities();
+            public Page<Metric> entities(Pager pager) {
+                return b.entities(pager);
             }
 
             @Override
@@ -72,7 +72,7 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         };
     }
 
-    MetricBrowser(InventoryContext context, FilterApplicator... path) {
+    MetricBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Metric.class, path);
     }
 }

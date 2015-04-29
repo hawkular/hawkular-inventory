@@ -21,14 +21,16 @@ import org.hawkular.inventory.api.Relatable;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
+import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -71,6 +73,20 @@ public class ObservableBase<T> {
         while (subjects.hasNext()) {
             Subject<C, C> s = subjects.next();
             s.onNext(actionContext);
+        }
+    }
+
+    public abstract static class ReadMultiple<Multiple extends ResolvableToMany<?>,
+            Iface extends ResolvingToMultiple<Multiple>> extends ObservableBase<Iface> {
+
+        ReadMultiple(Iface wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        protected abstract BiFunction<Multiple, ObservableContext, ? extends Multiple> multipleCtor();
+
+        public Multiple getAll(Filter... filters) {
+            return wrap(multipleCtor(), wrapped.getAll(filters));
         }
     }
 
@@ -162,8 +178,8 @@ public class ObservableBase<T> {
             super(wrapped, context);
         }
 
-        public Set<E> entities() {
-            return wrapped.entities();
+        public Page<E> entities(Pager pager) {
+            return wrapped.entities(pager);
         }
     }
 

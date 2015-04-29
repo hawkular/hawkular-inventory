@@ -16,12 +16,20 @@
  */
 package org.hawkular.inventory.rest;
 
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.PageContext;
+import org.hawkular.inventory.rest.json.Link;
+
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @author Heiko W. Rupp
+ * @since 0.0.1
  */
 final class ResponseUtil {
 
@@ -30,10 +38,72 @@ final class ResponseUtil {
      * one place until <a href="https://issues.jboss.org/browse/RESTEASY-1162">this JIRA</a> is resolved somehow.
      *
      * @param info the UriInfo instance of the current request
-     * @param id the ID of a newly created entity under the base
+     * @param id   the ID of a newly created entity under the base
      * @return the response builder with status 201 and location set to the entity with the provided id.
      */
-    public static Response.ResponseBuilder created(UriInfo info,  String id) {
+    public static Response.ResponseBuilder created(UriInfo info, String id) {
         return Response.status(Response.Status.CREATED).location(info.getRequestUriBuilder().path(id).build());
+    }
+
+    public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
+            Page<T> page) {
+
+        //extract the data out of the page
+        List<T> data = new ArrayList<>(page);
+
+        response.entity(data);
+
+        createPagingHeader(response, uriInfo, page);
+
+        return response;
+    }
+
+    /**
+     * Create the paging headers for collections and attach them to the passed builder. Those are represented as
+     * <i>Link:</i> http headers that carry the URL for the pages and the respective relation.
+     * <br/>In addition a <i>X-Total-Count</i> header is created that contains the whole collection size.
+     *
+     * @param builder    The ResponseBuilder that receives the headers
+     * @param uriInfo    The uriInfo of the incoming request to build the urls
+     * @param resultList The collection with its paging information
+     */
+    public static void createPagingHeader(final Response.ResponseBuilder builder, final UriInfo uriInfo,
+            final Page<?> resultList) {
+
+        UriBuilder uriBuilder;
+
+        PageContext pc = resultList.getPageContext();
+        int page = pc.getPageNumber();
+
+        if (resultList.getTotalSize() > (pc.getPageNumber() + 1) * pc.getPageSize()) {
+            int nextPage = page + 1;
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder.replaceQueryParam("page", nextPage);
+
+            builder.header("Link", new Link("next", uriBuilder.build().toString()).rfc5988String());
+        }
+
+        if (page > 0) {
+            int prevPage = page - 1;
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder.replaceQueryParam("page", prevPage);
+            builder.header("Link", new Link("prev", uriBuilder.build().toString()).rfc5988String());
+        }
+
+        // A link to the last page
+        if (pc.isLimited()) {
+            long lastPage = (resultList.getTotalSize() / pc.getPageSize()) - 1;
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder.replaceQueryParam("page", lastPage);
+            builder.header("Link", new Link("last", uriBuilder.build().toString()).rfc5988String());
+        }
+
+        // A link to the current page
+        uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+        builder.header("Link", new Link("current", uriBuilder.build().toString()).rfc5988String());
+
+
+        // Create a total size header
+        builder.header("X-Total-Count", resultList.getTotalSize());
     }
 }

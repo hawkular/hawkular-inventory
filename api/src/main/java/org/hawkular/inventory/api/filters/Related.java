@@ -19,6 +19,8 @@ package org.hawkular.inventory.api.filters;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 
+import java.util.Objects;
+
 /**
  * Defines a filter on entities having specified relationship.
  *
@@ -186,5 +188,37 @@ public class Related<T extends Entity> extends Filter {
     public String toString() {
         return getClass().getSimpleName() + "[" + (entity != null ? "entity=" + String.valueOf(entity) : "")
                 + ", rel='" + relationshipName + "', role=" + entityRole.name() + "]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Related)) return false;
+
+        Related<?> related = (Related<?>) o;
+
+        if (!Objects.equals(entity, related.entity)) {
+            return false;
+        }
+
+        if (!Objects.equals(relationshipName, related.relationshipName)) {
+            return false;
+        }
+
+        if (!Objects.equals(relationshipId,related.relationshipId)) {
+            return false;
+        }
+
+        return entityRole == related.entityRole;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = entity != null ? entity.hashCode() : 0;
+        result = 31 * result + (relationshipName != null ? relationshipName.hashCode() : 0);
+        result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
+        result = 31 * result + (entityRole != null ? entityRole.hashCode() : 0);
+        return result;
     }
 }

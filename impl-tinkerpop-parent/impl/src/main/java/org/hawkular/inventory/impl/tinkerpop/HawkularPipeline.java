@@ -33,22 +33,30 @@ import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
 import com.tinkerpop.pipes.util.structures.Tree;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.Pager;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * A slight extension of the Gremlin pipeline providing a couple of utility overloads of existing methods that accept
+ * Hawkular specific arguments.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable {
 
     private int asLabelCount;
     private final Deque<String> labelStack = new ArrayDeque<>(2);
+
+    private final Map<String, Long> counters = new HashMap<>();
 
     public HawkularPipeline() {
     }
@@ -110,6 +118,79 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         Arrays.setAll(srels, i -> rel[i].name());
 
         return in(srels);
+    }
+
+    public HawkularPipeline<S, Vertex> page(Pager pager) {
+        HawkularPipeline<S, Vertex> pipe = cast(Vertex.class);
+
+        List<Order> order = pager.getOrder();
+        if (!order.isEmpty()) {
+            //we have to have at least 1 order in the specific direction
+            boolean specific = false;
+            for (Order o : order) {
+                if (o.isSpecific()) {
+                    specific = true;
+                    break;
+                }
+            }
+            if (specific) {
+                //the order pipe holds on to the whole result set to be able to order, so we'd better do just
+                //1 order step.
+                pipe.order(p -> {
+                    int ret = 0;
+                    for (Order ord : order) {
+                        if (ord.isSpecific()) {
+                            String field = Constants.Property.mapUserDefined(ord.getField());
+                            Comparable<Object> a = p.getA().getProperty(field);
+                            Comparable<Object> b = p.getB().getProperty(field);
+                            ret = ord.isAscending() ? safeCompare(a, b) : safeCompare(b, a);
+                            if (ret != 0) {
+                                break;
+                            }
+                        }
+                    }
+                    return ret;
+                });
+            }
+        }
+
+        if (pager.isLimited()) {
+            this.range(pager.getStart(), pager.getEnd() - 1);
+        }
+
+        return pipe;
+    }
+
+    private static <U, T extends Comparable<U>> int safeCompare(T a, U b) {
+        if (a == null) {
+            return b == null ? 0 : -1;
+        } else if (b == null) {
+            return 1;
+        } else {
+            return a.compareTo(b);
+        }
+    }
+
+    /**
+     * Counts the number of elements that passed through the pipeline at this position.
+     *
+     * @param name the name of the counter
+     * @return this pipeline
+     * @see #getCount(String)
+     */
+    public HawkularPipeline<S, E> counter(String name) {
+        this.sideEffect(e -> counters.put(name, counters.getOrDefault(name, 0L) + 1));
+        return this;
+    }
+
+    /**
+     * Returns the value of the counter previously "installed" by the {@link #counter(String)} method.
+     *
+     * @param counterName the name of the counter to get the count of
+     * @return the count or -1 if the counter with given name was not found
+     */
+    public long getCount(String counterName) {
+        return counters.getOrDefault(counterName, -1L);
     }
 
     @Override

@@ -29,10 +29,15 @@ import java.util.Arrays;
 public final class RelationNotFoundException extends InventoryException {
 
     private final String sourceEntityType;
-    private final Filter[] filters;
+    private final Filter[][] filters;
     private final String nameOrId;
 
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
+                                     String message, Throwable cause) {
+        this(sourceEntityType, nameOrId, oneElem(filters), message, cause);
+    }
+
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[][] filters,
                                      String message, Throwable cause) {
         super(message, cause);
         this.sourceEntityType = sourceEntityType != null ? sourceEntityType.getSimpleName() : null;
@@ -53,7 +58,15 @@ public final class RelationNotFoundException extends InventoryException {
         this(sourceEntityType, null, filters, null, null);
     }
 
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, Filter[][] filters) {
+        this(sourceEntityType, null, filters, null, null);
+    }
+
     public RelationNotFoundException(String nameOrId, Filter[] filters) {
+        this(null, nameOrId, filters, null, null);
+    }
+
+    public RelationNotFoundException(String nameOrId, Filter[][] filters) {
         this(null, nameOrId, filters, null, null);
     }
 
@@ -62,7 +75,13 @@ public final class RelationNotFoundException extends InventoryException {
         return "Relation"
                 + (sourceEntityType != null ? " with source in " + sourceEntityType : "")
                 + (nameOrId != null ? " with name or id '" + nameOrId + "'" : "")
-                + (filters != null ? " searched for using filters: " + Arrays.toString(filters) : "")
+                + (filters != null ? " searched for using any of the filters: " + Arrays.deepToString(filters) : "")
                 + (super.getMessage() == null ? ": Was not found." : ": " + super.getMessage());
+    }
+
+    private static Filter[][] oneElem(Filter[] elem) {
+        Filter[][] ret = new Filter[1][];
+        ret[0] = elem;
+        return ret;
     }
 }

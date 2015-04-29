@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
@@ -45,6 +46,8 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 /**
  * @author Lukas Krejci
@@ -62,14 +65,16 @@ public class RestEnvironments {
 
     @GET
     @Path("/{tenantId}/environments")
-    @ApiOperation("Returns all environments under given tenant.")
+    @ApiOperation("Returns all environments under given tenant. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
             @ApiResponse(code = 404, message = "Tenant not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Environment> getAll(@PathParam("tenantId") String tenantId) throws Exception {
-        return inventory.tenants().get(tenantId).environments().getAll().entities();
+    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uri) throws Exception {
+        Page<Environment> ret = inventory.tenants().get(tenantId).environments().getAll().entities(extractPaging(uri));
+
+        return pagedResponse(Response.ok(), uri, ret).build();
     }
 
     @GET

@@ -29,9 +29,16 @@ import java.util.Arrays;
 public final class RelationAlreadyExistsException extends InventoryException {
 
     private final String relationName;
-    private final Filter[] path;
+    private final Filter[][] path;
 
     public RelationAlreadyExistsException(Throwable cause, String relationName, Filter[] path) {
+        super(cause);
+        this.relationName = relationName;
+        this.path = new Filter[1][];
+        this.path[0] = path;
+    }
+
+    public RelationAlreadyExistsException(Throwable cause, String relationName, Filter[][] path) {
         super(cause);
         this.relationName = relationName;
         this.path = path;
@@ -41,12 +48,17 @@ public final class RelationAlreadyExistsException extends InventoryException {
         this(null, relationName, path);
     }
 
+    public RelationAlreadyExistsException(String relationName, Filter[][] path) {
+        this(null, relationName, path);
+    }
+
     public RelationAlreadyExistsException(Entity entity) {
         this(entity.getId(), Filter.pathTo(entity));
     }
 
     @Override
     public String getMessage() {
-        return "Relation with id '" + relationName + "' already exists at the position: " + Arrays.toString(path);
+        return "Relation with id '" + relationName + "' already exists at some of the positions: "
+                + Arrays.deepToString(path);
     }
 }

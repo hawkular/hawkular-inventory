@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.observable;
 
+import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.Resource;
 
@@ -28,6 +29,20 @@ import java.util.function.BiFunction;
 public final class ObservableResources {
     private ObservableResources() {
 
+    }
+
+    public static final class ReadMultiple
+            extends ObservableBase.ReadMultiple<Resources.Multiple, ResolvingToMultiple<Resources.Multiple>>
+            implements ResolvingToMultiple<Resources.Multiple> {
+
+        ReadMultiple(ResolvingToMultiple<Resources.Multiple> wrapped, ObservableContext context) {
+            super(wrapped, context);
+        }
+
+        @Override
+        protected BiFunction<Resources.Multiple, ObservableContext, ? extends Resources.Multiple> multipleCtor() {
+            return ObservableResources.Multiple::new;
+        }
     }
 
     public static final class Read extends ObservableBase.Read<Resources.Single, Resources.Multiple, Resources.Read>

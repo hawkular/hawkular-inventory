@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -33,7 +34,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__version
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class Constants {
 
@@ -63,7 +64,15 @@ final class Constants {
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
-        __unit
+        __unit;
+
+        public static String mapUserDefined(String property) {
+            if (AbstractElement.ID_PROPERTY.equals(property)) {
+                return __eid.name();
+            } else {
+                return property;
+            }
+        }
     }
 
     /**
@@ -77,7 +86,7 @@ final class Constants {
         private final String[] mappedProperties;
         private final Class<? extends Entity> entityType;
 
-        private Type(Class<? extends Entity> entityType, Property... mappedProperties) {
+        Type(Class<? extends Entity> entityType, Property... mappedProperties) {
             this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 2];
             Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.__type.name() :
@@ -147,6 +156,9 @@ final class Constants {
             return entityType;
         }
 
+        /**
+         * @return list of properties that are explicitly mapped to entity class properties.
+         */
         public String[] getMappedProperties() {
             return mappedProperties;
         }

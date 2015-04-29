@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
@@ -44,6 +45,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 /**
  * @author Lukas Krejci
@@ -61,14 +64,16 @@ public class RestTenants {
 
     @GET
     @Path("/")
-    @ApiOperation("Lists all tenants")
+    @ApiOperation("Lists all tenants. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of tenants"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll() {
-        return Response.ok(inventory.tenants().getAll().entities()).build();
+    public Response getAll(@Context UriInfo uriInfo) {
+        Page<Tenant> ret = inventory.tenants().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @POST

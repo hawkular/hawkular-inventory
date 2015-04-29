@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -57,6 +59,13 @@ public final class ResourceType extends OwnedEntity<ResourceType.Blueprint, Reso
 
     public ResourceType(String tenantId, String id, String version) {
         this(tenantId, id, new Version(version));
+    }
+
+    /** JSON serialization support */
+    @JsonCreator
+    public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
+            @JsonProperty("version") String version, @JsonProperty("properties") Map<String, Object> properties) {
+        this(tenantId, id, new Version(version), properties);
     }
 
     public ResourceType(String tenantId, String id, Version version, Map<String, Object> properties) {
@@ -151,7 +160,6 @@ public final class ResourceType extends OwnedEntity<ResourceType.Blueprint, Reso
             }
         }
     }
-
 
     public static final class Update extends AbstractElement.Update {
         private final String version;

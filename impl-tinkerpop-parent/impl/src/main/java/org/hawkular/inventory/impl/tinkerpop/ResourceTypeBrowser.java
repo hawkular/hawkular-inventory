@@ -27,22 +27,22 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class ResourceTypeBrowser extends AbstractBrowser<ResourceType, ResourceType.Blueprint, ResourceType.Update> {
-    private ResourceTypeBrowser(InventoryContext context, FilterApplicator... path) {
+    private ResourceTypeBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, ResourceType.class, path);
     }
 
-    public static ResourceTypes.Single single(InventoryContext context, FilterApplicator... path) {
+    public static ResourceTypes.Single single(InventoryContext context, FilterApplicator.Tree path) {
         ResourceTypeBrowser b = new ResourceTypeBrowser(context, path);
 
         return new ResourceTypes.Single() {
@@ -74,7 +74,7 @@ final class ResourceTypeBrowser extends AbstractBrowser<ResourceType, ResourceTy
         };
     }
 
-    public static ResourceTypes.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static ResourceTypes.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         ResourceTypeBrowser b = new ResourceTypeBrowser(context, path);
 
         return new ResourceTypes.Multiple() {
@@ -99,8 +99,8 @@ final class ResourceTypeBrowser extends AbstractBrowser<ResourceType, ResourceTy
             }
 
             @Override
-            public Set<ResourceType> entities() {
-                return b.entities();
+            public Page<ResourceType> entities(Pager pager) {
+                return b.entities(pager);
             }
         };
     }

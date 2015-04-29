@@ -28,21 +28,21 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-
-import java.util.Set;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 final class TenantBrowser extends AbstractBrowser<Tenant, Tenant.Blueprint, Tenant.Update> {
-    private TenantBrowser(InventoryContext context, FilterApplicator... path) {
+    private TenantBrowser(InventoryContext context, FilterApplicator.Tree path) {
         super(context, Tenant.class, path);
     }
 
-    public static Tenants.Single single(InventoryContext context, FilterApplicator... path) {
+    public static Tenants.Single single(InventoryContext context, FilterApplicator.Tree path) {
         TenantBrowser b = new TenantBrowser(context, path);
 
         return new Tenants.Single() {
@@ -78,7 +78,7 @@ final class TenantBrowser extends AbstractBrowser<Tenant, Tenant.Blueprint, Tena
         };
     }
 
-    public static Tenants.Multiple multiple(InventoryContext context, FilterApplicator... path) {
+    public static Tenants.Multiple multiple(InventoryContext context, FilterApplicator.Tree path) {
         TenantBrowser b = new TenantBrowser(context, path);
         return new Tenants.Multiple() {
             @Override
@@ -107,8 +107,8 @@ final class TenantBrowser extends AbstractBrowser<Tenant, Tenant.Blueprint, Tena
             }
 
             @Override
-            public Set<Tenant> entities() {
-                return b.entities();
+            public Page<Tenant> entities(Pager pager) {
+                return b.entities(pager);
             }
         };
     }

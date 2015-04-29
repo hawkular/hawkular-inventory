@@ -62,6 +62,21 @@ public final class With {
         public String toString() {
             return  "Ids" + Arrays.asList(ids).toString();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Ids)) return false;
+
+            Ids other = (Ids) o;
+
+            return Arrays.equals(ids, other.ids);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(ids);
+        }
     }
 
     public static final class Types extends Filter {
@@ -88,6 +103,21 @@ public final class With {
             }
             ret.append("]");
             return ret.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Types)) return false;
+
+            Types other = (Types) o;
+
+            return Arrays.equals(types, other.types);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(types);
         }
     }
 

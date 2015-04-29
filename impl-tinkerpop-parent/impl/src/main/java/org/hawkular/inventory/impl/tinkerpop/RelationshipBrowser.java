@@ -39,11 +39,12 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,17 +52,17 @@ import java.util.stream.StreamSupport;
 
 /**
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
 final class RelationshipBrowser extends AbstractGraphService {
 
-    private RelationshipBrowser(InventoryContext iContext, FilterApplicator... path) {
+    private RelationshipBrowser(InventoryContext iContext, FilterApplicator.Tree path) {
         super(iContext, path);
     }
 
     public static <T extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
         Relationships.Single single(InventoryContext iContext, Class<T> sourceClass, Relationships.Direction direction,
-                                    FilterApplicator[] path, RelationFilter[] filters) {
+                                    FilterApplicator.Tree path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
         RelationshipBrowser b = new RelationshipBrowser(iContext, AbstractGraphService.pathWith
@@ -72,7 +73,7 @@ final class RelationshipBrowser extends AbstractGraphService {
             public Relationship entity() {
                 HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
                 if (!edges.hasNext()) {
-                    throw new RelationNotFoundException(sourceClass, FilterApplicator.filters(b.path));
+                    throw new RelationNotFoundException(sourceClass, FilterApplicator.filters(b.sourcePaths));
                 }
                 Edge edge = edges.next();
 
@@ -89,7 +90,7 @@ final class RelationshipBrowser extends AbstractGraphService {
     }
 
     public static Relationships.Multiple multiple(InventoryContext iContext, Relationships.Direction direction,
-            FilterApplicator[] path, RelationFilter[] filters) {
+            FilterApplicator.Tree path, RelationFilter[] filters) {
 
         final Filter goToEdge = new JumpInOutFilter(direction, false);
         final Filter goFromEdge = new JumpInOutFilter(direction, true);
@@ -98,8 +99,8 @@ final class RelationshipBrowser extends AbstractGraphService {
 
         return new Relationships.Multiple() {
             @Override
-            public Set<Relationship> entities() {
-                HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
+            public Page<Relationship> entities(Pager pager) {
+                HawkularPipeline<?, Edge> edges = b.source().counter("total").page(pager).cast(Edge.class);
 
                 List<String> mappedProperties = Arrays.asList(RelationshipService.MAPPED_PROPERTIES);
 
@@ -118,7 +119,7 @@ final class RelationshipBrowser extends AbstractGraphService {
                                     .build());
                         });
 
-                return relationshipStream.collect(Collectors.toSet());
+                return new Page<>(relationshipStream.collect(Collectors.toList()), pager, edges.getCount("total"));
             }
 
             @Override
