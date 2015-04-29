@@ -22,6 +22,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.inject.Inject;
@@ -35,6 +36,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Set;
+
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 /**
  * @author Lukas Krejci
@@ -71,8 +75,12 @@ public class RestFeeds {
             @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Set<Feed> getAll(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId) {
-        return inventory.tenants().get(tenantId).environments().get(environmentId).feeds().getAll().entities();
+    public Response getAll(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
+            @Context UriInfo uriInfo) {
+        Page<Feed> ret = inventory.tenants().get(tenantId).environments().get(environmentId).feeds().getAll()
+                .entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -117,7 +125,7 @@ public class RestFeeds {
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response deleteMetric(@PathParam("tenantId") String tenantId,
+    public Response delete(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().delete(feedId);
