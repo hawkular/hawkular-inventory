@@ -32,7 +32,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>10</version>
+    <version>11</version>
   </parent>
 
   <properties>
