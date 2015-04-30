@@ -22,38 +22,42 @@ import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
 
 /**
- * Base class for entities in a tenant (i.e. everything but the {@link Tenant tenant}s themselves and relationships).
+ * Base class for entities that are part of an environment.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-abstract class OwnedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update> extends Entity<B, U> {
+public abstract class EnvironmentBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
+        extends TenantBasedEntity<B, U> {
 
-    @XmlAttribute(name = "tenant")
+    @XmlAttribute(name = "environment")
     @Expose
-    private final String tenantId;
+    private final String environmentId;
 
-    /** JAXB support */
-    OwnedEntity() {
-        tenantId = null;
+    /**
+     * JAXB support
+     */
+    EnvironmentBasedEntity() {
+        environmentId = null;
     }
 
-    OwnedEntity(String tenantId, String id) {
-        super(id);
-        if (tenantId == null) {
-            throw new IllegalArgumentException("tenantId == null");
+    EnvironmentBasedEntity(String tenantId, String environmentId, String id) {
+        super(tenantId, id);
+
+        if (environmentId == null) {
+            throw new IllegalArgumentException("environmentId == null");
         }
 
-        this.tenantId = tenantId;
+        this.environmentId = environmentId;
     }
 
-    OwnedEntity(String tenantId, String id, Map<String, Object> properties) {
-        super(id, properties);
-        this.tenantId = tenantId;
+    EnvironmentBasedEntity(String tenantId, String environmentId, String id, Map<String, Object> properties) {
+        super(tenantId, id, properties);
+        this.environmentId = environmentId;
     }
 
-    public String getTenantId() {
-        return tenantId;
+    public String getEnvironmentId() {
+        return environmentId;
     }
 
     @Override
@@ -61,21 +65,21 @@ abstract class OwnedEntity<B extends Entity.Blueprint, U extends AbstractElement
         if (this == o) return true;
         if (!super.equals(o)) return false;
 
-        OwnedEntity entity = (OwnedEntity) o;
+        EnvironmentBasedEntity that = (EnvironmentBasedEntity) o;
 
-        return tenantId.equals(entity.tenantId);
+        return environmentId.equals(that.environmentId);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + tenantId.hashCode();
+        result = 31 * result + environmentId.hashCode();
         return result;
     }
 
     @Override
     protected void appendToString(StringBuilder toStringBuilder) {
         super.appendToString(toStringBuilder);
-        toStringBuilder.append(", tenantId='").append(tenantId).append("'");
+        toStringBuilder.append(", environmentId='").append(environmentId).append('\'');
     }
 }

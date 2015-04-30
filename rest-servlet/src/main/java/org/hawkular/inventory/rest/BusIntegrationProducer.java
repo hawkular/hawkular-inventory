@@ -29,6 +29,7 @@ import org.hawkular.inventory.impl.tinkerpop.InventoryService;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 import java.io.File;
@@ -44,24 +45,35 @@ import static org.hawkular.inventory.rest.RestApiLogger.LOGGER;
 @ApplicationScoped
 public class BusIntegrationProducer {
 
+    @Inject
+    private Security security;
+
     @Produces @ApplicationScoped @ForRest
     public InventoryWithBus getBusIntegration() throws JMSException, NamingException {
         InventoryWithBus ret = new InventoryWithBus();
 
-        ObservableInventory inventory = new ObservableInventory(instantiateInventory());
-        BusIntegration integration = instantiateIntegration(inventory);
+        SecurityIntegration securityIntegration = new SecurityIntegration(security);
+        ObservableInventory inventory = new ObservableInventory(instantiateInventory(securityIntegration));
+        BusIntegration busIntegration = instantiateIntegration(inventory);
+
+        securityIntegration.start(inventory);
 
         ret.setInventory(inventory);
-        ret.setIntegration(integration);
+        ret.setBusIntegration(busIntegration);
+        ret.setSecurityIntegration(securityIntegration);
 
         return ret;
     }
 
     public void closeBusIntegration(@Disposes @ForRest InventoryWithBus integration) throws Exception {
         try {
-            integration.getIntegration().stop();
+            integration.getBusIntegration().stop();
         } finally {
-            integration.getInventory().close();
+            try {
+                integration.getSecurityIntegration().stop();
+            } finally {
+                integration.getInventory().close();
+            }
         }
     }
 
@@ -79,7 +91,7 @@ public class BusIntegrationProducer {
         return ret;
     }
 
-    private Inventory instantiateInventory() {
+    private Inventory instantiateInventory(SecurityIntegration securityIntegration) {
         // TODO this is crude and ties REST API to tinkerpop impl.
         // Once we have a more established way of configuring hawkular components, we can rewrite this to use a more
         // generic approach using ServiceLoader.
@@ -100,30 +112,39 @@ public class BusIntegrationProducer {
 
         i.initialize(org.hawkular.inventory.api.Configuration.builder()
                 .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
+                .withResultFilter(securityIntegration)
                 .withConfiguration(config).build());
 
         return i;
     }
 
     public static class InventoryWithBus {
-        private BusIntegration integration;
+        private BusIntegration busIntegration;
+        private SecurityIntegration securityIntegration;
         private ObservableInventory inventory;
 
-        public BusIntegration getIntegration() {
-            return integration;
+        public BusIntegration getBusIntegration() {
+            return busIntegration;
+        }
+
+        public SecurityIntegration getSecurityIntegration() {
+            return securityIntegration;
         }
 
         public ObservableInventory getInventory() {
             return inventory;
         }
 
-        private void setIntegration(BusIntegration integration) {
-            this.integration = integration;
+        private void setBusIntegration(BusIntegration busIntegration) {
+            this.busIntegration = busIntegration;
         }
 
-        private
-        void setInventory(ObservableInventory inventory) {
+        private void setInventory(ObservableInventory inventory) {
             this.inventory = inventory;
+        }
+
+        private void setSecurityIntegration(SecurityIntegration securityIntegration) {
+            this.securityIntegration = securityIntegration;
         }
     }
 

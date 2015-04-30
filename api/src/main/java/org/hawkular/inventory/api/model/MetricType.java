@@ -34,13 +34,15 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class MetricType extends OwnedEntity<MetricType.Blueprint, MetricType.Update> {
+public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, MetricType.Update> {
 
     @XmlAttribute
     @Expose
     private final MetricUnit unit;
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private MetricType() {
         unit = null;
@@ -56,7 +58,9 @@ public final class MetricType extends OwnedEntity<MetricType.Blueprint, MetricTy
         this.unit = unit;
     }
 
-    /** JSON serialization support */
+    /**
+     * JSON serialization support
+     */
     @JsonCreator
     public MetricType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("unit") MetricUnit unit, @JsonProperty("properties") Map<String, Object> properties) {
@@ -100,7 +104,9 @@ public final class MetricType extends OwnedEntity<MetricType.Blueprint, MetricTy
             return new Builder();
         }
 
-        /** JAXB support */
+        /**
+         * JAXB support
+         */
         @SuppressWarnings("unused")
         private Blueprint() {
             this(null, null, null);

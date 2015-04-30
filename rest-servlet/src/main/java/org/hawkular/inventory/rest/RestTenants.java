@@ -22,12 +22,10 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -41,6 +39,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -52,10 +51,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 @Api(value = "/tenants", description = "CRUD for tenants")
-public class RestTenants {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestTenants extends RestBase {
 
     @GET
     @Path("/")
@@ -81,6 +77,9 @@ public class RestTenants {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(Tenant.Blueprint tenant, @Context UriInfo uriInfo) {
+        if (!security.canCreate(Tenant.class).under(null)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
         inventory.tenants().create(tenant);
         return ResponseUtil.created(uriInfo, tenant.getId()).build();
     }
@@ -108,6 +107,10 @@ public class RestTenants {
     })
     public Response update(@PathParam("tenantId") String tenantId,
                            @ApiParam(required = true) Tenant.Update update) {
+        if (!security.canUpdate(Tenant.class, tenantId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().update(tenantId, update);
         return Response.noContent().build();
     }
@@ -121,6 +124,10 @@ public class RestTenants {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response delete(@PathParam("tenantId") String tenantId) {
+        if (!security.canDelete(Tenant.class, tenantId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().delete(tenantId);
         return Response.noContent().build();
     }

@@ -22,40 +22,41 @@ import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
 
 /**
- * Base class for entities that are part of an environment.
+ * Base class for entities in a tenant (i.e. everything but the {@link Tenant tenant}s themselves and relationships).
  *
  * @author Lukas Krejci
  * @since 1.0
  */
-abstract class EnvironmentalEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
-        extends OwnedEntity<B, U> {
+public abstract class TenantBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
+        extends Entity<B, U> {
 
-    @XmlAttribute(name = "environment")
+    @XmlAttribute(name = "tenant")
     @Expose
-    private final String environmentId;
+    private final String tenantId;
 
-    /** JAXB support */
-    EnvironmentalEntity() {
-        environmentId = null;
+    /**
+     * JAXB support
+     */
+    TenantBasedEntity() {
+        tenantId = null;
     }
 
-    EnvironmentalEntity(String tenantId, String environmentId, String id) {
-        super(tenantId, id);
-
-        if (environmentId == null) {
-            throw new IllegalArgumentException("environmentId == null");
+    TenantBasedEntity(String tenantId, String id) {
+        super(id);
+        if (tenantId == null) {
+            throw new IllegalArgumentException("tenantId == null");
         }
 
-        this.environmentId = environmentId;
+        this.tenantId = tenantId;
     }
 
-    EnvironmentalEntity(String tenantId, String environmentId, String id, Map<String, Object> properties) {
-        super(tenantId, id, properties);
-        this.environmentId = environmentId;
+    TenantBasedEntity(String tenantId, String id, Map<String, Object> properties) {
+        super(id, properties);
+        this.tenantId = tenantId;
     }
 
-    public String getEnvironmentId() {
-        return environmentId;
+    public String getTenantId() {
+        return tenantId;
     }
 
     @Override
@@ -63,21 +64,21 @@ abstract class EnvironmentalEntity<B extends Entity.Blueprint, U extends Abstrac
         if (this == o) return true;
         if (!super.equals(o)) return false;
 
-        EnvironmentalEntity that = (EnvironmentalEntity) o;
+        TenantBasedEntity entity = (TenantBasedEntity) o;
 
-        return environmentId.equals(that.environmentId);
+        return tenantId.equals(entity.tenantId);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + environmentId.hashCode();
+        result = 31 * result + tenantId.hashCode();
         return result;
     }
 
     @Override
     protected void appendToString(StringBuilder toStringBuilder) {
         super.appendToString(toStringBuilder);
-        toStringBuilder.append(", environmentId='").append(environmentId).append('\'');
+        toStringBuilder.append(", tenantId='").append(tenantId).append("'");
     }
 }

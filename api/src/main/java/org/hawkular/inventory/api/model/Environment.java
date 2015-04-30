@@ -35,7 +35,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Environment extends OwnedEntity<Environment.Blueprint, Environment.Update> {
+public final class Environment extends TenantBasedEntity<Environment.Blueprint, Environment.Update> {
 
     @SuppressWarnings("unused")
     private Environment() {
@@ -46,7 +46,9 @@ public final class Environment extends OwnedEntity<Environment.Blueprint, Enviro
         super(tenantId, id);
     }
 
-    /** JSON serialization support */
+    /**
+     * JSON serialization support
+     */
     @JsonCreator
     public Environment(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("properties") Map<String, Object> properties) {

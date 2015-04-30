@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.bus;
+package org.hawkular.inventory.rest;
 
-import rx.functions.Action1;
+import org.hawkular.inventory.api.Inventory;
 
-import java.util.function.BiConsumer;
+import javax.inject.Inject;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class PartiallyApplied<P, T> implements Action1<T> {
-    private final P parameter;
-    private final BiConsumer<P, T> target;
+public class RestBase {
 
-    public PartiallyApplied(BiConsumer<P, T> target, P parameter) {
-        this.parameter = parameter;
-        this.target = target;
-    }
+    @Inject
+    @ForRest
+    protected Inventory inventory;
 
-    @Override
-    public void call(T t) {
-        target.accept(parameter, t);
-    }
+    @Inject
+    protected Security security;
 }

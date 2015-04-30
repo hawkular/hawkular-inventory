@@ -31,9 +31,11 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Feed extends EnvironmentalEntity<Feed.Blueprint, Feed.Update> {
+public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Update> {
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private Feed() {
     }

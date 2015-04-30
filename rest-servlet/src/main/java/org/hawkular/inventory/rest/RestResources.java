@@ -23,11 +23,12 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -35,7 +36,6 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -52,6 +52,7 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Collection;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -63,10 +64,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
 @Api(value = "/", description = "Resources CRUD")
-public class RestResources {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestResources extends RestBase {
 
     @POST
     @Path("/{tenantId}/{environmentId}/resources")
@@ -82,6 +80,10 @@ public class RestResources {
                                 @PathParam("environmentId") String environmentId,
                                 @ApiParam(required =  true) Resource.Blueprint resource,
                                 @Context UriInfo uriInfo) {
+
+        if (!security.canCreate(Resource.class).under(Environment.class, tenantId, environmentId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                 .create(resource);
@@ -102,6 +104,10 @@ public class RestResources {
     public Response addResource(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @ApiParam(required =  true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
+
+        if (!security.canCreate(Resource.class).under(Feed.class, tenantId, environmentId, feedId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
                 .create(resource);
@@ -212,8 +218,14 @@ public class RestResources {
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
                            @PathParam("resourceId") String resourceId,
                            @ApiParam(required = true) Resource.Update update) {
+
+        if (!security.canUpdate(Resource.class, tenantId, environmentId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().update(resourceId,
                 update);
+
         return Response.noContent().build();
     }
 
@@ -229,8 +241,14 @@ public class RestResources {
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
             @ApiParam(required = true) Resource.Update update) {
+
+        if (!security.canUpdate(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
                 .update(resourceId, update);
+
         return Response.noContent().build();
     }
 
@@ -246,6 +264,10 @@ public class RestResources {
     public Response deleteResource(@PathParam("tenantId") String tenantId,
                                    @PathParam("environmentId") String environmentId,
                                    @PathParam("resourceId") String resourceId) {
+        if (!security.canDelete(Resource.class, tenantId, environmentId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().delete(resourceId);
         return Response.noContent().build();
     }
@@ -262,6 +284,11 @@ public class RestResources {
     public Response deleteResource(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("resourceId") String resourceId) {
+
+        if (!security.canDelete(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
                 .delete(resourceId);
         return Response.noContent().build();
@@ -280,6 +307,11 @@ public class RestResources {
                                         @PathParam("environmentId") String environmentId,
                                         @PathParam("resourceId") String resourceId,
                                         Collection<String> metricIds) {
+
+        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .feedlessResources().get(resourceId).metrics();
 
@@ -300,6 +332,11 @@ public class RestResources {
     public Response addMetricToResource(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("resourceId") String resourceId, Collection<String> metricIds) {
+
+        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .feeds().get(feedId).resources().get(resourceId).metrics();
 
@@ -352,10 +389,8 @@ public class RestResources {
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
-            @ApiResponse(code = 404,
-//Eff you, 120 chars enforcer
-message = "Tenant, environment, resource or metric doesn't exist or if the metric is not associated with the resource",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource or metric doesn't exist or if the " +
+                    "metric is not associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetricOfResource(@PathParam("tenantId") String tenantId,

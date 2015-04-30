@@ -19,6 +19,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.FeedIdStrategy;
+import org.hawkular.inventory.api.ResultFilter;
 
 /**
  * Data needed by various services. Mostly coming from configuration.
@@ -29,12 +30,15 @@ import org.hawkular.inventory.api.FeedIdStrategy;
 final class InventoryContext {
 
     private final FeedIdStrategy feedIdStrategy;
+    private final ResultFilter resultFilter;
     private final TransactionalGraph graph;
     private final InventoryService inventory;
 
-    public InventoryContext(InventoryService inventory, FeedIdStrategy feedIdStrategy, TransactionalGraph graph) {
+    public InventoryContext(InventoryService inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
+            TransactionalGraph graph) {
         this.inventory = inventory;
         this.feedIdStrategy = feedIdStrategy;
+        this.resultFilter = resultFilter;
         this.graph = graph;
     }
 
@@ -44,6 +48,10 @@ final class InventoryContext {
 
     public FeedIdStrategy getFeedIdStrategy() {
         return feedIdStrategy;
+    }
+
+    public ResultFilter getResultFilter() {
+        return resultFilter;
     }
 
     public TransactionalGraph getGraph() {

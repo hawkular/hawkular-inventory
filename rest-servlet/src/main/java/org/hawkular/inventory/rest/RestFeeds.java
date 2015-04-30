@@ -20,12 +20,11 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -37,6 +36,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -45,10 +45,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
  * @since 0.0.1
  */
 @Path("/")
-public class RestFeeds {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestFeeds extends RestBase {
 
     @POST
     @Path("{tenantId}/{environmentId}/feeds")
@@ -60,6 +57,10 @@ public class RestFeeds {
     })
     public Response register(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
             @ApiParam(required = true) Feed.Blueprint blueprint, @Context UriInfo uriInfo) {
+
+        if (!security.canCreate(Feed.class).under(Environment.class, tenantId, environmentId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
 
         Feed feed = inventory.tenants().get(tenantId).environments().get(environmentId).feeds().create(blueprint)
                 .entity();
@@ -98,7 +99,6 @@ public class RestFeeds {
         return inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).entity();
     }
 
-
     @PUT
     @Path("/{tenantId}/{environmentId}/feeds/{feedId}")
     @ApiOperation("Updates a metric")
@@ -111,6 +111,11 @@ public class RestFeeds {
     })
     public Response update(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId, Feed.Update update) {
+
+        if (!security.canUpdate(Feed.class, tenantId, environmentId, feedId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().update(feedId, update);
         return Response.noContent().build();
     }
@@ -127,6 +132,10 @@ public class RestFeeds {
     })
     public Response delete(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
+
+        if (!security.canDelete(Feed.class, tenantId, environmentId, feedId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().delete(feedId);
         return Response.noContent().build();

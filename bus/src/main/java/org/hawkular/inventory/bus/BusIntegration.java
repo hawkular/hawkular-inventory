@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.observable.Action;
 import org.hawkular.inventory.api.observable.Interest;
 import org.hawkular.inventory.api.observable.ObservableInventory;
+import org.hawkular.inventory.api.observable.PartiallyApplied;
 import rx.Subscription;
 
 import javax.jms.JMSException;
@@ -117,7 +118,8 @@ public final class BusIntegration {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);
 
-        Subscription s = inventory.observable(interest).subscribe(new PartiallyApplied<>(sender::send, interest));
+        Subscription s = inventory.observable(interest).subscribe(PartiallyApplied.method(sender::send)
+                .first(interest));
         subscriptions.add(s);
     }
 }

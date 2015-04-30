@@ -22,12 +22,11 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -42,6 +41,7 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -53,10 +53,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
 @Api(value = "/", description = "CRUD of environments.")
-public class RestEnvironments {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestEnvironments extends RestBase {
 
     @GET
     @Path("/{tenantId}/environments")
@@ -95,9 +92,12 @@ public class RestEnvironments {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(@PathParam("tenantId") String tenantId,
-                           @ApiParam(required = true) Environment.Blueprint environmentBlueprint,
-                           @Context UriInfo uriInfo)
+            @ApiParam(required = true) Environment.Blueprint environmentBlueprint, @Context UriInfo uriInfo)
             throws Exception {
+        if (!security.canCreate(Environment.class).under(Tenant.class, tenantId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().create(environmentBlueprint);
         return ResponseUtil.created(uriInfo, environmentBlueprint.getId()).build();
     }
@@ -106,14 +106,20 @@ public class RestEnvironments {
     @Path("/{tenantId}/environments/{environmentId}")
     @ApiOperation("Updates properties of the environment")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "The properties of the environment successfully updated"),
+            @ApiResponse(code = 204, message = "The properties of the environment successfully updated"),
             @ApiResponse(code = 400, message = "Properties invalid", response = ApiError.class),
             @ApiResponse(code = 404, message = "Tenant or environment not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public void update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
-                           @ApiParam(required = true) Environment.Update update) throws Exception {
+    public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
+            @ApiParam(required = true) Environment.Update update) throws Exception {
+
+        if (!security.canUpdate(Environment.class, tenantId, environmentId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).environments().update(environmentId, update);
+        return Response.noContent().build();
     }
 
     @DELETE
@@ -127,7 +133,11 @@ public class RestEnvironments {
         @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response delete(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId)
-        throws Exception {
+            throws Exception {
+
+        if (!security.canDelete(Environment.class, tenantId, environmentId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
 
         inventory.tenants().get(tenantId).environments().delete(environmentId);
         return Response.noContent().build();

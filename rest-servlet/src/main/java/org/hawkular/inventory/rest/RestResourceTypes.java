@@ -22,16 +22,15 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.IdJSON;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -45,6 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -56,10 +56,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 @Api(value = "/", description = "Resource type CRUD")
-public class RestResourceTypes {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestResourceTypes extends RestBase {
 
     @GET
     @Path("/{tenantId}/resourceTypes")
@@ -137,7 +134,11 @@ public class RestResourceTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(@PathParam("tenantId") String tenantId, ResourceType.Blueprint resourceType,
-                           @Context UriInfo uriInfo) {
+            @Context UriInfo uriInfo) {
+        if (!security.canCreate(ResourceType.class).under(Tenant.class, tenantId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
@@ -153,7 +154,11 @@ public class RestResourceTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId,
-                           @ApiParam(required = true) ResourceType.Update update) {
+            @ApiParam(required = true) ResourceType.Update update) {
+        if (!security.canUpdate(ResourceType.class, tenantId, resourceTypeId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).resourceTypes().update(resourceTypeId, update);
         return Response.noContent().build();
     }
@@ -166,8 +171,11 @@ public class RestResourceTypes {
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId,
-                           @PathParam("resourceTypeId") String resourceTypeId) {
+    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId) {
+        if (!security.canDelete(ResourceType.class, tenantId, resourceTypeId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).resourceTypes().delete(resourceTypeId);
         return Response.noContent().build();
     }
@@ -182,8 +190,11 @@ public class RestResourceTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response addMetricType(@PathParam("tenantId") String tenantId,
-                                  @PathParam("resourceTypeId") String resourceTypeId,
-                                  IdJSON metricTypeId) {
+            @PathParam("resourceTypeId") String resourceTypeId, IdJSON metricTypeId) {
+        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
                 .associate(metricTypeId.getId());
         return Response.noContent().build();
@@ -201,6 +212,10 @@ public class RestResourceTypes {
     public Response removeMetricType(@PathParam("tenantId") String tenantId,
                                      @PathParam("resourceTypeId") String resourceTypeId,
                                      @PathParam("metricTypeId") String metricTypeId) {
+        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+            return Response.status(UNAUTHORIZED).build();
+        }
+
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
         return Response.noContent().build();
     }

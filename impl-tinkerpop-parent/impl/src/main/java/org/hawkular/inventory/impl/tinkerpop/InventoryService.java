@@ -49,7 +49,7 @@ public final class InventoryService implements Inventory {
                         .withElementType(Vertex.class)
                         .withProperty(Constants.Property.__type.name(), String.class).build());
 
-        context = new InventoryContext(this, configuration.getFeedIdStrategy(), graph);
+        context = new InventoryContext(this, configuration.getFeedIdStrategy(), configuration.getResultFilter(), graph);
     }
 
     @Override
