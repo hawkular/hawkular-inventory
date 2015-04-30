@@ -30,7 +30,7 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
-import org.hawkular.inventory.api.ResolvableToSingle;
+import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
@@ -256,7 +256,7 @@ public class BasicTest {
 
     private void assertDoesNotExist(Entity e) {
         try {
-            inventory.inspect(e, ResolvableToSingle.class).entity();
+            inventory.inspect(e, ResolvableToSingleWithRelationships.class).entity();
             Assert.fail(e + " should have been deleted");
         } catch (EntityNotFoundException ignored) {
             //good
@@ -265,7 +265,7 @@ public class BasicTest {
 
     private void assertExists(Entity e) {
         try {
-            inventory.inspect(e, ResolvableToSingle.class);
+            inventory.inspect(e, ResolvableToSingleWithRelationships.class);
         } catch (EntityNotFoundException ignored) {
             Assert.fail(e + " should have been present in the inventory.");
         }
@@ -584,7 +584,7 @@ public class BasicTest {
 
         Set<Resource> resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named
-                ("defines").resources().getAll().entities();
+                        ("defines").resources().getAll().entities();
         assert resources.stream().allMatch(res -> "playroom1".equals(res.getId()) || "playroom2".equals(res.getId()))
                 : "ResourceType[Playroom] -defines-> resources called playroom1 and playroom2";
 
