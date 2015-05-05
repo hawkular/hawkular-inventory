@@ -19,8 +19,5 @@
 -->
 <jboss-web>
   <context-root>/hawkular/inventory</context-root>
-  <!--<security-domain>RHQRESTSecurityDomain</security-domain>  TODO -->
-
-  <!-- see https://community.jboss.org/wiki/JBossAS7SecurityAuditing for the next tag -->
-  <!--<disable-audit>false</disable-audit>-->
+  <security-domain>keycloak</security-domain>
 </jboss-web>
