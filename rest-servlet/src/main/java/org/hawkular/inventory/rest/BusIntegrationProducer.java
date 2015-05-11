@@ -112,7 +112,7 @@ public class BusIntegrationProducer {
 
         i.initialize(org.hawkular.inventory.api.Configuration.builder()
                 .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
-                .withResultFilter(securityIntegration)
+//.withResultFilter(securityIntegration) results filtering not required for the current security model
                 .withConfiguration(config).build());
 
         return i;
