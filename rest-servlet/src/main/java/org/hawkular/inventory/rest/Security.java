@@ -50,6 +50,7 @@ public class Security {
 
     private final Map<Class<?>, Map<OperationType, Operation>> operationsByType =
             new HashMap<>();
+
     @Inject @ForRest
     Inventory inventory;
 

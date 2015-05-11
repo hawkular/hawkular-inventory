@@ -49,6 +49,9 @@ import static org.hawkular.inventory.api.observable.Action.deleted;
  * one of its {@code can*()} methods. The creation of the security resources associated with the newly created inventory
  * entities is handled automagically by this class which does that by observing the mutation events on the inventory.
  *
+ * <p><b>NOTE</b>: result filtering is not currently integrated but is left available in this class. The paragraph below
+ * therefore doesn't apply.
+ *
  * <p>Retrieval operations are handled automagically by this class which acts as a {@link ResultFilter} and is installed
  * into the REST inventory as such during the initialization of {@link BusIntegrationProducer}.
  *
