@@ -17,6 +17,10 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 /**
@@ -42,7 +46,10 @@ public final class Feed extends EnvironmentalEntity<Feed.Blueprint, Feed.Update>
         super(tenantId, environmentId, id);
     }
 
-    public Feed(String tenantId, String environmentId, String id, Map<String, Object> properties) {
+    /** JSON serialization support */
+    @JsonCreator
+    public Feed(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
+            @JsonProperty("id") String id, @JsonProperty("properties") Map<String, Object> properties) {
         super(tenantId, environmentId, id, properties);
     }
 
