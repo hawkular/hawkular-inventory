@@ -14,12 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.ResolvingToMultiple;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.Environment;
 
 import java.util.function.BiFunction;
@@ -28,12 +24,12 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableEnvironments {
+final class ObservableEnvironments {
     private ObservableEnvironments() {
 
     }
 
-    public static final class Read
+    static final class Read
             extends ObservableBase.Read<Environments.Single, Environments.Multiple, Environments.Read>
             implements Environments.Read {
 
@@ -52,7 +48,7 @@ public final class ObservableEnvironments {
         }
     }
 
-    public static final class ReadWrite
+    static final class ReadWrite
             extends ObservableBase.ReadWrite<Environment, Environment.Blueprint, Environment.Update,
             Environments.Single, Environments.Multiple, Environments.ReadWrite> implements Environments.ReadWrite {
 
@@ -80,7 +76,7 @@ public final class ObservableEnvironments {
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<Environment, Environments.Single>
+    static final class Single extends ObservableBase.RelatableSingle<Environment, Environments.Single>
             implements Environments.Single {
 
         Single(Environments.Single wrapped, ObservableContext context) {
@@ -113,7 +109,7 @@ public final class ObservableEnvironments {
         }
     }
 
-    public static final class Multiple extends ObservableBase.RelatableMultiple<Environment, Environments.Multiple>
+    static final class Multiple extends ObservableBase.RelatableMultiple<Environment, Environments.Multiple>
             implements Environments.Multiple {
 
         Multiple(Environments.Multiple wrapped, ObservableContext context) {

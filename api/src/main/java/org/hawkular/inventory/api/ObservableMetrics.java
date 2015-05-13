@@ -14,11 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
 
@@ -28,12 +25,12 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableMetrics {
+final class ObservableMetrics {
     private ObservableMetrics() {
 
     }
 
-    public static final class ReadMultiple
+    static final class ReadMultiple
             extends ObservableBase.ReadMultiple<Metrics.Multiple, ResolvingToMultiple<Metrics.Multiple>>
             implements ResolvingToMultiple<Metrics.Multiple> {
 
@@ -47,7 +44,7 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class Read extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.Read>
+    static final class Read extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.Read>
         implements Metrics.Read {
 
         Read(Metrics.Read wrapped, ObservableContext context) {
@@ -65,7 +62,7 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class ReadAssociate
+    static final class ReadAssociate
             extends ObservableBase.Read<Metrics.Single, Metrics.Multiple, Metrics.ReadAssociate>
             implements Metrics.ReadAssociate {
 
@@ -103,7 +100,7 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class ReadWrite
+    static final class ReadWrite
         extends ObservableBase.ReadWrite<Metric, Metric.Blueprint, Metric.Update, Metrics.Single, Metrics.Multiple,
             Metrics.ReadWrite> implements Metrics.ReadWrite {
 
@@ -122,7 +119,7 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<Metric, Metrics.Single>
+    static final class Single extends ObservableBase.RelatableSingle<Metric, Metrics.Single>
             implements Metrics.Single {
 
         Single(Metrics.Single wrapped, ObservableContext context) {
@@ -130,7 +127,7 @@ public final class ObservableMetrics {
         }
     }
 
-    public static final class Multiple extends ObservableBase.RelatableMultiple<Metric, Metrics.Multiple>
+    static final class Multiple extends ObservableBase.RelatableMultiple<Metric, Metrics.Multiple>
             implements Metrics.Multiple {
 
         Multiple(Metrics.Multiple wrapped, ObservableContext context) {

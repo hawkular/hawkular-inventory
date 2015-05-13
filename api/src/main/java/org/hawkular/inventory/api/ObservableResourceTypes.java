@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.ResourceType;
 
 import java.util.function.BiFunction;
@@ -25,13 +24,13 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableResourceTypes {
+final class ObservableResourceTypes {
 
     private ObservableResourceTypes() {
 
     }
 
-    public static final class Read
+    static final class Read
             extends ObservableBase.Read<ResourceTypes.Single, ResourceTypes.Multiple, ResourceTypes.Read>
             implements ResourceTypes.Read {
 
@@ -47,15 +46,15 @@ public final class ObservableResourceTypes {
 
         @Override
         protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple>
-            multipleCtor() {
+        multipleCtor() {
 
             return ObservableResourceTypes.Multiple::new;
         }
     }
 
-    public static final class ReadWrite
+    static final class ReadWrite
             extends ObservableBase.ReadWrite<ResourceType, ResourceType.Blueprint, ResourceType.Update,
-                ResourceTypes.Single, ResourceTypes.Multiple, ResourceTypes.ReadWrite>
+            ResourceTypes.Single, ResourceTypes.Multiple, ResourceTypes.ReadWrite>
             implements ResourceTypes.ReadWrite {
 
 
@@ -70,13 +69,13 @@ public final class ObservableResourceTypes {
 
         @Override
         protected BiFunction<ResourceTypes.Multiple, ObservableContext, ? extends ResourceTypes.Multiple>
-            multipleCtor() {
+        multipleCtor() {
 
             return ObservableResourceTypes.Multiple::new;
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<ResourceType, ResourceTypes.Single>
+    static final class Single extends ObservableBase.RelatableSingle<ResourceType, ResourceTypes.Single>
             implements ResourceTypes.Single {
 
         Single(ResourceTypes.Single wrapped, ObservableContext context) {
@@ -94,7 +93,7 @@ public final class ObservableResourceTypes {
         }
     }
 
-    public static final class Multiple extends ObservableBase.RelatableMultiple<ResourceType, ResourceTypes.Multiple>
+    static final class Multiple extends ObservableBase.RelatableMultiple<ResourceType, ResourceTypes.Multiple>
             implements ResourceTypes.Multiple {
 
         Multiple(ResourceTypes.Multiple wrapped, ObservableContext context) {

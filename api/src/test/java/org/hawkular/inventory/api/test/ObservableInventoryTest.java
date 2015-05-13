@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.api.test;
 
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
@@ -25,9 +28,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Action;
-import org.hawkular.inventory.api.observable.Interest;
-import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,10 +37,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.hawkular.inventory.api.observable.Action.copied;
-import static org.hawkular.inventory.api.observable.Action.created;
-import static org.hawkular.inventory.api.observable.Action.deleted;
-import static org.hawkular.inventory.api.observable.Action.updated;
+import static org.hawkular.inventory.api.Action.copied;
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -50,12 +50,12 @@ import static org.mockito.Mockito.when;
  */
 public class ObservableInventoryTest {
 
-    private ObservableInventory observableInventory;
+    private Inventory.Mixin.Observable observableInventory;
 
     @Before
     public void init() {
         InventoryMock.rewire();
-        observableInventory = new ObservableInventory(InventoryMock.inventory);
+        observableInventory = Inventory.augment(InventoryMock.inventory).observable().get();
     }
 
     @Test

@@ -47,4 +47,11 @@ public interface ResolvableToMany<Entity> {
     default Set<Entity> entities() {
         return new HashSet<>(entities(Pager.unlimited(Order.unspecified())));
     }
+
+    /**
+     * @return true if there is at least 1 entity on the current position in the inventory traversal
+     */
+    default boolean anyExists() {
+        return !entities(Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).isEmpty();
+    }
 }

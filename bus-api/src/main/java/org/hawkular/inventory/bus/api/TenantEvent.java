@@ -17,8 +17,8 @@
 package org.hawkular.inventory.bus.api;
 
 import com.google.gson.annotations.Expose;
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Action;
 
 /**
  * @author Lukas Krejci

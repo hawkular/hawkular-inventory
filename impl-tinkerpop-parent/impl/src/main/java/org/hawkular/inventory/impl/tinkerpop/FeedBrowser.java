@@ -16,8 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
@@ -43,7 +45,7 @@ final class FeedBrowser extends AbstractBrowser<Feed, Feed.Blueprint, Feed.Updat
         return new Feeds.Single() {
 
             @Override
-            public Feed entity() {
+            public Feed entity() throws EntityNotFoundException, RelationNotFoundException {
                 return b.entity();
             }
 

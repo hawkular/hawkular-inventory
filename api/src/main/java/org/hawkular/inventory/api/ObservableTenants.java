@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.function.BiFunction;
@@ -25,13 +24,13 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableTenants {
+final class ObservableTenants {
 
     private ObservableTenants() {
 
     }
 
-    public static final class Read extends ObservableBase.Read<Tenants.Single, Tenants.Multiple, Tenants.Read>
+    static final class Read extends ObservableBase.Read<Tenants.Single, Tenants.Multiple, Tenants.Read>
             implements Tenants.Read {
 
         Read(Tenants.Read wrapped, ObservableContext context) {
@@ -49,7 +48,7 @@ public final class ObservableTenants {
         }
     }
 
-    public static final class ReadWrite
+    static final class ReadWrite
             extends ObservableBase.ReadWrite<Tenant, Tenant.Blueprint, Tenant.Update, Tenants.Single, Tenants.Multiple,
             Tenants.ReadWrite> implements Tenants.ReadWrite {
 
@@ -68,7 +67,7 @@ public final class ObservableTenants {
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<Tenant, Tenants.Single>
+    static final class Single extends ObservableBase.RelatableSingle<Tenant, Tenants.Single>
             implements Tenants.Single {
 
         Single(Tenants.Single wrapped, ObservableContext context) {
@@ -91,7 +90,7 @@ public final class ObservableTenants {
         }
     }
 
-    public static final class Multiple extends ObservableBase.RelatableMultiple<Tenant, Tenants.Multiple>
+    static final class Multiple extends ObservableBase.RelatableMultiple<Tenant, Tenants.Multiple>
             implements Tenants.Multiple {
 
         Multiple(Tenants.Multiple wrapped, ObservableContext context) {

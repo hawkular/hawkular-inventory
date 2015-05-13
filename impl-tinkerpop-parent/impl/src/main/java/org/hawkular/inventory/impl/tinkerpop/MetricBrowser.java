@@ -16,7 +16,9 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
@@ -34,7 +36,7 @@ final class MetricBrowser extends AbstractBrowser<Metric, Metric.Blueprint, Metr
         return new Metrics.Single() {
 
             @Override
-            public Metric entity() {
+            public Metric entity() throws EntityNotFoundException, RelationNotFoundException {
                 return b.entity();
             }
 

@@ -14,23 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.api.Inventory;
 import rx.Observable;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableInventory implements Inventory {
+final class ObservableInventory implements Inventory, Inventory.Mixin.Observable {
 
     private final Inventory inventory;
 
     private final ObservableContext context;
 
-    public ObservableInventory(Inventory inventory) {
+    ObservableInventory(Inventory inventory) {
         this.inventory = inventory;
         this.context = new ObservableContext();
     }

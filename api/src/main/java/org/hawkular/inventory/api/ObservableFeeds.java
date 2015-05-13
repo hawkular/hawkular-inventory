@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.model.Feed;
 
 import java.util.function.BiFunction;
@@ -26,13 +24,13 @@ import java.util.function.BiFunction;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableFeeds {
+final class ObservableFeeds {
 
     private ObservableFeeds() {
 
     }
 
-    public static final class Read extends ObservableBase.Read<Feeds.Single, Feeds.Multiple, Feeds.Read>
+    static final class Read extends ObservableBase.Read<Feeds.Single, Feeds.Multiple, Feeds.Read>
             implements Feeds.Read {
 
         Read(Feeds.Read wrapped, ObservableContext context) {
@@ -50,7 +48,7 @@ public final class ObservableFeeds {
         }
     }
 
-    public static final class ReadWrite extends ObservableBase.ReadWrite<Feed, Feed.Blueprint, Feed.Update,
+    static final class ReadWrite extends ObservableBase.ReadWrite<Feed, Feed.Blueprint, Feed.Update,
             Feeds.Single, Feeds.Multiple, Feeds.ReadWrite> implements Feeds.ReadWrite {
 
         ReadWrite(Feeds.ReadWrite wrapped, ObservableContext context) {
@@ -68,7 +66,7 @@ public final class ObservableFeeds {
         }
     }
 
-    public static final class Single extends ObservableBase.RelatableSingle<Feed, Feeds.Single>
+    static final class Single extends ObservableBase.RelatableSingle<Feed, Feeds.Single>
             implements Feeds.Single {
 
         Single(Feeds.Single wrapped, ObservableContext context) {
@@ -86,7 +84,7 @@ public final class ObservableFeeds {
         }
     }
 
-    public static final class Multiple extends ObservableBase.RelatableMultiple<Feed, Feeds.Multiple>
+    static final class Multiple extends ObservableBase.RelatableMultiple<Feed, Feeds.Multiple>
             implements Feeds.Multiple {
 
         Multiple(Feeds.Multiple wrapped, ObservableContext context) {

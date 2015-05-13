@@ -17,6 +17,10 @@
 package org.hawkular.inventory.rest;
 
 import org.hawkular.accounts.api.model.Persona;
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
@@ -30,17 +34,13 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
-import org.hawkular.inventory.api.observable.Action;
-import org.hawkular.inventory.api.observable.Interest;
-import org.hawkular.inventory.api.observable.ObservableInventory;
-import org.hawkular.inventory.api.observable.PartiallyApplied;
 import rx.Subscription;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hawkular.inventory.api.observable.Action.created;
-import static org.hawkular.inventory.api.observable.Action.deleted;
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
 
 /**
  * Integrates the security concerns with the inventory.
@@ -73,7 +73,7 @@ public class SecurityIntegration implements ResultFilter {
         return security.canRead(element);
     }
 
-    public void start(ObservableInventory inventory) {
+    public void start(Inventory.Mixin.Observable inventory) {
         install(inventory, Tenant.class);
         install(inventory, Environment.class);
         install(inventory, Feed.class);
@@ -89,7 +89,7 @@ public class SecurityIntegration implements ResultFilter {
         subscriptions.clear();
     }
 
-    private <E extends AbstractElement<?, ?>> void install(ObservableInventory inventory, Class<E> cls) {
+    private <E extends AbstractElement<?, ?>> void install(Inventory.Mixin.Observable inventory, Class<E> cls) {
         subscriptions.add(inventory.observable(Interest.in(cls).being(created()))
                 .subscribe(PartiallyApplied.method(this::react).second(created())));
 

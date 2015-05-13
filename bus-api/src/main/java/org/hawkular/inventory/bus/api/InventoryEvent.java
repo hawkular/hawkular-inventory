@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import com.google.gson.annotations.Expose;
 import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -26,7 +27,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Action;
 
 /**
  * @author Lukas Krejci

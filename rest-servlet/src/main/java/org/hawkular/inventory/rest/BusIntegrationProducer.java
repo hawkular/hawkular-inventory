@@ -21,7 +21,6 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
-import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.hawkular.inventory.bus.BusIntegration;
 import org.hawkular.inventory.bus.Configuration;
 import org.hawkular.inventory.impl.tinkerpop.InventoryService;
@@ -53,7 +52,8 @@ public class BusIntegrationProducer {
         InventoryWithBus ret = new InventoryWithBus();
 
         SecurityIntegration securityIntegration = new SecurityIntegration(security);
-        ObservableInventory inventory = new ObservableInventory(instantiateInventory(securityIntegration));
+        Inventory.Mixin.AutoTenantAndObservable inventory = Inventory.augment(instantiateInventory(securityIntegration))
+                .autoTenant().observable().get();
         BusIntegration busIntegration = instantiateIntegration(inventory);
 
         securityIntegration.start(inventory);
@@ -77,7 +77,7 @@ public class BusIntegrationProducer {
         }
     }
 
-    private BusIntegration instantiateIntegration(ObservableInventory inventory) {
+    private BusIntegration instantiateIntegration(Inventory.Mixin.Observable inventory) {
         BusIntegration ret = new BusIntegration(inventory);
         // TODO load this from somewhere
         ret.configure(Configuration.getDefaultConfiguration());
@@ -121,7 +121,7 @@ public class BusIntegrationProducer {
     public static class InventoryWithBus {
         private BusIntegration busIntegration;
         private SecurityIntegration securityIntegration;
-        private ObservableInventory inventory;
+        private Inventory.Mixin.AutoTenantAndObservable inventory;
 
         public BusIntegration getBusIntegration() {
             return busIntegration;
@@ -131,7 +131,7 @@ public class BusIntegrationProducer {
             return securityIntegration;
         }
 
-        public ObservableInventory getInventory() {
+        public Inventory.Mixin.AutoTenantAndObservable getInventory() {
             return inventory;
         }
 
@@ -139,7 +139,7 @@ public class BusIntegrationProducer {
             this.busIntegration = busIntegration;
         }
 
-        private void setInventory(ObservableInventory inventory) {
+        private void setInventory(Inventory.Mixin.AutoTenantAndObservable inventory) {
             this.inventory = inventory;
         }
 

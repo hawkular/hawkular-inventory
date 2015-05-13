@@ -16,7 +16,9 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
@@ -58,7 +60,7 @@ final class ResourceBrowser extends AbstractBrowser<Resource, Resource.Blueprint
             }
 
             @Override
-            public Resource entity() {
+            public Resource entity() throws EntityNotFoundException, RelationNotFoundException {
                 return b.entity();
             }
         };

@@ -14,11 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
@@ -29,9 +26,9 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class ObservableRelationships {
+final class ObservableRelationships {
 
-    public static final class ReadWrite extends ObservableBase<Relationships.ReadWrite>
+    static final class ReadWrite extends ObservableBase<Relationships.ReadWrite>
             implements Relationships.ReadWrite {
 
         ReadWrite(Relationships.ReadWrite wrapped, ObservableContext context) {
@@ -87,7 +84,7 @@ public final class ObservableRelationships {
         }
     }
 
-    public static final class Read extends ObservableBase<Relationships.Read>
+    static final class Read extends ObservableBase<Relationships.Read>
             implements Relationships.Read {
 
         Read(Relationships.Read wrapped, ObservableContext context) {
@@ -115,7 +112,7 @@ public final class ObservableRelationships {
         }
     }
 
-    public static final class Single extends ObservableBase.SingleBase<Relationship, Relationships.Single>
+    static final class Single extends ObservableBase.SingleBase<Relationship, Relationships.Single>
             implements Relationships.Single {
 
         Single(Relationships.Single wrapped, ObservableContext context) {
@@ -123,7 +120,7 @@ public final class ObservableRelationships {
         }
     }
 
-    public static final class Multiple extends ObservableBase.MultipleBase<Relationship, Relationships.Multiple>
+    static final class Multiple extends ObservableBase.MultipleBase<Relationship, Relationships.Multiple>
             implements Relationships.Multiple {
 
         Multiple(Relationships.Multiple wrapped, ObservableContext context) {

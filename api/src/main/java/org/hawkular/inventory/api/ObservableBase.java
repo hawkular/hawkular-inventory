@@ -14,15 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.ReadInterface;
-import org.hawkular.inventory.api.Relatable;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResolvableToMany;
-import org.hawkular.inventory.api.ResolvableToSingle;
-import org.hawkular.inventory.api.ResolvingToMultiple;
-import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
@@ -38,7 +31,7 @@ import java.util.function.Function;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public class ObservableBase<T> {
+class ObservableBase<T> {
 
     protected final ObservableContext context;
     protected final T wrapped;
@@ -167,7 +160,7 @@ public class ObservableBase<T> {
             super(wrapped, context);
         }
 
-        public E entity() {
+        public E entity() throws EntityNotFoundException, RelationNotFoundException {
             return wrapped.entity();
         }
     }

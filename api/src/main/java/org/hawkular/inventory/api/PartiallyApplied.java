@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.observable;
+package org.hawkular.inventory.api;
 
 import rx.functions.Action1;
 
@@ -46,6 +46,10 @@ import java.util.function.BiConsumer;
  * @since 0.0.1
  */
 public abstract class PartiallyApplied<P> implements Action1<P> {
+
+    private PartiallyApplied() {
+
+    }
 
     /**
      * Creates a new builder of the partially applied method call.
