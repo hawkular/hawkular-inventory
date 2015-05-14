@@ -165,18 +165,6 @@ public class Security {
         }
     }
 
-    private Operation read(Class<?> entityType) {
-        return getOperation(entityType, OperationType.READ);
-    }
-
-    public boolean canRead(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), read(entityType), getStableId(entityType, entityPath));
-    }
-
-    public boolean canRead(AbstractElement<?, ?> element) {
-        return safePermissionCheck(element.getClass(), element.getId(), read(element.getClass()), getStableId(element));
-    }
-
     private Operation create(Class<?> entityType) {
         return getOperation(entityType, OperationType.CREATE);
     }
@@ -274,37 +262,30 @@ public class Security {
         transaction.begin();
 
         try {
-            operations.setup("read-tenant").add("Monitor").commit();
             operations.setup("update-tenant").add("Super User").commit();
             operations.setup("delete-tenant").add("Super User").commit();
 
-            operations.setup("read-environment").add("Monitor").commit();
             operations.setup("create-environment").add("Administrator").commit();
             operations.setup("update-environment").add("Administrator").commit();
             operations.setup("delete-environment").add("Administrator").commit();
             operations.setup("copy-environment").add("Administrator").commit();
 
-            operations.setup("read-resourceType").add("Monitor").commit();
             operations.setup("create-resourceType").add("Administrator").commit();
             operations.setup("update-resourceType").add("Administrator").commit();
             operations.setup("delete-resourceType").add("Administrator").commit();
 
-            operations.setup("read-metricType").add("Monitor").commit();
             operations.setup("create-metricType").add("Administrator").commit();
             operations.setup("update-metricType").add("Administrator").commit();
             operations.setup("delete-metricType").add("Administrator").commit();
 
-            operations.setup("read-feed").add("Monitor").commit();
             operations.setup("create-feed").add("Administrator").commit();
             operations.setup("update-feed").add("Administrator").commit();
             operations.setup("delete-feed").add("Administrator").commit();
 
-            operations.setup("read-resource").add("Monitor").commit();
             operations.setup("create-resource").add("Maintainer").commit();
             operations.setup("update-resource").add("Maintainer").commit();
             operations.setup("delete-resource").add("Maintainer").commit();
 
-            operations.setup("read-metric").add("Monitor").commit();
             operations.setup("create-metric").add("Maintainer").commit();
             operations.setup("update-metric").add("Maintainer").commit();
             operations.setup("delete-metric").add("Maintainer").commit();
@@ -317,37 +298,30 @@ public class Security {
             throw t;
         }
 
-        Operation readTenantOperation = operations.getByName("read-tenant");
         Operation updateTenantOperation = operations.getByName("update-tenant");
         Operation deleteTenantOperation = operations.getByName("delete-tenant");
 
-        Operation readEnvironmentOperation = operations.getByName("read-environment");
         Operation createEnvironmentOperation = operations.getByName("create-environment");
         Operation updateEnvironmentOperation = operations.getByName("update-environment");
         Operation deleteEnvironmentOperation = operations.getByName("delete-environment");
         Operation copyEnvironmentOperation = operations.getByName("copy-environment");
 
-        Operation readResourceTypeOperation = operations.getByName("read-resourceType");
         Operation createResourceTypeOperation = operations.getByName("create-resourceType");
         Operation updateResourceTypeOperation = operations.getByName("update-resourceType");
         Operation deleteResourceTypeOperation = operations.getByName("delete-resourceType");
 
-        Operation readMetricTypeOperation = operations.getByName("read-metricType");
         Operation createMetricTypeOperation = operations.getByName("create-metricType");
         Operation updateMetricTypeOperation = operations.getByName("update-metricType");
         Operation deleteMetricTypeOperation = operations.getByName("delete-metricType");
 
-        Operation readFeedOperation = operations.getByName("read-feed");
         Operation createFeedOperation = operations.getByName("create-feed");
         Operation updateFeedOperation = operations.getByName("update-feed");
         Operation deleteFeedOperation = operations.getByName("delete-feed");
 
-        Operation readResourceOperation = operations.getByName("read-resource");
         Operation createResourceOperation = operations.getByName("create-resource");
         Operation updateResourceOperation = operations.getByName("update-resource");
         Operation deleteResourceOperation = operations.getByName("delete-resource");
 
-        Operation readMetricOperation = operations.getByName("read-metric");
         Operation createMetricOperation = operations.getByName("create-metric");
         Operation updateMetricOperation = operations.getByName("update-metric");
         Operation deleteMetricOperation = operations.getByName("delete-metric");
@@ -355,13 +329,11 @@ public class Security {
         Operation associate = operations.getByName("associate");
 
         operationsByType.put(Tenant.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readTenantOperation);
             put(OperationType.UPDATE, updateTenantOperation);
             put(OperationType.DELETE, deleteTenantOperation);
         }});
 
         operationsByType.put(Environment.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readEnvironmentOperation);
             put(OperationType.CREATE, createEnvironmentOperation);
             put(OperationType.UPDATE, updateEnvironmentOperation);
             put(OperationType.DELETE, deleteEnvironmentOperation);
@@ -369,35 +341,30 @@ public class Security {
         }});
 
         operationsByType.put(ResourceType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readResourceTypeOperation);
             put(OperationType.CREATE, createResourceTypeOperation);
             put(OperationType.UPDATE, updateResourceTypeOperation);
             put(OperationType.DELETE, deleteResourceTypeOperation);
         }});
 
         operationsByType.put(MetricType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readMetricTypeOperation);
             put(OperationType.CREATE, createMetricTypeOperation);
             put(OperationType.UPDATE, updateMetricTypeOperation);
             put(OperationType.DELETE, deleteMetricTypeOperation);
         }});
 
         operationsByType.put(Feed.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readFeedOperation);
             put(OperationType.CREATE, createFeedOperation);
             put(OperationType.UPDATE, updateFeedOperation);
             put(OperationType.DELETE, deleteFeedOperation);
         }});
 
         operationsByType.put(Resource.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readResourceOperation);
             put(OperationType.CREATE, createResourceOperation);
             put(OperationType.UPDATE, updateResourceOperation);
             put(OperationType.DELETE, deleteResourceOperation);
         }});
 
         operationsByType.put(Metric.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readMetricOperation);
             put(OperationType.CREATE, createMetricOperation);
             put(OperationType.UPDATE, updateMetricOperation);
             put(OperationType.DELETE, deleteMetricOperation);
@@ -409,7 +376,7 @@ public class Security {
     }
 
     private enum OperationType {
-        READ, CREATE, UPDATE, DELETE, COPY, ASSOCIATE
+        CREATE, UPDATE, DELETE, COPY, ASSOCIATE
     }
 
     public final class CreatePermissionCheckerFinisher {

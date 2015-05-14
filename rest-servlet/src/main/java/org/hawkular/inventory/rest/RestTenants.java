@@ -58,10 +58,6 @@ public class RestTenants extends RestBase {
     public Response getTenant() {
         String tenantId = getTenantId();
 
-        if (!security.canRead(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
-        }
-
         return Response.ok(inventory.tenants().get(tenantId).entity()).build();
     }
 
