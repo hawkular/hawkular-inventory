@@ -14,31 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.cdi;
 
-import org.hawkular.accounts.api.PersonaService;
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.Observable_AutoTenant;
-
-import javax.inject.Inject;
+import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.0.2
  */
-public class RestBase {
-
-    @Inject
-    @Observable_AutoTenant
-    protected Inventory.Mixin.AutoTenantAndObservable inventory;
-
-    @Inject
-    protected Security security;
-
-    @Inject
-    PersonaService personas;
-
-    protected String getTenantId() {
-        return personas.getCurrent().getId();
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Qualifier
+public @interface AutoTenant {
 }

@@ -92,6 +92,14 @@ public interface Inventory extends AutoCloseable {
         return new Mixin(inventory);
     }
 
+    static Mixin.ObservableMixin augment(Mixin.Observable inventory) {
+        return new Mixin.ObservableMixin(inventory);
+    }
+
+    static Mixin.AutoTenantMixin augment(Mixin.AutoTenant inventory) {
+        return new Mixin.AutoTenantMixin(inventory);
+    }
+
     /**
      * Initializes the inventory from the provided configuration object.
      * @param configuration the configuration to use.
@@ -271,10 +279,14 @@ public interface Inventory extends AutoCloseable {
         }
 
         public static final class ObservableMixin {
-            private final ObservableInventory inventory;
+            private final Observable inventory;
 
             private ObservableMixin(Inventory inventory) {
                 this.inventory = new ObservableInventory(inventory);
+            }
+
+            private ObservableMixin(Observable inventory) {
+                this.inventory = inventory;
             }
 
             public ObservableAndAutoTenantMixin autoTenant() {
@@ -287,12 +299,15 @@ public interface Inventory extends AutoCloseable {
         }
 
         public static final class AutoTenantMixin {
-            private final AutoTenantInventory inventory;
+            private final AutoTenant inventory;
 
             private AutoTenantMixin(Inventory inventory) {
                 this.inventory = new AutoTenantInventory(inventory);
             }
 
+            private AutoTenantMixin(AutoTenant inventory) {
+                this.inventory = inventory;
+            }
             public ObservableAndAutoTenantMixin observable() {
                 return new ObservableAndAutoTenantMixin(inventory);
             }

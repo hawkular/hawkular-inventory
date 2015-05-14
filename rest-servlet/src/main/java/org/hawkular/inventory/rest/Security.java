@@ -16,10 +16,8 @@
  */
 package org.hawkular.inventory.rest;
 
-import org.hawkular.accounts.api.NamedOperation;
+import org.hawkular.accounts.api.OperationService;
 import org.hawkular.accounts.api.PermissionChecker;
-import org.hawkular.accounts.api.PersonaService;
-import org.hawkular.accounts.api.ResourceService;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -33,8 +31,16 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.cdi.Observable_AutoTenant;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.UserTransaction;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,196 +50,25 @@ import java.util.Map;
  * It defines all the operations available in inventory and implements permission checking methods.
  *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.0.2
  */
 public class Security {
 
     private final Map<Class<?>, Map<OperationType, Operation>> operationsByType =
             new HashMap<>();
 
-    @Inject @ForRest
-    Inventory inventory;
+    @Inject
+    private PermissionChecker permissions;
 
     @Inject
-    PermissionChecker permissions;
+    private OperationService operations;
 
     @Inject
-    ResourceService storage;
+    @Observable_AutoTenant
+    private Inventory.Mixin.AutoTenantAndObservable inventory;
 
-    @Inject
-    PersonaService personas;
-
-    @Inject
-    @NamedOperation("read-tenant")
-    private Operation readTenantOperation;
-
-    @Inject
-    @NamedOperation("read-environment")
-    private Operation readEnvironmentOperation;
-
-    @Inject
-    @NamedOperation("read-metricType")
-    private Operation readMetricTypeOperation;
-
-    @Inject
-    @NamedOperation("read-resourceType")
-    private Operation readResourceTypeOperation;
-
-    @Inject
-    @NamedOperation("read-feed")
-    private Operation readFeedOperation;
-
-    @Inject
-    @NamedOperation("read-resource")
-    private Operation readResourceOperation;
-
-    @Inject
-    @NamedOperation("read-metric")
-    private Operation readMetricOperation;
-
-    @Inject
-    @NamedOperation("create-tenant")
-    private Operation createTenantOperation;
-
-    @Inject
-    @NamedOperation("create-environment")
-    private Operation createEnvironmentOperation;
-
-    @Inject
-    @NamedOperation("create-metricType")
-    private Operation createMetricTypeOperation;
-
-    @Inject
-    @NamedOperation("create-resourceType")
-    private Operation createResourceTypeOperation;
-
-    @Inject
-    @NamedOperation("create-feed")
-    private Operation createFeedOperation;
-
-    @Inject
-    @NamedOperation("create-resource")
-    private Operation createResourceOperation;
-
-    @Inject
-    @NamedOperation("create-metric")
-    private Operation createMetricOperation;
-
-    @Inject
-    @NamedOperation("update-tenant")
-    private Operation updateTenantOperation;
-
-    @Inject
-    @NamedOperation("update-environment")
-    private Operation updateEnvironmentOperation;
-
-    @Inject
-    @NamedOperation("update-metricType")
-    private Operation updateMetricTypeOperation;
-
-    @Inject
-    @NamedOperation("update-resourceType")
-    private Operation updateResourceTypeOperation;
-
-    @Inject
-    @NamedOperation("update-feed")
-    private Operation updateFeedOperation;
-
-    @Inject
-    @NamedOperation("update-resource")
-    private Operation updateResourceOperation;
-
-    @Inject
-    @NamedOperation("update-metric")
-    private Operation updateMetricOperation;
-
-    @Inject
-    @NamedOperation("delete-tenant")
-    private Operation deleteTenantOperation;
-
-    @Inject
-    @NamedOperation("delete-environment")
-    private Operation deleteEnvironmentOperation;
-
-    @Inject
-    @NamedOperation("delete-metricType")
-    private Operation deleteMetricTypeOperation;
-
-    @Inject
-    @NamedOperation("delete-resourceType")
-    private Operation deleteResourceTypeOperation;
-
-    @Inject
-    @NamedOperation("delete-feed")
-    private Operation deleteFeedOperation;
-
-    @Inject
-    @NamedOperation("delete-resource")
-    private Operation deleteResourceOperation;
-
-    @Inject
-    @NamedOperation("delete-metric")
-    private Operation deleteMetricOperation;
-
-    @Inject
-    @NamedOperation("copy-environment")
-    private Operation copyEnvironmentOperation;
-
-    @Inject
-    @NamedOperation("associate")
-    private Operation associateOperation;
-
-    {
-        operationsByType.put(Tenant.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readTenantOperation);
-            put(OperationType.CREATE, createTenantOperation);
-            put(OperationType.UPDATE, updateTenantOperation);
-            put(OperationType.DELETE, deleteTenantOperation);
-        }});
-
-        operationsByType.put(Environment.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readEnvironmentOperation);
-            put(OperationType.CREATE, createEnvironmentOperation);
-            put(OperationType.UPDATE, updateEnvironmentOperation);
-            put(OperationType.DELETE, deleteEnvironmentOperation);
-            put(OperationType.COPY, copyEnvironmentOperation);
-        }});
-
-        operationsByType.put(ResourceType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readResourceTypeOperation);
-            put(OperationType.CREATE, createResourceTypeOperation);
-            put(OperationType.UPDATE, updateResourceTypeOperation);
-            put(OperationType.DELETE, deleteResourceTypeOperation);
-        }});
-
-        operationsByType.put(MetricType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readMetricTypeOperation);
-            put(OperationType.CREATE, createMetricTypeOperation);
-            put(OperationType.UPDATE, updateMetricTypeOperation);
-            put(OperationType.DELETE, deleteMetricTypeOperation);
-        }});
-
-        operationsByType.put(Feed.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readFeedOperation);
-            put(OperationType.CREATE, createFeedOperation);
-            put(OperationType.UPDATE, updateFeedOperation);
-            put(OperationType.DELETE, deleteFeedOperation);
-        }});
-
-        operationsByType.put(Resource.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readResourceOperation);
-            put(OperationType.CREATE, createResourceOperation);
-            put(OperationType.UPDATE, updateResourceOperation);
-            put(OperationType.DELETE, deleteResourceOperation);
-        }});
-
-        operationsByType.put(Metric.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
-            put(OperationType.READ, readMetricOperation);
-            put(OperationType.CREATE, createMetricOperation);
-            put(OperationType.UPDATE, updateMetricOperation);
-            put(OperationType.DELETE, deleteMetricOperation);
-        }});
-    }
+    @javax.annotation.Resource
+    private UserTransaction transaction;
 
     public static String getStableId(AbstractElement<?, ?> element) {
         if (element instanceof Relationship) {
@@ -335,11 +170,11 @@ public class Security {
     }
 
     public boolean canRead(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return permissions.isAllowedTo(read(entityType), getStableId(entityType, entityPath));
+        return safePermissionCheck(entityType, last(entityPath), read(entityType), getStableId(entityType, entityPath));
     }
 
     public boolean canRead(AbstractElement<?, ?> element) {
-        return permissions.isAllowedTo(read(element.getClass()), getStableId(element));
+        return safePermissionCheck(element.getClass(), element.getId(), read(element.getClass()), getStableId(element));
     }
 
     private Operation create(Class<?> entityType) {
@@ -355,7 +190,8 @@ public class Security {
     }
 
     public boolean canUpdate(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return permissions.isAllowedTo(update(entityType), getStableId(entityType, entityPath));
+        return safePermissionCheck(entityType, last(entityPath), update(entityType),
+                getStableId(entityType, entityPath));
     }
 
     private Operation delete(Class<?> entityType) {
@@ -363,23 +199,25 @@ public class Security {
     }
 
     public boolean canDelete(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return permissions.isAllowedTo(delete(entityType), getStableId(entityType, entityPath));
+        return safePermissionCheck(entityType, last(entityPath), delete(entityType),
+                getStableId(entityType, entityPath));
     }
 
     private Operation associate() {
-        return associateOperation;
+        return operationsByType.get(Relationship.class).get(OperationType.ASSOCIATE);
     }
 
     public boolean canAssociateFrom(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return permissions.isAllowedTo(associate(), getStableId(entityType, entityPath));
+        return safePermissionCheck(entityType, last(entityPath), associate(), getStableId(entityType, entityPath));
     }
 
     private Operation copy() {
-        return copyEnvironmentOperation;
+        return operationsByType.get(Environment.class).get(OperationType.COPY);
     }
 
     public boolean canCopyEnvironment(String... environmentPath) {
-        return permissions.isAllowedTo(copy(), getStableId(Environment.class, environmentPath));
+        return safePermissionCheck(Environment.class, last(environmentPath), copy(),
+                getStableId(Environment.class, environmentPath));
     }
 
     private Operation getOperation(Class<?> cls, OperationType operationType) {
@@ -392,20 +230,198 @@ public class Security {
         return ops.get(operationType);
     }
 
+
+    private boolean safePermissionCheck(Class<?> entityType, String entityId, Operation operation, String stableId) {
+        try {
+            if (Tenant.class.equals(entityType)) {
+                //make sure the tenant exists prior to checking perms on it
+                if (!inventory.tenants().get(entityId).exists()) {
+                    inventory.tenants().create(Tenant.Blueprint.builder().withId(entityId).build());
+                }
+            }
+            return permissions.isAllowedTo(operation, stableId);
+        } catch (Exception e) {
+            RestApiLogger.LOGGER.securityCheckFailed(stableId, e);
+            return false;
+        }
+    }
+
+    private static String last(String... elements) {
+        return elements[elements.length - 1];
+    }
+
+    @PostConstruct
+    public void initOperationsMap() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
+
+        // Monitor – a read-only role. Cannot modify any resource.
+        // Operator – Monitor permissions, plus can modify runtime state, but cannot modify anything that ends up in the
+        //            persistent configuration. Could, for example, restart a server.
+        // Maintainer – Operator permissions, plus can modify the persistent configuration.
+        // Deployer – like a Maintainer, but with permission to modify persistent configuration constrained to resources
+        //            that are considered to be "application resources". A deployment is an application resource. The
+        //            messaging server is not. Items like datasources and JMS destinations are not considered to be
+        //            application resources by default, but this is configurable.
+        //
+        // Three roles are granted permissions for security sensitive items:
+        //
+        // SuperUser – has all permissions. Equivalent to a JBoss AS 7 administrator.
+        // Administrator – has all permissions except cannot read or write resources related to the administrative audit
+        //                 logging system.
+        // Auditor – can read anything. Can only modify the resources related to the administrative audit logging
+        //           system.
+
+        transaction.begin();
+
+        try {
+            operations.setup("read-tenant").add("Monitor").commit();
+            operations.setup("update-tenant").add("Super User").commit();
+            operations.setup("delete-tenant").add("Super User").commit();
+
+            operations.setup("read-environment").add("Monitor").commit();
+            operations.setup("create-environment").add("Administrator").commit();
+            operations.setup("update-environment").add("Administrator").commit();
+            operations.setup("delete-environment").add("Administrator").commit();
+            operations.setup("copy-environment").add("Administrator").commit();
+
+            operations.setup("read-resourceType").add("Monitor").commit();
+            operations.setup("create-resourceType").add("Administrator").commit();
+            operations.setup("update-resourceType").add("Administrator").commit();
+            operations.setup("delete-resourceType").add("Administrator").commit();
+
+            operations.setup("read-metricType").add("Monitor").commit();
+            operations.setup("create-metricType").add("Administrator").commit();
+            operations.setup("update-metricType").add("Administrator").commit();
+            operations.setup("delete-metricType").add("Administrator").commit();
+
+            operations.setup("read-feed").add("Monitor").commit();
+            operations.setup("create-feed").add("Administrator").commit();
+            operations.setup("update-feed").add("Administrator").commit();
+            operations.setup("delete-feed").add("Administrator").commit();
+
+            operations.setup("read-resource").add("Monitor").commit();
+            operations.setup("create-resource").add("Maintainer").commit();
+            operations.setup("update-resource").add("Maintainer").commit();
+            operations.setup("delete-resource").add("Maintainer").commit();
+
+            operations.setup("read-metric").add("Monitor").commit();
+            operations.setup("create-metric").add("Maintainer").commit();
+            operations.setup("update-metric").add("Maintainer").commit();
+            operations.setup("delete-metric").add("Maintainer").commit();
+
+            operations.setup("associate").add("Operator").commit();
+
+            transaction.commit();
+        } catch (Throwable t) {
+            transaction.rollback();
+            throw t;
+        }
+
+        Operation readTenantOperation = operations.getByName("read-tenant");
+        Operation updateTenantOperation = operations.getByName("update-tenant");
+        Operation deleteTenantOperation = operations.getByName("delete-tenant");
+
+        Operation readEnvironmentOperation = operations.getByName("read-environment");
+        Operation createEnvironmentOperation = operations.getByName("create-environment");
+        Operation updateEnvironmentOperation = operations.getByName("update-environment");
+        Operation deleteEnvironmentOperation = operations.getByName("delete-environment");
+        Operation copyEnvironmentOperation = operations.getByName("copy-environment");
+
+        Operation readResourceTypeOperation = operations.getByName("read-resourceType");
+        Operation createResourceTypeOperation = operations.getByName("create-resourceType");
+        Operation updateResourceTypeOperation = operations.getByName("update-resourceType");
+        Operation deleteResourceTypeOperation = operations.getByName("delete-resourceType");
+
+        Operation readMetricTypeOperation = operations.getByName("read-metricType");
+        Operation createMetricTypeOperation = operations.getByName("create-metricType");
+        Operation updateMetricTypeOperation = operations.getByName("update-metricType");
+        Operation deleteMetricTypeOperation = operations.getByName("delete-metricType");
+
+        Operation readFeedOperation = operations.getByName("read-feed");
+        Operation createFeedOperation = operations.getByName("create-feed");
+        Operation updateFeedOperation = operations.getByName("update-feed");
+        Operation deleteFeedOperation = operations.getByName("delete-feed");
+
+        Operation readResourceOperation = operations.getByName("read-resource");
+        Operation createResourceOperation = operations.getByName("create-resource");
+        Operation updateResourceOperation = operations.getByName("update-resource");
+        Operation deleteResourceOperation = operations.getByName("delete-resource");
+
+        Operation readMetricOperation = operations.getByName("read-metric");
+        Operation createMetricOperation = operations.getByName("create-metric");
+        Operation updateMetricOperation = operations.getByName("update-metric");
+        Operation deleteMetricOperation = operations.getByName("delete-metric");
+
+        Operation associate = operations.getByName("associate");
+
+        operationsByType.put(Tenant.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readTenantOperation);
+            put(OperationType.UPDATE, updateTenantOperation);
+            put(OperationType.DELETE, deleteTenantOperation);
+        }});
+
+        operationsByType.put(Environment.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readEnvironmentOperation);
+            put(OperationType.CREATE, createEnvironmentOperation);
+            put(OperationType.UPDATE, updateEnvironmentOperation);
+            put(OperationType.DELETE, deleteEnvironmentOperation);
+            put(OperationType.COPY, copyEnvironmentOperation);
+        }});
+
+        operationsByType.put(ResourceType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readResourceTypeOperation);
+            put(OperationType.CREATE, createResourceTypeOperation);
+            put(OperationType.UPDATE, updateResourceTypeOperation);
+            put(OperationType.DELETE, deleteResourceTypeOperation);
+        }});
+
+        operationsByType.put(MetricType.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readMetricTypeOperation);
+            put(OperationType.CREATE, createMetricTypeOperation);
+            put(OperationType.UPDATE, updateMetricTypeOperation);
+            put(OperationType.DELETE, deleteMetricTypeOperation);
+        }});
+
+        operationsByType.put(Feed.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readFeedOperation);
+            put(OperationType.CREATE, createFeedOperation);
+            put(OperationType.UPDATE, updateFeedOperation);
+            put(OperationType.DELETE, deleteFeedOperation);
+        }});
+
+        operationsByType.put(Resource.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readResourceOperation);
+            put(OperationType.CREATE, createResourceOperation);
+            put(OperationType.UPDATE, updateResourceOperation);
+            put(OperationType.DELETE, deleteResourceOperation);
+        }});
+
+        operationsByType.put(Metric.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.READ, readMetricOperation);
+            put(OperationType.CREATE, createMetricOperation);
+            put(OperationType.UPDATE, updateMetricOperation);
+            put(OperationType.DELETE, deleteMetricOperation);
+        }});
+
+        operationsByType.put(Relationship.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+            put(OperationType.ASSOCIATE, associate);
+        }});
+    }
+
     private enum OperationType {
         READ, CREATE, UPDATE, DELETE, COPY, ASSOCIATE
     }
 
     public final class CreatePermissionCheckerFinisher {
-        private final Class<?> createdType;
 
+        private final Class<?> createdType;
         private CreatePermissionCheckerFinisher(Class<?> createdType) {
             this.createdType = createdType;
         }
 
         boolean under(Class<? extends Entity<?, ?>> parentType, String... parentPath) {
-            return permissions.isAllowedTo(create(createdType), parentType == null ? "/" :
-                    getStableId(parentType, parentPath));
+            String entityId = getStableId(parentType, parentPath);
+            return safePermissionCheck(createdType, last(parentPath), create(createdType), entityId);
         }
     }
 }

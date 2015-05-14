@@ -46,5 +46,7 @@
     <module>rest-test</module>
     <module>bus</module>
     <module>bus-api</module>
+    <module>hawkular-integrated-inventory-rest</module>
+    <module>hawkular-inventory-cdi</module>
   </modules>
 </project>

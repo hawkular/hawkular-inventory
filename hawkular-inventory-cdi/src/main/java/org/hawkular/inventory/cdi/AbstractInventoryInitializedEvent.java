@@ -14,31 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.cdi;
 
-import org.hawkular.accounts.api.PersonaService;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.Observable_AutoTenant;
-
-import javax.inject.Inject;
 
 /**
+ * A CDI event informing the users that an inventory instance was initialized.
+ *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.0.2
  */
-public class RestBase {
+abstract class AbstractInventoryInitializedEvent<I extends Inventory> {
+    private final I inventory;
 
-    @Inject
-    @Observable_AutoTenant
-    protected Inventory.Mixin.AutoTenantAndObservable inventory;
+    public AbstractInventoryInitializedEvent(I inventory) {
+        this.inventory = inventory;
+    }
 
-    @Inject
-    protected Security security;
-
-    @Inject
-    PersonaService personas;
-
-    protected String getTenantId() {
-        return personas.getCurrent().getId();
+    public I getInventory() {
+        return inventory;
     }
 }

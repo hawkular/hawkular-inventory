@@ -14,24 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.cdi;
 
 import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.2
  */
-@Qualifier
 @Retention(RetentionPolicy.RUNTIME)
-@Target({FIELD, METHOD, PARAMETER})
-public @interface ForRest {
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Qualifier
+public @interface Observable_AutoTenant {
 }

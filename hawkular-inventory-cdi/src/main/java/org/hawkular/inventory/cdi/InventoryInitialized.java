@@ -14,29 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.cdi;
 
 import org.hawkular.inventory.api.Inventory;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-
 /**
+ * A CDI event informing the users that an inventory instance was initialized.
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.2
  */
-@ApplicationScoped
-public class InventoryProducer {
-
-    @Inject @ForRest
-    private BusIntegrationProducer.InventoryWithBus busIntegration;
-
-    @Produces @ApplicationScoped @ForRest
-    public Inventory getInventory() {
-        return busIntegration.getInventory();
-
+public final class InventoryInitialized extends AbstractInventoryInitializedEvent<Inventory> {
+    public InventoryInitialized(Inventory inventory) {
+        super(inventory);
     }
-
 }

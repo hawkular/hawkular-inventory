@@ -17,6 +17,7 @@
 package org.hawkular.inventory.rest;
 
 
+import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
@@ -31,7 +32,7 @@ import org.jboss.logging.annotations.MessageLogger;
  * @author Heiko W. Rupp
  */
 @MessageLogger(projectCode = "HAWKINV")
-public interface RestApiLogger {
+public interface RestApiLogger extends BasicLogger {
 
     RestApiLogger LOGGER = Logger.getMessageLogger(RestApiLogger.class, "org.hawkular.inventory.rest");
 
@@ -48,6 +49,10 @@ public interface RestApiLogger {
     @Message(id = 2002, value = "Bus Integration initialization failed. Inventory will not notify about changes on " +
             "the Hawkular message bus. Cause: [%s]")
     void busInitializationFailed(String message);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2003, value = "Security check failed on entity: [%s]")
+    void securityCheckFailed(String entityId, @Cause Throwable cause);
 
 
 }

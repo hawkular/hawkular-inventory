@@ -16,12 +16,13 @@
  */
 package org.hawkular.inventory.rest;
 
+import org.hawkular.accounts.api.PersonaService;
+import org.hawkular.accounts.api.ResourceService;
 import org.hawkular.accounts.api.model.Persona;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.PartiallyApplied;
-import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.EnvironmentBasedEntity;
@@ -29,18 +30,24 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.FeedBasedEntity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
+import org.hawkular.inventory.cdi.DisposingObservableInventory;
+import org.hawkular.inventory.cdi.ObservableInventoryInitialized;
 import rx.Subscription;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.rest.RestApiLogger.LOGGER;
 
 /**
  * Integrates the security concerns with the inventory.
@@ -49,31 +56,22 @@ import static org.hawkular.inventory.api.Action.deleted;
  * one of its {@code can*()} methods. The creation of the security resources associated with the newly created inventory
  * entities is handled automagically by this class which does that by observing the mutation events on the inventory.
  *
- * <p><b>NOTE</b>: result filtering is not currently integrated but is left available in this class. The paragraph below
- * therefore doesn't apply.
- *
- * <p>Retrieval operations are handled automagically by this class which acts as a {@link ResultFilter} and is installed
- * into the REST inventory as such during the initialization of {@link BusIntegrationProducer}.
- *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.0.2
  */
-public class SecurityIntegration implements ResultFilter {
+@ApplicationScoped
+public class SecurityIntegration {
 
-    private final Security security;
+    @Inject
+    ResourceService storage;
+
+    @Inject
+    PersonaService personas;
+
     private final Set<Subscription> subscriptions = new HashSet<>();
 
-    public SecurityIntegration(Security security) {
-        this.security = security;
-    }
-
-
-    @Override
-    public boolean isApplicable(AbstractElement<?, ?> element) {
-        return security.canRead(element);
-    }
-
-    public void start(Inventory.Mixin.Observable inventory) {
+    public void start(@Observes ObservableInventoryInitialized event) {
+        Inventory.Mixin.Observable inventory = event.getInventory();
         install(inventory, Tenant.class);
         install(inventory, Environment.class);
         install(inventory, Feed.class);
@@ -81,10 +79,10 @@ public class SecurityIntegration implements ResultFilter {
         install(inventory, MetricType.class);
         install(inventory, Resource.class);
         install(inventory, Metric.class);
-        install(inventory, Relationship.class);
+        //install(inventory, Relationship.class);
     }
 
-    public void stop() {
+    public void stop(@Observes DisposingObservableInventory event) {
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
     }
@@ -97,19 +95,36 @@ public class SecurityIntegration implements ResultFilter {
                 .subscribe(PartiallyApplied.method(this::react).second(deleted())));
     }
 
-    private void react(AbstractElement<?, ?> entity, Action<?, ?> action) {
+    @Transactional
+    public void react(AbstractElement<?, ?> entity, Action<?, ?> action) {
         switch (action.asEnum()) {
             case CREATED:
                 createSecurityResource(entity);
                 break;
             case DELETED:
-                security.storage.delete(Security.getStableId(entity));
+                storage.delete(Security.getStableId(entity));
                 break;
         }
     }
 
     private void createSecurityResource(AbstractElement<?, ?> entity) {
-        //these are the possible parents
+        LOGGER.tracef("Creating security entity for %s", entity);
+
+        org.hawkular.accounts.api.model.Resource parent = ensureParent(entity);
+
+        Persona owner = establishOwner(parent, personas.getCurrent());
+
+        // because the event handling in inventory is not ordered in any way, we might receive the info about creating
+        // a parent after a child has been reported. In that case, the security resource for the parent will already
+        // exist.
+        String stableId = Security.getStableId(entity);
+        if (storage.get(stableId) == null) {
+            storage.create(stableId, parent, owner);
+            LOGGER.debugf("Created security entity with stable ID '%s' for entity %s", stableId, entity);
+        }
+    }
+
+    private org.hawkular.accounts.api.model.Resource ensureParent(AbstractElement<?, ?> entity) {
         String feedId = null;
         String environmentId = null;
         String tenantId = null;
@@ -127,31 +142,62 @@ public class SecurityIntegration implements ResultFilter {
         }
 
         org.hawkular.accounts.api.model.Resource parent = null;
+        Persona owner = personas.getCurrent();
 
-        //establish what parent we are going to be creating our resource under
-        if (feedId != null) {
-            parent = security.storage.get(Security.getStableId(Feed.class, tenantId, environmentId, feedId));
-        } else if (environmentId != null) {
-            parent = security.storage.get(Security.getStableId(Environment.class, tenantId, environmentId));
-        } else if (tenantId != null) {
-            parent = security.storage.get(Security.getStableId(Tenant.class, tenantId));
-        }
+        if (tenantId != null) {
+            String parentStableId = Security.getStableId(Tenant.class, tenantId);
 
-        //establish the owner. If the owner of the parent is the same as the current user, then create the resource
-        //as being owner-less, inheriting the owner from the parent
-        Persona owner = security.personas.getCurrent();
+            org.hawkular.accounts.api.model.Resource tenantResource = storage.get(parentStableId);
 
-        if (parent != null) {
-            org.hawkular.accounts.api.model.Resource ownedParent = parent;
-            while (ownedParent != null && ownedParent.getPersona() == null) {
-                ownedParent = ownedParent.getParent();
+            if (tenantResource == null) {
+                tenantResource = storage.create(parentStableId, null, owner);
+            } else {
+                owner = establishOwner(tenantResource, owner);
             }
 
-            if (ownedParent != null && ownedParent.getPersona().equals(owner)) {
-                owner = null;
+            parent = tenantResource;
+
+            if (environmentId != null) {
+                parentStableId = Security.getStableId(Environment.class, tenantId, environmentId);
+                org.hawkular.accounts.api.model.Resource envResource = storage.get(parentStableId);
+
+                if (envResource == null) {
+                    envResource = storage.create(parentStableId, tenantResource, owner);
+                } else {
+                    owner = establishOwner(envResource, owner);
+                }
+
+                parent = envResource;
+
+                if (feedId != null) {
+                    parentStableId = Security.getStableId(Feed.class, tenantId, environmentId, feedId);
+                    org.hawkular.accounts.api.model.Resource feedResource = storage.get(parentStableId);
+
+                    if (feedResource == null) {
+                        storage.create(parentStableId, envResource, owner);
+                    }
+
+                    parent = feedResource;
+                }
             }
         }
 
-        security.storage.create(Security.getStableId(entity), parent, owner);
+        return parent;
+    }
+
+    /**
+     * Establishes the owner. If the owner of the parent is the same as the current user, then create the resource
+     * as being owner-less, inheriting the owner from the parent.
+     */
+    private Persona establishOwner(org.hawkular.accounts.api.model.Resource resource, Persona current) {
+        while (resource != null && resource.getPersona() == null) {
+            resource = resource.getParent();
+        }
+
+        if (resource != null && resource.getPersona().equals(current)) {
+            current = null;
+        }
+
+        return current;
     }
 }
