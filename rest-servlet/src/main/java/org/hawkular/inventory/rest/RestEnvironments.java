@@ -56,44 +56,51 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 public class RestEnvironments extends RestBase {
 
     @GET
-    @Path("/{tenantId}/environments")
+    @Path("/environments")
     @ApiOperation("Returns all environments under given tenant. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uri) throws Exception {
-        Page<Environment> ret = inventory.tenants().get(tenantId).environments().getAll().entities(extractPaging(uri));
+    public Response getAll(@Context UriInfo uri) throws Exception {
+        String tenantId = getTenantId();
+
+        Page<Environment> ret = inventory.tenants().get(tenantId).environments().getAll()
+                .entities(extractPaging(uri));
 
         return pagedResponse(Response.ok(), uri, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/environments/{environmentId}")
+    @Path("/environments/{environmentId}")
     @ApiOperation("Retrieves a single environment")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Environment get(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId)
+    public Response get(@PathParam("environmentId") String environmentId)
             throws Exception {
-        return inventory.tenants().get(tenantId).environments().get(environmentId).entity();
+        String tenantId = getTenantId();
+
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).entity()).build();
     }
 
     @POST
-    @Path("/{tenantId}/environments")
+    @Path("/environments")
     @ApiOperation("Creates a new environment in given tenant.")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Environment created"),
-            @ApiResponse(code = 404, message = "Tenant not found", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 409, message = "Environment already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("tenantId") String tenantId,
-            @ApiParam(required = true) Environment.Blueprint environmentBlueprint, @Context UriInfo uriInfo)
-            throws Exception {
+    public Response create(@ApiParam(required = true) Environment.Blueprint environmentBlueprint,
+            @Context UriInfo uriInfo) throws Exception {
+        String tenantId = getTenantId();
         if (!security.canCreate(Environment.class).under(Tenant.class, tenantId)) {
             return Response.status(FORBIDDEN).build();
         }
@@ -103,16 +110,19 @@ public class RestEnvironments extends RestBase {
     }
 
     @PUT
-    @Path("/{tenantId}/environments/{environmentId}")
+    @Path("/environments/{environmentId}")
     @ApiOperation("Updates properties of the environment")
     @ApiResponses({
             @ApiResponse(code = 204, message = "The properties of the environment successfully updated"),
             @ApiResponse(code = 400, message = "Properties invalid", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant or environment not found", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
+    public Response update(@PathParam("environmentId") String environmentId,
             @ApiParam(required = true) Environment.Update update) throws Exception {
+
+        String tenantId = getTenantId();
 
         if (!security.canUpdate(Environment.class, tenantId, environmentId)) {
             return Response.status(FORBIDDEN).build();
@@ -123,17 +133,19 @@ public class RestEnvironments extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/environments/{environmentId}")
+    @Path("/environments/{environmentId}")
     @ApiOperation("Deletes the environment from the tenant")
     @ApiResponses({
         @ApiResponse(code = 204, message = "Environment successfully deleted"),
         @ApiResponse(code = 400, message = "Delete failed because it would leave inventory in invalid state",
                 response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
         @ApiResponse(code = 404, message = "Tenant or environment not found", response = ApiError.class),
         @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId)
-            throws Exception {
+    public Response delete(@PathParam("environmentId") String environmentId) throws Exception {
+
+        String tenantId = getTenantId();
 
         if (!security.canDelete(Environment.class, tenantId, environmentId)) {
             return Response.status(FORBIDDEN).build();
