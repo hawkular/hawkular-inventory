@@ -23,7 +23,7 @@
   <parent>
     <artifactId>inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -47,13 +47,13 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-impl-tinkerpop</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>

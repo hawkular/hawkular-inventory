@@ -17,14 +17,13 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>inventory-parent</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
@@ -32,21 +31,17 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>10</version>
+    <version>12</version>
   </parent>
-
-  <properties>
-    <version.hawkular-inventory>0.0.1-SNAPSHOT</version.hawkular-inventory>
-  </properties>
 
   <modules>
     <module>api</module>
     <module>impl-tinkerpop-parent</module>
+    <module>hawkular-inventory-cdi</module>
     <module>rest-servlet</module>
     <module>rest-test</module>
     <module>bus</module>
     <module>bus-api</module>
     <module>hawkular-integrated-inventory-rest</module>
-    <module>hawkular-inventory-cdi</module>
   </modules>
 </project>
