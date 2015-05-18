@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

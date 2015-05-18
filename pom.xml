@@ -35,10 +35,6 @@
     <version>12</version>
   </parent>
 
-  <properties>
-    <version.hawkular-inventory>0.0.1-SNAPSHOT</version.hawkular-inventory>
-  </properties>
-
   <modules>
     <module>api</module>
     <module>impl-tinkerpop-parent</module>

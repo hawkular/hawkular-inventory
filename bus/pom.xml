@@ -34,13 +34,13 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-api</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-bus-api</artifactId>
-      <version>${version.hawkular-inventory}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
