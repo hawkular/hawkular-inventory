@@ -262,35 +262,35 @@ public class Security {
         transaction.begin();
 
         try {
-            operations.setup("update-tenant").add("Super User").commit();
-            operations.setup("delete-tenant").add("Super User").commit();
+            operations.setup("update-tenant").add("Super User").persist();
+            operations.setup("delete-tenant").add("Super User").persist();
 
-            operations.setup("create-environment").add("Administrator").commit();
-            operations.setup("update-environment").add("Administrator").commit();
-            operations.setup("delete-environment").add("Administrator").commit();
-            operations.setup("copy-environment").add("Administrator").commit();
+            operations.setup("create-environment").add("Administrator").persist();
+            operations.setup("update-environment").add("Administrator").persist();
+            operations.setup("delete-environment").add("Administrator").persist();
+            operations.setup("copy-environment").add("Administrator").persist();
 
-            operations.setup("create-resourceType").add("Administrator").commit();
-            operations.setup("update-resourceType").add("Administrator").commit();
-            operations.setup("delete-resourceType").add("Administrator").commit();
+            operations.setup("create-resourceType").add("Administrator").persist();
+            operations.setup("update-resourceType").add("Administrator").persist();
+            operations.setup("delete-resourceType").add("Administrator").persist();
 
-            operations.setup("create-metricType").add("Administrator").commit();
-            operations.setup("update-metricType").add("Administrator").commit();
-            operations.setup("delete-metricType").add("Administrator").commit();
+            operations.setup("create-metricType").add("Administrator").persist();
+            operations.setup("update-metricType").add("Administrator").persist();
+            operations.setup("delete-metricType").add("Administrator").persist();
 
-            operations.setup("create-feed").add("Administrator").commit();
-            operations.setup("update-feed").add("Administrator").commit();
-            operations.setup("delete-feed").add("Administrator").commit();
+            operations.setup("create-feed").add("Administrator").persist();
+            operations.setup("update-feed").add("Administrator").persist();
+            operations.setup("delete-feed").add("Administrator").persist();
 
-            operations.setup("create-resource").add("Maintainer").commit();
-            operations.setup("update-resource").add("Maintainer").commit();
-            operations.setup("delete-resource").add("Maintainer").commit();
+            operations.setup("create-resource").add("Maintainer").persist();
+            operations.setup("update-resource").add("Maintainer").persist();
+            operations.setup("delete-resource").add("Maintainer").persist();
 
-            operations.setup("create-metric").add("Maintainer").commit();
-            operations.setup("update-metric").add("Maintainer").commit();
-            operations.setup("delete-metric").add("Maintainer").commit();
+            operations.setup("create-metric").add("Maintainer").persist();
+            operations.setup("update-metric").add("Maintainer").persist();
+            operations.setup("delete-metric").add("Maintainer").persist();
 
-            operations.setup("associate").add("Operator").commit();
+            operations.setup("associate").add("Operator").persist();
 
             transaction.commit();
         } catch (Throwable t) {
