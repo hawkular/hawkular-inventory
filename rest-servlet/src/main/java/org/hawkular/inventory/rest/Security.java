@@ -31,7 +31,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.cdi.Observable_AutoTenant;
+import org.hawkular.inventory.cdi.ObservableAutoTenant;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -64,7 +64,7 @@ public class Security {
     private OperationService operations;
 
     @Inject
-    @Observable_AutoTenant
+    @ObservableAutoTenant
     private Inventory.Mixin.AutoTenantAndObservable inventory;
 
     @javax.annotation.Resource
@@ -382,6 +382,7 @@ public class Security {
     public final class CreatePermissionCheckerFinisher {
 
         private final Class<?> createdType;
+
         private CreatePermissionCheckerFinisher(Class<?> createdType) {
             this.createdType = createdType;
         }

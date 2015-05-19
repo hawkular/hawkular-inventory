@@ -28,7 +28,7 @@ import javax.inject.Singleton;
  * @author Lukas Krejci
  * @since 0.0.2
  */
-public class AutoTenantObservableInventoryProducer {
+public class ObservableAutoTenantInventoryProducer {
 
     @Inject
     @Observable
@@ -42,14 +42,14 @@ public class AutoTenantObservableInventoryProducer {
 
     @Produces
     @Singleton
-    @Observable_AutoTenant
+    @ObservableAutoTenant
     public Inventory.Mixin.AutoTenantAndObservable getInventory() {
         Inventory.Mixin.AutoTenantAndObservable ret = Inventory.augment(inventory).autoTenant().get();
         autoTenantInventoryInitializedEvent.fire(new AutoTenantInventoryInitialized(ret));
         return ret;
     }
 
-    public void close(@Disposes @Observable_AutoTenant Inventory.Mixin.AutoTenantAndObservable inventory)
+    public void close(@Disposes @ObservableAutoTenant Inventory.Mixin.AutoTenantAndObservable inventory)
             throws Exception {
         disposingAutoTenantInventoryEvent.fire(new DisposingAutoTenantInventory(inventory));
     }
