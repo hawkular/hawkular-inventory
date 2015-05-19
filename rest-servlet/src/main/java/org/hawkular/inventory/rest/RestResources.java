@@ -52,7 +52,7 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Collection;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -82,7 +82,7 @@ public class RestResources extends RestBase {
                                 @Context UriInfo uriInfo) {
 
         if (!security.canCreate(Resource.class).under(Environment.class, tenantId, environmentId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
@@ -106,7 +106,7 @@ public class RestResources extends RestBase {
             @ApiParam(required =  true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
 
         if (!security.canCreate(Resource.class).under(Feed.class, tenantId, environmentId, feedId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
@@ -220,7 +220,7 @@ public class RestResources extends RestBase {
                            @ApiParam(required = true) Resource.Update update) {
 
         if (!security.canUpdate(Resource.class, tenantId, environmentId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().update(resourceId,
@@ -243,7 +243,7 @@ public class RestResources extends RestBase {
             @ApiParam(required = true) Resource.Update update) {
 
         if (!security.canUpdate(Resource.class, tenantId, environmentId, feedId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
@@ -265,7 +265,7 @@ public class RestResources extends RestBase {
                                    @PathParam("environmentId") String environmentId,
                                    @PathParam("resourceId") String resourceId) {
         if (!security.canDelete(Resource.class, tenantId, environmentId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().delete(resourceId);
@@ -286,7 +286,7 @@ public class RestResources extends RestBase {
             @PathParam("resourceId") String resourceId) {
 
         if (!security.canDelete(Resource.class, tenantId, environmentId, feedId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
@@ -309,7 +309,7 @@ public class RestResources extends RestBase {
                                         Collection<String> metricIds) {
 
         if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
@@ -334,7 +334,7 @@ public class RestResources extends RestBase {
             @PathParam("resourceId") String resourceId, Collection<String> metricIds) {
 
         if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, feedId, resourceId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)

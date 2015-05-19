@@ -36,7 +36,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -59,7 +59,7 @@ public class RestFeeds extends RestBase {
             @ApiParam(required = true) Feed.Blueprint blueprint, @Context UriInfo uriInfo) {
 
         if (!security.canCreate(Feed.class).under(Environment.class, tenantId, environmentId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         Feed feed = inventory.tenants().get(tenantId).environments().get(environmentId).feeds().create(blueprint)
@@ -113,7 +113,7 @@ public class RestFeeds extends RestBase {
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId, Feed.Update update) {
 
         if (!security.canUpdate(Feed.class, tenantId, environmentId, feedId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().update(feedId, update);
@@ -134,7 +134,7 @@ public class RestFeeds extends RestBase {
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
 
         if (!security.canDelete(Feed.class, tenantId, environmentId, feedId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().delete(feedId);

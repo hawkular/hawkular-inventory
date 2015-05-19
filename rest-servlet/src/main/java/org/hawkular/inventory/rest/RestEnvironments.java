@@ -41,7 +41,7 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -95,7 +95,7 @@ public class RestEnvironments extends RestBase {
             @ApiParam(required = true) Environment.Blueprint environmentBlueprint, @Context UriInfo uriInfo)
             throws Exception {
         if (!security.canCreate(Environment.class).under(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().create(environmentBlueprint);
@@ -115,7 +115,7 @@ public class RestEnvironments extends RestBase {
             @ApiParam(required = true) Environment.Update update) throws Exception {
 
         if (!security.canUpdate(Environment.class, tenantId, environmentId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().update(environmentId, update);
@@ -136,7 +136,7 @@ public class RestEnvironments extends RestBase {
             throws Exception {
 
         if (!security.canDelete(Environment.class, tenantId, environmentId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().delete(environmentId);

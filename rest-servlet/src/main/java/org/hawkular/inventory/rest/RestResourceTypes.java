@@ -44,7 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -136,7 +136,7 @@ public class RestResourceTypes extends RestBase {
     public Response create(@PathParam("tenantId") String tenantId, ResourceType.Blueprint resourceType,
             @Context UriInfo uriInfo) {
         if (!security.canCreate(ResourceType.class).under(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
@@ -156,7 +156,7 @@ public class RestResourceTypes extends RestBase {
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId,
             @ApiParam(required = true) ResourceType.Update update) {
         if (!security.canUpdate(ResourceType.class, tenantId, resourceTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).resourceTypes().update(resourceTypeId, update);
@@ -173,7 +173,7 @@ public class RestResourceTypes extends RestBase {
     })
     public Response delete(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId) {
         if (!security.canDelete(ResourceType.class, tenantId, resourceTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).resourceTypes().delete(resourceTypeId);
@@ -192,7 +192,7 @@ public class RestResourceTypes extends RestBase {
     public Response addMetricType(@PathParam("tenantId") String tenantId,
             @PathParam("resourceTypeId") String resourceTypeId, IdJSON metricTypeId) {
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
@@ -213,7 +213,7 @@ public class RestResourceTypes extends RestBase {
                                      @PathParam("resourceTypeId") String resourceTypeId,
                                      @PathParam("metricTypeId") String metricTypeId) {
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);

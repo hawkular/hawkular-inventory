@@ -45,7 +45,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 /**
  * @author Lukas Krejci
@@ -71,7 +71,7 @@ public class RestMetrics extends RestBase {
             @Context UriInfo uriInfo) {
 
         if (!security.canCreate(Metric.class).under(Environment.class, tenantId, environmentId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics(), metric);
@@ -92,7 +92,7 @@ public class RestMetrics extends RestBase {
             @ApiParam(required = true) Metric.Blueprint metric, @Context UriInfo uriInfo) {
 
         if (!security.canCreate(Metric.class).under(Feed.class, tenantId, environmentId, feedId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics(),
@@ -207,7 +207,7 @@ public class RestMetrics extends RestBase {
             Metric.Update update) {
 
         if (!security.canUpdate(Metric.class, tenantId, environmentId, metricId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().update(metricId, update);
@@ -230,7 +230,7 @@ public class RestMetrics extends RestBase {
             @PathParam("metricId") String metricId, Metric.Update update) {
 
         if (!security.canUpdate(Metric.class, tenantId, environmentId, feedId, metricId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
@@ -252,7 +252,7 @@ public class RestMetrics extends RestBase {
             @PathParam("environmentId") String environmentId, @PathParam("metricId") String metricId) {
 
         if (!security.canDelete(Metric.class, tenantId, environmentId, metricId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().delete(metricId);
@@ -274,7 +274,7 @@ public class RestMetrics extends RestBase {
             @PathParam("metricId") String metricId) {
 
         if (!security.canDelete(Metric.class, tenantId, environmentId, feedId, metricId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()

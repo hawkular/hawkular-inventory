@@ -34,7 +34,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 /**
  * @author Lukas Krejci
@@ -74,7 +74,7 @@ public class RestTenants extends RestBase {
     public Response update(@ApiParam(required = true) Tenant.Update update) {
         String tenantId = getTenantId();
         if (!security.canUpdate(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().update(tenantId, update);
@@ -93,7 +93,7 @@ public class RestTenants extends RestBase {
     public Response delete() {
         String tenantId = getTenantId();
         if (!security.canDelete(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().delete(tenantId);

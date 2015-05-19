@@ -40,7 +40,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 /**
@@ -94,7 +94,7 @@ public class RestMetricTypes extends RestBase {
             @ApiParam(required = true) MetricType.Blueprint metricType, @Context UriInfo uriInfo) {
 
         if (!security.canCreate(MetricType.class).under(Tenant.class, tenantId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).metricTypes().create(metricType);
@@ -115,7 +115,7 @@ public class RestMetricTypes extends RestBase {
             @ApiParam(required = true) MetricType.Update update) throws Exception {
 
         if (!security.canUpdate(MetricType.class, tenantId, metricTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).metricTypes().update(metricTypeId, update);
@@ -135,7 +135,7 @@ public class RestMetricTypes extends RestBase {
     public Response delete(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId) {
 
         if (!security.canDelete(MetricType.class, tenantId, metricTypeId)) {
-            return Response.status(UNAUTHORIZED).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         inventory.tenants().get(tenantId).metricTypes().delete(metricTypeId);
