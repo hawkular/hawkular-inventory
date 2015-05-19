@@ -262,8 +262,8 @@ public class Security {
         transaction.begin();
 
         try {
-            operations.setup("update-tenant").add("Super User").persist();
-            operations.setup("delete-tenant").add("Super User").persist();
+            operations.setup("update-tenant").add("SuperUser").persist();
+            operations.setup("delete-tenant").add("SuperUser").persist();
 
             operations.setup("create-environment").add("Administrator").persist();
             operations.setup("update-environment").add("Administrator").persist();
