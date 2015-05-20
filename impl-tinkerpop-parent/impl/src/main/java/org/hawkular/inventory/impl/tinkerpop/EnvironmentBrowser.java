@@ -16,9 +16,11 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
@@ -83,7 +85,7 @@ final class EnvironmentBrowser extends AbstractBrowser<Environment, Environment.
             }
 
             @Override
-            public Environment entity() {
+            public Environment entity() throws EntityNotFoundException, RelationNotFoundException {
                 return b.entity();
             }
         };

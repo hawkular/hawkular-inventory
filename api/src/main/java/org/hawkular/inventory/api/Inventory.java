@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -32,6 +33,14 @@ import org.hawkular.inventory.api.model.Tenant;
  *
  * <p>The resources are organized by tenant (your company) and environments (i.e. testing, development, staging,
  * production, ...).
+ *
+ * <p>Despite their name, tenants are not completely separated and one can easily create relationships between them or
+ * between entities underneath different tenants. This is because there are situations where such relationships might
+ * make sense but more importantly because at the API level, inventory does not mandate any security model. It is
+ * assumed that the true multi-tenancy in the common sense of the word is implemented by a layer on top of the inventory
+ * API that also understands some security model to separate the tenants. To help with multi-tenancy support, the API
+ * provides "mixins" to modify the default behavior of the inventory, see the
+ * {@link Mixin} class and the {@link #augment(Inventory)} method.
  *
  * <p>Resources are hierarchical - meaning that one can be a parent of others, recursively. One can also say that a
  * resource can contain other resources. Resources can have other kinds of relationships that are not necessarily
@@ -69,9 +78,27 @@ import org.hawkular.inventory.api.model.Tenant;
  * </ol>
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public interface Inventory extends AutoCloseable {
+
+    /**
+     * Returns an object with which one can modify the behavior of or add features to the provided inventory.
+     *
+     * @param inventory the inventory to augment
+     * @return a mixin object to modify the inventory with
+     */
+    static Mixin augment(Inventory inventory) {
+        return new Mixin(inventory);
+    }
+
+    static Mixin.ObservableMixin augment(Mixin.Observable inventory) {
+        return new Mixin.ObservableMixin(inventory);
+    }
+
+    static Mixin.AutoTenantMixin augment(Mixin.AutoTenant inventory) {
+        return new Mixin.AutoTenantMixin(inventory);
+    }
 
     /**
      * Initializes the inventory from the provided configuration object.
@@ -224,5 +251,200 @@ public interface Inventory extends AutoCloseable {
                 return accessInterface.cast(inspect(type));
             }
         }, null);
+    }
+
+    /**
+     * A class for producing mixins of inventory and the {@link Mixin.Observable} or {@link Mixin.AutoTenant}
+     * interfaces.
+     *
+     * <p>Given the old-ish type system of Java lacking Self type or union types, this is quite cumbersome and will
+     * result in a combinatorial explosion of backing classes if more mixins are added. I am not sure there is a way to
+     * work around that. Maybe dynamic proxies could be used but are not worth it at this stage.
+     *
+     * @since 0.0.2
+     */
+    final class Mixin {
+        private final Inventory inventory;
+
+        private Mixin(Inventory inventory) {
+            this.inventory = inventory;
+        }
+
+        public AutoTenantMixin autoTenant() {
+            return new AutoTenantMixin(inventory);
+        }
+
+        public ObservableMixin observable() {
+            return new ObservableMixin(inventory);
+        }
+
+        public static final class ObservableMixin {
+            private final Observable inventory;
+
+            private ObservableMixin(Inventory inventory) {
+                this.inventory = new ObservableInventory(inventory);
+            }
+
+            private ObservableMixin(Observable inventory) {
+                this.inventory = inventory;
+            }
+
+            public ObservableAndAutoTenantMixin autoTenant() {
+                return new ObservableAndAutoTenantMixin(inventory);
+            }
+
+            public Observable get() {
+                return inventory;
+            }
+        }
+
+        public static final class AutoTenantMixin {
+            private final AutoTenant inventory;
+
+            private AutoTenantMixin(Inventory inventory) {
+                this.inventory = new AutoTenantInventory(inventory);
+            }
+
+            private AutoTenantMixin(AutoTenant inventory) {
+                this.inventory = inventory;
+            }
+            public ObservableAndAutoTenantMixin observable() {
+                return new ObservableAndAutoTenantMixin(inventory);
+            }
+
+            public AutoTenant get() {
+                return inventory;
+            }
+        }
+
+        public static final class ObservableAndAutoTenantMixin {
+            private final AutoTenantAndObservable inventory;
+
+            private ObservableAndAutoTenantMixin(Observable inventory) {
+                this.inventory = new AutoTenantObservableInventory(inventory);
+            }
+
+            private ObservableAndAutoTenantMixin(AutoTenant inventory) {
+                this.inventory = new ObservableAutoTenantInventory(inventory);
+            }
+
+            public AutoTenantAndObservable get() {
+                return inventory;
+            }
+        }
+
+        /**
+         * The observable mixin interface. Augments the inventory so that mutation events on it can be observed.
+         */
+        public interface Observable extends Inventory {
+            /**
+             * This method is mainly useful for testing.
+             *
+             * @param interest the interest in changes of some inventory entity type
+             * @return true if the interest has some observers or not
+             */
+            boolean hasObservers(Interest<?, ?> interest);
+
+            /**
+             * @param interest the interest in changes of some inventory entity type
+             * @param <C>      the type of object that will be passed to the subscribers of the returned observable
+             * @param <E>      the type of the entity the interest is expressed on
+             * @return an observable to which the caller can subscribe to receive notifications about inventory
+             * mutation
+             */
+            <C, E> rx.Observable<C> observable(Interest<C, E> interest);
+        }
+
+        /**
+         * A mixin interface for automatic creation on tenants. While this mixin doesn't provide any new methods,
+         * it changes the behavior of the inventory by using the {@link AutoTenantInventory} as the backing class for
+         * the mixin implementation. Using this mixin, the
+         * {@link #tenants()}.{@link ReadInterface#getAll(Filter...) getAll(Filter...)} always returns an empty set and
+         * {@link #tenants()}.{@link ReadInterface#get(String) get(String)} returns an existing tenant or creates a new
+         * with the provided id.
+         */
+        public interface AutoTenant extends Inventory {
+        }
+
+        /**
+         * Poor man's intersection type ;)
+         */
+        public interface AutoTenantAndObservable extends AutoTenant, Observable {
+        }
+
+        /**
+         * An implementation of AutoTenant and Observable interfaces in that order.
+         */
+        private static final class AutoTenantObservableInventory implements AutoTenantAndObservable {
+
+            private final Observable inventory;
+            private final AutoTenantInventory autoTenant;
+
+            public AutoTenantObservableInventory(Observable inventory) {
+                this.inventory = inventory;
+                this.autoTenant = new AutoTenantInventory(inventory);
+            }
+
+            @Override
+            public void initialize(Configuration configuration) {
+                autoTenant.initialize(configuration);
+            }
+
+            @Override
+            public Tenants.ReadWrite tenants() {
+                return autoTenant.tenants();
+            }
+
+            @Override
+            public void close() throws Exception {
+                autoTenant.close();
+            }
+
+            @Override
+            public boolean hasObservers(Interest<?, ?> interest) {
+                return inventory.hasObservers(interest);
+            }
+
+            @Override
+            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
+                return inventory.observable(interest);
+            }
+        }
+
+        /**
+         * An implementation of all Inventory, Observable and AutoTenant interfaces in that order.
+         */
+        private static final class ObservableAutoTenantInventory implements AutoTenantAndObservable {
+
+            private final ObservableInventory inventory;
+
+            public ObservableAutoTenantInventory(AutoTenant inventory) {
+                this.inventory = new ObservableInventory(inventory);
+            }
+
+            public boolean hasObservers(Interest<?, ?> interest) {
+                return inventory.hasObservers(interest);
+            }
+
+            @Override
+            public void close() throws Exception {
+                inventory.close();
+            }
+
+            @Override
+            public void initialize(Configuration configuration) {
+                inventory.initialize(configuration);
+            }
+
+            @Override
+            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
+                return inventory.observable(interest);
+            }
+
+            @Override
+            public ObservableTenants.ReadWrite tenants() {
+                return inventory.tenants();
+            }
+        }
     }
 }

@@ -18,7 +18,7 @@ package org.hawkular.inventory.bus;
 
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
-import org.hawkular.inventory.api.observable.Interest;
+import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.bus.api.InventoryEvent;
 
 import javax.jms.JMSException;

@@ -22,12 +22,11 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -41,6 +40,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 /**
@@ -51,10 +51,7 @@ import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
 @Api(value = "/", description = "Metric types CRUD")
-public class RestMetricTypes {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestMetricTypes extends RestBase {
 
     @GET
     @Path("/{tenantId}/metricTypes")
@@ -94,8 +91,11 @@ public class RestMetricTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response create(@PathParam("tenantId") String tenantId,
-                           @ApiParam(required = true) MetricType.Blueprint metricType,
-                           @Context UriInfo uriInfo) {
+            @ApiParam(required = true) MetricType.Blueprint metricType, @Context UriInfo uriInfo) {
+
+        if (!security.canCreate(MetricType.class).under(Tenant.class, tenantId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         inventory.tenants().get(tenantId).metricTypes().create(metricType);
 
@@ -112,8 +112,11 @@ public class RestMetricTypes {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId,
-                       @ApiParam(required = true) MetricType.Update update)
-            throws Exception {
+            @ApiParam(required = true) MetricType.Update update) throws Exception {
+
+        if (!security.canUpdate(MetricType.class, tenantId, metricTypeId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         inventory.tenants().get(tenantId).metricTypes().update(metricTypeId, update);
         return Response.noContent().build();
@@ -129,8 +132,11 @@ public class RestMetricTypes {
             @ApiResponse(code = 404, message = "Tenant or metric type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId,
-                           @PathParam("metricTypeId") String metricTypeId) {
+    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId) {
+
+        if (!security.canDelete(MetricType.class, tenantId, metricTypeId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         inventory.tenants().get(tenantId).metricTypes().delete(metricTypeId);
         return Response.noContent().build();

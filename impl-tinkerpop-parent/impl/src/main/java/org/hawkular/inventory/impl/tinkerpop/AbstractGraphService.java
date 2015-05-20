@@ -21,7 +21,9 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -146,6 +148,11 @@ abstract class AbstractGraphService {
         Filter[][] fs = new Filter[1][];
         fs[0] = filters;
         return FilterApplicator.from(sourcePaths).and(FilterApplicator.Type.PATH, fs);
+    }
+
+    protected boolean isApplicable(AbstractElement<?, ?> result) {
+        ResultFilter filter = context.getResultFilter();
+        return filter == null ? true : filter.isApplicable(result);
     }
 
     /**

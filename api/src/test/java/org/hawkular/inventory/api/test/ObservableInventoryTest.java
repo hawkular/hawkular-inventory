@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.api.test;
 
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Metric;
@@ -25,9 +28,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Action;
-import org.hawkular.inventory.api.observable.Interest;
-import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,10 +37,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.hawkular.inventory.api.observable.Action.copied;
-import static org.hawkular.inventory.api.observable.Action.created;
-import static org.hawkular.inventory.api.observable.Action.deleted;
-import static org.hawkular.inventory.api.observable.Action.updated;
+import static org.hawkular.inventory.api.Action.copied;
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -50,12 +50,12 @@ import static org.mockito.Mockito.when;
  */
 public class ObservableInventoryTest {
 
-    private ObservableInventory observableInventory;
+    private Inventory.Mixin.Observable observableInventory;
 
     @Before
     public void init() {
         InventoryMock.rewire();
-        observableInventory = new ObservableInventory(InventoryMock.inventory);
+        observableInventory = Inventory.augment(InventoryMock.inventory).observable().get();
     }
 
     @Test
@@ -215,19 +215,19 @@ public class ObservableInventoryTest {
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
         void runTest(Class<T> entityClass, boolean watchRelationships, Runnable payload) {
 
-        List<T> createdTenants = new ArrayList<>();
-        List<Action.Update<T, U>> updatedTenants = new ArrayList<>();
-        List<T> deletedTenants = new ArrayList<>();
+        List<T> createdEntities = new ArrayList<>();
+        List<Action.Update<T, U>> updatedEntities = new ArrayList<>();
+        List<T> deletedEntities = new ArrayList<>();
         List<Relationship> createdRelationships = new ArrayList<>();
 
         Subscription s1 = observableInventory.observable(Interest.in(entityClass).being(created()))
-                .subscribe(createdTenants::add);
+                .subscribe(createdEntities::add);
 
         Subscription s2 = observableInventory.observable(Interest.in(entityClass).being(updated()))
-                .subscribe(updatedTenants::add);
+                .subscribe(updatedEntities::add);
 
         Subscription s3 = observableInventory.observable(Interest.in(entityClass).being(deleted()))
-                .subscribe(deletedTenants::add);
+                .subscribe(deletedEntities::add);
 
         observableInventory.observable(Interest.in(Relationship.class).being(created()))
                 .subscribe(createdRelationships::add);
@@ -237,9 +237,9 @@ public class ObservableInventoryTest {
 
         payload.run();
 
-        Assert.assertEquals(1, createdTenants.size());
-        Assert.assertEquals(1, updatedTenants.size());
-        Assert.assertEquals(1, deletedTenants.size());
+        Assert.assertEquals(1, createdEntities.size());
+        Assert.assertEquals(1, updatedEntities.size());
+        Assert.assertEquals(1, deletedEntities.size());
         if (watchRelationships) {
             Assert.assertEquals(1, createdRelationships.size());
         }

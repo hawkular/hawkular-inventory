@@ -26,5 +26,30 @@ package org.hawkular.inventory.api;
  */
 public interface ResolvableToSingle<Entity> {
 
-    Entity entity();
+    /**
+     * Resolves the entity and returns it.
+     *
+     * @return the entity at the current position in the inventory traversal
+     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
+     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
+     */
+    Entity entity() throws EntityNotFoundException, RelationNotFoundException;
+
+    /**
+     * Similar to {@link #entity()} but merely checks whether the entity exists on the position in the inventory
+     * traversal.
+     *
+     * <p>Note that the default implementation might not be optimal performance-wise because it tries to fully resolve
+     * the entity using the {@link #entity()} method but discards that result right after.
+     *
+     * @return true if there is an entity, false otherwise.
+     */
+    default boolean exists() {
+        try {
+            entity();
+            return true;
+        } catch (EntityNotFoundException | RelationNotFoundException ignored) {
+            return false;
+        }
+    }
 }

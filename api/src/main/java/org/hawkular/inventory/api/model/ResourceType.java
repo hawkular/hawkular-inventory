@@ -34,14 +34,16 @@ import java.util.Map;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends OwnedEntity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     @XmlAttribute
     @XmlJavaTypeAdapter(VersionAdapter.class)
     @Expose
     private final Version version;
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private ResourceType() {
         this.version = null;
@@ -61,7 +63,9 @@ public final class ResourceType extends OwnedEntity<ResourceType.Blueprint, Reso
         this(tenantId, id, new Version(version));
     }
 
-    /** JSON serialization support */
+    /**
+     * JSON serialization support
+     */
     @JsonCreator
     public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("version") String version, @JsonProperty("properties") Map<String, Object> properties) {

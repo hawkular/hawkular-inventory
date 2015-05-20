@@ -43,6 +43,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * A slight extension of the Gremlin pipeline providing a couple of utility overloads of existing methods that accept
@@ -121,7 +122,14 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
     }
 
     public HawkularPipeline<S, Vertex> page(Pager pager) {
-        HawkularPipeline<S, Vertex> pipe = cast(Vertex.class);
+        return cast(Vertex.class).page(pager, (e, p) -> {
+            String prop = Constants.Property.mapUserDefined(p);
+            return e.getProperty(prop);
+        });
+    }
+
+    public <V extends Comparable<V>> HawkularPipeline<S, E> page(Pager pager,
+            BiFunction<E, String, V> propertyValueExtractor) {
 
         List<Order> order = pager.getOrder();
         if (!order.isEmpty()) {
@@ -136,13 +144,12 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
             if (specific) {
                 //the order pipe holds on to the whole result set to be able to order, so we'd better do just
                 //1 order step.
-                pipe.order(p -> {
+                this.order(p -> {
                     int ret = 0;
                     for (Order ord : order) {
                         if (ord.isSpecific()) {
-                            String field = Constants.Property.mapUserDefined(ord.getField());
-                            Comparable<Object> a = p.getA().getProperty(field);
-                            Comparable<Object> b = p.getB().getProperty(field);
+                            V a = propertyValueExtractor.apply(p.getA(), ord.getField());
+                            V b = propertyValueExtractor.apply(p.getB(), ord.getField());
                             ret = ord.isAscending() ? safeCompare(a, b) : safeCompare(b, a);
                             if (ret != 0) {
                                 break;
@@ -158,10 +165,10 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
             this.range(pager.getStart(), pager.getEnd() - 1);
         }
 
-        return pipe;
+        return this;
     }
 
-    private static <U, T extends Comparable<U>> int safeCompare(T a, U b) {
+    private static <T extends Comparable<T>> int safeCompare(T a, T b) {
         if (a == null) {
             return b == null ? 0 : -1;
         } else if (b == null) {

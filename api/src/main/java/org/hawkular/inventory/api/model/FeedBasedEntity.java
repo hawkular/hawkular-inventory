@@ -27,7 +27,7 @@ import java.util.Objects;
  * @since 0.0.2
  */
 public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
-        extends EnvironmentalEntity<B, U> {
+        extends EnvironmentBasedEntity<B, U> {
 
     @XmlAttribute(name = "feed")
     @Expose
@@ -44,12 +44,19 @@ public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends Abst
     }
 
     public FeedBasedEntity(String tenantId, String environmentId, String feedId, String id,
-        Map<String, Object> properties) {
+            Map<String, Object> properties) {
 
         super(tenantId, environmentId, id, properties);
         this.feedId = feedId;
     }
 
+    /**
+     * The id of the feed that this entity belongs to or null, if this entity does not belong to any particular feed.
+     *
+     * (It is allowed for an entity that can exist under a feed to also exist directly under an environment).
+     *
+     * @return the id of the feed this entity lives under or null if this entity lives directly under an environment
+     */
     public String getFeedId() {
         return feedId;
     }

@@ -23,13 +23,13 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -45,6 +45,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 /**
  * @author Lukas Krejci
@@ -54,10 +55,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
 @Api(value = "/", description = "Metrics CRUD")
-public class RestMetrics {
-
-    @Inject @ForRest
-    private Inventory inventory;
+public class RestMetrics extends RestBase {
 
     @POST
     @Path("/{tenantId}/{environmentId}/metrics")
@@ -69,9 +67,12 @@ public class RestMetrics {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response createMetric(@PathParam("tenantId") String tenantId,
-                                 @PathParam("environmentId") String environmentId,
-                                 @ApiParam(required = true) Metric.Blueprint metric,
-                                 @Context UriInfo uriInfo) {
+            @PathParam("environmentId") String environmentId, @ApiParam(required = true) Metric.Blueprint metric,
+            @Context UriInfo uriInfo) {
+
+        if (!security.canCreate(Metric.class).under(Environment.class, tenantId, environmentId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics(), metric);
         return ResponseUtil.created(uriInfo, metric.getId()).build();
@@ -90,8 +91,13 @@ public class RestMetrics {
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @ApiParam(required = true) Metric.Blueprint metric, @Context UriInfo uriInfo) {
 
+        if (!security.canCreate(Metric.class).under(Feed.class, tenantId, environmentId, feedId)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
         createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics(),
                 metric);
+
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }
 
@@ -197,9 +203,13 @@ public class RestMetrics {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response updateMetric(@PathParam("tenantId") String tenantId,
-                                 @PathParam("environmentId") String environmentId,
-                                 @PathParam("metricId") String metricId,
-                                 Metric.Update update) {
+            @PathParam("environmentId") String environmentId, @PathParam("metricId") String metricId,
+            Metric.Update update) {
+
+        if (!security.canUpdate(Metric.class, tenantId, environmentId, metricId)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().update(metricId, update);
         return Response.noContent().build();
     }
@@ -218,6 +228,11 @@ public class RestMetrics {
     public Response updateMetric(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId, Metric.Update update) {
+
+        if (!security.canUpdate(Metric.class, tenantId, environmentId, feedId, metricId)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
                 .update(metricId, update);
         return Response.noContent().build();
@@ -234,8 +249,11 @@ public class RestMetrics {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteMetric(@PathParam("tenantId") String tenantId,
-                                 @PathParam("environmentId") String environmentId,
-                                 @PathParam("metricId") String metricId) {
+            @PathParam("environmentId") String environmentId, @PathParam("metricId") String metricId) {
+
+        if (!security.canDelete(Metric.class, tenantId, environmentId, metricId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().delete(metricId);
         return Response.noContent().build();
@@ -254,6 +272,10 @@ public class RestMetrics {
     public Response deleteMetric(@PathParam("tenantId") String tenantId,
             @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId) {
+
+        if (!security.canDelete(Metric.class, tenantId, environmentId, feedId, metricId)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
                 .delete(metricId);

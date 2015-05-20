@@ -129,5 +129,14 @@ public final class Pager extends PageContext {
         public Builder orderByDescending(String field) {
             return orderBy(field, Order.Direction.DESCENDING);
         }
+
+        public Builder orderBy(Order order) {
+            this.order.add(order);
+            return this;
+        }
+
+        public Pager build() {
+            return new Pager(pageNumber, pageSize, order);
+        }
     }
 }

@@ -18,6 +18,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetricTypes;
@@ -70,7 +71,7 @@ final class RelationshipBrowser extends AbstractGraphService {
         return new Relationships.Single() {
 
             @Override
-            public Relationship entity() {
+            public Relationship entity() throws EntityNotFoundException, RelationNotFoundException {
                 HawkularPipeline<?, Edge> edges = b.source().cast(Edge.class);
                 if (!edges.hasNext()) {
                     throw new RelationNotFoundException(sourceClass, FilterApplicator.filters(b.sourcePaths));

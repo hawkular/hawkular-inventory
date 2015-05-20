@@ -28,18 +28,28 @@ import java.util.Properties;
 public final class Configuration {
     private final FeedIdStrategy feedIdStrategy;
     private final Map<String, String> implementationConfiguration;
+    private final ResultFilter resultFilter;
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public Configuration(FeedIdStrategy feedIdStrategy, Map<String, String> implementationConfiguration) {
+    public Configuration(FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
+            Map<String, String> implementationConfiguration) {
         this.feedIdStrategy = feedIdStrategy;
+        this.resultFilter = resultFilter;
         this.implementationConfiguration = implementationConfiguration;
     }
 
     public FeedIdStrategy getFeedIdStrategy() {
         return feedIdStrategy;
+    }
+
+    /**
+     * @return the result filter to be used to filter the query results or null if none necessary
+     */
+    public ResultFilter getResultFilter() {
+        return resultFilter;
     }
 
     public Map<String, String> getImplementationConfiguration() {
@@ -48,6 +58,7 @@ public final class Configuration {
 
     public static final class Builder {
         private FeedIdStrategy strategy;
+        private ResultFilter resultFilter;
         private Map<String, String> configuration = new HashMap<>();
 
         private Builder() {
@@ -56,6 +67,11 @@ public final class Configuration {
 
         public Builder withFeedIdStrategy(FeedIdStrategy strategy) {
             this.strategy = strategy;
+            return this;
+        }
+
+        public Builder withResultFilter(ResultFilter resultFilter) {
+            this.resultFilter = resultFilter;
             return this;
         }
 
@@ -69,13 +85,14 @@ public final class Configuration {
             properties.forEach((k,v) -> map.put(k.toString(), v.toString()));
             return withConfiguration(map);
         }
+
         public Builder addConfigurationProperty(String key, String value) {
             configuration.put(key, value);
             return this;
         }
 
         public Configuration build() {
-            return new Configuration(strategy, configuration);
+            return new Configuration(strategy, resultFilter, configuration);
         }
     }
 }

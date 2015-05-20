@@ -19,6 +19,10 @@ package org.hawkular.inventory.bus;
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -28,9 +32,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Action;
-import org.hawkular.inventory.api.observable.Interest;
-import org.hawkular.inventory.api.observable.ObservableInventory;
 import rx.Subscription;
 
 import javax.jms.JMSException;
@@ -46,13 +47,13 @@ import java.util.Set;
  */
 public final class BusIntegration {
 
-    private final ObservableInventory inventory;
+    private final Inventory.Mixin.Observable inventory;
     private MessageSender messageSender;
     private final Set<Subscription> subscriptions = new HashSet<>();
     private Configuration configuration;
     private InitialContext namingContext;
 
-    public BusIntegration(ObservableInventory inventory) {
+    public BusIntegration(Inventory.Mixin.Observable inventory) {
         this.inventory = inventory;
     }
 
@@ -101,7 +102,7 @@ public final class BusIntegration {
     }
 
     private static <U extends AbstractElement.Update, T extends AbstractElement<?, U>>
-            void install(ObservableInventory inventory, Set<Subscription> subscriptions, Class<T> entityClass,
+    void install(Inventory.Mixin.Observable inventory, Set<Subscription> subscriptions, Class<T> entityClass,
             MessageSender sender, Action<?, T>... additionalActions) {
 
         installAction(inventory, subscriptions, entityClass, sender, Action.created());
@@ -112,12 +113,13 @@ public final class BusIntegration {
         }
     }
 
-    private static <C, T> void installAction(ObservableInventory inventory, Set<Subscription> subscriptions,
+    private static <C, T> void installAction(Inventory.Mixin.Observable inventory, Set<Subscription> subscriptions,
             Class<T> entityClass, MessageSender sender, Action<C, T> action) {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);
 
-        Subscription s = inventory.observable(interest).subscribe(new PartiallyApplied<>(sender::send, interest));
+        Subscription s = inventory.observable(interest).subscribe(PartiallyApplied.method(sender::send)
+                .first(interest));
         subscriptions.add(s);
     }
 }
