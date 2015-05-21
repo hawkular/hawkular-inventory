@@ -75,33 +75,42 @@ final class ResponseUtil {
         PageContext pc = resultList.getPageContext();
         int page = pc.getPageNumber();
 
-        if (resultList.getTotalSize() > (pc.getPageNumber() + 1) * pc.getPageSize()) {
+        List<Link> links = new ArrayList<>();
+
+        if (pc.isLimited() && resultList.getTotalSize() > (pc.getPageNumber() + 1) * pc.getPageSize()) {
             int nextPage = page + 1;
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?per_page, ?page, etc. if needed
             uriBuilder.replaceQueryParam("page", nextPage);
 
-            builder.header("Link", new Link("next", uriBuilder.build().toString()).rfc5988String());
+            links.add(new Link("next", uriBuilder.build().toString()));
         }
 
         if (page > 0) {
             int prevPage = page - 1;
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?per_page, ?page, etc. if needed
             uriBuilder.replaceQueryParam("page", prevPage);
-            builder.header("Link", new Link("prev", uriBuilder.build().toString()).rfc5988String());
+            links.add(new Link("prev", uriBuilder.build().toString()));
         }
 
         // A link to the last page
         if (pc.isLimited()) {
             long lastPage = (resultList.getTotalSize() / pc.getPageSize()) - 1;
-            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
+            uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?per_page, ?page, etc. if needed
             uriBuilder.replaceQueryParam("page", lastPage);
-            builder.header("Link", new Link("last", uriBuilder.build().toString()).rfc5988String());
+            links.add(new Link("last", uriBuilder.build().toString()));
         }
 
         // A link to the current page
-        uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?ps and ?category if needed
-        builder.header("Link", new Link("current", uriBuilder.build().toString()).rfc5988String());
+        uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?per_page, ?page, etc. if needed
 
+        StringBuilder linkHeader = new StringBuilder(new Link("current", uriBuilder.build().toString())
+                .rfc5988String());
+
+        //followed by the rest of the link defined above
+        links.forEach((l) -> linkHeader.append(", ").append(l.rfc5988String()));
+
+        //add that all as a single Link header to the response
+        builder.header("Link", linkHeader.toString());
 
         // Create a total size header
         builder.header("X-Total-Count", resultList.getTotalSize());
