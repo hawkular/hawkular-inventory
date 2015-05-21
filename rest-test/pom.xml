@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>inventory-parent</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.2</version>
   </parent>
 
   <artifactId>inventory-rest-test</artifactId>
