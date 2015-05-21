@@ -29,6 +29,13 @@
   <artifactId>inventory-api</artifactId>
   <name>Hawkular Inventory API</name>
 
+  <scm>
+    <url>https://github.com/hawkular/hawkular-inventory</url>
+    <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
+    <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>io.reactivex</groupId>

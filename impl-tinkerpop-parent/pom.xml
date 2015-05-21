@@ -30,6 +30,13 @@
 
   <name>Hawkular Inventory Tinkerpop implementation parent POM</name>
 
+  <scm>
+    <url>https://github.com/hawkular/hawkular-inventory</url>
+    <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
+    <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
   <properties>
     <version.com.tinkerpop>2.6.0</version.com.tinkerpop>
   </properties>

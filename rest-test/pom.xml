@@ -29,6 +29,13 @@
   <artifactId>inventory-rest-test</artifactId>
   <name>Hawkular Inventory REST API test application</name>
 
+  <scm>
+    <url>https://github.com/hawkular/hawkular-inventory</url>
+    <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
+    <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>

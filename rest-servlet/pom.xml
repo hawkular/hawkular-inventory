@@ -29,8 +29,13 @@
   <artifactId>inventory-rest-api</artifactId>
   <packaging>war</packaging>
   <name>Hawkular Inventory REST API Web Application</name>
-  <properties>
-  </properties>
+
+  <scm>
+    <url>https://github.com/hawkular/hawkular-inventory</url>
+    <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
+    <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
   <dependencyManagement>
     <dependencies>
