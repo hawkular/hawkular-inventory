@@ -21,7 +21,7 @@
   <parent>
     <artifactId>inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.0.3</version>
+    <version>0.0.4-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -34,7 +34,7 @@
     <url>https://github.com/hawkular/hawkular-inventory</url>
     <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
     <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
-    <tag>0.0.3</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
