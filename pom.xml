@@ -22,7 +22,7 @@
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>inventory-parent</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
@@ -43,8 +43,4 @@
     <module>bus-api</module>
     <module>hawkular-integrated-inventory-rest</module>
   </modules>
-
-  <scm>
-    <tag>0.0.2</tag>
-  </scm>
 </project>
