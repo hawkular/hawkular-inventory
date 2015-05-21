@@ -58,9 +58,6 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
         this.unit = unit;
     }
 
-    /**
-     * JSON serialization support
-     */
     @JsonCreator
     public MetricType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("unit") MetricUnit unit, @JsonProperty("properties") Map<String, Object> properties) {

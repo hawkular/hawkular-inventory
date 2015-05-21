@@ -141,6 +141,13 @@
       <groupId>com.wordnik</groupId>
       <artifactId>swagger-core_2.10</artifactId>
     </dependency>
+
+    <!-- javadoc requires all the annotations on the classpath -->
+    <dependency>
+      <groupId>org.hibernate.javax.persistence</groupId>
+      <artifactId>hibernate-jpa-2.1-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -46,9 +46,6 @@ public final class Environment extends TenantBasedEntity<Environment.Blueprint, 
         super(tenantId, id);
     }
 
-    /**
-     * JSON serialization support
-     */
     @JsonCreator
     public Environment(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("properties") Map<String, Object> properties) {

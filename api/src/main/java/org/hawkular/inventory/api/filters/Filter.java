@@ -39,14 +39,14 @@ import java.util.List;
  *
  * To create these filters, feel free to use the static helper methods defined on {@link With}.
  * <p>
- * Note: Additional information for the library consumers.<br/>
+ * Note: Additional information for the library consumers.<br>
  * Don't extend this class with hope that the new filter will work. This class is extendable only for the benefit of
  * the API implementations that can reuse it internally. For the users of the API, only the subclasses of Filter
  * declared directly in the API are available
- * </p>
+ *
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public abstract class Filter {
     private static final Filter[] EMPTY = new Filter[0];

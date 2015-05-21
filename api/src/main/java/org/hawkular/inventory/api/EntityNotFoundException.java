@@ -57,7 +57,7 @@ public final class EntityNotFoundException extends InventoryException {
     }
 
     /**
-     * The considered paths to the entity that was not found.
+     * @return the considered paths to the entity that was not found.
      */
     public Filter[][] getFilters() {
         return filters;

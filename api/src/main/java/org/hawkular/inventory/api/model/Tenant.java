@@ -41,7 +41,6 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
         super(id);
     }
 
-    /** JSON serialization support */
     @JsonCreator
     public Tenant(@JsonProperty("id") String id, @JsonProperty("properties") Map<String, Object> properties) {
         super(id, properties);

@@ -91,7 +91,8 @@ interface WriteRelationshipInterface<Single> {
      * Deletes an relationship with the provided id from the current position in the inventory traversal.
      *
      * @param id the id of the relationship to delete
-     * @throws org.hawkular.inventory.api.RelationNotFoundException
+     * @throws org.hawkular.inventory.api.RelationNotFoundException if the relation with given id doesn't exist on the
+     * current position in the inventory traversal
      */
     void delete(String id) throws RelationNotFoundException;
 }

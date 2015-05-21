@@ -63,7 +63,7 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
     }
 
     /**
-     * The id of the entity.
+     * @return the id of the entity.
      */
     public String getId() {
         return id;

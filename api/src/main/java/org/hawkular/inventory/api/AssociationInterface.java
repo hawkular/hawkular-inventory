@@ -28,7 +28,7 @@ import org.hawkular.inventory.api.model.Relationship;
  * methods would be semantically incorrect (in addition to being confusing to the API consumer).
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 interface AssociationInterface {
 
@@ -74,7 +74,7 @@ interface AssociationInterface {
      *
      * @return the relationship found
      *
-     * @throws RelationNotFoundException
+     * @throws RelationNotFoundException if a relation with an entity of given id doesn't exist
      */
     Relationship associationWith(String id) throws RelationNotFoundException;
 }

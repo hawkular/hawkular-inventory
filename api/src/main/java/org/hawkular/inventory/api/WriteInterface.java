@@ -57,7 +57,8 @@ public interface WriteInterface<Update, Blueprint extends Entity.Blueprint, Sing
      * Deletes an entity with the provided id from the current position in the inventory traversal.
      *
      * @param id the id of the entity to delete
-     * @throws EntityNotFoundException
+     * @throws EntityNotFoundException if an entity with given ID doesn't exist on the current postion in the inventory
+     *                                 traversal
      * @throws java.lang.IllegalArgumentException if the supplied entity could not be deleted for some reason
      */
     void delete(String id) throws EntityNotFoundException;

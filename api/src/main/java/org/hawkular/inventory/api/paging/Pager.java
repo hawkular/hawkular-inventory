@@ -60,6 +60,9 @@ public final class Pager extends PageContext {
     }
 
     /**
+     * @param pageNumber see {@link #Pager(int, int, Order...)}
+     * @param pageSize see {@link #Pager(int, int, Order...)}
+     * @param orders see {@link #Pager(int, int, Order...)}
      * @see #Pager(int, int, Order...)
      */
     public Pager(int pageNumber, int pageSize, Iterable<Order> orders) {

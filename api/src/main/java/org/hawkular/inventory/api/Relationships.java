@@ -96,7 +96,7 @@ public final class Relationships {
     /**
      * Interface for traversing over a set of relationships.
      *
-     * <p/>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
+     * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(String)} method).
      */

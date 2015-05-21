@@ -63,9 +63,6 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         this(tenantId, id, new Version(version));
     }
 
-    /**
-     * JSON serialization support
-     */
     @JsonCreator
     public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("version") String version, @JsonProperty("properties") Map<String, Object> properties) {
