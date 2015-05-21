@@ -65,7 +65,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -431,7 +433,7 @@ public class BasicTest {
                 : "Environment 'test' must contain 'playroom1'.";
         assert contains.stream().anyMatch(rel -> "playroom2" .equals(rel.getTarget().getId()))
                 : "Environment 'test' must contain 'playroom2'.";
-        assert contains.stream().anyMatch(rel -> "playroom2_size" .equals(rel.getTarget().getId()))
+        assert contains.stream().anyMatch(rel -> "playroom2_size".equals(rel.getTarget().getId()))
                 : "Environment 'test' must contain 'playroom2_size'.";
         assert contains.stream().anyMatch(rel -> "playroom1_size" .equals(rel.getTarget().getId()))
                 : "Environment 'test' must contain 'playroom1_size'.";
@@ -950,8 +952,9 @@ public class BasicTest {
 
     @Test
     public void testPaging() throws Exception {
-        Page<Metric> allResults = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll()
-                .entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING)));
+        //the page is not modifiable but we'll need to modify this later on in the tests
+        List<Metric> allResults = new ArrayList<>(inventory.tenants().getAll().environments().getAll().feedlessMetrics()
+                .getAll().entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING))));
 
         assert allResults.size() == 3;
 
@@ -973,6 +976,34 @@ public class BasicTest {
         assert ms.size() == 1;
         assert ms.getTotalSize() == 3;
         assert ms.get(0).equals(allResults.get(2));
+
+        ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
+        assert ms.getTotalSize() == 3;
+        assert ms.size() == 0;
+
+        //try the same with an unspecified order
+        //the reason for checking this explicitly is that the order pipe implicitly loads
+        //all elements before sending them on in the pipeline to the range filter.
+        //If the order is not present, the elements might not be all loaded before the range
+        //is overflown. The total still needs to match even in that case.
+        firstPage = new Pager(0, 1, Order.unspecified());
+
+        ms = metrics.entities(firstPage);
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert allResults.remove(ms.get(0)); //i.e. we check that the result is in all results and remove it from there
+        //so that subsequent checks for the same thing cannot get confused by the
+        //existence of this metric in all the results.
+
+        ms = metrics.entities(firstPage.nextPage());
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert allResults.remove(ms.get(0));
+
+        ms = metrics.entities(firstPage.nextPage().nextPage());
+        assert ms.size() == 1;
+        assert ms.getTotalSize() == 3;
+        assert allResults.remove(ms.get(0));
 
         ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
         assert ms.getTotalSize() == 3;

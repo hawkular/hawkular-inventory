@@ -162,7 +162,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         }
 
         if (pager.isLimited()) {
-            this.range(pager.getStart(), pager.getEnd() - 1);
+            this.drainedRange(pager.getStart(), pager.getEnd() - 1);
         }
 
         return this;
@@ -676,6 +676,11 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
     @Override
     public HawkularPipeline<S, E> range(int low, int high) {
         return cast(super.range(low, high));
+    }
+
+    public HawkularPipeline<S, E> drainedRange(int low, int high) {
+        add(new DrainedRangeFilterPipe<>(low, high));
+        return this;
     }
 
     @Override
