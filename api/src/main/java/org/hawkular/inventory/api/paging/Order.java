@@ -18,7 +18,7 @@ package org.hawkular.inventory.api.paging;
 
 /**
  * @author Lukas Krejci
- * @since ${MODULE_VERSION}
+ * @since 0.0.1
  */
 public final class Order {
     private final String field;
