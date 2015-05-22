@@ -94,7 +94,7 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Entity entity = (Entity) o;
+        AbstractElement<?, ?> entity = (AbstractElement<?, ?>) o;
 
         return id.equals(entity.id);
     }
