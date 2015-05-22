@@ -28,6 +28,7 @@ import javax.inject.Singleton;
  * @author Lukas Krejci
  * @since 0.0.2
  */
+@Singleton
 public class AutoTenantInventoryProducer {
 
     @Inject

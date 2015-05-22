@@ -36,6 +36,7 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 0.0.2
  */
+@Singleton
 public class BasicInventoryProducer {
 
     @Inject
