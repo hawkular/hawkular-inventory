@@ -35,6 +35,7 @@ import org.hawkular.inventory.cdi.ObservableAutoTenant;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -52,6 +53,7 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 0.0.2
  */
+@Singleton
 public class Security {
 
     private final Map<Class<?>, Map<OperationType, Operation>> operationsByType =
