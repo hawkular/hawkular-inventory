@@ -59,13 +59,10 @@ final class ObservableContext {
             Subject<C, C> subject = PublishSubject.<C>create().toSerialized();
 
             //error handling:
-            //onErrorResumeNext - error in the producer, i.e. the inventory API itself failed to send the event
             //OperatorIgnoreError - in case subscribers and us run in the same thread, an error in the subscriber
             //may error out the whole observable, which is definitely NOT what we want.
-            Observable<C> wrapper = subject.onErrorResumeNext((t) -> {
-                Log.LOGGER.wErrorSendingEvent(t);
-                return Observable.empty();
-            }).lift(new OperatorIgnoreError<>()).doOnSubscribe(tracker.onSubscribe())
+            Observable<C> wrapper = null;
+            wrapper = subject.lift(new OperatorIgnoreError<>()).doOnSubscribe(tracker.onSubscribe())
                     .doOnUnsubscribe(tracker.onUnsubscribe());
 
             sub = new SubjectAndWrapper<>(subject, wrapper);
