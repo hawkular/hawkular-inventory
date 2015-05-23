@@ -43,8 +43,10 @@ public class TemporaryHacks {
         Inventory.Mixin.Observable inventory = event.getInventory();
 
         Observable<Tenant> tenantCreation = inventory.observable(Interest.in(Tenant.class).being(created()));
-        tenantCreation.subscribe(PartiallyApplied.method(this::createTenantMetadata).second(inventory));
-        tenantCreation.subscribe(PartiallyApplied.method(this::createTestEnvironment).second(inventory));
+        tenantCreation.subscribe(PartiallyApplied.method(this::createTenantMetadata).second(inventory),
+                Log.LOGGER::failedToAutoCreateEntities);
+        tenantCreation.subscribe(PartiallyApplied.method(this::createTestEnvironment).second(inventory),
+                Log.LOGGER::failedToAutoCreateEntities);
     }
 
     private void createTestEnvironment(Tenant tenant, Inventory inventory) {
