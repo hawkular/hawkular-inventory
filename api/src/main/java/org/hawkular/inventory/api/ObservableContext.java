@@ -17,7 +17,9 @@
 package org.hawkular.inventory.api;
 
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action0;
+import rx.observers.SafeSubscriber;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -55,7 +57,12 @@ final class ObservableContext {
         if (initialize && sub == null) {
             SubscriptionTracker tracker = new SubscriptionTracker(() -> observables.remove(interest));
             Subject<C, C> subject = PublishSubject.<C>create().toSerialized();
-            Observable<C> wrapper = subject.doOnSubscribe(tracker.onSubscribe())
+
+            //error handling:
+            //OperatorIgnoreError - in case subscribers and us run in the same thread, an error in the subscriber
+            //may error out the whole observable, which is definitely NOT what we want.
+            Observable<C> wrapper = null;
+            wrapper = subject.lift(new OperatorIgnoreError<>()).doOnSubscribe(tracker.onSubscribe())
                     .doOnUnsubscribe(tracker.onUnsubscribe());
 
             sub = new SubjectAndWrapper<>(subject, wrapper);
@@ -94,6 +101,47 @@ final class ObservableContext {
         private SubjectAndWrapper(Subject<T, T> subject, Observable<T> wrapper) {
             this.subject = subject;
             this.wrapper = wrapper;
+        }
+    }
+
+    private static final class OperatorIgnoreError<T> implements Observable.Operator<T, T> {
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public Subscriber<? super T> call(Subscriber<? super T> subscriber) {
+            return new SafeSubscriber<T>(subscriber) {
+                private boolean done = false;
+
+                private final Subscriber<? super T> actual;
+
+                {
+                    Subscriber<? super T> s = subscriber;
+                    while (s instanceof SafeSubscriber) {
+                        s = ((SafeSubscriber<? super T>) s).getActual();
+                    }
+
+                    actual = s;
+                }
+
+                @Override
+                public void onNext(T t) {
+                    if (done) {
+                        return;
+                    }
+
+                    try {
+                        actual.onNext(t);
+                    } catch (Exception e) {
+                        Log.LOGGER.debugf(e, "Subscriber %s failed to process %s.", actual, t);
+                    }
+                }
+
+                @Override
+                protected void _onError(Throwable e) {
+                    done = true;
+                    super._onError(e);
+                }
+            };
         }
     }
 }
