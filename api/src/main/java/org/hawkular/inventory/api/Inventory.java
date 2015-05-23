@@ -346,6 +346,9 @@ public interface Inventory extends AutoCloseable {
             boolean hasObservers(Interest<?, ?> interest);
 
             /**
+             * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
+             * subscribers responsibility to unsubscribe on error
+             *
              * @param interest the interest in changes of some inventory entity type
              * @param <C>      the type of object that will be passed to the subscribers of the returned observable
              * @param <E>      the type of the entity the interest is expressed on
