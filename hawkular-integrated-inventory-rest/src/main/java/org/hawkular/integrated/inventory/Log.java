@@ -39,4 +39,9 @@ public interface Log {
     @LogMessage(level = Logger.Level.INFO)
     @Message(id = 3001, value = "HACK ALERT: Auto-created the %s '%s' for newly created tenant '%s'.")
     void autoCreatedEntity(String entityType, String entityId, String tenantId);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 3002, value = "HACK ALERT: Failed to auto-create tenant metadata. This is most probably due to it" +
+            " being already created in parallel.")
+    void failedToAutoCreateEntities(@Cause Throwable cause);
 }

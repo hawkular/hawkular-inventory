@@ -19,6 +19,7 @@ package org.hawkular.inventory.bus.api;
 import com.google.gson.annotations.Expose;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -36,8 +37,7 @@ public abstract class InventoryEvent<T> extends BasicMessage {
     @Expose
     private Action.Enumerated action;
 
-    @SuppressWarnings("unchecked")
-    public static <O> InventoryEvent<O> from(Action<?, ?> action, O object) {
+    public static InventoryEvent<?> from(Action<?, ?> action, Object object) {
         if (object == null) {
             throw new IllegalArgumentException("object == null");
         }
@@ -47,21 +47,30 @@ public abstract class InventoryEvent<T> extends BasicMessage {
         }
 
         if (object instanceof Tenant) {
-            return (InventoryEvent<O>) new TenantEvent(action.asEnum(), (Tenant) object);
+            return new TenantEvent(action.asEnum(), (Tenant) object);
         } else if (object instanceof Environment) {
-            return (InventoryEvent<O>) new EnvironmentEvent(action.asEnum(), (Environment) object);
+            return new EnvironmentEvent(action.asEnum(), (Environment) object);
         } else if (object instanceof Feed) {
-            return (InventoryEvent<O>) new FeedEvent(action.asEnum(), (Feed) object);
+            return new FeedEvent(action.asEnum(), (Feed) object);
         } else if (object instanceof Metric) {
-            return (InventoryEvent<O>) new MetricEvent(action.asEnum(), (Metric) object);
+            return new MetricEvent(action.asEnum(), (Metric) object);
         } else if (object instanceof MetricType) {
-            return (InventoryEvent<O>) new MetricTypeEvent(action.asEnum(), (MetricType) object);
+            return new MetricTypeEvent(action.asEnum(), (MetricType) object);
         } else if (object instanceof Resource) {
-            return (InventoryEvent<O>) new ResourceEvent(action.asEnum(), (Resource) object);
+            return new ResourceEvent(action.asEnum(), (Resource) object);
         } else if (object instanceof ResourceType) {
-            return (InventoryEvent<O>) new ResourceTypeEvent(action.asEnum(), (ResourceType) object);
+            return new ResourceTypeEvent(action.asEnum(), (ResourceType) object);
         } else if (object instanceof Relationship) {
-            return (InventoryEvent<O>) new RelationshipEvent(action.asEnum(), (Relationship) object);
+            return new RelationshipEvent(action.asEnum(), (Relationship) object);
+        } else if (object instanceof Action.Update) {
+            @SuppressWarnings("unchecked")
+            AbstractElement<?, AbstractElement.Update> updated =
+                    (AbstractElement<?, AbstractElement.Update>) ((Action.Update) object).getOriginalEntity();
+
+            updated.update().with((AbstractElement.Update) ((Action.Update) object).getUpdate());
+
+            //TODO should we instead send the whole update object? No time for that now, but it'd be preferable I think
+            return from(action, updated);
         } else {
             throw new IllegalArgumentException("Unsupported entity type: " + object.getClass());
         }
