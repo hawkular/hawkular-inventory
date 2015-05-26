@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+set -x
+
 # generate the docs
 mvn clean compile -Pdocgen -DskipTests -Dcheckstyle.skip -Dlicense.skip
 
@@ -23,7 +25,9 @@ FILE_NAME="rest-inventory.adoc"
 FILE_PATH="rest-servlet/target/generated/$FILE_NAME"
 
 # don't push the empty docs
-[[ -s $FILE_PATH ]] || echo "$FILE_PATH is empty" && exit 1
+[[ -s $FILE_PATH ]] || {
+  echo "$FILE_PATH is empty" && exit 1
+}
 
 REPO="hawkular/hawkular.github.io"
 BRANCH="swagger"
@@ -32,4 +36,3 @@ CONTENT=`openssl enc -base64 -in $FILE_PATH | sed ':a;N;$!ba;s/\n//g'`
 
 # update the adoc file using GitHub api
 curl -Lis -X PUT -H "Authorization: token $DEPLOY_TOKEN" -d "{\"path\": \"$FILE_NAME\", \"message\": \"Travis CI (inventory): updating swagger documentation\", \"commiter\": {\"name\": \"Travis CI\", \"email\": \"foo@bar.com\"}, \"sha\": \"$SHA\", \"content\": \"$CONTENT\", \"branch\": \"$BRANCH\"}" https://api.github.com/repos/$REPO/contents/$FILE_NAME
-
