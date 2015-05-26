@@ -138,9 +138,9 @@ public class ObservableInventoryTest {
 
     @Test
     public void testMetricTypes() throws Exception {
-        MetricType prototype = new MetricType("t", "rt", MetricUnit.BYTE);
+        MetricType prototype = new MetricType("t", "rt", MetricUnit.BYTES);
 
-        MetricType.Update update = new MetricType.Update(null, MetricUnit.MILLI_SECOND);
+        MetricType.Update update = new MetricType.Update(null, MetricUnit.MILLISECONDS);
 
         when(InventoryMock.metricTypesReadWrite.create(any())).thenReturn(InventoryMock.metricTypesSingle);
         when(InventoryMock.metricTypesSingle.entity()).thenReturn(prototype);
@@ -149,7 +149,7 @@ public class ObservableInventoryTest {
 
         runTest(MetricType.class, true, () -> {
             observableInventory.tenants().get("t").metricTypes()
-                    .create(new MetricType.Blueprint("rt", MetricUnit.BYTE));
+                    .create(new MetricType.Blueprint("rt", MetricUnit.BYTES));
             observableInventory.tenants().get("t").metricTypes().update(prototype.getId(), update);
             observableInventory.tenants().get("t").metricTypes().delete(prototype.getId());
         });
