@@ -23,7 +23,6 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.model.Version;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
@@ -48,8 +47,7 @@ final class ResourceTypesService extends
             exampleTnt = t;
         }
 
-        //pass the version through the Version object to verify it's well-formed.
-        newEntity.setProperty(Constants.Property.__version.name(), new Version(blueprint.getVersion()).toString());
+        newEntity.setProperty(Constants.Property.__version.name(), blueprint.getVersion());
 
         return Filter.by(With.type(Tenant.class), With.id(getEid(exampleTnt)), Related.by(contains),
                 With.type(ResourceType.class), With.id(getEid(newEntity))).get();

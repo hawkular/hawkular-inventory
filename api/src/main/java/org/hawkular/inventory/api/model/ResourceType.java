@@ -22,8 +22,6 @@ import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Collections;
 import java.util.Map;
 
@@ -37,9 +35,8 @@ import java.util.Map;
 public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     @XmlAttribute
-    @XmlJavaTypeAdapter(VersionAdapter.class)
     @Expose
-    private final Version version;
+    private final String version;
 
     /**
      * JAXB support
@@ -49,7 +46,7 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         this.version = null;
     }
 
-    public ResourceType(String tenantId, String id, Version version) {
+    public ResourceType(String tenantId, String id, String version) {
         super(tenantId, id);
 
         if (version == null) {
@@ -59,28 +56,25 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         this.version = version;
     }
 
-    public ResourceType(String tenantId, String id, String version) {
-        this(tenantId, id, new Version(version));
-    }
-
     @JsonCreator
     public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
             @JsonProperty("version") String version, @JsonProperty("properties") Map<String, Object> properties) {
-        this(tenantId, id, new Version(version), properties);
-    }
-
-    public ResourceType(String tenantId, String id, Version version, Map<String, Object> properties) {
         super(tenantId, id, properties);
+
+        if (version == null) {
+            throw new IllegalArgumentException("version == null");
+        }
+
         this.version = version;
     }
 
     @Override
     public Updater<Update, ResourceType> update() {
         return new Updater<>((u) -> new ResourceType(getTenantId(), getId(),
-                u.version == null ? this.version : new Version(u.version), u.getProperties()));
+                u.version == null ? this.version : u.version, u.getProperties()));
     }
 
-    public Version getVersion() {
+    public String getVersion() {
         return version;
     }
 
@@ -196,19 +190,6 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
             public Update build() {
                 return new Update(properties, version);
             }
-        }
-    }
-
-    private static final class VersionAdapter extends XmlAdapter<String, Version> {
-
-        @Override
-        public Version unmarshal(String v) throws Exception {
-            return new Version(v);
-        }
-
-        @Override
-        public String marshal(Version v) throws Exception {
-            return v.toString();
         }
     }
 }
