@@ -94,7 +94,11 @@ final class ResponseUtil {
 
         // A link to the last page
         if (pc.isLimited()) {
-            long lastPage = (resultList.getTotalSize() / pc.getPageSize()) - 1;
+            long lastPage = resultList.getTotalSize() / pc.getPageSize();
+            if (resultList.getTotalSize() % pc.getPageSize() == 0) {
+                lastPage -= 1;
+            }
+
             uriBuilder = uriInfo.getRequestUriBuilder(); // adds ?q, ?per_page, ?page, etc. if needed
             uriBuilder.replaceQueryParam("page", lastPage);
             links.add(new Link("last", uriBuilder.build().toString()));
