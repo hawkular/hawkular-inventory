@@ -111,12 +111,18 @@ public class Security {
 
                 @Override
                 public String visitResource(Resource resource, Void parameter) {
-                    return join(resource.getTenantId(), resource.getEnvironmentId(), "resources", resource.getId());
+                    if (resource.getFeedId() == null) {
+                        return getStableId(Resource.class, resource.getTenantId(), resource.getEnvironmentId(),
+                                resource.getId());
+                    } else {
+                        return getStableId(Resource.class, resource.getTenantId(), resource.getEnvironmentId(),
+                                resource.getFeedId(), resource.getId());
+                    }
                 }
 
                 @Override
                 public String visitResourceType(ResourceType type, Void parameter) {
-                    return join(type.getTenantId(), "resourceTypes", type.getId());
+                    return getStableId(ResourceType.class, type.getTenantId(), type.getId());
                 }
             }, null);
         }
