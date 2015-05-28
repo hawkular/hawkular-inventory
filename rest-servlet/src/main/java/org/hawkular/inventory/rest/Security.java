@@ -45,6 +45,7 @@ import javax.transaction.UserTransaction;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.
@@ -130,7 +131,7 @@ public class Security {
 
     public static String getStableId(Class<? extends AbstractElement<?, ?>> type, String... ids) {
         if (Tenant.class.isAssignableFrom(type)) {
-            return join("tenants", ids[0]);
+            return join("tenant", ids[0]);
         } else if (Environment.class.isAssignableFrom(type)) {
             return join(ids[0], "environments", ids[1]);
         } else if (ResourceType.class.isAssignableFrom(type)) {
@@ -152,7 +153,7 @@ public class Security {
                 return join(ids[0], ids[1], ids[2], "metrics", ids[3]);
             }
         } else if (Relationship.class.isAssignableFrom(type)) {
-            return join("relationships", ids[0]);
+            return "relationships/" + ids[0];
         } else {
             throw new IllegalArgumentException("Unknown entity type: " + type);
         }
@@ -169,7 +170,14 @@ public class Security {
                 bld.append('/').append(strings[i]);
             }
 
-            return bld.toString();
+            String retString = bld.toString();
+            if (retString.length() > 250) {
+                // the length is too long, let's create a 'uuid hash' of the url and prefix it with the tenant uuid
+                StringBuilder bld2 = new StringBuilder(strings[0]);
+                bld2.append('/').append(UUID.nameUUIDFromBytes(retString.getBytes()));
+                return bld2.toString();
+            }
+            return retString;
         }
     }
 
