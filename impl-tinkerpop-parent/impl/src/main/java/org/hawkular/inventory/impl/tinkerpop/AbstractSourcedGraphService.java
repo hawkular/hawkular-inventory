@@ -107,7 +107,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             context.getInventoryLock().writeLock().lock();
             String id = getProposedId(blueprint);
 
-            FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get();
+            FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates())
+                    .andFilter(With.ids(id)).get();
 
             Iterable<Vertex> check = source(checkPath);
 
@@ -282,8 +283,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
                                             convert(e.getVertex(Direction.IN)));
                 }
 
-                throw new EntityNotFoundException(entityClass,
-                                                  FilterApplicator.filters(FilterApplicator.from(sourcePaths).andPath(Related.by(rel)).get()));
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(FilterApplicator.from
+                        (sourcePaths).andPath(Related.by(rel)).get()));
             }
 
             throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(sourcePaths));
@@ -338,8 +339,8 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
             Iterator<Edge> it = edges.iterator();
 
             if (!it.hasNext()) {
-                throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
-                                                    FilterApplicator.filters(sourcePaths), "Relationship does not exist.", null);
+                throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(), FilterApplicator
+                        .filters(sourcePaths), "Relationship does not exist.", null);
             }
 
             Edge edge = it.next();
