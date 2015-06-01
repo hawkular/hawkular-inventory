@@ -91,43 +91,49 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
 
     @Override
     public Relationships.Single linkWith(String name, Entity targetOrSource, Map<String, String> properties) {
-        if (null == name) {
-            throw new IllegalArgumentException("name was null");
+        try {
+            context.getInventoryLock().writeLock().lock();
+
+            if (null == name) {
+                throw new IllegalArgumentException("name was null");
+            }
+            if (null == targetOrSource) {
+                throw new IllegalArgumentException("targetOrSource was null");
+            }
+
+            Vertex incidenceVertex = convert(targetOrSource);
+
+            if (contains.name().equals(name)) {
+                Direction d = direction == outgoing ? Direction.OUT :
+                        (direction == incoming ? Direction.IN : Direction.BOTH);
+
+                checkContains(d, incidenceVertex);
+            }
+
+            HawkularPipeline<?, Edge> pipe = null;
+            switch (direction) {
+                case outgoing:
+                    pipe = source().linkOut(name, incidenceVertex).cap().cast(Edge.class);
+                    break;
+                case incoming:
+                    pipe = source().linkIn(name, incidenceVertex).cap().cast(Edge.class);
+                    break;
+                case both:
+                    // basically creates a bi-directional relationship
+                    pipe = source().linkBoth(name, incidenceVertex).cap().cast(Edge.class);
+                    break;
+            }
+
+            Edge newEdge = pipe.next();
+            //believe it or not, Titan cannot filter on ids, hence we need to store the id as a property, too
+            newEdge.setProperty(Constants.Property.__eid.name(), newEdge.getId().toString());
+
+            context.getGraph().commit();
+
+            return createSingleBrowser(RelationWith.id(newEdge.getId().toString()));
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
-        if (null == targetOrSource) {
-            throw new IllegalArgumentException("targetOrSource was null");
-        }
-
-        Vertex incidenceVertex = convert(targetOrSource);
-
-        if (contains.name().equals(name)) {
-            Direction d = direction == outgoing ? Direction.OUT :
-                    (direction == incoming ? Direction.IN : Direction.BOTH);
-
-            checkContains(d, incidenceVertex);
-        }
-
-        HawkularPipeline<?, Edge> pipe = null;
-        switch (direction) {
-            case outgoing:
-                pipe = source().linkOut(name, incidenceVertex).cap().cast(Edge.class);
-                break;
-            case incoming:
-                pipe = source().linkIn(name, incidenceVertex).cap().cast(Edge.class);
-                break;
-            case both:
-                // basically creates a bi-directional relationship
-                pipe = source().linkBoth(name, incidenceVertex).cap().cast(Edge.class);
-                break;
-        }
-
-        Edge newEdge = pipe.next();
-        //believe it or not, Titan cannot filter on ids, hence we need to store the id as a property, too
-        newEdge.setProperty(Constants.Property.__eid.name(), newEdge.getId().toString());
-
-        context.getGraph().commit();
-
-        return createSingleBrowser(RelationWith.id(newEdge.getId().toString()));
     }
 
     @Override
@@ -138,35 +144,45 @@ final class RelationshipService<E extends Entity<B, U>, B extends Entity.Bluepri
 
     @Override
     public void update(String id, Relationship.Update update) throws RelationNotFoundException {
-        Edge edge = context.getGraph().getEdge(id);
+        try {
+            context.getInventoryLock().writeLock().lock();
+            Edge edge = context.getGraph().getEdge(id);
 
-        checkProperties(update.getProperties(), MAPPED_PROPERTIES);
-        updateProperties(edge, update.getProperties(), MAPPED_PROPERTIES);
+            checkProperties(update.getProperties(), MAPPED_PROPERTIES);
+            updateProperties(edge, update.getProperties(), MAPPED_PROPERTIES);
 
-        context.getGraph().commit();
+            context.getGraph().commit();
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
+        }
     }
 
     @Override
     public void delete(String id) throws RelationNotFoundException {
-        if (null == id) {
-            throw new IllegalArgumentException("relationship's id was null");
+        try {
+            context.getInventoryLock().writeLock().lock();
+            if (null == id) {
+                throw new IllegalArgumentException("relationship's id was null");
+            }
+            HawkularPipeline<?, ? extends Element> pipe = null;
+            switch (direction) {
+                case outgoing:
+                    pipe = source().outE().hasEid(id);
+                    break;
+                case incoming:
+                    pipe = source().inE().hasEid(id);
+                    break;
+                case both:
+                    pipe = source().bothE().hasEid(id);
+                    break;
+            }
+            if (!pipe.hasNext()) {
+                throw new RelationNotFoundException(id, (Filter[]) null);
+            }
+            pipe.remove();
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
-        HawkularPipeline<?, ? extends Element> pipe = null;
-        switch (direction) {
-            case outgoing:
-                pipe = source().outE().hasEid(id);
-                break;
-            case incoming:
-                pipe = source().inE().hasEid(id);
-                break;
-            case both:
-                pipe = source().bothE().hasEid(id);
-                break;
-        }
-        if (!pipe.hasNext()) {
-            throw new RelationNotFoundException(id, (Filter[]) null);
-        }
-        pipe.remove();
     }
 
     private void checkContains(Direction direction, Vertex incidenceVertex) {

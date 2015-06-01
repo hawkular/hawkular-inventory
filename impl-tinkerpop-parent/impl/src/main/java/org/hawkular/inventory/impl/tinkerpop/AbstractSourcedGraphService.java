@@ -103,37 +103,43 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
      * @return browser interface for the newly created entity
      */
     public Single create(Blueprint blueprint) {
-        String id = getProposedId(blueprint);
-
-        FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates()).andFilter(With.ids(id)).get();
-
-        Iterable<Vertex> check = source(checkPath);
-
-        if (check.iterator().hasNext()) {
-            throw new EntityAlreadyExistsException(id, FilterApplicator.filters(checkPath));
-        }
-
-        checkProperties(blueprint.getProperties());
-
-        Vertex v = context.getGraph().addVertex(null);
-        v.setProperty(Constants.Property.__type.name(), Constants.Type.of(entityClass).name());
-        v.setProperty(Constants.Property.__eid.name(), id);
-
-        if (blueprint.getProperties() != null) {
-            for (Map.Entry<String, Object> e : blueprint.getProperties().entrySet()) {
-                v.setProperty(e.getKey(), e.getValue());
-            }
-        }
-
         try {
-            Filter[] path = initNewEntity(v, blueprint);
+            context.getInventoryLock().writeLock().lock();
+            String id = getProposedId(blueprint);
 
-            context.getGraph().commit();
+            FilterApplicator.Tree checkPath = FilterApplicator.fromPath(selectCandidates())
+                    .andFilter(With.ids(id)).get();
 
-            return createSingleBrowser(FilterApplicator.fromPath(path).get());
-        } catch (Throwable e) {
-            context.getGraph().rollback();
-            throw e;
+            Iterable<Vertex> check = source(checkPath);
+
+            if (check.iterator().hasNext()) {
+                throw new EntityAlreadyExistsException(id, FilterApplicator.filters(checkPath));
+            }
+
+            checkProperties(blueprint.getProperties());
+
+            Vertex v = context.getGraph().addVertex(null);
+            v.setProperty(Constants.Property.__type.name(), Constants.Type.of(entityClass).name());
+            v.setProperty(Constants.Property.__eid.name(), id);
+
+            if (blueprint.getProperties() != null) {
+                for (Map.Entry<String, Object> e : blueprint.getProperties().entrySet()) {
+                    v.setProperty(e.getKey(), e.getValue());
+                }
+            }
+
+            try {
+                Filter[] path = initNewEntity(v, blueprint);
+
+                context.getGraph().commit();
+
+                return createSingleBrowser(FilterApplicator.fromPath(path).get());
+            } catch (Throwable e) {
+                context.getGraph().rollback();
+                throw e;
+            }
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
     }
 
@@ -146,18 +152,23 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
     public void update(String id, Update update) {
         checkProperties(update.getProperties());
 
-        Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
+        try {
+            context.getInventoryLock().writeLock().lock();
+            Iterator<Vertex> it = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
 
-        if (!it.hasNext()) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
+            if (!it.hasNext()) {
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
+            }
+
+            Vertex vertex = it.next();
+
+            updateProperties(vertex, update.getProperties(), Constants.Type.of(entityClass).getMappedProperties());
+            updateExplicitProperties(update, vertex);
+
+            context.getGraph().commit();
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
-
-        Vertex vertex = it.next();
-
-        updateProperties(vertex, update.getProperties(), Constants.Type.of(entityClass).getMappedProperties());
-        updateExplicitProperties(update, vertex);
-
-        context.getGraph().commit();
     }
 
     /**
@@ -166,58 +177,65 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
      * @param id the id of the entity to delete (must be amongst the {@link #selectCandidates()}).
      */
     public void delete(String id) {
-        Iterator<Vertex> vs = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
-
-        if (!vs.hasNext()) {
-            FilterApplicator.Tree fullPath = FilterApplicator.from(pathContext.sourcePath).andPath(selectCandidates())
-                    .andPath(With.id(id)).get();
-
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(fullPath));
-        }
-
-        Vertex v = vs.next();
-
-        Set<Vertex> verticesToBeDeletedThatDefineSomething = new HashSet<>();
-
         try {
-            new HawkularPipeline<>(v).as("start").out(contains).loop("start", (x) -> true, (x) -> true).toList()
-                .forEach(c -> {
-                    if (c.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
-                        verticesToBeDeletedThatDefineSomething.add(c);
-                    } else {
-                        c.remove();
-                    }
-                });
+            context.getInventoryLock().writeLock().lock();
 
-            if (v.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
-                verticesToBeDeletedThatDefineSomething.add(v);
-            } else {
-                v.remove();
+            Iterator<Vertex> vs = source(FilterApplicator.fromPath(selectCandidates()).andPath(With.id(id)).get());
+
+            if (!vs.hasNext()) {
+                FilterApplicator.Tree fullPath = FilterApplicator.from(pathContext.sourcePath)
+                        .andPath(selectCandidates()).andPath(With.id(id)).get();
+
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(fullPath));
             }
 
-            for (Vertex d : verticesToBeDeletedThatDefineSomething) {
-                if (d.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
-                    context.getGraph().rollback();
+            Vertex v = vs.next();
 
-                    //we avoid the convert() function here because it assumes the containing entities of the passed in
-                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
-                    //entities from the "top" down the containment chain and the entities are immediately deleted.
-                    String rootEntity = "Entity[id=" + getEid(v) + ", type=" + getType(v) + "]";
-                    String definingEntity = "Entity[id=" + getEid(d) + ", type=" + getType(d) + "]";
+            Set<Vertex> verticesToBeDeletedThatDefineSomething = new HashSet<>();
 
-                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                            definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
-                            "entities that are not deleted along with it, which would leave them without a " +
-                            "definition. This is illegal.");
+            try {
+                new HawkularPipeline<>(v).as("start").out(contains).loop("start", (x) -> true, (x) -> true).toList()
+                        .forEach(c -> {
+                            if (c.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                                verticesToBeDeletedThatDefineSomething.add(c);
+                            } else {
+                                c.remove();
+                            }
+                        });
+
+                if (v.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                    verticesToBeDeletedThatDefineSomething.add(v);
                 } else {
-                    d.remove();
+                    v.remove();
                 }
-            }
 
-            context.getGraph().commit();
-        } catch (Exception e) {
-            context.getGraph().rollback();
-            throw e;
+                for (Vertex d : verticesToBeDeletedThatDefineSomething) {
+                    if (d.getEdges(Direction.OUT, defines.name()).iterator().hasNext()) {
+                        context.getGraph().rollback();
+
+                        //we avoid the convert() function here because it assumes the containing entities of the
+                        //passed in entity exist. This might not be true during the delete because the transitive
+                        // closure "walks" the entities from the "top" down the containment chain and the entities
+                        // are immediately deleted.
+                        String rootEntity = "Entity[id=" + getEid(v) + ", type=" + getType(v) + "]";
+                        String definingEntity = "Entity[id=" + getEid(d) + ", type=" + getType(d) + "]";
+
+                        throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
+                                    definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
+                                    "entities that are not deleted along with it, which would leave them without a " +
+                                    "definition. This is illegal.");
+                    } else {
+                        d.remove();
+                    }
+                }
+
+                context.getGraph().commit();
+            } catch (Exception e) {
+                context.getGraph().rollback();
+                throw e;
+            }
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
     }
 
@@ -247,27 +265,32 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
      */
     protected Relationship addAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
                                           Iterable<Vertex> others) {
-        //noinspection LoopStatementThatDoesntLoop
-        for (Vertex v : source().hasType(typeInSource)) {
+        try {
+            context.getInventoryLock().writeLock().lock();
             //noinspection LoopStatementThatDoesntLoop
-            for (Vertex o : others) {
-                for (Edge e : v.getEdges(Direction.OUT, rel.name())) {
-                    if (e.getVertex(Direction.IN).equals(o)) {
-                        throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(sourcePaths));
+            for (Vertex v : source().hasType(typeInSource)) {
+                //noinspection LoopStatementThatDoesntLoop
+                for (Vertex o : others) {
+                    for (Edge e : v.getEdges(Direction.OUT, rel.name())) {
+                        if (e.getVertex(Direction.IN).equals(o)) {
+                            throw new RelationAlreadyExistsException(rel.name(), FilterApplicator.filters(sourcePaths));
+                        }
                     }
+
+                    Edge e = addEdge(v, rel.name(), o);
+
+                    return new Relationship(getEid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
+                                            convert(e.getVertex(Direction.IN)));
                 }
 
-                Edge e = addEdge(v, rel.name(), o);
-
-                return new Relationship(getEid(e), e.getLabel(), convert(e.getVertex(Direction.OUT)),
-                        convert(e.getVertex(Direction.IN)));
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(FilterApplicator.from
+                        (sourcePaths).andPath(Related.by(rel)).get()));
             }
 
-            throw new EntityNotFoundException(entityClass,
-                    FilterApplicator.filters(FilterApplicator.from(sourcePaths).andPath(Related.by(rel)).get()));
+            throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(sourcePaths));
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
-
-        throw new EntityNotFoundException(typeInSource.getEntityType(), FilterApplicator.filters(sourcePaths));
     }
 
     /**
@@ -279,17 +302,21 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
      * @return the relationship representing the association
      */
     protected Relationship findAssociation(String targetId, String label) {
-        Vertex source = source().next();
+        try {
+            context.getInventoryLock().readLock().lock();
+            Vertex source = source().next();
 
-        for(Edge e : source.getEdges(Direction.OUT, label)) {
-            Vertex target = e.getVertex(Direction.IN);
-            if (getEid(target).equals(targetId)) {
-                return new Relationship(getEid(e), label, convert(source), convert(target));
+            for (Edge e : source.getEdges(Direction.OUT, label)) {
+                Vertex target = e.getVertex(Direction.IN);
+                if (getEid(target).equals(targetId)) {
+                    return new Relationship(getEid(e), label, convert(source), convert(target));
+                }
             }
+
+            throw new RelationNotFoundException(label, FilterApplicator.filters(sourcePaths));
+        } finally {
+            context.getInventoryLock().readLock().unlock();
         }
-
-        throw new RelationNotFoundException(label, FilterApplicator.filters(sourcePaths));
-
     }
 
     /**
@@ -302,24 +329,28 @@ abstract class AbstractSourcedGraphService<Single, Multiple, E extends Entity<Bl
      */
     protected Relationship removeAssociation(Constants.Type typeInSource, Relationships.WellKnown rel,
                                      String targetUid) {
+        try {
+            context.getInventoryLock().writeLock().lock();
+            Constants.Type myType = Constants.Type.of(entityClass);
 
-        Constants.Type myType = Constants.Type.of(entityClass);
+            Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
+                    .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasEid(targetUid));
 
-        Iterable<Edge> edges = source().hasType(typeInSource).outE(rel.name())
-                .and(new HawkularPipeline<Edge, Object>().inV().hasType(myType).hasEid(targetUid));
+            Iterator<Edge> it = edges.iterator();
 
-        Iterator<Edge> it = edges.iterator();
+            if (!it.hasNext()) {
+                throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(), FilterApplicator
+                        .filters(sourcePaths), "Relationship does not exist.", null);
+            }
 
-        if (!it.hasNext()) {
-            throw new RelationNotFoundException(typeInSource.getEntityType(), rel.name(),
-                    FilterApplicator.filters(sourcePaths), "Relationship does not exist.", null);
+            Edge edge = it.next();
+            Relationship ret = new Relationship(getEid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
+                                                convert(edge.getVertex(Direction.IN)));
+            context.getGraph().removeEdge(edge);
+            return ret;
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
         }
-
-        Edge edge = it.next();
-        Relationship ret = new Relationship(getEid(edge), edge.getLabel(), convert(edge.getVertex(Direction.OUT)),
-                convert(edge.getVertex(Direction.IN)));
-        context.getGraph().removeEdge(edge);
-        return ret;
     }
 
     /**
