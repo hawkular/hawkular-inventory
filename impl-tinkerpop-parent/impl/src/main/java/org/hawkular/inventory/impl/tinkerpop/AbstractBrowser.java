@@ -47,47 +47,57 @@ abstract class AbstractBrowser<E extends Entity<B, U>, B extends Entity.Blueprin
     }
 
     public E entity() {
-        HawkularPipeline<?, Vertex> q = source();
+        try {
+            context.getInventoryLock().readLock().lock();
+            HawkularPipeline<?, Vertex> q = source();
 
-        if (!q.hasNext()) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
+            if (!q.hasNext()) {
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
+            }
+
+            Entity<?, ?> ret = convert(q.next());
+
+            if (!isApplicable(ret)) {
+                throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
+            }
+
+            return entityClass.cast(ret);
+        } finally {
+            context.getInventoryLock().readLock().unlock();
         }
-
-        Entity<?, ?> ret = convert(q.next());
-
-        if (!isApplicable(ret)) {
-            throw new EntityNotFoundException(entityClass, FilterApplicator.filters(pathContext.sourcePath));
-        }
-
-        return entityClass.cast(ret);
     }
 
     @SuppressWarnings("unchecked")
     public Page<E> entities(Pager pager) {
-        HawkularPipeline<?, E> q;
-        if (context.getResultFilter() == null) {
-            //no result filtering so, we can save the relatively expensive conversion from the vertex to the entity
-            //only for results we need.
-            q = source().counter("total").page(pager).transform(v -> entityClass.cast(convert(v)));
-        } else {
-            //the ResultFilter interface requires an entity to check its applicability and can rule out some of the
-            //entities from the result set, which affects the total count. We therefore need to convert to entity first
-            //and only then filter, count and page.
-            //Note that it would not be enough to pass the current path and the ID to the filter, because for the filter
-            //to have stable ids, it needs to have the "canonical" path to the entity, which the inventory traversal
-            //path might not be. The transformation of a non-canonical to canonical path is essentially identical
-            //operation to converting the vertex to the entity.
-            q = source().transform(v -> entityClass.cast(convert(v))).filter(this::isApplicable).counter("total")
-                    .page(pager, (e, p) -> {
-                        if (AbstractElement.ID_PROPERTY.equals(p)) {
-                            return (Comparable) e.getId();
-                        } else {
-                            return (Comparable) e.getProperties().get(p);
-                        }
-                    });
-        }
+        try {
+            context.getInventoryLock().readLock().lock();
+            HawkularPipeline<?, E> q;
+            if (context.getResultFilter() == null) {
+                //no result filtering so, we can save the relatively expensive conversion from the vertex to the entity
+                //only for results we need.
+                q = source().counter("total").page(pager).transform(v -> entityClass.cast(convert(v)));
+            } else {
+                //the ResultFilter interface requires an entity to check its applicability and can rule out some of the
+                //entities from the result set, which affects the total count. We therefore need to convert to entity first
+                //and only then filter, count and page.
+                //Note that it would not be enough to pass the current path and the ID to the filter, because for the filter
+                //to have stable ids, it needs to have the "canonical" path to the entity, which the inventory traversal
+                //path might not be. The transformation of a non-canonical to canonical path is essentially identical
+                //operation to converting the vertex to the entity.
+                q = source().transform(v -> entityClass.cast(convert(v))).filter(this::isApplicable).counter("total")
+                        .page(pager, (e, p) -> {
+                            if (AbstractElement.ID_PROPERTY.equals(p)) {
+                                return (Comparable) e.getId();
+                            } else {
+                                return (Comparable) e.getProperties().get(p);
+                            }
+                        });
+            }
 
-        return new Page<>(q.toList(), pager, q.getCount("total"));
+            return new Page<>(q.toList(), pager, q.getCount("total"));
+        } finally {
+            context.getInventoryLock().readLock().unlock();
+        }
     }
 
     public RelationshipService<E, B, U> relationships() {

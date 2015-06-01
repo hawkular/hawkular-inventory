@@ -197,9 +197,15 @@ abstract class AbstractGraphService {
      * @return the created edge
      */
     protected Edge addEdge(Vertex source, String label, Vertex target) {
-        Edge e = source.addEdge(label, target);
-        e.setProperty(Constants.Property.__eid.name(), e.getId());
-        return e;
+        try {
+            context.getInventoryLock().writeLock().lock();
+
+            Edge e = source.addEdge(label, target);
+            e.setProperty(Constants.Property.__eid.name(), e.getId());
+            return e;
+        } finally {
+            context.getInventoryLock().writeLock().unlock();
+        }
     }
 
     /**
