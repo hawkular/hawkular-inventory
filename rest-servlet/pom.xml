@@ -134,12 +134,14 @@
     <dependency>
       <groupId>com.wordnik</groupId>
       <artifactId>swagger-annotations</artifactId>
+      <version>1.5.3-M1</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>com.wordnik</groupId>
-      <artifactId>swagger-core_2.10</artifactId>
+      <artifactId>swagger-core</artifactId>
+      <version>1.5.3-M1</version>
     </dependency>
 
     <!-- javadoc requires all the annotations on the classpath -->
@@ -202,7 +204,6 @@
                   <basePath>http://localhost:8080/hawkular/inventory</basePath>
                   <outputTemplate>https://raw.githubusercontent.com/hawkular/hawkular.github.io/swagger/asciidoc.mustache</outputTemplate>
                   <swaggerDirectory>${project.build.directory}/generated/swagger-ui</swaggerDirectory>
-                  <swaggerInternalFilter>org.hawkular.inventory.rest.swagger.JaxRsFilter</swaggerInternalFilter>
                   <swaggerApiReader>com.wordnik.swagger.jaxrs.reader.DefaultJaxrsApiReader</swaggerApiReader>
                   <outputPath>${project.build.directory}/generated/rest-inventory.adoc</outputPath>
                 </apiSource>
