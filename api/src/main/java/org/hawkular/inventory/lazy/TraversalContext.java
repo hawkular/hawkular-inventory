@@ -17,13 +17,13 @@
 package org.hawkular.inventory.lazy;
 
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
-
-import java.util.function.Function;
 
 /**
  * @author Lukas Krejci
@@ -45,14 +45,18 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.configuration = configuration;
     }
 
-    <T extends Entity<?, ?>> Builder<BE, T> proceedBySelect(Class<T> entityClass) {
-        return new Builder<>(sourcePath.extend(), QueryFragmentTree.empty().extend(), backend, entityClass,
-                configuration, false).where(With.type(entityClass));
+    Builder<BE, E> proceed() {
+        return new Builder<>(select(), QueryFragmentTree.filter(), backend,
+                entityClass, configuration);
     }
 
-    Builder<BE, E> proceedByPath() {
-        return new Builder<>(sourcePath.extend().with(selectCandidates), QueryFragmentTree.empty().extend(), backend,
-                entityClass, configuration, true);
+    <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
+        return new Builder<>(select(), QueryFragmentTree.filter(), backend, entityType, configuration)
+                .where(Related.by(over), With.type(entityType));
+    }
+
+    QueryFragmentTree.SymmetricExtender select() {
+        return sourcePath.extend().path().with(selectCandidates);
     }
 
     TraversalContext<BE, E> replacePath(QueryFragmentTree path) {
@@ -62,36 +66,27 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {
         private final QueryFragmentTree.SymmetricExtender pathExtender;
         private final QueryFragmentTree.SymmetricExtender selectExtender;
-        private final QueryFragmentTree.SymmetricExtender workingExtender;
         private final LazyInventoryBackend<BE> backend;
         private final Class<E> entityClass;
         private final Configuration configuration;
-        private final Function<Filter[], QueryFragment[]> queryFragmentSupplier;
 
         public Builder(QueryFragmentTree.SymmetricExtender pathExtender,
                 QueryFragmentTree.SymmetricExtender selectExtender, LazyInventoryBackend<BE> backend,
-                Class<E> entityClass, Configuration configuration, boolean extendPath) {
+                Class<E> entityClass, Configuration configuration) {
             this.pathExtender = pathExtender;
             this.selectExtender = selectExtender;
             this.backend = backend;
             this.entityClass = entityClass;
             this.configuration = configuration;
-            if (extendPath) {
-                workingExtender = pathExtender;
-                queryFragmentSupplier = PathFragment::from;
-            } else {
-                workingExtender = selectExtender;
-                queryFragmentSupplier = FilterFragment::from;
-            }
         }
 
         public Builder<BE, E> where(Filter[][] filters) {
-            workingExtender.with(filters, queryFragmentSupplier);
+            selectExtender.filter().with(filters);
             return this;
         }
 
         public Builder<BE, E> where(Filter... filters) {
-            workingExtender.with(filters, queryFragmentSupplier);
+            selectExtender.filter().with(filters);
             return this;
         }
 

@@ -26,7 +26,6 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
@@ -38,6 +37,7 @@ import java.util.Set;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.filters.With.id;
 
 /**
  * @author Lukas Krejci
@@ -55,7 +55,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     protected final QueryFragmentTree doCreate(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        QueryFragmentTree existenceCheck = context.proceedByPath().where(With.id(id)).get().sourcePath;
+        QueryFragmentTree existenceCheck = context.select().filter().with(id(id)).get();
 
         Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
@@ -85,14 +85,14 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             @Override
             public QueryFragmentTree.Builder visitTenant(Void parameter) {
                 return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        With.id(id)));
+                        id(id)));
             }
 
             @Override
             public QueryFragmentTree.Builder visitEnvironment(Void parameter) {
                 return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        With.id(parentPath.path.getTenantId()), Related.by(contains), With.type(Environment.class),
-                        With.id(id)));
+                        id(parentPath.path.getTenantId()), Related.by(contains), With.type(Environment.class),
+                        id(id)));
             }
 
             @Override
@@ -282,7 +282,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             }
 
             private BE getParentOfType(Class<? extends Entity<?, ?>> type, boolean throwException) {
-                QueryFragmentTree query = context.sourcePath.extend().withFilters(With.type(type)).get();
+                QueryFragmentTree query = context.sourcePath.extend().filter().with(With.type(type)).get();
 
                 Page<BE> parents = context.backend.query(query, Pager.single());
 
@@ -302,15 +302,18 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     protected abstract void wireUpNewEntity(BE entity, Blueprint blueprint, CanonicalPath parentPath, BE parent);
 
     private BE checkExists(String id) {
-        QueryFragmentTree query = context.sourcePath.extend().withFilters(With.id(id)).get();
+        //sourcePath is "path to the parent"
+        //selectCandidates - is the elements possibly matched by this mutator
+        //we're given the id to select from these
+        QueryFragmentTree query = context.select().filter().with(id(id)).get();
 
-        Page<BE> toUpdate = context.backend.query(query, Pager.unlimited(Order.unspecified()));
+        Page<BE> result = context.backend.query(query, Pager.single());
 
-        if (toUpdate.isEmpty()) {
+        if (result.isEmpty()) {
             throw new EntityNotFoundException(context.entityClass, QueryFragmentTree.filters(query));
         }
 
-        return toUpdate.get(0);
+        return result.get(0);
     }
 
     private static final class CanonicalPathAndEntity<BE> {

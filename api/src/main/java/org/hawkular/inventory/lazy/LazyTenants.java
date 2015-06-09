@@ -25,9 +25,11 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
@@ -57,12 +59,12 @@ public final class LazyTenants {
 
         @Override
         public Tenants.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceedByPath().where(filters).get());
+            return new Multiple<>(context.proceed().where(filters).get());
         }
 
         @Override
         public Tenants.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceedByPath().where(With.id(id)).get());
+            return new Single<>(context.proceed().where(With.id(id)).get());
         }
 
         @Override
@@ -79,7 +81,6 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            context.proceedBySelect(ResourceType.class).get();
             //TODO implement
             return null;
         }
@@ -129,8 +130,7 @@ public final class LazyTenants {
 
         @Override
         public Environments.ReadWrite environments() {
-            //TODO implement
-            return null;
+            return new LazyEnvironments.ReadWrite<>(context.proceedTo(contains, Environment.class).get());
         }
 
         @Override

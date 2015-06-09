@@ -40,7 +40,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
     @SuppressWarnings("unchecked")
     @Override
     public E entity() throws EntityNotFoundException, RelationNotFoundException {
-        Page<BE> results = context.backend.query(context.sourcePath, Pager.single());
+        Page<BE> results = context.backend.query(context.select().get(), Pager.single());
 
         if (results.isEmpty()) {
             throwNotFoundException();
@@ -63,7 +63,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
         Function<E, Boolean> filter = context.configuration.getResultFilter() == null ? null :
                 (e) -> context.configuration.getResultFilter().isApplicable(e);
 
-        return context.backend.<E>query(context.sourcePath, Pager.single(), conversion, filter);
+        return context.backend.<E>query(context.select().get(), Pager.single(), conversion, filter);
     }
 
     @SuppressWarnings("unchecked")

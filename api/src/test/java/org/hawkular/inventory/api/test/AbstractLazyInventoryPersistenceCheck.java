@@ -21,8 +21,10 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
@@ -37,8 +39,11 @@ import org.junit.Test;
 
 import java.io.FileInputStream;
 import java.util.Properties;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 /**
  * @author Lukas Krejci
@@ -89,8 +94,8 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         assert inventory.tenants()
                 .create(Tenant.Blueprint.builder().withId("com.acme.tenant").withProperty("kachny", "moc").build())
                 .entity().getId().equals("com.acme.tenant");
-//        assert inventory.tenants().get("com.acme.tenant").environments().create(new Environment.Blueprint("production"))
-//                .entity().getId().equals("production");
+        assert inventory.tenants().get("com.acme.tenant").environments().create(new Environment.Blueprint("production"))
+                .entity().getId().equals("production");
 //        assert inventory.tenants().get("com.acme.tenant").resourceTypes()
 //                .create(new ResourceType.Blueprint("URL", "1.0")).entity().getId().equals("URL");
 //        assert inventory.tenants().get("com.acme.tenant").metricTypes()
@@ -129,8 +134,8 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 //
         assert inventory.tenants().create(new Tenant.Blueprint("com.example.tenant")).entity().getId()
                 .equals("com.example.tenant");
-//        assert inventory.tenants().get("com.example.tenant").environments().create(new Environment.Blueprint("test"))
-//                .entity().getId().equals("test");
+        assert inventory.tenants().get("com.example.tenant").environments().create(new Environment.Blueprint("test"))
+                .entity().getId().equals("test");
 //        assert inventory.tenants().get("com.example.tenant").resourceTypes()
 //                .create(new ResourceType.Blueprint("Kachna", "1.0")).entity().getId().equals("Kachna");
 //        assert inventory.tenants().get("com.example.tenant").resourceTypes()
@@ -165,7 +170,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 
     private void teardownData() throws Exception {
         Tenant t = new Tenant("com.example.tenant");
-//        Environment e = new Environment(t.getId(), "test");
+        Environment e = new Environment(t.getId(), "test");
 //        MetricType sizeType = new MetricType(t.getId(), "Size");
 //        ResourceType playRoomType = new ResourceType(t.getId(), "Playroom", "1.0");
 //        ResourceType kachnaType = new ResourceType(t.getId(), "Kachna", "1.0");
@@ -210,7 +215,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 
         inventory.tenants().delete(t.getId());
         assertDoesNotExist(t);
-//        assertDoesNotExist(e);
+        assertDoesNotExist(e);
 //        assertDoesNotExist(playRoomType);
 //        assertDoesNotExist(playroom2);
     }
@@ -241,8 +246,11 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         try {
             teardownData();
         } finally {
-            inventory.close();
-            destroyStorage();
+            try {
+                inventory.close();
+            } finally {
+                destroyStorage();
+            }
         }
     }
 
@@ -540,31 +548,36 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 //                : "No resources should be found under the relationship called owns from resource type";
 //    }
 //
-//    @Test
-//    public void testEnvironments() throws Exception {
-//        BiFunction<String, String, Void> test = (tenantId, id) -> {
-//            GremlinPipeline<Graph, Vertex> q = new GremlinPipeline<Graph, Vertex>(graph)
-//                    .V().has("__type", "tenant").has("__eid", tenantId).out("contains")
-//                    .has("__type", "environment").has("__eid", id).cast(Vertex.class);
-//
-//            Iterator<Vertex> envs = q.iterator();
-//            assert envs.hasNext();
-//            envs.next();
-//            assert !envs.hasNext();
-//
-//            //query, we should get the same results
-//            Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
-//            assert env.getId().equals(id);
-//
-//            return null;
-//        };
-//
-//        test.apply("com.acme.tenant", "production");
-//        test.apply("com.example.tenant", "test");
-//
-//        GraphQuery query = graph.query().has("__type", "environment");
-//        assert StreamSupport.stream(query.vertices().spliterator(), false).count() == 2;
-//    }
+@Test
+public void testEnvironments() throws Exception {
+    BiFunction<String, String, Void> test = (tenantId, id) -> {
+        QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
+                .with(PathFragment.from(With.type(Tenant.class), With.id(tenantId), Related.by(contains),
+                        With.type(Environment.class), With.id(id))).build();
+
+
+        Page<E> envs = inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()));
+
+        Assert.assertEquals(1, envs.size());
+
+        //query, we should get the same results
+        Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
+        Assert.assertEquals(id, env.getId());
+
+        env = inventory.getBackend().convert(envs.get(0), Environment.class);
+        Assert.assertEquals(id, env.getId());
+
+        return null;
+    };
+
+    test.apply("com.acme.tenant", "production");
+    test.apply("com.example.tenant", "test");
+
+    QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
+            .with(PathFragment.from(With.type(Environment.class))).build();
+
+    Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).size());
+}
 //
 //    @Test
 //    public void testResourceTypes() throws Exception {

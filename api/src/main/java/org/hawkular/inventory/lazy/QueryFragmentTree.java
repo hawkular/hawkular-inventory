@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Represents a tree of filters.
@@ -109,6 +110,14 @@ public final class QueryFragmentTree {
         return new Builder().build();
     }
 
+    public static SymmetricExtender filter() {
+        return empty().extend().filter();
+    }
+
+    public static SymmetricExtender path() {
+        return empty().extend().path();
+    }
+
     private QueryFragmentTree() {
     }
 
@@ -187,11 +196,28 @@ public final class QueryFragmentTree {
             return this;
         }
 
+        public Builder with(Function<Filter, QueryFragment> converter, QueryFragment... filters) {
+            this.fragments.addAll(Arrays.asList(filters).stream().map(QueryFragment::getFilter).map(converter)
+                    .collect(Collectors.toList()));
+            return this;
+        }
+
         public Builder with(QueryFragmentTree other) {
             with(other.fragments);
             for (QueryFragmentTree sub : other.getSubTrees()) {
                 branch();
                 with(sub);
+                done();
+            }
+
+            return this;
+        }
+
+        public Builder with(QueryFragmentTree other, Function<Filter, QueryFragment> converter) {
+            with(converter, other.fragments);
+            for (QueryFragmentTree sub : other.getSubTrees()) {
+                branch();
+                with(sub, converter);
                 done();
             }
 
@@ -222,19 +248,36 @@ public final class QueryFragmentTree {
      */
     public static final class SymmetricExtender {
         private QueryFragmentTree.Builder filters;
+        private Function<Filter[], QueryFragment[]> queryFragmentSupplier;
+        private Function<Filter, QueryFragment> converter;
 
         private SymmetricExtender(QueryFragmentTree.Builder filters) {
             this.filters = filters;
         }
 
-        public SymmetricExtender with(QueryFragmentTree other) {
-            onLeaves(this.filters, (builder) -> {
-                builder.with(other);
-            });
+        public SymmetricExtender path() {
+            queryFragmentSupplier = PathFragment::from;
+            converter = PathFragment::new;
             return this;
         }
 
-        public SymmetricExtender with(Filter[][] filters, Function<Filter[], QueryFragment[]> queryFragmentSupplier) {
+        public SymmetricExtender filter() {
+            queryFragmentSupplier = FilterFragment::from;
+            converter = FilterFragment::new;
+            return this;
+        }
+
+        public SymmetricExtender with(QueryFragmentTree other) {
+            onLeaves(this.filters, (builder) -> builder.with(other, converter));
+            return this;
+        }
+
+        public SymmetricExtender withExact(QueryFragmentTree other) {
+            onLeaves(this.filters, (builder) -> builder.with(other));
+            return this;
+        }
+
+        public SymmetricExtender with(Filter[][] filters) {
             onLeaves(this.filters, (builder) -> {
                 for (Filter[] fs : filters) {
                     builder.branch().with(queryFragmentSupplier.apply(fs));
@@ -243,25 +286,9 @@ public final class QueryFragmentTree {
             return this;
         }
 
-        public SymmetricExtender with(Filter[] filters, Function<Filter[], QueryFragment[]> queryFragmentSupplier) {
+        public SymmetricExtender with(Filter... filters) {
             onLeaves(this.filters, (t) -> t.with(queryFragmentSupplier.apply(filters)));
             return this;
-        }
-
-        public SymmetricExtender withFilters(Filter... filters) {
-            return with(filters, FilterFragment::from);
-        }
-
-        public SymmetricExtender withFilters(Filter[][] filters) {
-            return with(filters, FilterFragment::from);
-        }
-
-        public SymmetricExtender withPath(Filter... path) {
-            return with(path, PathFragment::from);
-        }
-
-        public SymmetricExtender withPath(Filter[][] path) {
-            return with(path, PathFragment::from);
         }
 
         public QueryFragmentTree get() {
