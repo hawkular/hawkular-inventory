@@ -37,7 +37,9 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     @Expose
     private final ResourceType type;
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private Resource() {
         type = null;
@@ -68,7 +70,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitResource(this, parameter);
     }
 
@@ -92,7 +94,9 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
             return new Builder();
         }
 
-        /** JAXB support */
+        /**
+         * JAXB support
+         */
         @SuppressWarnings("unused")
         private Blueprint() {
             this(null, null, null);

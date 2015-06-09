@@ -187,6 +187,17 @@ public final class QueryFragmentTree {
             return this;
         }
 
+        Builder with(QueryFragmentTree other) {
+            with(other.fragments);
+            for (QueryFragmentTree sub : other.getSubTrees()) {
+                branch();
+                with(sub);
+                done();
+            }
+
+            return this;
+        }
+
         /**
          * Builds the <b>whole</b> tree regardless of where in the tree the current builder "operates".
          *
@@ -214,6 +225,13 @@ public final class QueryFragmentTree {
 
         private SymmetricExtender(QueryFragmentTree.Builder filters) {
             this.filters = filters;
+        }
+
+        public SymmetricExtender with(QueryFragmentTree other) {
+            onLeaves(this.filters, (builder) -> {
+                builder.with(other);
+            });
+            return this;
         }
 
         public SymmetricExtender with(Filter[][] filters, Function<Filter[], QueryFragment[]> queryFragmentSupplier) {

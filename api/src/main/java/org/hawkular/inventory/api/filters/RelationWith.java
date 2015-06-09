@@ -168,7 +168,7 @@ public final class RelationWith {
             this.types = types;
         }
 
-        public Class<? extends Entity>[] getTypes() {
+        public Class<? extends Entity<?, ?>>[] getTypes() {
             return types;
         }
 

@@ -20,51 +20,33 @@ package org.hawkular.inventory.api.model;
  * A visitor interface to accept different kinds of entities available in Hawkular.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public interface EntityTypeVisitor<R, P> {
+public interface ElementVisitor<R, P> {
 
-    static <R, P> R accept(Class<?> entityType, EntityTypeVisitor<R, P> visitor, P parameter) {
-        if (Tenant.class.equals(entityType)) {
-            return visitor.visitTenant(parameter);
-        } else if (Environment.class.equals(entityType)) {
-            return visitor.visitEnvironment(parameter);
-        } else if (Feed.class.equals(entityType)) {
-            return visitor.visitFeed(parameter);
-        } else if (Metric.class.equals(entityType)) {
-            return visitor.visitMetric(parameter);
-        } else if (MetricType.class.equals(entityType)) {
-            return visitor.visitMetricType(parameter);
-        } else if (Resource.class.equals(entityType)) {
-            return visitor.visitResource(parameter);
-        } else if (ResourceType.class.equals(entityType)) {
-            return visitor.visitResourceType(parameter);
-        } else {
-            return visitor.visitUnknown(parameter);
-        }
-    }
+    R visitTenant(Tenant tenant, P parameter);
 
-    R visitTenant(P parameter);
+    R visitEnvironment(Environment environment, P parameter);
 
-    R visitEnvironment(P parameter);
+    R visitFeed(Feed feed, P parameter);
 
-    R visitFeed(P parameter);
+    R visitMetric(Metric metric, P parameter);
 
-    R visitMetric(P parameter);
+    R visitMetricType(MetricType definition, P parameter);
 
-    R visitMetricType(P parameter);
+    R visitResource(Resource resource, P parameter);
 
-    R visitResource(P parameter);
+    R visitResourceType(ResourceType type, P parameter);
 
-    R visitResourceType(P parameter);
+    R visitRelationship(Relationship relationship, P parameter);
 
-    R visitUnknown(P parameter);
+    R visitUnknown(Object entity, P parameter);
 
     /**
      * A simple implementation of the EntityVisitor interface that returns a default value (provided at construction
      * time) from the visit methods.
      */
-    class Simple<R, P> implements EntityTypeVisitor<R, P> {
+    class Simple<R, P> implements ElementVisitor<R, P> {
         private final R defaultValue;
 
         /**
@@ -94,42 +76,47 @@ public interface EntityTypeVisitor<R, P> {
         }
 
         @Override
-        public R visitTenant(P parameter) {
+        public R visitTenant(Tenant tenant, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitEnvironment(P parameter) {
+        public R visitEnvironment(Environment environment, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitFeed(P parameter) {
+        public R visitFeed(Feed feed, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitMetric(P parameter) {
+        public R visitMetric(Metric metric, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitMetricType(P parameter) {
+        public R visitMetricType(MetricType type, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitResource(P parameter) {
+        public R visitResource(Resource resource, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitResourceType(P parameter) {
+        public R visitResourceType(ResourceType type, P parameter) {
             return defaultAction();
         }
 
         @Override
-        public R visitUnknown(P parameter) {
+        public R visitRelationship(Relationship relationship, P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitUnknown(Object entity, P parameter) {
             return defaultAction();
         }
     }

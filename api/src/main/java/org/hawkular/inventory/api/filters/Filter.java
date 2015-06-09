@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -60,7 +60,7 @@ public abstract class Filter {
     }
 
     public static Filter[] pathTo(Entity<?, ?> entity) {
-        return entity.accept(new EntityVisitor<Accumulator, Accumulator>() {
+        return entity.accept(new ElementVisitor.Simple<Accumulator, Accumulator>() {
             @Override
             public Accumulator visitTenant(Tenant tenant, Accumulator acc) {
                 return acc.and(With.type(Tenant.class)).and(With.id(tenant.getId()));

@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public final class With {
     private With() {
@@ -38,11 +38,11 @@ public final class With {
     }
 
     @SafeVarargs
-    public static Types types(Class<? extends Entity>... types) {
+    public static Types types(Class<? extends Entity<?, ?>>... types) {
         return new Types(types);
     }
 
-    public static Types type(Class<? extends Entity> type) {
+    public static Types type(Class<? extends Entity<?, ?>> type) {
         return new Types(type);
     }
 
@@ -80,14 +80,14 @@ public final class With {
     }
 
     public static final class Types extends Filter {
-        private final Class<? extends Entity>[] types;
+        private final Class<? extends Entity<?, ?>>[] types;
 
         @SafeVarargs
-        public Types(Class<? extends Entity>... types) {
+        public Types(Class<? extends Entity<?, ?>>... types) {
             this.types = types;
         }
 
-        public Class<? extends Entity>[] getTypes() {
+        public Class<? extends Entity<?, ?>>[] getTypes() {
             return types;
         }
 

@@ -76,7 +76,7 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitMetricType(this, parameter);
     }
 
@@ -122,6 +122,11 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
             return unit;
         }
 
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitMetricType(this, parameter);
+        }
+
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private MetricUnit unit;
 
@@ -157,6 +162,11 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
 
         public MetricUnit getUnit() {
             return unit;
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitMetricType(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

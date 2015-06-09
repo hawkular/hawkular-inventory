@@ -30,7 +30,7 @@ import java.util.Map;
  * <p>Note that the tenant does not have a dedicated blueprint type (i.e. data required to create a new tenant
  * in some context), because the only data needed to create a new tenant is its ID, which can easily be modelled
  * by a {@code String}.
-
+ *
  * @author Lukas Krejci
  * @since 1.0
  */
@@ -52,7 +52,7 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitTenant(this, parameter);
     }
 
@@ -74,6 +74,11 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
         public Blueprint(String id, Map<String, Object> properties) {
             super(id, properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitTenant(this, parameter);
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
@@ -99,6 +104,11 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
         public Update(Map<String, Object> properties) {
             super(properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitTenant(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

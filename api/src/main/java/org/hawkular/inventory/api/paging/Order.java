@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.paging;
 
+import java.util.Objects;
+
 /**
  * @author Lukas Krejci
  * @since 0.0.1
@@ -60,7 +62,7 @@ public final class Order {
 
         Order order = (Order) o;
 
-        return field.equals(order.field) && direction == order.direction;
+        return Objects.equals(field, order.field) && direction == order.direction;
     }
 
     @Override

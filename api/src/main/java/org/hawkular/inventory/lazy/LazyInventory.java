@@ -16,8 +16,11 @@
  */
 package org.hawkular.inventory.lazy;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
 
 /**
@@ -32,16 +35,30 @@ import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
  */
 public abstract class LazyInventory<E> implements Inventory {
 
-    private final LazyInventoryBackend<E> backend;
+    private LazyInventoryBackend<E> backend;
+    private Configuration configuration;
 
-    protected LazyInventory(LazyInventoryBackend<E> backend) {
-        this.backend = backend;
+    @Override
+    public final void initialize(Configuration configuration) {
+        this.backend = doInitialize(configuration);
+        this.configuration = configuration;
+    }
+
+    protected abstract LazyInventoryBackend<E> doInitialize(Configuration configuration);
+
+    @Override
+    public final void close() throws Exception {
+        if (backend != null) {
+            backend.close();
+            backend = null;
+        }
     }
 
     @Override
     public Tenants.ReadWrite tenants() {
-        //TODO implement
-        return null;
+        return new LazyTenants.ReadWrite<>(new TraversalContext<>(QueryFragmentTree.empty(),
+                QueryFragmentTree.empty().extend().withFilters(With.type(Tenant.class)).get(), backend, Tenant.class,
+                configuration));
     }
 
 }

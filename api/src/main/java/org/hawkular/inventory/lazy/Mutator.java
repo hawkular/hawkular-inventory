@@ -21,8 +21,8 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.EntityTypeVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Tenant;
@@ -31,7 +31,13 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 /**
  * @author Lukas Krejci
@@ -46,12 +52,10 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
     protected abstract String getProposedId(Blueprint entity);
 
-    protected abstract QueryFragmentTree initNewEntity(E entity, BE backendEntity);
-
     protected final QueryFragmentTree doCreate(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        QueryFragmentTree existenceCheck = context.sourcePath.extend().withFilters(With.id(id)).get();
+        QueryFragmentTree existenceCheck = context.proceedByPath().where(With.id(id)).get().sourcePath;
 
         Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
@@ -59,12 +63,17 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             throw new EntityAlreadyExistsException(id, QueryFragmentTree.filters(existenceCheck));
         }
 
-        CanonicalPath canonicalPath = getCanonicalPath(id, blueprint);
+        CanonicalPathAndEntity<BE> parentPath = getCanonicalParentPath();
 
         try {
-            BE entity = context.backend.persist(canonicalPath, blueprint);
+            BE entity = context.backend.persist(id, blueprint);
 
-            wireUpNewEntity(entity, blueprint, canonicalPath);
+            if (parentPath.path.isDefined()) {
+                BE parent = parentPath.entity;
+                context.backend.relate(parent, entity, contains.name(), Collections.emptyMap());
+            }
+
+            wireUpNewEntity(entity, blueprint, parentPath.path, parentPath.entity);
 
             context.backend.commit();
         } catch (Throwable t) {
@@ -72,52 +81,58 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             throw t;
         }
 
-        return EntityTypeVisitor.accept(context.entityClass, new EntityTypeVisitor<QueryFragmentTree.Builder, Object>() {
+        return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor<QueryFragmentTree.Builder, Void>() {
             @Override
-            public QueryFragmentTree.Builder visitTenant(Object parameter) {
+            public QueryFragmentTree.Builder visitTenant(Void parameter) {
                 return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        With.id(canonicalPath.getTenantId())));
+                        With.id(id)));
             }
 
             @Override
-            public QueryFragmentTree.Builder visitEnvironment(Object parameter) {
+            public QueryFragmentTree.Builder visitEnvironment(Void parameter) {
                 return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        With.id(canonicalPath.getTenantId()), Related.by(contains), With.type(Environment.class),
-                        With.id(canonicalPath.getEnvironmentId())));
+                        With.id(parentPath.path.getTenantId()), Related.by(contains), With.type(Environment.class),
+                        With.id(id)));
             }
 
             @Override
-            public QueryFragmentTree.Builder visitFeed(Object parameter) {
+            public QueryFragmentTree.Builder visitFeed(Void parameter) {
                 //TODO implement
                 return null;
             }
 
             @Override
-            public QueryFragmentTree.Builder visitMetric(Object parameter) {
+            public QueryFragmentTree.Builder visitMetric(Void parameter) {
                 //TODO implement
                 return null;
             }
 
             @Override
-            public QueryFragmentTree.Builder visitMetricType(Object parameter) {
+            public QueryFragmentTree.Builder visitMetricType(Void parameter) {
                 //TODO implement
                 return null;
             }
 
             @Override
-            public QueryFragmentTree.Builder visitResource(Object parameter) {
+            public QueryFragmentTree.Builder visitResource(Void parameter) {
                 //TODO implement
                 return null;
             }
 
             @Override
-            public QueryFragmentTree.Builder visitResourceType(Object parameter) {
+            public QueryFragmentTree.Builder visitResourceType(Void parameter) {
                 //TODO implement
                 return null;
             }
 
             @Override
-            public QueryFragmentTree.Builder visitUnknown(Object parameter) {
+            public QueryFragmentTree.Builder visitUnknown(Void parameter) {
+                //TODO implement
+                return null;
+            }
+
+            @Override
+            public QueryFragmentTree.Builder visitRelationship(Void parameter) {
                 //TODO implement
                 return null;
             }
@@ -125,16 +140,10 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     }
 
     public final void update(String id, Update update) throws EntityNotFoundException {
-        QueryFragmentTree query = context.sourcePath.extend().withFilters(With.id(id)).get();
-
-        Page<BE> toUpdate = context.backend.query(query, Pager.unlimited(Order.unspecified()));
-
-        if (toUpdate.isEmpty()) {
-            throw new EntityNotFoundException(context.entityClass, QueryFragmentTree.filters(query));
-        }
+        BE toUpdate = checkExists(id);
 
         try {
-            context.backend.update(toUpdate.get(0), update);
+            context.backend.update(toUpdate, update);
             context.backend.commit();
         } catch (Throwable e) {
             context.backend.rollback();
@@ -142,73 +151,134 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         }
     }
 
-    protected CanonicalPath getCanonicalPath(String realId, Blueprint blueprint) {
-        return EntityTypeVisitor.accept(context.entityClass, new EntityTypeVisitor<CanonicalPath.Builder,
+    public final void delete(String id) throws EntityNotFoundException {
+        BE toDelete = checkExists(id);
+
+        Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+
+        try {
+            context.backend.getTransitiveClosureOver(toDelete, contains.name()).forEachRemaining((e) -> {
+                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
+                    verticesToDeleteThatDefineSomething.add(e);
+                } else {
+                    context.backend.delete(e);
+                }
+            });
+
+            if (context.backend.hasRelationship(toDelete, outgoing, defines.name())) {
+                verticesToDeleteThatDefineSomething.add(toDelete);
+            } else {
+                context.backend.delete(toDelete);
+            }
+
+            for (BE e : verticesToDeleteThatDefineSomething) {
+                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
+                    //we avoid the convert() function here because it assumes the containing entities of the passed in
+                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
+                    //entities from the "top" down the containment chain and the entities are immediately deleted.
+                    String rootId = context.backend.extractId(toDelete);
+                    String definingId = context.backend.extractId(e);
+                    String rootType = context.entityClass.getSimpleName();
+                    String definingType = context.backend.getType(e).getSimpleName();
+
+                    String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
+                    String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
+
+                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
+                            definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
+                            "entities that are not deleted along with it, which would leave them without a " +
+                            "definition. This is illegal.");
+                } else {
+                    context.backend.delete(e);
+                }
+            }
+
+            context.backend.commit();
+        } catch (Exception e) {
+            context.backend.rollback();
+            throw e;
+        }
+    }
+
+    protected CanonicalPathAndEntity<BE> getCanonicalParentPath() {
+        return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor<CanonicalPathAndEntity<BE>,
                 CanonicalPath.Builder>() {
             @Override
-            public CanonicalPath.Builder visitTenant(CanonicalPath.Builder parameter) {
-                return parameter.withTenantId(realId);
+            public CanonicalPathAndEntity<BE> visitTenant(CanonicalPath.Builder parameter) {
+                return new CanonicalPathAndEntity<>(null, null);
             }
 
             @Override
-            public CanonicalPath.Builder visitEnvironment(CanonicalPath.Builder parameter) {
-                BE tenant = getParentOfType(Tenant.class, false);
-                return parameter.withTenantId(context.backend.extractId(tenant)).withEnvironmentId(realId);
+            public CanonicalPathAndEntity<BE> visitEnvironment(CanonicalPath.Builder parameter) {
+                BE tenant = getParentOfType(Tenant.class, true);
+                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                        .build());
             }
 
             @Override
-            public CanonicalPath.Builder visitFeed(CanonicalPath.Builder parameter) {
-                Environment env = context.backend.convert(getParentOfType(Environment.class, false), Environment.class);
-                return parameter.withTenantId(env.getTenantId()).withEnvironmentId(env.getId()).withFeedId(realId);
+            public CanonicalPathAndEntity<BE> visitFeed(CanonicalPath.Builder parameter) {
+                BE e = getParentOfType(Environment.class, true);
+                Environment env = context.backend.convert(e, Environment.class);
+                return new CanonicalPathAndEntity<>(e, parameter.withTenantId(env.getTenantId())
+                        .withEnvironmentId(env.getId()).build());
             }
 
             @Override
-            public CanonicalPath.Builder visitMetric(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitMetric(CanonicalPath.Builder parameter) {
                 BE env = getParentOfType(Environment.class, true);
                 if (env != null) {
                     //feedless metric
                     Environment e = context.backend.convert(env, Environment.class);
-                    return parameter.withTenantId(e.getTenantId()).withEnvironmentId(e.getId()).withMetricId(realId);
+                    return new CanonicalPathAndEntity<>(env, parameter.withTenantId(e.getTenantId())
+                            .withEnvironmentId(e.getId()).build());
                 } else {
                     //metric under a feed
                     BE feed = getParentOfType(Feed.class, false);
                     Feed f = context.backend.convert(feed, Feed.class);
-                    return parameter.withTenantId(f.getTenantId()).withEnvironmentId(f.getEnvironmentId())
-                            .withFeedId(f.getId()).withMetricId(realId);
+                    return new CanonicalPathAndEntity<>(feed, parameter.withTenantId(f.getTenantId())
+                            .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
                 }
             }
 
             @Override
-            public CanonicalPath.Builder visitMetricType(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitMetricType(CanonicalPath.Builder parameter) {
                 BE tenant = getParentOfType(Tenant.class, false);
-                return parameter.withTenantId(context.backend.extractId(tenant)).withMetricTypeId(realId);
+                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                        .build());
             }
 
             @Override
-            public CanonicalPath.Builder visitResource(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitResource(CanonicalPath.Builder parameter) {
                 BE env = getParentOfType(Environment.class, true);
                 if (env != null) {
-                    //feedless metric
+                    //feedless resource
                     Environment e = context.backend.convert(env, Environment.class);
-                    return parameter.withTenantId(e.getTenantId()).withEnvironmentId(e.getId()).withResourceId(realId);
+                    return new CanonicalPathAndEntity<>(env, parameter.withTenantId(e.getTenantId())
+                            .withEnvironmentId(e.getId()).build());
                 } else {
-                    //metric under a feed
+                    //metric under a rsource
                     BE feed = getParentOfType(Feed.class, false);
                     Feed f = context.backend.convert(feed, Feed.class);
-                    return parameter.withTenantId(f.getTenantId()).withEnvironmentId(f.getEnvironmentId())
-                            .withFeedId(f.getId()).withResourceId(realId);
+                    return new CanonicalPathAndEntity<>(feed, parameter.withTenantId(f.getTenantId())
+                            .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
                 }
             }
 
             @Override
-            public CanonicalPath.Builder visitResourceType(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitResourceType(CanonicalPath.Builder parameter) {
                 BE tenant = getParentOfType(Tenant.class, false);
-                return parameter.withTenantId(context.backend.extractId(tenant)).withResourceTypeId(realId);
+                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                        .build());
             }
 
             @Override
-            public CanonicalPath.Builder visitUnknown(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitUnknown(CanonicalPath.Builder parameter) {
                 throw new IllegalArgumentException("Unknown entity type: " + context.entityClass);
+            }
+
+            @Override
+            public CanonicalPathAndEntity<BE> visitRelationship(CanonicalPath.Builder parameter) {
+                throw new IllegalArgumentException("Relationship cannot act as a parent of any other entity");
             }
 
             private BE getParentOfType(Class<? extends Entity> type, boolean throwException) {
@@ -226,9 +296,30 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
                 return parents.get(0);
             }
-        }, CanonicalPath.builder()).buid();
+        }, CanonicalPath.builder());
     }
 
-    protected abstract void wireUpNewEntity(BE entity, Blueprint blueprint, CanonicalPath path);
+    protected abstract void wireUpNewEntity(BE entity, Blueprint blueprint, CanonicalPath parentPath, BE parent);
 
+    private BE checkExists(String id) {
+        QueryFragmentTree query = context.sourcePath.extend().withFilters(With.id(id)).get();
+
+        Page<BE> toUpdate = context.backend.query(query, Pager.unlimited(Order.unspecified()));
+
+        if (toUpdate.isEmpty()) {
+            throw new EntityNotFoundException(context.entityClass, QueryFragmentTree.filters(query));
+        }
+
+        return toUpdate.get(0);
+    }
+
+    private static final class CanonicalPathAndEntity<BE> {
+        final BE entity;
+        final CanonicalPath path;
+
+        public CanonicalPathAndEntity(BE entity, CanonicalPath path) {
+            this.entity = entity;
+            this.path = path;
+        }
+    }
 }

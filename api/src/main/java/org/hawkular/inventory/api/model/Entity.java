@@ -17,8 +17,6 @@
 package org.hawkular.inventory.api.model;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,7 +25,7 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 1.0
  */
-public abstract class Entity<B extends Entity.Blueprint, U extends AbstractElement.Update>
+public abstract class Entity<B extends AbstractElement.Blueprint, U extends AbstractElement.Update>
         extends AbstractElement<B, U> {
 
     /** JAXB support */
@@ -41,17 +39,6 @@ public abstract class Entity<B extends Entity.Blueprint, U extends AbstractEleme
     Entity(String id, Map<String, Object> properties) {
         super(id, properties);
     }
-
-    /**
-     * Accepts the provided visitor.
-     *
-     * @param visitor the visitor to visit this entity
-     * @param parameter the parameter to pass on to the visitor
-     * @param <R> the return type
-     * @param <P> the type of the parameter
-     * @return the return value provided by the visitor
-     */
-    public abstract <R, P> R accept(EntityVisitor<R, P> visitor, P parameter);
 
     /**
      * Use this to append additional information to the string representation of this instance
@@ -77,50 +64,27 @@ public abstract class Entity<B extends Entity.Blueprint, U extends AbstractEleme
         return bld.toString();
     }
 
-    public abstract static class Blueprint {
+    public static abstract class Blueprint extends AbstractElement.Blueprint {
         @XmlAttribute
         private final String id;
 
-        @XmlElement
-        private final Map<String, Object> properties;
-
         protected Blueprint(String id, Map<String, Object> properties) {
+            super(properties);
             this.id = id;
-            this.properties = properties;
         }
 
         public String getId() {
             return id;
         }
 
-        public Map<String, Object> getProperties() {
-            return properties;
-        }
+        public static abstract class Builder<Blueprint, This extends Builder<Blueprint, This>>
+                extends AbstractElement.Blueprint.Builder<Blueprint, This> {
 
-        public abstract static class Builder<B, This extends Builder<B, This>> {
             protected String id;
-            protected Map<String, Object> properties = new HashMap<>();
 
             public This withId(String id) {
                 this.id = id;
                 return castThis();
-            }
-
-            public This withProperty(String key, Object value) {
-                this.properties.put(key, value);
-                return castThis();
-            }
-
-            public This withProperties(Map<String, Object> properties) {
-                this.properties.putAll(properties);
-                return castThis();
-            }
-
-            public abstract B build();
-
-            @SuppressWarnings("unchecked")
-            protected This castThis() {
-                return (This) this;
             }
         }
     }

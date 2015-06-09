@@ -97,7 +97,7 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitResourceType(this, parameter);
     }
 
@@ -141,6 +141,11 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
             return version;
         }
 
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitResourceType(this, parameter);
+        }
+
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private String version;
 
@@ -176,6 +181,11 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
 
         public String getVersion() {
             return version;
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitResourceType(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

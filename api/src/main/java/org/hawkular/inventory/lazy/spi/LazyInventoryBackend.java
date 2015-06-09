@@ -16,12 +16,13 @@
  */
 package org.hawkular.inventory.lazy.spi;
 
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.lazy.QueryFragmentTree;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -35,11 +36,16 @@ import java.util.function.Function;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public interface LazyInventoryBackend<E> {
+public interface LazyInventoryBackend<E> extends AutoCloseable {
 
     Page<E> query(QueryFragmentTree query, Pager pager);
 
-    <T> Page<T> query(QueryFragmentTree query, Pager pager, Function<E, T> conversion, Function<T, Boolean> filter);
+    <T extends AbstractElement<?, ?>> Page<T> query(QueryFragmentTree query, Pager pager, Function<E, T> conversion,
+            Function<T, Boolean> filter);
+
+    Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName);
+
+    boolean hasRelationship(E entity, Relationships.Direction direction, String relationshipName);
 
     String extractId(E entityRepresentation);
 
@@ -51,11 +57,11 @@ public interface LazyInventoryBackend<E> {
 
     void relate(E sourceEntity, E targetEntity, String label, Map<String, Object> properties);
 
-    E persist(CanonicalPath targetPath, Entity.Blueprint entity);
+    E persist(String id, AbstractElement.Blueprint entity);
 
     void update(E entity, AbstractElement.Update update);
 
-    void delete(AbstractElement<?, ?> element);
+    void delete(E entity);
 
     void commit();
 

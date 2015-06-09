@@ -25,9 +25,9 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
 /**
  * @author Lukas Krejci
@@ -39,10 +39,20 @@ public final class LazyTenants {
 
     }
 
-    public static final class ReadWrite<BE> extends Traversal<BE, Tenant> implements Tenants.ReadWrite {
+    public static final class ReadWrite<BE> extends Mutator<BE, Tenant, Tenant.Blueprint, Tenant.Update>
+            implements Tenants.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Tenant> context) {
             super(context);
+        }
+
+        @Override
+        protected String getProposedId(Tenant.Blueprint entity) {
+            return entity.getId();
+        }
+
+        @Override
+        protected void wireUpNewEntity(BE entity, Tenant.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
         }
 
         @Override
@@ -57,24 +67,11 @@ public final class LazyTenants {
 
         @Override
         public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public void update(String id, Tenant.Update update) throws EntityNotFoundException {
-            //TODO implement
-
-        }
-
-        @Override
-        public void delete(String id) throws EntityNotFoundException {
-            //TODO implement
-
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 
-    public static final class Multiple<BE> extends Traversal<BE, Tenant> implements Tenants.Multiple {
+    public static final class Multiple<BE> extends Fetcher<BE, Tenant> implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -82,6 +79,7 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.Read resourceTypes() {
+            context.proceedBySelect(ResourceType.class).get();
             //TODO implement
             return null;
         }
@@ -106,12 +104,6 @@ public final class LazyTenants {
 
         @Override
         public Relationships.Read relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Page<Tenant> entities(Pager pager) {
             //TODO implement
             return null;
         }

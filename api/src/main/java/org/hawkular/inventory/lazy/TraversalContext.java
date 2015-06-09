@@ -18,7 +18,9 @@ package org.hawkular.inventory.lazy;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
 
 import java.util.function.Function;
@@ -43,14 +45,18 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.configuration = configuration;
     }
 
-    <T extends AbstractElement<?, ?>> Builder<BE, T> proceedBySelect(Class<T> entityClass) {
-        return new Builder<>(sourcePath.extend(), QueryFragmentTree.empty().extend(), backend,
-                entityClass, configuration, false);
+    <T extends Entity<?, ?>> Builder<BE, T> proceedBySelect(Class<T> entityClass) {
+        return new Builder<>(sourcePath.extend(), QueryFragmentTree.empty().extend(), backend, entityClass,
+                configuration, false).where(With.type(entityClass));
     }
 
     Builder<BE, E> proceedByPath() {
-        return new Builder<>(sourcePath.extend(), QueryFragmentTree.empty().extend(), backend, entityClass,
-                configuration, true);
+        return new Builder<>(sourcePath.extend().with(selectCandidates), QueryFragmentTree.empty().extend(), backend,
+                entityClass, configuration, true);
+    }
+
+    TraversalContext<BE, E> replacePath(QueryFragmentTree path) {
+        return new TraversalContext<>(path, QueryFragmentTree.empty(), backend, entityClass, configuration);
     }
 
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {

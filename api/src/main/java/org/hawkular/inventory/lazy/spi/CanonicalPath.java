@@ -28,6 +28,7 @@ public final class CanonicalPath {
     private final String metricTypeId;
     private final String metricId;
     private final String resourceId;
+    private final String relationshipId;
 
     public static Builder builder() {
         return new Builder();
@@ -35,7 +36,7 @@ public final class CanonicalPath {
 
     public CanonicalPath(String tenantId, String environmentId, String feedId,
             String resourceTypeId,
-            String metricTypeId, String resourceId, String metricId) {
+            String metricTypeId, String resourceId, String metricId, String relationshipId) {
         this.environmentId = environmentId;
         this.tenantId = tenantId;
         this.feedId = feedId;
@@ -43,6 +44,11 @@ public final class CanonicalPath {
         this.metricTypeId = metricTypeId;
         this.metricId = metricId;
         this.resourceId = resourceId;
+        this.relationshipId = relationshipId;
+    }
+
+    public boolean isDefined() {
+        return relationshipId != null || tenantId != null;
     }
 
     public String getEnvironmentId() {
@@ -73,6 +79,52 @@ public final class CanonicalPath {
         return tenantId;
     }
 
+    public String getRelationshipId() {
+        return relationshipId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CanonicalPath)) return false;
+
+        CanonicalPath that = (CanonicalPath) o;
+
+        if (tenantId != null ? !tenantId.equals(that.tenantId) : that.tenantId != null) return false;
+        if (environmentId != null ? !environmentId.equals(that.environmentId) : that.environmentId != null)
+            return false;
+        if (feedId != null ? !feedId.equals(that.feedId) : that.feedId != null) return false;
+        if (resourceTypeId != null ? !resourceTypeId.equals(that.resourceTypeId) : that.resourceTypeId != null)
+            return false;
+        if (metricTypeId != null ? !metricTypeId.equals(that.metricTypeId) : that.metricTypeId != null) return false;
+        if (metricId != null ? !metricId.equals(that.metricId) : that.metricId != null) return false;
+        if (resourceId != null ? !resourceId.equals(that.resourceId) : that.resourceId != null) return false;
+        return !(relationshipId != null ? !relationshipId.equals(that.relationshipId) : that.relationshipId != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tenantId != null ? tenantId.hashCode() : 0;
+        result = 31 * result + (environmentId != null ? environmentId.hashCode() : 0);
+        result = 31 * result + (feedId != null ? feedId.hashCode() : 0);
+        result = 31 * result + (resourceTypeId != null ? resourceTypeId.hashCode() : 0);
+        result = 31 * result + (metricTypeId != null ? metricTypeId.hashCode() : 0);
+        result = 31 * result + (metricId != null ? metricId.hashCode() : 0);
+        result = 31 * result + (resourceId != null ? resourceId.hashCode() : 0);
+        result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "CanonicalPath[" + "environmentId='" + environmentId + '\'' + ", feedId='" + feedId + '\'' +
+                ", metricId='" + metricId + '\'' + ", metricTypeId='" + metricTypeId + '\'' + ", relationshipId='" +
+                relationshipId + '\'' + ", resourceId='" + resourceId + '\'' + ", resourceTypeId='" + resourceTypeId +
+                '\'' + ", tenantId='" + tenantId + '\'' + ']';
+    }
+
+
     public static final class Builder {
         String tenantId;
         String environmentId;
@@ -81,6 +133,7 @@ public final class CanonicalPath {
         String metricTypeId;
         String metricId;
         String resourceId;
+        String relationshipId;
 
         private Builder() {
 
@@ -121,9 +174,14 @@ public final class CanonicalPath {
             return this;
         }
 
-        public CanonicalPath buid() {
+        public Builder withRelationshipId(String id) {
+            this.relationshipId = id;
+            return this;
+        }
+
+        public CanonicalPath build() {
             return new CanonicalPath(tenantId, environmentId, feedId, resourceTypeId, metricTypeId, resourceId,
-                    metricId);
+                    metricId, relationshipId);
         }
     }
 }
