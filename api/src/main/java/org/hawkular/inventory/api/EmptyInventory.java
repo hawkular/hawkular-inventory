@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import rx.Observable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -52,6 +53,16 @@ public class EmptyInventory implements Inventory {
     @Override
     public Tenants.ReadWrite tenants() {
         return new TenantsReadWrite();
+    }
+
+    @Override
+    public boolean hasObservers(Interest<?, ?> interest) {
+        return false;
+    }
+
+    @Override
+    public <C, E> Observable<C> observable(Interest<C, E> interest) {
+        return Observable.empty();
     }
 
     protected static <T> Page<T> emptyPage(Pager pager) {
