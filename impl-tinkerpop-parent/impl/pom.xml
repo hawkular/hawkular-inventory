@@ -72,6 +72,15 @@
       <artifactId>gremlin-java</artifactId>
       <version>${version.com.tinkerpop}</version>
     </dependency>
+
+    <!-- test deps -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-api</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
   </dependencies>
 
 

@@ -204,80 +204,80 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor<CanonicalPathAndEntity<BE>,
                 CanonicalPath.Builder>() {
             @Override
-            public CanonicalPathAndEntity<BE> visitTenant(CanonicalPath.Builder parameter) {
-                return new CanonicalPathAndEntity<>(null, null);
+            public CanonicalPathAndEntity<BE> visitTenant(CanonicalPath.Builder builder) {
+                return new CanonicalPathAndEntity<>(null, builder.build());
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitEnvironment(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitEnvironment(CanonicalPath.Builder builder) {
                 BE tenant = getParentOfType(Tenant.class, true);
-                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                return new CanonicalPathAndEntity<>(tenant, builder.withTenantId(context.backend.extractId(tenant))
                         .build());
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitFeed(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitFeed(CanonicalPath.Builder builder) {
                 BE e = getParentOfType(Environment.class, true);
                 Environment env = context.backend.convert(e, Environment.class);
-                return new CanonicalPathAndEntity<>(e, parameter.withTenantId(env.getTenantId())
+                return new CanonicalPathAndEntity<>(e, builder.withTenantId(env.getTenantId())
                         .withEnvironmentId(env.getId()).build());
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitMetric(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitMetric(CanonicalPath.Builder builder) {
                 BE env = getParentOfType(Environment.class, true);
                 if (env != null) {
                     //feedless metric
                     Environment e = context.backend.convert(env, Environment.class);
-                    return new CanonicalPathAndEntity<>(env, parameter.withTenantId(e.getTenantId())
+                    return new CanonicalPathAndEntity<>(env, builder.withTenantId(e.getTenantId())
                             .withEnvironmentId(e.getId()).build());
                 } else {
                     //metric under a feed
                     BE feed = getParentOfType(Feed.class, false);
                     Feed f = context.backend.convert(feed, Feed.class);
-                    return new CanonicalPathAndEntity<>(feed, parameter.withTenantId(f.getTenantId())
+                    return new CanonicalPathAndEntity<>(feed, builder.withTenantId(f.getTenantId())
                             .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
                 }
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitMetricType(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitMetricType(CanonicalPath.Builder builder) {
                 BE tenant = getParentOfType(Tenant.class, false);
-                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                return new CanonicalPathAndEntity<>(tenant, builder.withTenantId(context.backend.extractId(tenant))
                         .build());
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitResource(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitResource(CanonicalPath.Builder builder) {
                 BE env = getParentOfType(Environment.class, true);
                 if (env != null) {
                     //feedless resource
                     Environment e = context.backend.convert(env, Environment.class);
-                    return new CanonicalPathAndEntity<>(env, parameter.withTenantId(e.getTenantId())
+                    return new CanonicalPathAndEntity<>(env, builder.withTenantId(e.getTenantId())
                             .withEnvironmentId(e.getId()).build());
                 } else {
                     //metric under a rsource
                     BE feed = getParentOfType(Feed.class, false);
                     Feed f = context.backend.convert(feed, Feed.class);
-                    return new CanonicalPathAndEntity<>(feed, parameter.withTenantId(f.getTenantId())
+                    return new CanonicalPathAndEntity<>(feed, builder.withTenantId(f.getTenantId())
                             .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
                 }
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitResourceType(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitResourceType(CanonicalPath.Builder builder) {
                 BE tenant = getParentOfType(Tenant.class, false);
-                return new CanonicalPathAndEntity<>(tenant, parameter.withTenantId(context.backend.extractId(tenant))
+                return new CanonicalPathAndEntity<>(tenant, builder.withTenantId(context.backend.extractId(tenant))
                         .build());
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitUnknown(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitUnknown(CanonicalPath.Builder builder) {
                 throw new IllegalArgumentException("Unknown entity type: " + context.entityClass);
             }
 
             @Override
-            public CanonicalPathAndEntity<BE> visitRelationship(CanonicalPath.Builder parameter) {
+            public CanonicalPathAndEntity<BE> visitRelationship(CanonicalPath.Builder builder) {
                 throw new IllegalArgumentException("Relationship cannot act as a parent of any other entity");
             }
 
