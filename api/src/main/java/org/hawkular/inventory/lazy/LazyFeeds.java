@@ -71,8 +71,10 @@ public final class LazyFeeds {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
-            //nothing to do here
+        protected NewEntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
+            return new NewEntityAndPendingNotifications<>(new Feed(parentPath.getTenantId(),
+                    parentPath.getEnvironmentId(), context.backend.extractId(entity), blueprint.getProperties()));
         }
 
         @Override

@@ -16,9 +16,11 @@
  */
 package org.hawkular.inventory.api.test;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
@@ -31,6 +33,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -52,6 +55,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Subscription;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -64,6 +68,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -596,36 +603,36 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
                 : "No resources should be found under the relationship called owns from resource type";
     }
 
-@Test
-public void testEnvironments() throws Exception {
-    BiFunction<String, String, Void> test = (tenantId, id) -> {
+    @Test
+    public void testEnvironments() throws Exception {
+        BiFunction<String, String, Void> test = (tenantId, id) -> {
+            QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
+                    .with(PathFragment.from(type(Tenant.class), With.id(tenantId), by(contains),
+                            type(Environment.class), With.id(id))).build();
+
+
+            Page<E> envs = inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()));
+
+            Assert.assertEquals(1, envs.size());
+
+            //query, we should get the same results
+            Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
+            Assert.assertEquals(id, env.getId());
+
+            env = inventory.getBackend().convert(envs.get(0), Environment.class);
+            Assert.assertEquals(id, env.getId());
+
+            return null;
+        };
+
+        test.apply("com.acme.tenant", "production");
+        test.apply("com.example.tenant", "test");
+
         QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
-                .with(PathFragment.from(type(Tenant.class), With.id(tenantId), by(contains),
-                        type(Environment.class), With.id(id))).build();
+                .with(PathFragment.from(type(Environment.class))).build();
 
-
-        Page<E> envs = inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()));
-
-        Assert.assertEquals(1, envs.size());
-
-        //query, we should get the same results
-        Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
-        Assert.assertEquals(id, env.getId());
-
-        env = inventory.getBackend().convert(envs.get(0), Environment.class);
-        Assert.assertEquals(id, env.getId());
-
-        return null;
-    };
-
-    test.apply("com.acme.tenant", "production");
-    test.apply("com.example.tenant", "test");
-
-    QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
-            .with(PathFragment.from(type(Environment.class))).build();
-
-    Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).size());
-}
+        Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).size());
+    }
 
     @Test
     public void testResourceTypes() throws Exception {
@@ -1034,6 +1041,155 @@ public void testEnvironments() throws Exception {
                     by(contains), type(Resource.class), by(owns), type(Metric.class),
                     id("m")).get(), paths[1]);
         }
+    }
+
+    @Test
+    public void testObserveTenants() throws Exception {
+        runObserverTest(Tenant.class, 0, 0, () -> {
+            inventory.tenants().create(new Tenant.Blueprint("xxx"));
+            inventory.tenants().update("xxx", Tenant.Update.builder().build());
+            inventory.tenants().delete("xxx");
+        });
+    }
+
+    @Test
+    public void testObserveEnvironments() throws Exception {
+        runObserverTest(Environment.class, 1, 1, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+            inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("xxx").build());
+            inventory.tenants().get("t").environments().update("xxx", Environment.Update.builder().build());
+            inventory.tenants().get("t").environments().delete("xxx");
+            inventory.tenants().delete("t");
+        });
+    }
+
+    @Test
+    public void testObserveResourceTypes() throws Exception {
+        runObserverTest(ResourceType.class, 3, 3, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+
+            inventory.tenants().get("t").resourceTypes().create(new ResourceType.Blueprint("rt", "1.0"));
+            inventory.tenants().get("t").resourceTypes().update("rt", new ResourceType.Update(null, "2.0.0"));
+
+            inventory.tenants().get("t").metricTypes().create(MetricType.Blueprint.builder().withId("mt")
+                    .withUnit(MetricUnit.BYTE).build());
+
+            List<Relationship> createdRelationships = new ArrayList<>();
+
+            inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
+
+            inventory.tenants().get("t").resourceTypes().get("rt").metricTypes().associate("mt");
+
+            inventory.tenants().get("t").metricTypes().delete("mt");
+
+            Assert.assertEquals(1, createdRelationships.size());
+
+            inventory.tenants().get("t").resourceTypes().delete("rt");
+
+            inventory.tenants().delete("t");
+        });
+    }
+
+    @Test
+    public void testObserveMetricTypes() throws Exception {
+        runObserverTest(MetricType.class, 1, 1, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+
+            inventory.tenants().get("t").metricTypes()
+                    .create(new MetricType.Blueprint("mt", MetricUnit.BYTE));
+            inventory.tenants().get("t").metricTypes().update("mt", MetricType.Update.builder()
+                    .withUnit(MetricUnit.MILLI_SECOND).build());
+            inventory.tenants().get("t").metricTypes().delete("mt");
+        });
+    }
+
+    @Test
+    public void testObserveMetrics() throws Exception {
+        runObserverTest(Metric.class, 4, 2, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+            inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
+            inventory.tenants().get("t").metricTypes().create(new MetricType.Blueprint("mt", MetricUnit.BYTE));
+
+            inventory.tenants().get("t").environments().get("e").feedlessMetrics()
+                    .create(new Metric.Blueprint("mt", "m"));
+            inventory.tenants().get("t").environments().get("e").feedlessMetrics().update("m",
+                    Metric.Update.builder().build());
+
+            inventory.tenants().get("t").environments().get("e").feedlessMetrics().delete("m");
+        });
+    }
+
+    @Test
+    public void testObserveResources() throws Exception {
+        runObserverTest(Resource.class, 8, 3, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+            inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
+            inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
+                    .withVersion("1.0").build());
+            inventory.tenants().get("t").metricTypes().create(MetricType.Blueprint.builder().withId("mt")
+                    .withUnit(MetricUnit.BYTE).build());
+
+            inventory.tenants().get("t").environments().get("e").feedlessResources()
+                    .create(new Resource.Blueprint("r", "rt"));
+            inventory.tenants().get("t").environments().get("e").feedlessResources().update("r",
+                    Resource.Update.builder().build());
+
+            inventory.tenants().get("t").environments().get("e").feedlessMetrics().create(Metric.Blueprint.builder()
+                    .withId("m").withMetricTypeId("mt").build());
+
+            List<Relationship> createdRelationships = new ArrayList<>();
+
+            inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
+
+            inventory.tenants().get("t").environments().get("e").feedlessResources().get("r").metrics().associate("m");
+
+            Assert.assertEquals(1, createdRelationships.size());
+
+            inventory.tenants().get("t").environments().get("e").feedlessResources().delete("r");
+        });
+    }
+
+    private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
+    void runObserverTest(Class<T> entityClass, int nofCreatedRelationships, int nofDeletedRelationships,
+            Runnable payload) {
+
+        List<T> createdEntities = new ArrayList<>();
+        List<Action.Update<T, U>> updatedEntities = new ArrayList<>();
+        List<T> deletedEntities = new ArrayList<>();
+        List<Relationship> createdRelationships = new ArrayList<>();
+        List<Relationship> deletedRelationships = new ArrayList<>();
+
+        Subscription s1 = inventory.observable(Interest.in(entityClass).being(created()))
+                .subscribe(createdEntities::add);
+
+        Subscription s2 = inventory.observable(Interest.in(entityClass).being(updated()))
+                .subscribe(updatedEntities::add);
+
+        Subscription s3 = inventory.observable(Interest.in(entityClass).being(deleted()))
+                .subscribe(deletedEntities::add);
+
+        inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
+        inventory.observable(Interest.in(Relationship.class).being(deleted())).subscribe(deletedRelationships::add);
+
+        //dummy observer just to check that unsubscription works
+        inventory.observable(Interest.in(entityClass).being(created())).subscribe((t) -> {
+        });
+
+        payload.run();
+
+        Assert.assertEquals(1, createdEntities.size());
+        Assert.assertEquals(1, updatedEntities.size());
+        Assert.assertEquals(1, deletedEntities.size());
+        Assert.assertEquals(nofCreatedRelationships, createdRelationships.size());
+        Assert.assertEquals(nofDeletedRelationships, deletedRelationships.size());
+
+        s1.unsubscribe();
+        s2.unsubscribe();
+        s3.unsubscribe();
+
+        Assert.assertTrue(inventory.hasObservers(Interest.in(entityClass).being(created())));
+        Assert.assertFalse(inventory.hasObservers(Interest.in(entityClass).being(updated())));
+        Assert.assertFalse(inventory.hasObservers(Interest.in(entityClass).being(deleted())));
     }
 
     private interface TriFunction<T, U, V, R> {

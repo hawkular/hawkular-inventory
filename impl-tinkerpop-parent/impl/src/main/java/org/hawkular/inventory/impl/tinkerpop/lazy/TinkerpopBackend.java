@@ -52,7 +52,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -197,6 +199,33 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
 
         return new HawkularPipeline<>(source).outE(relationshipName).remember().inV().hasType(getType(t))
                 .hasEid(getEid(t)).recall().cast(Edge.class).next();
+    }
+
+    @Override
+    public Set<Element> getRelationships(Element source, Relationships.Direction direction, String... names) {
+        if (!(source instanceof Vertex)) {
+            return Collections.emptySet();
+        }
+
+        Vertex v = (Vertex) source;
+
+        HawkularPipeline<?, Element> q = new HawkularPipeline<>(v);
+
+        switch (direction) {
+            case incoming:
+                q.inE(names);
+                break;
+            case outgoing:
+                q.outE(names);
+                break;
+            case both:
+                q.bothE(names);
+                break;
+            default:
+                throw new AssertionError("Invalid relationship direction specified: " + direction);
+        }
+
+        return StreamSupport.stream(q.spliterator(), false).collect(toSet());
     }
 
     @Override

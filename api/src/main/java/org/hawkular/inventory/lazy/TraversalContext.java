@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.lazy;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
@@ -25,6 +26,9 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
 import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import rx.subjects.Subject;
+
+import java.util.Iterator;
 
 import static org.hawkular.inventory.api.filters.With.type;
 
@@ -39,36 +43,41 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     protected final LazyInventoryBackend<BE> backend;
     protected final Class<E> entityClass;
     protected final Configuration configuration;
+    protected final ObservableContext observableContext;
 
     TraversalContext(LazyInventory<BE> inventory, QueryFragmentTree sourcePath, QueryFragmentTree selectCandidates,
             LazyInventoryBackend<BE> backend,
-            Class<E> entityClass, Configuration configuration) {
+            Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
         this.inventory = inventory;
         this.sourcePath = sourcePath;
         this.selectCandidates = selectCandidates;
         this.backend = backend;
         this.entityClass = entityClass;
         this.configuration = configuration;
+        this.observableContext = observableContext;
     }
 
     Builder<BE, E> proceed() {
-        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityClass, configuration);
+        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityClass, configuration,
+                observableContext);
     }
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
-        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityType, configuration)
+        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityType, configuration,
+                observableContext)
                 .where(Related.by(over), type(entityType));
     }
 
     Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
         return new Builder<>(inventory, hop(), QueryFragmentTree.filter()
-                .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration);
+                .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration,
+                observableContext);
     }
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
             Class<T> entityType) {
         return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), QueryFragmentTree.filter(),
-                backend, entityType, configuration).where(type(entityType));
+                backend, entityType, configuration, observableContext).where(type(entityType));
     }
 
     QueryFragmentTree.SymmetricExtender select() {
@@ -80,7 +89,20 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     TraversalContext<BE, E> replacePath(QueryFragmentTree path) {
-        return new TraversalContext<>(inventory, path, QueryFragmentTree.empty(), backend, entityClass, configuration);
+        return new TraversalContext<>(inventory, path, QueryFragmentTree.empty(), backend, entityClass, configuration,
+                observableContext);
+    }
+
+    protected <V> void notify(V entity, Action<V, V> action) {
+        notify(entity, entity, action);
+    }
+
+    protected <C, V> void notify(V entity, C actionContext, Action<C, V> action) {
+        Iterator<Subject<C, C>> subjects = observableContext.matchingSubjects(action, entity);
+        while (subjects.hasNext()) {
+            Subject<C, C> s = subjects.next();
+            s.onNext(actionContext);
+        }
     }
 
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {
@@ -90,16 +112,18 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         private final LazyInventoryBackend<BE> backend;
         private final Class<E> entityClass;
         private final Configuration configuration;
+        private final ObservableContext observableContext;
 
         public Builder(LazyInventory<BE> inventory, QueryFragmentTree.SymmetricExtender pathExtender,
                 QueryFragmentTree.SymmetricExtender selectExtender, LazyInventoryBackend<BE> backend,
-                Class<E> entityClass, Configuration configuration) {
+                Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
             this.inventory = inventory;
             this.pathExtender = pathExtender;
             this.selectExtender = selectExtender;
             this.backend = backend;
             this.entityClass = entityClass;
             this.configuration = configuration;
+            this.observableContext = observableContext;
         }
 
         public Builder<BE, E> where(Filter[][] filters) {
@@ -114,12 +138,12 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityClass,
-                    configuration);
+                    configuration, observableContext);
         }
 
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityType,
-                    configuration);
+                    configuration, observableContext);
         }
     }
 }

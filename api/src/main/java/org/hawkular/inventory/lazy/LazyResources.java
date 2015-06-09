@@ -23,10 +23,14 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
+import org.hawkular.inventory.lazy.NewEntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
+import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -54,17 +58,29 @@ public final class LazyResources {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+        protected NewEntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
+                Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+
             Class<? extends AbstractElement<?, ?>> parentType = context.backend.getType(parent);
 
             @SuppressWarnings("unchecked")
             TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
                     (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
-            BE resourceType = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
-                    .withResourceTypeId(blueprint.getResourceTypeId()).build());
+            BE resourceTypeObject = context.backend.find(CanonicalPath.builder()
+                    .withTenantId(parentEntity.getTenantId()).withResourceTypeId(blueprint.getResourceTypeId())
+                    .build());
 
-            context.backend.relate(resourceType, entity, defines.name(), null);
+            BE r = context.backend.relate(resourceTypeObject, entity, defines.name(), null);
+
+            ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
+
+            Resource ret = new Resource(parentPath.getTenantId(), parentPath.getEnvironmentId(), parentPath.getFeedId(),
+                    context.backend.extractId(entity), resourceType, blueprint.getProperties());
+
+            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), resourceType, ret);
+
+            return new NewEntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
         }
 
         @Override

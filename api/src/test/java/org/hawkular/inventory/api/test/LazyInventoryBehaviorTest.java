@@ -19,7 +19,6 @@ package org.hawkular.inventory.api.test;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -42,7 +41,7 @@ import static org.mockito.Mockito.when;
  */
 public class LazyInventoryBehaviorTest {
 
-    private Inventory inventory;
+    private LazyInventory<String> inventory;
     private LazyInventoryBackend<String> backend;
 
     @SuppressWarnings("unchecked")
@@ -66,6 +65,7 @@ public class LazyInventoryBehaviorTest {
                 .thenReturn(new Page<>(Collections.emptyList(), Pager.single(), 0))
                         //fake the backend succeeded in saving it
                 .thenReturn(new Page<>(Collections.singletonList("kachna"), Pager.single(), 1));
+        when(backend.extractId(any())).then(__ -> "kachna");
 
         //mock the conversion
         when(backend.convert(eq("kachna"), eq(Tenant.class)))
@@ -82,6 +82,7 @@ public class LazyInventoryBehaviorTest {
                 //impl needs to check there is no entity prior to creating it
                 //the second time query is called is to check whether there is an entity - this will then fail
                 .thenReturn(new Page<>(Collections.emptyList(), Pager.single(), 0));
+        when(backend.extractId(any())).then(__ -> "kachna");
 
         Tenant t = inventory.tenants().create(Tenant.Blueprint.builder().withId("kachna").build()).entity();
     }
@@ -91,6 +92,7 @@ public class LazyInventoryBehaviorTest {
         when(backend.query(any(), eq(Pager.single())))
                 //impl needs to check there is no entity prior to creating it. This should make it fail.
                 .thenReturn(new Page<>(Collections.singletonList("kachna"), Pager.single(), 1));
+        when(backend.extractId(any())).then(__ -> "kachna");
 
         Tenant t = inventory.tenants().create(Tenant.Blueprint.builder().withId("kachna").build()).entity();
     }

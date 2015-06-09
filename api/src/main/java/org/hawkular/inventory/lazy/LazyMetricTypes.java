@@ -61,9 +61,13 @@ public final class LazyMetricTypes {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, MetricType.Blueprint blueprint, CanonicalPath parentPath,
+        protected NewEntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity,
+                MetricType.Blueprint blueprint, CanonicalPath parentPath,
                 BE parent) {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
+
+            return new NewEntityAndPendingNotifications<>(new MetricType(parentPath.getTenantId(),
+                    context.backend.extractId(entity), blueprint.getUnit(), blueprint.getProperties()));
         }
 
         @Override

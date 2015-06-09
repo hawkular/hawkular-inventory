@@ -58,9 +58,11 @@ public final class LazyEnvironments {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath,
+        protected NewEntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity,
+                Environment.Blueprint blueprint, CanonicalPath parentPath,
                 BE parent) {
-            //contains is already wired up by the superclass, we don't need anything else here.
+            return new NewEntityAndPendingNotifications<>(new Environment(parentPath.getTenantId(),
+                    context.backend.extractId(entity), blueprint.getProperties()));
         }
 
         @Override

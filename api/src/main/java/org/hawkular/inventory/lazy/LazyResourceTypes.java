@@ -55,9 +55,13 @@ public final class LazyResourceTypes {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, ResourceType.Blueprint blueprint, CanonicalPath parentPath,
-                BE parent) {
+        protected NewEntityAndPendingNotifications<ResourceType> wireUpNewEntity(BE entity,
+                ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+
             context.backend.update(entity, ResourceType.Update.builder().withVersion(blueprint.getVersion()).build());
+
+            return new NewEntityAndPendingNotifications<>(new ResourceType(parentPath.getTenantId(),
+                    context.backend.extractId(entity), blueprint.getVersion(), blueprint.getProperties()));
         }
 
         @Override

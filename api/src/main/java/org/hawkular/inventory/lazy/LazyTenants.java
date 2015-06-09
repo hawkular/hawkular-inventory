@@ -55,7 +55,11 @@ public final class LazyTenants {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, Tenant.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+        protected NewEntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
+
+            return new NewEntityAndPendingNotifications<>(new Tenant(context.backend.extractId(entity),
+                    blueprint.getProperties()));
         }
 
         @Override

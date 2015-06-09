@@ -17,11 +17,13 @@
 package org.hawkular.inventory.lazy;
 
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+import rx.Observable;
 
 /**
  * An implementation of the {@link Inventory} that converts the API traversals into trees of filters that it then passes
@@ -37,6 +39,7 @@ public abstract class LazyInventory<E> implements Inventory {
 
     private LazyInventoryBackend<E> backend;
     private Configuration configuration;
+    private final ObservableContext observableContext = new ObservableContext();
 
     @Override
     public final void initialize(Configuration configuration) {
@@ -57,7 +60,8 @@ public abstract class LazyInventory<E> implements Inventory {
     @Override
     public Tenants.ReadWrite tenants() {
         return new LazyTenants.ReadWrite<>(new TraversalContext<>(this, QueryFragmentTree.empty(),
-                QueryFragmentTree.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration));
+                QueryFragmentTree.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
+                observableContext));
     }
 
     /**
@@ -68,5 +72,15 @@ public abstract class LazyInventory<E> implements Inventory {
      */
     public LazyInventoryBackend<E> getBackend() {
         return backend;
+    }
+
+    @Override
+    public boolean hasObservers(Interest<?, ?> interest) {
+        return observableContext.isObserved(interest);
+    }
+
+    @Override
+    public <C, V> Observable<C> observable(Interest<C, V> interest) {
+        return observableContext.getObservableFor(interest);
     }
 }

@@ -253,6 +253,33 @@ public interface Inventory extends AutoCloseable {
         }, null);
     }
 
+    //TODO make these 2 NOT default - it is a default method right now so that we don't have to change the old
+    //implementation. This should be done before HWKINVENT-45 is merged into master.
+
+    /**
+     * This method is mainly useful for testing.
+     *
+     * @param interest the interest in changes of some inventory entity type
+     * @return true if the interest has some observers or not
+     */
+    default boolean hasObservers(Interest<?, ?> interest) {
+        return false;
+    }
+
+    /**
+     * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
+     * subscribers responsibility to unsubscribe on error
+     *
+     * @param interest the interest in changes of some inventory entity type
+     * @param <C>      the type of object that will be passed to the subscribers of the returned observable
+     * @param <E>      the type of the entity the interest is expressed on
+     * @return an observable to which the caller can subscribe to receive notifications about inventory
+     * mutation
+     */
+    default <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
+        return null;
+    }
+
     /**
      * A class for producing mixins of inventory and the {@link Mixin.Observable} or {@link Mixin.AutoTenant}
      * interfaces.

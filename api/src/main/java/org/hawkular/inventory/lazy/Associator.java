@@ -24,6 +24,8 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.filters.With.type;
 
 /**
@@ -48,7 +50,13 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
         BE relationshipObject = context.backend.relate(source, target, relationship.name(), null);
 
-        return context.backend.convert(relationshipObject, Relationship.class);
+        context.backend.commit();
+
+        Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
+
+        context.notify(ret, created());
+
+        return ret;
     }
 
     protected Relationship deleteAssociation(Class<? extends Entity<?, ?>> sourceType,
@@ -67,6 +75,10 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
 
         context.backend.delete(relationshipObject);
+
+        context.backend.commit();
+
+        context.notify(ret, deleted());
 
         return ret;
     }

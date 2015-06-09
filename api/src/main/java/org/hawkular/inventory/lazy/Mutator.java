@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.lazy;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -25,6 +26,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -36,6 +38,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
+import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
@@ -69,21 +76,29 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
         CanonicalPathAndEntity<BE> parentPath = getCanonicalParentPath();
 
+        NewEntityAndPendingNotifications<E> newEntity;
+        BE containsRel = null;
         try {
-            BE entity = context.backend.persist(id, blueprint);
+            BE entityObject = context.backend.persist(id, blueprint);
 
             if (parentPath.path.isDefined()) {
                 BE parent = parentPath.entity;
-                context.backend.relate(parent, entity, contains.name(), Collections.emptyMap());
+                containsRel = context.backend.relate(parent, entityObject, contains.name(), Collections.emptyMap());
             }
 
-            wireUpNewEntity(entity, blueprint, parentPath.path, parentPath.entity);
+            newEntity = wireUpNewEntity(entityObject, blueprint, parentPath.path, parentPath.entity);
 
             context.backend.commit();
         } catch (Throwable t) {
             context.backend.rollback();
             throw t;
         }
+
+        context.notify(newEntity.getEntity(), created());
+        if (containsRel != null) {
+            context.notify(context.backend.convert(containsRel, Relationship.class), created());
+        }
+        newEntity.getNotifications().forEach(this::notify);
 
         return ElementTypeVisitor.accept(context.entityClass,
                 new ElementTypeVisitor<QueryFragmentTree, QueryFragmentTree.Builder>() {
@@ -167,6 +182,13 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             context.backend.rollback();
             throw e;
         }
+
+        E entity = context.backend.convert(toUpdate, context.entityClass);
+        context.notify(entity, new Action.Update<>(entity, update), updated());
+    }
+
+    private <C, V> void notify(NewEntityAndPendingNotifications.Notification<C, V> n) {
+        context.notify(n.getValue(), n.getActionContext(), n.getAction());
     }
 
     public final void delete(String id) throws EntityNotFoundException {
@@ -174,19 +196,41 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
         Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
 
+        Set<BE> deleted = new HashSet<>();
+        Set<BE> deletedRels = new HashSet<>();
+        Set<AbstractElement<?, ?>> deletedEntities;
+        Set<Relationship> deletedRelationships;
+
         try {
             context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
                 } else {
-                    context.backend.delete(e);
+                    deleted.add(e);
                 }
+                //not only the entity, but also its relationships are going to disappear
+                deletedRels.addAll(context.backend.getRelationships(e, both));
             });
 
             if (context.backend.hasRelationship(toDelete, outgoing, defines.name())) {
                 verticesToDeleteThatDefineSomething.add(toDelete);
             } else {
-                context.backend.delete(toDelete);
+                deleted.add(toDelete);
+            }
+            deletedRels.addAll(context.backend.getRelationships(toDelete, both));
+
+            //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
+            //We have to do it prior to actually deleting the objects in the backend so that all information and
+            //relationships is still available.
+            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.getType(o)))
+                    .collect(toSet());
+
+            deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
+                    .collect(toSet());
+
+            //k, now we can delete them all... the order is not important anymore
+            for (BE e : deleted) {
+                context.backend.delete(e);
             }
 
             for (BE e : verticesToDeleteThatDefineSomething) {
@@ -215,6 +259,16 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         } catch (Exception e) {
             context.backend.rollback();
             throw e;
+        }
+
+        //report the relationship deletions first - it would be strange to report deletion of a relationship after
+        //reporting that an entity on one end of the relationship has been deleted
+        for (Relationship r : deletedRelationships) {
+            context.notify(r, deleted());
+        }
+
+        for (AbstractElement<?, ?> e : deletedEntities) {
+            context.notify(e, deleted());
         }
     }
 
@@ -317,7 +371,8 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         }, CanonicalPath.builder());
     }
 
-    protected abstract void wireUpNewEntity(BE entity, Blueprint blueprint, CanonicalPath parentPath, BE parent);
+    protected abstract NewEntityAndPendingNotifications<E> wireUpNewEntity(BE entity, Blueprint blueprint,
+            CanonicalPath parentPath, BE parent);
 
     private BE checkExists(String id) {
         //sourcePath is "path to the parent"

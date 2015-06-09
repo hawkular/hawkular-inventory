@@ -24,6 +24,7 @@ import org.hawkular.inventory.lazy.QueryFragmentTree;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -49,6 +50,8 @@ public interface LazyInventoryBackend<E> extends AutoCloseable {
     boolean hasRelationship(E entity, Relationships.Direction direction, String relationshipName);
 
     boolean hasRelationship(E source, E target, String relationshipName);
+
+    Set<E> getRelationships(E source, Relationships.Direction direction, String... names);
 
     E getRelationship(E source, E target, String relationshipName);
 

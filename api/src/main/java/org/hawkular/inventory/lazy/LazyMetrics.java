@@ -24,11 +24,14 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
+import org.hawkular.inventory.lazy.NewEntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
+import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
@@ -60,17 +63,28 @@ public final class LazyMetrics {
         }
 
         @Override
-        protected void wireUpNewEntity(BE entity, Metric.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+        protected NewEntityAndPendingNotifications<Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
+
             Class<? extends AbstractElement<?, ?>> parentType = context.backend.getType(parent);
 
             @SuppressWarnings("unchecked")
             TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
                     (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
-            BE metricType = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
+            BE metricTypeObject = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
                     .withMetricTypeId(blueprint.getMetricTypeId()).build());
 
-            context.backend.relate(metricType, entity, defines.name(), null);
+            BE r = context.backend.relate(metricTypeObject, entity, defines.name(), null);
+
+            MetricType metricType = context.backend.convert(metricTypeObject, MetricType.class);
+
+            Metric ret = new Metric(parentPath.getTenantId(), parentPath.getEnvironmentId(), parentPath.getFeedId(),
+                    context.backend.extractId(entity), metricType, blueprint.getProperties());
+
+            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), metricType, ret);
+
+            return new NewEntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
         }
 
         @Override
