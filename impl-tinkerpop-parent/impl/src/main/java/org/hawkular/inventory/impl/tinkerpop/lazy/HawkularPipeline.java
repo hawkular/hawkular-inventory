@@ -122,8 +122,8 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         return in(srels);
     }
 
-    public HawkularPipeline<S, Vertex> page(Pager pager) {
-        return cast(Vertex.class).page(pager, (e, p) -> {
+    public HawkularPipeline<S, ? extends Element> page(Pager pager) {
+        return cast(Element.class).page(pager, (e, p) -> {
             String prop = Constants.Property.mapUserDefined(p);
             return e.getProperty(prop);
         });

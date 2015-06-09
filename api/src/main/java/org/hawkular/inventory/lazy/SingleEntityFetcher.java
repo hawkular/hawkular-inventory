@@ -37,7 +37,6 @@ class SingleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
     }
 
     public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-        return new LazyRelationships.ReadWrite<>(context.proceedToRelationships().get(), context.entityClass,
-                direction);
+        return new LazyRelationships.ReadWrite<>(context.proceedToRelationships(direction).get(), context.entityClass);
     }
 }

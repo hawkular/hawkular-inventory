@@ -24,6 +24,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+import org.hawkular.inventory.lazy.spi.SwitchElementType;
 
 import static org.hawkular.inventory.api.filters.With.type;
 
@@ -51,26 +52,31 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     Builder<BE, E> proceed() {
-        return new Builder<>(inventory, select(), QueryFragmentTree.filter(), backend,
-                entityClass, configuration);
+        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityClass, configuration);
     }
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
-        return new Builder<>(inventory, select(), QueryFragmentTree.filter(), backend, entityType, configuration)
+        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityType, configuration)
                 .where(Related.by(over), type(entityType));
     }
 
-    Builder<BE, Relationship> proceedToRelationships() {
-        return new Builder<>(inventory, select(), QueryFragmentTree.filter(), backend, Relationship.class, configuration);
+    Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
+        return new Builder<>(inventory, hop(), QueryFragmentTree.filter()
+                .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration);
     }
 
-    <T extends Entity<?, ?>> Builder<BE, T> filterTo(Class<T> entityType) {
-        return new Builder<>(inventory, select(), QueryFragmentTree.filter(), backend, entityType, configuration)
-                .where(type(entityType));
+    <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
+            Class<T> entityType) {
+        return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), QueryFragmentTree.filter(),
+                backend, entityType, configuration).where(type(entityType));
     }
 
     QueryFragmentTree.SymmetricExtender select() {
-        return sourcePath.extend().path().with(selectCandidates).filter();
+        return sourcePath.extend().filter().with(selectCandidates);
+    }
+
+    QueryFragmentTree.SymmetricExtender hop() {
+        return sourcePath.extend().path().with(selectCandidates);
     }
 
     TraversalContext<BE, E> replacePath(QueryFragmentTree path) {

@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.lazy.FilterFragment;
 import org.hawkular.inventory.lazy.QueryFragment;
 import org.hawkular.inventory.lazy.QueryFragmentTree;
+import org.hawkular.inventory.lazy.spi.SwitchElementType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -65,7 +66,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(RelationWith.SourceOfType.class, RelationWithSourcesOfTypesApplicator.class);
         applicators.put(RelationWith.TargetOfType.class, RelationWithTargetsOfTypesApplicator.class);
         applicators.put(RelationWith.SourceOrTargetOfType.class, RelationWithSourcesOrTargetsOfTypesApplicator.class);
-        applicators.put(JumpInOutFilter.class, RelationWithJumpInOutApplicator.class);
+        applicators.put(SwitchElementType.class, SwitchElementTypeApplicator.class);
 
     }
 
@@ -261,9 +262,9 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    private static final class RelationWithJumpInOutApplicator
-            extends FilterApplicator<JumpInOutFilter> {
-        private RelationWithJumpInOutApplicator(JumpInOutFilter filter, Type type) {
+    private static final class SwitchElementTypeApplicator
+            extends FilterApplicator<SwitchElementType> {
+        private SwitchElementTypeApplicator(SwitchElementType filter, Type type) {
             super(type, filter);
         }
 

@@ -28,6 +28,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.api.filters.With.id;
 
 /**
@@ -105,7 +106,7 @@ public final class LazyResourceTypes {
 
         @Override
         public MetricTypes.ReadAssociate metricTypes() {
-            return new LazyMetricTypes.ReadAssociate<>(context.proceedTo(defines, MetricType.class).get());
+            return new LazyMetricTypes.ReadAssociate<>(context.proceedTo(owns, MetricType.class).get());
         }
     }
 
@@ -123,7 +124,7 @@ public final class LazyResourceTypes {
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new LazyMetricTypes.Read<>(context.proceedTo(defines, MetricType.class).get());
+            return new LazyMetricTypes.Read<>(context.proceedTo(owns, MetricType.class).get());
         }
     }
 }

@@ -41,9 +41,11 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.lazy.spi.SwitchElementType;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
@@ -64,17 +66,16 @@ public final class LazyRelationships {
         private final Relationships.Direction direction;
         private final Class<? extends Entity<?, ?>> originEntityType;
 
-        public ReadWrite(TraversalContext<BE, Relationship> context, Class<? extends Entity<?, ?>> originEntityType,
-                Relationships.Direction direction) {
-
+        public ReadWrite(TraversalContext<BE, Relationship> context, Class<? extends Entity<?, ?>> originEntityType) {
             super(context);
-            this.direction = direction;
+            QueryFragment[] filters = context.selectCandidates.getFragments();
+            direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
             this.originEntityType = originEntityType;
         }
 
         @Override
         public Relationships.Multiple named(String name) {
-            return new Multiple<>(context.proceed().where(RelationWith.name(name)).get());
+            return new Multiple<>(direction, context.proceed().where(RelationWith.name(name)).get());
         }
 
         @Override
@@ -89,7 +90,7 @@ public final class LazyRelationships {
 
         @Override
         public Relationships.Multiple getAll(RelationFilter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+            return new Multiple<>(direction, context.proceed().where(filters).get());
         }
 
         @Override
@@ -105,7 +106,7 @@ public final class LazyRelationships {
 
             BE incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
 
-            Page<BE> origins = context.backend.query(context.select().get(), Pager.single());
+            Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
             if (origins.isEmpty()) {
                 throw new EntityNotFoundException(originEntityType, QueryFragmentTree.filters(context.select().get()));
             }
@@ -168,8 +169,13 @@ public final class LazyRelationships {
         public void delete(String id) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
             //TODO this probably should not allow to delete "contains" and other semantically-rich rels
-            BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
-            context.backend.delete(relationshipObject);
+            try {
+                BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
+                context.backend.delete(relationshipObject);
+            } catch (NoSuchElementException e) {
+                throw new RelationNotFoundException("Could not find relationship to delete",
+                        QueryFragmentTree.filters(context.select().with(RelationWith.id(id)).get()));
+            }
         }
 
 
@@ -218,21 +224,17 @@ public final class LazyRelationships {
     }
 
     public static final class Read<BE> extends Traversal<BE, Relationship> implements Relationships.Read {
-
         private final Relationships.Direction direction;
-        private final Class<? extends Entity<?, ?>> originEntityType;
 
-        public Read(TraversalContext<BE, Relationship> context, Class<? extends Entity<?, ?>> originEntityType,
-                Relationships.Direction direction) {
-
+        public Read(TraversalContext<BE, Relationship> context) {
             super(context);
-            this.direction = direction;
-            this.originEntityType = originEntityType;
+            QueryFragment[] filters = context.selectCandidates.getFragments();
+            direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
         }
 
         @Override
         public Relationships.Multiple named(String name) {
-            return new Multiple<>(context.proceed().where(RelationWith.name(name)).get());
+            return new Multiple<>(direction, context.proceed().where(RelationWith.name(name)).get());
         }
 
         @Override
@@ -247,7 +249,7 @@ public final class LazyRelationships {
 
         @Override
         public Relationships.Multiple getAll(RelationFilter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+            return new Multiple<>(direction, context.proceed().where(filters).get());
         }
     }
 
@@ -260,43 +262,47 @@ public final class LazyRelationships {
 
     public static final class Multiple<BE> extends Fetcher<BE, Relationship> implements Relationships.Multiple {
 
-        public Multiple(TraversalContext<BE, Relationship> context) {
+        private final Relationships.Direction direction;
+
+        public Multiple(Relationships.Direction direction, TraversalContext<BE, Relationship> context) {
             super(context);
+            this.direction = direction;
         }
 
         @Override
         public Tenants.Read tenants() {
-            return new LazyTenants.Read<>(context.filterTo(Tenant.class).get());
+            return new LazyTenants.Read<>(context.proceedFromRelationshipsTo(direction, Tenant.class).get());
         }
 
         @Override
         public Environments.Read environments() {
-            return new LazyEnvironments.Read<>(context.filterTo(Environment.class).get());
+            return new LazyEnvironments.Read<>(context.proceedFromRelationshipsTo(direction, Environment.class).get());
         }
 
         @Override
         public Feeds.Read feeds() {
-            return new LazyFeeds.Read<>(context.filterTo(Feed.class).get());
+            return new LazyFeeds.Read<>(context.proceedFromRelationshipsTo(direction, Feed.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new LazyMetricTypes.Read<>(context.filterTo(MetricType.class).get());
+            return new LazyMetricTypes.Read<>(context.proceedFromRelationshipsTo(direction, MetricType.class).get());
         }
 
         @Override
         public Metrics.Read metrics() {
-            return new LazyMetrics.Read<>(context.filterTo(Metric.class).get());
+            return new LazyMetrics.Read<>(context.proceedFromRelationshipsTo(direction, Metric.class).get());
         }
 
         @Override
         public Resources.Read resources() {
-            return new LazyResources.Read<>(context.filterTo(Resource.class).get());
+            return new LazyResources.Read<>(context.proceedFromRelationshipsTo(direction, Resource.class).get());
         }
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            return new LazyResourceTypes.Read<>(context.filterTo(ResourceType.class).get());
+            return new LazyResourceTypes.Read<>(context.proceedFromRelationshipsTo(direction, ResourceType.class).
+                    get());
         }
     }
 }

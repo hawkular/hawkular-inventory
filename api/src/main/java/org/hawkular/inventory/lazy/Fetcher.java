@@ -59,18 +59,18 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
 
     @Override
     public Page<E> entities(Pager pager) {
-        Function<BE, E> conversion = (be) -> context.backend.convert(be, context.entityClass);
+        Function<BE, E> conversion = (e) -> context.backend.convert(e, context.entityClass);
         Function<E, Boolean> filter = context.configuration.getResultFilter() == null ? null :
                 (e) -> context.configuration.getResultFilter().isApplicable(e);
 
-        return context.backend.<E>query(context.select().get(), Pager.single(), conversion, filter);
+        return context.backend.<E>query(context.select().get(), pager, conversion, filter);
     }
 
     @SuppressWarnings("unchecked")
     private void throwNotFoundException() {
         if (Entity.class.isAssignableFrom(context.entityClass)) {
             throw new EntityNotFoundException((Class<Entity<?, ?>>) context.entityClass,
-                    QueryFragmentTree.filters(context.sourcePath));
+                    QueryFragmentTree.filters(context.select().get()));
         } else {
             //TODO this is not correct?
             throw new RelationNotFoundException((Class<Entity<?, ?>>) context.entityClass,

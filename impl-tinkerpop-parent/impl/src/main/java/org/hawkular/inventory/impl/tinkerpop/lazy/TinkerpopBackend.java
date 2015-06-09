@@ -22,6 +22,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
@@ -82,7 +83,12 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
 
     @Override
     public Page<Element> query(QueryFragmentTree query, Pager pager) {
-        HawkularPipeline<?, Vertex> q = new HawkularPipeline<>(context.getGraph()).V();
+        HawkularPipeline<?, ? extends Element> q;
+        if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+            q = new HawkularPipeline<>(context.getGraph()).E();
+        } else {
+            q = new HawkularPipeline<>(context.getGraph()).V();
+        }
 
         FilterApplicator.applyAll(query, q);
 
@@ -95,25 +101,36 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     public <T extends AbstractElement<?, ?>> Page<T> query(QueryFragmentTree query, Pager pager,
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
-        HawkularPipeline<?, Vertex> q = new HawkularPipeline<>(context.getGraph()).V();
+        HawkularPipeline<?, ? extends Element> q;
+
+        if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+            q = new HawkularPipeline<>(context.getGraph()).E();
+        } else {
+            q = new HawkularPipeline<>(context.getGraph()).V();
+        }
 
         FilterApplicator.applyAll(query, q);
 
-        //the ResultFilter interface requires an entity to check its applicability and can rule out some of the
-        //entities from the result set, which affects the total count. We therefore need to convert to entity first
-        //and only then filter, count and page.
-        //Note that it would not be enough to pass the current path and the ID to the filter, because for the filter
-        //to have stable ids, it needs to have the "canonical" path to the entity, which the inventory traversal
-        //path might not be. The transformation of a non-canonical to canonical path is essentially identical
-        //operation to converting the vertex to the entity.
-        HawkularPipeline<?, T> q2 = q.transform(conversion::apply).filter(filter::apply).counter("total")
-                .page(pager, (e, p) -> {
-                    if (AbstractElement.ID_PROPERTY.equals(p)) {
-                        return e.getId();
-                    } else {
-                        return (Comparable) e.getProperties().get(p);
-                    }
-                });
+        HawkularPipeline<?, T> q2;
+        if (filter == null) {
+            q2 = q.counter("total").page(pager).transform(conversion::apply);
+        } else {
+            //the ResultFilter interface requires an entity to check its applicability and can rule out some of the
+            //entities from the result set, which affects the total count. We therefore need to convert to entity first
+            //and only then filter, count and page.
+            //Note that it would not be enough to pass the current path and the ID to the filter, because for the filter
+            //to have stable ids, it needs to have the "canonical" path to the entity, which the inventory traversal
+            //path might not be. The transformation of a non-canonical to canonical path is essentially identical
+            //operation to converting the vertex to the entity.
+            q2 = q.transform(conversion::apply).filter(filter::apply).counter("total")
+                    .page(pager, (e, p) -> {
+                        if (AbstractElement.ID_PROPERTY.equals(p)) {
+                            return e.getId();
+                        } else {
+                            return (Comparable) e.getProperties().get(p);
+                        }
+                    });
+        }
 
         return new Page<>(q2.toList(), pager, q.getCount("total"));
     }
@@ -124,8 +141,23 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
         if (!(startingPoint instanceof Vertex)) {
             return Collections.<Element>emptyList().iterator();
         } else {
-            return new HawkularPipeline<>(startingPoint).as("start").out(relationshipName)
-                    .loop("start", (x) -> true, (x) -> true).cast(Element.class);
+            HawkularPipeline<?, Element> ret = new HawkularPipeline<Element, Element>(startingPoint).as("start");
+
+            switch (direction) {
+                case incoming:
+                    ret.in(relationshipName);
+                    break;
+                case outgoing:
+                    ret.out(relationshipName);
+                    break;
+                case both:
+                    ret.both(relationshipName);
+                    break;
+            }
+
+            //toList() is important as it ensures eager evaluation of the closure - the callers might modify the
+            //conditions for the evaluation during the iteration which would skew the results.
+            return ret.loop("start", (x) -> true, (x) -> true).toList().iterator();
         }
     }
 
@@ -374,7 +406,9 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
                 v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
                 v.setProperty(Constants.Property.__eid.name(), id);
 
-                ElementHelper.setProperties(v, properties);
+                if (properties != null) {
+                    ElementHelper.setProperties(v, properties);
+                }
 
                 return v;
             }
@@ -463,7 +497,7 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     private HawkularPipeline<?, Element> navigate(CanonicalPath path) {
-        HawkularPipeline<?, Element> ret = new HawkularPipeline<>();
+        HawkularPipeline<?, Element> ret = new HawkularPipeline<>(context.getGraph());
         if (path.getRelationshipId() != null) {
             ret.E().hasEid(path.getRelationshipId());
             return ret;

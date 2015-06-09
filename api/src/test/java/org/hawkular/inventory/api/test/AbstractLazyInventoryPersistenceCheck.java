@@ -66,6 +66,7 @@ import java.util.stream.Stream;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
+import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 
@@ -320,7 +321,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
                             Pager.unlimited(Order.unspecified()));
 
                     Page<?> children = backend.query(QueryFragmentTree.path().with(type(parentType),
-                            Related.by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
+                            by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
 
 //                    GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
 //                            .V().has("__type", parentType).cast(Vertex.class);
@@ -374,7 +375,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 //                    assert !multipleChildrenIterator.hasNext();
                 });
 
-        ResolvableToMany parents = inventory.tenants().getAll(Related.by("contains"));
+        ResolvableToMany parents = inventory.tenants().getAll(by("contains"));
         ResolvableToMany kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(Environment.class).apply(parents).accept(kids);
 
@@ -386,7 +387,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(MetricType.class).apply(parents)
                 .accept(kids);
 
-        parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
+        parents = inventory.tenants().getAll().environments().getAll(by("contains"));
         kids = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll(
                 Related.asTargetBy("contains"));
         testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Metric.class).apply(parents).
@@ -397,7 +398,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Resource.class).apply(parents).accept
                 (kids);
 
-        parents = inventory.tenants().getAll().environments().getAll(Related.by("contains"));
+        parents = inventory.tenants().getAll().environments().getAll(by("contains"));
         kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(
                 Related.asTargetBy("defines"));
         testHelper.apply(2).apply(MetricType.class).apply("defines").apply(4).apply(Metric.class).apply(parents)
@@ -476,7 +477,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         // try deleting again
         try {
             inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
-            assert true : "It shouldn't be possible to delete the same relationship twice";
+            assert false : "It shouldn't be possible to delete the same relationship twice";
         } catch (RelationNotFoundException e) {
             // good
         }
@@ -597,7 +598,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 public void testEnvironments() throws Exception {
     BiFunction<String, String, Void> test = (tenantId, id) -> {
         QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
-                .with(PathFragment.from(type(Tenant.class), With.id(tenantId), Related.by(contains),
+                .with(PathFragment.from(type(Tenant.class), With.id(tenantId), by(contains),
                         type(Environment.class), With.id(id))).build();
 
 
@@ -629,7 +630,7 @@ public void testEnvironments() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
             QueryFragmentTree query = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
-                    Related.by(contains), type(ResourceType.class), id(id)).get();
+                    by(contains), type(ResourceType.class), id(id)).get();
 
             Page<?> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
 
@@ -654,7 +655,7 @@ public void testEnvironments() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
             QueryFragmentTree query = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
-                    Related.by(contains), type(MetricType.class), id(id)).get();
+                    by(contains), type(MetricType.class), id(id)).get();
 
             assert !inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).isEmpty();
 
@@ -676,7 +677,7 @@ public void testEnvironments() throws Exception {
         TriFunction<String, String, String, Void> test = (tenantId, resourceTypeId, id) -> {
 
             QueryFragmentTree q = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
-                    Related.by(contains), type(ResourceType.class), id(resourceTypeId), Related.by(owns),
+                    by(contains), type(ResourceType.class), id(resourceTypeId), by(owns),
                     type(MetricType.class), id(id)).get();
 
             assert !inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).isEmpty();
@@ -728,7 +729,7 @@ public void testEnvironments() throws Exception {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(4, inventory.getBackend().query(QueryFragmentTree.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(6, inventory.getBackend().query(QueryFragmentTree.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
     }
 
@@ -1023,13 +1024,13 @@ public void testEnvironments() throws Exception {
         } catch (EntityNotFoundException e) {
             Filter[][] paths = e.getFilters();
             Assert.assertEquals(2, paths.length);
-            Assert.assertArrayEquals(Filter.by(type(Tenant.class), With.id("non-tenant"), Related.by(contains),
-                    type(Environment.class), With.id("non-env"), Related.by(contains), type(Resource.class),
-                    Related.by(owns), type(Metric.class), With.id("m")).get(), paths[0]);
-            Assert.assertArrayEquals(Filter.by(type(Tenant.class), With.id("non-tenant"), Related.by(contains),
-                    type(Environment.class), With.id("non-env"), Related.by(contains), type(Feed.class),
-                    Related.by(contains), type(Resource.class), Related.by(owns), type(Metric.class),
-                    With.id("m")).get(), paths[1]);
+            Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
+                    type(Environment.class), id("non-env"), by(contains), type(Resource.class),
+                    by(owns), type(Metric.class), id("m")).get(), paths[0]);
+            Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
+                    type(Environment.class), id("non-env"), by(contains), type(Feed.class),
+                    by(contains), type(Resource.class), by(owns), type(Metric.class),
+                    id("m")).get(), paths[1]);
         }
     }
 

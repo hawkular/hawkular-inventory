@@ -59,7 +59,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     protected final QueryFragmentTree doCreate(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        QueryFragmentTree existenceCheck = context.select().filter().with(id(id)).get();
+        QueryFragmentTree existenceCheck = context.hop().filter().with(id(id)).get();
 
         Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
@@ -114,8 +114,8 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                         } else {
                             return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                     by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()), type(Metric.class),
-                                    id(id))).build();
+                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
+                                    by(contains), type(Metric.class), id(id))).build();
                         }
                     }
 
@@ -135,7 +135,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                             return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                     by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
                                     by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
-                                    type(Resource.class), id(id))).build();
+                                    by(contains), type(Resource.class), id(id))).build();
                         }
                     }
 
@@ -203,7 +203,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                     String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
 
                     throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                            definingEntity + ", which it (indirectly) contains, acts as a definition for some" +
+                            definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
                             "entities that are not deleted along with it, which would leave them without a " +
                             "definition. This is illegal.");
                 } else {
@@ -243,7 +243,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
             @Override
             public CanonicalPathAndEntity<BE> visitMetric(CanonicalPath.Builder builder) {
-                BE env = getParentOfType(Environment.class, true);
+                BE env = getParentOfType(Environment.class, false);
                 if (env != null) {
                     //feedless metric
                     Environment e = context.backend.convert(env, Environment.class);
@@ -251,7 +251,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                             .withEnvironmentId(e.getId()).build());
                 } else {
                     //metric under a feed
-                    BE feed = getParentOfType(Feed.class, false);
+                    BE feed = getParentOfType(Feed.class, true);
                     Feed f = context.backend.convert(feed, Feed.class);
                     return new CanonicalPathAndEntity<>(feed, builder.withTenantId(f.getTenantId())
                             .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
@@ -267,15 +267,15 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
             @Override
             public CanonicalPathAndEntity<BE> visitResource(CanonicalPath.Builder builder) {
-                BE env = getParentOfType(Environment.class, true);
+                BE env = getParentOfType(Environment.class, false);
                 if (env != null) {
                     //feedless resource
                     Environment e = context.backend.convert(env, Environment.class);
                     return new CanonicalPathAndEntity<>(env, builder.withTenantId(e.getTenantId())
                             .withEnvironmentId(e.getId()).build());
                 } else {
-                    //metric under a rsource
-                    BE feed = getParentOfType(Feed.class, false);
+                    //resource under a feed
+                    BE feed = getParentOfType(Feed.class, true);
                     Feed f = context.backend.convert(feed, Feed.class);
                     return new CanonicalPathAndEntity<>(feed, builder.withTenantId(f.getTenantId())
                             .withEnvironmentId(f.getEnvironmentId()).withFeedId(f.getId()).build());
@@ -323,7 +323,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         //sourcePath is "path to the parent"
         //selectCandidates - is the elements possibly matched by this mutator
         //we're given the id to select from these
-        QueryFragmentTree query = context.select().filter().with(id(id)).get();
+        QueryFragmentTree query = context.sourcePath.extend().path().with(context.selectCandidates).with(id(id)).get();
 
         Page<BE> result = context.backend.query(query, Pager.single());
 

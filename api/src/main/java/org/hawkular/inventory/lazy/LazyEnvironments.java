@@ -134,7 +134,7 @@ public final class LazyEnvironments {
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
             return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
-                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
         }
@@ -173,7 +173,7 @@ public final class LazyEnvironments {
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
             return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
-                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
         }

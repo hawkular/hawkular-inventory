@@ -18,12 +18,9 @@ package org.hawkular.inventory.lazy;
 
 import org.hawkular.inventory.api.filters.Filter;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -72,38 +69,35 @@ public final class QueryFragmentTree {
      */
     public static Filter[][] filters(QueryFragmentTree query) {
         List<List<Filter>> paths = new ArrayList<>();
+        List<Filter[]> workingPath = new ArrayList<>();
 
-        Deque<Filter[]> path = new ArrayDeque<>();
-        Deque<Iterator<QueryFragmentTree>> traversalPosition = new ArrayDeque<>();
-
-        path.add(filters(query.fragments));
-        traversalPosition.push(query.subTrees.iterator());
-
-        while (!traversalPosition.isEmpty()) {
-            Iterator<QueryFragmentTree> currentPos = traversalPosition.peek();
-            if (currentPos.hasNext()) {
-                QueryFragmentTree child = currentPos.next();
-                if (child.subTrees.isEmpty()) {
-                    //we have a leaf here
-                    List<Filter> pathToLeaf = new ArrayList<>();
-                    for (Filter[] fs : path) {
-                        Collections.addAll(pathToLeaf, fs);
-                    }
-                    Collections.addAll(pathToLeaf, filters(child.fragments));
-                    paths.add(pathToLeaf);
-                } else {
-                    path.add(filters(child.fragments));
-                    traversalPosition.push(child.subTrees.iterator());
-                }
-            } else {
-                traversalPosition.pop();
-                path.removeLast();
-            }
-        }
+        addPathsToLeaves(query, workingPath, paths);
 
         Filter[][] ret = new Filter[paths.size()][];
         Arrays.setAll(ret, (i) -> paths.get(i).toArray(new Filter[paths.get(i).size()]));
         return ret;
+    }
+
+    private static void addPathsToLeaves(QueryFragmentTree tree, List<Filter[]> workingPath,
+            List<List<Filter>> results) {
+
+        if (tree.getSubTrees().isEmpty()) {
+            //this is the leaf
+            List<Filter> pathToLeaf = new ArrayList<>();
+            for (Filter[] fs : workingPath) {
+                Collections.addAll(pathToLeaf, fs);
+            }
+
+            Collections.addAll(pathToLeaf, filters(tree.getFragments()));
+
+            results.add(pathToLeaf);
+        } else {
+            workingPath.add(filters(tree.getFragments()));
+            for (QueryFragmentTree subTree : tree.getSubTrees()) {
+                addPathsToLeaves(subTree, workingPath, results);
+            }
+            workingPath.remove(workingPath.size() - 1);
+        }
     }
 
     public static QueryFragmentTree empty() {
@@ -216,9 +210,7 @@ public final class QueryFragmentTree {
         public Builder with(QueryFragmentTree other, Function<Filter, QueryFragment> converter) {
             with(converter, other.fragments);
             for (QueryFragmentTree sub : other.getSubTrees()) {
-                branch();
-                with(sub, converter);
-                done();
+                branch().with(sub, converter).done();
             }
 
             return this;

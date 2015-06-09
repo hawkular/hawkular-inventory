@@ -68,7 +68,7 @@ public final class LazyMetrics {
                     (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
             BE metricType = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
-                    .withResourceTypeId(blueprint.getMetricTypeId()).build());
+                    .withMetricTypeId(blueprint.getMetricTypeId()).build());
 
             context.backend.relate(metricType, entity, defines.name(), null);
         }
