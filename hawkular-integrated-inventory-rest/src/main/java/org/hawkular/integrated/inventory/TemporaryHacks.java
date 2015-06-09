@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.cdi.ObservableInventoryInitialized;
+import org.hawkular.inventory.cdi.InventoryInitialized;
 import rx.Observable;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -39,8 +39,8 @@ import static org.hawkular.inventory.api.Action.created;
 @ApplicationScoped
 public class TemporaryHacks {
 
-    public void install(@Observes ObservableInventoryInitialized event) {
-        Inventory.Mixin.Observable inventory = event.getInventory();
+    public void install(@Observes InventoryInitialized event) {
+        Inventory inventory = event.getInventory();
 
         Observable<Tenant> tenantCreation = inventory.observable(Interest.in(Tenant.class).being(created()));
         tenantCreation.subscribe(PartiallyApplied.method(this::createTenantMetadata).second(inventory),

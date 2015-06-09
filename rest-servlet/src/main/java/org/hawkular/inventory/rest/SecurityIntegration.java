@@ -34,8 +34,8 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
-import org.hawkular.inventory.cdi.DisposingObservableInventory;
-import org.hawkular.inventory.cdi.ObservableInventoryInitialized;
+import org.hawkular.inventory.cdi.DisposingInventory;
+import org.hawkular.inventory.cdi.InventoryInitialized;
 import rx.Subscription;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -70,8 +70,8 @@ public class SecurityIntegration {
 
     private final Set<Subscription> subscriptions = new HashSet<>();
 
-    public void start(@Observes ObservableInventoryInitialized event) {
-        Inventory.Mixin.Observable inventory = event.getInventory();
+    public void start(@Observes InventoryInitialized event) {
+        Inventory inventory = event.getInventory();
         install(inventory, Tenant.class);
         install(inventory, Environment.class);
         install(inventory, Feed.class);
@@ -82,12 +82,12 @@ public class SecurityIntegration {
         //install(inventory, Relationship.class);
     }
 
-    public void stop(@Observes DisposingObservableInventory event) {
+    public void stop(@Observes DisposingInventory event) {
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
     }
 
-    private <E extends AbstractElement<?, ?>> void install(Inventory.Mixin.Observable inventory, Class<E> cls) {
+    private <E extends AbstractElement<?, ?>> void install(Inventory inventory, Class<E> cls) {
         subscriptions.add(inventory.observable(Interest.in(cls).being(created()))
                 .subscribe(PartiallyApplied.method(this::react).second(created())));
 

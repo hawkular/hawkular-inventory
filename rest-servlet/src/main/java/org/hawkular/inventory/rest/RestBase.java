@@ -18,7 +18,7 @@ package org.hawkular.inventory.rest;
 
 import org.hawkular.accounts.api.PersonaService;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.ObservableAutoTenant;
+import org.hawkular.inventory.cdi.AutoTenant;
 
 import javax.inject.Inject;
 
@@ -29,8 +29,8 @@ import javax.inject.Inject;
 public class RestBase {
 
     @Inject
-    @ObservableAutoTenant
-    protected Inventory.Mixin.AutoTenantAndObservable inventory;
+    @AutoTenant
+    protected Inventory inventory;
 
     @Inject
     protected Security security;

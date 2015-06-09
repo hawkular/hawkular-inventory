@@ -31,7 +31,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.cdi.ObservableAutoTenant;
+import org.hawkular.inventory.cdi.AutoTenant;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -67,8 +67,8 @@ public class Security {
     private OperationService operations;
 
     @Inject
-    @ObservableAutoTenant
-    private Inventory.Mixin.AutoTenantAndObservable inventory;
+    @AutoTenant
+    private Inventory inventory;
 
     @javax.annotation.Resource
     private UserTransaction transaction;

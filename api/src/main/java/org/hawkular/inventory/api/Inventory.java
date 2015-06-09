@@ -92,14 +92,6 @@ public interface Inventory extends AutoCloseable {
         return new Mixin(inventory);
     }
 
-    static Mixin.ObservableMixin augment(Mixin.Observable inventory) {
-        return new Mixin.ObservableMixin(inventory);
-    }
-
-    static Mixin.AutoTenantMixin augment(Mixin.AutoTenant inventory) {
-        return new Mixin.AutoTenantMixin(inventory);
-    }
-
     /**
      * Initializes the inventory from the provided configuration object.
      *
@@ -281,8 +273,9 @@ public interface Inventory extends AutoCloseable {
     }
 
     /**
-     * A class for producing mixins of inventory and the {@link Mixin.Observable} or {@link Mixin.AutoTenant}
-     * interfaces.
+     * TODO get rid of this...
+     *
+     * A class for producing mixins of inventory (currently just {@link Mixin.AutoTenant} interface).
      *
      * <p>Given the old-ish type system of Java lacking Self type or union types, this is quite cumbersome and will
      * result in a combinatorial explosion of backing classes if more mixins are added. I am not sure there is a way to
@@ -301,30 +294,6 @@ public interface Inventory extends AutoCloseable {
             return new AutoTenantMixin(inventory);
         }
 
-        public ObservableMixin observable() {
-            return new ObservableMixin(inventory);
-        }
-
-        public static final class ObservableMixin {
-            private final Observable inventory;
-
-            private ObservableMixin(Inventory inventory) {
-                this.inventory = new ObservableInventory(inventory);
-            }
-
-            private ObservableMixin(Observable inventory) {
-                this.inventory = inventory;
-            }
-
-            public ObservableAndAutoTenantMixin autoTenant() {
-                return new ObservableAndAutoTenantMixin(inventory);
-            }
-
-            public Observable get() {
-                return inventory;
-            }
-        }
-
         public static final class AutoTenantMixin {
             private final AutoTenant inventory;
 
@@ -336,27 +305,7 @@ public interface Inventory extends AutoCloseable {
                 this.inventory = inventory;
             }
 
-            public ObservableAndAutoTenantMixin observable() {
-                return new ObservableAndAutoTenantMixin(inventory);
-            }
-
             public AutoTenant get() {
-                return inventory;
-            }
-        }
-
-        public static final class ObservableAndAutoTenantMixin {
-            private final AutoTenantAndObservable inventory;
-
-            private ObservableAndAutoTenantMixin(Observable inventory) {
-                this.inventory = new AutoTenantObservableInventory(inventory);
-            }
-
-            private ObservableAndAutoTenantMixin(AutoTenant inventory) {
-                this.inventory = new ObservableAutoTenantInventory(inventory);
-            }
-
-            public AutoTenantAndObservable get() {
                 return inventory;
             }
         }
@@ -395,87 +344,6 @@ public interface Inventory extends AutoCloseable {
          * with the provided id.
          */
         public interface AutoTenant extends Inventory {
-        }
-
-        /**
-         * Poor man's intersection type ;)
-         */
-        public interface AutoTenantAndObservable extends AutoTenant, Observable {
-        }
-
-        /**
-         * An implementation of AutoTenant and Observable interfaces in that order.
-         */
-        private static final class AutoTenantObservableInventory implements AutoTenantAndObservable {
-
-            private final Observable inventory;
-            private final AutoTenantInventory autoTenant;
-
-            public AutoTenantObservableInventory(Observable inventory) {
-                this.inventory = inventory;
-                this.autoTenant = new AutoTenantInventory(inventory);
-            }
-
-            @Override
-            public void initialize(Configuration configuration) {
-                autoTenant.initialize(configuration);
-            }
-
-            @Override
-            public Tenants.ReadWrite tenants() {
-                return autoTenant.tenants();
-            }
-
-            @Override
-            public void close() throws Exception {
-                autoTenant.close();
-            }
-
-            @Override
-            public boolean hasObservers(Interest<?, ?> interest) {
-                return inventory.hasObservers(interest);
-            }
-
-            @Override
-            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
-                return inventory.observable(interest);
-            }
-        }
-
-        /**
-         * An implementation of all Inventory, Observable and AutoTenant interfaces in that order.
-         */
-        private static final class ObservableAutoTenantInventory implements AutoTenantAndObservable {
-
-            private final ObservableInventory inventory;
-
-            public ObservableAutoTenantInventory(AutoTenant inventory) {
-                this.inventory = new ObservableInventory(inventory);
-            }
-
-            public boolean hasObservers(Interest<?, ?> interest) {
-                return inventory.hasObservers(interest);
-            }
-
-            @Override
-            public void close() throws Exception {
-                inventory.close();
-            }
-
-            @Override
-            public void initialize(Configuration configuration) {
-                inventory.initialize(configuration);
-            }
-
-            @Override
-            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
-                return inventory.observable(interest);
-            }
-
-            @Override
-            public ObservableTenants.ReadWrite tenants() {
-                return inventory.tenants();
-            }
         }
     }
 }
