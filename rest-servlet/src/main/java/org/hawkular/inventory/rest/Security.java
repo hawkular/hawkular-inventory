@@ -31,7 +31,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.cdi.AutoTenant;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;

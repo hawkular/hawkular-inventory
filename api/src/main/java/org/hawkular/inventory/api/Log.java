@@ -22,12 +22,14 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.MessageLogger;
 import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.Message;
+import org.jboss.logging.annotations.ValidIdRange;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.6
  */
 @MessageLogger(projectCode = "HAWKINV")
+@ValidIdRange(min = 1, max = 999)
 public interface Log extends BasicLogger {
     Log LOGGER = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.api");
 

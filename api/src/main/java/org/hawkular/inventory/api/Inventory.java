@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -38,9 +37,7 @@ import org.hawkular.inventory.api.model.Tenant;
  * between entities underneath different tenants. This is because there are situations where such relationships might
  * make sense but more importantly because at the API level, inventory does not mandate any security model. It is
  * assumed that the true multi-tenancy in the common sense of the word is implemented by a layer on top of the inventory
- * API that also understands some security model to separate the tenants. To help with multi-tenancy support, the API
- * provides "mixins" to modify the default behavior of the inventory, see the
- * {@link Mixin} class and the {@link #augment(Inventory)} method.
+ * API that also understands some security model to separate the tenants.
  *
  * <p>Resources are hierarchical - meaning that one can be a parent of others, recursively. One can also say that a
  * resource can contain other resources. Resources can have other kinds of relationships that are not necessarily
@@ -57,6 +54,12 @@ import org.hawkular.inventory.api.model.Tenant;
  * single thread or serially.
  *
  * <p>Note to implementers:
+ *
+ * <p>It is highly recommended to extend the {@link org.hawkular.inventory.base.BaseInventory} and its SPI instead of
+ * this interface directly. The base is considered the "reference implementation" and any implementation is required to
+ * behave the same.
+ *
+ * <p>If you for any reason need to implement the full inventory interface, please consider the following:
  *
  * <p>The interfaces composing the inventory API are of 2 kinds:
  * <ol>
@@ -81,16 +84,6 @@ import org.hawkular.inventory.api.model.Tenant;
  * @since 0.0.1
  */
 public interface Inventory extends AutoCloseable {
-
-    /**
-     * Returns an object with which one can modify the behavior of or add features to the provided inventory.
-     *
-     * @param inventory the inventory to augment
-     * @return a mixin object to modify the inventory with
-     */
-    static Mixin augment(Inventory inventory) {
-        return new Mixin(inventory);
-    }
 
     /**
      * Initializes the inventory from the provided configuration object.
@@ -245,18 +238,13 @@ public interface Inventory extends AutoCloseable {
         }, null);
     }
 
-    //TODO make these 2 NOT default - it is a default method right now so that we don't have to change the old
-    //implementation. This should be done before HWKINVENT-45 is merged into master.
-
     /**
      * This method is mainly useful for testing.
      *
      * @param interest the interest in changes of some inventory entity type
      * @return true if the interest has some observers or not
      */
-    default boolean hasObservers(Interest<?, ?> interest) {
-        return false;
-    }
+    boolean hasObservers(Interest<?, ?> interest);
 
     /**
      * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
@@ -268,82 +256,5 @@ public interface Inventory extends AutoCloseable {
      * @return an observable to which the caller can subscribe to receive notifications about inventory
      * mutation
      */
-    default <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
-        return null;
-    }
-
-    /**
-     * TODO get rid of this...
-     *
-     * A class for producing mixins of inventory (currently just {@link Mixin.AutoTenant} interface).
-     *
-     * <p>Given the old-ish type system of Java lacking Self type or union types, this is quite cumbersome and will
-     * result in a combinatorial explosion of backing classes if more mixins are added. I am not sure there is a way to
-     * work around that. Maybe dynamic proxies could be used but are not worth it at this stage.
-     *
-     * @since 0.0.2
-     */
-    final class Mixin {
-        private final Inventory inventory;
-
-        private Mixin(Inventory inventory) {
-            this.inventory = inventory;
-        }
-
-        public AutoTenantMixin autoTenant() {
-            return new AutoTenantMixin(inventory);
-        }
-
-        public static final class AutoTenantMixin {
-            private final AutoTenant inventory;
-
-            private AutoTenantMixin(Inventory inventory) {
-                this.inventory = new AutoTenantInventory(inventory);
-            }
-
-            private AutoTenantMixin(AutoTenant inventory) {
-                this.inventory = inventory;
-            }
-
-            public AutoTenant get() {
-                return inventory;
-            }
-        }
-
-        /**
-         * The observable mixin interface. Augments the inventory so that mutation events on it can be observed.
-         */
-        public interface Observable extends Inventory {
-            /**
-             * This method is mainly useful for testing.
-             *
-             * @param interest the interest in changes of some inventory entity type
-             * @return true if the interest has some observers or not
-             */
-            boolean hasObservers(Interest<?, ?> interest);
-
-            /**
-             * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
-             * subscribers responsibility to unsubscribe on error
-             *
-             * @param interest the interest in changes of some inventory entity type
-             * @param <C>      the type of object that will be passed to the subscribers of the returned observable
-             * @param <E>      the type of the entity the interest is expressed on
-             * @return an observable to which the caller can subscribe to receive notifications about inventory
-             * mutation
-             */
-            <C, E> rx.Observable<C> observable(Interest<C, E> interest);
-        }
-
-        /**
-         * A mixin interface for automatic creation on tenants. While this mixin doesn't provide any new methods,
-         * it changes the behavior of the inventory by using the {@link AutoTenantInventory} as the backing class for
-         * the mixin implementation. Using this mixin, the
-         * {@link #tenants()}.{@link ReadInterface#getAll(Filter...) getAll(Filter...)} always returns an empty set and
-         * {@link #tenants()}.{@link ReadInterface#get(String) get(String)} returns an existing tenant or creates a new
-         * with the provided id.
-         */
-        public interface AutoTenant extends Inventory {
-        }
-    }
+    <C, E> rx.Observable<C> observable(Interest<C, E> interest);
 }

@@ -22,8 +22,14 @@ import org.hawkular.inventory.api.Inventory;
  * @author Lukas Krejci
  * @since 0.0.2
  */
-public final class DisposingInventory extends AbstractDisposingInventory<Inventory> {
+public final class DisposingInventory {
+    private final Inventory inventory;
+
     public DisposingInventory(Inventory inventory) {
-        super(inventory);
+        this.inventory = inventory;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 }

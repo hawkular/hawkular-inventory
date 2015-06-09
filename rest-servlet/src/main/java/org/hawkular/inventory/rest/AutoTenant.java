@@ -14,24 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.cdi;
+package org.hawkular.inventory.rest;
 
-import org.hawkular.inventory.api.Inventory;
+import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * A CDI event informing the users that an inventory instance was initialized.
- *
  * @author Lukas Krejci
- * @since 0.0.2
+ * @since ${MODULE_VERSION}
  */
-abstract class AbstractInventoryInitializedEvent<I extends Inventory> {
-    private final I inventory;
-
-    public AbstractInventoryInitializedEvent(I inventory) {
-        this.inventory = inventory;
-    }
-
-    public I getInventory() {
-        return inventory;
-    }
+@Qualifier
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AutoTenant {
 }

@@ -16,20 +16,18 @@
  */
 package org.hawkular.inventory.cdi;
 
-import org.hawkular.inventory.api.Inventory;
+import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.2
  */
-abstract class AbstractDisposingInventory<I extends Inventory> {
-    private final I inventory;
-
-    public AbstractDisposingInventory(I inventory) {
-        this.inventory = inventory;
-    }
-
-    public I getInventory() {
-        return inventory;
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Qualifier
+public @interface Official {
 }

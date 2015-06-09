@@ -37,7 +37,7 @@ import java.util.Map;
  * @since 0.0.2
  */
 @Singleton
-public class BasicInventoryProducer {
+public class OfficialInventoryProducer {
 
     @Inject
     private Event<InventoryInitialized> inventoryInitializedEvent;
@@ -47,14 +47,14 @@ public class BasicInventoryProducer {
 
     @Produces
     @Singleton
-    @Basic
+    @Official
     public Inventory getInventory() {
         Inventory inventory = initInventory();
         inventoryInitializedEvent.fire(new InventoryInitialized(inventory));
         return inventory;
     }
 
-    public void close(@Disposes @Basic Inventory inventory) throws Exception {
+    public void close(@Disposes @Official Inventory inventory) throws Exception {
         disposingInventoryEvent.fire(new DisposingInventory(inventory));
         dispose(inventory);
     }

@@ -17,7 +17,7 @@
 package org.hawkular.integrated.inventory;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.Basic;
+import org.hawkular.inventory.cdi.Official;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
@@ -35,7 +35,7 @@ import javax.naming.NamingException;
 public class InventoryJNDIPublisher {
 
     @Inject
-    @Basic
+    @Official
     private Inventory inventory;
 
     @PostConstruct
