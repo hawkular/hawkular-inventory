@@ -137,7 +137,9 @@ abstract class FilterApplicator<T extends Filter> {
                 branches.add(branch);
             }
 
-            q.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge();
+            // HAWKULAR-255: the dedup pipe in the end could go away once we find out why there are duplicates
+            // TODO: find out what is really happening here
+            q.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge().dedup();
         }
     }
 
