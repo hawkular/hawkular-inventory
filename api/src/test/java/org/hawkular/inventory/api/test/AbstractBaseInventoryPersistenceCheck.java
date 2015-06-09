@@ -32,7 +32,6 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -50,6 +49,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.PathFragment;
 import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
@@ -63,14 +63,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
+import static org.hawkular.inventory.api.Relationships.Direction.both;
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -82,7 +87,7 @@ import static org.hawkular.inventory.api.filters.With.type;
  * @since 0.0.6
  */
 public abstract class AbstractBaseInventoryPersistenceCheck<E> {
-    BaseInventory<E> inventory;
+    protected BaseInventory<E> inventory;
 
     protected abstract BaseInventory<E> instantiateNewInventory();
 
@@ -193,10 +198,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .get("playroom2").metrics().get("playroom2_size").relationships(outgoing)
                 .linkWith("yourMom", test, null);
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.incoming)
+                .get("playroom2").metrics().get("playroom2_size").relationships(incoming)
                 .linkWith("IamYourFather", test, null);
     }
 
@@ -290,7 +295,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testTenants() throws Exception {
         Function<String, Void> test = (id) -> {
             Query query = Query.empty().asBuilder()
-                    .with(PathFragment.from(type(Tenant.class), With.id(id))).build();
+                    .with(PathFragment.from(type(Tenant.class), id(id))).build();
 
             Page<E> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
 
@@ -456,13 +461,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testRelationshipServiceLinkedWith() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
                 .feedlessResources().get("playroom2").metrics().get("playroom2_size")
-                .relationships(Relationships.Direction.outgoing).named("yourMom").entities();
+                .relationships(outgoing).named("yourMom").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
         assert "test".equals(rels.iterator().next().getTarget().getId()) : "Target of relationship 'yourMom' should " +
                 "be the 'test' environment";
 
         rels = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.both)
+                .get("playroom2").metrics().get("playroom2_size").relationships(both)
                 .named("IamYourFather").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
         assert "test".equals(rels.iterator().next().getSource().getId()) : "Source of relationship 'IamYourFather' " +
@@ -473,10 +478,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testRelationshipServiceLinkedWithAndDelete() throws Exception {
         Tenant tenant = inventory.tenants().get("com.example.tenant").entity();
         Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production")
-                .feedlessResources().get("host1").relationships(Relationships.Direction.incoming)
+                .feedlessResources().get("host1").relationships(incoming)
                 .linkWith("crossTenantLink", tenant, null).entity();
 
-        assert inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+        assert inventory.tenants().get("com.example.tenant").relationships(outgoing)
                 .named("crossTenantLink").entities().size() == 1 : "Relation 'crossTenantLink' was not found.";
         // delete the relationship
         inventory.tenants().get("com.example.tenant").relationships(/*defaults to outgoing*/).delete(link.getId());
@@ -497,23 +502,23 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         final String someKey = "k3y";
         final String someValue = "v4lu3";
         Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .get("playroom2").metrics().get("playroom2_size").relationships(outgoing)
                 .named("yourMom").entities().iterator().next();
         assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
 
         Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .get("playroom2").metrics().get("playroom2_size").relationships(outgoing)
                 .named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel2.getId()) && null == rel2.getProperties().get(someKey) : "There should not be" +
                 " any property with key 'k3y'";
 
         // persist the change
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .get("playroom2").metrics().get("playroom2_size").relationships(outgoing)
                 .update(rel1.getId(), Relationship.Update.builder().withProperty(someKey, someValue).build());
 
         Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get("playroom2_size").relationships(Relationships.Direction.outgoing)
+                .get("playroom2").metrics().get("playroom2_size").relationships(outgoing)
                 .named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
                 : "There should be the property with key 'k3y' and value 'v4lu3'";
@@ -522,14 +527,14 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testRelationshipServiceGetAllFilters() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains")).entities();
+                .relationships(outgoing).getAll(RelationWith.name("contains")).entities();
         assert rels != null && rels.size() == 4 : "There should be 4 relationships conforming the filters";
         assert rels.stream().anyMatch(rel -> "playroom2_size".equals(rel.getTarget().getId()));
         assert rels.stream().anyMatch(rel -> "playroom1".equals(rel.getTarget().getId()));
 
 
         rels = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .relationships(Relationships.Direction.outgoing).getAll(RelationWith.name("contains"), RelationWith
+                .relationships(outgoing).getAll(RelationWith.name("contains"), RelationWith
                         .targetOfType(Metric.class)).entities();
         assert rels != null && rels.size() == 2 : "There should be 2 relationships conforming the filters";
         assert rels.stream().allMatch(rel -> Metric.class.equals(rel.getTarget().getClass())) : "The type of all the " +
@@ -537,7 +542,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
 
         rels = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .relationships(Relationships.Direction.incoming).getAll(RelationWith.name("contains")).entities();
+                .relationships(incoming).getAll(RelationWith.name("contains")).entities();
 
         assert rels != null && rels.size() == 1 : "There should be just 1 relationship conforming the filters";
         assert "com.example.tenant".equals(rels.iterator().next().getSource().getId()) : "Tenant 'com.example" +
@@ -607,8 +612,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testEnvironments() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
             Query q = Query.empty().asBuilder()
-                    .with(PathFragment.from(type(Tenant.class), With.id(tenantId), by(contains),
-                            type(Environment.class), With.id(id))).build();
+                    .with(PathFragment.from(type(Tenant.class), id(tenantId), by(contains),
+                            type(Environment.class), id(id))).build();
 
 
             Page<E> envs = inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()));
@@ -707,7 +712,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, metricDefId, id) -> {
 
             Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
-                    .getAll(Defined.by(new MetricType(tenantId, metricDefId)), With.id(id)).entities().iterator()
+                    .getAll(Defined.by(new MetricType(tenantId, metricDefId)), id(id)).entities().iterator()
                     .next();
             assert m.getId().equals(id);
 
@@ -726,7 +731,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testResources() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
             Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
-                    .getAll(Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0")), With.id(id)).entities()
+                    .getAll(Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0")), id(id)).entities()
                     .iterator().next();
             assert r.getId().equals(id);
 
@@ -835,7 +840,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testContainsLoopsImpossible() throws Exception {
         try {
-            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+            inventory.tenants().get("com.example.tenant").relationships(outgoing)
                     .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Self-loops in contains should be disallowed");
@@ -844,7 +849,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         try {
-            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+            inventory.tenants().get("com.example.tenant").relationships(incoming)
                     .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Self-loops in contains should be disallowed");
@@ -854,7 +859,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         try {
             inventory.tenants().get("com.example.tenant").environments().get("test")
-                    .relationships(Relationships.Direction.outgoing)
+                    .relationships(outgoing)
                     .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Loops in contains should be disallowed");
@@ -863,7 +868,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         try {
-            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.incoming)
+            inventory.tenants().get("com.example.tenant").relationships(incoming)
                     .linkWith("contains", new Environment("com.example.tenant", "test"), null);
 
             Assert.fail("Loops in contains should be disallowed");
@@ -875,7 +880,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testContainsDiamondsImpossible() throws Exception {
         try {
-            inventory.tenants().get("com.example.tenant").relationships(Relationships.Direction.outgoing)
+            inventory.tenants().get("com.example.tenant").relationships(outgoing)
                     .linkWith("contains", new ResourceType("com.acme.tenant", "URL", "1.0"), null);
 
             Assert.fail("Entity cannot be contained in 2 or more others");
@@ -885,7 +890,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         try {
             inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL")
-                    .relationships(Relationships.Direction.incoming)
+                    .relationships(incoming)
                     .linkWith("contains", new Tenant("com.example.tenant"), null);
 
             Assert.fail("Entity cannot be contained in 2 or more others");
@@ -1147,6 +1152,254 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             inventory.tenants().get("t").environments().get("e").feedlessResources().delete("r");
         });
+    }
+
+    @Test
+    public void testBackendFind() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        CanonicalPath tenantPath = CanonicalPath.builder().withTenantId("com.acme.tenant").build();
+
+        E entity = backend.find(tenantPath);
+        Tenant tenant = backend.convert(entity, Tenant.class);
+        Assert.assertEquals("com.acme.tenant", tenant.getId());
+
+        CanonicalPath envPath = tenantPath.extend().withEnvironmentId("production").build();
+        entity = backend.find(envPath);
+        Environment env = backend.convert(entity, Environment.class);
+        Assert.assertEquals("com.acme.tenant", env.getTenantId());
+        Assert.assertEquals("production", env.getId());
+
+        entity = backend.find(envPath.extend().withResourceId("host1").build());
+        Resource r = backend.convert(entity, Resource.class);
+        Assert.assertEquals("com.acme.tenant", r.getTenantId());
+        Assert.assertEquals("production", r.getEnvironmentId());
+        Assert.assertNull(r.getFeedId());
+        Assert.assertEquals("host1", r.getId());
+
+        entity = backend.find(envPath.extend().withMetricId("host1_ping_response").build());
+        Metric m = backend.convert(entity, Metric.class);
+        Assert.assertEquals("com.acme.tenant", m.getTenantId());
+        Assert.assertEquals("production", m.getEnvironmentId());
+        Assert.assertNull(m.getFeedId());
+        Assert.assertEquals("host1_ping_response", m.getId());
+
+        CanonicalPath feedPath = envPath.extend().withFeedId("feed1").build();
+        entity = backend.find(feedPath);
+        Feed f = backend.convert(entity, Feed.class);
+        Assert.assertEquals("com.acme.tenant", f.getTenantId());
+        Assert.assertEquals("production", f.getEnvironmentId());
+        Assert.assertEquals("feed1", f.getId());
+
+        entity = backend.find(feedPath.extend().withResourceId("feedResource1").build());
+        r = backend.convert(entity, Resource.class);
+        Assert.assertEquals("com.acme.tenant", r.getTenantId());
+        Assert.assertEquals("production", r.getEnvironmentId());
+        Assert.assertEquals("feed1", r.getFeedId());
+        Assert.assertEquals("feedResource1", r.getId());
+
+        entity = backend.find(feedPath.extend().withMetricId("feedMetric1").build());
+        m = backend.convert(entity, Metric.class);
+        Assert.assertEquals("com.acme.tenant", m.getTenantId());
+        Assert.assertEquals("production", m.getEnvironmentId());
+        Assert.assertEquals("feed1", m.getFeedId());
+        Assert.assertEquals("feedMetric1", m.getId());
+
+        entity = backend.find(tenantPath.extend().withResourceTypeId("URL").build());
+        ResourceType rt = backend.convert(entity, ResourceType.class);
+        Assert.assertEquals("com.acme.tenant", rt.getTenantId());
+        Assert.assertEquals("URL", rt.getId());
+
+        entity = backend.find(tenantPath.extend().withMetricTypeId("ResponseTime").build());
+        MetricType mt = backend.convert(entity, MetricType.class);
+        Assert.assertEquals("com.acme.tenant", mt.getTenantId());
+        Assert.assertEquals("ResponseTime", mt.getId());
+    }
+
+    @Test
+    public void testBackendGetRelationship() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        E tenant = backend.find(CanonicalPath.builder().withTenantId("com.acme.tenant").build());
+        E environment = backend.find(CanonicalPath.builder().withTenantId("com.acme.tenant")
+                .withEnvironmentId("production").build());
+        E r = backend.getRelationship(tenant, environment, contains.name());
+
+        Relationship rel = backend.convert(r, Relationship.class);
+
+        Assert.assertEquals("com.acme.tenant", rel.getSource().getId());
+        Assert.assertEquals("production", rel.getTarget().getId());
+        Assert.assertEquals("contains", rel.getName());
+    }
+
+    @Test
+    public void testBackendGetRelationships() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        E entity = backend.find(CanonicalPath.builder().withTenantId("com.acme.tenant").build());
+        Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
+        Set<E> rels = backend.getRelationships(entity, both);
+        Assert.assertEquals(3, rels.size());
+
+        Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
+                Relationship.class));
+
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "production".equals(r.getTarget().getId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "URL".equals(r.getTarget().getId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "ResponseTime".equals(r.getTarget().getId())));
+
+        rels = backend.getRelationships(entity, incoming);
+        Assert.assertTrue(rels.isEmpty());
+
+        rels = backend.getRelationships(entity, outgoing);
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "production".equals(r.getTarget().getId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "URL".equals(r.getTarget().getId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getId()) && "ResponseTime".equals(r.getTarget().getId())));
+
+        entity = backend.find(CanonicalPath.builder().withTenantId("com.example.tenant").withEnvironmentId("test")
+                .build());
+        Assert.assertEquals("test", backend.extractId(entity));
+
+        rels = backend.getRelationships(entity, incoming);
+        Assert.assertEquals(2, rels.size());
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "contains".equals(r.getName()) &&
+                "com.example.tenant".equals(r.getSource().getId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "yourMom".equals(r.getName()) &&
+                "playroom2_size".equals(r.getSource().getId())));
+
+        rels = backend.getRelationships(entity, outgoing, "IamYourFather");
+        Assert.assertEquals(1, rels.size());
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "IamYourFather".equals(r.getName()) &&
+                "playroom2_size".equals(r.getTarget().getId())));
+
+    }
+
+    @Test
+    public void testBackendGetTransitiveClosure() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        TriFunction<E, String, Relationships.Direction, Stream<? extends AbstractElement<?, ?>>> test =
+                (start, name, direction) -> {
+                    Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, name, direction);
+                    return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
+                            false).map((e) -> backend.convert(e, backend.extractType(e)));
+                };
+
+        E env = backend.find(CanonicalPath.builder().withTenantId("com.acme.tenant").withEnvironmentId("production")
+                .build());
+        E feed = backend.find(CanonicalPath.builder().withTenantId("com.acme.tenant").withEnvironmentId("production")
+                .withFeedId("feed1").build());
+
+        Assert.assertEquals(4, test.apply(feed, "contains", outgoing).count());
+        Assert.assertFalse(test.apply(feed, "contains", outgoing).anyMatch((e) -> e instanceof Feed &&
+                "feed1".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
+                "feedResource1".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
+                "feedResource2".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
+                "feedResource3".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Metric &&
+                "feedMetric1".equals(e.getId())));
+
+        Assert.assertEquals(1, test.apply(env, "contains", incoming).count());
+        Assert.assertTrue(test.apply(env, "contains", incoming).anyMatch((e) -> e instanceof Tenant &&
+                "com.acme.tenant".equals(e.getId())));
+    }
+
+    @Test
+    public void testBackendHasRelationship() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        E tenant = backend.find(CanonicalPath.builder().withTenantId("com.example.tenant").build());
+
+        Assert.assertTrue(backend.hasRelationship(tenant, outgoing, "contains"));
+        Assert.assertFalse(backend.hasRelationship(tenant, incoming, "contains"));
+        Assert.assertTrue(backend.hasRelationship(tenant, both, "contains"));
+
+        E env = backend.find(CanonicalPath.builder().withTenantId("com.example.tenant").withEnvironmentId("test")
+                .build());
+
+        Assert.assertTrue(backend.hasRelationship(tenant, env, "contains"));
+        Assert.assertFalse(backend.hasRelationship(tenant, env, "kachny"));
+    }
+
+    @Test
+    public void testBackendExtractId() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        E tenant = backend.find(CanonicalPath.builder().withTenantId("com.example.tenant").build());
+
+        Assert.assertEquals("com.example.tenant", backend.extractId(tenant));
+    }
+
+    @Test
+    public void testBackendExtractType() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        CanonicalPath tenantPath = CanonicalPath.builder().withTenantId("com.acme.tenant").build();
+
+        E entity = backend.find(tenantPath);
+        Assert.assertEquals(Tenant.class, backend.extractType(entity));
+
+        CanonicalPath envPath = tenantPath.extend().withEnvironmentId("production").build();
+        entity = backend.find(envPath);
+        Assert.assertEquals(Environment.class, backend.extractType(entity));
+
+        entity = backend.find(envPath.extend().withResourceId("host1").build());
+        Assert.assertEquals(Resource.class, backend.extractType(entity));
+
+        entity = backend.find(envPath.extend().withMetricId("host1_ping_response").build());
+        Assert.assertEquals(Metric.class, backend.extractType(entity));
+
+        CanonicalPath feedPath = envPath.extend().withFeedId("feed1").build();
+        entity = backend.find(feedPath);
+        Assert.assertEquals(Feed.class, backend.extractType(entity));
+
+        entity = backend.find(feedPath.extend().withResourceId("feedResource1").build());
+        Assert.assertEquals(Resource.class, backend.extractType(entity));
+
+        entity = backend.find(feedPath.extend().withMetricId("feedMetric1").build());
+        Assert.assertEquals(Metric.class, backend.extractType(entity));
+
+        entity = backend.find(tenantPath.extend().withResourceTypeId("URL").build());
+        Assert.assertEquals(ResourceType.class, backend.extractType(entity));
+
+        entity = backend.find(tenantPath.extend().withMetricTypeId("ResponseTime").build());
+        Assert.assertEquals(MetricType.class, backend.extractType(entity));
+    }
+
+    @Test
+    public void testBackendQuery() throws Exception {
+        InventoryBackend<E> backend = inventory.getBackend();
+
+        Pager unlimited = Pager.unlimited(Order.unspecified());
+
+        Query q = Query.path().with(type(Tenant.class), id("com.acme.tenant")).get();
+        Page<E> results = backend.query(q, unlimited);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals("com.acme.tenant", backend.extractId(results.get(0)));
+
+        q = Query.path().with(type(Tenant.class), id("com.acme.tenant"), Related.by("contains"),
+                type(Environment.class), id("production")).get();
+        results = backend.query(q, unlimited);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals("production", backend.extractId(results.get(0)));
+
+        // equivalent to inventory.tenants().getAll(Related.by("contains"), type(ResourceType.class, id("URL")
+        // .environments().getAll().entities();
+        q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(ResourceType.class),
+                id("URL")).path().with(Related.by("contains"), type(Environment.class)).get();
+        results = backend.query(q, unlimited);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals("production", backend.extractId(results.get(0)));
+
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

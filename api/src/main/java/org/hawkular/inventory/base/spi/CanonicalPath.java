@@ -131,6 +131,17 @@ public final class CanonicalPath {
     }
 
     /**
+     * Constructs a canonical path builder that can be used to construct a new canonical path extending this one.
+     *
+     * @return a new builder with the fields initialized from this instance
+     */
+    public Builder extend() {
+        return new Builder().withTenantId(tenantId).withEnvironmentId(environmentId).withFeedId(feedId)
+                .withResourceTypeId(resourceTypeId).withMetricTypeId(metricTypeId).withMetricId(metricId)
+                .withResourceId(resourceId).withRelationshipId(relationshipId);
+    }
+
+    /**
      * @return true if relationshipId or tenantId is not null, false otherwise
      */
     public boolean isDefined() {
