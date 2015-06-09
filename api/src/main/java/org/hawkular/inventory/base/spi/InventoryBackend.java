@@ -143,22 +143,6 @@ public interface InventoryBackend<E> extends AutoCloseable {
     String extractId(E entityRepresentation);
 
     /**
-     * Similar to {@link #extractId(Object)} but extracts the name of the relationship represented as the object.
-     *
-     * @param relationshipRepresentation the relationship object.
-     * @return the name of the relationship
-     */
-    String extractRelationshipName(E relationshipRepresentation);
-
-    /**
-     * Similar to {@link #extractId(Object)} but extracts the properties out of the element representation.
-     *
-     * @param entityRepresentation the element object
-     * @return the properties of the element represented by the object
-     */
-    Map<String, Object> extractProperties(E entityRepresentation);
-
-    /**
      * Similar to {@link #extractId(Object)} but extracts the type of element from the representation.
      *
      * @param entityRepresentation the representation object.

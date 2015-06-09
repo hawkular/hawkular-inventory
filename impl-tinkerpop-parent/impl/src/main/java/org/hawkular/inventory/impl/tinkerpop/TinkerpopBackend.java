@@ -252,16 +252,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public String extractRelationshipName(Element relationshipRepresentation) {
-        return ((Edge) relationshipRepresentation).getLabel();
-    }
-
-    @Override
-    public Map<String, Object> extractProperties(Element entityRepresentation) {
-        return ElementHelper.getProperties(entityRepresentation);
-    }
-
-    @Override
     public Class<? extends AbstractElement<?, ?>> extractType(Element entityRepresentation) {
         if (entityRepresentation instanceof Edge) {
             return Relationship.class;
