@@ -42,7 +42,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.spi.JumpInOutFilter;
+import org.hawkular.inventory.lazy.spi.SwitchElementType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,7 +66,7 @@ final class RelationshipBrowser extends AbstractGraphService {
         Relationships.Single single(InventoryContext iContext, Class<T> sourceClass, Relationships.Direction direction,
                                     FilterApplicator.Tree path, RelationFilter[] filters) {
 
-        final Filter goToEdge = new JumpInOutFilter(direction, false);
+        final Filter goToEdge = new SwitchElementType(direction, false);
         RelationshipBrowser b = new RelationshipBrowser(iContext, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
         return new Relationships.Single() {
@@ -94,8 +94,8 @@ final class RelationshipBrowser extends AbstractGraphService {
     public static Relationships.Multiple multiple(InventoryContext iContext, Relationships.Direction direction,
             FilterApplicator.Tree path, RelationFilter[] filters) {
 
-        final Filter goToEdge = new JumpInOutFilter(direction, false);
-        final Filter goFromEdge = new JumpInOutFilter(direction, true);
+        final Filter goToEdge = new SwitchElementType(direction, false);
+        final Filter goFromEdge = new SwitchElementType(direction, true);
         RelationshipBrowser b = new RelationshipBrowser(iContext, AbstractGraphService.pathWith
                 (path, goToEdge).andFilter(filters).get());
 

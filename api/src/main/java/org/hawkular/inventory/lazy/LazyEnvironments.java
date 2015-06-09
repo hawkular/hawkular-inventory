@@ -21,14 +21,19 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -97,7 +102,7 @@ public final class LazyEnvironments {
         }
     }
 
-    public static final class Single<BE> extends Fetcher<BE, Environment> implements Environments.Single {
+    public static final class Single<BE> extends SingleEntityFetcher<BE, Environment> implements Environments.Single {
 
         public Single(TraversalContext<BE, Environment> context) {
             super(context);
@@ -105,48 +110,38 @@ public final class LazyEnvironments {
 
         @Override
         public Feeds.ReadWrite feeds() {
-            //TODO implement
-            return null;
+            return new LazyFeeds.ReadWrite<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override
         public Resources.ReadWrite feedlessResources() {
-            //TODO implement
-            return null;
+            return new LazyResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.ReadWrite feedlessMetrics() {
-            //TODO implement
-            return null;
+            return new LazyMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            //TODO implement
-            return null;
+            return new LazyResources.Read<>(context.proceed().where(new Filter[][]{
+                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Feed.class), by(contains), type(Resource.class)}
+            }).getting(Resource.class));
         }
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
+            return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
+                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Feed.class), by(contains), type(Metric.class)}
+            }).getting(Metric.class));
         }
     }
 
-    public static final class Multiple<BE> extends Fetcher<BE, Environment> implements Environments.Multiple {
+    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Environment>
+            implements Environments.Multiple {
 
         public Multiple(TraversalContext<BE, Environment> context) {
             super(context);
@@ -154,44 +149,33 @@ public final class LazyEnvironments {
 
         @Override
         public Feeds.Read feeds() {
-            //TODO implement
-            return null;
+            return new LazyFeeds.Read<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override
         public Resources.Read feedlessResources() {
-            //TODO implement
-            return null;
+            return new LazyResources.Read<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.Read feedlessMetrics() {
-            //TODO implement
-            return null;
+            return new LazyMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            //TODO implement
-            return null;
+            return new LazyResources.Read<>(context.proceed().where(new Filter[][]{
+                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Feed.class), by(contains), type(Resource.class)}
+            }).getting(Resource.class));
         }
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
+            return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
+                    {by(contains), type(Resource.class)},
+                    {by(contains), type(Feed.class), by(contains), type(Metric.class)}
+            }).getting(Metric.class));
         }
     }
 }

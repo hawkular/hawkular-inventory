@@ -56,7 +56,7 @@ public abstract class LazyInventory<E> implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new LazyTenants.ReadWrite<>(new TraversalContext<>(QueryFragmentTree.empty(),
+        return new LazyTenants.ReadWrite<>(new TraversalContext<>(this, QueryFragmentTree.empty(),
                 QueryFragmentTree.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration));
     }
 

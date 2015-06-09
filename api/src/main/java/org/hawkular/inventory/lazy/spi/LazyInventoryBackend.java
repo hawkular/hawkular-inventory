@@ -32,7 +32,6 @@ import java.util.function.Function;
  *
  * @param <E> the type of the backend-specific objects representing the inventory entities. It is assumed that the
  *            backend is "untyped" and stores all different inventory entities using this single type.
- *
  * @author Lukas Krejci
  * @since 0.0.6
  */
@@ -48,6 +47,10 @@ public interface LazyInventoryBackend<E> extends AutoCloseable {
     Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);
 
     boolean hasRelationship(E entity, Relationships.Direction direction, String relationshipName);
+
+    boolean hasRelationship(E source, E target, String relationshipName);
+
+    E getRelationship(E source, E target, String relationshipName);
 
     String extractId(E entityRepresentation);
 

@@ -20,11 +20,12 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.MetricTypes;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
@@ -90,7 +91,7 @@ public final class LazyTenants {
         }
     }
 
-    public static final class Multiple<BE> extends Fetcher<BE, Tenant> implements Tenants.Multiple {
+    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant> implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -98,36 +99,21 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            //TODO implement
-            return null;
+            return new LazyResourceTypes.Read<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            //TODO implement
-            return null;
+            return new LazyMetricTypes.Read<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.Read environments() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.Read relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
+            return new LazyEnvironments.Read<>(context.proceedTo(contains, Environment.class).get());
         }
     }
 
-    public static final class Single<BE> extends Fetcher<BE, Tenant> implements Tenants.Single {
+    public static final class Single<BE> extends SingleEntityFetcher<BE, Tenant> implements Tenants.Single {
 
         public Single(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -135,31 +121,17 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.ReadWrite resourceTypes() {
-            //TODO implement
-            return null;
+            return new LazyResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
         public MetricTypes.ReadWrite metricTypes() {
-            //TODO implement
-            return null;
+            return new LazyMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.ReadWrite environments() {
             return new LazyEnvironments.ReadWrite<>(context.proceedTo(contains, Environment.class).get());
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships() {
-            //TODO implement
-            return null;
-        }
-
-        @Override
-        public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-            //TODO implement
-            return null;
         }
     }
 }

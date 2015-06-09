@@ -18,13 +18,15 @@ package org.hawkular.inventory.lazy;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -37,7 +39,9 @@ import java.util.Set;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -81,62 +85,76 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             throw t;
         }
 
-        return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor<QueryFragmentTree.Builder, Void>() {
-            @Override
-            public QueryFragmentTree.Builder visitTenant(Void parameter) {
-                return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        id(id)));
-            }
+        return ElementTypeVisitor.accept(context.entityClass,
+                new ElementTypeVisitor<QueryFragmentTree, QueryFragmentTree.Builder>() {
+                    @Override
+                    public QueryFragmentTree visitTenant(QueryFragmentTree.Builder bld) {
+                        return bld.with(PathFragment.from(type(Tenant.class), id(id))).build();
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitEnvironment(Void parameter) {
-                return new QueryFragmentTree.Builder().with(PathFragment.from(With.type(Tenant.class),
-                        id(parentPath.path.getTenantId()), Related.by(contains), With.type(Environment.class),
-                        id(id)));
-            }
+                    @Override
+                    public QueryFragmentTree visitEnvironment(QueryFragmentTree.Builder bld) {
+                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                by(contains), type(Environment.class), id(id))).build();
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitFeed(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitFeed(QueryFragmentTree.Builder bld) {
+                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                by(contains), type(Feed.class), id(id))).build();
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitMetric(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitMetric(QueryFragmentTree.Builder bld) {
+                        if (parentPath.path.getFeedId() == null) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                    by(contains), type(Metric.class), id(id))).build();
+                        } else {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()), type(Metric.class),
+                                    id(id))).build();
+                        }
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitMetricType(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitMetricType(QueryFragmentTree.Builder bld) {
+                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                by(contains), type(MetricType.class), id(id))).build();
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitResource(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitResource(QueryFragmentTree.Builder bld) {
+                        if (parentPath.path.getFeedId() == null) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                    by(contains), type(Resource.class), id(id))).build();
+                        } else {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
+                                    type(Resource.class), id(id))).build();
+                        }
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitResourceType(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitResourceType(QueryFragmentTree.Builder bld) {
+                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                by(contains), type(ResourceType.class), id(id))).build();
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitUnknown(Void parameter) {
-                //TODO implement
-                return null;
-            }
+                    @Override
+                    public QueryFragmentTree visitUnknown(QueryFragmentTree.Builder bld) {
+                        return null;
+                    }
 
-            @Override
-            public QueryFragmentTree.Builder visitRelationship(Void parameter) {
-                //TODO implement
-                return null;
-            }
-        }, null).build();
+                    @Override
+                    public QueryFragmentTree visitRelationship(QueryFragmentTree.Builder bld) {
+                        return null;
+                    }
+                }, new QueryFragmentTree.Builder());
     }
 
     public final void update(String id, Update update) throws EntityNotFoundException {
@@ -282,7 +300,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             }
 
             private BE getParentOfType(Class<? extends Entity<?, ?>> type, boolean throwException) {
-                QueryFragmentTree query = context.sourcePath.extend().filter().with(With.type(type)).get();
+                QueryFragmentTree query = context.sourcePath.extend().filter().with(type(type)).get();
 
                 Page<BE> parents = context.backend.query(query, Pager.single());
 

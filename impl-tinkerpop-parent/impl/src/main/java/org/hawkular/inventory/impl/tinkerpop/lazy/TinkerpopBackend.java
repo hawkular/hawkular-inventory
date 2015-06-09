@@ -139,6 +139,35 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
+    public boolean hasRelationship(Element source, Element target, String relationshipName) {
+        if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
+            return false;
+        }
+
+        Iterator<Vertex> targets = ((Vertex) source).getVertices(Direction.OUT, relationshipName).iterator();
+
+        while (targets.hasNext()) {
+            if (target.equals(targets.next())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public Element getRelationship(Element source, Element target, String relationshipName) {
+        if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
+            return null;
+        }
+
+        Vertex t = (Vertex) target;
+
+        return new HawkularPipeline<>(source).outE(relationshipName).remember().inV().hasType(getType(t))
+                .hasEid(getEid(t)).recall().cast(Edge.class).next();
+    }
+
+    @Override
     public String extractId(Element entityRepresentation) {
         return entityRepresentation.getProperty(Constants.Property.__eid.name());
     }
@@ -287,7 +316,9 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     @Override
     public Element relate(Element sourceEntity, Element targetEntity, String label, Map<String, Object> properties) {
         Edge e = ((Vertex) sourceEntity).addEdge(label, (Vertex) targetEntity);
-        ElementHelper.setProperties(e, properties);
+        if (properties != null) {
+            ElementHelper.setProperties(e, properties);
+        }
         e.setProperty(Constants.Property.__eid.name(), e.getId().toString());
         return e;
     }
@@ -594,6 +625,10 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
      */
     static Constants.Type getType(Vertex v) {
         return Constants.Type.valueOf(v.getProperty(Constants.Property.__type.name()));
+    }
+
+    static String getEid(Element e) {
+        return e.getProperty(Constants.Property.__eid.name());
     }
 
     static Direction toNative(Relationships.Direction direction) {

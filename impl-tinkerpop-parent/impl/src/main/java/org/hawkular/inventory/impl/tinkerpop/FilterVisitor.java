@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.lazy.spi.JumpInOutFilter;
+import org.hawkular.inventory.lazy.spi.SwitchElementType;
 
 import java.util.Arrays;
 
@@ -182,7 +182,7 @@ class FilterVisitor {
         q2.or(typeChecks).recall();
     }
 
-    public void visit(HawkularPipeline<?, ?> query, JumpInOutFilter filter) {
+    public void visit(HawkularPipeline<?, ?> query, SwitchElementType filter) {
         final boolean jumpFromEdge = filter.isFromEdge();
         switch (filter.getDirection()) {
             case incoming:

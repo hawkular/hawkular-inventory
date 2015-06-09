@@ -19,15 +19,34 @@ package org.hawkular.inventory.lazy.spi;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+
 /**
  * filter used internally by the lazy impl for jumping from a vertex to an edge or back.
  * This needs to be understood by all backends but is not directly part of the public API.
  */
-public class JumpInOutFilter extends Filter {
+public final class SwitchElementType extends Filter {
     private final Relationships.Direction direction;
     private final boolean fromEdge;
 
-    public JumpInOutFilter(Relationships.Direction direction, boolean fromEdge) {
+    public static SwitchElementType incomingRelationships() {
+        return new SwitchElementType(incoming, false);
+    }
+
+    public static SwitchElementType outgoingRelationships() {
+        return new SwitchElementType(outgoing, false);
+    }
+
+    public static SwitchElementType sourceEntities() {
+        return new SwitchElementType(incoming, true);
+    }
+
+    public static SwitchElementType targetEntities() {
+        return new SwitchElementType(outgoing, true);
+    }
+
+    public SwitchElementType(Relationships.Direction direction, boolean fromEdge) {
         this.direction = direction;
         this.fromEdge = fromEdge;
     }

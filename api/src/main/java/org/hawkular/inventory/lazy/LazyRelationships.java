@@ -31,7 +31,12 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -48,7 +53,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public class LazyRelationships {
+public final class LazyRelationships {
 
     private LazyRelationships() {
 
@@ -212,6 +217,40 @@ public class LazyRelationships {
         }
     }
 
+    public static final class Read<BE> extends Traversal<BE, Relationship> implements Relationships.Read {
+
+        private final Relationships.Direction direction;
+        private final Class<? extends Entity<?, ?>> originEntityType;
+
+        public Read(TraversalContext<BE, Relationship> context, Class<? extends Entity<?, ?>> originEntityType,
+                Relationships.Direction direction) {
+
+            super(context);
+            this.direction = direction;
+            this.originEntityType = originEntityType;
+        }
+
+        @Override
+        public Relationships.Multiple named(String name) {
+            return new Multiple<>(context.proceed().where(RelationWith.name(name)).get());
+        }
+
+        @Override
+        public Relationships.Multiple named(Relationships.WellKnown name) {
+            return named(name.name());
+        }
+
+        @Override
+        public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return new Single<>(context.proceed().where(With.id(id)).get());
+        }
+
+        @Override
+        public Relationships.Multiple getAll(RelationFilter... filters) {
+            return new Multiple<>(context.proceed().where(filters).get());
+        }
+    }
+
     public static final class Single<BE> extends Fetcher<BE, Relationship> implements Relationships.Single {
 
         public Single(TraversalContext<BE, Relationship> context) {
@@ -237,32 +276,27 @@ public class LazyRelationships {
 
         @Override
         public Feeds.Read feeds() {
-            //TODO implement
-            return null;
+            return new LazyFeeds.Read<>(context.filterTo(Feed.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            //TODO implement
-            return null;
+            return new LazyMetricTypes.Read<>(context.filterTo(MetricType.class).get());
         }
 
         @Override
         public Metrics.Read metrics() {
-            //TODO implement
-            return null;
+            return new LazyMetrics.Read<>(context.filterTo(Metric.class).get());
         }
 
         @Override
         public Resources.Read resources() {
-            //TODO implement
-            return null;
+            return new LazyResources.Read<>(context.filterTo(Resource.class).get());
         }
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            //TODO implement
-            return null;
+            return new LazyResourceTypes.Read<>(context.filterTo(ResourceType.class).get());
         }
     }
 }
