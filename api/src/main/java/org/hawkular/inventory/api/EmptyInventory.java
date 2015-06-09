@@ -558,14 +558,14 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Relationships.Single linkWith(String name, Entity targetOrSource,
-                Map<String, String> properties) throws IllegalArgumentException {
+        public Relationships.Single linkWith(String name, Entity<?, ?> targetOrSource,
+                Map<String, Object> properties) throws IllegalArgumentException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource,
-                Map<String, String> properties) throws IllegalArgumentException {
+        public Relationships.Single linkWith(Relationships.WellKnown name, Entity<?, ?> targetOrSource,
+                Map<String, Object> properties) throws IllegalArgumentException {
             throw new UnsupportedOperationException();
         }
 

@@ -73,6 +73,23 @@ public final class LazyTenants {
         }
     }
 
+    public static final class Read<BE> extends Traversal<BE, Tenant> implements Tenants.Read {
+
+        public Read(TraversalContext<BE, Tenant> context) {
+            super(context);
+        }
+
+        @Override
+        public Tenants.Multiple getAll(Filter... filters) {
+            return new Multiple<>(context.proceed().where(filters).get());
+        }
+
+        @Override
+        public Tenants.Single get(String id) throws EntityNotFoundException {
+            return new Single<>(context.proceed().where(id(id)).get());
+        }
+    }
+
     public static final class Multiple<BE> extends Fetcher<BE, Tenant> implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {

@@ -16,6 +16,17 @@
  */
 package org.hawkular.inventory.lazy.spi;
 
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
+
 /**
  * @author Lukas Krejci
  * @since 0.0.6
@@ -29,6 +40,63 @@ public final class CanonicalPath {
     private final String metricId;
     private final String resourceId;
     private final String relationshipId;
+
+    public static CanonicalPath of(AbstractElement<?, ?> element) {
+        return element.accept(new ElementVisitor<CanonicalPath, Void>() {
+            @Override
+            public CanonicalPath visitTenant(Tenant tenant, Void parameter) {
+                return CanonicalPath.builder().withTenantId(tenant.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitEnvironment(Environment environment, Void parameter) {
+                return CanonicalPath.builder().withTenantId(environment.getTenantId())
+                        .withEnvironmentId(environment.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitFeed(Feed feed, Void parameter) {
+                return CanonicalPath.builder().withTenantId(feed.getTenantId())
+                        .withEnvironmentId(feed.getEnvironmentId()).withFeedId(feed.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitMetric(Metric metric, Void parameter) {
+                return CanonicalPath.builder().withTenantId(metric.getTenantId())
+                        .withEnvironmentId(metric.getEnvironmentId()).withFeedId(metric.getFeedId())
+                        .withMetricId(metric.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitMetricType(MetricType type, Void parameter) {
+                return CanonicalPath.builder().withTenantId(type.getTenantId())
+                        .withMetricTypeId(type.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitResource(Resource resource, Void parameter) {
+                return CanonicalPath.builder().withTenantId(resource.getTenantId())
+                        .withEnvironmentId(resource.getEnvironmentId()).withFeedId(resource.getFeedId())
+                        .withResourceId(resource.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitResourceType(ResourceType type, Void parameter) {
+                return CanonicalPath.builder().withTenantId(type.getTenantId())
+                        .withResourceTypeId(type.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitRelationship(Relationship relationship, Void parameter) {
+                return CanonicalPath.builder().withRelationshipId(relationship.getId()).build();
+            }
+
+            @Override
+            public CanonicalPath visitUnknown(Object entity, Void parameter) {
+                return null;
+            }
+        }, null);
+    }
 
     public static Builder builder() {
         return new Builder();

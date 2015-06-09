@@ -80,6 +80,23 @@ public final class LazyEnvironments {
         }
     }
 
+    public static final class Read<BE> extends Traversal<BE, Environment> implements Environments.Read {
+
+        public Read(TraversalContext<BE, Environment> context) {
+            super(context);
+        }
+
+        @Override
+        public Environments.Multiple getAll(Filter... filters) {
+            return new Multiple<>(context.proceed().where(filters).get());
+        }
+
+        @Override
+        public Environments.Single get(String id) throws EntityNotFoundException {
+            return new Single<>(context.proceed().where(id(id)).get());
+        }
+    }
+
     public static final class Single<BE> extends Fetcher<BE, Environment> implements Environments.Single {
 
         public Single(TraversalContext<BE, Environment> context) {

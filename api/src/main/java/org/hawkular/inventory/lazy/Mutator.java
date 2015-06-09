@@ -157,7 +157,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
 
         try {
-            context.backend.getTransitiveClosureOver(toDelete, contains.name()).forEachRemaining((e) -> {
+            context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
                 } else {

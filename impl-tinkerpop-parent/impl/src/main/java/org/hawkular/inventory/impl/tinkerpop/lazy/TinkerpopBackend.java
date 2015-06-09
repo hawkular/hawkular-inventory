@@ -76,6 +76,11 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
+    public Element find(CanonicalPath element) {
+        return navigate(element).iterator().next();
+    }
+
+    @Override
     public Page<Element> query(QueryFragmentTree query, Pager pager) {
         HawkularPipeline<?, Vertex> q = new HawkularPipeline<>(context.getGraph()).V();
 
@@ -114,7 +119,8 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
-    public Iterator<Element> getTransitiveClosureOver(Element startingPoint, String relationshipName) {
+    public Iterator<Element> getTransitiveClosureOver(Element startingPoint, String relationshipName,
+            Relationships.Direction direction) {
         if (!(startingPoint instanceof Vertex)) {
             return Collections.<Element>emptyList().iterator();
         } else {
@@ -135,6 +141,11 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     @Override
     public String extractId(Element entityRepresentation) {
         return entityRepresentation.getProperty(Constants.Property.__eid.name());
+    }
+
+    @Override
+    public String extractRelationshipName(Element relationshipRepresentation) {
+        return ((Edge) relationshipRepresentation).getLabel();
     }
 
     @Override
@@ -274,9 +285,11 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
-    public void relate(Element sourceEntity, Element targetEntity, String label, Map<String, Object> properties) {
+    public Element relate(Element sourceEntity, Element targetEntity, String label, Map<String, Object> properties) {
         Edge e = ((Vertex) sourceEntity).addEdge(label, (Vertex) targetEntity);
         ElementHelper.setProperties(e, properties);
+        e.setProperty(Constants.Property.__eid.name(), e.getId().toString());
+        return e;
     }
 
     @Override

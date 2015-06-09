@@ -42,6 +42,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.lazy.spi.JumpInOutFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -165,29 +166,5 @@ final class RelationshipBrowser extends AbstractGraphService {
                 return new ResourceTypesService(b.context, b.pathToHereWithSelect(acc));
             }
         };
-    }
-
-    // filter used internally by the impl for jumping from a vertex to an edge or back
-    static class JumpInOutFilter extends Filter {
-        private final Relationships.Direction direction;
-        private final boolean fromEdge;
-
-        JumpInOutFilter(Relationships.Direction direction, boolean fromEdge) {
-            this.direction = direction;
-            this.fromEdge = fromEdge;
-        }
-
-        public Relationships.Direction getDirection() {
-            return direction;
-        }
-
-        public boolean isFromEdge() {
-            return fromEdge;
-        }
-
-        @Override
-        public String toString() {
-            return "Jump[" + (fromEdge ? "from " : "to ") + direction.name() + " edges]";
-        }
     }
 }

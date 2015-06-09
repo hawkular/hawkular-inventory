@@ -38,16 +38,20 @@ import java.util.function.Function;
  */
 public interface LazyInventoryBackend<E> extends AutoCloseable {
 
+    E find(CanonicalPath element);
+
     Page<E> query(QueryFragmentTree query, Pager pager);
 
     <T extends AbstractElement<?, ?>> Page<T> query(QueryFragmentTree query, Pager pager, Function<E, T> conversion,
             Function<T, Boolean> filter);
 
-    Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName);
+    Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);
 
     boolean hasRelationship(E entity, Relationships.Direction direction, String relationshipName);
 
     String extractId(E entityRepresentation);
+
+    String extractRelationshipName(E relationshipRepresentation);
 
     Map<String, Object> extractProperties(E entityRepresentation);
 
@@ -55,7 +59,7 @@ public interface LazyInventoryBackend<E> extends AutoCloseable {
 
     <T extends AbstractElement<?, ?>> T convert(E entityRepresentation, Class<T> entityType);
 
-    void relate(E sourceEntity, E targetEntity, String label, Map<String, Object> properties);
+    E relate(E sourceEntity, E targetEntity, String label, Map<String, Object> properties);
 
     E persist(String id, AbstractElement.Blueprint entity);
 

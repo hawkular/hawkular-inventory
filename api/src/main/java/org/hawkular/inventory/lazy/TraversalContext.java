@@ -20,10 +20,11 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+
+import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -52,11 +53,16 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
         return new Builder<>(select(), QueryFragmentTree.filter(), backend, entityType, configuration)
-                .where(Related.by(over), With.type(entityType));
+                .where(Related.by(over), type(entityType));
+    }
+
+    <T extends Entity<?, ?>> Builder<BE, T> filterTo(Class<T> entityType) {
+        return new Builder<>(select(), QueryFragmentTree.filter(), backend, entityType, configuration)
+                .where(type(entityType));
     }
 
     QueryFragmentTree.SymmetricExtender select() {
-        return sourcePath.extend().path().with(selectCandidates);
+        return sourcePath.extend().path().with(selectCandidates).filter();
     }
 
     TraversalContext<BE, E> replacePath(QueryFragmentTree path) {
