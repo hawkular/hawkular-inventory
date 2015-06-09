@@ -96,8 +96,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -118,8 +118,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -164,8 +164,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override

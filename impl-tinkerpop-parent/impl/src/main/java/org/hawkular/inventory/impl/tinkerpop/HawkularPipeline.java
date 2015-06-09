@@ -28,6 +28,7 @@ import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.branch.LoopPipe;
 import com.tinkerpop.pipes.transform.TransformPipe;
+import com.tinkerpop.pipes.util.FluentUtility;
 import com.tinkerpop.pipes.util.structures.Pair;
 import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
@@ -95,7 +96,18 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
      * @return the pipe line emitting the elements from the last remembered step
      */
     public HawkularPipeline<S, ?> recall() {
-        return back(labelStack.pop());
+        // Gremlin will barf on trying back() when no pipes were added since the last as().
+        // remember()+recall() shouldn't suffer from that condition - there might be situations
+        // during query generation where ensuring that might be more difficult than the simple
+        // check here.
+        String label = labelStack.pop();
+        List<Pipe> pipes = FluentUtility.removePreviousPipes(this, label);
+        if (pipes.isEmpty()) {
+            return this;
+        } else {
+            pipes.forEach(this::add);
+            return back(label);
+        }
     }
 
     @SuppressWarnings("unchecked")

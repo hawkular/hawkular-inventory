@@ -76,7 +76,7 @@ public class EmptyInventory implements Inventory {
     public static class TenantsRead implements Tenants.Read {
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
+        public Tenants.Multiple getAll(Filter[][] filters) {
             return new TenantsMultiple();
         }
 
@@ -89,7 +89,7 @@ public class EmptyInventory implements Inventory {
     public static class TenantsReadWrite implements Tenants.ReadWrite {
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
+        public Tenants.Multiple getAll(Filter[][] filters) {
             return new TenantsMultiple();
         }
 
@@ -183,7 +183,7 @@ public class EmptyInventory implements Inventory {
     public static class ResourceTypesRead implements ResourceTypes.Read {
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
             return new ResourceTypesMultiple();
         }
 
@@ -196,7 +196,7 @@ public class EmptyInventory implements Inventory {
     public static class ResourceTypesReadWrite implements ResourceTypes.ReadWrite {
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
             return new ResourceTypesMultiple();
         }
 
@@ -280,7 +280,7 @@ public class EmptyInventory implements Inventory {
     public static class MetricTypesRead implements MetricTypes.Read {
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
             return new MetricTypesMultiple();
         }
 
@@ -293,7 +293,7 @@ public class EmptyInventory implements Inventory {
     public static class MetricTypesReadWrite implements MetricTypes.ReadWrite {
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
             return new MetricTypesMultiple();
         }
 
@@ -336,7 +336,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
             return new MetricTypesMultiple();
         }
 
@@ -395,7 +395,7 @@ public class EmptyInventory implements Inventory {
     public static class EnvironmentsRead implements Environments.Read {
 
         @Override
-        public Environments.Multiple getAll(Filter... filters) {
+        public Environments.Multiple getAll(Filter[][] filters) {
             return new EnvironmentsMultiple();
         }
 
@@ -412,7 +412,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Environments.Multiple getAll(Filter... filters) {
+        public Environments.Multiple getAll(Filter[][] filters) {
             return new EnvironmentsMultiple();
         }
 
@@ -645,7 +645,7 @@ public class EmptyInventory implements Inventory {
     public static class FeedsRead implements Feeds.Read {
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
+        public Feeds.Multiple getAll(Filter[][] filters) {
             return new FeedsMultiple();
         }
 
@@ -673,7 +673,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
+        public Feeds.Multiple getAll(Filter[][] filters) {
             return new FeedsMultiple();
         }
 
@@ -742,7 +742,7 @@ public class EmptyInventory implements Inventory {
     public static class MetricsRead implements Metrics.Read {
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
+        public Metrics.Multiple getAll(Filter[][] filters) {
             return new MetricsMultiple();
         }
 
@@ -755,7 +755,7 @@ public class EmptyInventory implements Inventory {
     public static class MetricsReadWrite implements Metrics.ReadWrite {
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
+        public Metrics.Multiple getAll(Filter[][] filters) {
             return new MetricsMultiple();
         }
 
@@ -798,7 +798,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
+        public Metrics.Multiple getAll(Filter[][] filters) {
             return new MetricsMultiple();
         }
 
@@ -847,7 +847,7 @@ public class EmptyInventory implements Inventory {
     public static class ResourcesRead implements Resources.Read {
 
         @Override
-        public Resources.Multiple getAll(Filter... filters) {
+        public Resources.Multiple getAll(Filter[][] filters) {
             return new ResourcesMultiple();
         }
 
@@ -860,7 +860,7 @@ public class EmptyInventory implements Inventory {
     public static class ResourcesReadWrite implements Resources.ReadWrite {
 
         @Override
-        public Resources.Multiple getAll(Filter... filters) {
+        public Resources.Multiple getAll(Filter[][] filters) {
             return new ResourcesMultiple();
         }
 

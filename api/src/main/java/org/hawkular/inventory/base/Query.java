@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.base.spi.NoopFilter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,11 +85,18 @@ public final class Query {
         if (tree.getSubTrees().isEmpty()) {
             //this is the leaf
             List<Filter> pathToLeaf = new ArrayList<>();
+
+            Consumer<Filter> addOps = (f) -> {
+                if (!(f instanceof NoopFilter)) {
+                    pathToLeaf.add(f);
+                }
+            };
+
             for (Filter[] fs : workingPath) {
-                Collections.addAll(pathToLeaf, fs);
+                Arrays.asList(fs).forEach(addOps);
             }
 
-            Collections.addAll(pathToLeaf, filters(tree.getFragments()));
+            Arrays.asList(filters(tree.getFragments())).forEach(addOps);
 
             results.add(pathToLeaf);
         } else {
@@ -223,9 +231,7 @@ public final class Query {
         public Builder with(Query other) {
             with(other.fragments);
             for (Query sub : other.getSubTrees()) {
-                branch();
-                with(sub);
-                done();
+                branch().with(sub).done();
             }
 
             return this;
@@ -266,9 +272,17 @@ public final class Query {
         private Query.Builder filters;
         private Function<Filter[], QueryFragment[]> queryFragmentSupplier;
         private Function<Filter, QueryFragment> converter;
-
+        private Boolean isFilter;
         private SymmetricExtender(Query.Builder filters) {
             this.filters = filters;
+            onLeaves(filters, (b) -> {
+                QueryFragment last = b.fragments.isEmpty() ? null : b.fragments.get(b.fragments.size() - 1);
+                if (last != null) {
+                    isFilter = last instanceof FilterFragment;
+                    queryFragmentSupplier = isFilter ? FilterFragment::from : PathFragment::from;
+                    converter = isFilter ? FilterFragment::new : PathFragment::new;
+                }
+            });
         }
 
         /**
@@ -277,6 +291,10 @@ public final class Query {
         public SymmetricExtender path() {
             queryFragmentSupplier = PathFragment::from;
             converter = PathFragment::new;
+            if (isFilter != null && isFilter && !filters.fragments.isEmpty()) {
+                with(NoopFilter.INSTANCE);
+            }
+            isFilter = false;
             return this;
         }
 
@@ -288,6 +306,10 @@ public final class Query {
         public SymmetricExtender filter() {
             queryFragmentSupplier = FilterFragment::from;
             converter = FilterFragment::new;
+            if (isFilter != null && !isFilter && filters.fragments.isEmpty()) {
+                with(NoopFilter.INSTANCE);
+            }
+            isFilter = true;
             return this;
         }
 

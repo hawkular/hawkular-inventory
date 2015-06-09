@@ -91,8 +91,8 @@ public final class BaseResources {
         }
 
         @Override
-        public Resources.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -113,8 +113,8 @@ public final class BaseResources {
         }
 
         @Override
-        public Resources.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override

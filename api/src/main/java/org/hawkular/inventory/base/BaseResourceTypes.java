@@ -65,8 +65,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
-            return new BaseResourceTypes.Multiple<>(context.proceed().where(filters).get());
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseResourceTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -87,8 +87,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
-            return new BaseResourceTypes.Multiple<>(context.proceed().where(filters).get());
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseResourceTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override

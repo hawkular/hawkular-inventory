@@ -71,8 +71,8 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
-            return new BaseMetricTypes.Multiple<>(context.proceed().where(filters).get());
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseMetricTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -93,8 +93,8 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
-            return new BaseMetricTypes.Multiple<>(context.proceed().where(filters).get());
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseMetricTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -140,8 +140,8 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Multiple getAll(Filter... filters) {
-            return new BaseMetricTypes.Multiple<>(context.proceed().where(filters).get());
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseMetricTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override

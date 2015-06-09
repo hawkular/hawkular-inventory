@@ -69,7 +69,7 @@ public abstract class BaseInventory<E> implements Inventory {
     @Override
     public Tenants.ReadWrite tenants() {
         return new BaseTenants.ReadWrite<>(new TraversalContext<>(this, Query.empty(),
-                Query.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
+                Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext));
     }
 

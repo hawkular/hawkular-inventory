@@ -330,23 +330,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 multipleParents -> multipleChildren -> {
                     InventoryBackend<?> backend = inventory.getBackend();
 
-                    Page<?> parents = backend.query(Query.filter().with(type(parentType)).get(),
+                    Page<?> parents = backend.query(Query.path().with(type(parentType)).get(),
                             Pager.unlimited(Order.unspecified()));
 
                     Page<?> children = backend.query(Query.path().with(type(parentType),
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
-
-//                    GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
-//                            .V().has("__type", parentType).cast(Vertex.class);
-//                    Iterator<Vertex> parentIterator = q1.iterator();
-//
-//                    GremlinPipeline<Graph, Vertex> q2 = new GremlinPipeline<Graph, Vertex>(graph)
-//                            .V().has("__type", parentType).out(edgeLabel).has("__type", childType)
-//                            .cast(Vertex.class);
-//                    Iterator<Vertex> childIterator = q2.iterator();
-
-                    Iterator<?> multipleParentIterator = multipleParents.entities().iterator();
-                    Iterator<?> multipleChildrenIterator = multipleChildren.entities().iterator();
 
                     assert parents.size() == numberOfParents : "There must be exactly " + numberOfParents + " " +
                             parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Backend " +
@@ -355,37 +343,12 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     assert multipleParents.entities().size() == numberOfParents : "There must be exactly " +
                             numberOfParents + " " + parentType + "s that have outgoing edge labeled with " + edgeLabel +
                             ". Tested API returned only " + multipleParents.entities().size();
-//                    for (int i = 0; i < numberOfParents; i++) {
-//                        assert parentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
-//                              parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Gremlin " +
-//                                "query returned only " + i;
-//                        assert multipleParentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
-//                                parentType + "s that have outgoing edge labeled with " + edgeLabel + ". Tested API " +
-//                                "returned only " + i;
-//                        parentIterator.next();
-//                        multipleParentIterator.next();
-//                    }
-//                    assert !parentIterator.hasNext() : "There must be " + numberOfParents + " " + parentType +
-//                            "s. Gremlin query returned more than " + numberOfParents;
-//                    assert !multipleParentIterator.hasNext() : "There must be " + numberOfParents + " " + parentType +
-//                            "s. Tested API returned more than " + numberOfParents;
 
                     assert children.size() == numberOfKids : "There must be exactly " + numberOfKids + " " + childType +
                             "s that are directly under " + parentType + " connected with " + edgeLabel +
                             ". Gremlin query returned only " + children.size();
 
                     assert multipleChildren.entities().size() == numberOfKids;
-//
-//                    for (int i = 0; i < numberOfKids; i++) {
-//                        assert childIterator.hasNext() : "There must be exactly " + numberOfKids + " " + childType +
-//                                "s that are directly under " + parentType + " connected with " + edgeLabel +
-//                                ". Gremlin query returned only " + i;
-//                        assert multipleChildrenIterator.hasNext();
-//                        childIterator.next();
-//                        multipleChildrenIterator.next();
-//                    }
-//                    assert !childIterator.hasNext() : "There must be exactly " + numberOfKids + " " + childType + "s";
-//                    assert !multipleChildrenIterator.hasNext();
                 });
 
         ResolvableToMany parents = inventory.tenants().getAll(by("contains"));
@@ -712,8 +675,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, metricDefId, id) -> {
 
             Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
-                    .getAll(Defined.by(new MetricType(tenantId, metricDefId)), id(id)).entities().iterator()
-                    .next();
+                    .getAll(new Filter[][]{{Defined.by(new MetricType(tenantId, metricDefId))}, {id(id)}}).entities()
+                    .iterator().next();
             assert m.getId().equals(id);
 
             return null;
@@ -731,8 +694,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testResources() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
             Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
-                    .getAll(Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0")), id(id)).entities()
-                    .iterator().next();
+                    .getAll(new Filter[][]{{Defined.by(new ResourceType(tenantId, resourceTypeId, "1.0"))}, {id(id)}})
+                    .entities().iterator().next();
             assert r.getId().equals(id);
 
             return null;
@@ -1392,7 +1355,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertEquals(1, results.size());
         Assert.assertEquals("production", backend.extractId(results.get(0)));
 
-        // equivalent to inventory.tenants().getAll(Related.by("contains"), type(ResourceType.class, id("URL")
+        // equivalent to inventory.tenants().getAll(Related.by("contains"), type(ResourceType.class, id("URL"))
         // .environments().getAll().entities();
         q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(ResourceType.class),
                 id("URL")).path().with(Related.by("contains"), type(Environment.class)).get();

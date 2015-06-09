@@ -72,8 +72,8 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Environments.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Environments.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -94,8 +94,8 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Environments.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Environments.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -127,7 +127,7 @@ public final class BaseEnvironments {
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return new BaseResources.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
@@ -135,7 +135,7 @@ public final class BaseEnvironments {
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return new BaseMetrics.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
@@ -166,7 +166,7 @@ public final class BaseEnvironments {
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return new BaseResources.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
@@ -174,7 +174,7 @@ public final class BaseEnvironments {
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return new BaseMetrics.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));

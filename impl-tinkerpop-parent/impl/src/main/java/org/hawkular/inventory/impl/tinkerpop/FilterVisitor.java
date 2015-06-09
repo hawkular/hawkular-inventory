@@ -24,6 +24,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.util.Arrays;
@@ -35,10 +36,7 @@ import java.util.Arrays;
  */
 class FilterVisitor {
 
-    public void visit(HawkularPipeline<?, ?> query,
-            Related<? extends Entity> related) {
-        query.remember();
-
+    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
         switch (related.getEntityRole()) {
             case TARGET:
                 if (null != related.getRelationshipName()) {
@@ -73,8 +71,6 @@ class FilterVisitor {
 
             query.hasType(desiredType).hasEid(related.getEntity().getId());
         }
-
-        query.recall();
     }
 
     @SuppressWarnings("unchecked")
@@ -214,5 +210,9 @@ class FilterVisitor {
                 }
                 break;
         }
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, NoopFilter filter) {
+        //nothing to do
     }
 }

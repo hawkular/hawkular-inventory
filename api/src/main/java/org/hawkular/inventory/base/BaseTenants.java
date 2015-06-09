@@ -63,8 +63,8 @@ public final class BaseTenants {
         }
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Tenants.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -85,8 +85,8 @@ public final class BaseTenants {
         }
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Tenants.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override

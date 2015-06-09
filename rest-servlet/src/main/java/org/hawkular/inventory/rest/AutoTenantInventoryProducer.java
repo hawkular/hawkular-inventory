@@ -58,7 +58,7 @@ public class AutoTenantInventoryProducer {
                 Tenants.ReadWrite actual = inventory.tenants();
                 return new Tenants.ReadWrite() {
                     @Override
-                    public Tenants.Multiple getAll(Filter... filters) {
+                    public Tenants.Multiple getAll(Filter[][] filters) {
                         return new EmptyInventory.TenantsMultiple();
                     }
 

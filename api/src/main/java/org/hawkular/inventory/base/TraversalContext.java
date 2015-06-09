@@ -85,7 +85,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     /**
      * If the current position in the traversal defines any select candidates, the new context will have its source path
-     * composed by appending the select candidates as path fragments to the current source path.
+     * composed by appending the select candidates to the current source path.
      *
      * @return a context builder with the modified source path
      */
@@ -95,11 +95,12 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     /**
-     * The new context will have the source path composed by appending current select candidates as path fragments to
-     * the current source path and its select candidates will filter for entities related by the provided relationship
-     * to the new sources and will have the provided type.
+     * The new context will have the source path composed by appending current select candidates to the current source
+     * path and its select candidates will filter for entities related by the provided relationship to the new sources
+     * and will have the provided type.
      *
-     * @param over       the relationship the select candidates will be related to the entities on the source path
+     * @param over       the relationship with which the select candidates will be related to the entities on the source
+     *                   path
      * @param entityType the type of the entities related to the entities on the source path
      * @param <T>        the type of the "target" entities
      * @return a context builder with the modified source path, select candidates and type
@@ -107,21 +108,20 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
         return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration,
                 observableContext)
-                .where(Related.by(over), type(entityType));
+                .hop(Related.by(over), type(entityType));
     }
 
     /**
-     * The new context will have the source path composed by appending current select candidates as path fragments to
-     * the current source path. The new context will have select candidates such that it will select the relationships
-     * in given direction stemming from the entities on the new source path.
+     * The new context will have the source path composed by appending current select candidates to the current source
+     * path. The new context will have select candidates such that it will select the relationships in given direction
+     * stemming from the entities on the new source path.
      *
      * @param direction the direction of the relationships to look for
      * @return a context builder with the modified source path, select candidates and type
      */
     Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
-        return new Builder<>(inventory, hop(), Query.filter()
-                .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration,
-                observableContext);
+        return new Builder<>(inventory, hop(), Query.filter(), backend, Relationship.class, configuration,
+                observableContext).hop(new SwitchElementType(direction, false));
     }
 
     /**
@@ -134,22 +134,24 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
             Class<T> entityType) {
-        return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), Query.filter(),
-                backend, entityType, configuration, observableContext).where(type(entityType));
+        return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration, observableContext)
+                .hop(new SwitchElementType(direction, true)).where(type(entityType));
     }
 
     /**
-     * @return a new query selecting the select candidates from the source path
+     * @return a new query selecting the select candidates from the source path. The resulting extender
+     * is set up to append filter fragments.
      */
     Query.SymmetricExtender select() {
-        return sourcePath.extend().filter().with(selectCandidates);
+        return sourcePath.extend().filter().withExact(selectCandidates);
     }
 
     /**
-     * @return appends the select candidates as path fragments to the source path
+     * @return appends the select candidates to the source path. The only difference between this and {@link #select()}
+     * is that this method returns the extender set up to append path fragments.
      */
     Query.SymmetricExtender hop() {
-        return sourcePath.extend().path().with(selectCandidates);
+        return sourcePath.extend().path().withExact(selectCandidates).path();
     }
 
     /**
@@ -221,21 +223,86 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
             this.observableContext = observableContext;
         }
 
+        /**
+         * Appends the sets of filters in succession to the select candidates.
+         *
+         * @param filters the sets of filters to apply
+         * @return this builder
+         * @see #where(Filter[][])
+         * @see #where(Filter...)
+         */
+        public Builder<BE, E> whereAll(Filter[][] filters) {
+            if (filters.length == 1) {
+                return where(filters[0]);
+            } else {
+                for (Filter[] fs : filters) {
+                    hop().where(fs);
+                }
+                return this;
+            }
+        }
+
+        /**
+         * Create query branches in the select candidates with each of the provided sets of filters.
+         *
+         * @param filters the sets of filters, each representing a new branch in the query
+         * @return this builder
+         */
         public Builder<BE, E> where(Filter[][] filters) {
             selectExtender.filter().with(filters);
             return this;
         }
 
+        /**
+         * Appends the provided set of filters to the current select candidates.
+         *
+         * @param filters the set of filters to append
+         * @return this builder
+         */
         public Builder<BE, E> where(Filter... filters) {
             selectExtender.filter().with(filters);
             return this;
         }
 
+        /**
+         * Create query branches in the select candidates with each of the provided sets of filters.
+         * The filters are applied as path fragments.
+         *
+         * @param filters the sets of the filters to append as path fragments
+         * @return this builder
+         */
+        public Builder<BE, E> hop(Filter[][] filters) {
+            selectExtender.path().with(filters);
+            return this;
+        }
+
+        /**
+         * Appends the provided set of filters to the current select candidates.
+         * The filters are applied as path fragments.
+         *
+         * @param filters the set of filters to append as path fragments
+         * @return this builder
+         */
+        public Builder<BE, E> hop(Filter... filters) {
+            selectExtender.path().with(filters);
+            return this;
+        }
+
+        /**
+         * @return a new traversal context set up using this builder
+         */
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityClass,
                     configuration, observableContext);
         }
 
+        /**
+         * Changes the entity type of the to-be-returned traversal context.
+         *
+         * @param entityType the type of entities to be returned by traversals using the new context
+         * @param <T>        the type
+         * @return a new traversal context set up using this builder and querying for entities of the provided type
+         */
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityType,
                     configuration, observableContext);

@@ -83,8 +83,8 @@ public final class BaseFeeds {
         }
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
@@ -100,8 +100,8 @@ public final class BaseFeeds {
         }
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
-            return new Multiple<>(context.proceed().where(filters).get());
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
