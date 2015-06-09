@@ -37,6 +37,7 @@ import org.hawkular.inventory.base.spi.CanonicalPath;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hawkular.inventory.api.Action.created;
@@ -223,7 +224,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             //We have to do it prior to actually deleting the objects in the backend so that all information and
             //relationships is still available.
             deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.getType(o)))
-                    .collect(toSet());
+                    .collect(Collectors.<AbstractElement<?, ?>>toSet());
 
             deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
                     .collect(toSet());
