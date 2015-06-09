@@ -51,6 +51,13 @@ public final class Pager extends PageContext {
     }
 
     /**
+     * @return a pager that returns at most a single result.
+     */
+    public static Pager single() {
+        return new Pager(0, 1, Order.unspecified());
+    }
+
+    /**
      * @param pageNumber the number of the page to fetch
      * @param pageSize   the number of the elements on the page
      * @param orders     the ordering of the results required
