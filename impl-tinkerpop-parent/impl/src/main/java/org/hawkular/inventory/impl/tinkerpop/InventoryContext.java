@@ -32,9 +32,9 @@ final class InventoryContext {
     private final FeedIdStrategy feedIdStrategy;
     private final ResultFilter resultFilter;
     private final TransactionalGraph graph;
-    private final InventoryService inventory;
+    private final TinkerpopInventory inventory;
 
-    public InventoryContext(InventoryService inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
+    public InventoryContext(TinkerpopInventory inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
             TransactionalGraph graph) {
         this.inventory = inventory;
         this.feedIdStrategy = feedIdStrategy;
@@ -42,7 +42,7 @@ final class InventoryContext {
         this.graph = graph;
     }
 
-    public InventoryService getInventory() {
+    public TinkerpopInventory getInventory() {
         return inventory;
     }
 

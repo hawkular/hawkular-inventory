@@ -26,7 +26,8 @@ import org.hawkular.inventory.api.model.Entity;
  */
 class PathVisitor extends FilterVisitor {
     @Override
-    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
+    public void visit(HawkularPipeline<?, ?> query,
+            Related<? extends Entity> related) {
         switch (related.getEntityRole()) {
             case TARGET:
                 if (null != related.getRelationshipName()) {

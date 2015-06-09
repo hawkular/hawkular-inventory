@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop.lazy;
+package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -29,9 +29,9 @@ import java.util.ServiceLoader;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
-public class TinkerpopInventory extends BaseInventory<Element> {
+public final class TinkerpopInventory extends BaseInventory<Element> {
     @Override
     protected InventoryBackend<Element> doInitialize(Configuration configuration) {
         GraphProvider gp = ServiceLoader.load(GraphProvider.class).iterator().next();

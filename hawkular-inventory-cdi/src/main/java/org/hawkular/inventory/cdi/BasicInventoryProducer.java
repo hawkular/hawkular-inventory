@@ -21,7 +21,7 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
-import org.hawkular.inventory.impl.tinkerpop.InventoryService;
+import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Disposes;
@@ -77,7 +77,7 @@ public class BasicInventoryProducer {
                     .getAbsolutePath());
         }
 
-        InventoryService inventory = new InventoryService();
+        TinkerpopInventory inventory = new TinkerpopInventory();
 
         inventory.initialize(org.hawkular.inventory.api.Configuration.builder()
                 .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))

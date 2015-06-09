@@ -34,7 +34,9 @@ import java.util.Arrays;
  * @since 0.0.1
  */
 class FilterVisitor {
-    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
+
+    public void visit(HawkularPipeline<?, ?> query,
+            Related<? extends Entity> related) {
         query.remember();
 
         switch (related.getEntityRole()) {
@@ -127,7 +129,8 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.Properties properties) {
+    public void visit(HawkularPipeline<?, ?> query,
+            RelationWith.Properties properties) {
         if (properties.getValues().length == 1) {
             query.has(properties.getProperty(), properties.getValues()[0]);
             return;
@@ -142,20 +145,24 @@ class FilterVisitor {
         query.or(idChecks);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types) {
+    public void visit(HawkularPipeline<?, ?> query,
+            RelationWith.SourceOfType types) {
         visit(query, types, true);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types) {
+    public void visit(HawkularPipeline<?, ?> query,
+            RelationWith.TargetOfType types) {
         visit(query, types, false);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types) {
+    public void visit(HawkularPipeline<?, ?> query,
+            RelationWith.SourceOrTargetOfType types) {
         visit(query, types, null);
     }
 
     @SuppressWarnings("unchecked")
-    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source) {
+    private void visit(HawkularPipeline<?, ?> query,
+            RelationWith.SourceOrTargetOfType types, Boolean source) {
         // look ahead if the type of the incidence vertex is of the desired type(s)
         HawkularPipeline<?, ?> q1 = query.remember();
         HawkularPipeline<?, ?> q2;

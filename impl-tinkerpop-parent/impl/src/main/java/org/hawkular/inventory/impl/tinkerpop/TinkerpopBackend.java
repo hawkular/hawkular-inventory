@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop.lazy;
+package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -58,20 +58,20 @@ import static java.util.stream.Collectors.toSet;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.environment;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.feed;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.metric;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.metricType;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.relationship;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.resource;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.resourceType;
-import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.tenant;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class TinkerpopBackend implements InventoryBackend<Element> {
+final class TinkerpopBackend implements InventoryBackend<Element> {
     private final InventoryContext context;
 
     public TinkerpopBackend(InventoryContext context) {
