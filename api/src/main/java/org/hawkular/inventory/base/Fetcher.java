@@ -28,6 +28,8 @@ import org.hawkular.inventory.api.paging.Pager;
 import java.util.function.Function;
 
 /**
+ * A base class for all interface impls that need to resolve the entities.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */

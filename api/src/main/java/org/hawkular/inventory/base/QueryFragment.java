@@ -19,6 +19,11 @@ package org.hawkular.inventory.base;
 import org.hawkular.inventory.api.filters.Filter;
 
 /**
+ * Abstract base class for the 2 types of query fragments - {@link FilterFragment} and {@link PathFragment}.
+ *
+ * <p>A query fragment is an application of a single filter somwhere on the inventory traversal defined by the
+ * {@link Query}.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */

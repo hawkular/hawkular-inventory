@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  *
  * <p>The API contains a method to traverse both of these kinds of "placement" of metrics or resources
  * simultaneously. This is nice from a user perspective but creates problems in the impl, because using the
- * relationships of the resources or metrics, one can construct queries, the would be able to branch multiple times
+ * relationships of the resources or metrics, one can construct queries, that would be able to branch multiple times
  * and hence form a tree.
  *
  * @author Lukas Krejci
@@ -100,14 +100,23 @@ public final class Query {
         }
     }
 
+    /**
+     * @return an empty query
+     */
     public static Query empty() {
         return new Builder().build();
     }
 
+    /**
+     * @return a symmetric builder that will start appending filter fragments to the query
+     */
     public static SymmetricExtender filter() {
         return empty().extend().filter();
     }
 
+    /**
+     * @return a symmetric builder that will start appending path fragments to the query
+     */
     public static SymmetricExtender path() {
         return empty().extend().path();
     }
@@ -115,14 +124,23 @@ public final class Query {
     private Query() {
     }
 
+    /**
+     * @return the query fragments to compose the query from
+     */
     public QueryFragment[] getFragments() {
         return fragments;
     }
 
+    /**
+     * @return the list of query "branches" from the point this query object represents.
+     */
     public List<Query> getSubTrees() {
         return subTrees;
     }
 
+    /**
+     * @return a new builder initialized to "contain" this query
+     */
     public Builder asBuilder() {
         Builder b = new Builder();
         b.fragments = new ArrayList<>(Arrays.asList(fragments));
@@ -135,10 +153,16 @@ public final class Query {
         return b;
     }
 
+    /**
+     * @return a new symmetric builder initialized with this query
+     */
     public SymmetricExtender extend() {
         return new SymmetricExtender(asBuilder());
     }
 
+    /**
+     * A low-level builder able to create new branches in the query tree.
+     */
     public static final class Builder {
         private List<QueryFragment> fragments = new ArrayList<>();
         private Query tree = new Query();
@@ -247,28 +271,59 @@ public final class Query {
             this.filters = filters;
         }
 
+        /**
+         * Modifies this extender to append path fragments with future calls to {@code with()} methods.
+         */
         public SymmetricExtender path() {
             queryFragmentSupplier = PathFragment::from;
             converter = PathFragment::new;
             return this;
         }
 
+        /**
+         * Modifies this extender to append filter fragments with future calls to {@code with()} methods.\
+         *
+         * @return this instance
+         */
         public SymmetricExtender filter() {
             queryFragmentSupplier = FilterFragment::from;
             converter = FilterFragment::new;
             return this;
         }
 
+        /**
+         * Appends the provided query to the leaves of the current query tree, converting all its fragments to the
+         * current fragment type (determined by the last call to {@link #filter()} or {@link #path()}).
+         *
+         * @param other the query to append
+         * @return this instance
+         */
         public SymmetricExtender with(Query other) {
             onLeaves(this.filters, (builder) -> builder.with(other, converter));
             return this;
         }
 
+        /**
+         * Appends the provided query to the leaves of the current query tree, leaving the type of its fragments as they
+         * originally were.
+         *
+         * @param other the query to append
+         * @return this instance
+         */
         public SymmetricExtender withExact(Query other) {
             onLeaves(this.filters, (builder) -> builder.with(other));
             return this;
         }
 
+        /**
+         * Appends the filters as query fragments determined by the last call to {@link #filter()} or {@link #path()}.
+         *
+         * <p>The filters is an array of arrays representing a new set of branches to be created at all the leaves of
+         * the current query tree.
+         *
+         * @param filters the filters to append to the leaves of the query tree
+         * @return this instance
+         */
         public SymmetricExtender with(Filter[][] filters) {
             onLeaves(this.filters, (builder) -> {
                 for (Filter[] fs : filters) {
@@ -278,11 +333,20 @@ public final class Query {
             return this;
         }
 
+        /**
+         * Appends the filters as query fragments determined by the last call to {@link #filter()} or {@link #path()}.
+         *
+         * @param filters the filters to append to the leaves of the query tree
+         * @return this instance
+         */
         public SymmetricExtender with(Filter... filters) {
             onLeaves(this.filters, (t) -> t.with(queryFragmentSupplier.apply(filters)));
             return this;
         }
 
+        /**
+         * @return the final query.
+         */
         public Query get() {
             return filters.build();
         }

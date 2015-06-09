@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
 import org.hawkular.inventory.base.NewEntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
@@ -53,23 +54,29 @@ public final class BaseResources {
         }
 
         @Override
-        protected String getProposedId(Resource.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(Resource.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override
         protected NewEntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
                 Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
 
-            Class<? extends AbstractElement<?, ?>> parentType = context.backend.getType(parent);
+            Class<? extends AbstractElement<?, ?>> parentType = context.backend.extractType(parent);
 
             @SuppressWarnings("unchecked")
             TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
                     (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
-            BE resourceTypeObject = context.backend.find(CanonicalPath.builder()
-                    .withTenantId(parentEntity.getTenantId()).withResourceTypeId(blueprint.getResourceTypeId())
-                    .build());
+            BE resourceTypeObject;
+            try {
+                resourceTypeObject = context.backend.find(CanonicalPath.builder()
+                        .withTenantId(parentEntity.getTenantId()).withResourceTypeId(blueprint.getResourceTypeId())
+                        .build());
+            } catch (ElementNotFoundException e) {
+                throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypeId() + "' not found" +
+                        " in tenant '" + parentEntity.getTenantId() + "'.");
+            }
 
             BE r = context.backend.relate(resourceTypeObject, entity, defines.name(), null);
 

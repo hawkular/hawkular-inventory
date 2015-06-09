@@ -50,8 +50,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        protected String getProposedId(ResourceType.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(ResourceType.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override

@@ -41,6 +41,7 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 import java.util.Arrays;
@@ -69,7 +70,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 final class TinkerpopBackend implements InventoryBackend<Element> {
     private final InventoryContext context;
@@ -79,8 +80,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element find(CanonicalPath element) {
-        return navigate(element).iterator().next();
+    public Element find(CanonicalPath element) throws ElementNotFoundException {
+        Iterator<Element> it = navigate(element);
+        if (!it.hasNext()) {
+            throw new ElementNotFoundException();
+        } else {
+            return it.next();
+        }
     }
 
     @Override
@@ -190,24 +196,36 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element getRelationship(Element source, Element target, String relationshipName) {
+    public Element getRelationship(Element source, Element target, String relationshipName)
+            throws ElementNotFoundException {
+
         if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
-            return null;
+            throw new IllegalArgumentException("Source or target entity not a vertex.");
+        }
+
+        if (relationshipName == null) {
+            throw new IllegalArgumentException("relationshipName == null");
         }
 
         Vertex t = (Vertex) target;
 
-        return new HawkularPipeline<>(source).outE(relationshipName).remember().inV().hasType(getType(t))
-                .hasEid(getEid(t)).recall().cast(Edge.class).next();
+        Iterator<Edge> it = new HawkularPipeline<>(source).outE(relationshipName).remember().inV().hasType(getType(t))
+                .hasEid(getEid(t)).recall().cast(Edge.class);
+
+        if (!it.hasNext()) {
+            throw new ElementNotFoundException();
+        } else {
+            return it.next();
+        }
     }
 
     @Override
-    public Set<Element> getRelationships(Element source, Relationships.Direction direction, String... names) {
-        if (!(source instanceof Vertex)) {
+    public Set<Element> getRelationships(Element entity, Relationships.Direction direction, String... names) {
+        if (!(entity instanceof Vertex)) {
             return Collections.emptySet();
         }
 
-        Vertex v = (Vertex) source;
+        Vertex v = (Vertex) entity;
 
         HawkularPipeline<?, Element> q = new HawkularPipeline<>(v);
 
@@ -244,7 +262,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Class<? extends AbstractElement<?, ?>> getType(Element entityRepresentation) {
+    public Class<? extends AbstractElement<?, ?>> extractType(Element entityRepresentation) {
         if (entityRepresentation instanceof Edge) {
             return Relationship.class;
         } else {
@@ -254,7 +272,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public <T extends AbstractElement<?, ?>> T convert(Element entityRepresentation, Class<T> entityType) {
-        Constants.Type type = Constants.Type.of(getType(entityRepresentation));
+        Constants.Type type = Constants.Type.of(extractType(entityRepresentation));
 
         Vertex environmentVertex;
         Vertex feedVertex;
@@ -375,8 +393,20 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element relate(Element sourceEntity, Element targetEntity, String label, Map<String, Object> properties) {
-        Edge e = ((Vertex) sourceEntity).addEdge(label, (Vertex) targetEntity);
+    public Element relate(Element sourceEntity, Element targetEntity, String name, Map<String, Object> properties) {
+        if (name == null) {
+            throw new IllegalArgumentException("name == null");
+        }
+
+        if (!(sourceEntity instanceof Vertex)) {
+            throw new IllegalArgumentException("Source not a vertex.");
+        }
+
+        if (!(targetEntity instanceof Vertex)) {
+            throw new IllegalArgumentException("Target not a vertex.");
+        }
+
+        Edge e = ((Vertex) sourceEntity).addEdge(name, (Vertex) targetEntity);
         if (properties != null) {
             ElementHelper.setProperties(e, properties);
         }
@@ -498,6 +528,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private void common(Map<String, Object> properties, Class<? extends AbstractElement<?, ?>> entityType) {
+                Class<?> actualType = extractType(entity);
+                if (!actualType.equals(entityType)) {
+                    throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the entity.");
+                }
                 String[] disallowedProperties = Constants.Type.of(entityType).getMappedProperties();
                 checkProperties(properties, disallowedProperties);
                 updateProperties(entity, properties, disallowedProperties);

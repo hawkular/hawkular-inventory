@@ -28,6 +28,13 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
+ * A simple representation of a "canonical path" to an entity or relationship.
+ *
+ * <p>Relationships are always directly addressed by their ID, all other fields in the canonical path are ignored for
+ * relationships.
+ *
+ * <p>For entities, a canonical path is the "descent" from tenant through to the entity in question.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
@@ -41,6 +48,14 @@ public final class CanonicalPath {
     private final String resourceId;
     private final String relationshipId;
 
+    /**
+     * Creates canonical path to the provided element.
+     *
+     * <p>This can be done simply by examining the object, no backend access is needed for this.
+     *
+     * @param element the element to provide a path to.
+     * @return the canonical path to the element
+     */
     public static CanonicalPath of(AbstractElement<?, ?> element) {
         return element.accept(new ElementVisitor<CanonicalPath, Void>() {
             @Override
@@ -115,6 +130,9 @@ public final class CanonicalPath {
         this.relationshipId = relationshipId;
     }
 
+    /**
+     * @return true if relationshipId or tenantId is not null, false otherwise
+     */
     public boolean isDefined() {
         return relationshipId != null || tenantId != null;
     }

@@ -56,8 +56,8 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected String getProposedId(MetricType.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(MetricType.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override

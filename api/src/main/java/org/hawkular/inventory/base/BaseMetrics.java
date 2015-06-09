@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
 import org.hawkular.inventory.base.NewEntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -58,22 +59,29 @@ public final class BaseMetrics {
         }
 
         @Override
-        protected String getProposedId(Metric.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(Metric.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override
         protected NewEntityAndPendingNotifications<Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
 
-            Class<? extends AbstractElement<?, ?>> parentType = context.backend.getType(parent);
+            Class<? extends AbstractElement<?, ?>> parentType = context.backend.extractType(parent);
 
             @SuppressWarnings("unchecked")
             TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
                     (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
-            BE metricTypeObject = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
-                    .withMetricTypeId(blueprint.getMetricTypeId()).build());
+            BE metricTypeObject;
+
+            try {
+                metricTypeObject = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
+                        .withMetricTypeId(blueprint.getMetricTypeId()).build());
+            } catch (ElementNotFoundException e) {
+                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypeId() +
+                        "' not found in tenant '" + parentEntity.getTenantId() + "'.");
+            }
 
             BE r = context.backend.relate(metricTypeObject, entity, defines.name(), null);
 

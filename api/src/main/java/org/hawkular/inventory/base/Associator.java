@@ -23,12 +23,15 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.filters.With.type;
 
 /**
+ * A base class for implementations of {@code *ReadAssociate} implementations.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
@@ -65,9 +68,11 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
         BE source = getSingle(sourceQuery, sourceType);
 
-        BE relationshipObject = context.backend.getRelationship(source, target, relationship.name());
+        BE relationshipObject;
 
-        if (relationshipObject == null) {
+        try {
+            relationshipObject = context.backend.getRelationship(source, target, relationship.name());
+        } catch (ElementNotFoundException e) {
             throw new RelationNotFoundException(sourceType, relationship.name(), Query.filters(sourceQuery),
                     null, null);
         }
@@ -93,7 +98,13 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         BE source = getSingle(sourceQuery, sourceType);
         BE target = getSingle(targetQuery, targetType);
 
-        BE relationship = context.backend.getRelationship(source, target, rel.name());
+        BE relationship;
+        try {
+            relationship = context.backend.getRelationship(source, target, rel.name());
+        } catch (ElementNotFoundException e) {
+            throw new RelationNotFoundException(sourceType, rel.name(), Query.filters(sourceQuery),
+                    null, null);
+        }
 
         return context.backend.convert(relationship, Relationship.class);
     }

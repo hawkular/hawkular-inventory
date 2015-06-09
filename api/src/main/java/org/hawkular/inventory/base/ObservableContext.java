@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Hold the observables corresponding to different interests for being notified about on inventory.
+ *
  * @author Lukas Krejci
  * @since 0.0.1
  */

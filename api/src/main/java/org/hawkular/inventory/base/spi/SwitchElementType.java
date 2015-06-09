@@ -23,7 +23,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 /**
- * filter used internally by the lazy impl for jumping from a vertex to an edge or back.
+ * Filter used internally by the base impl for jumping from a vertex to an edge or back.
  * This needs to be understood by all backends but is not directly part of the public API.
  */
 public final class SwitchElementType extends Filter {

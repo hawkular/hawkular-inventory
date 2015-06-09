@@ -14,29 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.base;
-
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-
-import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+package org.hawkular.inventory.base.spi;
 
 /**
- * Base for {@code *Single} implementations on entities.
+ * Thrown by the backend to signify that the element in question was not found.
+ *
+ * <p>Note that this is a checked exception on purpose because the {@link org.hawkular.inventory.base.BaseInventory} is
+ * required to translate it appropriately to an exception expected from the inventory API.
  *
  * @author Lukas Krejci
  * @since 0.1.0
  */
-class SingleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
-    public SingleEntityFetcher(TraversalContext<BE, E> context) {
-        super(context);
+public class ElementNotFoundException extends Exception {
+
+    public ElementNotFoundException() {
     }
 
-    public Relationships.ReadWrite relationships() {
-        return relationships(outgoing);
+    public ElementNotFoundException(Throwable cause) {
+        super(cause);
     }
 
-    public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-        return new BaseRelationships.ReadWrite<>(context.proceedToRelationships(direction).get(), context.entityClass);
+    public ElementNotFoundException(String message) {
+        super(message);
+    }
+
+    public ElementNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

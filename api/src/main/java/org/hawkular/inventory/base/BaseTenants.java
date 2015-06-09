@@ -50,8 +50,8 @@ public final class BaseTenants {
         }
 
         @Override
-        protected String getProposedId(Tenant.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(Tenant.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override

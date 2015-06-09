@@ -46,6 +46,8 @@ interface WriteRelationshipInterface<Single> {
      * @return access interface to the freshly created relationship
      *
      * @throws java.lang.IllegalArgumentException if any of the parameters (but properties) is null
+     * @throws EntityNotFoundException if the current position in the inventory traversal doesn't evaluate to an
+     * existing entity or if the provided other end of the relationship doesn't exist.
      *
      * @see #linkWith(Relationships.WellKnown, Entity, Map)
      */
@@ -71,6 +73,8 @@ interface WriteRelationshipInterface<Single> {
      * @return access interface to the freshly created relationship
      *
      * @throws java.lang.IllegalArgumentException if any of the parameters is null
+     * @throws EntityNotFoundException if the current position in the inventory traversal doesn't evaluate to an
+     * existing entity or if the provided other end of the relationship doesn't exist.
      */
     Single linkWith(Relationships.WellKnown name, Entity<?, ?> targetOrSource, Map<String, Object> properties)
             throws IllegalArgumentException;

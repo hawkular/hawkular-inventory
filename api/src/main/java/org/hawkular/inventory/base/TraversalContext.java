@@ -33,16 +33,42 @@ import java.util.Iterator;
 import static org.hawkular.inventory.api.filters.With.type;
 
 /**
+ * Holds the data needed throughout the construction of inventory traversal.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
 public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
+    /**
+     * The inventory instance we're operating in.
+     */
     protected final BaseInventory<BE> inventory;
+
+    /**
+     * The query to the "point" right before the entities of interest.
+     */
     protected final Query sourcePath;
+
+    /**
+     * A query that will select the entities of interest from the {@link #sourcePath}.
+     */
     protected final Query selectCandidates;
+
+    /**
+     * The inventory backend to be used for querying and persistence.
+     */
     protected final InventoryBackend<BE> backend;
+
+    /**
+     * The type of the entity currently being sought after.
+     */
     protected final Class<E> entityClass;
+
+    /**
+     * The user provided configuration.
+     */
     protected final Configuration configuration;
+
     private final ObservableContext observableContext;
 
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
@@ -57,47 +83,110 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.observableContext = observableContext;
     }
 
+    /**
+     * If the current position in the traversal defines any select candidates, the new context will have its source path
+     * composed by appending the select candidates as path fragments to the current source path.
+     *
+     * @return a context builder with the modified source path
+     */
     Builder<BE, E> proceed() {
         return new Builder<>(inventory, hop(), Query.filter(), backend, entityClass, configuration,
                 observableContext);
     }
 
+    /**
+     * The new context will have the source path composed by appending current select candidates as path fragments to
+     * the current source path and its select candidates will filter for entities related by the provided relationship
+     * to the new sources and will have the provided type.
+     *
+     * @param over       the relationship the select candidates will be related to the entities on the source path
+     * @param entityType the type of the entities related to the entities on the source path
+     * @param <T>        the type of the "target" entities
+     * @return a context builder with the modified source path, select candidates and type
+     */
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
         return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration,
                 observableContext)
                 .where(Related.by(over), type(entityType));
     }
 
+    /**
+     * The new context will have the source path composed by appending current select candidates as path fragments to
+     * the current source path. The new context will have select candidates such that it will select the relationships
+     * in given direction stemming from the entities on the new source path.
+     *
+     * @param direction the direction of the relationships to look for
+     * @return a context builder with the modified source path, select candidates and type
+     */
     Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
         return new Builder<>(inventory, hop(), Query.filter()
                 .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration,
                 observableContext);
     }
 
+    /**
+     * An opposite of {@link #proceedToRelationships(Relationships.Direction)}.
+     *
+     * @param direction the direction in which to "leave" the relationships
+     * @param entityType the type of entities to "hop to"
+     * @param <T> the type of entities to "hop to"
+     * @return a context builder with the modified source path, select candidates and type
+     */
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
             Class<T> entityType) {
         return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), Query.filter(),
                 backend, entityType, configuration, observableContext).where(type(entityType));
     }
 
+    /**
+     * @return a new query selecting the select candidates from the source path
+     */
     Query.SymmetricExtender select() {
         return sourcePath.extend().filter().with(selectCandidates);
     }
 
+    /**
+     * @return appends the select candidates as path fragments to the source path
+     */
     Query.SymmetricExtender hop() {
         return sourcePath.extend().path().with(selectCandidates);
     }
 
+    /**
+     * Constructs a new traversal context by replacing the source path with the provided query and clearing out the
+     * selected candidates.
+     *
+     * @param path the source path of the new context
+     * @return a new traversal context with the provided source path and empty select candidates, but otherwise
+     * identical to this one.
+     */
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
                 observableContext);
     }
 
-    protected <V> void notify(V entity, Action<V, V> action) {
+    /**
+     * Sends out the notification to the subscribers.
+     *
+     * @param entity the entity on which the action took place
+     * @param action the action (for which the entity and context resolve to the same type)
+     * @param <V>    the type of the entity and at the same time the type of the action context
+     * @see #notify(Object, Object, Action)
+     */
+    <V> void notify(V entity, Action<V, V> action) {
         notify(entity, entity, action);
     }
 
-    protected <C, V> void notify(V entity, C actionContext, Action<C, V> action) {
+    /**
+     * Sends out the notification to the subscribers.
+     *
+     * @param entity        the entity on which the action occured
+     * @param actionContext the description of the action
+     * @param action        the actual action
+     * @param <C>           the type of the action description (aka context)
+     * @param <V>           the type of the entity on which the action occurred
+     */
+    <C, V> void notify(V entity, C actionContext, Action<C, V> action) {
         Iterator<Subject<C, C>> subjects = observableContext.matchingSubjects(action, entity);
         while (subjects.hasNext()) {
             Subject<C, C> s = subjects.next();
@@ -105,6 +194,12 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         }
     }
 
+    /**
+     * Builds a new traversal context.
+     *
+     * @param <BE> the type of the backend elements
+     * @param <E> the type of the inventory element the new context will represent
+     */
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {
         private final BaseInventory<BE> inventory;
         private final Query.SymmetricExtender pathExtender;

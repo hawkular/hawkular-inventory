@@ -22,7 +22,7 @@ import org.hawkular.inventory.api.model.Entity;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 /**
- * Base for Multiple implementations on entities.
+ * Base for {@code *Multiple} implementations on entities.
  *
  * @author Lukas Krejci
  * @since 0.1.0

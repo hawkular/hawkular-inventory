@@ -21,11 +21,20 @@ import org.hawkular.inventory.api.filters.Filter;
 import java.util.Arrays;
 
 /**
+ * A query fragment that represents a filtering step (i.e. the possible set of results is filtered down but the query
+ * doesn't progress futher along the path in the inventory).
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
 public final class FilterFragment extends QueryFragment {
 
+    /**
+     * A new array of filter fragments each constructed using the corresponding filters in the provided array.
+     *
+     * @param filters the filters to create the fragments from
+     * @return the array of filter fragments
+     */
     public static FilterFragment[] from(Filter... filters) {
         FilterFragment[] ret = new FilterFragment[filters.length];
         Arrays.setAll(ret, (i) -> new FilterFragment(filters[i]));

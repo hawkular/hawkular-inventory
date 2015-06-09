@@ -51,7 +51,7 @@ public final class BaseFeeds {
         }
 
         @Override
-        protected String getProposedId(Feed.Blueprint entity) {
+        protected String getProposedId(Feed.Blueprint blueprint) {
             Page<BE> envs = context.backend.query(context.sourcePath.extend().filter().with(type(Environment.class))
                     .get(), Pager.single());
 
@@ -67,7 +67,7 @@ public final class BaseFeeds {
             String tenantId = env.getTenantId();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory,
-                    new Feed(tenantId, envId, entity.getId()));
+                    new Feed(tenantId, envId, blueprint.getId()));
         }
 
         @Override

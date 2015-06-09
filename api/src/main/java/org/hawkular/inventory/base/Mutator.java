@@ -62,8 +62,23 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         super(context);
     }
 
-    protected abstract String getProposedId(Blueprint entity);
+    /**
+     * Extracts the proposed ID from the blueprint or identifies the ID through some other means.
+     *
+     * @param blueprint the blueprint of the entity to be created
+     * @return the ID to be used for the new entity
+     */
+    protected abstract String getProposedId(Blueprint blueprint);
 
+    /**
+     * A helper method to be used in the implementation of the
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method.
+     *
+     * <p>The callers may merely use the returned query and construct a new {@code *Single} instance using it.
+     *
+     * @param blueprint the blueprint of the new entity
+     * @return the query to the newly created entity.
+     */
     protected final Query doCreate(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
@@ -223,7 +238,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
             //We have to do it prior to actually deleting the objects in the backend so that all information and
             //relationships is still available.
-            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.getType(o)))
+            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.extractType(o)))
                     .collect(Collectors.<AbstractElement<?, ?>>toSet());
 
             deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
@@ -242,7 +257,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                     String rootId = context.backend.extractId(toDelete);
                     String definingId = context.backend.extractId(e);
                     String rootType = context.entityClass.getSimpleName();
-                    String definingType = context.backend.getType(e).getSimpleName();
+                    String definingType = context.backend.extractType(e).getSimpleName();
 
                     String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
                     String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
@@ -273,7 +288,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         }
     }
 
-    protected CanonicalPathAndEntity<BE> getCanonicalParentPath() {
+    private CanonicalPathAndEntity<BE> getCanonicalParentPath() {
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor<CanonicalPathAndEntity<BE>,
                 CanonicalPath.Builder>() {
             @Override
@@ -372,6 +387,20 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         }, CanonicalPath.builder());
     }
 
+    /**
+     * Wires up the freshly created entity in the appropriate places in inventory. The "contains" relationship between
+     * the parent and the new entity will already have been created so the implementations don't need to do that again.
+     *
+     * <p>The wiring up might result in new relationships being created or other "notifiable" actions - the returned
+     * object needs to reflect that so that the notification can correctly be emitted.
+     *
+     * @param entity     the freshly created, uninitialized entity
+     * @param blueprint  the blueprint that it prescribes how the entity should be initialized
+     * @param parentPath the path to the parent entity
+     * @param parent     the actual parent entity
+     * @return an object with the initialized and converted entity together with any pending notifications to be sent
+     * out
+     */
     protected abstract NewEntityAndPendingNotifications<E> wireUpNewEntity(BE entity, Blueprint blueprint,
             CanonicalPath parentPath, BE parent);
 

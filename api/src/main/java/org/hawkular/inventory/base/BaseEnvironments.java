@@ -53,8 +53,8 @@ public final class BaseEnvironments {
         }
 
         @Override
-        protected String getProposedId(Environment.Blueprint entity) {
-            return entity.getId();
+        protected String getProposedId(Environment.Blueprint blueprint) {
+            return blueprint.getId();
         }
 
         @Override

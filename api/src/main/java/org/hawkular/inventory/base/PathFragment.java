@@ -21,11 +21,20 @@ import org.hawkular.inventory.api.filters.Filter;
 import java.util.Arrays;
 
 /**
+ * A query fragment that represents a path step (i.e. the traversal represented by a query progresses futher by
+ * understanding the filter as a means of finding the target of the "hop").
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
 public final class PathFragment extends QueryFragment {
 
+    /**
+     * Constructs path fragments corresponding to the provided filters.
+     *
+     * @param filters the filters to create path fragments from
+     * @return the path fragments
+     */
     public static PathFragment[] from(Filter... filters) {
         PathFragment[] ret = new PathFragment[filters.length];
         Arrays.setAll(ret, (i) -> new PathFragment(filters[i]));

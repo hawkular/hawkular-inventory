@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -41,11 +42,11 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
@@ -104,7 +105,12 @@ public final class BaseRelationships {
                 throw new IllegalArgumentException("targetOrSource was null");
             }
 
-            BE incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
+            BE incidenceObject;
+            try {
+                incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
+            } catch (ElementNotFoundException e) {
+                throw new EntityNotFoundException(targetOrSource.getClass(), Filter.pathTo(targetOrSource));
+            }
 
             Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
             if (origins.isEmpty()) {
@@ -155,10 +161,14 @@ public final class BaseRelationships {
         @Override
         public void update(String id, Relationship.Update update) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
-            BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
             try {
+                BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
                 context.backend.update(relationshipObject, update);
                 context.backend.commit();
+            } catch (ElementNotFoundException e) {
+                context.backend.rollback();
+                throw new RelationNotFoundException(id,
+                        Query.filters(context.select().with(RelationWith.id(id)).get()));
             } catch (Throwable t) {
                 context.backend.rollback();
                 throw t;
@@ -172,8 +182,8 @@ public final class BaseRelationships {
             try {
                 BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
                 context.backend.delete(relationshipObject);
-            } catch (NoSuchElementException e) {
-                throw new RelationNotFoundException("Could not find relationship to delete",
+            } catch (ElementNotFoundException e) {
+                throw new RelationNotFoundException(id,
                         Query.filters(context.select().with(RelationWith.id(id)).get()));
             }
         }
