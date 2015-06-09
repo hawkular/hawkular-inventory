@@ -146,7 +146,7 @@ public final class QueryFragmentTree {
         /**
          * Creates a new branch in the tree and returns a builder of that branch.
          */
-        Builder branch() {
+        public Builder branch() {
             Builder child = new Builder();
             child.parent = this;
             children.add(child);
@@ -157,7 +157,7 @@ public final class QueryFragmentTree {
         /**
          * Concludes the work on a branch and returns a builder of the parent "node", if any.
          */
-        Builder done() {
+        public Builder done() {
             if (done) {
                 return parent;
             }
@@ -182,12 +182,12 @@ public final class QueryFragmentTree {
          *
          * @param filters the list of filters to apply to the query at this position in the tree.
          */
-        Builder with(QueryFragment... filters) {
+        public Builder with(QueryFragment... filters) {
             Collections.addAll(this.fragments, filters);
             return this;
         }
 
-        Builder with(QueryFragmentTree other) {
+        public Builder with(QueryFragmentTree other) {
             with(other.fragments);
             for (QueryFragmentTree sub : other.getSubTrees()) {
                 branch();
@@ -203,7 +203,7 @@ public final class QueryFragmentTree {
          *
          * @return the fully built tree
          */
-        QueryFragmentTree build() {
+        public QueryFragmentTree build() {
             QueryFragmentTree.Builder root = this;
             while (true) {
                 if (root.parent == null) {

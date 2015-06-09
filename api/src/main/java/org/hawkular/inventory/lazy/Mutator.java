@@ -281,7 +281,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                 throw new IllegalArgumentException("Relationship cannot act as a parent of any other entity");
             }
 
-            private BE getParentOfType(Class<? extends Entity> type, boolean throwException) {
+            private BE getParentOfType(Class<? extends Entity<?, ?>> type, boolean throwException) {
                 QueryFragmentTree query = context.sourcePath.extend().withFilters(With.type(type)).get();
 
                 Page<BE> parents = context.backend.query(query, Pager.single());

@@ -61,4 +61,13 @@ public abstract class LazyInventory<E> implements Inventory {
                 configuration));
     }
 
+    /**
+     * <b>WARNING</b>: This is not meant for general consumption but primarily for testing purposes. You can render
+     * the inventory inconsistent and/or unusable with unwise modifications done directly through the backend.
+     *
+     * @return the backend this inventory is using for persistence and querying.
+     */
+    public LazyInventoryBackend<E> getBackend() {
+        return backend;
+    }
 }

@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop;
+package org.hawkular.inventory.impl.tinkerpop.lazy;
 
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.Arrays;
 
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__version;
+import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Property.__unit;
+import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Property.__version;
 
 /**
  * @author Lukas Krejci
@@ -81,20 +82,25 @@ final class Constants {
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
         resourceType(ResourceType.class, __version), metricType(MetricType.class, __unit), resource(Resource.class),
-        metric(Metric.class);
+        metric(Metric.class), relationship(Relationship.class);
 
         private final String[] mappedProperties;
-        private final Class<? extends Entity> entityType;
+        private final Class<? extends AbstractElement<?, ?>> entityType;
 
-        Type(Class<? extends Entity> entityType, Property... mappedProperties) {
+        Type(Class<? extends AbstractElement<?, ?>> entityType, Property... mappedProperties) {
             this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 2];
             Arrays.setAll(this.mappedProperties, i -> i == 0 ? Property.__type.name() :
                     (i == 1 ? Property.__eid.name() : mappedProperties[i - 2].name()));
         }
 
-        public static Type of(Entity<?, ?> e) {
+        public static Type of(AbstractElement<?, ?> e) {
             return e.accept(new ElementVisitor.Simple<Type, Void>() {
+                @Override
+                public Type visitRelationship(Relationship relationship, Void parameter) {
+                    return Type.relationship;
+                }
+
                 @Override
                 public Type visitTenant(Tenant tenant, Void parameter) {
                     return Type.tenant;
@@ -132,27 +138,56 @@ final class Constants {
             }, null);
         }
 
-        public static Type of(Class<? extends Entity> ec) {
-            if (ec == Tenant.class) {
-                return Type.tenant;
-            } else if (ec == Environment.class) {
-                return Type.environment;
-            } else if (ec == Feed.class) {
-                return Type.feed;
-            } else if (ec == Metric.class) {
-                return Type.metric;
-            } else if (ec == MetricType.class) {
-                return Type.metricType;
-            } else if (ec == Resource.class) {
-                return Type.resource;
-            } else if (ec == ResourceType.class) {
-                return Type.resourceType;
-            } else {
-                throw new IllegalArgumentException("Unsupported entity class " + ec);
-            }
+        public static Type of(Class<? extends AbstractElement<?, ?>> ec) {
+            return ElementTypeVisitor.accept(ec, new ElementTypeVisitor.Simple<Type, Void>() {
+                @Override
+                public Type visitTenant(Void parameter) {
+                    return tenant;
+                }
+
+                @Override
+                public Type visitEnvironment(Void parameter) {
+                    return environment;
+                }
+
+                @Override
+                public Type visitFeed(Void parameter) {
+                    return feed;
+                }
+
+                @Override
+                public Type visitMetric(Void parameter) {
+                    return metric;
+                }
+
+                @Override
+                public Type visitMetricType(Void parameter) {
+                    return metricType;
+                }
+
+                @Override
+                public Type visitResource(Void parameter) {
+                    return resource;
+                }
+
+                @Override
+                public Type visitResourceType(Void parameter) {
+                    return resourceType;
+                }
+
+                @Override
+                public Type visitRelationship(Void parameter) {
+                    return relationship;
+                }
+
+                @Override
+                public Type visitUnknown(Void parameter) {
+                    throw new IllegalArgumentException("Unsupported entity class " + ec);
+                }
+            }, null);
         }
 
-        public Class<? extends Entity> getEntityType() {
+        public Class<? extends AbstractElement<?, ?>> getEntityType() {
             return entityType;
         }
 

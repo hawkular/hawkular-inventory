@@ -65,20 +65,20 @@ public final class RelationWith {
     }
 
     @SafeVarargs
-    public static SourceOfType sourcesOfTypes(Class<? extends Entity>... types) {
+    public static SourceOfType sourcesOfTypes(Class<? extends Entity<?, ?>>... types) {
         return new SourceOfType(types);
     }
 
-    public static SourceOfType sourceOfType(Class<? extends Entity> type) {
+    public static SourceOfType sourceOfType(Class<? extends Entity<?, ?>> type) {
         return new SourceOfType(type);
     }
 
     @SafeVarargs
-    public static TargetOfType targetsOfTypes(Class<? extends Entity>... types) {
+    public static TargetOfType targetsOfTypes(Class<? extends Entity<?, ?>>... types) {
         return new TargetOfType(types);
     }
 
-    public static TargetOfType targetOfType(Class<? extends Entity> type) {
+    public static TargetOfType targetOfType(Class<? extends Entity<?, ?>> type) {
         return new TargetOfType(type);
     }
 
@@ -157,14 +157,14 @@ public final class RelationWith {
     }
 
     public static class SourceOrTargetOfType extends RelationFilter {
-        private final Class<? extends Entity>[] types;
+        private final Class<? extends Entity<?, ?>>[] types;
 
         public String getFilterName() {
             return "SourceOrTargetOfType";
         }
 
         @SafeVarargs
-        public SourceOrTargetOfType(Class<? extends Entity>... types) {
+        public SourceOrTargetOfType(Class<? extends Entity<?, ?>>... types) {
             this.types = types;
         }
 
@@ -205,7 +205,7 @@ public final class RelationWith {
     public static final class SourceOfType extends SourceOrTargetOfType {
 
         @SafeVarargs
-        public SourceOfType(Class<? extends Entity>... types) {
+        public SourceOfType(Class<? extends Entity<?, ?>>... types) {
             super(types);
         }
 
@@ -218,7 +218,7 @@ public final class RelationWith {
     public static final class TargetOfType extends SourceOrTargetOfType {
 
         @SafeVarargs
-        public TargetOfType(Class<? extends Entity>... types) {
+        public TargetOfType(Class<? extends Entity<?, ?>>... types) {
             super(types);
         }
 

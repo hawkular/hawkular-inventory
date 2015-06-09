@@ -24,8 +24,8 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -212,7 +212,7 @@ abstract class AbstractGraphService {
         HawkularPipeline<Object, Vertex> ret = new HawkularPipeline<>(context.getGraph())
                 .V();
         HawkularPipeline<?, ? extends Element> vs =
-                e.accept(new EntityVisitor<HawkularPipeline<?, ? extends Element>, Void>() {
+                e.accept(new ElementVisitor.Simple<HawkularPipeline<?, ? extends Element>, Void>() {
 
                     @Override
                     public HawkularPipeline<?, ? extends Element> visitTenant(Tenant tenant, Void ignored) {
@@ -346,7 +346,7 @@ abstract class AbstractGraphService {
             }
         });
 
-        return e.accept(new EntityVisitor<Entity<?, ?>, Void>() {
+        return e.accept(new ElementVisitor.Simple<Entity<?, ?>, Void>() {
             @Override
             public Entity<?, ?> visitTenant(Tenant tenant, Void ignored) {
                 return tenant.update().with(Tenant.Update.builder().withProperties(filteredProperties).build());
