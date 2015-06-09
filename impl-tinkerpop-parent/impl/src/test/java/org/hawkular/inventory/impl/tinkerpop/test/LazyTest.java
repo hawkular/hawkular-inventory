@@ -41,7 +41,7 @@ public class LazyTest extends AbstractLazyInventoryPersistenceCheck<Element> {
 
     @Override
     protected void destroyStorage() throws IOException {
-        Path path = Paths.get("./", "__tinker.graph");
+        Path path = Paths.get("target", "__tinker.graph");
 
         if (!path.toFile().exists()) {
             return;
