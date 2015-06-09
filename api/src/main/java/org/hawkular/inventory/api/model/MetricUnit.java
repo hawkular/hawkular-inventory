@@ -26,13 +26,54 @@ package org.hawkular.inventory.api.model;
  */
 public enum MetricUnit {
 
-
+    // Simple Metric Types - Absolute and Relative
     NONE(""),
-    MILLI_SECOND("ms"),
+    PERCENTAGE("%"),
+
+    // Absolute Sizes in Bytes (utilization)
+    BYTES("B"),
+    KILOBYTES("KB"),
+    MEGABYTES("MB"),
+    GIGABYTES("GB"),
+    TERABYTES("TB"),
+    PETABYTES("PB"),
+
+    // Absolute Sizes in Bits (throughput)
+    BITS("b"),
+    KILOBITS("Kb"),
+    MEGABITS("Mb"),
+    GIGABITS("Gb"),
+    TERABITS("Tb"),
+    PETABITS("Pb"),
+
+    // Absolute Time - no display, only hints to the UI how to display
+    EPOCH_MILLISECONDS(""),
+    EPOCH_SECONDS(""),
+
+    // Relative Time
+    JIFFYS("j"),
+    NANOSECONDS("ns"),
+    MICROSECONDS("us"),
+    MILLISECONDS("ms"),
     SECONDS("s"),
-    MINUTE("min"),
-    BYTE("b"),
-    KILO_BYTE("kb");
+    MINUTES("m"),
+    HOURS("h"),
+    DAYS("d"),
+
+    // Rate
+    PER_JIFFY("/j"),
+    PER_NANOSECOND("/ns"),
+    PER_MICROSECOND("/us"),
+    PER_MILLISECOND("/ms"),
+    PER_SECOND("/s"),
+    PER_MINUTE("/m"),
+    PER_HOUR("/h"),
+    PER_DAY("/d"),
+
+    // Temperature
+    CELSIUS("C"),
+    KELVIN("K"),
+    FAHRENHEIGHT("F");
 
     private final String displayName;
 
