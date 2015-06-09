@@ -311,8 +311,9 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 
     @Test
     public void testEntitiesByRelationships() throws Exception {
-        Function<Integer, Function<Class<? extends Entity<?, ?>>, Function<String, Function<Integer, Function<Class<? extends Entity<?, ?>>,
-                Function<ResolvableToMany<?>, Consumer<ResolvableToMany<?>>>>>>>>
+        Function<Integer, Function<Class<? extends Entity<?, ?>>, Function<String, Function<Integer,
+                Function<Class<? extends Entity<?, ?>>, Function<ResolvableToMany<?>,
+                        Consumer<ResolvableToMany<?>>>>>>>>
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
                     LazyInventoryBackend<?> backend = inventory.getBackend();
@@ -339,12 +340,12 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
                             parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Backend " +
                             "query returned only " + parents.size();
 
-                    assert multipleParents.entities().size() == numberOfParents : "There must be exactly " + numberOfParents + " " +
-                            parentType + "s that have outgoing edge labeled with " + edgeLabel + ". Tested API " +
-                            "returned only " + multipleParents.entities().size();
+                    assert multipleParents.entities().size() == numberOfParents : "There must be exactly " +
+                            numberOfParents + " " + parentType + "s that have outgoing edge labeled with " + edgeLabel +
+                            ". Tested API returned only " + multipleParents.entities().size();
 //                    for (int i = 0; i < numberOfParents; i++) {
 //                        assert parentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
-//                                parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Gremlin " +
+//                              parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Gremlin " +
 //                                "query returned only " + i;
 //                        assert multipleParentIterator.hasNext() : "There must be exactly " + numberOfParents + " " +
 //                                parentType + "s that have outgoing edge labeled with " + edgeLabel + ". Tested API " +
@@ -377,7 +378,8 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 
         ResolvableToMany parents = inventory.tenants().getAll(by("contains"));
         ResolvableToMany kids = inventory.tenants().getAll().environments().getAll(Related.asTargetBy("contains"));
-        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(Environment.class).apply(parents).accept(kids);
+        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(Environment.class).apply(parents)
+                .accept(kids);
 
         kids = inventory.tenants().getAll().resourceTypes().getAll(Related.asTargetBy("contains"));
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(3).apply(ResourceType.class).apply(parents)
@@ -395,8 +397,8 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
 
         kids = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll(
                 Related.asTargetBy("contains"));
-        testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Resource.class).apply(parents).accept
-                (kids);
+        testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Resource.class).apply(parents)
+                .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(by("contains"));
         kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(

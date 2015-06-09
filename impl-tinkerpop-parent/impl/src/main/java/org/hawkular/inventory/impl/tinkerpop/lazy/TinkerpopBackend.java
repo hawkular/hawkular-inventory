@@ -564,7 +564,8 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     /**
      * Updates the properties of the element, disregarding any changes of the disallowed properties
      *
-     * <p> The list of the disallowed properties will usually come from {@link org.hawkular.inventory.impl.tinkerpop.Constants.Type#getMappedProperties()}.
+     * <p> The list of the disallowed properties will usually come from
+     * {@link org.hawkular.inventory.impl.tinkerpop.Constants.Type#getMappedProperties()}.
      *
      * @param e                    the element to update properties of
      * @param properties           the properties to update
@@ -614,7 +615,8 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
             case feed:
             case resource:
             case metric:
-                return new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.environment).iterator().next();
+                return new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.environment).iterator()
+                        .next();
             default:
                 return null;
         }
@@ -627,8 +629,8 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
             case feed:
             case resource:
             case metric:
-                Iterator<Vertex> envs = new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.environment)
-                        .iterator();
+                Iterator<Vertex> envs = new HawkularPipeline<>(entityVertex).in(contains)
+                        .hasType(Constants.Type.environment).iterator();
                 if (envs.hasNext()) {
                     return envs.next();
                 }
@@ -644,7 +646,8 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
         switch (type) {
             case resource:
             case metric:
-                Iterator<Vertex> feeds = new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.feed).iterator();
+                Iterator<Vertex> feeds = new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.feed)
+                        .iterator();
                 if (feeds.hasNext()) {
                     return feeds.next();
                 }
