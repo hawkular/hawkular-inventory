@@ -30,7 +30,7 @@ import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 

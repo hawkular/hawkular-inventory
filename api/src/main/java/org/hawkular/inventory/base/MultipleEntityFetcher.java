@@ -25,7 +25,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
  * Base for Multiple implementations on entities.
  *
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 class MultipleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
     public MultipleEntityFetcher(TraversalContext<BE, E> context) {

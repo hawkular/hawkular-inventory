@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * and hence form a tree.
  *
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public final class Query {
     private QueryFragment[] fragments;

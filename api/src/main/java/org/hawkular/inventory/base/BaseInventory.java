@@ -32,8 +32,10 @@ import rx.Observable;
  * <p>This class is meant to be inherited by the implementation that should provide the initialization and cleanup
  * logic.
  *
+ * @param <E> the type of the backend-specific class representing entities and relationships.
+ *
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public abstract class BaseInventory<E> implements Inventory {
 
@@ -47,6 +49,13 @@ public abstract class BaseInventory<E> implements Inventory {
         this.configuration = configuration;
     }
 
+    /**
+     * This method is called during {@link #initialize(Configuration)} and provides the instance of the backend
+     * initialized from the configuration.
+     *
+     * @param configuration the configuration provided by the user
+     * @return a backend implementation that will be used to access the backend store of the inventory
+     */
     protected abstract InventoryBackend<E> doInitialize(Configuration configuration);
 
     @Override

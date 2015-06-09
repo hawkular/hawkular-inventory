@@ -25,7 +25,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
  * Base for Single implementations on entities.
  *
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 class SingleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
     public SingleEntityFetcher(TraversalContext<BE, E> context) {

@@ -53,7 +53,7 @@ import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extends Entity.Blueprint,
         Update extends AbstractElement.Update> extends Traversal<BE, E> {

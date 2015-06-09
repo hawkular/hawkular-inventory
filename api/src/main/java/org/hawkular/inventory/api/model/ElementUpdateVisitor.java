@@ -18,7 +18,7 @@ package org.hawkular.inventory.api.model;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public interface ElementUpdateVisitor<R, P> {
     R visitTenant(Tenant.Update tenant, P parameter);

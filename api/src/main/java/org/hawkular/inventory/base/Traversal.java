@@ -25,7 +25,7 @@ import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
 

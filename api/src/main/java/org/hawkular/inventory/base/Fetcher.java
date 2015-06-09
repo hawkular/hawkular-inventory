@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE, E> implements ResolvableToSingle<E>,
                                                                                                 ResolvableToMany<E> {

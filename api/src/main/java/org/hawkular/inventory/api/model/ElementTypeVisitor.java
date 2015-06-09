@@ -20,7 +20,7 @@ package org.hawkular.inventory.api.model;
  * A visitor interface to accept different kinds of entities available in Hawkular.
  *
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public interface ElementTypeVisitor<R, P> {
 

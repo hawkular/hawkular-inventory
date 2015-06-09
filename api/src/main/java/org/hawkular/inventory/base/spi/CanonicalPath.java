@@ -29,7 +29,7 @@ import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public final class CanonicalPath {
     private final String tenantId;

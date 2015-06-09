@@ -34,7 +34,7 @@ import java.util.function.Function;
  * @param <E> the type of the backend-specific objects representing the inventory entities. It is assumed that the
  *            backend is "untyped" and stores all different inventory entities using this single type.
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public interface InventoryBackend<E> extends AutoCloseable {
 

@@ -26,7 +26,7 @@ import org.jboss.logging.annotations.ValidIdRange;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 @MessageLogger(projectCode = "HAWKINV")
 @ValidIdRange(min = 1, max = 999)

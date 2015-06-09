@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.6
+ * @since 0.1.0
  */
 public final class FilterFragment extends QueryFragment {
 
