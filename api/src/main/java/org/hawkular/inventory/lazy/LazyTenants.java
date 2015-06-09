@@ -24,12 +24,12 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
 
 /**
  * @author Lukas Krejci
@@ -64,7 +64,7 @@ public final class LazyTenants {
 
         @Override
         public Tenants.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(With.id(id)).get());
+            return new Single<>(context.proceed().where(id(id)).get());
         }
 
         @Override

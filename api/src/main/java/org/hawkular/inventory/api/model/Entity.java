@@ -64,7 +64,7 @@ public abstract class Entity<B extends AbstractElement.Blueprint, U extends Abst
         return bld.toString();
     }
 
-    public static abstract class Blueprint extends AbstractElement.Blueprint {
+    public abstract static class Blueprint extends AbstractElement.Blueprint {
         @XmlAttribute
         private final String id;
 
@@ -77,7 +77,7 @@ public abstract class Entity<B extends AbstractElement.Blueprint, U extends Abst
             return id;
         }
 
-        public static abstract class Builder<Blueprint, This extends Builder<Blueprint, This>>
+        public abstract static class Builder<Blueprint, This extends Builder<Blueprint, This>>
                 extends AbstractElement.Blueprint.Builder<Blueprint, This> {
 
             protected String id;

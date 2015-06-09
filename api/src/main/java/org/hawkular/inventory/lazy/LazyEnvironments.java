@@ -25,9 +25,10 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.lazy.spi.CanonicalPath;
+
+import static org.hawkular.inventory.api.filters.With.id;
 
 /**
  * @author Lukas Krejci
@@ -70,7 +71,7 @@ public final class LazyEnvironments {
 
         @Override
         public Environments.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(With.id(id)).get());
+            return new Single<>(context.proceed().where(id(id)).get());
         }
 
         @Override
