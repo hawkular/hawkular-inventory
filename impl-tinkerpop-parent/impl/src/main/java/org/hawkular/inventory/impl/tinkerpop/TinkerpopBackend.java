@@ -530,7 +530,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             private void common(Map<String, Object> properties, Class<? extends AbstractElement<?, ?>> entityType) {
                 Class<?> actualType = extractType(entity);
                 if (!actualType.equals(entityType)) {
-                    throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the entity.");
+                    throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the" +
+                            " entity.");
                 }
                 String[] disallowedProperties = Constants.Type.of(entityType).getMappedProperties();
                 checkProperties(properties, disallowedProperties);

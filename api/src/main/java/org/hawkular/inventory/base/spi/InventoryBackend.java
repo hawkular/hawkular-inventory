@@ -91,7 +91,8 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param entity           the entity in question
      * @param direction        the direction the relationship should have relative to the entity (
-     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both} means "any" in this context).
+     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both} means "any" in this
+     *                         context).
      * @param relationshipName the name of the relationship to seek
      * @return true if there is such relationship, false otherwise
      * @see #getRelationships(Object, Relationships.Direction, String...)
