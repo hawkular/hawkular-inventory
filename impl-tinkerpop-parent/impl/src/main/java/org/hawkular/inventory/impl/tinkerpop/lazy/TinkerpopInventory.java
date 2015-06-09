@@ -20,10 +20,10 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
-import org.hawkular.inventory.lazy.LazyInventory;
-import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
 
 import java.util.ServiceLoader;
 
@@ -31,9 +31,9 @@ import java.util.ServiceLoader;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public class TinkerpopInventory extends LazyInventory<Element> {
+public class TinkerpopInventory extends BaseInventory<Element> {
     @Override
-    protected LazyInventoryBackend<Element> doInitialize(Configuration configuration) {
+    protected InventoryBackend<Element> doInitialize(Configuration configuration) {
         GraphProvider gp = ServiceLoader.load(GraphProvider.class).iterator().next();
 
         TransactionalGraph graph = gp.instantiateGraph(configuration);

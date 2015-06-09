@@ -18,7 +18,7 @@ package org.hawkular.inventory.api.model;
 
 import com.google.gson.annotations.Expose;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;

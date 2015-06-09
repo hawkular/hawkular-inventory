@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -28,7 +28,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -39,13 +39,13 @@ import static org.hawkular.inventory.api.filters.With.type;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyEnvironments {
+public final class BaseEnvironments {
 
-    private LazyEnvironments() {
+    private BaseEnvironments() {
 
     }
 
-    public static final class ReadWrite<BE> extends Mutator<BE, Environment, Environment.Blueprint, Environment.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Environment, Environment.Blueprint, Environment.Update>
             implements Environments.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Environment> context) {
@@ -87,7 +87,7 @@ public final class LazyEnvironments {
         }
     }
 
-    public static final class Read<BE> extends Traversal<BE, Environment> implements Environments.Read {
+    public static class Read<BE> extends Traversal<BE, Environment> implements Environments.Read {
 
         public Read(TraversalContext<BE, Environment> context) {
             super(context);
@@ -104,7 +104,7 @@ public final class LazyEnvironments {
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, Environment> implements Environments.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Environment> implements Environments.Single {
 
         public Single(TraversalContext<BE, Environment> context) {
             super(context);
@@ -112,22 +112,22 @@ public final class LazyEnvironments {
 
         @Override
         public Feeds.ReadWrite feeds() {
-            return new LazyFeeds.ReadWrite<>(context.proceedTo(contains, Feed.class).get());
+            return new BaseFeeds.ReadWrite<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override
         public Resources.ReadWrite feedlessResources() {
-            return new LazyResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
+            return new BaseResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.ReadWrite feedlessMetrics() {
-            return new LazyMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
+            return new BaseMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return new LazyResources.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseResources.Read<>(context.proceed().where(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
@@ -135,14 +135,14 @@ public final class LazyEnvironments {
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseMetrics.Read<>(context.proceed().where(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
         }
     }
 
-    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Environment>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Environment>
             implements Environments.Multiple {
 
         public Multiple(TraversalContext<BE, Environment> context) {
@@ -151,22 +151,22 @@ public final class LazyEnvironments {
 
         @Override
         public Feeds.Read feeds() {
-            return new LazyFeeds.Read<>(context.proceedTo(contains, Feed.class).get());
+            return new BaseFeeds.Read<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override
         public Resources.Read feedlessResources() {
-            return new LazyResources.Read<>(context.proceedTo(contains, Resource.class).get());
+            return new BaseResources.Read<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.Read feedlessMetrics() {
-            return new LazyMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
         public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return new LazyResources.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseResources.Read<>(context.proceed().where(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
@@ -174,7 +174,7 @@ public final class LazyEnvironments {
 
         @Override
         public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return new LazyMetrics.Read<>(context.proceed().where(new Filter[][]{
+            return new BaseMetrics.Read<>(context.proceed().where(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));

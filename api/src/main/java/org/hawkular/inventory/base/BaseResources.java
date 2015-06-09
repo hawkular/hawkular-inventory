@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -27,8 +27,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.TenantBasedEntity;
-import org.hawkular.inventory.lazy.NewEntityAndPendingNotifications.Notification;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.NewEntityAndPendingNotifications.Notification;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
@@ -39,13 +39,13 @@ import static org.hawkular.inventory.api.filters.With.id;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyResources {
+public final class BaseResources {
 
-    private LazyResources() {
+    private BaseResources() {
 
     }
 
-    public static final class ReadWrite<BE> extends Mutator<BE, Resource, Resource.Blueprint, Resource.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Resource, Resource.Blueprint, Resource.Update>
             implements Resources.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Resource> context) {
@@ -99,7 +99,7 @@ public final class LazyResources {
         }
     }
 
-    public static final class Read<BE> extends Traversal<BE, Resource> implements Resources.Read {
+    public static class Read<BE> extends Traversal<BE, Resource> implements Resources.Read {
 
         public Read(TraversalContext<BE, Resource> context) {
             super(context);
@@ -116,7 +116,7 @@ public final class LazyResources {
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, Resource> implements Resources.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Resource> implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
             super(context);
@@ -124,11 +124,11 @@ public final class LazyResources {
 
         @Override
         public Metrics.ReadAssociate metrics() {
-            return new LazyMetrics.ReadAssociate<>(context.proceedTo(owns, Metric.class).get());
+            return new BaseMetrics.ReadAssociate<>(context.proceedTo(owns, Metric.class).get());
         }
     }
 
-    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Resource> implements Resources.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource> implements Resources.Multiple {
 
         public Multiple(TraversalContext<BE, Resource> context) {
             super(context);
@@ -136,7 +136,7 @@ public final class LazyResources {
 
         @Override
         public Metrics.Read metrics() {
-            return new LazyMetrics.Read<>(context.proceedTo(owns, Metric.class).get());
+            return new BaseMetrics.Read<>(context.proceedTo(owns, Metric.class).get());
         }
     }
 }

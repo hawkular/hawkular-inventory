@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
@@ -27,7 +27,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -37,13 +37,13 @@ import static org.hawkular.inventory.api.filters.With.type;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyFeeds {
+public final class BaseFeeds {
 
-    private LazyFeeds() {
+    private BaseFeeds() {
 
     }
 
-    public static final class ReadWrite<BE> extends Mutator<BE, Feed, Feed.Blueprint, Feed.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Feed, Feed.Blueprint, Feed.Update>
             implements Feeds.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Feed> context) {
@@ -56,7 +56,7 @@ public final class LazyFeeds {
                     .get(), Pager.single());
 
             if (envs.isEmpty()) {
-                throw new EntityNotFoundException(Environment.class, QueryFragmentTree.filters(context.sourcePath));
+                throw new EntityNotFoundException(Environment.class, Query.filters(context.sourcePath));
             }
 
             BE envObject = envs.get(0);
@@ -93,7 +93,7 @@ public final class LazyFeeds {
         }
     }
 
-    public static final class Read<BE> extends Fetcher<BE, Feed> implements Feeds.Read {
+    public static class Read<BE> extends Fetcher<BE, Feed> implements Feeds.Read {
 
         public Read(TraversalContext<BE, Feed> context) {
             super(context);
@@ -110,7 +110,7 @@ public final class LazyFeeds {
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, Feed> implements Feeds.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Feed> implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {
             super(context);
@@ -118,16 +118,16 @@ public final class LazyFeeds {
 
         @Override
         public Resources.ReadWrite resources() {
-            return new LazyResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
+            return new BaseResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.ReadWrite metrics() {
-            return new LazyMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
+            return new BaseMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
         }
     }
 
-    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Feed> implements Feeds.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed> implements Feeds.Multiple {
 
         public Multiple(TraversalContext<BE, Feed> context) {
             super(context);
@@ -135,12 +135,12 @@ public final class LazyFeeds {
 
         @Override
         public Resources.Read resources() {
-            return new LazyResources.Read<>(context.proceedTo(contains, Resource.class).get());
+            return new BaseResources.Read<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
         public Metrics.Read metrics() {
-            return new LazyMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
         }
     }
 }

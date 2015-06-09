@@ -47,10 +47,10 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.LazyInventory;
-import org.hawkular.inventory.lazy.PathFragment;
-import org.hawkular.inventory.lazy.QueryFragmentTree;
-import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.base.PathFragment;
+import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,10 +81,10 @@ import static org.hawkular.inventory.api.filters.With.type;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public abstract class AbstractLazyInventoryPersistenceCheck<E> {
-    LazyInventory<E> inventory;
+public abstract class AbstractBaseInventoryPersistenceCheck<E> {
+    BaseInventory<E> inventory;
 
-    protected abstract LazyInventory<E> instantiateNewInventory();
+    protected abstract BaseInventory<E> instantiateNewInventory();
 
     protected abstract void destroyStorage() throws Exception;
 
@@ -289,7 +289,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
     @Test
     public void testTenants() throws Exception {
         Function<String, Void> test = (id) -> {
-            QueryFragmentTree query = QueryFragmentTree.empty().asBuilder()
+            Query query = Query.empty().asBuilder()
                     .with(PathFragment.from(type(Tenant.class), With.id(id))).build();
 
             Page<E> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
@@ -308,7 +308,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.acme.tenant");
         test.apply("com.example.tenant");
 
-        QueryFragmentTree query = QueryFragmentTree.empty().asBuilder()
+        Query query = Query.empty().asBuilder()
                 .with(PathFragment.from(type(Tenant.class))).build();
 
         Page<E> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
@@ -323,12 +323,12 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
                         Consumer<ResolvableToMany<?>>>>>>>>
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
-                    LazyInventoryBackend<?> backend = inventory.getBackend();
+                    InventoryBackend<?> backend = inventory.getBackend();
 
-                    Page<?> parents = backend.query(QueryFragmentTree.filter().with(type(parentType)).get(),
+                    Page<?> parents = backend.query(Query.filter().with(type(parentType)).get(),
                             Pager.unlimited(Order.unspecified()));
 
-                    Page<?> children = backend.query(QueryFragmentTree.path().with(type(parentType),
+                    Page<?> children = backend.query(Query.path().with(type(parentType),
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
 
 //                    GremlinPipeline<Graph, Vertex> q1 = new GremlinPipeline<Graph, Vertex>(graph)
@@ -606,7 +606,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
     @Test
     public void testEnvironments() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
-            QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
+            Query q = Query.empty().asBuilder()
                     .with(PathFragment.from(type(Tenant.class), With.id(tenantId), by(contains),
                             type(Environment.class), With.id(id))).build();
 
@@ -628,7 +628,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.acme.tenant", "production");
         test.apply("com.example.tenant", "test");
 
-        QueryFragmentTree q = QueryFragmentTree.empty().asBuilder()
+        Query q = Query.empty().asBuilder()
                 .with(PathFragment.from(type(Environment.class))).build();
 
         Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).size());
@@ -638,7 +638,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
     public void testResourceTypes() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
-            QueryFragmentTree query = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
+            Query query = Query.path().with(type(Tenant.class), id(tenantId),
                     by(contains), type(ResourceType.class), id(id)).get();
 
             Page<?> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
@@ -655,7 +655,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Kachna");
         test.apply("com.example.tenant", "Playroom");
 
-        QueryFragmentTree query = QueryFragmentTree.path().with(type(ResourceType.class)).get();
+        Query query = Query.path().with(type(ResourceType.class)).get();
         assert 3 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).size();
     }
 
@@ -663,7 +663,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
     public void testMetricDefinitions() throws Exception {
         BiFunction<String, String, Void> test = (tenantId, id) -> {
 
-            QueryFragmentTree query = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
+            Query query = Query.path().with(type(Tenant.class), id(tenantId),
                     by(contains), type(MetricType.class), id(id)).get();
 
             assert !inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).isEmpty();
@@ -677,7 +677,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.acme.tenant", "ResponseTime");
         test.apply("com.example.tenant", "Size");
 
-        QueryFragmentTree query = QueryFragmentTree.path().with(type(MetricType.class)).get();
+        Query query = Query.path().with(type(MetricType.class)).get();
         assert 2 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).size();
     }
 
@@ -685,7 +685,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
     public void testMetricTypesLinkedToResourceTypes() throws Exception {
         TriFunction<String, String, String, Void> test = (tenantId, resourceTypeId, id) -> {
 
-            QueryFragmentTree q = QueryFragmentTree.path().with(type(Tenant.class), id(tenantId),
+            Query q = Query.path().with(type(Tenant.class), id(tenantId),
                     by(contains), type(ResourceType.class), id(resourceTypeId), by(owns),
                     type(MetricType.class), id(id)).get();
 
@@ -718,7 +718,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Size", "playroom1_size");
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
-        Assert.assertEquals(4, inventory.getBackend().query(QueryFragmentTree.path().with(type(Metric.class)).get(),
+        Assert.assertEquals(4, inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
     }
 
@@ -738,7 +738,7 @@ public abstract class AbstractLazyInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(6, inventory.getBackend().query(QueryFragmentTree.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(6, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
     }
 

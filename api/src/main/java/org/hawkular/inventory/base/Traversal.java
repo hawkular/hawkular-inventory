@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.ResultFilter;
@@ -27,7 +27,7 @@ import org.hawkular.inventory.api.paging.Pager;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
+public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
 
     protected final TraversalContext<BE, E> context;
 
@@ -40,11 +40,11 @@ abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
         return filter == null || filter.isApplicable(result);
     }
 
-    protected BE getSingle(QueryFragmentTree query, Class<? extends Entity<?, ?>> entityType) {
+    protected BE getSingle(Query query, Class<? extends Entity<?, ?>> entityType) {
         Page<BE> results = context.backend.query(query, Pager.single());
 
         if (results.isEmpty()) {
-            throw new EntityNotFoundException(entityType, QueryFragmentTree.filters(query));
+            throw new EntityNotFoundException(entityType, Query.filters(query));
         }
 
         return results.get(0);

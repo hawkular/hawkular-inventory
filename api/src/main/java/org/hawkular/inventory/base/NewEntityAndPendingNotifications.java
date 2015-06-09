@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -27,7 +27,7 @@ import java.util.List;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-final class NewEntityAndPendingNotifications<E extends AbstractElement<?, ?>> {
+public final class NewEntityAndPendingNotifications<E extends AbstractElement<?, ?>> {
 
     private final E entity;
     private final List<Notification<?, ?>> notifications;

@@ -23,7 +23,7 @@ import org.hawkular.inventory.api.filters.Owned;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

@@ -17,9 +17,9 @@
 package org.hawkular.inventory.impl.tinkerpop.test;
 
 import com.tinkerpop.blueprints.Element;
-import org.hawkular.inventory.api.test.AbstractLazyInventoryPersistenceCheck;
+import org.hawkular.inventory.api.test.AbstractBaseInventoryPersistenceCheck;
+import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.lazy.TinkerpopInventory;
-import org.hawkular.inventory.lazy.LazyInventory;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -33,9 +33,9 @@ import java.nio.file.attribute.BasicFileAttributes;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public class LazyTest extends AbstractLazyInventoryPersistenceCheck<Element> {
+public class BaseTest extends AbstractBaseInventoryPersistenceCheck<Element> {
     @Override
-    protected LazyInventory<Element> instantiateNewInventory() {
+    protected BaseInventory<Element> instantiateNewInventory() {
         return new TinkerpopInventory();
     }
 

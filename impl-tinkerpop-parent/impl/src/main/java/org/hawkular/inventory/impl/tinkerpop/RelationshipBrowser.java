@@ -42,7 +42,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.util.Arrays;
 import java.util.List;

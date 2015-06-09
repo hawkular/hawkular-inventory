@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.filters.Filter;
 
@@ -24,15 +24,19 @@ import java.util.Arrays;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class FilterFragment extends QueryFragment {
+public final class PathFragment extends QueryFragment {
 
-    public static FilterFragment[] from(Filter... filters) {
-        FilterFragment[] ret = new FilterFragment[filters.length];
-        Arrays.setAll(ret, (i) -> new FilterFragment(filters[i]));
+    public static PathFragment[] from(Filter... filters) {
+        PathFragment[] ret = new PathFragment[filters.length];
+        Arrays.setAll(ret, (i) -> new PathFragment(filters[i]));
         return ret;
     }
 
-    public FilterFragment(Filter filter) {
+    public static PathFragment from(Filter filter) {
+        return new PathFragment(filter);
+    }
+
+    public PathFragment(Filter filter) {
         super(filter);
     }
 }

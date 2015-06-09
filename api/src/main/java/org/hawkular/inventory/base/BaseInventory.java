@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
@@ -22,12 +22,12 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import rx.Observable;
 
 /**
  * An implementation of the {@link Inventory} that converts the API traversals into trees of filters that it then passes
- * for evaluation to a {@link LazyInventoryBackend backend}.
+ * for evaluation to a {@link InventoryBackend backend}.
  *
  * <p>This class is meant to be inherited by the implementation that should provide the initialization and cleanup
  * logic.
@@ -35,9 +35,9 @@ import rx.Observable;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public abstract class LazyInventory<E> implements Inventory {
+public abstract class BaseInventory<E> implements Inventory {
 
-    private LazyInventoryBackend<E> backend;
+    private InventoryBackend<E> backend;
     private Configuration configuration;
     private final ObservableContext observableContext = new ObservableContext();
 
@@ -47,7 +47,7 @@ public abstract class LazyInventory<E> implements Inventory {
         this.configuration = configuration;
     }
 
-    protected abstract LazyInventoryBackend<E> doInitialize(Configuration configuration);
+    protected abstract InventoryBackend<E> doInitialize(Configuration configuration);
 
     @Override
     public final void close() throws Exception {
@@ -59,8 +59,8 @@ public abstract class LazyInventory<E> implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new LazyTenants.ReadWrite<>(new TraversalContext<>(this, QueryFragmentTree.empty(),
-                QueryFragmentTree.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
+        return new BaseTenants.ReadWrite<>(new TraversalContext<>(this, Query.empty(),
+                Query.filter().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext));
     }
 
@@ -70,7 +70,7 @@ public abstract class LazyInventory<E> implements Inventory {
      *
      * @return the backend this inventory is using for persistence and querying.
      */
-    public LazyInventoryBackend<E> getBackend() {
+    public InventoryBackend<E> getBackend() {
         return backend;
     }
 

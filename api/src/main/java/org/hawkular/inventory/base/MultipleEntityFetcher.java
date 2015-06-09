@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
@@ -22,21 +22,22 @@ import org.hawkular.inventory.api.model.Entity;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 /**
- * Base for Single implementations on entities.
+ * Base for Multiple implementations on entities.
  *
  * @author Lukas Krejci
  * @since 0.0.6
  */
-class SingleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
-    public SingleEntityFetcher(TraversalContext<BE, E> context) {
+class MultipleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
+    public MultipleEntityFetcher(TraversalContext<BE, E> context) {
         super(context);
     }
 
-    public Relationships.ReadWrite relationships() {
+    public Relationships.Read relationships() {
         return relationships(outgoing);
     }
 
-    public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-        return new LazyRelationships.ReadWrite<>(context.proceedToRelationships(direction).get(), context.entityClass);
+    public Relationships.Read relationships(Relationships.Direction direction) {
+        return new BaseRelationships.Read<>(context.proceedToRelationships(direction).get()
+        );
     }
 }

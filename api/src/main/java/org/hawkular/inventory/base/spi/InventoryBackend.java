@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy.spi;
+package org.hawkular.inventory.base.spi;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.QueryFragmentTree;
+import org.hawkular.inventory.base.Query;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -36,13 +36,13 @@ import java.util.function.Function;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public interface LazyInventoryBackend<E> extends AutoCloseable {
+public interface InventoryBackend<E> extends AutoCloseable {
 
     E find(CanonicalPath element);
 
-    Page<E> query(QueryFragmentTree query, Pager pager);
+    Page<E> query(Query query, Pager pager);
 
-    <T extends AbstractElement<?, ?>> Page<T> query(QueryFragmentTree query, Pager pager, Function<E, T> conversion,
+    <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager, Function<E, T> conversion,
             Function<T, Boolean> filter);
 
     Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
@@ -40,8 +40,8 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
-import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -55,13 +55,13 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyRelationships {
+public final class BaseRelationships {
 
-    private LazyRelationships() {
+    private BaseRelationships() {
 
     }
 
-    public static final class ReadWrite<BE> extends Traversal<BE, Relationship> implements Relationships.ReadWrite {
+    public static class ReadWrite<BE> extends Traversal<BE, Relationship> implements Relationships.ReadWrite {
 
         private final Relationships.Direction direction;
         private final Class<? extends Entity<?, ?>> originEntityType;
@@ -108,7 +108,7 @@ public final class LazyRelationships {
 
             Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
             if (origins.isEmpty()) {
-                throw new EntityNotFoundException(originEntityType, QueryFragmentTree.filters(context.select().get()));
+                throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
             }
 
             BE origin = origins.get(0);
@@ -143,7 +143,7 @@ public final class LazyRelationships {
 
             String id = context.backend.extractId(relationshipObject);
 
-            return new Single<>(context.replacePath(QueryFragmentTree.path().with(RelationWith.id(id)).get()));
+            return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
         }
 
         @Override
@@ -174,7 +174,7 @@ public final class LazyRelationships {
                 context.backend.delete(relationshipObject);
             } catch (NoSuchElementException e) {
                 throw new RelationNotFoundException("Could not find relationship to delete",
-                        QueryFragmentTree.filters(context.select().with(RelationWith.id(id)).get()));
+                        Query.filters(context.select().with(RelationWith.id(id)).get()));
             }
         }
 
@@ -223,7 +223,7 @@ public final class LazyRelationships {
         }
     }
 
-    public static final class Read<BE> extends Traversal<BE, Relationship> implements Relationships.Read {
+    public static class Read<BE> extends Traversal<BE, Relationship> implements Relationships.Read {
         private final Relationships.Direction direction;
 
         public Read(TraversalContext<BE, Relationship> context) {
@@ -253,14 +253,14 @@ public final class LazyRelationships {
         }
     }
 
-    public static final class Single<BE> extends Fetcher<BE, Relationship> implements Relationships.Single {
+    public static class Single<BE> extends Fetcher<BE, Relationship> implements Relationships.Single {
 
         public Single(TraversalContext<BE, Relationship> context) {
             super(context);
         }
     }
 
-    public static final class Multiple<BE> extends Fetcher<BE, Relationship> implements Relationships.Multiple {
+    public static class Multiple<BE> extends Fetcher<BE, Relationship> implements Relationships.Multiple {
 
         private final Relationships.Direction direction;
 
@@ -271,37 +271,37 @@ public final class LazyRelationships {
 
         @Override
         public Tenants.Read tenants() {
-            return new LazyTenants.Read<>(context.proceedFromRelationshipsTo(direction, Tenant.class).get());
+            return new BaseTenants.Read<>(context.proceedFromRelationshipsTo(direction, Tenant.class).get());
         }
 
         @Override
         public Environments.Read environments() {
-            return new LazyEnvironments.Read<>(context.proceedFromRelationshipsTo(direction, Environment.class).get());
+            return new BaseEnvironments.Read<>(context.proceedFromRelationshipsTo(direction, Environment.class).get());
         }
 
         @Override
         public Feeds.Read feeds() {
-            return new LazyFeeds.Read<>(context.proceedFromRelationshipsTo(direction, Feed.class).get());
+            return new BaseFeeds.Read<>(context.proceedFromRelationshipsTo(direction, Feed.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new LazyMetricTypes.Read<>(context.proceedFromRelationshipsTo(direction, MetricType.class).get());
+            return new BaseMetricTypes.Read<>(context.proceedFromRelationshipsTo(direction, MetricType.class).get());
         }
 
         @Override
         public Metrics.Read metrics() {
-            return new LazyMetrics.Read<>(context.proceedFromRelationshipsTo(direction, Metric.class).get());
+            return new BaseMetrics.Read<>(context.proceedFromRelationshipsTo(direction, Metric.class).get());
         }
 
         @Override
         public Resources.Read resources() {
-            return new LazyResources.Read<>(context.proceedFromRelationshipsTo(direction, Resource.class).get());
+            return new BaseResources.Read<>(context.proceedFromRelationshipsTo(direction, Resource.class).get());
         }
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            return new LazyResourceTypes.Read<>(context.proceedFromRelationshipsTo(direction, ResourceType.class).
+            return new BaseResourceTypes.Read<>(context.proceedFromRelationshipsTo(direction, ResourceType.class).
                     get());
         }
     }

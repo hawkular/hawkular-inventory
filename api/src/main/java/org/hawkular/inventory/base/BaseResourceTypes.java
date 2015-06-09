@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -25,7 +25,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
@@ -35,13 +35,13 @@ import static org.hawkular.inventory.api.filters.With.id;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyResourceTypes {
+public final class BaseResourceTypes {
 
-    private LazyResourceTypes() {
+    private BaseResourceTypes() {
 
     }
 
-    public static final class ReadWrite<BE>
+    public static class ReadWrite<BE>
             extends Mutator<BE, ResourceType, ResourceType.Blueprint, ResourceType.Update>
             implements ResourceTypes.ReadWrite {
 
@@ -66,21 +66,21 @@ public final class LazyResourceTypes {
 
         @Override
         public ResourceTypes.Multiple getAll(Filter... filters) {
-            return new LazyResourceTypes.Multiple<>(context.proceed().where(filters).get());
+            return new BaseResourceTypes.Multiple<>(context.proceed().where(filters).get());
         }
 
         @Override
         public ResourceTypes.Single get(String id) throws EntityNotFoundException {
-            return new LazyResourceTypes.Single<>(context.proceed().where(id(id)).get());
+            return new BaseResourceTypes.Single<>(context.proceed().where(id(id)).get());
         }
 
         @Override
         public ResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new LazyResourceTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseResourceTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 
-    public static final class Read<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.Read {
+    public static class Read<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.Read {
 
         public Read(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -88,16 +88,16 @@ public final class LazyResourceTypes {
 
         @Override
         public ResourceTypes.Multiple getAll(Filter... filters) {
-            return new LazyResourceTypes.Multiple<>(context.proceed().where(filters).get());
+            return new BaseResourceTypes.Multiple<>(context.proceed().where(filters).get());
         }
 
         @Override
         public ResourceTypes.Single get(String id) throws EntityNotFoundException {
-            return new LazyResourceTypes.Single<>(context.proceed().where(id(id)).get());
+            return new BaseResourceTypes.Single<>(context.proceed().where(id(id)).get());
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, ResourceType> implements ResourceTypes.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, ResourceType> implements ResourceTypes.Single {
 
         public Single(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -105,16 +105,16 @@ public final class LazyResourceTypes {
 
         @Override
         public Resources.Read resources() {
-            return new LazyResources.Read<>(context.proceedTo(defines, Resource.class).get());
+            return new BaseResources.Read<>(context.proceedTo(defines, Resource.class).get());
         }
 
         @Override
         public MetricTypes.ReadAssociate metricTypes() {
-            return new LazyMetricTypes.ReadAssociate<>(context.proceedTo(owns, MetricType.class).get());
+            return new BaseMetricTypes.ReadAssociate<>(context.proceedTo(owns, MetricType.class).get());
         }
     }
 
-    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, ResourceType>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, ResourceType>
             implements ResourceTypes.Multiple {
 
         public Multiple(TraversalContext<BE, ResourceType> context) {
@@ -123,12 +123,12 @@ public final class LazyResourceTypes {
 
         @Override
         public Resources.Read resources() {
-            return new LazyResources.Read<>(context.proceedTo(defines, Resource.class).get());
+            return new BaseResources.Read<>(context.proceedTo(defines, Resource.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new LazyMetricTypes.Read<>(context.proceedTo(owns, MetricType.class).get());
+            return new BaseMetricTypes.Read<>(context.proceedTo(owns, MetricType.class).get());
         }
     }
 }

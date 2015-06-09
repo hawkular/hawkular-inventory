@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -70,11 +70,11 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
     private void throwNotFoundException() {
         if (Entity.class.isAssignableFrom(context.entityClass)) {
             throw new EntityNotFoundException((Class<Entity<?, ?>>) context.entityClass,
-                    QueryFragmentTree.filters(context.select().get()));
+                    Query.filters(context.select().get()));
         } else {
             //TODO this is not correct?
             throw new RelationNotFoundException((Class<Entity<?, ?>>) context.entityClass,
-                    QueryFragmentTree.filters(context.sourcePath));
+                    Query.filters(context.sourcePath));
         }
     }
 }

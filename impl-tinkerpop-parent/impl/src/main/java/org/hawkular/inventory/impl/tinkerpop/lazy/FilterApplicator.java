@@ -23,10 +23,10 @@ import org.hawkular.inventory.api.filters.Owned;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.lazy.FilterFragment;
-import org.hawkular.inventory.lazy.QueryFragment;
-import org.hawkular.inventory.lazy.QueryFragmentTree;
-import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import org.hawkular.inventory.base.FilterFragment;
+import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.QueryFragment;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -112,7 +112,7 @@ abstract class FilterApplicator<T extends Filter> {
      * @param <E>        type of the output of the query
      */
     @SuppressWarnings("unchecked")
-    public static <S, E> void applyAll(QueryFragmentTree filterTree, HawkularPipeline<S, E> q) {
+    public static <S, E> void applyAll(Query filterTree, HawkularPipeline<S, E> q) {
         if (filterTree == null) {
             return;
         }
@@ -131,7 +131,7 @@ abstract class FilterApplicator<T extends Filter> {
             applyAll(filterTree.getSubTrees().get(0), q);
         } else {
             List<HawkularPipeline<E, ?>> branches = new ArrayList<>();
-            for (QueryFragmentTree t : filterTree.getSubTrees()) {
+            for (Query t : filterTree.getSubTrees()) {
                 HawkularPipeline<E, ?> branch = new HawkularPipeline<>();
                 applyAll(t, branch);
                 branches.add(branch);

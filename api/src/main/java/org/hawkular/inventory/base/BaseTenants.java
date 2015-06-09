@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -27,7 +27,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -36,13 +36,13 @@ import static org.hawkular.inventory.api.filters.With.id;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class LazyTenants {
+public final class BaseTenants {
 
-    private LazyTenants() {
+    private BaseTenants() {
 
     }
 
-    public static final class ReadWrite<BE> extends Mutator<BE, Tenant, Tenant.Blueprint, Tenant.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Tenant, Tenant.Blueprint, Tenant.Update>
             implements Tenants.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Tenant> context) {
@@ -78,7 +78,7 @@ public final class LazyTenants {
         }
     }
 
-    public static final class Read<BE> extends Traversal<BE, Tenant> implements Tenants.Read {
+    public static class Read<BE> extends Traversal<BE, Tenant> implements Tenants.Read {
 
         public Read(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -95,7 +95,7 @@ public final class LazyTenants {
         }
     }
 
-    public static final class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant> implements Tenants.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant> implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -103,21 +103,21 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.Read resourceTypes() {
-            return new LazyResourceTypes.Read<>(context.proceedTo(contains, ResourceType.class).get());
+            return new BaseResourceTypes.Read<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
         public MetricTypes.Read metricTypes() {
-            return new LazyMetricTypes.Read<>(context.proceedTo(contains, MetricType.class).get());
+            return new BaseMetricTypes.Read<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.Read environments() {
-            return new LazyEnvironments.Read<>(context.proceedTo(contains, Environment.class).get());
+            return new BaseEnvironments.Read<>(context.proceedTo(contains, Environment.class).get());
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, Tenant> implements Tenants.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Tenant> implements Tenants.Single {
 
         public Single(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -125,17 +125,17 @@ public final class LazyTenants {
 
         @Override
         public ResourceTypes.ReadWrite resourceTypes() {
-            return new LazyResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
+            return new BaseResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
         public MetricTypes.ReadWrite metricTypes() {
-            return new LazyMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
+            return new BaseMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.ReadWrite environments() {
-            return new LazyEnvironments.ReadWrite<>(context.proceedTo(contains, Environment.class).get());
+            return new BaseEnvironments.ReadWrite<>(context.proceedTo(contains, Environment.class).get());
         }
     }
 }

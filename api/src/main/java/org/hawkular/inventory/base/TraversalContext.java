@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
@@ -24,8 +24,8 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
-import org.hawkular.inventory.lazy.spi.SwitchElementType;
+import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 import rx.subjects.Subject;
 
 import java.util.Iterator;
@@ -36,17 +36,17 @@ import static org.hawkular.inventory.api.filters.With.type;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
-    protected final LazyInventory<BE> inventory;
-    protected final QueryFragmentTree sourcePath;
-    protected final QueryFragmentTree selectCandidates;
-    protected final LazyInventoryBackend<BE> backend;
+public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
+    protected final BaseInventory<BE> inventory;
+    protected final Query sourcePath;
+    protected final Query selectCandidates;
+    protected final InventoryBackend<BE> backend;
     protected final Class<E> entityClass;
     protected final Configuration configuration;
-    protected final ObservableContext observableContext;
+    private final ObservableContext observableContext;
 
-    TraversalContext(LazyInventory<BE> inventory, QueryFragmentTree sourcePath, QueryFragmentTree selectCandidates,
-            LazyInventoryBackend<BE> backend,
+    TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
+            InventoryBackend<BE> backend,
             Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
         this.inventory = inventory;
         this.sourcePath = sourcePath;
@@ -58,38 +58,38 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     Builder<BE, E> proceed() {
-        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityClass, configuration,
+        return new Builder<>(inventory, hop(), Query.filter(), backend, entityClass, configuration,
                 observableContext);
     }
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
-        return new Builder<>(inventory, hop(), QueryFragmentTree.filter(), backend, entityType, configuration,
+        return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration,
                 observableContext)
                 .where(Related.by(over), type(entityType));
     }
 
     Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
-        return new Builder<>(inventory, hop(), QueryFragmentTree.filter()
+        return new Builder<>(inventory, hop(), Query.filter()
                 .with(new SwitchElementType(direction, false)), backend, Relationship.class, configuration,
                 observableContext);
     }
 
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
             Class<T> entityType) {
-        return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), QueryFragmentTree.filter(),
+        return new Builder<>(inventory, hop().with(new SwitchElementType(direction, true)), Query.filter(),
                 backend, entityType, configuration, observableContext).where(type(entityType));
     }
 
-    QueryFragmentTree.SymmetricExtender select() {
+    Query.SymmetricExtender select() {
         return sourcePath.extend().filter().with(selectCandidates);
     }
 
-    QueryFragmentTree.SymmetricExtender hop() {
+    Query.SymmetricExtender hop() {
         return sourcePath.extend().path().with(selectCandidates);
     }
 
-    TraversalContext<BE, E> replacePath(QueryFragmentTree path) {
-        return new TraversalContext<>(inventory, path, QueryFragmentTree.empty(), backend, entityClass, configuration,
+    TraversalContext<BE, E> replacePath(Query path) {
+        return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
                 observableContext);
     }
 
@@ -106,16 +106,16 @@ final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {
-        private final LazyInventory<BE> inventory;
-        private final QueryFragmentTree.SymmetricExtender pathExtender;
-        private final QueryFragmentTree.SymmetricExtender selectExtender;
-        private final LazyInventoryBackend<BE> backend;
+        private final BaseInventory<BE> inventory;
+        private final Query.SymmetricExtender pathExtender;
+        private final Query.SymmetricExtender selectExtender;
+        private final InventoryBackend<BE> backend;
         private final Class<E> entityClass;
         private final Configuration configuration;
         private final ObservableContext observableContext;
 
-        public Builder(LazyInventory<BE> inventory, QueryFragmentTree.SymmetricExtender pathExtender,
-                QueryFragmentTree.SymmetricExtender selectExtender, LazyInventoryBackend<BE> backend,
+        public Builder(BaseInventory<BE> inventory, Query.SymmetricExtender pathExtender,
+                Query.SymmetricExtender selectExtender, InventoryBackend<BE> backend,
                 Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
             this.inventory = inventory;
             this.pathExtender = pathExtender;

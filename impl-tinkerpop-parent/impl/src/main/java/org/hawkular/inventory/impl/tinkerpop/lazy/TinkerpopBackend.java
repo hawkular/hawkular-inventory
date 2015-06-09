@@ -39,9 +39,9 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.QueryFragmentTree;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
-import org.hawkular.inventory.lazy.spi.LazyInventoryBackend;
+import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,7 +71,7 @@ import static org.hawkular.inventory.impl.tinkerpop.lazy.Constants.Type.tenant;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
+public final class TinkerpopBackend implements InventoryBackend<Element> {
     private final InventoryContext context;
 
     public TinkerpopBackend(InventoryContext context) {
@@ -84,7 +84,7 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
-    public Page<Element> query(QueryFragmentTree query, Pager pager) {
+    public Page<Element> query(Query query, Pager pager) {
         HawkularPipeline<?, ? extends Element> q;
         if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
             q = new HawkularPipeline<>(context.getGraph()).E();
@@ -100,7 +100,7 @@ public final class TinkerpopBackend implements LazyInventoryBackend<Element> {
     }
 
     @Override
-    public <T extends AbstractElement<?, ?>> Page<T> query(QueryFragmentTree query, Pager pager,
+    public <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager,
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
         HawkularPipeline<?, ? extends Element> q;

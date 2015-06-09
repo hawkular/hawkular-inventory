@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -41,11 +41,11 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,
             Relationships.WellKnown relationship, BE target) {
 
-        QueryFragmentTree sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
         BE source = getSingle(sourceQuery, sourceType);
 
         if (context.backend.hasRelationship(source, target, relationship.name())) {
-            throw new RelationAlreadyExistsException(relationship.name(), QueryFragmentTree.filters(sourceQuery));
+            throw new RelationAlreadyExistsException(relationship.name(), Query.filters(sourceQuery));
         }
 
         BE relationshipObject = context.backend.relate(source, target, relationship.name(), null);
@@ -62,13 +62,13 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     protected Relationship deleteAssociation(Class<? extends Entity<?, ?>> sourceType,
             Relationships.WellKnown relationship, Class<? extends Entity<?, ?>> targetType, BE target) {
 
-        QueryFragmentTree sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
         BE source = getSingle(sourceQuery, sourceType);
 
         BE relationshipObject = context.backend.getRelationship(source, target, relationship.name());
 
         if (relationshipObject == null) {
-            throw new RelationNotFoundException(sourceType, relationship.name(), QueryFragmentTree.filters(sourceQuery),
+            throw new RelationNotFoundException(sourceType, relationship.name(), Query.filters(sourceQuery),
                     null, null);
         }
 
@@ -86,8 +86,8 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, String targetId,
             Class<? extends Entity<?, ?>> targetType, Relationships.WellKnown rel) {
 
-        QueryFragmentTree sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        QueryFragmentTree targetQuery = context.sourcePath.extend().path().with(type(sourceType), Related.by(rel))
+        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
+        Query targetQuery = context.sourcePath.extend().path().with(type(sourceType), Related.by(rel))
                 .filter().with(With.type(targetType), With.id(targetId)).get();
 
         BE source = getSingle(sourceQuery, sourceType);

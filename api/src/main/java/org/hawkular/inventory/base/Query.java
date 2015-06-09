@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.filters.Filter;
 
@@ -40,9 +40,9 @@ import java.util.stream.Collectors;
  * @author Lukas Krejci
  * @since 0.0.6
  */
-public final class QueryFragmentTree {
+public final class Query {
     private QueryFragment[] fragments;
-    private List<QueryFragmentTree> subTrees = new ArrayList<>();
+    private List<Query> subTrees = new ArrayList<>();
 
     /**
      * Converts the list of applicators to the list of filters.
@@ -67,7 +67,7 @@ public final class QueryFragmentTree {
      * @param query the tree of filters
      * @return the list of paths
      */
-    public static Filter[][] filters(QueryFragmentTree query) {
+    public static Filter[][] filters(Query query) {
         List<List<Filter>> paths = new ArrayList<>();
         List<Filter[]> workingPath = new ArrayList<>();
 
@@ -78,7 +78,7 @@ public final class QueryFragmentTree {
         return ret;
     }
 
-    private static void addPathsToLeaves(QueryFragmentTree tree, List<Filter[]> workingPath,
+    private static void addPathsToLeaves(Query tree, List<Filter[]> workingPath,
             List<List<Filter>> results) {
 
         if (tree.getSubTrees().isEmpty()) {
@@ -93,14 +93,14 @@ public final class QueryFragmentTree {
             results.add(pathToLeaf);
         } else {
             workingPath.add(filters(tree.getFragments()));
-            for (QueryFragmentTree subTree : tree.getSubTrees()) {
+            for (Query subTree : tree.getSubTrees()) {
                 addPathsToLeaves(subTree, workingPath, results);
             }
             workingPath.remove(workingPath.size() - 1);
         }
     }
 
-    public static QueryFragmentTree empty() {
+    public static Query empty() {
         return new Builder().build();
     }
 
@@ -112,21 +112,21 @@ public final class QueryFragmentTree {
         return empty().extend().path();
     }
 
-    private QueryFragmentTree() {
+    private Query() {
     }
 
     public QueryFragment[] getFragments() {
         return fragments;
     }
 
-    public List<QueryFragmentTree> getSubTrees() {
+    public List<Query> getSubTrees() {
         return subTrees;
     }
 
     public Builder asBuilder() {
         Builder b = new Builder();
         b.fragments = new ArrayList<>(Arrays.asList(fragments));
-        for (QueryFragmentTree subTree : subTrees) {
+        for (Query subTree : subTrees) {
             Builder childBuilder = subTree.asBuilder();
             childBuilder.parent = b;
             b.children.add(childBuilder);
@@ -141,7 +141,7 @@ public final class QueryFragmentTree {
 
     public static final class Builder {
         private List<QueryFragment> fragments = new ArrayList<>();
-        private QueryFragmentTree tree = new QueryFragmentTree();
+        private Query tree = new Query();
         private Builder parent;
         private List<Builder> children = new ArrayList<>();
         private boolean done;
@@ -173,7 +173,7 @@ public final class QueryFragmentTree {
 
             //done will remove the child from the children, so we'd get concurrent modification exceptions
             //avoid that stupidly by working on a copy of children
-            new ArrayList<>(children).forEach(QueryFragmentTree.Builder::done);
+            new ArrayList<>(children).forEach(Query.Builder::done);
 
             done = true;
 
@@ -196,9 +196,9 @@ public final class QueryFragmentTree {
             return this;
         }
 
-        public Builder with(QueryFragmentTree other) {
+        public Builder with(Query other) {
             with(other.fragments);
-            for (QueryFragmentTree sub : other.getSubTrees()) {
+            for (Query sub : other.getSubTrees()) {
                 branch();
                 with(sub);
                 done();
@@ -207,9 +207,9 @@ public final class QueryFragmentTree {
             return this;
         }
 
-        public Builder with(QueryFragmentTree other, Function<Filter, QueryFragment> converter) {
+        public Builder with(Query other, Function<Filter, QueryFragment> converter) {
             with(converter, other.fragments);
-            for (QueryFragmentTree sub : other.getSubTrees()) {
+            for (Query sub : other.getSubTrees()) {
                 branch().with(sub, converter).done();
             }
 
@@ -221,8 +221,8 @@ public final class QueryFragmentTree {
          *
          * @return the fully built tree
          */
-        public QueryFragmentTree build() {
-            QueryFragmentTree.Builder root = this;
+        public Query build() {
+            Query.Builder root = this;
             while (true) {
                 if (root.parent == null) {
                     break;
@@ -239,11 +239,11 @@ public final class QueryFragmentTree {
      * Constructs a query fragment tree by extending all the leaves with a uniform set of filters at a time.
      */
     public static final class SymmetricExtender {
-        private QueryFragmentTree.Builder filters;
+        private Query.Builder filters;
         private Function<Filter[], QueryFragment[]> queryFragmentSupplier;
         private Function<Filter, QueryFragment> converter;
 
-        private SymmetricExtender(QueryFragmentTree.Builder filters) {
+        private SymmetricExtender(Query.Builder filters) {
             this.filters = filters;
         }
 
@@ -259,12 +259,12 @@ public final class QueryFragmentTree {
             return this;
         }
 
-        public SymmetricExtender with(QueryFragmentTree other) {
+        public SymmetricExtender with(Query other) {
             onLeaves(this.filters, (builder) -> builder.with(other, converter));
             return this;
         }
 
-        public SymmetricExtender withExact(QueryFragmentTree other) {
+        public SymmetricExtender withExact(Query other) {
             onLeaves(this.filters, (builder) -> builder.with(other));
             return this;
         }
@@ -283,15 +283,15 @@ public final class QueryFragmentTree {
             return this;
         }
 
-        public QueryFragmentTree get() {
+        public Query get() {
             return filters.build();
         }
 
-        private void onLeaves(QueryFragmentTree.Builder root, Consumer<QueryFragmentTree.Builder> leafMutator) {
+        private void onLeaves(Query.Builder root, Consumer<Query.Builder> leafMutator) {
             if (root.children.isEmpty()) {
                 leafMutator.accept(root);
             } else {
-                for (QueryFragmentTree.Builder c : root.children) {
+                for (Query.Builder c : root.children) {
                     onLeaves(c, leafMutator);
                 }
             }

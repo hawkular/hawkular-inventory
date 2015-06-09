@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.lazy;
+package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
@@ -32,7 +32,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.lazy.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -63,15 +63,15 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
     protected abstract String getProposedId(Blueprint entity);
 
-    protected final QueryFragmentTree doCreate(Blueprint blueprint) {
+    protected final Query doCreate(Blueprint blueprint) {
         String id = getProposedId(blueprint);
 
-        QueryFragmentTree existenceCheck = context.hop().filter().with(id(id)).get();
+        Query existenceCheck = context.hop().filter().with(id(id)).get();
 
         Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
         if (!results.isEmpty()) {
-            throw new EntityAlreadyExistsException(id, QueryFragmentTree.filters(existenceCheck));
+            throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
         }
 
         CanonicalPathAndEntity<BE> parentPath = getCanonicalParentPath();
@@ -101,27 +101,27 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         newEntity.getNotifications().forEach(this::notify);
 
         return ElementTypeVisitor.accept(context.entityClass,
-                new ElementTypeVisitor<QueryFragmentTree, QueryFragmentTree.Builder>() {
+                new ElementTypeVisitor<Query, Query.Builder>() {
                     @Override
-                    public QueryFragmentTree visitTenant(QueryFragmentTree.Builder bld) {
+                    public Query visitTenant(Query.Builder bld) {
                         return bld.with(PathFragment.from(type(Tenant.class), id(id))).build();
                     }
 
                     @Override
-                    public QueryFragmentTree visitEnvironment(QueryFragmentTree.Builder bld) {
+                    public Query visitEnvironment(Query.Builder bld) {
                         return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                 by(contains), type(Environment.class), id(id))).build();
                     }
 
                     @Override
-                    public QueryFragmentTree visitFeed(QueryFragmentTree.Builder bld) {
+                    public Query visitFeed(Query.Builder bld) {
                         return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                 by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
                                 by(contains), type(Feed.class), id(id))).build();
                     }
 
                     @Override
-                    public QueryFragmentTree visitMetric(QueryFragmentTree.Builder bld) {
+                    public Query visitMetric(Query.Builder bld) {
                         if (parentPath.path.getFeedId() == null) {
                             return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                     by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
@@ -135,13 +135,13 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                     }
 
                     @Override
-                    public QueryFragmentTree visitMetricType(QueryFragmentTree.Builder bld) {
+                    public Query visitMetricType(Query.Builder bld) {
                         return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                 by(contains), type(MetricType.class), id(id))).build();
                     }
 
                     @Override
-                    public QueryFragmentTree visitResource(QueryFragmentTree.Builder bld) {
+                    public Query visitResource(Query.Builder bld) {
                         if (parentPath.path.getFeedId() == null) {
                             return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                     by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
@@ -155,21 +155,21 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                     }
 
                     @Override
-                    public QueryFragmentTree visitResourceType(QueryFragmentTree.Builder bld) {
+                    public Query visitResourceType(Query.Builder bld) {
                         return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
                                 by(contains), type(ResourceType.class), id(id))).build();
                     }
 
                     @Override
-                    public QueryFragmentTree visitUnknown(QueryFragmentTree.Builder bld) {
+                    public Query visitUnknown(Query.Builder bld) {
                         return null;
                     }
 
                     @Override
-                    public QueryFragmentTree visitRelationship(QueryFragmentTree.Builder bld) {
+                    public Query visitRelationship(Query.Builder bld) {
                         return null;
                     }
-                }, new QueryFragmentTree.Builder());
+                }, new Query.Builder());
     }
 
     public final void update(String id, Update update) throws EntityNotFoundException {
@@ -354,13 +354,13 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
             }
 
             private BE getParentOfType(Class<? extends Entity<?, ?>> type, boolean throwException) {
-                QueryFragmentTree query = context.sourcePath.extend().filter().with(type(type)).get();
+                Query query = context.sourcePath.extend().filter().with(type(type)).get();
 
                 Page<BE> parents = context.backend.query(query, Pager.single());
 
                 if (parents.isEmpty()) {
                     if (throwException) {
-                        throw new EntityNotFoundException(type, QueryFragmentTree.filters(query));
+                        throw new EntityNotFoundException(type, Query.filters(query));
                     } else {
                         return null;
                     }
@@ -378,12 +378,12 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         //sourcePath is "path to the parent"
         //selectCandidates - is the elements possibly matched by this mutator
         //we're given the id to select from these
-        QueryFragmentTree query = context.sourcePath.extend().path().with(context.selectCandidates).with(id(id)).get();
+        Query query = context.sourcePath.extend().path().with(context.selectCandidates).with(id(id)).get();
 
         Page<BE> result = context.backend.query(query, Pager.single());
 
         if (result.isEmpty()) {
-            throw new EntityNotFoundException(context.entityClass, QueryFragmentTree.filters(query));
+            throw new EntityNotFoundException(context.entityClass, Query.filters(query));
         }
 
         return result.get(0);
