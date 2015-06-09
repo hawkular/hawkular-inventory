@@ -34,11 +34,26 @@ import java.util.ServiceLoader;
 public final class TinkerpopInventory extends BaseInventory<Element> {
     @Override
     protected InventoryBackend<Element> doInitialize(Configuration configuration) {
-        GraphProvider gp = ServiceLoader.load(GraphProvider.class).iterator().next();
 
-        TransactionalGraph graph = gp.instantiateGraph(configuration);
+        GraphProvider<? extends TransactionalGraph> gp = loadGraph();
+        TransactionalGraph g = ensureIndices(gp, configuration);
 
-        gp.ensureIndices(graph,
+        InventoryContext context = new InventoryContext(this, configuration.getFeedIdStrategy(),
+                configuration.getResultFilter(), g);
+
+        return new TinkerpopBackend(context);
+    }
+
+    private <T extends TransactionalGraph> GraphProvider<T> loadGraph() {
+        @SuppressWarnings("unchecked")
+        GraphProvider<T> gp = ServiceLoader.load(GraphProvider.class).iterator().next();
+        return gp;
+    }
+
+    private <T extends TransactionalGraph> T ensureIndices(GraphProvider<T> graphProvider, Configuration config) {
+        T graph = graphProvider.instantiateGraph(config);
+
+        graphProvider.ensureIndices(graph,
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
                         .withProperty(Constants.Property.__type.name(), String.class)
@@ -47,9 +62,6 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withElementType(Vertex.class)
                         .withProperty(Constants.Property.__type.name(), String.class).build());
 
-        InventoryContext context = new InventoryContext(this, configuration.getFeedIdStrategy(),
-                configuration.getResultFilter(), graph);
-
-        return new TinkerpopBackend(context);
+        return graph;
     }
 }
