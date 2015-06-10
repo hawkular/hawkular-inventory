@@ -17,9 +17,7 @@
 package org.hawkular.integrated.inventory;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.Basic;
-import org.hawkular.inventory.cdi.Observable;
-import org.hawkular.inventory.cdi.ObservableAutoTenant;
+import org.hawkular.inventory.cdi.Official;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
@@ -37,15 +35,7 @@ import javax.naming.NamingException;
 public class InventoryJNDIPublisher {
 
     @Inject
-    @Observable
-    private Inventory.Mixin.Observable observableInventory;
-
-    @Inject
-    @ObservableAutoTenant
-    private Inventory.Mixin.AutoTenantAndObservable observableAndAutoTenantInventory;
-
-    @Inject
-    @Basic
+    @Official
     private Inventory inventory;
 
     @PostConstruct
@@ -53,9 +43,7 @@ public class InventoryJNDIPublisher {
         InitialContext ctx = null;
         try {
             ctx = new InitialContext();
-            ctx.bind("java:global/Hawkular/BasicInventory", inventory);
-            ctx.bind("java:global/Hawkular/ObservableInventory", observableInventory);
-            ctx.bind("java:global/Hawkular/ObservableAutoTenantInventory", observableAndAutoTenantInventory);
+            ctx.bind("java:global/Hawkular/Inventory", inventory);
         } catch (NamingException e) {
             throw new IllegalStateException("Could not register inventory in JNDI", e);
         } finally {

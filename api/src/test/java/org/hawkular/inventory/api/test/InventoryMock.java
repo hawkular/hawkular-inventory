@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.filters.Filter;
 import org.mockito.Mockito;
 
 import static org.mockito.Matchers.any;
@@ -135,9 +136,9 @@ public class InventoryMock {
         when(environmentsMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(environmentsMultiple.feedlessResources()).thenReturn(resourcesRead);
         when(environmentsRead.get(any())).thenReturn(environmentsSingle);
-        when(environmentsRead.getAll(anyVararg())).thenReturn(environmentsMultiple);
+        when(environmentsRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(environmentsMultiple);
         when(environmentsReadWrite.get(any())).thenReturn(environmentsSingle);
-        when(environmentsReadWrite.getAll(anyVararg())).thenReturn(environmentsMultiple);
+        when(environmentsReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(environmentsMultiple);
         when(environmentsSingle.feeds()).thenReturn(feedsReadWrite);
         when(environmentsSingle.feedlessMetrics()).thenReturn(metricsReadWrite);
         when(environmentsSingle.relationships()).thenReturn(relationshipsReadWrite);
@@ -149,9 +150,9 @@ public class InventoryMock {
         when(feedsMultiple.resources()).thenReturn(resourcesRead);
         when(feedsMultiple.metrics()).thenReturn(metricsRead);
         when(feedsRead.get(any())).thenReturn(feedsSingle);
-        when(feedsRead.getAll(anyVararg())).thenReturn(feedsMultiple);
+        when(feedsRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(feedsMultiple);
         when(feedsReadWrite.get(any())).thenReturn(feedsSingle);
-        when(feedsReadWrite.getAll(anyVararg())).thenReturn(feedsMultiple);
+        when(feedsReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(feedsMultiple);
         when(feedsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(feedsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
         when(feedsSingle.resources()).thenReturn(resourcesReadWrite);
@@ -160,11 +161,11 @@ public class InventoryMock {
         when(metricsMultiple.relationships()).thenReturn(relationshipsRead);
         when(metricsMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(metricsRead.get(any())).thenReturn(metricsSingle);
-        when(metricsRead.getAll(anyVararg())).thenReturn(metricsMultiple);
+        when(metricsRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricsMultiple);
         when(metricsReadAssociate.get(any())).thenReturn(metricsSingle);
-        when(metricsReadAssociate.getAll(anyVararg())).thenReturn(metricsMultiple);
+        when(metricsReadAssociate.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricsMultiple);
         when(metricsReadWrite.get(any())).thenReturn(metricsSingle);
-        when(metricsReadWrite.getAll(anyVararg())).thenReturn(metricsMultiple);
+        when(metricsReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricsMultiple);
         when(metricsSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(metricsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
 
@@ -172,11 +173,11 @@ public class InventoryMock {
         when(metricTypesMultiple.relationships()).thenReturn(relationshipsRead);
         when(metricTypesMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(metricTypesRead.get(any())).thenReturn(metricTypesSingle);
-        when(metricTypesRead.getAll(anyVararg())).thenReturn(metricTypesMultiple);
+        when(metricTypesRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricTypesMultiple);
         when(metricTypesReadAssociate.get(any())).thenReturn(metricTypesSingle);
-        when(metricTypesReadAssociate.getAll(anyVararg())).thenReturn(metricTypesMultiple);
+        when(metricTypesReadAssociate.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricTypesMultiple);
         when(metricTypesReadWrite.get(any())).thenReturn(metricTypesSingle);
-        when(metricTypesReadWrite.getAll(anyVararg())).thenReturn(metricTypesMultiple);
+        when(metricTypesReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(metricTypesMultiple);
         when(metricTypesSingle.metrics()).thenReturn(metricsRead);
         when(metricTypesSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(metricTypesSingle.relationships(any())).thenReturn(relationshipsReadWrite);
@@ -201,9 +202,9 @@ public class InventoryMock {
         when(resourcesMultiple.relationships()).thenReturn(relationshipsRead);
         when(resourcesMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(resourcesRead.get(any())).thenReturn(resourcesSingle);
-        when(resourcesRead.getAll(anyVararg())).thenReturn(resourcesMultiple);
+        when(resourcesRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(resourcesMultiple);
         when(resourcesReadWrite.get(any())).thenReturn(resourcesSingle);
-        when(resourcesReadWrite.getAll(anyVararg())).thenReturn(resourcesMultiple);
+        when(resourcesReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(resourcesMultiple);
         when(resourcesSingle.metrics()).thenReturn(metricsReadAssociate);
         when(resourcesSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(resourcesSingle.relationships(any())).thenReturn(relationshipsReadWrite);
@@ -212,17 +213,17 @@ public class InventoryMock {
         when(resourceTypesMultiple.relationships()).thenReturn(relationshipsRead);
         when(resourceTypesMultiple.relationships(any())).thenReturn(relationshipsRead);
         when(resourceTypesRead.get(any())).thenReturn(resourceTypesSingle);
-        when(resourceTypesRead.getAll(anyVararg())).thenReturn(resourceTypesMultiple);
+        when(resourceTypesRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(resourceTypesMultiple);
         when(resourceTypesReadWrite.get(any())).thenReturn(resourceTypesSingle);
-        when(resourceTypesReadWrite.getAll(anyVararg())).thenReturn(resourceTypesMultiple);
+        when(resourceTypesReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(resourceTypesMultiple);
         when(resourceTypesSingle.metricTypes()).thenReturn(metricTypesReadAssociate);
         when(resourceTypesSingle.relationships()).thenReturn(relationshipsReadWrite);
         when(resourceTypesSingle.relationships(any())).thenReturn(relationshipsReadWrite);
 
         when(tenantsReadWrite.get(anyString())).thenReturn(tenantsSingle);
-        when(tenantsReadWrite.getAll(anyVararg())).thenReturn(tenantsMultiple);
+        when(tenantsReadWrite.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(tenantsMultiple);
         when(tenantsRead.get(anyString())).thenReturn(tenantsSingle);
-        when(tenantsRead.getAll(anyVararg())).thenReturn(tenantsMultiple);
+        when(tenantsRead.getAll(Mockito.<Filter[][]>anyVararg())).thenReturn(tenantsMultiple);
         when(tenantsSingle.environments()).thenReturn(environmentsReadWrite);
         when(tenantsSingle.metricTypes()).thenReturn(metricTypesReadWrite);
         when(tenantsSingle.relationships()).thenReturn(relationshipsReadWrite);

@@ -18,8 +18,6 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.hawkular.inventory.api.FeedIdStrategy;
 import org.hawkular.inventory.api.ResultFilter;
 
@@ -34,19 +32,17 @@ final class InventoryContext {
     private final FeedIdStrategy feedIdStrategy;
     private final ResultFilter resultFilter;
     private final TransactionalGraph graph;
-    private final InventoryService inventory;
-    private final ReadWriteLock lock;
+    private final TinkerpopInventory inventory;
 
-    public InventoryContext(InventoryService inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
+    public InventoryContext(TinkerpopInventory inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
             TransactionalGraph graph) {
         this.inventory = inventory;
         this.feedIdStrategy = feedIdStrategy;
         this.resultFilter = resultFilter;
         this.graph = graph;
-        this.lock = new ReentrantReadWriteLock();
     }
 
-    public InventoryService getInventory() {
+    public TinkerpopInventory getInventory() {
         return inventory;
     }
 
@@ -60,14 +56,5 @@ final class InventoryContext {
 
     public TransactionalGraph getGraph() {
         return graph;
-    }
-
-    /**
-     * A ReadWriteLock maintains a pair of associated locks, one for read-only operations and one for writing. The read
-     * lock may be held simultaneously by multiple reader threads, so long as there are no writers.
-     * The write lock is exclusive.
-     */
-    public ReadWriteLock getInventoryLock() {
-        return lock;
     }
 }

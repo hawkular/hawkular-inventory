@@ -21,8 +21,8 @@ import org.hawkular.accounts.api.PermissionChecker;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -31,7 +31,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.cdi.ObservableAutoTenant;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -67,8 +66,8 @@ public class Security {
     private OperationService operations;
 
     @Inject
-    @ObservableAutoTenant
-    private Inventory.Mixin.AutoTenantAndObservable inventory;
+    @AutoTenant
+    private Inventory inventory;
 
     @javax.annotation.Resource
     private UserTransaction transaction;
@@ -77,7 +76,7 @@ public class Security {
         if (element instanceof Relationship) {
             return element.getId();
         } else {
-            return ((Entity<?, ?>) element).accept(new EntityVisitor<String, Void>() {
+            return ((Entity<?, ?>) element).accept(new ElementVisitor.Simple<String, Void>() {
                 @Override
                 public String visitTenant(Tenant tenant, Void parameter) {
                     return getStableId(Tenant.class, tenant.getId());

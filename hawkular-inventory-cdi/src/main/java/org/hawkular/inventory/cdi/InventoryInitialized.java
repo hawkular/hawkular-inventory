@@ -24,8 +24,14 @@ import org.hawkular.inventory.api.Inventory;
  * @author Lukas Krejci
  * @since 0.0.2
  */
-public final class InventoryInitialized extends AbstractInventoryInitializedEvent<Inventory> {
+public final class InventoryInitialized {
+    private final Inventory inventory;
+
     public InventoryInitialized(Inventory inventory) {
-        super(inventory);
+        this.inventory = inventory;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 }

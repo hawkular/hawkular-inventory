@@ -36,6 +36,35 @@ public interface ResolvingToMultiple<Multiple> {
      * @param filters the (possibly empty) list of filters to apply.
      * @return the (read-only) access interface to the found entities
      */
-    Multiple getAll(Filter... filters);
+    default Multiple getAll(Filter... filters) {
+        Filter[][] fs;
+        if (filters.length == 0) {
+            fs = new Filter[0][0];
+        } else {
+            fs = new Filter[1][];
+            fs[0] = filters;
+        }
+        return getAll(fs);
+    }
 
+    /**
+     * Returns access interface to all entities conforming to the provided filters in the current position in the
+     * inventory traversal.
+     *
+     * <p>The filters parameter is actually composed of individual sets of filters each of which is applied to
+     * the "source" entities. Each set can have multiple filters that are then applied one after another. This becomes
+     * useful when you want to filter by sources having some kind of relationships with other entities and in addition
+     * filter on the sources themselves, too.
+     * E.g.:
+     * <pre>{@code
+     * inventory.tenants().getAll(new Filter[][]{{Related.by("myRel"), With.type(ResourceType.class)},
+     * {With.id("asf")}}).entities();
+     * }</pre>
+     *
+     * The filter above would first check that the tenants in question have a relationship called "myRel" with some
+     * resource types and then would also check if the tenant has ID "asf".
+     *
+     * @param filters the sets of filters to apply
+     */
+    Multiple getAll(Filter[][] filters);
 }

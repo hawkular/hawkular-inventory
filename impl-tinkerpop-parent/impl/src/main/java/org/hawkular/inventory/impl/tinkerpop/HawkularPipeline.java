@@ -28,6 +28,7 @@ import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.branch.LoopPipe;
 import com.tinkerpop.pipes.transform.TransformPipe;
+import com.tinkerpop.pipes.util.FluentUtility;
 import com.tinkerpop.pipes.util.structures.Pair;
 import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
@@ -95,7 +96,18 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
      * @return the pipe line emitting the elements from the last remembered step
      */
     public HawkularPipeline<S, ?> recall() {
-        return back(labelStack.pop());
+        // Gremlin will barf on trying back() when no pipes were added since the last as().
+        // remember()+recall() shouldn't suffer from that condition - there might be situations
+        // during query generation where ensuring that might be more difficult than the simple
+        // check here.
+        String label = labelStack.pop();
+        List<Pipe> pipes = FluentUtility.removePreviousPipes(this, label);
+        if (pipes.isEmpty()) {
+            return this;
+        } else {
+            pipes.forEach(this::add);
+            return back(label);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -121,15 +133,15 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         return in(srels);
     }
 
-    public HawkularPipeline<S, Vertex> page(Pager pager) {
-        return cast(Vertex.class).page(pager, (e, p) -> {
+    public HawkularPipeline<S, ? extends Element> page(Pager pager) {
+        return cast(Element.class).page(pager, (e, p) -> {
             String prop = Constants.Property.mapUserDefined(p);
             return e.getProperty(prop);
         });
     }
 
-    public <V extends Comparable<V>> HawkularPipeline<S, E> page(Pager pager,
-            BiFunction<E, String, V> propertyValueExtractor) {
+    public HawkularPipeline<S, E> page(Pager pager,
+            BiFunction<E, String, ? extends Comparable> propertyValueExtractor) {
 
         List<Order> order = pager.getOrder();
         if (!order.isEmpty()) {
@@ -148,8 +160,8 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
                     int ret = 0;
                     for (Order ord : order) {
                         if (ord.isSpecific()) {
-                            V a = propertyValueExtractor.apply(p.getA(), ord.getField());
-                            V b = propertyValueExtractor.apply(p.getB(), ord.getField());
+                            Comparable a = propertyValueExtractor.apply(p.getA(), ord.getField());
+                            Comparable b = propertyValueExtractor.apply(p.getB(), ord.getField());
                             ret = ord.isAscending() ? safeCompare(a, b) : safeCompare(b, a);
                             if (ret != 0) {
                                 break;
@@ -358,7 +370,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, E> groupBy(PipeFunction keyFunction, PipeFunction valueFunction,
-                                          PipeFunction reduceFunction) {
+            PipeFunction reduceFunction) {
         return cast(super.groupBy(keyFunction, valueFunction, reduceFunction));
     }
 
@@ -369,7 +381,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, E> groupBy(Map reduceMap, PipeFunction keyFunction, PipeFunction valueFunction,
-                                          PipeFunction reduceFunction) {
+            PipeFunction reduceFunction) {
         return cast(super.groupBy(reduceMap, keyFunction, valueFunction, reduceFunction));
     }
 
@@ -385,7 +397,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, E> groupCount(PipeFunction keyFunction,
-                                             PipeFunction<Pair<?, Number>, Number> valueFunction) {
+            PipeFunction<Pair<?, Number>, Number> valueFunction) {
         return cast(super.groupCount(keyFunction, valueFunction));
     }
 
@@ -401,7 +413,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, E> groupCount(Map<?, Number> map, PipeFunction keyFunction,
-                                             PipeFunction<Pair<?, Number>, Number> valueFunction) {
+            PipeFunction<Pair<?, Number>, Number> valueFunction) {
         return cast(super.groupCount(map, keyFunction, valueFunction));
     }
 
@@ -452,7 +464,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, ?> ifThenElse(PipeFunction<E, Boolean> ifFunction, PipeFunction<E, ?> thenFunction,
-                                             PipeFunction<E, ?> elseFunction) {
+            PipeFunction<E, ?> elseFunction) {
         return cast(super.ifThenElse(ifFunction, thenFunction, elseFunction));
     }
 
@@ -533,7 +545,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     @Override
     public HawkularPipeline<S, E> loop(String namedStep, PipeFunction<LoopPipe.LoopBundle<E>, Boolean> whileFunction,
-                                       PipeFunction<LoopPipe.LoopBundle<E>, Boolean> emitFunction) {
+            PipeFunction<LoopPipe.LoopBundle<E>, Boolean> emitFunction) {
         return cast(super.loop(namedStep, whileFunction, emitFunction));
     }
 
@@ -546,7 +558,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
     @Override
     @Deprecated
     public HawkularPipeline<S, E> loop(int numberedStep, PipeFunction<LoopPipe.LoopBundle<E>, Boolean> whileFunction,
-                                       PipeFunction<LoopPipe.LoopBundle<E>, Boolean> emitFunction) {
+            PipeFunction<LoopPipe.LoopBundle<E>, Boolean> emitFunction) {
         return cast(super.loop(numberedStep, whileFunction, emitFunction));
     }
 

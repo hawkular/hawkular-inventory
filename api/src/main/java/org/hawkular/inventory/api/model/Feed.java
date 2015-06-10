@@ -60,7 +60,7 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitFeed(this, parameter);
     }
 
@@ -78,6 +78,11 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
 
         public Blueprint(String id, Map<String, Object> properties) {
             super(id, properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitFeed(this, parameter);
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
@@ -103,6 +108,11 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
 
         public Update(Map<String, Object> properties) {
             super(properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitFeed(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

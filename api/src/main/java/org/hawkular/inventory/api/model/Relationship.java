@@ -17,6 +17,8 @@
 package org.hawkular.inventory.api.model;
 
 import com.google.gson.annotations.Expose;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -32,7 +34,7 @@ import java.util.Map;
  * @since 1.0
  */
 @XmlRootElement
-public final class Relationship extends AbstractElement<Void, Relationship.Update> {
+public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
     @XmlAttribute
     @Expose
     private final String name;
@@ -47,6 +49,11 @@ public final class Relationship extends AbstractElement<Void, Relationship.Updat
     @SuppressWarnings("unused")
     private Relationship() {
         this(null, null, null, null, null);
+    }
+
+    @Override
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
+        return visitor.visitRelationship(this, parameter);
     }
 
     public Relationship(String id, String name, Entity source, Entity target) {
@@ -105,10 +112,81 @@ public final class Relationship extends AbstractElement<Void, Relationship.Updat
             super(properties);
         }
 
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitRelationship(this, parameter);
+        }
+
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
                 return new Update(properties);
+            }
+        }
+    }
+
+    public static final class Blueprint extends AbstractElement.Blueprint {
+
+        private final String name;
+        private final CanonicalPath otherEnd;
+        private final Relationships.Direction direction;
+
+        //JAXB support
+        private Blueprint() {
+            super(null);
+            this.name = null;
+            this.otherEnd = null;
+            this.direction = null;
+        }
+
+        public Blueprint(Relationships.Direction direction, String name, CanonicalPath otherEnd,
+                Map<String, Object> properties) {
+            super(properties);
+            this.name = name;
+            this.otherEnd = otherEnd;
+            this.direction = direction;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Relationships.Direction getDirection() {
+            return direction;
+        }
+
+        public CanonicalPath getOtherEnd() {
+            return otherEnd;
+        }
+
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitRelationship(this, parameter);
+        }
+
+        public static final class Builder extends AbstractElement.Blueprint.Builder<Blueprint, Builder> {
+            private String name;
+            private CanonicalPath otherEnd;
+            private Relationships.Direction direction = Relationships.Direction.outgoing;
+
+            public Builder withName(String name) {
+                this.name = name;
+                return this;
+            }
+
+            public Builder withOtherEnd(CanonicalPath path) {
+                this.otherEnd = path;
+                return this;
+            }
+
+            public Builder withDirection(Relationships.Direction direction) {
+                this.direction = direction;
+                return this;
+            }
+
+            @Override
+            public Blueprint build() {
+                return new Blueprint(direction, name, otherEnd, properties);
             }
         }
     }

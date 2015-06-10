@@ -47,13 +47,13 @@ import java.util.Set;
  */
 public final class BusIntegration {
 
-    private final Inventory.Mixin.Observable inventory;
+    private final Inventory inventory;
     private MessageSender messageSender;
     private final Set<Subscription> subscriptions = new HashSet<>();
     private Configuration configuration;
     private InitialContext namingContext;
 
-    public BusIntegration(Inventory.Mixin.Observable inventory) {
+    public BusIntegration(Inventory inventory) {
         this.inventory = inventory;
     }
 
@@ -102,7 +102,7 @@ public final class BusIntegration {
     }
 
     private static <U extends AbstractElement.Update, T extends AbstractElement<?, U>>
-    void install(Inventory.Mixin.Observable inventory, Set<Subscription> subscriptions, Class<T> entityClass,
+    void install(Inventory inventory, Set<Subscription> subscriptions, Class<T> entityClass,
             MessageSender sender, Action<?, T>... additionalActions) {
 
         installAction(inventory, subscriptions, entityClass, sender, Action.created());
@@ -113,7 +113,7 @@ public final class BusIntegration {
         }
     }
 
-    private static <C, T> void installAction(Inventory.Mixin.Observable inventory, Set<Subscription> subscriptions,
+    private static <C, T> void installAction(Inventory inventory, Set<Subscription> subscriptions,
             Class<T> entityClass, MessageSender sender, Action<C, T> action) {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);

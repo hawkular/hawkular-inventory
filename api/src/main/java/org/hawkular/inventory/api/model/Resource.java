@@ -37,7 +37,9 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     @Expose
     private final ResourceType type;
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private Resource() {
         type = null;
@@ -68,7 +70,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitResource(this, parameter);
     }
 
@@ -92,7 +94,9 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
             return new Builder();
         }
 
-        /** JAXB support */
+        /**
+         * JAXB support
+         */
         @SuppressWarnings("unused")
         private Blueprint() {
             this(null, null, null);
@@ -109,6 +113,11 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
 
         public String getResourceTypeId() {
             return resourceTypeId;
+        }
+
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitResource(this, parameter);
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
@@ -140,6 +149,11 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
 
         public Update(Map<String, Object> properties) {
             super(properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitResource(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

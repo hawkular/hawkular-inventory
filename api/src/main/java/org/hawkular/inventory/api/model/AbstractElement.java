@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,7 @@ import java.util.function.Function;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class AbstractElement<B, U extends AbstractElement.Update> {
+public abstract class AbstractElement<B extends AbstractElement.Blueprint, U extends AbstractElement.Update> {
     public static final String ID_PROPERTY = "id";
 
     @XmlAttribute
@@ -61,6 +62,17 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
             this.properties.remove(ID_PROPERTY);
         }
     }
+
+    /**
+     * Accepts the provided visitor.
+     *
+     * @param visitor   the visitor to visit this entity
+     * @param parameter the parameter to pass on to the visitor
+     * @param <R>       the return type
+     * @param <P>       the type of the parameter
+     * @return the return value provided by the visitor
+     */
+    public abstract <R, P> R accept(ElementVisitor<R, P> visitor, P parameter);
 
     /**
      * @return the id of the entity.
@@ -118,6 +130,8 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
             return properties;
         }
 
+        public abstract <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter);
+
         public abstract static class Builder<U extends Update, This extends Builder<U, This>> {
             protected final Map<String, Object> properties = new HashMap<>();
 
@@ -149,6 +163,42 @@ public abstract class AbstractElement<B, U extends AbstractElement.Update> {
 
         public E with(U update) {
             return updater.apply(update);
+        }
+    }
+
+    public abstract static class Blueprint {
+        @XmlElement
+        private final Map<String, Object> properties;
+
+        protected Blueprint(Map<String, Object> properties) {
+            this.properties = properties;
+        }
+
+        public Map<String, Object> getProperties() {
+            return properties;
+        }
+
+        public abstract <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);
+
+        public abstract static class Builder<B, This extends Builder<B, This>> {
+            protected Map<String, Object> properties = new HashMap<>();
+
+            public This withProperty(String key, Object value) {
+                this.properties.put(key, value);
+                return castThis();
+            }
+
+            public This withProperties(Map<String, Object> properties) {
+                this.properties.putAll(properties);
+                return castThis();
+            }
+
+            public abstract B build();
+
+            @SuppressWarnings("unchecked")
+            protected This castThis() {
+                return (This) this;
+            }
         }
     }
 }

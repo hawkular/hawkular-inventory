@@ -19,8 +19,8 @@ package org.hawkular.integrated.inventory;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.bus.BusIntegration;
 import org.hawkular.inventory.bus.Configuration;
-import org.hawkular.inventory.cdi.DisposingObservableInventory;
-import org.hawkular.inventory.cdi.ObservableInventoryInitialized;
+import org.hawkular.inventory.cdi.DisposingInventory;
+import org.hawkular.inventory.cdi.InventoryInitialized;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -37,7 +37,7 @@ public class BusIntegrationProducer {
 
     private final IdentityHashMap<Inventory, BusIntegration> integrations = new IdentityHashMap<>();
 
-    public void install(@Observes ObservableInventoryInitialized event) throws JMSException, NamingException {
+    public void install(@Observes InventoryInitialized event) throws JMSException, NamingException {
         BusIntegration integration = integrations.get(event.getInventory());
         if (integration == null) {
             integration = newIntegration(event.getInventory());
@@ -46,14 +46,14 @@ public class BusIntegrationProducer {
         }
     }
 
-    public void close(@Observes DisposingObservableInventory event) throws NamingException {
+    public void close(@Observes DisposingInventory event) throws NamingException {
         BusIntegration integration = integrations.remove(event.getInventory());
         if (integration != null) {
             integration.stop();
         }
     }
 
-    private BusIntegration newIntegration(Inventory.Mixin.Observable inventory) {
+    private BusIntegration newIntegration(Inventory inventory) {
         BusIntegration ret = new BusIntegration(inventory);
         // TODO load this from somewhere
         ret.configure(Configuration.getDefaultConfiguration());

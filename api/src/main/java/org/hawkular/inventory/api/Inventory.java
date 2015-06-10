@@ -16,9 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -38,9 +37,7 @@ import org.hawkular.inventory.api.model.Tenant;
  * between entities underneath different tenants. This is because there are situations where such relationships might
  * make sense but more importantly because at the API level, inventory does not mandate any security model. It is
  * assumed that the true multi-tenancy in the common sense of the word is implemented by a layer on top of the inventory
- * API that also understands some security model to separate the tenants. To help with multi-tenancy support, the API
- * provides "mixins" to modify the default behavior of the inventory, see the
- * {@link Mixin} class and the {@link #augment(Inventory)} method.
+ * API that also understands some security model to separate the tenants.
  *
  * <p>Resources are hierarchical - meaning that one can be a parent of others, recursively. One can also say that a
  * resource can contain other resources. Resources can have other kinds of relationships that are not necessarily
@@ -58,23 +55,29 @@ import org.hawkular.inventory.api.model.Tenant;
  *
  * <p>Note to implementers:
  *
+ * <p>It is highly recommended to extend the {@link org.hawkular.inventory.base.BaseInventory} and its SPI instead of
+ * this interface directly. The base is considered the "reference implementation" and any implementation is required to
+ * behave the same.
+ *
+ * <p>If you for any reason need to implement the full inventory interface, please consider the following:
+ *
  * <p>The interfaces composing the inventory API are of 2 kinds:
  * <ol>
- *     <li>CRUD interfaces that provide manipulation of the entities as well as the retrieval of the actual entity
- *     instances (various {@code Read}, {@code ReadWrite} or {@code ReadRelate} interfaces, e.g.
- *     {@link org.hawkular.inventory.api.Environments.ReadWrite}),
- *     <li>browse interfaces that offer further navigation methods to "hop" onto other entities somehow related to the
- *     one(s) in the current position in the inventory traversal. These interfaces are further divided into 2 groups:
- *      <ul>
- *          <li><b>{@code Single}</b> interfaces that provide methods for navigating from a single entity.
- *          These interfaces generally contain methods that enable modification of the entity or its relationships.
- *          See {@link org.hawkular.inventory.api.Environments.Single} for an example.
- *          <li><b>{@code Multiple}</b> interfaces that provide methods for navigating from multiple entities at once.
- *          These interfaces strictly offer only read-only access to the entities, because the semantics of what should
- *          be done when modifying or relating multiple entities at once is not uniformly defined on all types of
- *          entities and therefore would make the API more confusing than necessary. See
- *          {@link org.hawkular.inventory.api.Environments.Multiple} for example.
- *      </ul>
+ * <li>CRUD interfaces that provide manipulation of the entities as well as the retrieval of the actual entity
+ * instances (various {@code Read}, {@code ReadWrite} or {@code ReadRelate} interfaces, e.g.
+ * {@link org.hawkular.inventory.api.Environments.ReadWrite}),
+ * <li>browse interfaces that offer further navigation methods to "hop" onto other entities somehow related to the
+ * one(s) in the current position in the inventory traversal. These interfaces are further divided into 2 groups:
+ * <ul>
+ * <li><b>{@code Single}</b> interfaces that provide methods for navigating from a single entity.
+ * These interfaces generally contain methods that enable modification of the entity or its relationships.
+ * See {@link org.hawkular.inventory.api.Environments.Single} for an example.
+ * <li><b>{@code Multiple}</b> interfaces that provide methods for navigating from multiple entities at once.
+ * These interfaces strictly offer only read-only access to the entities, because the semantics of what should
+ * be done when modifying or relating multiple entities at once is not uniformly defined on all types of
+ * entities and therefore would make the API more confusing than necessary. See
+ * {@link org.hawkular.inventory.api.Environments.Multiple} for example.
+ * </ul>
  * </ol>
  *
  * @author Lukas Krejci
@@ -83,25 +86,8 @@ import org.hawkular.inventory.api.model.Tenant;
 public interface Inventory extends AutoCloseable {
 
     /**
-     * Returns an object with which one can modify the behavior of or add features to the provided inventory.
-     *
-     * @param inventory the inventory to augment
-     * @return a mixin object to modify the inventory with
-     */
-    static Mixin augment(Inventory inventory) {
-        return new Mixin(inventory);
-    }
-
-    static Mixin.ObservableMixin augment(Mixin.Observable inventory) {
-        return new Mixin.ObservableMixin(inventory);
-    }
-
-    static Mixin.AutoTenantMixin augment(Mixin.AutoTenant inventory) {
-        return new Mixin.AutoTenantMixin(inventory);
-    }
-
-    /**
      * Initializes the inventory from the provided configuration object.
+     *
      * @param configuration the configuration to use.
      */
     void initialize(Configuration configuration);
@@ -205,17 +191,16 @@ public interface Inventory extends AutoCloseable {
      * all access interfaces returned from this method (which makes it almost useless but at least you can get the
      * instance of it).
      *
-     * @param entity the entity to inspect
+     * @param entity          the entity to inspect
      * @param accessInterface the expected access interface
-     * @param <E> the type of the entity
-     * @param <Single> the type of the access interface
+     * @param <E>             the type of the entity
+     * @param <Single>        the type of the access interface
      * @return the access interface instance
-     *
      * @throws java.lang.ClassCastException if the provided access interface doesn't match the entity
      */
     default <E extends Entity<?, ?>, Single extends ResolvableToSingle<E>> Single inspect(E entity,
             Class<Single> accessInterface) {
-        return entity.accept(new EntityVisitor<Single, Void>() {
+        return entity.accept(new ElementVisitor.Simple<Single, Void>() {
             @Override
             public Single visitTenant(Tenant tenant, Void ignored) {
                 return accessInterface.cast(inspect(tenant));
@@ -254,200 +239,22 @@ public interface Inventory extends AutoCloseable {
     }
 
     /**
-     * A class for producing mixins of inventory and the {@link Mixin.Observable} or {@link Mixin.AutoTenant}
-     * interfaces.
+     * This method is mainly useful for testing.
      *
-     * <p>Given the old-ish type system of Java lacking Self type or union types, this is quite cumbersome and will
-     * result in a combinatorial explosion of backing classes if more mixins are added. I am not sure there is a way to
-     * work around that. Maybe dynamic proxies could be used but are not worth it at this stage.
-     *
-     * @since 0.0.2
+     * @param interest the interest in changes of some inventory entity type
+     * @return true if the interest has some observers or not
      */
-    final class Mixin {
-        private final Inventory inventory;
+    boolean hasObservers(Interest<?, ?> interest);
 
-        private Mixin(Inventory inventory) {
-            this.inventory = inventory;
-        }
-
-        public AutoTenantMixin autoTenant() {
-            return new AutoTenantMixin(inventory);
-        }
-
-        public ObservableMixin observable() {
-            return new ObservableMixin(inventory);
-        }
-
-        public static final class ObservableMixin {
-            private final Observable inventory;
-
-            private ObservableMixin(Inventory inventory) {
-                this.inventory = new ObservableInventory(inventory);
-            }
-
-            private ObservableMixin(Observable inventory) {
-                this.inventory = inventory;
-            }
-
-            public ObservableAndAutoTenantMixin autoTenant() {
-                return new ObservableAndAutoTenantMixin(inventory);
-            }
-
-            public Observable get() {
-                return inventory;
-            }
-        }
-
-        public static final class AutoTenantMixin {
-            private final AutoTenant inventory;
-
-            private AutoTenantMixin(Inventory inventory) {
-                this.inventory = new AutoTenantInventory(inventory);
-            }
-
-            private AutoTenantMixin(AutoTenant inventory) {
-                this.inventory = inventory;
-            }
-            public ObservableAndAutoTenantMixin observable() {
-                return new ObservableAndAutoTenantMixin(inventory);
-            }
-
-            public AutoTenant get() {
-                return inventory;
-            }
-        }
-
-        public static final class ObservableAndAutoTenantMixin {
-            private final AutoTenantAndObservable inventory;
-
-            private ObservableAndAutoTenantMixin(Observable inventory) {
-                this.inventory = new AutoTenantObservableInventory(inventory);
-            }
-
-            private ObservableAndAutoTenantMixin(AutoTenant inventory) {
-                this.inventory = new ObservableAutoTenantInventory(inventory);
-            }
-
-            public AutoTenantAndObservable get() {
-                return inventory;
-            }
-        }
-
-        /**
-         * The observable mixin interface. Augments the inventory so that mutation events on it can be observed.
-         */
-        public interface Observable extends Inventory {
-            /**
-             * This method is mainly useful for testing.
-             *
-             * @param interest the interest in changes of some inventory entity type
-             * @return true if the interest has some observers or not
-             */
-            boolean hasObservers(Interest<?, ?> interest);
-
-            /**
-             * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
-             * subscribers responsibility to unsubscribe on error
-             *
-             * @param interest the interest in changes of some inventory entity type
-             * @param <C>      the type of object that will be passed to the subscribers of the returned observable
-             * @param <E>      the type of the entity the interest is expressed on
-             * @return an observable to which the caller can subscribe to receive notifications about inventory
-             * mutation
-             */
-            <C, E> rx.Observable<C> observable(Interest<C, E> interest);
-        }
-
-        /**
-         * A mixin interface for automatic creation on tenants. While this mixin doesn't provide any new methods,
-         * it changes the behavior of the inventory by using the {@link AutoTenantInventory} as the backing class for
-         * the mixin implementation. Using this mixin, the
-         * {@link #tenants()}.{@link ReadInterface#getAll(Filter...) getAll(Filter...)} always returns an empty set and
-         * {@link #tenants()}.{@link ReadInterface#get(String) get(String)} returns an existing tenant or creates a new
-         * with the provided id.
-         */
-        public interface AutoTenant extends Inventory {
-        }
-
-        /**
-         * Poor man's intersection type ;)
-         */
-        public interface AutoTenantAndObservable extends AutoTenant, Observable {
-        }
-
-        /**
-         * An implementation of AutoTenant and Observable interfaces in that order.
-         */
-        private static final class AutoTenantObservableInventory implements AutoTenantAndObservable {
-
-            private final Observable inventory;
-            private final AutoTenantInventory autoTenant;
-
-            public AutoTenantObservableInventory(Observable inventory) {
-                this.inventory = inventory;
-                this.autoTenant = new AutoTenantInventory(inventory);
-            }
-
-            @Override
-            public void initialize(Configuration configuration) {
-                autoTenant.initialize(configuration);
-            }
-
-            @Override
-            public Tenants.ReadWrite tenants() {
-                return autoTenant.tenants();
-            }
-
-            @Override
-            public void close() throws Exception {
-                autoTenant.close();
-            }
-
-            @Override
-            public boolean hasObservers(Interest<?, ?> interest) {
-                return inventory.hasObservers(interest);
-            }
-
-            @Override
-            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
-                return inventory.observable(interest);
-            }
-        }
-
-        /**
-         * An implementation of all Inventory, Observable and AutoTenant interfaces in that order.
-         */
-        private static final class ObservableAutoTenantInventory implements AutoTenantAndObservable {
-
-            private final ObservableInventory inventory;
-
-            public ObservableAutoTenantInventory(AutoTenant inventory) {
-                this.inventory = new ObservableInventory(inventory);
-            }
-
-            public boolean hasObservers(Interest<?, ?> interest) {
-                return inventory.hasObservers(interest);
-            }
-
-            @Override
-            public void close() throws Exception {
-                inventory.close();
-            }
-
-            @Override
-            public void initialize(Configuration configuration) {
-                inventory.initialize(configuration);
-            }
-
-            @Override
-            public <C, E> rx.Observable<C> observable(Interest<C, E> interest) {
-                return inventory.observable(interest);
-            }
-
-            @Override
-            public ObservableTenants.ReadWrite tenants() {
-                return inventory.tenants();
-            }
-        }
-    }
+    /**
+     * <b>NOTE</b>: The subscribers will receive the notifications even after they failed. I.e. it is the
+     * subscribers responsibility to unsubscribe on error
+     *
+     * @param interest the interest in changes of some inventory entity type
+     * @param <C>      the type of object that will be passed to the subscribers of the returned observable
+     * @param <E>      the type of the entity the interest is expressed on
+     * @return an observable to which the caller can subscribe to receive notifications about inventory
+     * mutation
+     */
+    <C, E> rx.Observable<C> observable(Interest<C, E> interest);
 }

@@ -39,7 +39,9 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
     @Expose
     private final MetricType type;
 
-    /** JAXB support */
+    /**
+     * JAXB support
+     */
     @SuppressWarnings("unused")
     private Metric() {
         type = null;
@@ -77,7 +79,7 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
     }
 
     @Override
-    public <R, P> R accept(EntityVisitor<R, P> visitor, P parameter) {
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitMetric(this, parameter);
     }
 
@@ -96,7 +98,9 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
             return new Builder();
         }
 
-        /** JAXB support */
+        /**
+         * JAXB support
+         */
         @SuppressWarnings("unused")
         private Blueprint() {
             this(null, null, null);
@@ -113,6 +117,11 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
 
         public String getMetricTypeId() {
             return metricTypeId;
+        }
+
+        @Override
+        public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
+            return visitor.visitMetric(this, parameter);
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
@@ -143,6 +152,11 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
 
         public Update(Map<String, Object> properties) {
             super(properties);
+        }
+
+        @Override
+        public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
+            return visitor.visitMetric(this, parameter);
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {

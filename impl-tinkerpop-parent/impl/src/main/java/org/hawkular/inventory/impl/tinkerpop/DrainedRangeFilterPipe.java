@@ -32,7 +32,7 @@ import com.tinkerpop.pipes.util.PipeHelper;
  * @author Lukas Krejci
  * @since 0.0.2
  */
-public class DrainedRangeFilterPipe<S> extends AbstractPipe<S, S> implements FilterPipe<S> {
+class DrainedRangeFilterPipe<S> extends AbstractPipe<S, S> implements FilterPipe<S> {
     private final int low;
     private final int high;
     private int counter = -1;
