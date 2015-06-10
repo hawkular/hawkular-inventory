@@ -18,8 +18,8 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
-import org.hawkular.inventory.api.FeedIdStrategy;
-import org.hawkular.inventory.api.ResultFilter;
+import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 
 /**
  * Data needed by various services. Mostly coming from configuration.
@@ -27,34 +27,35 @@ import org.hawkular.inventory.api.ResultFilter;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class InventoryContext {
+final class InventoryContext<G extends TransactionalGraph> {
 
-    private final FeedIdStrategy feedIdStrategy;
-    private final ResultFilter resultFilter;
-    private final TransactionalGraph graph;
+    private final G graph;
     private final TinkerpopInventory inventory;
+    private final GraphProvider<G> graphProvider;
 
-    public InventoryContext(TinkerpopInventory inventory, FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
-            TransactionalGraph graph) {
+    public InventoryContext(TinkerpopInventory inventory, G graph, GraphProvider<G> graphProvider) {
         this.inventory = inventory;
-        this.feedIdStrategy = feedIdStrategy;
-        this.resultFilter = resultFilter;
         this.graph = graph;
+        this.graphProvider = graphProvider;
     }
 
     public TinkerpopInventory getInventory() {
         return inventory;
     }
 
-    public FeedIdStrategy getFeedIdStrategy() {
-        return feedIdStrategy;
-    }
-
-    public ResultFilter getResultFilter() {
-        return resultFilter;
-    }
-
     public TransactionalGraph getGraph() {
         return graph;
+    }
+
+    public InventoryBackend.Transaction startTransaction(boolean mutating) {
+        return graphProvider.startTransaction(graph, mutating);
+    }
+
+    public void commit(InventoryBackend.Transaction t) {
+        graphProvider.commit(graph, t);
+    }
+
+    public void rollback(InventoryBackend.Transaction t) {
+        graphProvider.rollback(graph, t);
     }
 }

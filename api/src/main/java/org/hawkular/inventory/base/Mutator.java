@@ -80,21 +80,22 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
      * @return the query to the newly created entity.
      */
     protected final Query doCreate(Blueprint blueprint) {
-        String id = getProposedId(blueprint);
+        return mutating((transaction) -> {
+            String id = getProposedId(blueprint);
 
-        Query existenceCheck = context.hop().filter().with(id(id)).get();
+            Query existenceCheck = context.hop().filter().with(id(id)).get();
 
-        Page<BE> results = context.backend.query(existenceCheck, Pager.single());
+            Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
-        if (!results.isEmpty()) {
-            throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
-        }
+            if (!results.isEmpty()) {
+                throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
+            }
 
-        CanonicalPathAndEntity<BE> parentPath = getCanonicalParentPath();
+            CanonicalPathAndEntity<BE> parentPath = getCanonicalParentPath();
 
-        NewEntityAndPendingNotifications<E> newEntity;
-        BE containsRel = null;
-        try {
+            NewEntityAndPendingNotifications<E> newEntity;
+            BE containsRel = null;
+
             BE entityObject = context.backend.persist(id, blueprint);
 
             if (parentPath.path.isDefined()) {
@@ -104,102 +105,96 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
             newEntity = wireUpNewEntity(entityObject, blueprint, parentPath.path, parentPath.entity);
 
-            context.backend.commit();
-        } catch (Throwable t) {
-            context.backend.rollback();
-            throw t;
-        }
+            context.backend.commit(transaction);
 
-        context.notify(newEntity.getEntity(), created());
-        if (containsRel != null) {
-            context.notify(context.backend.convert(containsRel, Relationship.class), created());
-        }
-        newEntity.getNotifications().forEach(this::notify);
+            context.notify(newEntity.getEntity(), created());
+            if (containsRel != null) {
+                context.notify(context.backend.convert(containsRel, Relationship.class), created());
+            }
+            newEntity.getNotifications().forEach(this::notify);
 
-        return ElementTypeVisitor.accept(context.entityClass,
-                new ElementTypeVisitor<Query, Query.Builder>() {
-                    @Override
-                    public Query visitTenant(Query.Builder bld) {
-                        return bld.with(PathFragment.from(type(Tenant.class), id(id))).build();
-                    }
-
-                    @Override
-                    public Query visitEnvironment(Query.Builder bld) {
-                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                by(contains), type(Environment.class), id(id))).build();
-                    }
-
-                    @Override
-                    public Query visitFeed(Query.Builder bld) {
-                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                by(contains), type(Feed.class), id(id))).build();
-                    }
-
-                    @Override
-                    public Query visitMetric(Query.Builder bld) {
-                        if (parentPath.path.getFeedId() == null) {
-                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                    by(contains), type(Metric.class), id(id))).build();
-                        } else {
-                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
-                                    by(contains), type(Metric.class), id(id))).build();
+            return ElementTypeVisitor.accept(context.entityClass,
+                    new ElementTypeVisitor<Query, Query.Builder>() {
+                        @Override
+                        public Query visitTenant(Query.Builder bld) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(id))).build();
                         }
-                    }
 
-                    @Override
-                    public Query visitMetricType(Query.Builder bld) {
-                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                by(contains), type(MetricType.class), id(id))).build();
-                    }
-
-                    @Override
-                    public Query visitResource(Query.Builder bld) {
-                        if (parentPath.path.getFeedId() == null) {
+                        @Override
+                        public Query visitEnvironment(Query.Builder bld) {
                             return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                    by(contains), type(Resource.class), id(id))).build();
-                        } else {
-                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
-                                    by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
-                                    by(contains), type(Resource.class), id(id))).build();
+                                    by(contains), type(Environment.class), id(id))).build();
                         }
-                    }
 
-                    @Override
-                    public Query visitResourceType(Query.Builder bld) {
-                        return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
-                                by(contains), type(ResourceType.class), id(id))).build();
-                    }
+                        @Override
+                        public Query visitFeed(Query.Builder bld) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                    by(contains), type(Feed.class), id(id))).build();
+                        }
 
-                    @Override
-                    public Query visitUnknown(Query.Builder bld) {
-                        return null;
-                    }
+                        @Override
+                        public Query visitMetric(Query.Builder bld) {
+                            if (parentPath.path.getFeedId() == null) {
+                                return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                        by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                        by(contains), type(Metric.class), id(id))).build();
+                            } else {
+                                return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                        by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                        by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
+                                        by(contains), type(Metric.class), id(id))).build();
+                            }
+                        }
 
-                    @Override
-                    public Query visitRelationship(Query.Builder bld) {
-                        return null;
-                    }
-                }, new Query.Builder());
+                        @Override
+                        public Query visitMetricType(Query.Builder bld) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(MetricType.class), id(id))).build();
+                        }
+
+                        @Override
+                        public Query visitResource(Query.Builder bld) {
+                            if (parentPath.path.getFeedId() == null) {
+                                return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                        by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                        by(contains), type(Resource.class), id(id))).build();
+                            } else {
+                                return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                        by(contains), type(Environment.class), id(parentPath.path.getEnvironmentId()),
+                                        by(contains), type(Feed.class), id(parentPath.path.getFeedId()),
+                                        by(contains), type(Resource.class), id(id))).build();
+                            }
+                        }
+
+                        @Override
+                        public Query visitResourceType(Query.Builder bld) {
+                            return bld.with(PathFragment.from(type(Tenant.class), id(parentPath.path.getTenantId()),
+                                    by(contains), type(ResourceType.class), id(id))).build();
+                        }
+
+                        @Override
+                        public Query visitUnknown(Query.Builder bld) {
+                            return null;
+                        }
+
+                        @Override
+                        public Query visitRelationship(Query.Builder bld) {
+                            return null;
+                        }
+                    }, new Query.Builder());
+        });
     }
 
     public final void update(String id, Update update) throws EntityNotFoundException {
-        BE toUpdate = checkExists(id);
-
-        try {
+        BE updated = mutating((t) -> {
+            BE toUpdate = checkExists(id);
             context.backend.update(toUpdate, update);
-            context.backend.commit();
-        } catch (Throwable e) {
-            context.backend.rollback();
-            throw e;
-        }
+            context.backend.commit(t);
+            return toUpdate;
+        });
 
-        E entity = context.backend.convert(toUpdate, context.entityClass);
+        E entity = context.backend.convert(updated, context.entityClass);
         context.notify(entity, new Action.Update<>(entity, update), updated());
     }
 
@@ -208,16 +203,16 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     }
 
     public final void delete(String id) throws EntityNotFoundException {
-        BE toDelete = checkExists(id);
+        mutating((transaction) -> {
+            BE toDelete = checkExists(id);
 
-        Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+            Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
 
-        Set<BE> deleted = new HashSet<>();
-        Set<BE> deletedRels = new HashSet<>();
-        Set<AbstractElement<?, ?>> deletedEntities;
-        Set<Relationship> deletedRelationships;
+            Set<BE> deleted = new HashSet<>();
+            Set<BE> deletedRels = new HashSet<>();
+            Set<AbstractElement<?, ?>> deletedEntities;
+            Set<Relationship> deletedRelationships;
 
-        try {
             context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
@@ -271,21 +266,20 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
                 }
             }
 
-            context.backend.commit();
-        } catch (Exception e) {
-            context.backend.rollback();
-            throw e;
-        }
+            context.backend.commit(transaction);
 
-        //report the relationship deletions first - it would be strange to report deletion of a relationship after
-        //reporting that an entity on one end of the relationship has been deleted
-        for (Relationship r : deletedRelationships) {
-            context.notify(r, deleted());
-        }
+            //report the relationship deletions first - it would be strange to report deletion of a relationship after
+            //reporting that an entity on one end of the relationship has been deleted
+            for (Relationship r : deletedRelationships) {
+                context.notify(r, deleted());
+            }
 
-        for (AbstractElement<?, ?> e : deletedEntities) {
-            context.notify(e, deleted());
-        }
+            for (AbstractElement<?, ?> e : deletedEntities) {
+                context.notify(e, deleted());
+            }
+
+            return null;
+        });
     }
 
     private CanonicalPathAndEntity<BE> getCanonicalParentPath() {

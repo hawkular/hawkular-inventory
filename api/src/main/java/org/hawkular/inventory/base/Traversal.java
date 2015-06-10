@@ -22,6 +22,10 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.InventoryBackend;
+
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A base class for all the inventory traversal interfaces. Contains only a minimal set of helper methods and holds the
@@ -66,5 +70,44 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
         }
 
         return results.get(0);
+    }
+
+    /**
+     * Runs the payload in transaction. It is the payload's responsibility to commit the transaction at some point
+     * during its execution. If the payload throws an exception the transaction is automatically rolled back and
+     * the exception rethrown.
+     *
+     * @param payload the payload to execute in transaction
+     * @return the return value provided by the payload
+     */
+    protected <R> R mutating(Function<InventoryBackend.Transaction, R> payload) {
+        return inTransaction(false, payload);
+    }
+
+    /**
+     * A "shortcut" method for executing read-only payloads in transaction. Such payloads don't have to have a reference
+     * to the transaction in which they're being executed.
+     *
+     * @param payload the read-only payload to execute
+     * @param <R>     the type of the return value
+     * @return the return value provided by the payload
+     */
+    protected <R> R readOnly(Supplier<R> payload) {
+        return inTransaction(true, (t) -> payload.get());
+    }
+
+    private <R> R inTransaction(boolean readOnly, Function<InventoryBackend.Transaction, R> payload) {
+        InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
+        try {
+            R ret = payload.apply(t);
+            if (readOnly) {
+                context.backend.commit(t);
+            }
+
+            return ret;
+        } catch (Throwable e) {
+            context.backend.rollback(t);
+            throw e;
+        }
     }
 }

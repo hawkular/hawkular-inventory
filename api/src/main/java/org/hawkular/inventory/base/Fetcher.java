@@ -42,30 +42,34 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
     @SuppressWarnings("unchecked")
     @Override
     public E entity() throws EntityNotFoundException, RelationNotFoundException {
-        Page<BE> results = context.backend.query(context.select().get(), Pager.single());
+        return readOnly(() -> {
+            Page<BE> results = context.backend.query(context.select().get(), Pager.single());
 
-        if (results.isEmpty()) {
-            throwNotFoundException();
-        }
+            if (results.isEmpty()) {
+                throwNotFoundException();
+            }
 
-        BE entity = results.get(0);
+            BE entity = results.get(0);
 
-        E ret = context.backend.convert(entity, context.entityClass);
+            E ret = context.backend.convert(entity, context.entityClass);
 
-        if (!isApplicable(ret)) {
-            throwNotFoundException();
-        }
+            if (!isApplicable(ret)) {
+                throwNotFoundException();
+            }
 
-        return ret;
+            return ret;
+        });
     }
 
     @Override
     public Page<E> entities(Pager pager) {
-        Function<BE, E> conversion = (e) -> context.backend.convert(e, context.entityClass);
-        Function<E, Boolean> filter = context.configuration.getResultFilter() == null ? null :
-                (e) -> context.configuration.getResultFilter().isApplicable(e);
+        return readOnly(() -> {
+            Function<BE, E> conversion = (e) -> context.backend.convert(e, context.entityClass);
+            Function<E, Boolean> filter = context.configuration.getResultFilter() == null ? null :
+                    (e) -> context.configuration.getResultFilter().isApplicable(e);
 
-        return context.backend.<E>query(context.select().get(), pager, conversion, filter);
+            return context.backend.<E>query(context.select().get(), pager, conversion, filter);
+        });
     }
 
     @SuppressWarnings("unchecked")

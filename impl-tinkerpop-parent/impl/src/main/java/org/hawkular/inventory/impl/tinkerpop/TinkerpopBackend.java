@@ -73,10 +73,15 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
  * @since 0.1.0
  */
 final class TinkerpopBackend implements InventoryBackend<Element> {
-    private final InventoryContext context;
+    private final InventoryContext<?> context;
 
-    public TinkerpopBackend(InventoryContext context) {
+    public TinkerpopBackend(InventoryContext<?> context) {
         this.context = context;
+    }
+
+    @Override
+    public Transaction startTransaction(boolean mutating) {
+        return context.startTransaction(mutating);
     }
 
     @Override
@@ -536,13 +541,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void commit() {
-        context.getGraph().commit();
+    public void commit(Transaction t) {
+        context.commit(t);
     }
 
     @Override
-    public void rollback() {
-        context.getGraph().rollback();
+    public void rollback(Transaction t) {
+        context.rollback(t);
     }
 
     @Override

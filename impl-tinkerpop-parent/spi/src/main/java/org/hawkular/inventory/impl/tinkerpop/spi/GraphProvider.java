@@ -18,6 +18,7 @@ package org.hawkular.inventory.impl.tinkerpop.spi;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * This is a service interface that the Tinkerpop implementation will use to get a configured and initialized instance
@@ -51,4 +52,42 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param indexSpecs the core set of indices to define
      */
     void ensureIndices(G graph, IndexSpec... indexSpecs);
+
+    /**
+     * Starts a new transaction in the graph.
+     *
+     * <p>The default implementation returns a new instance of
+     * {@link org.hawkular.inventory.base.spi.InventoryBackend.Transaction} with the provided mutating flag.
+     *
+     * @param graph    the graph to start the transaction in
+     * @param mutating whether the transaction will mutate the storage or not
+     * @return a transaction handle
+     */
+    default InventoryBackend.Transaction startTransaction(G graph, boolean mutating) {
+        return new InventoryBackend.Transaction(mutating);
+    }
+
+    /**
+     * Commits the transaction in the graph.
+     *
+     * <p>The default implementation merely calls {@link TransactionalGraph#commit()}.
+     *
+     * @param graph the graph to commit the transaction to
+     * @param t     the transaction
+     */
+    default void commit(G graph, InventoryBackend.Transaction t) {
+        graph.commit();
+    }
+
+    /**
+     * Rolls back the transaction in the graph.
+     *
+     * <p>The default implementation merely calls {@link TransactionalGraph#rollback()}.
+     *
+     * @param graph the graph to rollback the transaction from
+     * @param t     the transaction
+     */
+    default void rollback(G graph, InventoryBackend.Transaction t) {
+        graph.rollback();
+    }
 }

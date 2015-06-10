@@ -39,6 +39,13 @@ import java.util.function.Function;
 public interface InventoryBackend<E> extends AutoCloseable {
 
     /**
+     * Starts a transaction in the backend.
+     *
+     * @param mutating whether there will be calls mutating the data or not
+     */
+    Transaction startTransaction(boolean mutating);
+
+    /**
      * Tries to find an element at given canonical path.
      *
      * @param element the canonical path of the element to find
@@ -200,12 +207,31 @@ public interface InventoryBackend<E> extends AutoCloseable {
     void delete(E entity);
 
     /**
-     * Commits the currently running transaction.
+     * Commits the transaction.
+     * @param transaction the transaction to commit
      */
-    void commit();
+    void commit(Transaction transaction);
 
     /**
-     * Rolls back the currently running transaction.
+     * Rolls back the transaction.
+     * @param transaction the transaction to roll back
      */
-    void rollback();
+    void rollback(Transaction transaction);
+
+    /**
+     * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are
+     * encouraged to inherit from this class and add additional information to it. The base inventory implementation
+     * only needs and provides the information stored in this class though.
+     */
+    class Transaction {
+        private final boolean mutating;
+
+        public Transaction(boolean mutating) {
+            this.mutating = mutating;
+        }
+
+        public boolean isMutating() {
+            return mutating;
+        }
+    }
 }

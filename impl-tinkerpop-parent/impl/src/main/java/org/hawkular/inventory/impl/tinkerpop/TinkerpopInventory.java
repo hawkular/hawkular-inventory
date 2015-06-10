@@ -34,20 +34,17 @@ import java.util.ServiceLoader;
 public final class TinkerpopInventory extends BaseInventory<Element> {
     @Override
     protected InventoryBackend<Element> doInitialize(Configuration configuration) {
-
-        GraphProvider<? extends TransactionalGraph> gp = loadGraph();
-        TransactionalGraph g = ensureIndices(gp, configuration);
-
-        InventoryContext context = new InventoryContext(this, configuration.getFeedIdStrategy(),
-                configuration.getResultFilter(), g);
-
+        InventoryContext<?> context = loadGraph(configuration);
         return new TinkerpopBackend(context);
     }
 
-    private <T extends TransactionalGraph> GraphProvider<T> loadGraph() {
+    private <T extends TransactionalGraph> InventoryContext<T> loadGraph(Configuration configuration) {
         @SuppressWarnings("unchecked")
         GraphProvider<T> gp = ServiceLoader.load(GraphProvider.class).iterator().next();
-        return gp;
+
+        T g = ensureIndices(gp, configuration);
+
+        return new InventoryContext<>(this, g, gp);
     }
 
     private <T extends TransactionalGraph> T ensureIndices(GraphProvider<T> graphProvider, Configuration config) {
