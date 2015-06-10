@@ -67,14 +67,20 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
 
     @Override
     public void commit(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
-        graph.commit();
-        unlock(t);
+        try {
+            graph.commit();
+        } finally {
+            unlock(t);
+        }
     }
 
     @Override
     public void rollback(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
-        graph.rollback();
-        unlock(t);
+        try {
+            graph.rollback();
+        } finally {
+            unlock(t);
+        }
     }
 
     private void unlock(InventoryBackend.Transaction t) {
