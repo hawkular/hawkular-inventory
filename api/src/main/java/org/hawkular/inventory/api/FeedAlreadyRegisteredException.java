@@ -21,7 +21,7 @@ import org.hawkular.inventory.api.model.Feed;
 
 /**
  * @author jkremser
- * @since 1.0
+ * @since 0.1.0
  */
 public final class FeedAlreadyRegisteredException extends EntityAlreadyExistsException {
     private Feed feed;
