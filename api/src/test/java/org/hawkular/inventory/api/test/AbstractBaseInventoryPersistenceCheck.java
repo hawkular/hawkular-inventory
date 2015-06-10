@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.test;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
@@ -769,8 +770,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .feeds();
 
         Feed f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
-        Feed f2 = feeds.create(new Feed.Blueprint("feed", null)).entity();
-
+        Feed f2 = null;
+        try {
+            f2 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+        } catch (FeedAlreadyRegisteredException fare) {
+            //good
+        }
+        f2 = feeds.create(new Feed.Blueprint(null, null)).entity();
         assert f1.getId().equals("feed");
         assert !f1.getId().equals(f2.getId());
     }

@@ -26,7 +26,7 @@ import java.util.Arrays;
  * @author Lukas Krejci
  * @since 1.0
  */
-public final class EntityAlreadyExistsException extends InventoryException {
+public class EntityAlreadyExistsException extends InventoryException {
 
     private final String entityId;
     private final Filter[][] paths;
@@ -65,7 +65,7 @@ public final class EntityAlreadyExistsException extends InventoryException {
                 + Arrays.deepToString(paths);
     }
 
-    private static Filter[][] asPaths(Entity entity) {
+    static Filter[][] asPaths(Entity entity) {
         Filter[][] ret = new Filter[1][];
         ret[0] = Filter.pathTo(entity);
         return ret;
