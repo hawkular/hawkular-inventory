@@ -69,6 +69,7 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
         public static Builder builder() {
             return new Builder();
         }
+        private static final String AUTO_ID_FLAG = "__auto-generate-id";
 
         //JAXB support
         @SuppressWarnings("unused")
@@ -77,7 +78,7 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
         }
 
         public Blueprint(String id, Map<String, Object> properties) {
-            super(id, properties);
+            super(id == null ? AUTO_ID_FLAG : id, properties);
         }
 
         @Override
@@ -91,6 +92,10 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
             public Blueprint build() {
                 return new Blueprint(id, properties);
             }
+        }
+
+        public static boolean shouldAutogenerateId(Feed proposedFeed) {
+            return AUTO_ID_FLAG.equals(proposedFeed.getId());
         }
     }
 

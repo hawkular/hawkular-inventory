@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.feeds;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.FeedIdStrategy;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Feed;
@@ -50,15 +51,18 @@ public final class AcceptWithFallbackFeedIdStrategy implements FeedIdStrategy {
     @Override
     public String generate(Inventory inventory, Feed proposedFeed) throws EntityAlreadyExistsException {
         try {
-            inventory.tenants().get(proposedFeed.getTenantId()).environments().get(proposedFeed.getEnvironmentId())
-                    .feeds().get(proposedFeed.getId()).entity();
+            if (!Feed.Blueprint.shouldAutogenerateId(proposedFeed)) {
+                inventory.tenants().get(proposedFeed.getTenantId()).environments().get(proposedFeed.getEnvironmentId())
+                        .feeds().get(proposedFeed.getId()).entity();
+            }
 
-            if (fallback == null) {
-                throw new EntityAlreadyExistsException(proposedFeed);
+            if (fallback == null || !Feed.Blueprint.shouldAutogenerateId(proposedFeed)) {
+                throw new FeedAlreadyRegisteredException(proposedFeed);
             } else {
                 return fallback.generate(inventory, proposedFeed);
             }
         } catch (EntityNotFoundException e) {
+            // the happy path
             return proposedFeed.getId();
         }
     }
