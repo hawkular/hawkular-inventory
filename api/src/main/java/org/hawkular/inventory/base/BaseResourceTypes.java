@@ -45,7 +45,7 @@ public final class BaseResourceTypes {
             extends Mutator<BE, ResourceType, ResourceType.Blueprint, ResourceType.Update>
             implements ResourceTypes.ReadWrite {
 
-        public ReadWrite(TraversalContext context) {
+        public ReadWrite(TraversalContext<BE, ResourceType> context) {
             super(context);
         }
 

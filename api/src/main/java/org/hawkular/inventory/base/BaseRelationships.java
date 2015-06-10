@@ -98,6 +98,7 @@ public final class BaseRelationships {
         public Relationships.Single linkWith(String name, Entity<?, ?> targetOrSource,
                 Map<String, Object> properties) throws IllegalArgumentException {
 
+
             if (null == name) {
                 throw new IllegalArgumentException("name was null");
             }
@@ -105,27 +106,27 @@ public final class BaseRelationships {
                 throw new IllegalArgumentException("targetOrSource was null");
             }
 
-            BE incidenceObject;
-            try {
-                incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
-            } catch (ElementNotFoundException e) {
-                throw new EntityNotFoundException(targetOrSource.getClass(), Filter.pathTo(targetOrSource));
-            }
+            return mutating((transaction) -> {
+                BE incidenceObject;
+                try {
+                    incidenceObject = context.backend.find(CanonicalPath.of(targetOrSource));
+                } catch (ElementNotFoundException e) {
+                    throw new EntityNotFoundException(targetOrSource.getClass(), Filter.pathTo(targetOrSource));
+                }
 
-            Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
-            if (origins.isEmpty()) {
-                throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
-            }
+                Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
+                if (origins.isEmpty()) {
+                    throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
+                }
 
-            BE origin = origins.get(0);
+                BE origin = origins.get(0);
 
-            if (Relationships.WellKnown.contains.name().equals(name)) {
-                checkContains(origin, direction, incidenceObject);
-            }
+                if (Relationships.WellKnown.contains.name().equals(name)) {
+                    checkContains(origin, direction, incidenceObject);
+                }
 
-            BE relationshipObject;
+                BE relationshipObject;
 
-            try {
                 switch (direction) {
                     case incoming:
                         relationshipObject = context.backend.relate(incidenceObject, origin, name, properties);
@@ -141,15 +142,12 @@ public final class BaseRelationships {
                         throw new AssertionError("Unhandled direction when linking. This shouldn't have happened.");
                 }
 
-                context.backend.commit();
-            } catch (Throwable t) {
-                context.backend.rollback();
-                throw t;
-            }
+                context.backend.commit(transaction);
 
-            String id = context.backend.extractId(relationshipObject);
+                String id = context.backend.extractId(relationshipObject);
 
-            return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
+                return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
+            });
         }
 
         @Override
@@ -161,31 +159,38 @@ public final class BaseRelationships {
         @Override
         public void update(String id, Relationship.Update update) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
-            try {
-                BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
-                context.backend.update(relationshipObject, update);
-                context.backend.commit();
-            } catch (ElementNotFoundException e) {
-                context.backend.rollback();
-                throw new RelationNotFoundException(id,
-                        Query.filters(context.select().with(RelationWith.id(id)).get()));
-            } catch (Throwable t) {
-                context.backend.rollback();
-                throw t;
-            }
+            mutating((transaction) -> {
+                try {
+                    BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id)
+                            .build());
+                    context.backend.update(relationshipObject, update);
+                    context.backend.commit(transaction);
+
+                    return null;
+                } catch (ElementNotFoundException e) {
+                    throw new RelationNotFoundException(id,
+                            Query.filters(context.select().with(RelationWith.id(id)).get()));
+                }
+            });
         }
 
         @Override
         public void delete(String id) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
             //TODO this probably should not allow to delete "contains" and other semantically-rich rels
-            try {
-                BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id).build());
-                context.backend.delete(relationshipObject);
-            } catch (ElementNotFoundException e) {
-                throw new RelationNotFoundException(id,
-                        Query.filters(context.select().with(RelationWith.id(id)).get()));
-            }
+            mutating((transaction) -> {
+                try {
+                    BE relationshipObject = context.backend.find(CanonicalPath.builder().withRelationshipId(id)
+                            .build());
+                    context.backend.delete(relationshipObject);
+                    context.backend.commit(transaction);
+
+                    return null;
+                } catch (ElementNotFoundException e) {
+                    throw new RelationNotFoundException(id,
+                            Query.filters(context.select().with(RelationWith.id(id)).get()));
+                }
+            });
         }
 
 
