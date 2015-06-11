@@ -53,15 +53,18 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 public class RestFeeds extends RestBase {
 
     @POST
-    @Path("{tenantId}/{environmentId}/feeds")
+    @Path("/{environmentId}/feeds")
     @ApiOperation("Registers a feed with the inventory, giving it a unique ID.")
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK", response = Feed.class),
             @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response register(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
+    public Response register(@PathParam("environmentId") String environmentId,
             @ApiParam(required = true) Feed.Blueprint blueprint, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
 
         if (!security.canCreate(Feed.class).under(Environment.class, tenantId, environmentId)) {
             return Response.status(FORBIDDEN).build();
@@ -73,16 +76,18 @@ public class RestFeeds extends RestBase {
     }
 
     @GET
-    @Path("{tenantId}/{environmentId}/feeds")
+    @Path("/{environmentId}/feeds")
     @ApiOperation("Return all the feeds registered with the inventory")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
             @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
-            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
-            @Context UriInfo uriInfo) {
+    public Response getAll(@PathParam("environmentId") String environmentId, @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
+
         Page<Feed> ret = inventory.tenants().get(tenantId).environments().get(environmentId).feeds().getAll()
                 .entities(extractPaging(uriInfo));
 
@@ -90,32 +95,38 @@ public class RestFeeds extends RestBase {
     }
 
     @GET
-    @Path("{tenantId}/{environmentId}/feeds/{feedId}")
+    @Path("/{environmentId}/feeds/{feedId}")
     @ApiOperation("Return a single feed by its ID.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
             @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
-            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment or feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Feed get(@PathParam("tenantId") String tenantId, @PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId) {
+    public Response get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).entity();
+        String tenantId = getTenantId();
+
+        return Response.ok(inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
+                .entity()).build();
     }
 
     @PUT
-    @Path("/{tenantId}/{environmentId}/feeds/{feedId}")
+    @Path("/{environmentId}/feeds/{feedId}")
     @ApiOperation("Updates a feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment or the feed doesn't exist",
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The update failed because of invalid data"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId, Feed.Update update) {
+    public Response update(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            Feed.Update update) {
+
+        String tenantId = getTenantId();
 
         if (!security.canUpdate(Feed.class, tenantId, environmentId, feedId)) {
             return Response.status(FORBIDDEN).build();
@@ -126,17 +137,19 @@ public class RestFeeds extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/{environmentId}/feeds/{feedId}")
+    @Path("/{environmentId}/feeds/{feedId}")
     @ApiOperation("Deletes a feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment or the feed doesn't exist",
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
+    public Response delete(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
+
+        String tenantId = getTenantId();
 
         if (!security.canDelete(Feed.class, tenantId, environmentId, feedId)) {
             return Response.status(FORBIDDEN).build();

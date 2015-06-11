@@ -45,7 +45,7 @@ import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
@@ -54,34 +54,33 @@ import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 public class RestMetricTypes extends RestBase {
 
     @GET
-    @Path("/{tenantId}/metricTypes")
+    @Path("/metricTypes")
     @ApiOperation("Retrieves all metric types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uriInfo) {
-        Page<MetricType> ret = inventory.tenants().get(tenantId).metricTypes().getAll()
+    public Response getAll(@Context UriInfo uriInfo) {
+        Page<MetricType> ret = inventory.tenants().get(getTenantId()).metricTypes().getAll()
                 .entities(extractPaging(uriInfo));
 
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/metricTypes/{metricTypeId}")
+    @Path("/metricTypes/{metricTypeId}")
     @ApiOperation("Retrieves a single metric type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant or metric type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Metric type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public MetricType get(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId) {
-        return inventory.tenants().get(tenantId).metricTypes().get(metricTypeId).entity();
+    public MetricType get(@PathParam("metricTypeId") String metricTypeId) {
+        return inventory.tenants().get(getTenantId()).metricTypes().get(metricTypeId).entity();
     }
 
     @POST
-    @Path("/{tenantId}/metricTypes")
+    @Path("/metricTypes")
     @ApiOperation("Creates a new metric type")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Metric type successfully created"),
@@ -90,8 +89,8 @@ public class RestMetricTypes extends RestBase {
             @ApiResponse(code = 409, message = "Metric type already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("tenantId") String tenantId,
-            @ApiParam(required = true) MetricType.Blueprint metricType, @Context UriInfo uriInfo) {
+    public Response create(@ApiParam(required = true) MetricType.Blueprint metricType, @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
 
         if (!security.canCreate(MetricType.class).under(Tenant.class, tenantId)) {
             return Response.status(FORBIDDEN).build();
@@ -103,7 +102,7 @@ public class RestMetricTypes extends RestBase {
     }
 
     @PUT
-    @Path("/{tenantId}/metricTypes/{metricTypeId}")
+    @Path("/metricTypes/{metricTypeId}")
     @ApiOperation("Updates a metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "Metric type successfully updated"),
@@ -111,8 +110,10 @@ public class RestMetricTypes extends RestBase {
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId,
+    public Response update(@PathParam("metricTypeId") String metricTypeId,
             @ApiParam(required = true) MetricType.Update update) throws Exception {
+
+        String tenantId = getTenantId();
 
         if (!security.canUpdate(MetricType.class, tenantId, metricTypeId)) {
             return Response.status(FORBIDDEN).build();
@@ -123,7 +124,7 @@ public class RestMetricTypes extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/metricTypes/{metricTypeId}")
+    @Path("/metricTypes/{metricTypeId}")
     @ApiOperation("Deletes a metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "Metric type successfully deleted"),
@@ -132,7 +133,9 @@ public class RestMetricTypes extends RestBase {
             @ApiResponse(code = 404, message = "Tenant or metric type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("metricTypeId") String metricTypeId) {
+    public Response delete(@PathParam("metricTypeId") String metricTypeId) {
+
+        String tenantId = getTenantId();
 
         if (!security.canDelete(MetricType.class, tenantId, metricTypeId)) {
             return Response.status(FORBIDDEN).build();
@@ -141,5 +144,4 @@ public class RestMetricTypes extends RestBase {
         inventory.tenants().get(tenantId).metricTypes().delete(metricTypeId);
         return Response.noContent().build();
     }
-
 }

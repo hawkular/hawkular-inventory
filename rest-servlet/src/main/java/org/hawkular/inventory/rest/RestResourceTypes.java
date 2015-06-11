@@ -59,7 +59,7 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 public class RestResourceTypes extends RestBase {
 
     @GET
-    @Path("/{tenantId}/resourceTypes")
+    @Path("/resourceTypes")
     @ApiOperation("Retrieves all resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resource types"),
@@ -67,15 +67,15 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("tenantId") String tenantId, @Context UriInfo uriInfo) {
-        Page<ResourceType> ret = inventory.tenants().get(tenantId).resourceTypes().getAll()
+    public Response getAll(@Context UriInfo uriInfo) {
+        Page<ResourceType> ret = inventory.tenants().get(getTenantId()).resourceTypes().getAll()
                 .entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}")
     @ApiOperation("Retrieves a single resource type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the resource type"),
@@ -83,13 +83,12 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public ResourceType get(@PathParam("tenantId") String tenantId,
-                            @PathParam("resourceTypeId") String resourceTypeId) {
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).entity();
+    public ResourceType get(@PathParam("resourceTypeId") String resourceTypeId) {
+        return inventory.tenants().get(getTenantId()).resourceTypes().get(resourceTypeId).entity();
     }
 
     @GET
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes")
     @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
@@ -97,16 +96,15 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricTypes(@PathParam("tenantId") String tenantId,
-            @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
-        Page<MetricType> ret = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
+    public Response getMetricTypes(@PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+        Page<MetricType> ret = inventory.tenants().get(getTenantId()).resourceTypes().get(resourceTypeId).metricTypes()
                 .getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/resources")
+    @Path("/resourceTypes/{resourceTypeId}/resources")
     @ApiOperation("Retrieves all resources with given resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resources"),
@@ -114,8 +112,9 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getResources(@PathParam("tenantId") String tenantId,
-            @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+    public Response getResources(@PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
 
         ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
         single.entity(); // check whether it exists
@@ -124,7 +123,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @POST
-    @Path("/{tenantId}/resourceTypes")
+    @Path("/resourceTypes")
     @ApiOperation("Creates a new resource type")
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK"),
@@ -133,8 +132,9 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 409, message = "Resource type already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("tenantId") String tenantId, ResourceType.Blueprint resourceType,
-            @Context UriInfo uriInfo) {
+    public Response create(ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
+
         if (!security.canCreate(ResourceType.class).under(Tenant.class, tenantId)) {
             return Response.status(FORBIDDEN).build();
         }
@@ -145,7 +145,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @PUT
-    @Path("{tenantId}/resourceTypes/{resourceTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}")
     @ApiOperation("Update a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -153,8 +153,10 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 404, message = "Resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId,
+    public Response update(@PathParam("resourceTypeId") String resourceTypeId,
             @ApiParam(required = true) ResourceType.Update update) {
+        String tenantId = getTenantId();
+
         if (!security.canUpdate(ResourceType.class, tenantId, resourceTypeId)) {
             return Response.status(FORBIDDEN).build();
         }
@@ -164,14 +166,16 @@ public class RestResourceTypes extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}")
     @ApiOperation("Deletes a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("tenantId") String tenantId, @PathParam("resourceTypeId") String resourceTypeId) {
+    public Response delete(@PathParam("resourceTypeId") String resourceTypeId) {
+        String tenantId = getTenantId();
+
         if (!security.canDelete(ResourceType.class, tenantId, resourceTypeId)) {
             return Response.status(FORBIDDEN).build();
         }
@@ -181,7 +185,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @POST
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes")
     @ApiOperation("Associates a pre-existing metric type with a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -189,8 +193,8 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricType(@PathParam("tenantId") String tenantId,
-            @PathParam("resourceTypeId") String resourceTypeId, IdJSON metricTypeId) {
+    public Response addMetricType(@PathParam("resourceTypeId") String resourceTypeId, IdJSON metricTypeId) {
+        String tenantId = getTenantId();
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
             return Response.status(FORBIDDEN).build();
         }
@@ -201,7 +205,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
     @ApiOperation("Disassociates the resource type with a metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -209,9 +213,11 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response removeMetricType(@PathParam("tenantId") String tenantId,
-                                     @PathParam("resourceTypeId") String resourceTypeId,
-                                     @PathParam("metricTypeId") String metricTypeId) {
+    public Response removeMetricType(@PathParam("resourceTypeId") String resourceTypeId,
+            @PathParam("metricTypeId") String metricTypeId) {
+
+        String tenantId = getTenantId();
+
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
             return Response.status(FORBIDDEN).build();
         }
