@@ -58,17 +58,19 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 public class RestMetrics extends RestBase {
 
     @POST
-    @Path("/{tenantId}/{environmentId}/metrics")
+    @Path("/{environmentId}/metrics")
     @ApiOperation("Creates a new metric in given environment")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Metric created"),
             @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 409, message = "Metric already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response createMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @ApiParam(required = true) Metric.Blueprint metric,
-            @Context UriInfo uriInfo) {
+    public Response createMetric(@PathParam("environmentId") String environmentId,
+            @ApiParam(required = true) Metric.Blueprint metric, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
 
         if (!security.canCreate(Metric.class).under(Environment.class, tenantId, environmentId)) {
             return Response.status(FORBIDDEN).build();
@@ -79,17 +81,19 @@ public class RestMetrics extends RestBase {
     }
 
     @POST
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics")
+    @Path("/{environmentId}/{feedId}/metrics")
     @ApiOperation("Creates a new metric in given feed")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Metric created"),
             @ApiResponse(code = 400, message = "Invalid inputs", response = ApiError.class),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 409, message = "Metric already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response createMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response createMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @ApiParam(required = true) Metric.Blueprint metric, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
 
         if (!security.canCreate(Metric.class).under(Feed.class, tenantId, environmentId, feedId)) {
             return Response.status(FORBIDDEN).build();
@@ -118,93 +122,95 @@ public class RestMetrics extends RestBase {
     }
 
     @GET
-    @Path("/{tenantId}/{environmentId}/metrics/{metricId}")
+    @Path("/{environmentId}/metrics/{metricId}")
     @ApiOperation("Retrieves a single metric")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment or metrics doesn't exist",
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Rnvironment or metrics doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Metric getMetric(@PathParam("tenantId") String tenantId,
-                            @PathParam("environmentId") String environmentId,
-                            @PathParam("metricId") String metricId) {
+    public Metric getMetric(@PathParam("environmentId") String environmentId,
+            @PathParam("metricId") String metricId) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().get(metricId)
+        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessMetrics().get(metricId)
                 .entity();
     }
 
     @GET
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
     @ApiOperation("Retrieves a single metric")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment, feed or metric doesn't exist",
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Environment, feed or metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Metric getMetric(@PathParam("tenantId") String tenantId,
-                            @PathParam("environmentId") String environmentId,
-                            @PathParam("feedId") String feedId,
-                            @PathParam("metricId") String metricId) {
+    public Metric getMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            @PathParam("metricId") String metricId) {
 
-        return inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
+        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId).metrics()
                 .get(metricId).entity();
     }
 
     @GET
-    @Path("/{tenantId}/{environmentId}/metrics")
+    @Path("/{environmentId}/metrics")
     @ApiOperation("Retrieves all metrics in an environment. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant or environment doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetrics(@PathParam("tenantId") String tenantId,
-                               @PathParam("environmentId") String environmentId,
-                               @QueryParam("feedless") @DefaultValue("false") boolean feedless,
-                               @Context UriInfo uriInfo) {
+    public Response getMetrics(@PathParam("environmentId") String environmentId,
+            @QueryParam("feedless") @DefaultValue("false") boolean feedless, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
 
         Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
 
         Page<Metric> ret = (feedless ? envs.feedlessMetrics() : envs.allMetrics())
                 .getAll().entities(RequestUtil.extractPaging(uriInfo));
+
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics")
+    @Path("/{environmentId}/{feedId}/metrics")
     @ApiOperation("Retrieves all metrics in a feed")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetrics(@PathParam("tenantId") String tenantId,
-                                  @PathParam("environmentId") String environmentId,
-                                  @PathParam("feedId") String feedId,
-                                  @Context UriInfo uriInfo) {
+    public Response getMetrics(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            @Context UriInfo uriInfo) {
 
-        Page<Metric> ret = inventory.tenants().get(tenantId).environments().get(environmentId).feeds()
+        Page<Metric> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds()
                 .get(feedId).metrics().getAll().entities(RequestUtil.extractPaging(uriInfo));
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @PUT
-    @Path("/{tenantId}/{environmentId}/metrics/{metricId}")
+    @Path("/{environmentId}/metrics/{metricId}")
     @ApiOperation("Updates a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant, environment or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The update failed because of invalid data"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response updateMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("metricId") String metricId,
-            Metric.Update update) {
+    public Response updateMetric(@PathParam("environmentId") String environmentId,
+            @PathParam("metricId") String metricId, Metric.Update update) {
+
+        String tenantId = getTenantId();
 
         if (!security.canUpdate(Metric.class, tenantId, environmentId, metricId)) {
             return Response.status(FORBIDDEN).build();
@@ -216,18 +222,20 @@ public class RestMetrics extends RestBase {
 
 
     @PUT
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
     @ApiOperation("Updates a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant, environment, feed or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The update failed because of invalid data"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response updateMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response updateMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId, Metric.Update update) {
+
+        String tenantId = getTenantId();
 
         if (!security.canUpdate(Metric.class, tenantId, environmentId, feedId, metricId)) {
             return Response.status(FORBIDDEN).build();
@@ -239,17 +247,20 @@ public class RestMetrics extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/{environmentId}/metrics/{metricId}")
+    @Path("/{environmentId}/metrics/{metricId}")
     @ApiOperation("Deletes a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant, environment or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response deleteMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("metricId") String metricId) {
+    public Response deleteMetric(@PathParam("environmentId") String environmentId,
+            @PathParam("metricId") String metricId) {
+
+        String tenantId = getTenantId();
 
         if (!security.canDelete(Metric.class, tenantId, environmentId, metricId)) {
             return Response.status(FORBIDDEN).build();
@@ -260,7 +271,7 @@ public class RestMetrics extends RestBase {
     }
 
     @DELETE
-    @Path("/{tenantId}/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
     @ApiOperation("Deletes a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -269,9 +280,10 @@ public class RestMetrics extends RestBase {
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response deleteMetric(@PathParam("tenantId") String tenantId,
-            @PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response deleteMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId) {
+
+        String tenantId = getTenantId();
 
         if (!security.canDelete(Metric.class, tenantId, environmentId, feedId, metricId)) {
             return Response.status(FORBIDDEN).build();
