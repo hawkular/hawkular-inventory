@@ -195,7 +195,7 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricType(@PathParam("resourceTypeId") String resourceTypeId,
+    public Response associateMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
             Collection<String> metricTypeIds) {
         String tenantId = getTenantId();
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
@@ -218,7 +218,7 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response removeMetricType(@PathParam("resourceTypeId") String resourceTypeId,
+    public Response disassociateMetricType(@PathParam("resourceTypeId") String resourceTypeId,
             @PathParam("metricTypeId") String metricTypeId) {
 
         String tenantId = getTenantId();

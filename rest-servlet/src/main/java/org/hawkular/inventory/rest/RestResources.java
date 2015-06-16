@@ -306,7 +306,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricToResource(@PathParam("environmentId") String environmentId,
+    public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("resourceId") String resourceId, Collection<String> metricIds) {
 
         String tenantId = getTenantId();
@@ -332,7 +332,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricToResource(@PathParam("environmentId") String environmentId,
+    public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
             Collection<String> metricIds) {
 
@@ -359,7 +359,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response listMetricsOfResource(@PathParam("environmentId") String environmentID,
+    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
             @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentID)
                     .feedlessResources().get(resourceId).metrics().getAll().entities(extractPaging(uriInfo));
@@ -376,7 +376,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response listMetricsOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentId)
                  .feeds().get(feedId).resources().get(resourceId).metrics().getAll()
@@ -393,7 +393,7 @@ public class RestResources extends RestBase {
                     "metric is not associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
                 .get(resourceId).metrics().get(metricId).entity();
@@ -410,7 +410,7 @@ public class RestResources extends RestBase {
                         "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
             @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId)
