@@ -73,14 +73,12 @@ import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 =======
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
@@ -219,22 +217,6 @@ public class RestResources extends RestBase {
     public Resource getResource(@PathParam("environmentId") String environmentId, @PathParam("resourceId") String uid) {
         return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
                 .get(uid).entity();
-    }
-
-    @GET
-    @Path("/{environmentId}/resources/{resourceId}/relationships")
-    public Response getResourceRels(@PathParam("environmentId") String environmentId,
-                                    @PathParam("resourceId") String uid,
-                                    @Context UriInfo uriInfo) {
-        Pager pager = extractPaging(uriInfo);
-        Page<Relationship> entities = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .feedlessResources().get(uid).relationships(Relationships.Direction.both).getAll().entities(pager);
-        RestApiLogger.LOGGER.info(entities.toString());
-        RestApiLogger.LOGGER.info("ahoj");
-        System.out.println("AHOJ");
-        RestApiLogger.LOGGER.error("kunda");
-
-        return pagedResponse(Response.ok(), uriInfo, entities).build();
     }
 
     @GET
