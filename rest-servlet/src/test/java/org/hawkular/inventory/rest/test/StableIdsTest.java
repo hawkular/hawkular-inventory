@@ -57,10 +57,10 @@ public class StableIdsTest {
 
     @Test
     public void testStableIdForTenant() throws Exception {
-        assert ("tenant/" + tenantId).equals(Security.getStableId(tenant))
-                : "tenant/" + tenantId + " should be equal to " + Security.getStableId(tenant);
-        assert "tenant/foo".equals(Security.getStableId(new Tenant("foo")))
-                : "tenant/foo should be equal to " + Security.getStableId(new Tenant("foo"));
+        assert ("tenants/" + tenantId).equals(Security.getStableId(tenant))
+                : "tenants/" + tenantId + " should be equal to " + Security.getStableId(tenant);
+        assert "tenants/foo".equals(Security.getStableId(new Tenant("foo")))
+                : "tenants/foo should be equal to " + Security.getStableId(new Tenant("foo"));
     }
 
     @Test

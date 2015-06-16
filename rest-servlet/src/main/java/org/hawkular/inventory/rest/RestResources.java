@@ -17,11 +17,19 @@
 
 package org.hawkular.inventory.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.WILDCARD;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+<<<<<<< HEAD
 
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Metrics;
@@ -37,6 +45,9 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
 
+=======
+import java.util.Collection;
+>>>>>>> Relations - the concise way of serialization, read-only
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -50,6 +61,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+<<<<<<< HEAD
 
 import java.util.Collection;
 
@@ -58,14 +70,31 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+=======
+import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.ResolvingToMultiple;
+import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.rest.json.ApiError;
+>>>>>>> Relations - the concise way of serialization, read-only
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
 @Path("/")
-@Produces(value = APPLICATION_JSON)
-@Consumes(value = APPLICATION_JSON)
+@Produces(APPLICATION_JSON)
+@Consumes(WILDCARD)
 @Api(value = "/", description = "Resources CRUD")
 public class RestResources extends RestBase {
 
@@ -190,6 +219,22 @@ public class RestResources extends RestBase {
     public Resource getResource(@PathParam("environmentId") String environmentId, @PathParam("resourceId") String uid) {
         return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
                 .get(uid).entity();
+    }
+
+    @GET
+    @Path("/{environmentId}/resources/{resourceId}/relationships")
+    public Response getResourceRels(@PathParam("environmentId") String environmentId,
+                                    @PathParam("resourceId") String uid,
+                                    @Context UriInfo uriInfo) {
+        Pager pager = extractPaging(uriInfo);
+        Page<Relationship> entities = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .feedlessResources().get(uid).relationships(Relationships.Direction.both).getAll().entities(pager);
+        RestApiLogger.LOGGER.info(entities.toString());
+        RestApiLogger.LOGGER.info("ahoj");
+        System.out.println("AHOJ");
+        RestApiLogger.LOGGER.error("kunda");
+
+        return pagedResponse(Response.ok(), uriInfo, entities).build();
     }
 
     @GET

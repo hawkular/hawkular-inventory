@@ -22,9 +22,12 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.ws.rs.Consumes;
@@ -71,6 +74,21 @@ public class RestEnvironments extends RestBase {
                 .entities(extractPaging(uri));
 
         return pagedResponse(Response.ok(), uri, ret).build();
+    }
+
+    @GET
+    @Path("/environments/{environmentId}/relationships")
+    public Response getResourceRels(@PathParam("environmentId") String environmentId,
+                                    @Context UriInfo uriInfo) {
+        Pager pager = extractPaging(uriInfo);
+        Page<Relationship> entities = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .relationships(Relationships.Direction.both).getAll().entities(pager);
+        RestApiLogger.LOGGER.info(entities.toString());
+        RestApiLogger.LOGGER.info("ahoj");
+        System.out.println("AHOJ");
+        RestApiLogger.LOGGER.error("kunda");
+
+        return pagedResponse(Response.ok(), uriInfo, entities).build();
     }
 
     @GET

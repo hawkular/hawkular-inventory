@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
@@ -31,11 +33,13 @@ public class ApiError {
     private final String errorMsg;
     private final Object details;
 
-    public ApiError(String errorMsg) {
+    @JsonCreator
+    public ApiError(@JsonProperty("errorMsg") String errorMsg) {
         this(errorMsg, null);
     }
 
-    public ApiError(String errorMsg, Object details) {
+    @JsonCreator
+    public ApiError(@JsonProperty("errorMsg") String errorMsg, @JsonProperty("details")  Object details) {
         this.errorMsg = errorMsg;
         this.details = details;
     }
