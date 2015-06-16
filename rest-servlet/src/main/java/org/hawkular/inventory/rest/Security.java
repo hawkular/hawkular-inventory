@@ -165,10 +165,10 @@ public class Security {
         } else if ("environments".equals(chunks[1])) {
             builder.withTenantId(chunks[0]);
             builder.withEnvironmentId(chunks[2]);
-        } else if ("resourceType".equals(chunks[1])) {
+        } else if ("resourceTypes".equals(chunks[1])) {
             builder.withTenantId(chunks[0]);
             builder.withResourceTypeId(chunks[2]);
-        } else if ("metricType".equals(chunks[1])) {
+        } else if ("metricTypes".equals(chunks[1])) {
             builder.withTenantId(chunks[0]);
             builder.withMetricTypeId(chunks[2]);
         } else if ("resources".equals(chunks[2])) {

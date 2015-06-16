@@ -20,9 +20,6 @@ package org.hawkular.inventory.rest;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
-
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -35,14 +32,8 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
 
 /**
@@ -84,20 +75,6 @@ public class RestTenants extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
         return getMyTenant();
-    }
-
-    @GET
-    @Path("/relationships")
-    public Response getResourceRels(@Context UriInfo uriInfo) {
-        Pager pager = extractPaging(uriInfo);
-        Page<Relationship> entities = inventory.tenants().get(getTenantId())
-                .relationships(Relationships.Direction.both).getAll().entities(pager);
-        RestApiLogger.LOGGER.info(entities.toString());
-        RestApiLogger.LOGGER.info("ahoj");
-        System.out.println("AHOJ");
-        RestApiLogger.LOGGER.error("kunda");
-
-        return pagedResponse(Response.ok(), uriInfo, entities).build();
     }
 
     @PUT

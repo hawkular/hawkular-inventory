@@ -68,7 +68,7 @@ public class RestRelationships extends RestBase {
 
     private String toSecurityId(String urlPath) {
         if (urlPath == null) return null;
-        return getTenantId() + "/" + urlPath;
+        return urlPath.startsWith("tenants") ? urlPath : getTenantId() + "/" + urlPath;
     }
 
     private ResolvableToSingleWithRelationships getResolvableFromCanonicalPath(CanonicalPath cPath) {

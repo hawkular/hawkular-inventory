@@ -19,12 +19,14 @@ package org.hawkular.inventory.rest.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.rest.RestApiLogger;
 
 /**
  * Created by jkremser on 6/11/15.
@@ -43,6 +45,12 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
         relationshipModule.addSerializer(Relationship.class, new RelationshipJacksonSerializer());
         relationshipModule.addDeserializer(Relationship.class, new RelationshipJacksonDeserializer());
         mapper.registerModule(relationshipModule);
+
+        String prettyJson = System.getProperty("prettyJson");
+        if ("true".equals(prettyJson)) {
+            RestApiLogger.LOGGER.info("JSON pretty print = ON");
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        }
         return mapper;
     }
 }

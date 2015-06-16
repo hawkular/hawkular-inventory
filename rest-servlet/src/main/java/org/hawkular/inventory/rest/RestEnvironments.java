@@ -77,21 +77,6 @@ public class RestEnvironments extends RestBase {
     }
 
     @GET
-    @Path("/environments/{environmentId}/relationships")
-    public Response getResourceRels(@PathParam("environmentId") String environmentId,
-                                    @Context UriInfo uriInfo) {
-        Pager pager = extractPaging(uriInfo);
-        Page<Relationship> entities = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .relationships(Relationships.Direction.both).getAll().entities(pager);
-        RestApiLogger.LOGGER.info(entities.toString());
-        RestApiLogger.LOGGER.info("ahoj");
-        System.out.println("AHOJ");
-        RestApiLogger.LOGGER.error("kunda");
-
-        return pagedResponse(Response.ok(), uriInfo, entities).build();
-    }
-
-    @GET
     @Path("/environments/{environmentId}")
     @ApiOperation("Retrieves a single environment")
     @ApiResponses({
