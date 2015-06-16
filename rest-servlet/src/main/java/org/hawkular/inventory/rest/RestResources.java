@@ -22,6 +22,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
@@ -49,10 +50,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
 import java.util.Collection;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -306,7 +309,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricToResource(@PathParam("environmentId") String environmentId,
+    public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("resourceId") String resourceId, Collection<String> metricIds) {
 
         String tenantId = getTenantId();
@@ -332,7 +335,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricToResource(@PathParam("environmentId") String environmentId,
+    public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
             Collection<String> metricIds) {
 
@@ -359,7 +362,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response listMetricsOfResource(@PathParam("environmentId") String environmentID,
+    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
             @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentID)
                     .feedlessResources().get(resourceId).metrics().getAll().entities(extractPaging(uriInfo));
@@ -376,7 +379,7 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response listMetricsOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentId)
                  .feeds().get(feedId).resources().get(resourceId).metrics().getAll()
@@ -389,11 +392,12 @@ public class RestResources extends RestBase {
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
-            @ApiResponse(code = 404, message = "Tenant, environment, resource or metric doesn't exist or if the " +
-                    "metric is not associated with the resource", response = ApiError.class),
+            @ApiResponse(code = 404,
+                    message = "Tenant, environment, resource or metric does not exist or the metric is not " +
+                            "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
                 .get(resourceId).metrics().get(metricId).entity();
@@ -406,15 +410,63 @@ public class RestResources extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
             @ApiResponse(code = 404,
-                message = "Tenant, environment, feed, resource or metric doesn't exist or if the metric is not " +
-                        "associated with the resource", response = ApiError.class),
+                    message = "Tenant, environment, feed, resource or metric does not exist or the metric is not " +
+                            "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetricOfResource(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
             @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId)
                 .resources().get(resourceId).metrics().get(metricId).entity();
         return Response.ok(m).build();
     }
+
+    @DELETE
+    @Path("/{environmentId}/resources/{resourceId}/metrics/{metricId}")
+    @ApiOperation("Disassociates the given resource from the given metric")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404,
+                    message = "Tenant, environment, resource or metric does not exist or the metric is not " +
+                            "associated with the resource", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response disassociateMetric(@PathParam("environmentId") String environmentId,
+            @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
+
+        String tenantId = getTenantId();
+
+        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+            return Response.status(FORBIDDEN).build();
+        }
+        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().get(resourceId)
+                .metrics().disassociate(metricId);
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics/{metricId}")
+    @ApiOperation("Disassociates the given resource from the given metric")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404,
+                    message = "Tenant, environment, feed, resource or metric does not exist or the metric is not " +
+                            "associated with the resource", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response disassociateMetric(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
+            @PathParam("metricId") String metricId) {
+
+        String tenantId = getTenantId();
+
+        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+            return Response.status(FORBIDDEN).build();
+        }
+        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
+                .get(resourceId).metrics().disassociate(metricId);
+        return Response.noContent().build();
+    }
+
 }
