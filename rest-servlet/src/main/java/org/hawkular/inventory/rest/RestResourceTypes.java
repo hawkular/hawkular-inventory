@@ -22,6 +22,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+
 import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.MetricType;
@@ -47,6 +48,7 @@ import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
@@ -209,12 +211,46 @@ public class RestResourceTypes extends RestBase {
         return Response.noContent().build();
     }
 
+    @GET
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @ApiOperation("Retrieves the given metric type associated with the given resource type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of metric types"),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
+            response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public MetricType getAssociatedMetricType(@PathParam("resourceTypeId") String resourceTypeId,
+            @PathParam("metricTypeId") String metricTypeId) {
+        String tenantId = getTenantId();
+        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                .metricTypes().get(metricTypeId).entity();
+    }
+
+    @GET
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Retrieves metric types associated with the given resource type. Accepts paging query parameters.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of metric types"),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
+            response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getAssociatedMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
+            @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
+        Page<MetricType> mTypes = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                .metricTypes().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, mTypes).build();
+    }
+
     @DELETE
     @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
-    @ApiOperation("Disassociates the resource type with a metric type")
+    @ApiOperation("Disassociates the given resource type from the given metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, resource type or metric type doesn't exist",
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
