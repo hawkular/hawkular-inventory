@@ -29,25 +29,8 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-<<<<<<< HEAD
 
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.ResolvingToMultiple;
-import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Defined;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.rest.json.ApiError;
-
-=======
 import java.util.Collection;
->>>>>>> Relations - the concise way of serialization, read-only
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -61,16 +44,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-<<<<<<< HEAD
 
-import java.util.Collection;
-
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
-=======
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
@@ -84,7 +58,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
->>>>>>> Relations - the concise way of serialization, read-only
+
 
 /**
  * @author Lukas Krejci
