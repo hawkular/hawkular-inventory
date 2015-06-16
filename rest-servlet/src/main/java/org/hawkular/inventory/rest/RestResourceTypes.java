@@ -22,6 +22,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
@@ -29,7 +30,8 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.IdJSON;
+
+import java.util.Collection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -193,14 +195,17 @@ public class RestResourceTypes extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addMetricType(@PathParam("resourceTypeId") String resourceTypeId, IdJSON metricTypeId) {
+    public Response addMetricType(@PathParam("resourceTypeId") String resourceTypeId,
+            Collection<String> metricTypeIds) {
         String tenantId = getTenantId();
         if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes()
-                .associate(metricTypeId.getId());
+        ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+                .metricTypes();
+        metricTypeIds.forEach(metricTypesDao::associate);
+
         return Response.noContent().build();
     }
 
