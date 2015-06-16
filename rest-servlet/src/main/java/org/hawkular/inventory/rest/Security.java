@@ -140,16 +140,13 @@ public class Security {
         if (chunks.length == 2 && "tenants".equals(chunks[0]) && chunks[1].length() > 0) {
             return true;
         }
-
         if (chunks.length == 3 && chunks[0].length() > 0 && chunks[2].length() > 0) {
             return "environments".equals(chunks[1]) || "resourceTypes".equals(chunks[1])
                     || "metricTypes".equals(chunks[1]);
         }
-
         if (chunks.length == 4 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[3].length() > 0) {
             return "resources".equals(chunks[2]) || "metrics".equals(chunks[2]);
         }
-
         if (chunks.length == 5 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[2].length() > 0
                 && chunks[4].length() > 0) {
             return "resources".equals(chunks[3]) || "metrics".equals(chunks[3]);

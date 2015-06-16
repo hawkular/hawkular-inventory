@@ -72,7 +72,7 @@ import org.hawkular.inventory.base.spi.CanonicalPath;
 @Api(value = "/.*/relationships", description = "Work with the relationships.")
 public class RestRelationships extends RestBase {
 
-    public static Map<String, Class<? extends Entity>> entityMap;
+    public static Map<String, Class<? extends Entity<?, ?>>> entityMap;
 
     static {
         try {
@@ -125,9 +125,11 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values()).contains(relation.getName())) {
-            throw new IllegalArgumentException("Unable to delete a relationship with well defined name. Restricted " +
-                                                       "names: " + Arrays.asList(Relationships.WellKnown.values()));
+        if (Arrays.asList(Relationships.WellKnown.values())
+                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
+            throw new IllegalArgumentException("Unable to delete a relationship with well defined name. " +
+                                                       "Restricted names: " +
+                                                       Arrays.asList(Relationships.WellKnown.values()));
         }
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
@@ -152,7 +154,8 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values()).contains(relation.getName())) {
+        if (Arrays.asList(Relationships.WellKnown.values())
+                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))){
             throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
                                                        "names: " + Arrays.asList(Relationships.WellKnown.values()));
         }
@@ -163,10 +166,10 @@ public class RestRelationships extends RestBase {
         Entity theOtherSide;
         String[] chunks = path.split("/");
         String currentEntityId = chunks[chunks.length - 1];
-        if (relation.getSource().getId() == currentEntityId) {
+        if (currentEntityId.equals(relation.getSource().getId())) {
             directed = Relationships.Direction.outgoing;
             theOtherSide = relation.getTarget();
-        } else if (relation.getTarget().getId() == currentEntityId) {
+        } else if (currentEntityId.equals(relation.getTarget().getId())) {
             directed = Relationships.Direction.incoming;
             theOtherSide = relation.getSource();
         } else {
@@ -254,7 +257,7 @@ public class RestRelationships extends RestBase {
             }
             Class<? extends Entity<?, ?>>[] types = (Class<? extends Entity<?, ?>>[]) targetParam.stream()
                     .map(typeString -> entityMap.get(typeString))
-                    .toArray();
+                    .toArray(size -> new Class[size]);
             if (!targetParam.isEmpty()) {
                 filters.add(RelationWith.targetsOfTypes(types));
             }

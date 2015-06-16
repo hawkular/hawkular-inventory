@@ -125,6 +125,8 @@ public final class CanonicalPath {
                 return new Metric(getTenantId(), getEnvironmentId(), getFeedId(), getMetricId(), null);
             } else if (getFeedId() != null) {
                 return new Feed(getTenantId(), getEnvironmentId(), getFeedId());
+            } else {
+                return new Environment(getTenantId(), getEnvironmentId());
             }
         } else if (getResourceTypeId() != null) {
             // hc: version 1.0 because the version can't be inferred from the path
@@ -134,7 +136,8 @@ public final class CanonicalPath {
         } else if (getTenantId() != null) {
             return new Tenant(getTenantId());
         }
-        throw new IllegalStateException("CanonicalPath.toElement() didn't match for any known entity");
+        throw new IllegalStateException("CanonicalPath.toElement() didn't match for any known entity. Canonical path: "
+                                                + this);
     }
 
     public static Builder builder() {
