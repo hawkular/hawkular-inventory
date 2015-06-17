@@ -18,7 +18,6 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.WILDCARD;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
@@ -66,7 +65,7 @@ import org.hawkular.inventory.rest.json.ApiError;
  */
 @Path("/")
 @Produces(APPLICATION_JSON)
-@Consumes(WILDCARD)
+@Consumes(APPLICATION_JSON)
 @Api(value = "/", description = "Resources CRUD")
 public class RestResources extends RestBase {
 
