@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -144,7 +145,8 @@ public class RestResources extends RestBase {
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs;
         if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+            ResourceType rt = new ResourceType(CanonicalPath.of().tenant(tenantId).resourceType(typeId).get(),
+                    typeVersion);
             rs = rr.getAll(Defined.by(rt)).entities(pager);
         } else {
             rs = rr.getAll().entities(pager);
@@ -171,7 +173,8 @@ public class RestResources extends RestBase {
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs;
         if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+            ResourceType rt = new ResourceType(CanonicalPath.of().tenant(tenantId).resourceType(typeId).get(),
+                    typeVersion);
             rs = rr.getAll(Defined.by(rt)).entities(pager);
         } else {
             rs = rr.getAll().entities(pager);
