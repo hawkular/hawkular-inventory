@@ -184,7 +184,38 @@ public class RestRelationships extends RestBase {
                                                relation.getName());
         }
 
-        return ResponseUtil.created(uriInfo, relation.getId()).build();
+        return ResponseUtil.created(uriInfo, newId).build();
+    }
+
+    @PUT
+    @Path("{path:.*}/relationships")
+    @ApiOperation("Updates a relationship")
+    public Response update(@PathParam("path") String path,
+                           @ApiParam(required = true) Relationship relation,
+                           @Context UriInfo uriInfo) {
+        String securityId = toSecurityId(path);
+        if (!Security.isValidId(securityId)) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        // perhaps we could have allowed updating the properties of well-known rels
+        if (Arrays.asList(Relationships.WellKnown.values())
+                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
+            throw new IllegalArgumentException("Unable to update a relationship with well defined name. Restricted " +
+                                                       "names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
+        CanonicalPath cPath = Security.getCanonicalPath(securityId);
+        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+
+        // update the relationship
+        resolvable.relationships(Relationships.Direction.both).update(relation.getId(), Relationship.Update.builder()
+                .withProperties(relation.getProperties()).build());
+        if (RestApiLogger.LOGGER.isDebugEnabled()) {
+            RestApiLogger.LOGGER.debug("updating relationship with id: " + relation.getId() + " and name: " +
+                                               relation.getName());
+        }
+
+        return Response.noContent().build();
     }
 
     private String toSecurityId(String urlPath) {
