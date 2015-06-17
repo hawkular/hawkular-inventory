@@ -26,31 +26,40 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.rest.RestApiLogger;
 
 /**
- * Created by jkremser on 6/11/15.
+ * @author Jirka Kremser
+ * @since 0.1.0
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
 public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
+    private ObjectMapper mapper;
 
-    @Override
-    public ObjectMapper getContext(Class<?> aClass) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    private EmbeddedObjectMapper embeddedRelationshipsMapper;
+
+    public JacksonConfig() {
+        this.mapper = new ObjectMapper();
+        this.embeddedRelationshipsMapper = new EmbeddedObjectMapper();
+        initializeObjectMapper(this.mapper);
         SimpleModule relationshipModule = new SimpleModule("RelationshipModule",
-                                      new Version(0, 1, 0, null, "org.hawkular.inventory", "inventory-rest-api"));
+                                                           new Version(0, 1, 0, null, "org.hawkular.inventory",
+                                                                       "inventory-rest-api"));
         relationshipModule.addSerializer(Relationship.class, new RelationshipJacksonSerializer());
         relationshipModule.addDeserializer(Relationship.class, new RelationshipJacksonDeserializer());
-        mapper.registerModule(relationshipModule);
+        this.mapper.registerModule(relationshipModule);
+    }
 
-        String prettyJson = System.getProperty("prettyJson");
-        if ("true".equals(prettyJson)) {
-            RestApiLogger.LOGGER.info("JSON pretty print = ON");
-            mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        }
-        return mapper;
+    public static void initializeObjectMapper(ObjectMapper mapper) {
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
+        mapper.disable(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+    }
+
+    @Override
+    public ObjectMapper getContext(Class<?> clazz) {
+        return clazz == EmbeddedObjectMapper.class ? embeddedRelationshipsMapper : mapper;
     }
 }
