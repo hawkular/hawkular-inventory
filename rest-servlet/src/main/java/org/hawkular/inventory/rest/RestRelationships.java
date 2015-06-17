@@ -18,11 +18,14 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -36,6 +39,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -43,6 +47,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Providers;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
@@ -61,6 +67,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.rest.json.EmbeddedObjectMapper;
 
 /**
  * @author Jiri Kremser
@@ -76,7 +83,7 @@ public class RestRelationships extends RestBase {
 
     static {
         try {
-            entityMap = new HashMap<>(6);
+            entityMap = new HashMap<>(7);
             entityMap.put(Tenant.class.getSimpleName(), Tenant.class);
             entityMap.put(Environment.class.getSimpleName(), Environment.class);
             entityMap.put(ResourceType.class.getSimpleName(), ResourceType.class);
@@ -89,6 +96,9 @@ public class RestRelationships extends RestBase {
         }
     }
 
+    @Context
+    private Providers providers;
+
     @GET
     @Path("{path:.*}/relationships")
     @ApiOperation("Retrieves relationships")
@@ -99,6 +109,7 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("") @QueryParam("named") String named,
                         @DefaultValue("") @QueryParam("sourceType") String sourceType,
                         @DefaultValue("") @QueryParam("targetType") String targetType,
+                        @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = toSecurityId(path);
         if (!Security.isValidId(securityId)) {
@@ -112,6 +123,20 @@ public class RestRelationships extends RestBase {
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         Page<Relationship> relations = resolvable.relationships(directed).getAll(filters).entities(pager);
 
+        ContextResolver<ObjectMapper> contextResolver =
+                providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
+
+        // json-ld serialization
+        if (Boolean.parseBoolean(jsonLd)) {
+            ObjectMapper mapper = contextResolver.getContext(EmbeddedObjectMapper.class);
+            Object json;
+            try {
+                json = mapper.writeValueAsString(relations);
+            } catch (JsonProcessingException e) {
+                json = relations;
+            }
+            return pagedResponse(Response.ok(), uriInfo, relations, json).build();
+        }
         return pagedResponse(Response.ok(), uriInfo, relations).build();
     }
 
@@ -155,7 +180,7 @@ public class RestRelationships extends RestBase {
             return Response.status(NOT_FOUND).build();
         }
         if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))){
+                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
             throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
                                                        "names: " + Arrays.asList(Relationships.WellKnown.values()));
         }
@@ -178,9 +203,10 @@ public class RestRelationships extends RestBase {
         }
 
         // link the current entity with the target or the source of the relationship
-        resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation.getProperties());
+        String newId = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
+                .getProperties()).entity().getId();
         if (RestApiLogger.LOGGER.isDebugEnabled()) {
-            RestApiLogger.LOGGER.debug("creating relationship with id: " + relation.getId() + " and name: " +
+            RestApiLogger.LOGGER.debug("creating relationship with id: " + newId + " and name: " +
                                                relation.getName());
         }
 
@@ -224,7 +250,7 @@ public class RestRelationships extends RestBase {
     }
 
     private ResolvableToSingleWithRelationships getResolvableFromCanonicalPath(CanonicalPath cPath) {
-        Tenants.Single tenant = inventory.tenants().get(cPath.getTenantId());
+        Tenants.Single tenant = inventory.tenants().get(getTenantId());
         ResolvableToSingleWithRelationships resolvable = tenant;
         if (cPath.getEnvironmentId() != null) {
             Environments.Single env = tenant.environments().get(cPath.getEnvironmentId());
@@ -240,6 +266,8 @@ public class RestRelationships extends RestBase {
                 resolvable = env.feedlessResources().get(cPath.getResourceId());
             } else if (cPath.getMetricId() != null) {
                 resolvable = env.feedlessMetrics().get(cPath.getMetricId());
+            } else {
+                resolvable = env;
             }
         } else if (cPath.getResourceTypeId() != null) {
             resolvable = tenant.resourceTypes().get(cPath.getResourceTypeId());

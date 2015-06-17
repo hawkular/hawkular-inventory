@@ -21,6 +21,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.CanonicalPath;
 import org.hawkular.inventory.rest.Security;
@@ -46,7 +53,19 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
         String targetPath = node.get("target").asText();
         CanonicalPath sourceCPath = Security.getCanonicalPath(sourcePath);
         CanonicalPath targetCPath = Security.getCanonicalPath(targetPath);
+        JsonNode properties = node.get("properties");
 
-        return new Relationship(id, name, sourceCPath.toEntity(), targetCPath.toEntity());
+        Map<String, Object> relProperties = null;
+        if (properties != null) {
+            Stream<Map.Entry<String, JsonNode>> stream = StreamSupport
+                    .stream(Spliterators.spliteratorUnknownSize(properties.fields(), Spliterator.ORDERED), false);
+
+            relProperties = stream
+                    .collect(Collectors.toMap(Map.Entry::getKey,
+                                              ((Function<Map.Entry<String, JsonNode>, JsonNode>) Map.Entry::getValue)
+                                                      .andThen(x -> (Object) x.asText())));
+        }
+
+        return new Relationship(id, name, sourceCPath.toEntity(), targetCPath.toEntity(), relProperties);
     }
 }
