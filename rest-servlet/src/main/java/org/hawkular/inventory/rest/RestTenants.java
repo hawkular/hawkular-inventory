@@ -17,14 +17,14 @@
 
 package org.hawkular.inventory.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.rest.json.ApiError;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -32,9 +32,8 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.rest.json.ApiError;
 
 /**
  * @author Lukas Krejci
@@ -57,13 +56,12 @@ public class RestTenants extends RestBase {
     })
     public Response getTenant() {
         String tenantId = getTenantId();
-
         return Response.ok(inventory.tenants().get(tenantId).entity()).build();
     }
 
     @PUT
     @Path("/")
-    @ApiOperation("Updates properties of the tenant")
+    @ApiOperation("Updates properties of the current tenant")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
@@ -71,7 +69,7 @@ public class RestTenants extends RestBase {
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@ApiParam(required = true) Tenant.Update update) {
+    public Response updateTenant(@ApiParam(required = true) Tenant.Update update) {
         String tenantId = getTenantId();
         if (!security.canUpdate(Tenant.class, tenantId)) {
             return Response.status(FORBIDDEN).build();
@@ -83,14 +81,14 @@ public class RestTenants extends RestBase {
 
     @DELETE
     @Path("/")
-    @ApiOperation("Deletes the tenant. !!! I am not sure this is safe for public consumption!!!")
+    @ApiOperation("Deletes the tenant and all its data. Be careful!")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete() {
+    public Response deleteTenant() {
         String tenantId = getTenantId();
         if (!security.canDelete(Tenant.class, tenantId)) {
             return Response.status(FORBIDDEN).build();
@@ -99,5 +97,4 @@ public class RestTenants extends RestBase {
         inventory.tenants().delete(tenantId);
         return Response.noContent().build();
     }
-
 }

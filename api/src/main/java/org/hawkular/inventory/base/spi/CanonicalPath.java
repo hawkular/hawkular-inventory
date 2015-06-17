@@ -18,6 +18,7 @@ package org.hawkular.inventory.base.spi;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -111,6 +112,32 @@ public final class CanonicalPath {
                 return null;
             }
         }, null);
+    }
+
+    public Entity toEntity() {
+        if (getRelationshipId() != null) {
+            throw new IllegalStateException("toElement() cannot be called for path to relationship");
+        }
+        if (getEnvironmentId() != null) {
+            if (getResourceId() != null) {
+                return new Resource(getTenantId(), getEnvironmentId(), getFeedId(), getResourceId(), null);
+            } else if (getMetricId() != null) {
+                return new Metric(getTenantId(), getEnvironmentId(), getFeedId(), getMetricId(), null);
+            } else if (getFeedId() != null) {
+                return new Feed(getTenantId(), getEnvironmentId(), getFeedId());
+            } else {
+                return new Environment(getTenantId(), getEnvironmentId());
+            }
+        } else if (getResourceTypeId() != null) {
+            // hc: version 1.0 because the version can't be inferred from the path
+            return new ResourceType(getTenantId(), getResourceTypeId(), "1.0");
+        } else if (getMetricTypeId() != null) {
+            return new MetricType(getTenantId(), getMetricTypeId(), null);
+        } else if (getTenantId() != null) {
+            return new Tenant(getTenantId());
+        }
+        throw new IllegalStateException("CanonicalPath.toElement() didn't match for any known entity. Canonical path: "
+                                                + this);
     }
 
     public static Builder builder() {

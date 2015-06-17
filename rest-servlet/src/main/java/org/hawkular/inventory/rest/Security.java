@@ -45,6 +45,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.hawkular.inventory.base.spi.CanonicalPath;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.
@@ -128,9 +129,70 @@ public class Security {
         }
     }
 
+    public static boolean isValidId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
+        String[] chunks = id.split("/");
+        if (chunks == null || chunks.length < 2) {
+            return false;
+        }
+        if (chunks.length == 2 && "tenants".equals(chunks[0]) && chunks[1].length() > 0) {
+            return true;
+        }
+        if (chunks.length == 3 && chunks[0].length() > 0 && chunks[2].length() > 0) {
+            return "environments".equals(chunks[1]) || "resourceTypes".equals(chunks[1])
+                    || "metricTypes".equals(chunks[1]);
+        }
+        if (chunks.length == 4 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[3].length() > 0) {
+            return "resources".equals(chunks[2]) || "metrics".equals(chunks[2]);
+        }
+        if (chunks.length == 5 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[2].length() > 0
+                && chunks[4].length() > 0) {
+            return "resources".equals(chunks[3]) || "metrics".equals(chunks[3]);
+        }
+        return false;
+    }
+
+    public static CanonicalPath getCanonicalPath(String id) {
+        String[] chunks = id.split("/");
+        CanonicalPath.Builder builder = CanonicalPath.builder();
+        if ("tenants".equals(chunks[0])) {
+            builder.withTenantId(chunks[1]);
+        } else if ("environments".equals(chunks[1])) {
+            builder.withTenantId(chunks[0]);
+            builder.withEnvironmentId(chunks[2]);
+        } else if ("resourceTypes".equals(chunks[1])) {
+            builder.withTenantId(chunks[0]);
+            builder.withResourceTypeId(chunks[2]);
+        } else if ("metricTypes".equals(chunks[1])) {
+            builder.withTenantId(chunks[0]);
+            builder.withMetricTypeId(chunks[2]);
+        } else if ("resources".equals(chunks[2])) {
+            builder.withTenantId(chunks[0]);
+            builder.withEnvironmentId(chunks[1]);
+            builder.withResourceId(chunks[3]);
+        } else if ("metrics".equals(chunks[2])) {
+            builder.withTenantId(chunks[0]);
+            builder.withEnvironmentId(chunks[1]);
+            builder.withMetricId(chunks[3]);
+        } else if ("resources".equals(chunks[3])) {
+            builder.withTenantId(chunks[0]);
+            builder.withEnvironmentId(chunks[1]);
+            builder.withFeedId(chunks[2]);
+            builder.withMetricId(chunks[4]);
+        } else if ("metrics".equals(chunks[3])) {
+            builder.withTenantId(chunks[0]);
+            builder.withEnvironmentId(chunks[1]);
+            builder.withFeedId(chunks[2]);
+            builder.withMetricId(chunks[4]);
+        }
+        return builder.build();
+    }
+
     public static String getStableId(Class<? extends AbstractElement<?, ?>> type, String... ids) {
         if (Tenant.class.isAssignableFrom(type)) {
-            return join("tenant", ids[0]);
+            return join("tenants", ids[0]);
         } else if (Environment.class.isAssignableFrom(type)) {
             return join(ids[0], "environments", ids[1]);
         } else if (ResourceType.class.isAssignableFrom(type)) {
