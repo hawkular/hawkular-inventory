@@ -50,11 +50,13 @@ final class ResponseUtil {
 
         //extract the data out of the page
         List<T> data = new ArrayList<>(page);
+        return pagedResponse(response, uriInfo, page, data);
+    }
 
+    public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
+                                                             Page<T> page, Object data) {
         response.entity(data);
-
         createPagingHeader(response, uriInfo, page);
-
         return response;
     }
 
