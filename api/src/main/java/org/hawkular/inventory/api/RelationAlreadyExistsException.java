@@ -61,4 +61,12 @@ public final class RelationAlreadyExistsException extends InventoryException {
         return "Relation with id '" + relationName + "' already exists at some of the positions: "
                 + Arrays.deepToString(path);
     }
+
+    public String getRelationName() {
+        return relationName;
+    }
+
+    public Filter[][] getPath() {
+        return path;
+    }
 }
