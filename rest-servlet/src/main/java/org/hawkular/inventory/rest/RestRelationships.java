@@ -165,12 +165,7 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
-            throw new IllegalArgumentException("Unable to delete a relationship with well defined name. " +
-                                                       "Restricted names: " +
-                                                       Arrays.asList(Relationships.WellKnown.values()));
-        }
+        checkForWellKnownLabels(relation.getName(), "delete");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
@@ -202,11 +197,7 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
-            throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
-                                                       "names: " + Arrays.asList(Relationships.WellKnown.values()));
-        }
+        checkForWellKnownLabels(relation.getName(), "create");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
@@ -255,11 +246,7 @@ public class RestRelationships extends RestBase {
         }
 
         // perhaps we could have allowed updating the properties of well-known rels
-        if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
-            throw new IllegalArgumentException("Unable to update a relationship with well defined name. Restricted " +
-                                                       "names: " + Arrays.asList(Relationships.WellKnown.values()));
-        }
+        checkForWellKnownLabels(relation.getName(), "update");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
@@ -354,4 +341,10 @@ public class RestRelationships extends RestBase {
         return filters.isEmpty() ? RelationFilter.all() : filters.toArray(new RelationFilter[filters.size()]);
     }
 
+    private void checkForWellKnownLabels(String name, String operation) {
+        if (Arrays.stream(Relationships.WellKnown.values()).anyMatch(x -> x.name().equals(name))) {
+            throw new IllegalArgumentException("Unable to " + operation + " a relationship with well defined name. " +
+                                               "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
+    }
 }
