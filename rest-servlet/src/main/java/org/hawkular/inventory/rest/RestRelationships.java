@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -67,6 +69,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.EmbeddedObjectMapper;
 
 /**
@@ -102,6 +105,12 @@ public class RestRelationships extends RestBase {
     @GET
     @Path("{path:.*}/relationships")
     @ApiOperation("Retrieves relationships")
+    @ApiResponses({
+                          @ApiResponse(code = 200, message = "The list of relationships"),
+                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                                  .class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
     public Response get(@PathParam("path") String path,
                         @DefaultValue("both") @QueryParam("direction") String direction,
                         @DefaultValue("") @QueryParam("property") String propertyName,
@@ -143,6 +152,12 @@ public class RestRelationships extends RestBase {
     @DELETE
     @Path("{path:.*}/relationships")
     @ApiOperation("Deletes a relationship")
+    @ApiResponses({
+                          @ApiResponse(code = 200, message = "The list of relationships"),
+                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                                  .class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
     public Response delete(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -172,6 +187,14 @@ public class RestRelationships extends RestBase {
     @POST
     @Path("{path:.*}/relationships")
     @ApiOperation("Creates a relationship")
+    @ApiResponses({
+                          @ApiResponse(code = 201, message = "OK"),
+                          @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                                  ApiError.class),
+                          @ApiResponse(code = 409, message = "Relationship already exists", response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
     public Response create(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -216,6 +239,13 @@ public class RestRelationships extends RestBase {
     @PUT
     @Path("{path:.*}/relationships")
     @ApiOperation("Updates a relationship")
+    @ApiResponses({
+                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                                  ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
     public Response update(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {

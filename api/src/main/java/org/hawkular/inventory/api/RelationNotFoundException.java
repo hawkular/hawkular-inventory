@@ -84,4 +84,16 @@ public final class RelationNotFoundException extends InventoryException {
         ret[0] = elem;
         return ret;
     }
+
+    public String getNameOrId() {
+        return nameOrId;
+    }
+
+    public String getSourceEntityType() {
+        return sourceEntityType;
+    }
+
+    public Filter[][] getFilters() {
+        return filters;
+    }
 }
