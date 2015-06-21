@@ -157,31 +157,33 @@ public class Security {
     public static CanonicalPath getCanonicalPath(String id) {
         String[] chunks = id.split("/");
         CanonicalPath.Builder builder = CanonicalPath.builder();
-        if ("tenants".equals(chunks[0])) {
+        if (chunks.length == 2 && "tenants".equals(chunks[0])) {
             builder.withTenantId(chunks[1]);
-        } else if ("environments".equals(chunks[1])) {
-            builder.withTenantId(chunks[0]);
-            builder.withEnvironmentId(chunks[2]);
-        } else if ("resourceTypes".equals(chunks[1])) {
-            builder.withTenantId(chunks[0]);
-            builder.withResourceTypeId(chunks[2]);
-        } else if ("metricTypes".equals(chunks[1])) {
-            builder.withTenantId(chunks[0]);
-            builder.withMetricTypeId(chunks[2]);
-        } else if ("resources".equals(chunks[2])) {
+        } else if (chunks.length == 3) {
+            if ("environments".equals(chunks[1])) {
+                builder.withTenantId(chunks[0]);
+                builder.withEnvironmentId(chunks[2]);
+            } else if ("resourceTypes".equals(chunks[1])) {
+                builder.withTenantId(chunks[0]);
+                builder.withResourceTypeId(chunks[2]);
+            } else if ("metricTypes".equals(chunks[1])) {
+                builder.withTenantId(chunks[0]);
+                builder.withMetricTypeId(chunks[2]);
+            }
+        } else if (chunks.length == 4 && "resources".equals(chunks[2])) {
             builder.withTenantId(chunks[0]);
             builder.withEnvironmentId(chunks[1]);
             builder.withResourceId(chunks[3]);
-        } else if ("metrics".equals(chunks[2])) {
+        } else if (chunks.length == 4 && "metrics".equals(chunks[2])) {
             builder.withTenantId(chunks[0]);
             builder.withEnvironmentId(chunks[1]);
             builder.withMetricId(chunks[3]);
-        } else if ("resources".equals(chunks[3])) {
+        } else if (chunks.length == 5 && "resources".equals(chunks[3])) {
             builder.withTenantId(chunks[0]);
             builder.withEnvironmentId(chunks[1]);
             builder.withFeedId(chunks[2]);
             builder.withMetricId(chunks[4]);
-        } else if ("metrics".equals(chunks[3])) {
+        } else if (chunks.length == 5 && "metrics".equals(chunks[3])) {
             builder.withTenantId(chunks[0]);
             builder.withEnvironmentId(chunks[1]);
             builder.withFeedId(chunks[2]);
