@@ -289,7 +289,7 @@ public class RestRelationships extends RestBase {
         } else if (cPath.getResourceTypeId() != null) {
             resolvable = tenant.resourceTypes().get(cPath.getResourceTypeId());
         } else if (cPath.getMetricTypeId() != null) {
-            resolvable = tenant.resourceTypes().get(cPath.getMetricTypeId());
+            resolvable = tenant.metricTypes().get(cPath.getMetricTypeId());
         }
         return resolvable;
     }
