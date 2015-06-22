@@ -213,9 +213,9 @@ abstract class FilterApplicator<T extends Filter> {
         return "FilterApplicator[filter=" + filter + "]";
     }
 
-    private static final class RelatedApplicator extends FilterApplicator<Related<?>> {
+    private static final class RelatedApplicator extends FilterApplicator<Related> {
 
-        private RelatedApplicator(Related<?> filter) {
+        private RelatedApplicator(Related filter) {
             super(filter);
         }
 

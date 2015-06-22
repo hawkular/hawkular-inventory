@@ -153,7 +153,7 @@ final class Constants {
             }, null);
         }
 
-        public static Type of(Class<? extends AbstractElement<?, ?>> ec) {
+        public static Type of(Class<?> ec) {
             return ElementTypeVisitor.accept(ec, new ElementTypeVisitor.Simple<Type, Void>() {
                 @Override
                 public Type visitTenant(Void parameter) {

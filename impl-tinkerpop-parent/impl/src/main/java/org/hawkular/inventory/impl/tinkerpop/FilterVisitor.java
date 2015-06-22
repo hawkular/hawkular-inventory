@@ -21,7 +21,6 @@ import java.util.Arrays;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
@@ -37,7 +36,7 @@ import com.tinkerpop.pipes.filter.PropertyFilterPipe;
  */
 class FilterVisitor {
 
-    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
+    public void visit(HawkularPipeline<?, ?> query, Related related) {
         switch (related.getEntityRole()) {
             case TARGET:
                 if (null != related.getRelationshipName()) {
@@ -67,10 +66,8 @@ class FilterVisitor {
                 }
         }
 
-        if (related.getEntity() != null) {
-            Constants.Type desiredType = Constants.Type.of(related.getEntity());
-
-            query.hasType(desiredType).hasEid(related.getEntity().getId());
+        if (related.getEntityPath() != null) {
+            query.hasCanonicalPath(related.getEntityPath());
         }
     }
 
@@ -217,6 +214,7 @@ class FilterVisitor {
         //nothing to do
     }
 
+    @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter) {
         if (filter.getPaths().length == 1) {
             query.has(Constants.Property.__cp.name(), filter.getPaths()[0].toString());

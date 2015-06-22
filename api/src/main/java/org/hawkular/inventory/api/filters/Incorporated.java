@@ -17,10 +17,7 @@
 package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
  * A helper class to create filters on the "incorporates" relationship.  This can also be achieved by using the
@@ -29,23 +26,15 @@ import org.hawkular.inventory.api.model.ResourceType;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class Incorporated<T extends Entity> extends Related<T> {
+public final class Incorporated extends Related {
 
-    public static final Incorporated<?> entities = new Incorporated<>(null);
+    public static final Incorporated entities = new Incorporated(null);
 
-    private Incorporated(T entity) {
+    private Incorporated(CanonicalPath entity) {
         super(entity, Relationships.WellKnown.incorporates.name(), EntityRole.TARGET);
     }
 
-    public static Incorporated<Resource> by(Resource resource) {
-        return new Incorporated<>(resource);
-    }
-
-    public static Incorporated<ResourceType> by(ResourceType resourceType) {
-        return new Incorporated<>(resourceType);
-    }
-
-    public static Incorporated<MetricType> by(MetricType metricType) {
-        return new Incorporated<>(metricType);
+    public static Incorporated by(CanonicalPath entity) {
+        return new Incorporated(entity);
     }
 }

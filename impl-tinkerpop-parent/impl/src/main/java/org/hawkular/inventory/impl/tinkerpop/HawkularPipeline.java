@@ -34,6 +34,7 @@ import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
 import com.tinkerpop.pipes.util.structures.Tree;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Pager;
 
@@ -117,6 +118,10 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     public HawkularPipeline<S, ? extends Element> hasEid(String eid) {
         return cast(has(Constants.Property.__eid.name(), eid));
+    }
+
+    public HawkularPipeline<S, ? extends Element> hasCanonicalPath(CanonicalPath path) {
+        return cast(has(Constants.Property.__cp.name(), path.toString()));
     }
 
     public HawkularPipeline<S, Vertex> out(Relationships.WellKnown... rel) {

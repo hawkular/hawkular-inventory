@@ -17,22 +17,22 @@
 package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
  * A helper class to create filters on the "contains" relationship. This can also be achieved by using the
  * {@link Related} filter.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public final class Contained<T extends Entity<?, ?>> extends Related<T> {
+public final class Contained extends Related {
 
-    private Contained(T entity) {
+    private Contained(CanonicalPath entity) {
         super(entity, Relationships.WellKnown.contains.name(), EntityRole.TARGET);
     }
 
-    public static <T extends Entity<?, ?>> Contained<T> in(T entity) {
-        return new Contained<>(entity);
+    public static Contained in(CanonicalPath entityPath) {
+        return new Contained(entityPath);
     }
 }

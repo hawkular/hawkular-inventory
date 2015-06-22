@@ -706,8 +706,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
                     .getAll(new Filter[][]{
-                            {Defined.by(new MetricType(CanonicalPath.of().tenant(tenantId).metricType(metricDefId)
-                                    .get()))},
+                            {Defined.by(CanonicalPath.of().tenant(tenantId).metricType(metricDefId)
+                                    .get())},
                             {id(id)}})
                     .entities().iterator().next();
             assert m.getId().equals(id);
@@ -728,8 +728,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
             Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
                     .getAll(new Filter[][]{
-                            {Defined.by(new ResourceType(CanonicalPath.of().tenant(tenantId)
-                                    .resourceType(resourceTypeId).get(), "1.0"))},
+                            {Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())},
                             {id(id)}})
                     .entities().iterator().next();
             assert r.getId().equals(id);
@@ -1067,7 +1066,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         children = res.allChildren().getAll().entities(pager);
         Assert.assertEquals(3, children.size());
 
-        children = res.allChildren().getAll(Related.asTargetWith(res.entity(), isParentOf)).entities(pager);
+        children = res.allChildren().getAll(Related.asTargetWith(res.entity().getPath(), isParentOf)).entities(pager);
         Assert.assertEquals(3, children.size());
     }
 

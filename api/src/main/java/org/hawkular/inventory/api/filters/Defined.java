@@ -17,28 +17,22 @@
 package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
  * A helper class to create filters on the "defines" relationship. This can also be achieved by using the
  * {@link Related} filter.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public final class Defined<T extends Entity> extends Related<T> {
+public final class Defined extends Related {
 
-    private Defined(T entity) {
+    private Defined(CanonicalPath entity) {
         super(entity, Relationships.WellKnown.defines.name(), EntityRole.TARGET);
     }
 
-    public static Defined<MetricType> by(MetricType definition) {
-        return new Defined<>(definition);
-    }
-
-    public static Defined<ResourceType> by(ResourceType type) {
-        return new Defined<>(type);
+    public static Defined by(CanonicalPath entity) {
+        return new Defined(entity);
     }
 }
