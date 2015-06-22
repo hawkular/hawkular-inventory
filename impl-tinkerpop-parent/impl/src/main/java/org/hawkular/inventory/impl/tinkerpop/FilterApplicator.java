@@ -56,8 +56,9 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(Owned.class, RelatedApplicator.class);
         applicators.put(With.Ids.class, WithIdsApplicator.class);
         applicators.put(With.Types.class, WithTypesApplicator.class);
+        applicators.put(With.PropertyValues.class, WithPropertyValuesApplicator.class);
         applicators.put(RelationWith.Ids.class, RelationWithIdsApplicator.class);
-        applicators.put(RelationWith.Properties.class, RelationWithPropertiesApplicator.class);
+        applicators.put(RelationWith.PropertyValues.class, RelationWithPropertiesApplicator.class);
         applicators.put(RelationWith.SourceOfType.class, RelationWithSourcesOfTypesApplicator.class);
         applicators.put(RelationWith.TargetOfType.class, RelationWithTargetsOfTypesApplicator.class);
         applicators.put(RelationWith.SourceOrTargetOfType.class, RelationWithSourcesOrTargetsOfTypesApplicator.class);
@@ -253,9 +254,9 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    private static final class RelationWithPropertiesApplicator extends FilterApplicator<RelationWith.Properties> {
+    private static final class RelationWithPropertiesApplicator extends FilterApplicator<RelationWith.PropertyValues> {
 
-        private RelationWithPropertiesApplicator(RelationWith.Properties filter) {
+        private RelationWithPropertiesApplicator(RelationWith.PropertyValues filter) {
             super(filter);
         }
 
@@ -315,6 +316,18 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class WithPropertyValuesApplicator extends FilterApplicator<With.PropertyValues> {
+
+        private WithPropertyValuesApplicator(With.PropertyValues f) {
+            super(f);
+        }
+
+        @Override
         public void applyTo(HawkularPipeline<?, ?> query) {
             visitor.visit(query, filter);
         }

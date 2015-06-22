@@ -37,30 +37,34 @@ public final class RelationWith {
         return new Ids(ids);
     }
 
-    public static Properties property(String property, String value) {
-        return new Properties(property, value);
+    public static PropertyValues property(String property) {
+        return new PropertyValues(property);
+    }
+
+    public static PropertyValues propertyValue(String property, Object value) {
+        return new PropertyValues(property, value);
     }
 
     @SafeVarargs
-    public static Properties properties(String property, String... values) {
+    public static PropertyValues propertyValues(String property, Object... values) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException("there must be at least one value of the property");
         }
-        Properties properties = new Properties(property, values);
+        PropertyValues properties = new PropertyValues(property, values);
         return properties;
     }
 
 
-    public static Properties name(String value) {
-        return new Properties("label", value);
+    public static PropertyValues name(String value) {
+        return new PropertyValues("label", value);
     }
 
     @SafeVarargs
-    public static Properties names(String... values) {
+    public static PropertyValues names(String... values) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException("there must be at least one value of the relation name");
         }
-        Properties names = new Properties("label", values);
+        PropertyValues names = new PropertyValues("label", values);
         return names;
     }
 
@@ -115,12 +119,12 @@ public final class RelationWith {
         }
     }
 
-    public static final class Properties extends RelationFilter {
+    public static final class PropertyValues extends RelationFilter {
 
         private final String property;
-        private final String[] values;
+        private final Object[] values;
 
-        public Properties(String property, String... values) {
+        public PropertyValues(String property, Object... values) {
             this.property = property;
             this.values = values;
         }
@@ -129,7 +133,7 @@ public final class RelationWith {
             return property;
         }
 
-        public String[] getValues() {
+        public Object[] getValues() {
             return values;
         }
 
@@ -141,9 +145,9 @@ public final class RelationWith {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof Properties)) return false;
+            if (!(o instanceof PropertyValues)) return false;
 
-            Properties that = (Properties) o;
+            PropertyValues that = (PropertyValues) o;
 
             return property.equals(that.property) && Arrays.equals(values, that.values);
         }
