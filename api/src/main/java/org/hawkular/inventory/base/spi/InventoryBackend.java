@@ -16,16 +16,16 @@
  */
 package org.hawkular.inventory.base.spi;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 
 /**
  * The backend for the base inventory that does all the "low level" stuff like querying the actual inventory store,
@@ -42,6 +42,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * Starts a transaction in the backend.
      *
      * @param mutating whether there will be calls mutating the data or not
+     * @return the newly started transaction
      */
     Transaction startTransaction(boolean mutating);
 
@@ -77,6 +78,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param conversion a conversion function to apply on the elements, never null
      * @param filter     possibly null filter to filter the results with
      * @param <T>        the type of the returned elements
+     * @return the page of results according to the supplied parameters
      */
     <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager, Function<E, T> conversion,
             Function<T, Boolean> filter);
@@ -195,7 +197,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param entity the entity to update
      * @param update the update object
-     * @throw IllegalArgumentException if the entity is of different type than the update
+     * @throws IllegalArgumentException if the entity is of different type than the update
      */
     void update(E entity, AbstractElement.Update update);
 

@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.base.spi.NoopFilter;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +23,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.base.spi.NoopFilter;
 
 /**
  * Represents a tree of filters.
@@ -180,6 +180,7 @@ public final class Query {
 
         /**
          * Creates a new branch in the tree and returns a builder of that branch.
+         * @return a new builder instance for building the child
          */
         public Builder branch() {
             Builder child = new Builder();
@@ -191,6 +192,7 @@ public final class Query {
 
         /**
          * Concludes the work on a branch and returns a builder of the parent "node", if any.
+         * @return the parent builder
          */
         public Builder done() {
             if (done) {
@@ -216,6 +218,7 @@ public final class Query {
          * Sets the filters to be used on the current node in the tree.
          *
          * @param filters the list of filters to apply to the query at this position in the tree.
+         * @return this builder
          */
         public Builder with(QueryFragment... filters) {
             Collections.addAll(this.fragments, filters);
@@ -287,6 +290,7 @@ public final class Query {
 
         /**
          * Modifies this extender to append path fragments with future calls to {@code with()} methods.
+         * @return this instance
          */
         public SymmetricExtender path() {
             queryFragmentSupplier = PathFragment::from;
