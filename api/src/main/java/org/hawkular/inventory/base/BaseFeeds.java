@@ -16,11 +16,16 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -28,10 +33,6 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -93,6 +94,23 @@ public final class BaseFeeds {
         }
     }
 
+    public static class ReadContained<BE> extends Fetcher<BE, Feed> implements Feeds.ReadContained {
+
+        public ReadContained(TraversalContext<BE, Feed> context) {
+            super(context);
+        }
+
+        @Override
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Feeds.Single get(String id) throws EntityNotFoundException {
+            return new Single<>(context.proceed().where(id(id)).get());
+        }
+    }
+
     public static class Read<BE> extends Fetcher<BE, Feed> implements Feeds.Read {
 
         public Read(TraversalContext<BE, Feed> context) {
@@ -105,8 +123,8 @@ public final class BaseFeeds {
         }
 
         @Override
-        public Feeds.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(id)).get());
+        public Feeds.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
         }
     }
 
@@ -134,13 +152,13 @@ public final class BaseFeeds {
         }
 
         @Override
-        public Resources.Read resources() {
-            return new BaseResources.Read<>(context.proceedTo(contains, Resource.class).get());
+        public Resources.ReadContained resources() {
+            return new BaseResources.ReadContained<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
-        public Metrics.Read metrics() {
-            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+        public Metrics.ReadContained metrics() {
+            return new BaseMetrics.ReadContained<>(context.proceedTo(contains, Metric.class).get());
         }
     }
 }

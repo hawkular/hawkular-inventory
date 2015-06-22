@@ -16,10 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.pipes.Pipe;
-import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import java.util.Arrays;
+
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -27,7 +25,10 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
-import java.util.Arrays;
+import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.pipes.Pipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
 
 /**
  * @author Lukas Krejci
@@ -214,5 +215,20 @@ class FilterVisitor {
 
     public void visit(HawkularPipeline<?, ?> query, NoopFilter filter) {
         //nothing to do
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter) {
+        if (filter.getPaths().length == 1) {
+            query.has(Constants.Property.__cp.name(), filter.getPaths()[0].toString());
+            return;
+        }
+
+        Pipe[] idChecks = new Pipe[filter.getPaths().length];
+
+        Arrays.setAll(idChecks, i ->
+                new PropertyFilterPipe<Element, String>(Constants.Property.__cp.name(), Compare.EQUAL,
+                        filter.getPaths()[i].toString()));
+
+        query.or(idChecks);
     }
 }

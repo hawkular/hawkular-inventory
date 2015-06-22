@@ -16,11 +16,24 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
+import static java.util.stream.Collectors.toSet;
+
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.StreamSupport;
+
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -28,7 +41,6 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -43,21 +55,12 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.StreamSupport;
-import static org.hawkular.inventory.api.Relationships.Direction.incoming;
-import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
-import static java.util.stream.Collectors.toSet;
+
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 
 /**
  * @author Lukas Krejci
@@ -286,15 +289,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public <T extends AbstractElement<?, ?>> T convert(Element entityRepresentation, Class<T> entityType) {
         Constants.Type type = Constants.Type.of(extractType(entityRepresentation));
 
-        Vertex environmentVertex;
-        Vertex feedVertex;
-
         AbstractElement<?, ?> e;
 
         if (type == relationship) {
             Edge edge = (Edge) entityRepresentation;
-            Entity<?, ?> source = convert(edge.getVertex(Direction.OUT), Entity.class);
-            Entity<?, ?> target = convert(edge.getVertex(Direction.IN), Entity.class);
+            CanonicalPath source = extractCanonicalPath(edge.getVertex(Direction.OUT));
+            CanonicalPath target = extractCanonicalPath(edge.getVertex(Direction.IN));
 
             e = new Relationship(extractId(edge), edge.getLabel(), source, target);
         } else {
@@ -409,6 +409,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             ElementHelper.setProperties(e, properties);
         }
         e.setProperty(Constants.Property.__eid.name(), e.getId().toString());
+        e.setProperty(Constants.Property.__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get());
         return e;
     }
 

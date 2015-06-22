@@ -16,6 +16,14 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
@@ -28,14 +36,6 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.QueryFragment;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A filter applicator applies a filter to a Gremlin query.
@@ -63,6 +63,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(RelationWith.SourceOrTargetOfType.class, RelationWithSourcesOrTargetsOfTypesApplicator.class);
         applicators.put(SwitchElementType.class, SwitchElementTypeApplicator.class);
         applicators.put(NoopFilter.class, NoopApplicator.class);
+        applicators.put(With.CanonicalPaths.class, CanonicalPathApplicator.class);
     }
 
     protected final T filter;
@@ -315,6 +316,18 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class CanonicalPathApplicator extends FilterApplicator<With.CanonicalPaths> {
+
+        private CanonicalPathApplicator(With.CanonicalPaths f) {
+            super(f);
+        }
+
+        @Override
         public void applyTo(HawkularPipeline<?, ?> query) {
             visitor.visit(query, filter);
         }

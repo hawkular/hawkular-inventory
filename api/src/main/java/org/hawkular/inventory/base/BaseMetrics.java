@@ -16,12 +16,18 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.filters.With.id;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -29,14 +35,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-import static org.hawkular.inventory.api.filters.Related.asTargetBy;
-import static org.hawkular.inventory.api.filters.Related.by;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -77,12 +75,14 @@ public final class BaseMetrics {
 
             BE r = relate(metricTypeObject, entity, defines.name());
 
+            CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
+
             MetricType metricType = context.backend.convert(metricTypeObject, MetricType.class);
 
             Metric ret = new Metric(parentPath.extend(Metric.class,
                     context.backend.extractId(entity)).get(), metricType, blueprint.getProperties());
 
-            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), metricType, ret);
+            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), parentPath, entityPath);
 
             return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
         }
@@ -103,9 +103,9 @@ public final class BaseMetrics {
         }
     }
 
-    public static class Read<BE> extends Traversal<BE, Metric> implements Metrics.Read {
+    public static class ReadContained<BE> extends Traversal<BE, Metric> implements Metrics.ReadContained {
 
-        public Read(TraversalContext<BE, Metric> context) {
+        public ReadContained(TraversalContext<BE, Metric> context) {
             super(context);
         }
 
@@ -120,39 +120,10 @@ public final class BaseMetrics {
         }
     }
 
-    public static class ReadAssociate<BE> extends Associator<BE, Metric> implements Metrics.ReadAssociate {
+    public static class Read<BE> extends Traversal<BE, Metric> implements Metrics.Read {
 
-        public ReadAssociate(TraversalContext<BE, Metric> context) {
+        public Read(TraversalContext<BE, Metric> context) {
             super(context);
-        }
-
-        @Override
-        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
-            //the sourcePath is a resource - that is the only way the API allows this method
-            //to be called.
-            //to get from the resource to the metric in question, we first go out of the metric to its owner
-            //then down again to metrics and finally filter by the id.
-            Query getMetric = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Metric.class), id(id)).get();
-
-            BE metric = getSingle(getMetric, Metric.class);
-
-            return createAssociation(Resource.class, incorporates, metric);
-        }
-
-        @Override
-        public Relationship disassociate(String id) throws EntityNotFoundException {
-            Query getMetric = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Metric.class), id(id)).get();
-
-            BE metric = getSingle(getMetric, Metric.class);
-
-            return deleteAssociation(Resource.class, incorporates, metric);
-        }
-
-        @Override
-        public Relationship associationWith(String id) throws RelationNotFoundException {
-            return getAssociation(Resource.class, id, Metric.class, incorporates);
         }
 
         @Override
@@ -161,8 +132,49 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(id)).get());
+        public Metrics.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
+        }
+    }
+
+    public static class ReadAssociate<BE> extends Associator<BE, Metric> implements Metrics.ReadAssociate {
+
+        public ReadAssociate(TraversalContext<BE, Metric> context) {
+            super(context);
+        }
+
+        @Override
+        public Relationship associate(
+                AbstractPath<?> id) throws EntityNotFoundException, RelationAlreadyExistsException {
+            Query getMetric = Util.queryTo(context, id);
+
+            BE metric = getSingle(getMetric, Metric.class);
+
+            return createAssociation(Resource.class, incorporates, metric);
+        }
+
+        @Override
+        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException {
+            Query getMetric = Util.queryTo(context, id);
+
+            BE metric = getSingle(getMetric, Metric.class);
+
+            return deleteAssociation(Resource.class, incorporates, metric);
+        }
+
+        @Override
+        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+            return getAssociation(Resource.class, path, incorporates);
+        }
+
+        @Override
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Metrics.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
         }
     }
 

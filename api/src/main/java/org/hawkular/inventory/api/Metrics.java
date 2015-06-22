@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Metric;
 
 /**
@@ -40,14 +41,21 @@ public final class Metrics {
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<Metric> {}
 
     /**
-     * Provides read-only access to metrics.
+     * Provides read-only access to metrics that are contained in the entity(ies) on the current position in the
+     * inventory traversal.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    /**
+     * Provides read-only access to metrics that are related to the entity(ies) on the current position in the
+     * inventory traversal (as a target of {@link org.hawkular.inventory.api.Relationships.WellKnown#defines}).
+     */
+    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
 
     /**
      * Provides read-write access to metrics.
@@ -58,5 +66,5 @@ public final class Metrics {
      * Provides read-only access to metrics with the additional ability to relate the metrics to the current
      * position in the inventory traversal.
      */
-    public interface ReadAssociate extends ReadInterface<Single, Multiple>, AssociationInterface {}
+    public interface ReadAssociate extends Read, AssociationInterface {}
 }

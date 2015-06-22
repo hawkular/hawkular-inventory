@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Feed;
 
 /**
@@ -38,9 +39,11 @@ public final class Feeds {
             BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
-            BrowserBase<Resources.Read, Metrics.Read> {}
+            BrowserBase<Resources.ReadContained, Metrics.ReadContained> {}
 
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
 
     public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
 

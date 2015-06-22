@@ -48,8 +48,10 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
@@ -314,11 +316,11 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, Collection<String> metricIds) {
+            @PathParam("resourcePath") String resourcePath, Collection<CanonicalPath> metricIds) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourcePath)) {
+        if (!security.canAssociateFrom(composeCanonicalPath(tenantId, environmentId, null, resourcePath))) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -341,18 +343,18 @@ public class RestResources extends RestBase {
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            Collection<String> metricIds) {
+            Collection<CanonicalPath> metricPaths) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, feedId, resourcePath)) {
+        if (!security.canAssociateFrom(composeCanonicalPath(tenantId, environmentId, feedId, resourcePath))) {
             return Response.status(FORBIDDEN).build();
         }
 
         Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .feeds().get(feedId).resources().get(resourcePath).metrics();
 
-        metricIds.forEach(metricDao::associate);
+        metricPaths.forEach(metricDao::associate);
 
         return Response.noContent().build();
     }
@@ -392,9 +394,11 @@ public class RestResources extends RestBase {
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
 
+    // TODO we need to be able to address the metric more intelligently - figure out how to do relative addressing in
+    // REST as we do in Java API
     @GET
     @Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricId}")
-    @ApiOperation("Retrieves a single resource")
+    @ApiOperation("Retrieves a single metric associated with a resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
             @ApiResponse(code = 404,
@@ -405,7 +409,7 @@ public class RestResources extends RestBase {
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("resourcePath") String resourcePath, @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
-                .get(resourcePath).metrics().get(metricId).entity();
+                .get(resourcePath).metrics().get(RelativePath.to().up().metric(metricId).get()).entity();
         return Response.ok(m).build();
     }
 
@@ -423,7 +427,7 @@ public class RestResources extends RestBase {
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
             @PathParam("metricId") String metricId) {
         Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId)
-                .resources().get(resourcePath).metrics().get(metricId).entity();
+                .resources().get(resourcePath).metrics().get(RelativePath.to().up().metric(metricId).get()).entity();
         return Response.ok(m).build();
     }
 
@@ -446,12 +450,12 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
         inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().get(resourceId)
-                .metrics().disassociate(metricId);
+                .metrics().disassociate(RelativePath.to().up().metric(metricId).get());
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricId}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -461,17 +465,34 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
             @PathParam("metricId") String metricId) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath path = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (!security.canAssociateFrom(path)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
-                .get(resourceId).metrics().disassociate(metricId);
+
+        inventory.inspect(path, Resources.Single.class).metrics().disassociate(RelativePath.to().up().metric(metricId)
+                .get());
         return Response.noContent().build();
     }
 
+    private CanonicalPath composeCanonicalPath(String tenantId, String envId, String feedId, String resourcePath) {
+        CanonicalPath.Extender<CanonicalPath> bld = CanonicalPath.empty().extend(Tenant.class, tenantId)
+                .extend(Environment.class, envId);
+
+        if (feedId != null) {
+            bld = bld.extend(Feed.class, feedId);
+        }
+
+        for (String rid : resourcePath.split("/")) {
+            bld = bld.extend(Resource.class, rid);
+        }
+
+        return bld.get();
+    }
 }

@@ -16,21 +16,23 @@
  */
 package org.hawkular.inventory.rest;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
+
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EmptyInventory;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.cdi.Official;
-import rx.Observable;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import rx.Observable;
 
 /**
  * @author Lukas Krejci
@@ -87,6 +89,11 @@ public class AutoTenantInventoryProducer {
                         actual.delete(id);
                     }
                 };
+            }
+
+            @Override
+            public Relationships.Read relationships() {
+                return inventory.relationships();
             }
 
             @Override

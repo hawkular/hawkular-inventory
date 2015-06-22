@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 
@@ -29,7 +30,7 @@ public final class Resources {
 
     private Resources() {}
 
-    private interface BrowserBase<Metrics> {
+    private interface BrowserBase<Metrics, ContainedAccess, AllAccess> {
 
         /**
          * @return access to metrics owned by the resource(s)
@@ -37,9 +38,9 @@ public final class Resources {
         Metrics metrics();
 
         /**
-         * @return access to children that are existentially bound to this resource
+         * @return access to children that are existentially bound to this/these resource(s)
          */
-        ReadWrite containedChildren();
+        ContainedAccess containedChildren();
 
         /**
          * Access to all children.
@@ -49,18 +50,11 @@ public final class Resources {
          * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains} relationship) cannot be disassociated
          * using this interface.
          *
-         * @return access to all children of this resource (superset of {@link #containedChildren()}, also includes
-         * the resources bound merely by {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf}).
-         * @see org.hawkular.inventory.api.Resources.ReadAssociate
+         * @return access to all children of this/these resource(s) (superset of {@link #containedChildren()}, also
+         * includes the resources bound merely by
+         * {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf}).
          */
-        ReadAssociate allChildren();
-
-        /**
-         * @return access to the parent resource (if any) that contains the resource on the current position in the
-         * path traversal. This resource will not exist for top-level resources living directly under an environment or
-         * feed.
-         */
-        Single parent();
+        AllAccess allChildren();
 
         /**
          * @return the parent resource(s) of the current resource(s)
@@ -71,26 +65,42 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadAssociate> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadAssociate,
+            ReadWrite, ReadAssociate> {
+
+        /**
+         * @return access to the parent resource (if any) that contains the resource on the current position in the
+         * path traversal. This resource will not exist for top-level resources living directly under an environment or
+         * feed.
+         */
+        Single parent();
+    }
 
     /**
      * Interface for traversing over a set of resources.
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
-    public interface Multiple extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read> {}
+    public interface Multiple
+            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, ReadContained, Read> {}
 
     /**
      * Provides read-only access to resources.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    /**
+     * Provides read-only access to resources.
+     */
+    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
 
     /**
      * Provides read-write access to resources.
      */
-    public interface ReadWrite extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple>,
+            ReadContained {}
 
     /**
      * This interface enables the creation of "alternative" tree hierarchies of resources using the
@@ -109,10 +119,10 @@ public final class Resources {
          * @param id the id of the entity to remove from the relation with the current entity.
          * @return the relationship that was deleted as a result of the disassociation
          * @throws EntityNotFoundException  if a resource with given id doesn't exist
-         * @throws IllegalArgumentException if the resource with the supplied id is existentially bound to its parent
+         * @throws IllegalArgumentException if the resource with the supplied path is existentially bound to its parent
          *                                  resource
          */
         @Override
-        Relationship disassociate(String id) throws EntityNotFoundException, IllegalArgumentException;
+        Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException, IllegalArgumentException;
     }
 }

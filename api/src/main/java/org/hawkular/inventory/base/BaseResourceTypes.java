@@ -16,20 +16,21 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.filters.With.id;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-import static org.hawkular.inventory.api.filters.With.id;
 
 /**
  * @author Lukas Krejci
@@ -80,6 +81,23 @@ public final class BaseResourceTypes {
         }
     }
 
+    public static class ReadContained<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.ReadContained {
+
+        public ReadContained(TraversalContext<BE, ResourceType> context) {
+            super(context);
+        }
+
+        @Override
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
+            return new BaseResourceTypes.Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public ResourceTypes.Single get(String id) throws EntityNotFoundException {
+            return new BaseResourceTypes.Single<>(context.proceed().where(id(id)).get());
+        }
+    }
+
     public static class Read<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.Read {
 
         public Read(TraversalContext<BE, ResourceType> context) {
@@ -92,8 +110,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public ResourceTypes.Single get(String id) throws EntityNotFoundException {
-            return new BaseResourceTypes.Single<>(context.proceed().where(id(id)).get());
+        public ResourceTypes.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+            return new BaseResourceTypes.Single<>(context.proceedTo(id));
         }
     }
 
@@ -127,8 +145,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return new BaseMetricTypes.Read<>(context.proceedTo(incorporates, MetricType.class).get());
+        public MetricTypes.ReadContained metricTypes() {
+            return new BaseMetricTypes.ReadContained<>(context.proceedTo(incorporates, MetricType.class).get());
         }
     }
 }

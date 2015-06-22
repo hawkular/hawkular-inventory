@@ -39,7 +39,7 @@ public abstract class TenantBasedEntity<B extends Entity.Blueprint, U extends Ab
 
     TenantBasedEntity(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
-        if (path.getRoot().getSegment().getElementType() != ElementType.TENANT) {
+        if (!Tenant.class.equals(path.getRoot().getSegment().getElementType())) {
             throw new IllegalArgumentException("A tenant based entity should be rooted at a tenant.");
         }
     }

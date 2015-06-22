@@ -22,7 +22,7 @@ import org.hawkular.inventory.api.model.Relationship;
  * This is a wrapper class to hold various interfaces defining available functionality on relationships.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public final class Relationships {
     private Relationships() {
@@ -124,7 +124,7 @@ public final class Relationships {
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToMany<Relationship> {
         Tenants.Read tenants();

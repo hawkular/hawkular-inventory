@@ -16,13 +16,9 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.RelationWith;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.ElementType;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.base.spi.NoopFilter;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,9 +29,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
+import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.base.spi.NoopFilter;
 
 /**
  * Represents a tree of filters.
@@ -126,18 +126,18 @@ public final class Query {
 
         if (it.hasNext()) {
             CanonicalPath.Segment s = it.next();
-            if (s.getElementType() == ElementType.RELATIONSHIP) {
+            if (Relationship.class.equals(s.getElementType())) {
                 bld.with(RelationWith.id(s.getElementId()));
                 //early return - no further querying needed for relationships
                 return bld.get();
             } else {
-                bld.with(type((Class<? extends Entity<?, ?>>) s.getElementType().getType()), id(s.getElementId()));
+                bld.with(type((Class<? extends Entity<?, ?>>) s.getElementType()), id(s.getElementId()));
             }
         }
 
         while (it.hasNext()) {
             CanonicalPath.Segment s = it.next();
-            bld.with(Related.by(contains), type((Class<? extends Entity<?, ?>>) s.getElementType().getType()),
+            bld.with(Related.by(contains), type((Class<? extends Entity<?, ?>>) s.getElementType()),
                     id(s.getElementId()));
         }
 

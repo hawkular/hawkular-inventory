@@ -16,20 +16,28 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+
+import java.util.function.Function;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractPath;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-import java.util.function.Function;
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Action.deleted;
 
 /**
  * @author Lukas Krejci
@@ -135,6 +143,26 @@ final class Util {
 
             return backend.convert(relationship, Relationship.class);
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Query queryTo(TraversalContext context, AbstractPath<?> path) {
+        if (path instanceof CanonicalPath) {
+            return Query.to((CanonicalPath) path);
+        }
+
+        Query.SymmetricExtender extender = context.sourcePath.extend().path();
+
+        for (AbstractPath.Segment s : path.getPath()) {
+            if (RelativePath.Up.class.equals(s.getElementType())) {
+                extender.with(Related.asTargetBy(contains));
+            } else {
+                extender.with(Related.by(contains), With.type((Class<? extends Entity<?, ?>>) s.getElementType()),
+                        With.id(s.getElementId()));
+            }
+        }
+
+        return extender.get();
     }
 
 }

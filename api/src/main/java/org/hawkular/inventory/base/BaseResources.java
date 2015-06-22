@@ -16,6 +16,13 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
+import static org.hawkular.inventory.api.filters.With.id;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
@@ -25,6 +32,7 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Relationship;
@@ -32,15 +40,6 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
-import static org.hawkular.inventory.api.filters.Related.asTargetBy;
-import static org.hawkular.inventory.api.filters.Related.by;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -80,20 +79,23 @@ public final class BaseResources {
 
             BE r = relate(resourceTypeObject, entity, defines.name());
 
+            CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
+            CanonicalPath resourceTypePath = context.backend.extractCanonicalPath(resourceTypeObject);
+
             ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
 
             Resource ret = new Resource(parentPath.extend(Resource.class, context.backend.extractId(entity)).get(),
                     resourceType, blueprint.getProperties());
 
-            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), resourceType, ret);
+            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
+                    entityPath);
 
             if (context.backend.extractType(parent).equals(Resource.class)) {
                 //we're creating a child resource... need to also create the implicit isParentOf
                 r = relate(parent, entity, isParentOf.name());
-                Resource parentResource = context.backend.convert(parent, Resource.class);
 
                 Relationship parentRel = new Relationship(context.backend.extractId(r), isParentOf.name(),
-                        parentResource, ret);
+                        parentPath, entityPath);
 
                 return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()),
                         new Notification<>(parentRel, parentRel, created()));
@@ -118,9 +120,9 @@ public final class BaseResources {
         }
     }
 
-    public static class Read<BE> extends Traversal<BE, Resource> implements Resources.Read {
+    public static class ReadContained<BE> extends Traversal<BE, Resource> implements Resources.ReadContained {
 
-        public Read(TraversalContext<BE, Resource> context) {
+        public ReadContained(TraversalContext<BE, Resource> context) {
             super(context);
         }
 
@@ -135,19 +137,33 @@ public final class BaseResources {
         }
     }
 
+    public static class Read<BE> extends Traversal<BE, Resource> implements Resources.Read {
+
+        public Read(TraversalContext<BE, Resource> context) {
+            super(context);
+        }
+
+        @Override
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Resources.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
+        }
+    }
+
     public static class ReadAssociate<BE> extends Read<BE> implements Resources.ReadAssociate {
         public ReadAssociate(TraversalContext<BE, Resource> context) {
             super(context);
         }
 
         @Override
-        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
-            // FIXME currently we are bound to search for the other resource id within the same parent as this resource
-            // that is unacceptably narrow.
-
+        public Relationship associate(AbstractPath<?> id) throws EntityNotFoundException,
+                RelationAlreadyExistsException {
             Query sourceQuery = context.sourcePath;
-            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Resource.class), id(id)).get();
+            Query targetResource = Util.queryTo(context, id);
 
             BE targetEntity = getSingle(targetResource, Resource.class);
 
@@ -159,10 +175,9 @@ public final class BaseResources {
         }
 
         @Override
-        public Relationship disassociate(String id) throws EntityNotFoundException, IllegalArgumentException {
+        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException, IllegalArgumentException {
             Query sourceQuery = context.select().get();
-            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Resource.class), id(id)).get();
+            Query targetResource = Util.queryTo(context, id);
 
             BE targetEntity = getSingle(targetResource, Resource.class);
 
@@ -174,10 +189,9 @@ public final class BaseResources {
         }
 
         @Override
-        public Relationship associationWith(String id) throws RelationNotFoundException {
+        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
             Query sourceQuery = context.select().get();
-            Query targetResource = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Resource.class), id(id)).get();
+            Query targetResource = Util.queryTo(context, path);
 
             return Util.getAssociation(context.backend, sourceQuery, Resource.class, targetResource, Resource.class,
                     isParentOf.name());
@@ -235,11 +249,6 @@ public final class BaseResources {
         @Override
         public Resources.ReadWrite containedChildren() {
             return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
-        }
-
-        @Override
-        public Resources.Single parent() {
-            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(Resource.class)).get());
         }
 
         @Override

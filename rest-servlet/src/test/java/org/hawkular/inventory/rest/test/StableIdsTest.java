@@ -134,7 +134,7 @@ public class StableIdsTest {
 
     @Test
     public void testStableIdForRelationships() throws Exception {
-        Relationship rel = new Relationship("fooId", "label", tenant, resource);
+        Relationship rel = new Relationship("fooId", "label", tenant.getPath(), resource.getPath());
         assert "relationships/fooId".equals(Security.getStableId(Relationship.class, rel.getId()))
                 : "relationships/fooId should be equal to " + Security.getStableId(Relationship.class, rel.getId());
     }

@@ -16,13 +16,12 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.filters.With.type;
+
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
-
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * A base class for implementations of {@code *ReadAssociate} implementations.
@@ -61,11 +60,14 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         return rel.getEntity();
     }
 
-    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, String targetId,
-            Class<? extends Entity<?, ?>> targetType, Relationships.WellKnown rel) {
+    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, AbstractPath<?> targetPath,
+            Relationships.WellKnown rel) {
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        Query targetQuery = context.sourcePath.extend().path().with(type(sourceType), Related.by(rel))
-                .filter().with(With.type(targetType), With.id(targetId)).get();
+        Query targetQuery = Util.queryTo(context, targetPath);
+
+        @SuppressWarnings("unchecked")
+        Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) targetPath.getSegment()
+                .getElementType();
 
         return Util.getAssociation(context.backend, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }

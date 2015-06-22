@@ -21,17 +21,17 @@ package org.hawkular.inventory.api;
  * using its id.
  *
  * @param <Single> the access interface to the entity
- *
+ * @param <Address> the type of address to use to find the entity
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public interface ResolvingToSingle<Single> {
+public interface ResolvingToSingle<Single, Address> {
 
     /**
      * Tries to find a single entity in the current position in the inventory traversal.
      *
-     * @param id the id of the entity to find in the current traversal position
+     * @param address the identification of sorts of the entity to find in the current traversal position
      * @return access interface to the entity
      */
-    Single get(String id) throws EntityNotFoundException;
+    Single get(Address address) throws EntityNotFoundException;
 }

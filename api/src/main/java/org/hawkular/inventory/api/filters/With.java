@@ -16,9 +16,10 @@
  */
 package org.hawkular.inventory.api.filters;
 
-import org.hawkular.inventory.api.model.Entity;
-
 import java.util.Arrays;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 
 /**
  * @author Lukas Krejci
@@ -44,6 +45,14 @@ public final class With {
 
     public static Types type(Class<? extends Entity<?, ?>> type) {
         return new Types(type);
+    }
+
+    public static CanonicalPaths path(CanonicalPath path) {
+        return new CanonicalPaths(path);
+    }
+
+    public static CanonicalPaths paths(CanonicalPath... paths) {
+        return new CanonicalPaths(paths);
     }
 
     public static final class Ids extends Filter {
@@ -121,4 +130,35 @@ public final class With {
         }
     }
 
+    public static final class CanonicalPaths extends Filter {
+        private final CanonicalPath[] paths;
+
+        public CanonicalPaths(CanonicalPath... paths) {
+            this.paths = paths;
+        }
+
+        public CanonicalPath[] getPaths() {
+            return paths;
+        }
+
+        @Override
+        public String toString() {
+            return "CanonicalPaths" + Arrays.asList(paths).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CanonicalPaths)) return false;
+
+            CanonicalPaths other = (CanonicalPaths) o;
+
+            return Arrays.equals(paths, other.paths);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(paths);
+        }
+    }
 }

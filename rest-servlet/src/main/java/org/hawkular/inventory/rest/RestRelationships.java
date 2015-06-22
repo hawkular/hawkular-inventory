@@ -23,14 +23,12 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -43,12 +41,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import org.hawkular.inventory.api.Environments;
+
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -60,7 +58,10 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CanonicalPath;
+
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 
 /**
  * @author Jiri Kremser
@@ -163,13 +164,13 @@ public class RestRelationships extends RestBase {
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
         Relationships.Direction directed;
-        Entity theOtherSide;
+        CanonicalPath theOtherSide;
         String[] chunks = path.split("/");
         String currentEntityId = chunks[chunks.length - 1];
-        if (currentEntityId.equals(relation.getSource().getId())) {
+        if (currentEntityId.equals(relation.getSource().getSegment().getElementId())) {
             directed = Relationships.Direction.outgoing;
             theOtherSide = relation.getTarget();
-        } else if (currentEntityId.equals(relation.getTarget().getId())) {
+        } else if (currentEntityId.equals(relation.getTarget().getSegment().getElementId())) {
             directed = Relationships.Direction.incoming;
             theOtherSide = relation.getSource();
         } else {
@@ -192,30 +193,9 @@ public class RestRelationships extends RestBase {
         return urlPath.startsWith("tenants") ? urlPath : getTenantId() + "/" + urlPath;
     }
 
-    private ResolvableToSingleWithRelationships getResolvableFromCanonicalPath(CanonicalPath cPath) {
-        Tenants.Single tenant = inventory.tenants().get(cPath.getTenantId());
-        ResolvableToSingleWithRelationships resolvable = tenant;
-        if (cPath.getEnvironmentId() != null) {
-            Environments.Single env = tenant.environments().get(cPath.getEnvironmentId());
-            if (cPath.getFeedId() != null) {
-                if (cPath.getResourceId() != null) {
-                    resolvable = env.feeds().get(cPath.getFeedId()).resources().get(cPath.getResourceId());
-                } else if (cPath.getMetricId() != null) {
-                    resolvable = env.feeds().get(cPath.getFeedId()).metrics().get(cPath.getMetricId());
-                } else {
-                    resolvable = env.feeds().get(cPath.getFeedId());
-                }
-            } else if (cPath.getResourceId() != null) {
-                resolvable = env.feedlessResources().get(cPath.getResourceId());
-            } else if (cPath.getMetricId() != null) {
-                resolvable = env.feedlessMetrics().get(cPath.getMetricId());
-            }
-        } else if (cPath.getResourceTypeId() != null) {
-            resolvable = tenant.resourceTypes().get(cPath.getResourceTypeId());
-        } else if (cPath.getMetricTypeId() != null) {
-            resolvable = tenant.resourceTypes().get(cPath.getMetricTypeId());
-        }
-        return resolvable;
+    @SuppressWarnings("unchecked")
+    private <T> ResolvableToSingleWithRelationships<T> getResolvableFromCanonicalPath(CanonicalPath cPath) {
+        return inventory.inspect(cPath, ResolvableToSingleWithRelationships.class);
     }
 
     public static RelationFilter[] extractFilters(String propertyName,

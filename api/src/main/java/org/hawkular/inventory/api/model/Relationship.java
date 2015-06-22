@@ -16,12 +16,14 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-import org.hawkular.inventory.api.Relationships;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Map;
+
+import org.hawkular.inventory.api.Relationships;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * Represents a relationship between 2 entities. A relationship has a source and target entities (somewhat obviously),
@@ -43,10 +45,10 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
     private final String name;
 
     @Expose
-    private final Entity source;
+    private final CanonicalPath source;
 
     @Expose
-    private final Entity target;
+    private final CanonicalPath target;
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -59,11 +61,12 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         return visitor.visitRelationship(this, parameter);
     }
 
-    public Relationship(String id, String name, Entity source, Entity target) {
+    public Relationship(String id, String name, CanonicalPath source, CanonicalPath target) {
         this(id, name, source, target, null);
     }
 
-    public Relationship(String id, String name, Entity source, Entity target, Map<String, Object> properties) {
+    public Relationship(String id, String name, CanonicalPath source, CanonicalPath target,
+            Map<String, Object> properties) {
         super(CanonicalPath.of().relationship(id).get(), properties);
         this.id = id;
         this.name = name;
@@ -85,11 +88,11 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         return name;
     }
 
-    public Entity getSource() {
+    public CanonicalPath getSource() {
         return source;
     }
 
-    public Entity getTarget() {
+    public CanonicalPath getTarget() {
         return target;
     }
 

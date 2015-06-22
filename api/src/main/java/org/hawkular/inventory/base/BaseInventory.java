@@ -19,10 +19,13 @@ package org.hawkular.inventory.base;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+
 import rx.Observable;
 
 /**
@@ -71,6 +74,12 @@ public abstract class BaseInventory<E> implements Inventory {
         return new BaseTenants.ReadWrite<>(new TraversalContext<>(this, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext));
+    }
+
+    @Override
+    public Relationships.Read relationships() {
+        return new BaseRelationships.Read<>(new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
+                Relationship.class, configuration, observableContext));
     }
 
     /**

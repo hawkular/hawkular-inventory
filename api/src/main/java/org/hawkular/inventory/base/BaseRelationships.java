@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import java.util.Map;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
@@ -26,7 +28,6 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -44,7 +45,6 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.SwitchElementType;
-import java.util.Map;
 
 /**
  * @author Lukas Krejci
@@ -88,8 +88,9 @@ public final class BaseRelationships {
             return new Multiple<>(direction, context.proceed().where(filters).get());
         }
 
+        @SuppressWarnings("unchecked")
         @Override
-        public Relationships.Single linkWith(String name, Entity<?, ?> targetOrSource,
+        public Relationships.Single linkWith(String name, CanonicalPath targetOrSource,
                 Map<String, Object> properties) throws IllegalArgumentException {
 
 
@@ -103,9 +104,11 @@ public final class BaseRelationships {
             return mutating((transaction) -> {
                 BE incidenceObject;
                 try {
-                    incidenceObject = context.backend.find(targetOrSource.getPath());
+                    incidenceObject = context.backend.find(targetOrSource);
                 } catch (ElementNotFoundException e) {
-                    throw new EntityNotFoundException(targetOrSource.getClass(), Filter.pathTo(targetOrSource));
+                    throw new EntityNotFoundException(
+                            (Class<? extends Entity<?, ?>>) targetOrSource.getSegment().getElementType(),
+                            Query.filters(Query.to(targetOrSource)));
                 }
 
                 Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
@@ -141,12 +144,6 @@ public final class BaseRelationships {
 
                 return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
             });
-        }
-
-        @Override
-        public Relationships.Single linkWith(Relationships.WellKnown name, Entity<?, ?> targetOrSource,
-                Map<String, Object> properties) throws IllegalArgumentException {
-            return linkWith(name.name(), targetOrSource, properties);
         }
 
         @Override

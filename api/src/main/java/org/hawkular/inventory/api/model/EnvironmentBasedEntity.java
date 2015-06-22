@@ -39,7 +39,7 @@ public abstract class EnvironmentBasedEntity<B extends Entity.Blueprint, U exten
 
     EnvironmentBasedEntity(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
-        if (path.getRoot().down().getSegment().getElementType() != ElementType.ENVIRONMENT) {
+        if (!Environment.class.equals(path.getRoot().down().getSegment().getElementType())) {
             throw new IllegalArgumentException("An environment based entity should be contained in an environment.");
         }
     }

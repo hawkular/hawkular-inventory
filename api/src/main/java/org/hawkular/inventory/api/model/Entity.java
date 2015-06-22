@@ -16,8 +16,9 @@
  */
 package org.hawkular.inventory.api.model;
 
-import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
+
+import javax.xml.bind.annotation.XmlAttribute;
 
 /**
  * Base class for all Hawkular entities.
@@ -40,10 +41,10 @@ public abstract class Entity<B extends AbstractElement.Blueprint, U extends Abst
 
     Entity(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
-        if (!this.getClass().equals(path.getSegment().getElementType().getType())) {
+        if (!this.getClass().equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
                     this.getClass().getSimpleName() + " but the path points to " +
-                    path.getSegment().getElementType().getType().getSimpleName());
+                    path.getSegment().getElementType().getSimpleName());
         }
     }
 

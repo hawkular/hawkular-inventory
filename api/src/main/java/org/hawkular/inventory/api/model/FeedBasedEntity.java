@@ -49,6 +49,6 @@ public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends Abst
      */
     public String getFeedId() {
         CanonicalPath.Segment seg = getPath().getRoot().down().down().getSegment();
-        return seg.getElementType() == ElementType.FEED ? seg.getElementId() : null;
+        return Feed.class.equals(seg.getElementType()) ? seg.getElementId() : null;
     }
 }

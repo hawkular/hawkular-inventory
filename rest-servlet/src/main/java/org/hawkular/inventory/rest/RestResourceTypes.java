@@ -17,20 +17,11 @@
 
 package org.hawkular.inventory.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
-import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.rest.json.ApiError;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 import java.util.Collection;
 
@@ -46,11 +37,22 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.json.ApiError;
 
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -198,9 +200,9 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
-            Collection<String> metricTypeIds) {
+            Collection<RelativePath> metricTypeIds) {
         String tenantId = getTenantId();
-        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canAssociateFrom(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -224,7 +226,7 @@ public class RestResourceTypes extends RestBase {
             @PathParam("metricTypeId") String metricTypeId) {
         String tenantId = getTenantId();
         return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .metricTypes().get(metricTypeId).entity();
+                .metricTypes().get(RelativePath.to().up().metricType(metricTypeId).get()).entity();
     }
 
     @GET
@@ -259,11 +261,12 @@ public class RestResourceTypes extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canAssociateFrom(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
+        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(
+                RelativePath.to().up().metricType(metricTypeId).get());
         return Response.noContent().build();
     }
 }

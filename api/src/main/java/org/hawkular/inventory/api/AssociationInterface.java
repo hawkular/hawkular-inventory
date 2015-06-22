@@ -17,6 +17,7 @@
 
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Relationship;
 
 /**
@@ -39,17 +40,27 @@ interface AssociationInterface {
      * being related to it. Consider this example:
      *
      * <pre><code>
-     * inventory.tenants().get(tenantId).environments().get(envId).resources().get(rId).metrics().associate(metricId);
+     * inventory.tenants().get(tenantId).environments().get(envId).resources().get(rId).metrics().associate(
+     * RelativePath.to().up().metric(metricId));
      * </code></pre>
      *
      * <p>In here the {@code associate} method will add a new metric (identified by the {@code metricId}) to the
      * resource identified by the {@code rId}.
      *
-     * @param id the id of a pre-existing entity to be related to the entity on the current position in the inventory
-     *           traversal.
+     * <p>The provided path can be a {@link org.hawkular.inventory.api.model.RelativePath} (as in the above example)
+     * which is evaluated against the current position in the graph - the
+     * {@link org.hawkular.inventory.api.model.RelativePath#up() up()} call will move up the path from the resource
+     * to the environment and the {@code metric()} call will the move to a metric in that environment.
+     *
+     * <p>The provided path can also be a {@link org.hawkular.inventory.api.model.CanonicalPath} in which case it is
+     * fully evaluated and the entity on that path is associated (provided the path points to the correct type of
+     * entity and all the rules specific for the association of the two types of entities are fulfilled).
+     *
+     * @param path the path to a pre-existing entity to be related to the entity on the current position in the
+     *             inventory traversal.
      * @return the relationship that was created as the consequence of the association.
      */
-    Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException;
+    Relationship associate(AbstractPath<?> path) throws EntityNotFoundException, RelationAlreadyExistsException;
 
     /**
      * Removes an entity from the relation with the current entity.
@@ -57,24 +68,24 @@ interface AssociationInterface {
      * The current entity and the type of the entity to remove from the relation is determined by the current position
      * in the inventory traversal.
      *
-     * @see #associate(String) for explanation of how the current entity and the relation is determined.
+     * @see #associate(AbstractPath) for explanation of how the current entity and the relation is determined.
      *
-     * @param id the id of the entity to remove from the relation with the current entity.
+     * @param path the id of the entity to remove from the relation with the current entity.
      *
      * @return the relationship that was deleted as a result of the disassociation
      */
-    Relationship disassociate(String id) throws EntityNotFoundException;
+    Relationship disassociate(AbstractPath<?> path) throws EntityNotFoundException;
 
     /**
      * Finds the relationship with the entity with the provided id.
      *
-     * @see #associate(String) for the discussion of how the entity and the relationship is determined
+     * @see #associate(AbstractPath) for the discussion of how the entity and the relationship is determined
      *
-     * @param id the id of the entity to find the relation with
+     * @param path the id of the entity to find the relation with
      *
      * @return the relationship found
      *
      * @throws RelationNotFoundException if a relation with an entity of given id doesn't exist
      */
-    Relationship associationWith(String id) throws RelationNotFoundException;
+    Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException;
 }

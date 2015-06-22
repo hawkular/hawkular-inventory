@@ -16,22 +16,24 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.filters.With.type;
+
+import java.util.Iterator;
+
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+
 import rx.subjects.Subject;
-
-import java.util.Iterator;
-
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * Holds the data needed throughout the construction of inventory traversal.
@@ -166,6 +168,13 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
                 observableContext);
+    }
+
+    TraversalContext<BE, E> proceedTo(AbstractPath<?> path) {
+        if (!entityClass.equals(path.getSegment().getElementType())) {
+            throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
+        }
+        return replacePath(Util.queryTo(this, path));
     }
 
     /**

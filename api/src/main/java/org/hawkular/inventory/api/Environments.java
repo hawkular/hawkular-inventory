@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Environment;
 
 /**
@@ -30,7 +31,7 @@ public final class Environments {
 
     }
 
-    private interface BrowserBase<Feeds, Resources, Metrics> {
+    private interface BrowserBase<Feeds, ResourcesAccess, MetricsAccess> {
         /**
          * @return feeds in the environment(s)
          */
@@ -39,12 +40,12 @@ public final class Environments {
         /**
          * @return resources in the environment(s) that do not come from any feed
          */
-        Resources feedlessResources();
+        ResourcesAccess feedlessResources();
 
         /**
          * @return metrics in the environment(s) that do not come from any feed
          */
-        Metrics feedlessMetrics();
+        MetricsAccess feedlessMetrics();
 
         /**
          * Returns access to all resources in this environment regardless of whether they are under some feed or
@@ -55,7 +56,7 @@ public final class Environments {
          *
          * @return the access interface to all resources in this environment
          */
-        ResolvingToMultiple<org.hawkular.inventory.api.Resources.Multiple> allResources();
+        Resources.Read allResources();
 
         /**
          * Returns access to all metrics in this environment regardless of whether they are under some feed or
@@ -66,7 +67,7 @@ public final class Environments {
          *
          * @return the access interface to all metrics in this environment
          */
-        ResolvingToMultiple<org.hawkular.inventory.api.Metrics.Multiple> allMetrics();
+        Metrics.Read allMetrics();
     }
 
     /**
@@ -80,15 +81,17 @@ public final class Environments {
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<Environment>,
-            BrowserBase<Feeds.Read, Resources.Read, Metrics.Read> {}
+            BrowserBase<Feeds.ReadContained, Resources.ReadContained, Metrics.ReadContained> {}
 
     /**
      * Provides read-only access to environments.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
 
     /**
      * Provides methods for read-write access to environments.

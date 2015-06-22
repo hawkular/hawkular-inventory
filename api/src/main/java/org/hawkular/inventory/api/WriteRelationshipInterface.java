@@ -16,9 +16,10 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Relationship;
 import java.util.Map;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
 
 /**
  * Generic methods to write access to relationships.
@@ -33,29 +34,6 @@ interface WriteRelationshipInterface<Single> {
     /**
      * Creates a new relationship at the current position in the inventory traversal.
      *
-     * <p>Note that there are limitations when working with
-     * {@link org.hawkular.inventory.api.Relationships.WellKnown well-known relationships}. See
-     * {@link #linkWith(Relationships.WellKnown, Entity, Map)}
-     * for details.
-     *
-     * @param name the name of the relationship (label)
-     * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
-     *                       entity (based on the position in the inventory traversal) will be in the relationship with
-     * @param properties the properties of the newly created relationship or null if none specified
-     * @return access interface to the freshly created relationship
-     *
-     * @throws java.lang.IllegalArgumentException if any of the parameters (but properties) is null
-     * @throws EntityNotFoundException if the current position in the inventory traversal doesn't evaluate to an
-     * existing entity or if the provided other end of the relationship doesn't exist.
-     *
-     * @see #linkWith(Relationships.WellKnown, Entity, Map)
-     */
-    Single linkWith(String name, Entity<?, ?> targetOrSource,
-            Map<String, Object> properties) throws IllegalArgumentException;
-
-    /**
-     * Creates a new relationship at the current position in the inventory traversal.
-     *
      * <p>It is possible to have multiple relationships with the same name between 2 entities. These relationships will
      * differ in their ids and can have different properties.
      *
@@ -65,7 +43,7 @@ interface WriteRelationshipInterface<Single> {
      * {@link org.hawkular.inventory.api.Relationships.WellKnown#incorporates incorporates}) for restrictions of usage,
      * especially what restrictions the relationships impose when deleting entities.
      *
-     * @param name the well known name (Relationships.WellKnown) of the relationship
+     * @param name the name of the relationship
      * @param targetOrSource the the source/target entity (based on the chosen relationship direction) that the current
      *                       entity (based on the position in the inventory traversal) will be in the relationship with
      * @param properties the properties of the newly created relationship or null if none specified
@@ -75,19 +53,24 @@ interface WriteRelationshipInterface<Single> {
      * @throws EntityNotFoundException if the current position in the inventory traversal doesn't evaluate to an
      * existing entity or if the provided other end of the relationship doesn't exist.
      */
-    Single linkWith(Relationships.WellKnown name, Entity<?, ?> targetOrSource, Map<String, Object> properties)
+    Single linkWith(String name, CanonicalPath targetOrSource, Map<String, Object> properties)
             throws IllegalArgumentException;
 
     /**
-     * Persists the provided relationship on the current position in the inventory traversal.
+     * @see #linkWith(String, CanonicalPath, Map)
+     */
+    default Single linkWith(Relationships.WellKnown name, CanonicalPath targetOrSource, Map<String, Object> properties)
+            throws IllegalArgumentException {
+        return linkWith(name.name(), targetOrSource, properties);
+    }
+
+    /**
+     * Updates the provided relationship on the current position in the inventory traversal.
      *
      * @param id the id of the relationship to update
      * @param update the update
      *
      * @throws org.hawkular.inventory.api.RelationNotFoundException if the relationship is not found in the database
-     * @throws java.lang.IllegalArgumentException if the source/target entity (based on the chosen relationship
-     * direction) doesn't correspond with the current position in the inventory traversal or if the name of the
-     * relationship doesn't correspond to what's in the database
      */
     void update(String id, Relationship.Update update) throws RelationNotFoundException;
 

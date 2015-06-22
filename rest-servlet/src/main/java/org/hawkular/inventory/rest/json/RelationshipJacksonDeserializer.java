@@ -16,14 +16,16 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import java.io.IOException;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.rest.Security;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.base.spi.CanonicalPath;
-import org.hawkular.inventory.rest.Security;
 
 /**
  *
@@ -47,6 +49,6 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
         CanonicalPath sourceCPath = Security.getCanonicalPath(sourcePath);
         CanonicalPath targetCPath = Security.getCanonicalPath(targetPath);
 
-        return new Relationship(id, name, sourceCPath.toEntity(), targetCPath.toEntity());
+        return new Relationship(id, name, sourceCPath, targetCPath);
     }
 }
