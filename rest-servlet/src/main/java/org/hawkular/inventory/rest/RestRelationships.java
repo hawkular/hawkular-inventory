@@ -302,7 +302,7 @@ public class RestRelationships extends RestBase {
                                                   UriInfo info) {
         List<RelationFilter> filters = new ArrayList<>();
         if (!propertyName.isEmpty() && !propertyValue.isEmpty()) {
-            filters.add(RelationWith.property(propertyName, propertyValue));
+            filters.add(RelationWith.propertyValue(propertyName, propertyValue));
         }
         if (!named.isEmpty()) {
             List<String> namedParam = info.getQueryParameters().get("named");
