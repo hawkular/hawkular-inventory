@@ -112,7 +112,8 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
      */
     @JsonCreator
     public static CanonicalPath fromString(String path) {
-        return AbstractPath.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (x) -> true, CanonicalPath::new);
+        return AbstractPath.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (x) -> true, true,
+                CanonicalPath::new);
     }
 
     public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
@@ -172,7 +173,7 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
     @Override
     @JsonValue
     public String toString() {
-        return new Encoder(SHORT_TYPE_NAMES).encode(this);
+        return new Encoder(SHORT_TYPE_NAMES).encode(Character.toString(PATH_DELIM), this);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {

@@ -79,7 +79,7 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
     @JsonCreator
     public static RelativePath fromString(String path) {
         return AbstractPath.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (c) -> !Up.class.equals(c),
-                RelativePath::new);
+                false, RelativePath::new);
     }
 
     /**
@@ -123,7 +123,7 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
     @JsonValue
     @Override
     public String toString() {
-        return new Encoder(SHORT_TYPE_NAMES).encode(this);
+        return new Encoder(SHORT_TYPE_NAMES).encode("", this);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {

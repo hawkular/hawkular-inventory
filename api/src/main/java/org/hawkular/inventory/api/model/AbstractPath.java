@@ -24,6 +24,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * Represents a path in an inventory. The path is either {@link CanonicalPath} or {@link RelativePath}.
  *
@@ -73,9 +76,9 @@ import java.util.function.Function;
  */
 public class AbstractPath<This extends AbstractPath<This>> implements Iterable<This> {
 
-    private static final char TYPE_DELIM = ';';
-    private static final char PATH_DELIM = '/';
-    private static final char ESCAPE_CHAR = '\\';
+    public static final char TYPE_DELIM = ';';
+    public static final char PATH_DELIM = '/';
+    public static final char ESCAPE_CHAR = '\\';
 
     //all path instances created from this one in the up(), down() and *iterator() methods will share this list
     //and will only differ in their "myIdx" field.
@@ -106,11 +109,21 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
 
     protected static <Impl extends AbstractPath<Impl>> Impl fromString(String path, Map<Class<?>,
             List<Class<?>>> validProgressions, Map<String, Class<?>> shortNameTypes,
-            Function<Class<?>, Boolean> requiresId, Constructor<Impl> constructor) {
+            Function<Class<?>, Boolean> requiresId, boolean shouldBeAbsolute, Constructor<Impl> constructor) {
 
         Extender<Impl> extender = new Extender<>(0, new ArrayList<>(), validProgressions, constructor);
 
-        ParsingProgress progress = new ParsingProgress(path);
+        int startPos = 0;
+
+        if (shouldBeAbsolute) {
+            if (!path.isEmpty() && path.charAt(0) == PATH_DELIM) {
+                startPos = 1;
+            } else {
+                throw new IllegalArgumentException("Supplied path is not absolute.");
+            }
+        }
+
+        ParsingProgress progress = new ParsingProgress(startPos, path);
 
         Decoder dec = new Decoder(requiresId, shortNameTypes);
 
@@ -120,6 +133,15 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
 
         return extender.get();
+    }
+
+    @JsonCreator
+    public static AbstractPath<?> fromString(String path) {
+        if (path.charAt(0) == PATH_DELIM) {
+            return CanonicalPath.fromString(path);
+        } else {
+            return RelativePath.fromString(path);
+        }
     }
 
     /**
@@ -286,6 +308,12 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         return true;
     }
 
+    @Override
+    @JsonValue
+    public String toString() {
+        return super.toString();
+    }
+
     @FunctionalInterface
     interface Constructor<Path> {
         Path create(int startIdx, int endIx, List<Segment> segments);
@@ -295,7 +323,8 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         private int pos;
         private final String source;
 
-        public ParsingProgress(String source) {
+        public ParsingProgress(int pos, String source) {
+            this.pos = pos;
             this.source = source;
         }
 
@@ -435,8 +464,8 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             this.typeMap = typeMap;
         }
 
-        public <P extends AbstractPath<P>> String encode(AbstractPath<P> path) {
-            StringBuilder bld = new StringBuilder();
+        public <P extends AbstractPath<P>> String encode(String prefix, AbstractPath<P> path) {
+            StringBuilder bld = new StringBuilder(prefix);
 
             for (Segment seg : path.getPath()) {
                 String type = typeMap.get(seg.getElementType());
