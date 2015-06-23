@@ -90,7 +90,8 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param startingPoint    the starting element
      * @param relationshipName the name of the relationship to follow when composing the transitive closure
-     * @param direction        any of the valid directions including {@link Relationships.Direction#both}.
+     * @param direction        any of the valid directions including
+     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both}.
      * @return an iterator over the transitive closure, may be "lazy" and evaluate the closure on demand.
      */
     Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);
