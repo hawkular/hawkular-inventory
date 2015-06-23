@@ -16,8 +16,12 @@
  */
 package org.hawkular.inventory.api;
 
+import java.util.Iterator;
+import java.util.function.Consumer;
+
 import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
@@ -28,7 +32,8 @@ import org.hawkular.inventory.api.model.Resource;
  */
 public final class Resources {
 
-    private Resources() {}
+    private Resources() {
+    }
 
     private interface BrowserBase<Metrics, ContainedAccess, AllAccess> {
 
@@ -86,15 +91,78 @@ public final class Resources {
     public interface Multiple
             extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, ReadContained, Read> {}
 
-    /**
-     * Provides read-only access to resources.
-     */
-    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+    public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {
+
+        /**
+         * A shortcut for {@code getAll(id(id1)).allChildren().getAll(id(id2))...} given the path {@code id1->id2->...}.
+         *
+         * @param path the path to descend to
+         * @return access to all children reachable using the relative path
+         */
+        default Read descend(RelativePath path) {
+            if (path.getPath().size() == 0) {
+                throw new IllegalArgumentException("empty relative path");
+            }
+
+            int[] depth = new int[1];
+
+            Consumer<AbstractPath.Segment> checker = (s) -> {
+                if (RelativePath.Up.class.equals(s.getElementType())) {
+                    --depth[0];
+                    if (depth[0] < 0) {
+                    }
+                } else if (Resource.class.equals(s.getElementType())) {
+                    depth[0]++;
+                } else {
+                    throw new IllegalArgumentException("Descend can only traverse child resources.");
+                }
+            };
+
+            Iterator<AbstractPath.Segment> it = path.getPath().iterator();
+            AbstractPath.Segment seg = it.next();
+
+            checker.accept(seg);
+
+            Read last = get(toAddress(seg)).allChildren();
+
+            while (it.hasNext()) {
+                last = last.get(RelativePath.empty().extend(it.next()).get()).allChildren();
+            }
+
+            return last;
+        }
+
+        /**
+         * A helper method implemented by {@link org.hawkular.inventory.api.Resources.ReadContained} and
+         * {@link org.hawkular.inventory.api.Resources.Read}. This is used in the default implementation of the
+         * {@link #descend(RelativePath)} method.
+         *
+         * @param pathSegment the path segment to convert to an address valid for this access interface
+         * @return the converted address
+         */
+        Address toAddress(AbstractPath.Segment pathSegment);
+    }
 
     /**
-     * Provides read-only access to resources.
+     * Provides read-only access to resources following the containment chain.
      */
-    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
+    public interface ReadContained extends ReadBase<String> {
+
+        default String toAddress(AbstractPath.Segment segment) {
+            return segment.getElementId();
+        }
+    }
+
+    /**
+     * Provides read-only access to resources from positions that follow associations without the possibility to
+     * introduce ambiguity when addressing using a relative path.
+     */
+    public interface Read extends ReadBase<AbstractPath<?>> {
+
+        default AbstractPath<?> toAddress(AbstractPath.Segment segment) {
+            return RelativePath.empty().extend(segment).get();
+        }
+    }
 
     /**
      * Provides read-write access to resources.

@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -198,6 +199,11 @@ public class Security {
         } else {
             throw new IllegalArgumentException("Unknown entity type: " + type);
         }
+    }
+
+    public static boolean isTenantEscapeAttempt(CanonicalPath origin, RelativePath extension) {
+        CanonicalPath target = extension.applyTo(origin);
+        return !target.ids().getTenantId().equals(origin.ids().getTenantId());
     }
 
     private static String join(String... strings) {

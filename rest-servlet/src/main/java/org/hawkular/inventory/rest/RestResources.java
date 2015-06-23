@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -392,7 +393,7 @@ public class RestResources extends RestBase {
     // TODO we need to be able to address the metric more intelligently - figure out how to do relative addressing in
     // REST as we do in Java API
     @GET
-    @Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricId}")
+    @Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Retrieves a single metric associated with a resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
@@ -402,14 +403,23 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @PathParam("metricId") String metricId) {
-        Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
-                .get(resourcePath).metrics().get(RelativePath.to().up().metric(metricId).get()).entity();
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") RelativePath metricPath) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(metricPath).entity();
+
         return Response.ok(m).build();
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
@@ -420,14 +430,21 @@ public class RestResources extends RestBase {
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricId") String metricId) {
-        Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId)
-                .resources().get(resourcePath).metrics().get(RelativePath.to().up().metric(metricId).get()).entity();
+            @PathParam("metricPath") RelativePath metricPath) {
+        String tenantId = getTenantId();
+
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(metricPath).entity();
         return Response.ok(m).build();
     }
 
     @DELETE
-    @Path("/{environmentId}/resources/{resourceId}/metrics/{metricId}")
+    @Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -437,20 +454,27 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") RelativePath metricPath) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().get(resourceId)
-                .metrics().disassociate(RelativePath.to().up().metric(metricId).get());
+
+        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(metricPath);
+
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricId}")
+    @Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -461,18 +485,22 @@ public class RestResources extends RestBase {
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricId") String metricId) {
+            @PathParam("metricPath") RelativePath metricPath) {
 
         String tenantId = getTenantId();
 
-        CanonicalPath path = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
-        if (!security.canAssociateFrom(path)) {
+        if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(path, Resources.Single.class).metrics().disassociate(RelativePath.to().up().metric(metricId)
-                .get());
+        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(metricPath);
+
         return Response.noContent().build();
     }
 
@@ -489,5 +517,15 @@ public class RestResources extends RestBase {
         }
 
         return bld.get();
+    }
+
+    private static RelativePath resourcePath(String resourcePath) {
+        AbstractPath.Extender<RelativePath> ret = RelativePath.empty();
+
+        for (String id : resourcePath.split("/")) {
+            ret.extend(Resource.class, id);
+        }
+
+        return ret.get();
     }
 }
