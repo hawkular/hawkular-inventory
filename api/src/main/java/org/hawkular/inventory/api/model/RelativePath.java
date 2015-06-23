@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +43,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class RelativePath extends AbstractPath<RelativePath> {
+public final class RelativePath extends AbstractPath<RelativePath> implements Serializable {
 
     public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
     public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
@@ -122,6 +124,10 @@ public final class RelativePath extends AbstractPath<RelativePath> {
     @Override
     public String toString() {
         return new Encoder(SHORT_TYPE_NAMES).encode(this);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        constructor = RelativePath::new;
     }
 
     public static final class Up {

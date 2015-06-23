@@ -25,17 +25,67 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 /**
+ * Represents a path in an inventory. The path is either {@link CanonicalPath} or {@link RelativePath}.
+ *
+ * <p>The path can be iterated both ways either from the current segment up from the root down to the current segment
+ * using the {@link #ascendingIterator()} or {@link #descendingIterator()} respectively. The {@link Iterable} interface
+ * is implemented using the {@link #ascendingIterator()}.
+ *
+ * <p>The {@link #up()} and {@link #down()} methods can also be used to get at the paths of the ancestors in an
+ * easy manner. Note though, that these methods don't do any "database lookup" of any sort. They merely work with
+ * the path of the first path instance created.
+ *
+ * <p>The following examples illustrate the behavior of {@code up()} and {@code down()} methods:
+ *
+ * <code><pre>
+ * CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("r").build();
+ * p.down(); // == undefined (p.down().isDefined() == false)
+ * p.up(); // == t/e
+ * p.up(2); // == t
+ * p.up().up(2); // == undefined
+ *
+ * p.up().down(); // == t/e/r
+ * p.up().up().down(); // == t/e
+ * p.up().down().down(); // == undefined
+ * </pre></code>
+ *
+ * <p>The serialized form of the path has the following format:
+ * <pre>{@code
+ * type;id/type;id/type;id
+ * }</pre>
+ * I.e. each of the path segments consists of the type of the element it represents followed by the id of the element.
+ *
+ * <p>The type of the entity is one of:
+ * <ul>
+ *     <li><b>t</b> - tenant,
+ *     <li><b>e</b> - environment,
+ *     <li><b>rt</b> - resource type,
+ *     <li><b>mt</b> - metric type,
+ *     <li><b>f</b> - feed,
+ *     <li><b>m</b> - metric,
+ *     <li><b>r</b> - resource,
+ *     <li><b>rl</b> - relationship
+ * <p> In addition to that, the relative paths can contain the special "up" token - <code>..</code> - instead of the
+ * {@code type:id} pair. E.g. a relative path may look like this: {@code ../e;production/r;myResource}.
+ *
  * @author Lukas Krejci
  * @since 0.1.0
  */
 public class AbstractPath<This extends AbstractPath<This>> implements Iterable<This> {
+
+    private static final char TYPE_DELIM = ';';
+    private static final char PATH_DELIM = '/';
+    private static final char ESCAPE_CHAR = '\\';
 
     //all path instances created from this one in the up(), down() and *iterator() methods will share this list
     //and will only differ in their "myIdx" field.
     protected final List<Segment> path;
     protected final int startIdx;
     protected final int endIdx;
-    private final Constructor<This> constructor;
+
+    //this really should be final, but that would make it ugly to deserialize. Needs to be set by subclasses in
+    //readObject
+    protected transient Constructor<This> constructor;
 
     AbstractPath() {
         path = null;
@@ -56,13 +106,13 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
 
     protected static <Impl extends AbstractPath<Impl>> Impl fromString(String path, Map<Class<?>,
             List<Class<?>>> validProgressions, Map<String, Class<?>> shortNameTypes,
-            Function<Class<?>, Boolean> isRequired, Constructor<Impl> constructor) {
+            Function<Class<?>, Boolean> requiresId, Constructor<Impl> constructor) {
 
         Extender<Impl> extender = new Extender<>(0, new ArrayList<>(), validProgressions, constructor);
 
         ParsingProgress progress = new ParsingProgress(path);
 
-        Decoder dec = new Decoder(isRequired, shortNameTypes);
+        Decoder dec = new Decoder(requiresId, shortNameTypes);
 
         while (!progress.isFinished()) {
             Segment seg = dec.decodeNext(progress);
@@ -294,7 +344,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
                 switch (state) {
                     case 0: // reading type ordinal
                         switch (c) {
-                            case '|':
+                            case TYPE_DELIM:
                                 if (currentId.length() == 0) {
                                     throw new IllegalArgumentException("Unspecified entity type id at pos " +
                                             progress.getPos() + " in \"" + progress.getSource() + "\".");
@@ -312,7 +362,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
                                 currentId.delete(0, currentId.length());
                                 state = 1; //reading id
                                 break;
-                            case '/':
+                            case PATH_DELIM:
                                 currentType = getSegmentType(currentId.toString());
                                 if (requiresId.apply(currentType)) {
                                     throw new IllegalArgumentException("Type specified by '" + currentId.toString() +
@@ -330,10 +380,10 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
                         break;
                     case 1: //reading id
                         switch (c) {
-                            case '\\':
+                            case ESCAPE_CHAR:
                                 state = 2; // reading escape char
                                 break;
-                            case '/':
+                            case PATH_DELIM:
                                 if (currentId.length() == 0) {
                                     throw new IllegalArgumentException("Unspecified entity id at pos " +
                                             progress.getPos() + " in \"" + progress.getSource() + "\".");
@@ -396,18 +446,18 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
 
                 if (seg.getElementId() != null) {
                     if (type != null) {
-                        bld.append('|');
+                        bld.append(TYPE_DELIM);
                     }
 
                     for (int j = 0; j < seg.getElementId().length(); ++j) {
                         char c = seg.getElementId().charAt(j);
-                        if (c == '|' || c == '/' || c == '\\') {
-                            bld.append('\\');
+                        if (c == TYPE_DELIM || c == PATH_DELIM || c == ESCAPE_CHAR) {
+                            bld.append(ESCAPE_CHAR);
                         }
                         bld.append(c);
                     }
                 }
-                bld.append('/');
+                bld.append(PATH_DELIM);
             }
             return bld.delete(bld.length() - 1, bld.length()).toString();
         }
@@ -440,7 +490,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             } else if (Tenant.class.equals(elementType)) {
                 return visitor.visitTenant(parameter);
             } else {
-                throw new AssertionError("Unknown element type: " + elementType);
+                return visitor.visitUnknown(parameter);
             }
         }
 

@@ -51,9 +51,6 @@ public final class Environments {
          * Returns access to all resources in this environment regardless of whether they are under some feed or
          * directly under the environment.
          *
-         * <p>Note that it is not possible to get a single resource from this access interface because the id is not
-         * guaranteed to be unique amongst resources under different feeds.
-         *
          * @return the access interface to all resources in this environment
          */
         Resources.Read allResources();

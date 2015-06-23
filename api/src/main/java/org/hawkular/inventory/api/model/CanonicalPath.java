@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,27 +33,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * always starts at a tenant and follows only the "contains" relationships down to the entity in question. For
  * relationships the "traversal" comprises of merely referencing the relationship by its id.
  *
- * <p>The path can be iterated both ways either from the current segment up from the root down to the current segment
- * using the {@link #ascendingIterator()} or {@link #descendingIterator()} respectively. The {@link Iterable} interface
- * is implemented using the {@link #ascendingIterator()}.
- *
- * <p>The {@link #up()} and {@link #down()} methods can also be used to get at the paths of the ancestors in an
- * easy manner. Note though, that these methods don't do any "database lookup" of any sort. They merely work with
- * the path of the first path instance created.
- *
- * <p>The following examples illustrate the behavior of {@code up()} and {@code down()} methods:
- *
- * <code><pre>
- * CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("r").build();
- * p.down(); // == undefined (p.down().isDefined() == false)
- * p.up(); // == t/e
- * p.up(2); // == t
- * p.up().up(2); // == undefined
- *
- * p.up().down(); // == t/e/r
- * p.up().up().down(); // == t/e
- * p.up().down().down(); // == undefined
- * </pre></code>
+ * <p>For description of the basic behavior and serialized form of the path, please consult {@link AbstractPath}.
  *
  * @author Lukas Krejci
  * @since 0.1.0
@@ -192,6 +173,10 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
     @JsonValue
     public String toString() {
         return new Encoder(SHORT_TYPE_NAMES).encode(this);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        constructor = CanonicalPath::new;
     }
 
     public final class IdExtractor {

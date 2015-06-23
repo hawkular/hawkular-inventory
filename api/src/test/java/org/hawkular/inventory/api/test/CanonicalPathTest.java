@@ -39,18 +39,18 @@ public class CanonicalPathTest {
 
     @Test
     public void testParse() throws Exception {
-        CanonicalPath p = CanonicalPath.fromString("t|t/e|e/f|f/r|r");
+        CanonicalPath p = CanonicalPath.fromString("t;t/e;e/f;f/r;r");
         checkPath(p, Tenant.class, "t", Environment.class, "e", Feed.class, "f", Resource.class, "r");
 
         try {
-            CanonicalPath.fromString("t|t/e|e/f|f/t|t");
+            CanonicalPath.fromString("t;t/e;e/f;f/t;t");
             Assert.fail("Invalid path parse should have failed");
         } catch (IllegalArgumentException e) {
             //good
         }
 
         try {
-            CanonicalPath.fromString("e|e/f|f");
+            CanonicalPath.fromString("e;e/f;f");
             Assert.fail("Invalid path parse should have failed");
         } catch (IllegalArgumentException e) {
             //good
@@ -63,11 +63,11 @@ public class CanonicalPathTest {
             //good
         }
 
-        p = CanonicalPath.fromString("rl|r");
+        p = CanonicalPath.fromString("rl;r");
         checkPath(p, Relationship.class, "r");
 
         try {
-            CanonicalPath.fromString("rl|r/t/t");
+            CanonicalPath.fromString("rl;r/t/t");
             Assert.fail("Invalid path parse should have failed");
         } catch (IllegalArgumentException e) {
             //good
@@ -76,11 +76,11 @@ public class CanonicalPathTest {
 
     @Test
     public void testToString() throws Exception {
-        Assert.assertEquals("t|t/e|e/r|r", CanonicalPath.of().tenant("t").environment("e").resource("r").get()
+        Assert.assertEquals("t;t/e;e/r;r", CanonicalPath.of().tenant("t").environment("e").resource("r").get()
                 .toString());
-        Assert.assertEquals("t|t/e|e/f|f/r|r", CanonicalPath.of().tenant("t").environment("e").feed("f").resource("r")
+        Assert.assertEquals("t;t/e;e/f;f/r;r", CanonicalPath.of().tenant("t").environment("e").feed("f").resource("r")
                 .get().toString());
-        Assert.assertEquals("rl|r", CanonicalPath.of().relationship("r").get().toString());
+        Assert.assertEquals("rl;r", CanonicalPath.of().relationship("r").get().toString());
     }
 
     @Test
@@ -92,15 +92,15 @@ public class CanonicalPathTest {
         Assert.assertFalse(p.down().isDefined());
 
         CanonicalPath cp = p.getRoot();
-        Assert.assertEquals("t|t", cp.toString());
+        Assert.assertEquals("t;t", cp.toString());
 
         Assert.assertEquals(p.toString(), cp.getLeaf().toString());
 
         Assert.assertFalse(cp.up().isDefined());
 
-        Assert.assertEquals("t|t/e|e", cp.down().toString());
+        Assert.assertEquals("t;t/e;e", cp.down().toString());
 
-        Assert.assertEquals("t|t/e|e", p.up().up().toString());
+        Assert.assertEquals("t;t/e;e", p.up().up().toString());
     }
 
     @Test
@@ -108,10 +108,10 @@ public class CanonicalPathTest {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
 
         CanonicalPath p2 = p.extend(Metric.class, "m").get();
-        Assert.assertEquals("t|t/e|e/f|f/m|m", p2.toString());
+        Assert.assertEquals("t;t/e;e/f;f/m;m", p2.toString());
 
         p2 = p.getRoot().extend(MetricType.class, "mt").get();
-        Assert.assertEquals("t|t/mt|mt", p2.toString());
+        Assert.assertEquals("t;t/mt;mt", p2.toString());
     }
 
     @Test
@@ -162,11 +162,11 @@ public class CanonicalPathTest {
     public void testRelativePathConstruction() throws Exception {
         RelativePath rp = RelativePath.to().up().metric("kachna").get();
 
-        Assert.assertEquals("../m|kachna", rp.toString());
+        Assert.assertEquals("../m;kachna", rp.toString());
 
-        rp = RelativePath.fromString("../r|r/../t|t");
+        rp = RelativePath.fromString("../r;r/../t;t");
 
-        Assert.assertEquals("../r|r/../t|t", rp.toString());
+        Assert.assertEquals("../r;r/../t;t", rp.toString());
 
         try {
             RelativePath.fromString("../r");
@@ -176,14 +176,14 @@ public class CanonicalPathTest {
         }
 
         try {
-            RelativePath.fromString("../r|");
+            RelativePath.fromString("../r;");
             Assert.fail("Invalid relative path should have failed to parse.");
         } catch (IllegalArgumentException e) {
             //good
         }
 
         try {
-            RelativePath.fromString("..|boom/r|r");
+            RelativePath.fromString("..;boom/r;r");
             Assert.fail("Invalid relative path should have failed to parse.");
         } catch (IllegalArgumentException e) {
             //good
