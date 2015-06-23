@@ -48,6 +48,21 @@
       <version>0.0.5</version>
     </dependency>
 
+    <!-- these will be provided by our RA - the MDB itself will never need ActiveMQ specific classes -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-all</artifactId>
+      <version>${version.org.apache.activemq}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-jaas</artifactId>
+      <version>${version.org.apache.activemq}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
