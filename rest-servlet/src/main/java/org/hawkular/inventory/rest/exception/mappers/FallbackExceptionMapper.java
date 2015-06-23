@@ -17,11 +17,11 @@
 
 package org.hawkular.inventory.rest.exception.mappers;
 
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.rest.RestApiLogger;
-import org.hawkular.inventory.rest.json.ApiError;
 
 /**
  * @author Jirka Kremser
@@ -32,7 +32,6 @@ public class FallbackExceptionMapper implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception exception) {
-        RestApiLogger.LOGGER.warn(exception);
-        return Response.serverError().entity(new ApiError(exception.getMessage())).build();
+        return ExceptionMapperUtils.buildResponse(exception, INTERNAL_SERVER_ERROR);
     }
 }

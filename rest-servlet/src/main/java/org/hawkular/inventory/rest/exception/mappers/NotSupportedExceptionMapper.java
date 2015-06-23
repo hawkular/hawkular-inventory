@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2014-2015 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest.exception.mappers;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.rest.json.ApiError;
+import org.hawkular.inventory.rest.exception.mappers.ExceptionMapperUtils;
 
 /**
- * @author Jirka Kremser
- * @since 0.1.0
+ * Exception mapper for any exception thrown by RESTEasy when HTTP Unsupported Media Type (415) is encountered.
+ * <p>
+ * This mapper let us reply to the user with a pre-determined message format if, for example, receive a
+ * HTTP POST request with unsupported media type.
+ *
+ * @author Jeeva Kandasamy
  */
 @Provider
-public class EntityNotFoundExceptionMapper implements ExceptionMapper<EntityNotFoundException> {
+public class NotSupportedExceptionMapper implements ExceptionMapper<NotSupportedException> {
 
     @Override
-    public Response toResponse(EntityNotFoundException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityTypeAndPath.fromException(exception)), exception, NOT_FOUND);
+    public Response toResponse(NotSupportedException exception) {
+        return ExceptionMapperUtils.buildResponse(exception, Response.Status.UNSUPPORTED_MEDIA_TYPE);
     }
+
 }

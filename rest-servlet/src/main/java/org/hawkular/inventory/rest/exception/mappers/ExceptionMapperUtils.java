@@ -38,14 +38,16 @@ public class ExceptionMapperUtils {
 
     }
 
-    public static Response buildResponse(Throwable exception, Response.Status status){
-        if (RestApiLogger.LOGGER.isTraceEnabled()) {
-            RestApiLogger.LOGGER.trace("RestEasy exception,", exception);
-        }
+    public static Response buildResponse(ApiError error, Throwable exception, Response.Status status){
+        RestApiLogger.LOGGER.warn("RestEasy exception, ", exception);
         return Response.status(status)
-                .entity(new ApiError(Throwables.getRootCause(exception).getMessage()))
+                .entity(error)
                 .type(MediaType.APPLICATION_JSON_TYPE)
                 .build();
+    }
+
+    public static Response buildResponse(Throwable exception, Response.Status status){
+        return buildResponse(new ApiError(Throwables.getRootCause(exception).getMessage()), exception, status);
     }
 
     public static class EntityTypeAndPath {
