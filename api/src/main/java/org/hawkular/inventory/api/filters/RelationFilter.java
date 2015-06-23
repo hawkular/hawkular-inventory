@@ -24,7 +24,7 @@ import java.util.List;
  * Base class for filters that filter relationships.
  *
  * <p>The implementations of the Hawkular inventory API are supposed to support filtering relationships by
- * {@link org.hawkular.inventory.api.filters.RelationWith.Properties},
+ * {@link RelationWith.PropertyValues},
  * {@link org.hawkular.inventory.api.filters.RelationWith.Ids},
  * {@link org.hawkular.inventory.api.filters.RelationWith.TargetOfType},
  * {@link org.hawkular.inventory.api.filters.RelationWith.SourceOfType} and

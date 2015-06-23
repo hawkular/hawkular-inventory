@@ -122,41 +122,24 @@ class FilterVisitor {
         query.or(idChecks);
     }
 
-    @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query,
-            RelationWith.Properties properties) {
-        if (properties.getValues().length == 1) {
-            query.has(properties.getProperty(), properties.getValues()[0]);
-            return;
-        }
-
-        Pipe[] idChecks = new Pipe[properties.getValues().length];
-
-        Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(properties.getProperty(), Compare.EQUAL, properties
-                        .getValues()[i]));
-
-        query.or(idChecks);
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.PropertyValues properties) {
+        applyPropertyFilter(query, properties.getProperty(), properties.getValues());
     }
 
-    public void visit(HawkularPipeline<?, ?> query,
-            RelationWith.SourceOfType types) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types) {
         visit(query, types, true);
     }
 
-    public void visit(HawkularPipeline<?, ?> query,
-            RelationWith.TargetOfType types) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types) {
         visit(query, types, false);
     }
 
-    public void visit(HawkularPipeline<?, ?> query,
-            RelationWith.SourceOrTargetOfType types) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types) {
         visit(query, types, null);
     }
 
     @SuppressWarnings("unchecked")
-    private void visit(HawkularPipeline<?, ?> query,
-            RelationWith.SourceOrTargetOfType types, Boolean source) {
+    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source) {
         // look ahead if the type of the incidence vertex is of the desired type(s)
         HawkularPipeline<?, ?> q1 = query.remember();
         HawkularPipeline<?, ?> q2;
@@ -212,6 +195,25 @@ class FilterVisitor {
 
     public void visit(HawkularPipeline<?, ?> query, NoopFilter filter) {
         //nothing to do
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, With.PropertyValues filter) {
+        applyPropertyFilter(query, filter.getName(), filter.getValues());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyPropertyFilter(HawkularPipeline<?, ?> query, String propertyName, Object... values) {
+        if (values.length == 0) {
+            query.has(propertyName);
+        } else if (values.length == 1) {
+            query.has(propertyName, values[0]);
+        } else {
+            Pipe[] checks = new Pipe[values.length];
+
+            Arrays.setAll(checks, i -> new PropertyFilterPipe<Element, String>(propertyName, Compare.EQUAL, values[i]));
+
+            query.or(checks);
+        }
     }
 
     @SuppressWarnings("unchecked")

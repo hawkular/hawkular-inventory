@@ -14,45 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.rest.exception.mappers;
 
-package org.hawkular.inventory.rest;
-
+import com.google.common.base.Throwables;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.jboss.resteasy.spi.DefaultOptionsMethodException;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
-
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.CONFLICT;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @author Jeeva Kandasamy
+ * @since 0.1.0
  */
-@Provider
-public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
-    @Override
-    public Response toResponse(Exception exception) {
-        if (exception instanceof DefaultOptionsMethodException) {
-            return Response.ok().build();
-        } else if (exception instanceof EntityNotFoundException) {
-            return Response.status(NOT_FOUND).entity(new ApiError(exception.getMessage(),
-                    EntityTypeAndPath.fromException((EntityNotFoundException) exception))).build();
-        } else if (exception instanceof EntityAlreadyExistsException) {
-            return Response.status(CONFLICT).entity(new ApiError(exception.getMessage(),
-                    EntityIdAndPath.fromException((EntityAlreadyExistsException) exception))).build();
-        } else if (exception instanceof IllegalArgumentException) {
-            return Response.status(BAD_REQUEST).entity(new ApiError(exception.getMessage())).build();
-        } else {
-            RestApiLogger.LOGGER.warn(exception);
-            return Response.serverError().entity(new ApiError(exception.getMessage())).build();
+public class ExceptionMapperUtils {
+    private ExceptionMapperUtils(){
+
+    }
+
+    public static Response buildResponse(Throwable exception, Response.Status status){
+        if (RestApiLogger.LOGGER.isTraceEnabled()) {
+            RestApiLogger.LOGGER.trace("RestEasy exception,", exception);
         }
+        return Response.status(status)
+                .entity(new ApiError(Throwables.getRootCause(exception).getMessage()))
+                .type(MediaType.APPLICATION_JSON_TYPE)
+                .build();
     }
 
     public static class EntityTypeAndPath {
@@ -92,6 +85,32 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
 
         public String getEntityId() {
             return entityId;
+        }
+
+        public Filter[][] getPaths() {
+            return paths;
+        }
+    }
+
+    public static class RelationshipNameAndPath {
+        private final String relationshipNameOrId;
+        private final Filter[][] paths;
+
+        public static RelationshipNameAndPath fromException(RelationNotFoundException e) {
+            return new RelationshipNameAndPath(e.getNameOrId(), e.getFilters());
+        }
+
+        public static RelationshipNameAndPath fromException(RelationAlreadyExistsException e) {
+            return new RelationshipNameAndPath(e.getRelationName(), e.getPath());
+        }
+
+        public RelationshipNameAndPath(String relationshipNameOrId, Filter[][] paths) {
+            this.relationshipNameOrId = relationshipNameOrId;
+            this.paths = paths;
+        }
+
+        public String getRelationshipNameOrId() {
+            return relationshipNameOrId;
         }
 
         public Filter[][] getPaths() {

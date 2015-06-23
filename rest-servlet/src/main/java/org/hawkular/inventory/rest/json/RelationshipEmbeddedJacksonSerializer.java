@@ -16,24 +16,31 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.rest.Security;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import java.io.IOException;
-import java.util.Map;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.rest.Security;
 
 /**
  * @author Jirka Kremser
  * @since 0.1.0
  */
-public class RelationshipJacksonSerializer extends JsonSerializer<Relationship> {
-    public static final String FIELD_ID = "id";
-    public static final String FIELD_NAME = "name";
-    public static final String FIELD_SOURCE = "source";
-    public static final String FIELD_TARGET = "target";
-    public static final String FIELD_PROPERTIES = "properties";
+public class RelationshipEmbeddedJacksonSerializer extends JsonSerializer<Relationship> {
+    public static final String FIELD_CONTEXT_KEY = "@context";
+    public static final String FIELD_CONTEXT_URI = "http://hawkular.org/inventory/0.1.0/relationship.jsonld";
+    public static final String FIELD_ID = RelationshipJacksonSerializer.FIELD_ID;
+    public static final String FIELD_SHORT_ID = "shortId";
+    public static final String FIELD_NAME = RelationshipJacksonSerializer.FIELD_NAME;
+    public static final String FIELD_SOURCE = RelationshipJacksonSerializer.FIELD_SOURCE;
+    public static final String FIELD_TARGET = RelationshipJacksonSerializer.FIELD_TARGET;
+    public static final String FIELD_TYPE = "type";
+    public static final String FIELD_PROPERTIES = RelationshipJacksonSerializer.FIELD_PROPERTIES;
 
     /**
      * <pre>compact:
@@ -66,17 +73,17 @@ public class RelationshipJacksonSerializer extends JsonSerializer<Relationship> 
             serializerProvider) throws IOException {
         jg.writeStartObject();
 
+        jg.writeFieldName(FIELD_CONTEXT_KEY);
+        jg.writeString(FIELD_CONTEXT_URI);
+
         jg.writeFieldName(FIELD_ID);
         jg.writeString(relationship.getId());
 
         jg.writeFieldName(FIELD_NAME);
         jg.writeString(relationship.getName());
 
-        jg.writeFieldName(FIELD_SOURCE);
-        jg.writeString(Security.getStableId(relationship.getSource()));
-
-        jg.writeFieldName(FIELD_TARGET);
-        jg.writeString(Security.getStableId(relationship.getTarget()));
+        serializeEntity(relationship.getSource(), jg, FIELD_SOURCE);
+        serializeEntity(relationship.getTarget(), jg, FIELD_TARGET);
 
         if (relationship.getProperties() != null && !relationship.getProperties().isEmpty()) {
             jg.writeFieldName(FIELD_PROPERTIES);
@@ -89,5 +96,22 @@ public class RelationshipJacksonSerializer extends JsonSerializer<Relationship> 
         }
 
         jg.writeEndObject();
+    }
+
+    private void serializeEntity(CanonicalPath entity, JsonGenerator jsonGenerator, String fieldName)
+            throws IOException {
+        jsonGenerator.writeFieldName(fieldName);
+        jsonGenerator.writeStartObject();
+
+        jsonGenerator.writeFieldName(FIELD_ID);
+        jsonGenerator.writeString(Security.getStableId(entity));
+
+        jsonGenerator.writeFieldName(FIELD_SHORT_ID);
+        jsonGenerator.writeString(entity.getSegment().getElementId());
+
+        jsonGenerator.writeFieldName(FIELD_TYPE);
+        jsonGenerator.writeString(entity.getSegment().getElementType().getSimpleName());
+
+        jsonGenerator.writeEndObject();
     }
 }

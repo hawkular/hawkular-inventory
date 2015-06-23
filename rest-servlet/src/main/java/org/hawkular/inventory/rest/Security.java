@@ -36,6 +36,7 @@ import org.hawkular.accounts.api.PermissionChecker;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -111,35 +112,58 @@ public class Security {
     }
 
     public static boolean isValidId(String id) {
-        try {
-            CanonicalPath.fromString(id);
-            return true;
-        } catch (IllegalArgumentException e) {
+        if (id == null || id.trim().isEmpty()) {
             return false;
         }
+        String[] chunks = id.split("/");
+        if (chunks == null || chunks.length < 2) {
+            return false;
+        }
+        if (chunks.length == 2 && ("tenants".equals(chunks[0]) || "relationships".equals(chunks[0]))
+                && chunks[1].length() > 0) {
+            return true;
+        }
+        if (chunks.length == 3 && chunks[0].length() > 0 && chunks[2].length() > 0) {
+            return "environments".equals(chunks[1]) || "resourceTypes".equals(chunks[1])
+                    || "metricTypes".equals(chunks[1]);
+        }
+        if (chunks.length == 4 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[3].length() > 0) {
+            return "resources".equals(chunks[2]) || "metrics".equals(chunks[2]);
+        }
+        if (chunks.length == 5 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[2].length() > 0
+                && chunks[4].length() > 0) {
+            return "resources".equals(chunks[3]) || "metrics".equals(chunks[3]);
+        }
+        return false;
     }
 
     public static CanonicalPath getCanonicalPath(String id) {
         String[] chunks = id.split("/");
-        CanonicalPath.Extender<CanonicalPath> path = CanonicalPath.empty();
-        if ("tenants".equals(chunks[0])) {
-            path.extend(Tenant.class, chunks[1]);
-        } else if ("environments".equals(chunks[1])) {
-            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[2]);
-        } else if ("resourceTypes".equals(chunks[1])) {
-            path.extend(Tenant.class, chunks[0]).extend(ResourceType.class, chunks[2]);
-        } else if ("metricTypes".equals(chunks[1])) {
-            path.extend(Tenant.class, chunks[0]).extend(MetricType.class, chunks[2]);
-        } else if ("resources".equals(chunks[2])) {
+        AbstractPath.Extender<CanonicalPath> path = CanonicalPath.empty();
+        if (chunks.length == 2) {
+            if ("tenants".equals(chunks[0])) {
+                path.extend(Tenant.class, chunks[1]);
+            } else if ("relationships".equals(chunks[0])) {
+                path.extend(Relationship.class, chunks[1]);
+            }
+        } else if (chunks.length == 3) {
+            if ("environments".equals(chunks[1])) {
+                path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[2]);
+            } else if ("resourceTypes".equals(chunks[1])) {
+                path.extend(Tenant.class, chunks[0]).extend(ResourceType.class, chunks[2]);
+            } else if ("metricTypes".equals(chunks[1])) {
+                path.extend(Tenant.class, chunks[0]).extend(MetricType.class, chunks[2]);
+            }
+        } else if (chunks.length == 4 && "resources".equals(chunks[2])) {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Resource.class,
                     chunks[3]);
-        } else if ("metrics".equals(chunks[2])) {
+        } else if (chunks.length == 4 && "metrics".equals(chunks[2])) {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Metric.class,
                     chunks[3]);
-        } else if ("resources".equals(chunks[3])) {
+        } else if (chunks.length == 5 && "resources".equals(chunks[3])) {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
                     .extend(Resource.class, chunks[4]);
-        } else if ("metrics".equals(chunks[3])) {
+        } else if (chunks.length == 5 && "metrics".equals(chunks[3])) {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
                     .extend(Metric.class, chunks[4]);
         }

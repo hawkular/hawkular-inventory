@@ -18,6 +18,7 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
@@ -34,6 +35,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -41,6 +43,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Providers;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
@@ -58,10 +62,16 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.rest.json.ApiError;
+import org.hawkular.inventory.rest.json.EmbeddedObjectMapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Jiri Kremser
@@ -77,7 +87,7 @@ public class RestRelationships extends RestBase {
 
     static {
         try {
-            entityMap = new HashMap<>(6);
+            entityMap = new HashMap<>(7);
             entityMap.put(Tenant.class.getSimpleName(), Tenant.class);
             entityMap.put(Environment.class.getSimpleName(), Environment.class);
             entityMap.put(ResourceType.class.getSimpleName(), ResourceType.class);
@@ -90,9 +100,18 @@ public class RestRelationships extends RestBase {
         }
     }
 
+    @Context
+    private Providers providers;
+
     @GET
     @Path("{path:.*}/relationships")
     @ApiOperation("Retrieves relationships")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of relationships"),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                    .class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response get(@PathParam("path") String path,
                         @DefaultValue("both") @QueryParam("direction") String direction,
                         @DefaultValue("") @QueryParam("property") String propertyName,
@@ -100,6 +119,7 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("") @QueryParam("named") String named,
                         @DefaultValue("") @QueryParam("sourceType") String sourceType,
                         @DefaultValue("") @QueryParam("targetType") String targetType,
+            @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = toSecurityId(path);
         if (!Security.isValidId(securityId)) {
@@ -113,12 +133,32 @@ public class RestRelationships extends RestBase {
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         Page<Relationship> relations = resolvable.relationships(directed).getAll(filters).entities(pager);
 
+        ContextResolver<ObjectMapper> contextResolver =
+                providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
+
+        // json-ld serialization
+        if (Boolean.parseBoolean(jsonLd)) {
+            ObjectMapper mapper = contextResolver.getContext(EmbeddedObjectMapper.class);
+            Object json;
+            try {
+                json = mapper.writeValueAsString(relations);
+            } catch (JsonProcessingException e) {
+                json = relations;
+            }
+            return pagedResponse(Response.ok(), uriInfo, relations, json).build();
+        }
         return pagedResponse(Response.ok(), uriInfo, relations).build();
     }
 
     @DELETE
     @Path("{path:.*}/relationships")
     @ApiOperation("Deletes a relationship")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of relationships"),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                    .class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response delete(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -126,12 +166,7 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))) {
-            throw new IllegalArgumentException("Unable to delete a relationship with well defined name. " +
-                                                       "Restricted names: " +
-                                                       Arrays.asList(Relationships.WellKnown.values()));
-        }
+        checkForWellKnownLabels(relation.getName(), "delete");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
@@ -148,6 +183,14 @@ public class RestRelationships extends RestBase {
     @POST
     @Path("{path:.*}/relationships")
     @ApiOperation("Creates a relationship")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                    ApiError.class),
+            @ApiResponse(code = 409, message = "Relationship already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response create(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -155,11 +198,7 @@ public class RestRelationships extends RestBase {
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
-        if (Arrays.asList(Relationships.WellKnown.values())
-                .stream().map(val -> val.name()).anyMatch(x -> x.equals(relation.getName()))){
-            throw new IllegalArgumentException("Unable to create a relationship with well defined name. Restricted " +
-                                                       "names: " + Arrays.asList(Relationships.WellKnown.values()));
-        }
+        checkForWellKnownLabels(relation.getName(), "create");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
 
@@ -179,13 +218,48 @@ public class RestRelationships extends RestBase {
         }
 
         // link the current entity with the target or the source of the relationship
-        resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation.getProperties());
+        String newId = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
+                .getProperties()).entity().getId();
         if (RestApiLogger.LOGGER.isDebugEnabled()) {
-            RestApiLogger.LOGGER.debug("creating relationship with id: " + relation.getId() + " and name: " +
+            RestApiLogger.LOGGER.debug("creating relationship with id: " + newId + " and name: " +
                                                relation.getName());
         }
 
-        return ResponseUtil.created(uriInfo, relation.getId()).build();
+        return ResponseUtil.created(uriInfo, newId).build();
+    }
+
+    @PUT
+    @Path("{path:.*}/relationships")
+    @ApiOperation("Updates a relationship")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                    ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response update(@PathParam("path") String path,
+            @ApiParam(required = true) Relationship relation,
+            @Context UriInfo uriInfo) {
+        String securityId = toSecurityId(path);
+        if (!Security.isValidId(securityId)) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        // perhaps we could have allowed updating the properties of well-known rels
+        checkForWellKnownLabels(relation.getName(), "update");
+        CanonicalPath cPath = Security.getCanonicalPath(securityId);
+        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+
+        // update the relationship
+        resolvable.relationships(Relationships.Direction.both).update(relation.getId(), Relationship.Update.builder()
+                .withProperties(relation.getProperties()).build());
+        if (RestApiLogger.LOGGER.isDebugEnabled()) {
+            RestApiLogger.LOGGER.debug("updating relationship with id: " + relation.getId() + " and name: " +
+                    relation.getName());
+        }
+
+        return Response.noContent().build();
     }
 
     private String toSecurityId(String urlPath) {
@@ -206,7 +280,7 @@ public class RestRelationships extends RestBase {
                                                   UriInfo info) {
         List<RelationFilter> filters = new ArrayList<>();
         if (!propertyName.isEmpty() && !propertyValue.isEmpty()) {
-            filters.add(RelationWith.property(propertyName, propertyValue));
+            filters.add(RelationWith.propertyValue(propertyName, propertyValue));
         }
         if (!named.isEmpty()) {
             List<String> namedParam = info.getQueryParameters().get("named");
@@ -245,4 +319,10 @@ public class RestRelationships extends RestBase {
         return filters.isEmpty() ? RelationFilter.all() : filters.toArray(new RelationFilter[filters.size()]);
     }
 
+    private void checkForWellKnownLabels(String name, String operation) {
+        if (Arrays.stream(Relationships.WellKnown.values()).anyMatch(x -> x.name().equals(name))) {
+            throw new IllegalArgumentException("Unable to " + operation + " a relationship with well defined name. " +
+                    "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
+        }
+    }
 }

@@ -16,14 +16,14 @@
  */
 package org.hawkular.inventory.base;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * A base class for all the inventory traversal interfaces. Contains only a minimal set of helper methods and holds the
@@ -70,6 +70,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * the exception rethrown.
      *
      * @param payload the payload to execute in transaction
+     * @param <R> the return type
      * @return the return value provided by the payload
      */
     protected <R> R mutating(Function<InventoryBackend.Transaction, R> payload) {

@@ -33,6 +33,7 @@ import static org.hawkular.inventory.api.filters.With.type;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -64,6 +65,7 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
@@ -229,7 +231,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .get("playroom2").metrics().get(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").metric("playroom2_size").get()).relationships(incoming)
                 .linkWith("IamYourFather", CanonicalPath.of().tenant("com.example.tenant").environment("test").get(),
-                        null);
+                        new HashMap<String, Object>() {{
+                            put("adult", true);
+                        }});
     }
 
     private void teardownData() throws Exception {
@@ -539,7 +543,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         rels = inventory.tenants().getAll().relationships().named
                 (contains).environments().getAll().relationships().getAll(RelationWith
-                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
                 .entities();
         assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
         assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getSegment().getElementId())
@@ -554,16 +558,16 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
         Metric metric = inventory.tenants().getAll().relationships().named
                 (contains).environments().getAll().relationships().getAll(RelationWith
-                .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class)).metrics
-                ().getAll(id("playroom1_size")).entities().iterator().next();
+                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .metrics().getAll(id("playroom1_size")).entities().iterator().next();
         assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
                 "filters";
 
         try {
             inventory.tenants().getAll().relationships().named
                     (contains).environments().getAll().relationships().getAll(RelationWith
-                    .properties("label", "contains"), RelationWith.targetsOfTypes(Resource.class)).metrics
-                    ().getAll(id("playroom1_size")).entities().iterator().next();
+                    .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class))
+                    .metrics().getAll(id("playroom1_size")).entities().iterator().next();
             assert false : "this code should not be reachable. There should be no metric reachable under " +
                     "'RelationWith.targetsOfTypes(Resource.class))' filter";
         } catch (NoSuchElementException e) {
@@ -1051,6 +1055,29 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     by(contains), type(Resource.class), asTargetBy(contains), by(contains), type(Metric.class),
                     id("x")).get(), paths[1]);
         }
+    }
+
+    @Test
+    public void testFilterByPropertyValues() throws Exception {
+        Assert.assertTrue(inventory.tenants().getAll(With.property("kachny")).anyExists());
+        Assert.assertFalse(inventory.tenants().getAll(With.property("kachna")).anyExists());
+        Assert.assertTrue(inventory.tenants().getAll(With.propertyValue("kachny", "moc")).anyExists());
+        Assert.assertFalse(inventory.tenants().getAll(With.propertyValue("kachny", "malo")).anyExists());
+        Assert.assertTrue(inventory.tenants().getAll(With.propertyValues("kachny", "moc", "malo")).anyExists());
+        Assert.assertFalse(inventory.tenants().getAll(With.propertyValues("kachny", "hodne", "malo")).anyExists());
+
+        Assert.assertTrue(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.property("adult")).anyExists());
+        Assert.assertFalse(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.property("infant")).anyExists());
+        Assert.assertTrue(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.propertyValue("adult", true)).anyExists());
+        Assert.assertFalse(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.propertyValue("adult", false)).anyExists());
+        Assert.assertTrue(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.propertyValues("adult", false, true)).anyExists());
+        Assert.assertFalse(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
+                .getAll(RelationWith.propertyValues("adult", false, "true")).anyExists());
     }
 
     @Test

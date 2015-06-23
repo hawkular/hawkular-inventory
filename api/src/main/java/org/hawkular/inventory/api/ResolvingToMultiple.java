@@ -65,6 +65,7 @@ public interface ResolvingToMultiple<Multiple> {
      * resource types and then would also check if the tenant has ID "asf".
      *
      * @param filters the sets of filters to apply
+     * @return the access to found entities
      */
     Multiple getAll(Filter[][] filters);
 }

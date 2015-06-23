@@ -55,6 +55,38 @@ public final class With {
         return new CanonicalPaths(paths);
     }
 
+    /**
+     * Filters for entities that have a property of given name regardless of its value.
+     *
+     * @param name the name of the property
+     * @return the filter
+     */
+    public static PropertyValues property(String name) {
+        return new PropertyValues(name);
+    }
+
+    /**
+     * Filters for entities that have a property of given name equal to given value
+     *
+     * @param name  the name of the property
+     * @param value the desired value
+     * @return the filter
+     */
+    public static PropertyValues propertyValue(String name, Object value) {
+        return new PropertyValues(name, value);
+    }
+
+    /**
+     * Filters for entities that have a property of given name equal to one of the provided values.
+     *
+     * @param name   the name of the property
+     * @param values the possible values
+     * @return the filter
+     */
+    public static PropertyValues propertyValues(String name, Object... values) {
+        return new PropertyValues(name, values);
+    }
+
     public static final class Ids extends Filter {
 
         private final String[] ids;
@@ -159,6 +191,46 @@ public final class With {
         @Override
         public int hashCode() {
             return Arrays.hashCode(paths);
+        }
+    }
+
+    public static final class PropertyValues extends Filter {
+        private final String name;
+        private final Object[] values;
+
+        public PropertyValues(String name, Object... values) {
+            this.name = name;
+            this.values = values;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Object[] getValues() {
+            return values;
+        }
+
+        @Override
+        public String toString() {
+            return "PropertyValues[" + "name='" + name + '\'' + ", values=" + Arrays.toString(values) + ']';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof PropertyValues)) return false;
+
+            PropertyValues that = (PropertyValues) o;
+
+            return name.equals(that.name) && Arrays.equals(values, that.values);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name.hashCode();
+            result = 31 * result + Arrays.hashCode(values);
+            return result;
         }
     }
 }

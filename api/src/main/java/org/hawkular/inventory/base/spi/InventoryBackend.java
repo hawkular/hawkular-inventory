@@ -16,15 +16,17 @@
  */
 package org.hawkular.inventory.base.spi;
 
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.Query;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.Query;
 
 /**
  * The backend for the base inventory that does all the "low level" stuff like querying the actual inventory store,
@@ -41,6 +43,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * Starts a transaction in the backend.
      *
      * @param mutating whether there will be calls mutating the data or not
+     * @return the newly started transaction
      */
     Transaction startTransaction(boolean mutating);
 
@@ -51,7 +54,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @return the element
      * @throws ElementNotFoundException if the element is not found
      */
-    E find(org.hawkular.inventory.api.model.CanonicalPath element) throws ElementNotFoundException;
+    E find(CanonicalPath element) throws ElementNotFoundException;
 
     /**
      * Translates the query to the backend-specific representation and runs it, returning a correct page of results
@@ -76,6 +79,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param conversion a conversion function to apply on the elements, never null
      * @param filter     possibly null filter to filter the results with
      * @param <T>        the type of the returned elements
+     * @return the page of results according to the supplied parameters
      */
     <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager, Function<E, T> conversion,
             Function<T, Boolean> filter);
@@ -87,7 +91,8 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param startingPoint    the starting element
      * @param relationshipName the name of the relationship to follow when composing the transitive closure
-     * @param direction        any of the valid directions including {@link Relationships.Direction#both}.
+     * @param direction        any of the valid directions including
+     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both}.
      * @return an iterator over the transitive closure, may be "lazy" and evaluate the closure on demand.
      */
     Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);
@@ -181,7 +186,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param entityRepresentation the representation object
      * @return the extracted canonical path
      */
-    org.hawkular.inventory.api.model.CanonicalPath extractCanonicalPath(E entityRepresentation);
+    CanonicalPath extractCanonicalPath(E entityRepresentation);
 
     /**
      * Converts the provided representation object to a inventory element of provided type.
@@ -213,14 +218,14 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param blueprint the blueprint of the entity
      * @return the representation object of the newly created entity
      */
-    E persist(org.hawkular.inventory.api.model.CanonicalPath path, AbstractElement.Blueprint blueprint);
+    E persist(CanonicalPath path, AbstractElement.Blueprint blueprint);
 
     /**
      * Updates given entity with the data provided in the update object.
      *
      * @param entity the entity to update
      * @param update the update object
-     * @throw IllegalArgumentException if the entity is of different type than the update
+     * @throws IllegalArgumentException if the entity is of different type than the update
      */
     void update(E entity, AbstractElement.Update update);
 

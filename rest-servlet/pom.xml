@@ -37,18 +37,6 @@
     <tag>HEAD</tag>
   </scm>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.wildfly.bom</groupId>
-        <artifactId>jboss-javaee-7.0-with-resteasy</artifactId>
-        <version>${version.org.wildfly}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
 
     <dependency>
@@ -84,6 +72,21 @@
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>inventory-bus</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- these will be provided by our RA - the MDB itself will never need ActiveMQ specific classes -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-all</artifactId>
+      <version>${version.org.apache.activemq}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-jaas</artifactId>
+      <version>${version.org.apache.activemq}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
