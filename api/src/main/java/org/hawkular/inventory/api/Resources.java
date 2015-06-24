@@ -19,7 +19,7 @@ package org.hawkular.inventory.api;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.hawkular.inventory.api.model.AbstractPath;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -106,7 +106,7 @@ public final class Resources {
 
             int[] depth = new int[1];
 
-            Consumer<AbstractPath.Segment> checker = (s) -> {
+            Consumer<Path.Segment> checker = (s) -> {
                 if (RelativePath.Up.class.equals(s.getElementType())) {
                     --depth[0];
                     if (depth[0] < 0) {
@@ -118,8 +118,8 @@ public final class Resources {
                 }
             };
 
-            Iterator<AbstractPath.Segment> it = path.getPath().iterator();
-            AbstractPath.Segment seg = it.next();
+            Iterator<Path.Segment> it = path.getPath().iterator();
+            Path.Segment seg = it.next();
 
             checker.accept(seg);
 
@@ -140,7 +140,7 @@ public final class Resources {
          * @param pathSegment the path segment to convert to an address valid for this access interface
          * @return the converted address
          */
-        Address toAddress(AbstractPath.Segment pathSegment);
+        Address toAddress(Path.Segment pathSegment);
     }
 
     /**
@@ -148,7 +148,7 @@ public final class Resources {
      */
     public interface ReadContained extends ReadBase<String> {
 
-        default String toAddress(AbstractPath.Segment segment) {
+        default String toAddress(Path.Segment segment) {
             return segment.getElementId();
         }
     }
@@ -157,9 +157,9 @@ public final class Resources {
      * Provides read-only access to resources from positions that follow associations without the possibility to
      * introduce ambiguity when addressing using a relative path.
      */
-    public interface Read extends ReadBase<AbstractPath<?>> {
+    public interface Read extends ReadBase<Path> {
 
-        default AbstractPath<?> toAddress(AbstractPath.Segment segment) {
+        default Path toAddress(Path.Segment segment) {
             return RelativePath.empty().extend(segment).get();
         }
     }
@@ -191,6 +191,6 @@ public final class Resources {
          *                                  resource
          */
         @Override
-        Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException, IllegalArgumentException;
+        Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException;
     }
 }

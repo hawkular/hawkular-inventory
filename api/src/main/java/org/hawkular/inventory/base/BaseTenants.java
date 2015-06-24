@@ -26,10 +26,10 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 
@@ -108,7 +108,7 @@ public final class BaseTenants {
         }
 
         @Override
-        public Tenants.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Tenants.Single get(Path id) throws EntityNotFoundException {
             return new Single<>(context.proceedTo(id));
         }
     }

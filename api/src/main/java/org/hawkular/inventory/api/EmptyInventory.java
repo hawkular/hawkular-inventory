@@ -21,13 +21,13 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -102,7 +102,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Tenants.Single get(AbstractPath<?> path) throws EntityNotFoundException {
+        public Tenants.Single get(Path path) throws EntityNotFoundException {
             return new TenantsSingle();
         }
     }
@@ -222,7 +222,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResourceTypes.Single get(AbstractPath<?> path) throws EntityNotFoundException {
+        public ResourceTypes.Single get(Path path) throws EntityNotFoundException {
             return new ResourceTypesSingle();
         }
     }
@@ -332,7 +332,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Single get(AbstractPath<?> path) throws EntityNotFoundException {
+        public MetricTypes.Single get(Path path) throws EntityNotFoundException {
             return new MetricTypesSingle();
         }
     }
@@ -368,18 +368,18 @@ public class EmptyInventory implements Inventory {
     public static class MetricTypesReadAssociate implements MetricTypes.ReadAssociate {
 
         @Override
-        public Relationship associate(AbstractPath<?> id) throws EntityNotFoundException,
+        public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -389,7 +389,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public MetricTypes.Single get(Path id) throws EntityNotFoundException {
             return new MetricTypesSingle();
         }
     }
@@ -461,7 +461,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Environments.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Environments.Single get(Path id) throws EntityNotFoundException {
             return new EnvironmentsSingle();
         }
     }
@@ -718,7 +718,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Feeds.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Feeds.Single get(Path id) throws EntityNotFoundException {
             return new FeedsSingle();
         }
     }
@@ -828,7 +828,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
             return new MetricsSingle();
         }
     }
@@ -865,17 +865,17 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Relationship associate(
-                AbstractPath<?> id) throws EntityNotFoundException, RelationAlreadyExistsException {
+                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -885,7 +885,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
             return new MetricsSingle();
         }
     }
@@ -947,7 +947,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Resources.Single get(Path id) throws EntityNotFoundException {
             return new ResourcesSingle();
         }
     }
@@ -1066,17 +1066,17 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Relationship associate(
-                AbstractPath<?> id) throws EntityNotFoundException, RelationAlreadyExistsException {
+                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException, IllegalArgumentException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -1086,7 +1086,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Resources.Single get(Path id) throws EntityNotFoundException {
             return new ResourcesSingle();
         }
     }

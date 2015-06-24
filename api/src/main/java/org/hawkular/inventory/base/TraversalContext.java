@@ -26,8 +26,8 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -170,7 +170,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
                 observableContext);
     }
 
-    TraversalContext<BE, E> proceedTo(AbstractPath<?> path) {
+    TraversalContext<BE, E> proceedTo(Path path) {
         if (!entityClass.equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
         }

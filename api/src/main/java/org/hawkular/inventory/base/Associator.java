@@ -19,8 +19,8 @@ package org.hawkular.inventory.base;
 import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 
 /**
@@ -60,7 +60,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         return rel.getEntity();
     }
 
-    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, AbstractPath<?> targetPath,
+    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, Path targetPath,
             Relationships.WellKnown rel) {
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
         Query targetQuery = Util.queryTo(context, targetPath);

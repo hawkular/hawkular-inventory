@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * @author Lukas Krejci
@@ -43,7 +43,7 @@ public final class Feeds {
 
     public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
 
-    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
 

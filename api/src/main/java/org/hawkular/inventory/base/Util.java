@@ -28,9 +28,9 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.paging.Page;
@@ -146,14 +146,14 @@ final class Util {
     }
 
     @SuppressWarnings("unchecked")
-    public static Query queryTo(TraversalContext context, AbstractPath<?> path) {
+    public static Query queryTo(TraversalContext context, Path path) {
         if (path instanceof CanonicalPath) {
             return Query.to((CanonicalPath) path);
         }
 
         Query.SymmetricExtender extender = context.sourcePath.extend().path();
 
-        for (AbstractPath.Segment s : path.getPath()) {
+        for (Path.Segment s : path.getPath()) {
             if (RelativePath.Up.class.equals(s.getElementType())) {
                 extender.with(Related.asTargetBy(contains));
             } else {

@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on environments.
@@ -88,7 +88,7 @@ public final class Environments {
      */
     public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
 
-    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     /**
      * Provides methods for read-write access to environments.

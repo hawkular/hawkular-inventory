@@ -28,11 +28,11 @@ import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
@@ -115,7 +115,7 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Environments.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Environments.Single get(Path id) throws EntityNotFoundException {
             return new Single<>(context.proceedTo(id));
         }
     }

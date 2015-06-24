@@ -26,9 +26,9 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 
@@ -110,7 +110,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public ResourceTypes.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public ResourceTypes.Single get(Path id) throws EntityNotFoundException {
             return new BaseResourceTypes.Single<>(context.proceedTo(id));
         }
     }

@@ -60,21 +60,21 @@ import com.fasterxml.jackson.annotation.JsonValue;
  *
  * <p>The type of the entity is one of:
  * <ul>
- *     <li><b>t</b> - tenant,
- *     <li><b>e</b> - environment,
- *     <li><b>rt</b> - resource type,
- *     <li><b>mt</b> - metric type,
- *     <li><b>f</b> - feed,
- *     <li><b>m</b> - metric,
- *     <li><b>r</b> - resource,
- *     <li><b>rl</b> - relationship
+ * <li><b>t</b> - tenant,
+ * <li><b>e</b> - environment,
+ * <li><b>rt</b> - resource type,
+ * <li><b>mt</b> - metric type,
+ * <li><b>f</b> - feed,
+ * <li><b>m</b> - metric,
+ * <li><b>r</b> - resource,
+ * <li><b>rl</b> - relationship
  * <p> In addition to that, the relative paths can contain the special "up" token - <code>..</code> - instead of the
  * {@code type:id} pair. E.g. a relative path may look like this: {@code ../e;production/r;myResource}.
  *
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public class AbstractPath<This extends AbstractPath<This>> implements Iterable<This> {
+public abstract class Path {
 
     public static final char TYPE_DELIM = ';';
     public static final char PATH_DELIM = '/';
@@ -86,32 +86,26 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
     protected final int startIdx;
     protected final int endIdx;
 
-    //this really should be final, but that would make it ugly to deserialize. Needs to be set by subclasses in
-    //readObject
-    protected transient Constructor<This> constructor;
-
-    AbstractPath() {
+    Path() {
         path = null;
         startIdx = 0;
         endIdx = 0;
-        constructor = null;
     }
 
-    AbstractPath(int startIdx, int endIdx, List<Segment> path, Constructor<This> constructor) {
+    Path(int startIdx, int endIdx, List<Segment> path) {
         this.startIdx = startIdx;
         this.endIdx = endIdx;
         if (path.isEmpty()) {
             throw new IllegalArgumentException("Empty path is not valid.");
         }
         this.path = Collections.unmodifiableList(path);
-        this.constructor = constructor;
     }
 
-    protected static <Impl extends AbstractPath<Impl>> Impl fromString(String path, Map<Class<?>,
+    protected static Path fromString(String path, Map<Class<?>,
             List<Class<?>>> validProgressions, Map<String, Class<?>> shortNameTypes,
-            Function<Class<?>, Boolean> requiresId, boolean shouldBeAbsolute, Constructor<Impl> constructor) {
+            Function<Class<?>, Boolean> requiresId, ExtenderConstructor extenderConstructor, boolean shouldBeAbsolute) {
 
-        Extender<Impl> extender = new Extender<>(0, new ArrayList<>(), validProgressions, constructor);
+        Extender extender = extenderConstructor.create(0, new ArrayList<>(), validProgressions);
 
         int startPos = 0;
 
@@ -136,12 +130,54 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
     }
 
     @JsonCreator
-    public static AbstractPath<?> fromString(String path) {
+    public static Path fromString(String path) {
         if (path.charAt(0) == PATH_DELIM) {
             return CanonicalPath.fromString(path);
         } else {
             return RelativePath.fromString(path);
         }
+    }
+
+    protected abstract Path newInstance(int startIdx, int endIx, List<Segment> segments);
+
+    /**
+     * This is equivalent to merely casting this instance to the {@link RelativePath}.
+     *
+     * This method merely provides an ever so slightly nicer API, together with the {@link #isRelative()} and
+     * {@link #isCanonical()} methods.
+     *
+     * @return this instance cast to RelativePath
+     * @throws ClassCastException if this isn't a relative path
+     */
+    public RelativePath asRelativePath() {
+        return (RelativePath) this;
+    }
+
+    /**
+     * This is equivalent to merely casting this instance to the {@link CanonicalPath}.
+     *
+     * This method merely provides an ever so slightly nicer API, together with the {@link #isRelative()} and
+     * {@link #isCanonical()} methods.
+     *
+     * @return this instance cast to CanonicalPath
+     * @throws ClassCastException if this isn't a relative path
+     */
+    public CanonicalPath asCanonicalPath() {
+        return (CanonicalPath) this;
+    }
+
+    /**
+     * @return true if this is an instance of {@link CanonicalPath}, false otherwise
+     */
+    public boolean isCanonical() {
+        return this instanceof CanonicalPath;
+    }
+
+    /**
+     * @return true if this is an instance of {@link RelativePath}, false otherwise
+     */
+    public boolean isRelative() {
+        return this instanceof RelativePath;
     }
 
     /**
@@ -159,7 +195,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
      *
      * @return the ancestor path (may be {@link #isDefined() undefined}.
      */
-    public This up() {
+    public Path up() {
         return up(1);
     }
 
@@ -169,8 +205,8 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
      * @param distance the distance of the ancestor from the resource represented by this path object.
      * @return the ancestor path (may be {@link #isDefined() undefined}.
      */
-    public This up(int distance) {
-        return constructor.create(startIdx, endIdx - distance, path);
+    public Path up(int distance) {
+        return newInstance(startIdx, endIdx - distance, path);
     }
 
     /**
@@ -179,7 +215,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
      *
      * @return a path to a direct child of the resource represented by this path (may be {@link #isDefined() undefined}.
      */
-    public This down() {
+    public Path down() {
         return down(1);
     }
 
@@ -191,8 +227,8 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
      * @param distance the distance from this path to the child path
      * @return a path to a child of the resource represented by this path (may be {@link #isDefined() undefined}.
      */
-    public This down(int distance) {
-        return constructor.create(startIdx, endIdx + distance, path);
+    public Path down(int distance) {
+        return newInstance(startIdx, endIdx + distance, path);
     }
 
     /**
@@ -222,18 +258,10 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
     }
 
     /**
-     * @return the {@link #ascendingIterator()}
-     */
-    @Override
-    public Iterator<This> iterator() {
-        return ascendingIterator();
-    }
-
-    /**
      * @return the iterator that ascends the path from the current segment up to the root
      */
-    public Iterator<This> ascendingIterator() {
-        return new Iterator<This>() {
+    public Iterator<? extends Path> ascendingIterator() {
+        return new Iterator<Path>() {
             int idx = endIdx;
 
             @Override
@@ -242,11 +270,11 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             }
 
             @Override
-            public This next() {
+            public Path next() {
                 if (idx <= startIdx) {
                     throw new NoSuchElementException();
                 }
-                return constructor.create(startIdx, idx--, path);
+                return newInstance(startIdx, idx--, path);
             }
         };
     }
@@ -254,8 +282,8 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
     /**
      * @return the iterator that descends from the root down to the current segment.
      */
-    public Iterator<This> descendingIterator() {
-        return new Iterator<This>() {
+    public Iterator<? extends Path> descendingIterator() {
+        return new Iterator<Path>() {
             int idx = startIdx + 1;
 
             @Override
@@ -264,11 +292,11 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             }
 
             @Override
-            public This next() {
+            public Path next() {
                 if (idx >= endIdx) {
                     throw new NoSuchElementException();
                 }
-                return constructor.create(startIdx, idx++, path);
+                return newInstance(startIdx, idx++, path);
             }
         };
     }
@@ -293,7 +321,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             return false;
         }
 
-        AbstractPath other = (AbstractPath) o;
+        Path other = (Path) o;
 
         if (endIdx != other.endIdx || startIdx != other.startIdx) {
             return false;
@@ -464,7 +492,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             this.typeMap = typeMap;
         }
 
-        public <P extends AbstractPath<P>> String encode(String prefix, AbstractPath<P> path) {
+        public <P extends Path> String encode(String prefix, Path path) {
             StringBuilder bld = new StringBuilder(prefix);
 
             for (Segment seg : path.getPath()) {
@@ -555,16 +583,22 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
+    @FunctionalInterface
+    protected interface ExtenderConstructor {
+        Extender create(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions);
+    }
+
     /**
      * While {@link CanonicalPath.Builder} or {@link RelativePath.Builder} provide compile-time-safe canonical path
      * construction, this class provides the same behavior at runtime, throwing {@link IllegalArgumentException}s if
      * the segments being added to a path are invalid in given context.
      */
-    public static class Extender<PathImpl extends AbstractPath<PathImpl>> {
+    public abstract static class Extender {
         protected final List<Segment> segments;
         private final Map<Class<?>, List<Class<?>>> validProgressions;
-        private final Constructor<PathImpl> constructor;
         private final int from;
+
+        protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
 
         /**
          * Constructs a new extender
@@ -572,17 +606,14 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
          * @param from
          * @param segments          the list of already existing segments.
          * @param validProgressions the map of valid progressions (from element of type A to elements of other types)
-         * @param constructor       the constructor to use in the {@link #get()} method to create the path instance
          */
-        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions,
-                Constructor<PathImpl> constructor) {
+        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions) {
             this.from = from;
             this.segments = segments;
             this.validProgressions = validProgressions;
-            this.constructor = constructor;
         }
 
-        public Extender<PathImpl> extend(Segment segment) {
+        public Extender extend(Segment segment) {
             Class<?> first = segments.isEmpty() ? null : segments.get(segments.size() - 1).getElementType();
 
             if (!isValidProgression(first, segment.getElementType())) {
@@ -593,12 +624,12 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
             return this;
         }
 
-        public Extender<PathImpl> extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
             return extend(new Segment(type, id));
         }
 
-        public PathImpl get() {
-            return constructor.create(from, segments.size(), segments);
+        public Path get() {
+            return newPath(from, segments.size(), segments);
         }
 
         private boolean isValidProgression(Class<?> from, Class<?> to) {
@@ -610,7 +641,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    protected abstract static class AbstractBuilder<Impl extends AbstractPath<Impl>> {
+    protected abstract static class AbstractBuilder<Impl extends Path> {
         protected final List<Segment> segments;
         protected final Constructor<Impl> constructor;
 
@@ -620,7 +651,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class Builder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class Builder<Impl extends Path> extends AbstractBuilder<Impl> {
         Builder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
@@ -636,7 +667,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class RelationshipBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class RelationshipBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         RelationshipBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -647,7 +678,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class TenantBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class TenantBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         TenantBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -673,7 +704,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class ResourceTypeBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class ResourceTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
         ResourceTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
@@ -683,7 +714,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class MetricTypeBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class MetricTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
         MetricTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
@@ -693,7 +724,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class EnvironmentBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class EnvironmentBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
         EnvironmentBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
@@ -718,7 +749,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class FeedBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class FeedBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         FeedBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -739,7 +770,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class ResourceBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class ResourceBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         ResourceBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -755,7 +786,7 @@ public class AbstractPath<This extends AbstractPath<This>> implements Iterable<T
         }
     }
 
-    public static class MetricBuilder<Impl extends AbstractPath<Impl>> extends AbstractBuilder<Impl> {
+    public static class MetricBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         MetricBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);

@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on metric types.
@@ -66,7 +66,7 @@ public final class MetricTypes {
      */
     public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
 
-    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     /**
      * Provides read-only access to metric types with the additional ability to relate the metric types to the current

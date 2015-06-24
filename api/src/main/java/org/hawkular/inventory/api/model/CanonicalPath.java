@@ -16,12 +16,12 @@
  */
 package org.hawkular.inventory.api.model;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -33,12 +33,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * always starts at a tenant and follows only the "contains" relationships down to the entity in question. For
  * relationships the "traversal" comprises of merely referencing the relationship by its id.
  *
- * <p>For description of the basic behavior and serialized form of the path, please consult {@link AbstractPath}.
+ * <p>For description of the basic behavior and serialized form of the path, please consult {@link Path}.
  *
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class CanonicalPath extends AbstractPath<CanonicalPath> implements Iterable<CanonicalPath>, Serializable {
+public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 
     public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
     public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
@@ -78,7 +78,7 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
     }
 
     CanonicalPath(int myIdx, List<Segment> path) {
-        super(0, myIdx, path, CanonicalPath::new);
+        super(0, myIdx, path);
     }
 
     /**
@@ -91,8 +91,8 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
     /**
      * @return an empty canonical path to be extended
      */
-    public static Extender<CanonicalPath> empty() {
-        return new Extender<>(0, new ArrayList<>(), VALID_PROGRESSIONS, CanonicalPath::new);
+    public static Extender empty() {
+        return new Extender(0, new ArrayList<>(), VALID_PROGRESSIONS);
     }
 
     /**
@@ -112,12 +112,49 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
      */
     @JsonCreator
     public static CanonicalPath fromString(String path) {
-        return AbstractPath.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (x) -> true, true,
-                CanonicalPath::new);
+        return (CanonicalPath) Path.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (x) -> true,
+                Extender::new, true);
     }
 
     public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
         return getSegment().accept(visitor, parameter);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterator<CanonicalPath> ascendingIterator() {
+        return (Iterator<CanonicalPath>) super.ascendingIterator();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterator<CanonicalPath> descendingIterator() {
+        return (Iterator<CanonicalPath>) super.descendingIterator();
+    }
+
+    @Override
+    public CanonicalPath down() {
+        return (CanonicalPath) super.down();
+    }
+
+    @Override
+    public CanonicalPath down(int distance) {
+        return (CanonicalPath) super.down(distance);
+    }
+
+    @Override
+    protected CanonicalPath newInstance(int startIdx, int endIdx, List<Segment> segments) {
+        return new CanonicalPath(startIdx, endIdx, segments);
+    }
+
+    @Override
+    public CanonicalPath up() {
+        return (CanonicalPath) super.up();
+    }
+
+    @Override
+    public CanonicalPath up(int distance) {
+        return (CanonicalPath) super.up(distance);
     }
 
     /**
@@ -152,9 +189,9 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
      * @return a new path instance
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
-    public Extender<CanonicalPath> extend(Class<?> type, String id) {
-        Extender<CanonicalPath> ret = new Extender<>(startIdx, new ArrayList<>(getPath()), VALID_PROGRESSIONS,
-                CanonicalPath::new);
+    public Extender extend(Class<?> type, String id) {
+        Extender ret = new Extender(startIdx, new ArrayList<>(getPath()), VALID_PROGRESSIONS
+        );
         return ret.extend(new Segment(type, id));
     }
 
@@ -176,8 +213,9 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
         return new Encoder(SHORT_TYPE_NAMES).encode(Character.toString(PATH_DELIM), this);
     }
 
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        constructor = CanonicalPath::new;
+    @Override
+    public Iterator<CanonicalPath> iterator() {
+        return ascendingIterator();
     }
 
     public final class IdExtractor {
@@ -224,6 +262,33 @@ public final class CanonicalPath extends AbstractPath<CanonicalPath> implements 
             } else {
                 return null;
             }
+        }
+    }
+
+    public static class Extender extends Path.Extender {
+
+        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions) {
+            super(from, segments, validProgressions);
+        }
+
+        @Override
+        protected CanonicalPath newPath(int startIdx, int endIdx, List<Segment> segments) {
+            return new CanonicalPath(startIdx, endIdx, segments);
+        }
+
+        @Override
+        public Extender extend(Segment segment) {
+            return (Extender) super.extend(segment);
+        }
+
+        @Override
+        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+            return (Extender) super.extend(type, id);
+        }
+
+        @Override
+        public CanonicalPath get() {
+            return (CanonicalPath) super.get();
         }
     }
 }

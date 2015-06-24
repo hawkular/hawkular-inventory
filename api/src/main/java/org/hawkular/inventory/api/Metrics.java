@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on metrics.
@@ -55,7 +55,7 @@ public final class Metrics {
      * Provides read-only access to metrics that are related to the entity(ies) on the current position in the
      * inventory traversal (as a target of {@link org.hawkular.inventory.api.Relationships.WellKnown#defines}).
      */
-    public interface Read extends ReadInterface<Single, Multiple, AbstractPath<?>> {}
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     /**
      * Provides read-write access to metrics.

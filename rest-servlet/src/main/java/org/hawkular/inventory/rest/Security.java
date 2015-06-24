@@ -36,13 +36,13 @@ import org.hawkular.accounts.api.PermissionChecker;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -140,7 +140,7 @@ public class Security {
 
     public static CanonicalPath getCanonicalPath(String id) {
         String[] chunks = id.split("/");
-        AbstractPath.Extender<CanonicalPath> path = CanonicalPath.empty();
+        CanonicalPath.Extender path = CanonicalPath.empty();
         if (chunks.length == 2) {
             if ("tenants".equals(chunks[0])) {
                 path.extend(Tenant.class, chunks[1]);
@@ -201,9 +201,13 @@ public class Security {
         }
     }
 
-    public static boolean isTenantEscapeAttempt(CanonicalPath origin, RelativePath extension) {
-        CanonicalPath target = extension.applyTo(origin);
-        return !target.ids().getTenantId().equals(origin.ids().getTenantId());
+    public static boolean isTenantEscapeAttempt(CanonicalPath origin, Path extension) {
+        if (extension instanceof CanonicalPath) {
+            return !((CanonicalPath) extension).ids().getTenantId().equals(origin.ids().getTenantId());
+        } else {
+            CanonicalPath target = ((RelativePath) extension).applyTo(origin);
+            return !target.ids().getTenantId().equals(origin.ids().getTenantId());
+        }
     }
 
     private static String join(String... strings) {
@@ -461,6 +465,11 @@ public class Security {
         boolean under(Class<? extends Entity<?, ?>> parentType, String... parentPath) {
             String entityId = getStableId(parentType, parentPath);
             return safePermissionCheck(createdType, last(parentPath), create(createdType), entityId);
+        }
+
+        boolean under(CanonicalPath path) {
+            String entityId = getStableId(path);
+            return safePermissionCheck(createdType, path.getSegment().getElementId(), create(createdType), entityId);
         }
     }
 }

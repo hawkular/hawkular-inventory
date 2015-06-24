@@ -16,12 +16,12 @@
  */
 package org.hawkular.inventory.api.model;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +43,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class RelativePath extends AbstractPath<RelativePath> implements Serializable {
+public final class RelativePath extends Path implements Serializable {
 
     public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
     public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
@@ -73,20 +73,25 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
     }
 
     private RelativePath(int start, int end, List<Segment> segments) {
-        super(start, end, segments, RelativePath::new);
+        super(start, end, segments);
     }
 
     @JsonCreator
     public static RelativePath fromString(String path) {
-        return AbstractPath.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (c) -> !Up.class.equals(c),
-                false, RelativePath::new);
+        return (RelativePath) Path.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES,
+                (c) -> !Up.class.equals(c), Extender::new, false);
+    }
+
+    @Override
+    protected Path newInstance(int startIdx, int endIdx, List<Segment> segments) {
+        return new RelativePath(startIdx, endIdx, segments);
     }
 
     /**
      * @return an empty canonical path to be extended
      */
-    public static Extender<RelativePath> empty() {
-        return new Extender<>(0, new ArrayList<>(), VALID_PROGRESSIONS, RelativePath::new);
+    public static Extender empty() {
+        return new Extender(0, new ArrayList<>(), VALID_PROGRESSIONS);
     }
 
     public static Builder to() {
@@ -99,10 +104,10 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
      * @param path
      */
     public CanonicalPath applyTo(CanonicalPath path) {
-        Extender<CanonicalPath> extender = new Extender<CanonicalPath>(0, new ArrayList<>(path.getPath()),
-                VALID_PROGRESSIONS, CanonicalPath::new) {
+        CanonicalPath.Extender extender = new CanonicalPath.Extender(0, new ArrayList<>(path.getPath()),
+                VALID_PROGRESSIONS) {
             @Override
-            public Extender<CanonicalPath> extend(Segment segment) {
+            public CanonicalPath.Extender extend(Segment segment) {
                 super.extend(segment);
                 if (Up.class.equals(segment.getElementType())) {
                     segments.remove(segments.size() - 1);
@@ -113,11 +118,41 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
             }
         };
 
-        for (Segment s : getPath()) {
-            extender.extend(s);
-        }
+        getPath().forEach(extender::extend);
 
         return extender.get();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterator<RelativePath> ascendingIterator() {
+        return (Iterator<RelativePath>) super.ascendingIterator();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterator<RelativePath> descendingIterator() {
+        return (Iterator<RelativePath>) super.descendingIterator();
+    }
+
+    @Override
+    public RelativePath down() {
+        return (RelativePath) super.down();
+    }
+
+    @Override
+    public RelativePath down(int distance) {
+        return (RelativePath) super.down(distance);
+    }
+
+    @Override
+    public RelativePath up() {
+        return (RelativePath) super.up();
+    }
+
+    @Override
+    public RelativePath up(int distance) {
+        return (RelativePath) super.up(distance);
     }
 
     @JsonValue
@@ -126,16 +161,12 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         return new Encoder(SHORT_TYPE_NAMES).encode("", this);
     }
 
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        constructor = RelativePath::new;
-    }
-
     public static final class Up {
         private Up() {
         }
     }
 
-    public static class Builder extends AbstractPath.Builder<RelativePath> {
+    public static class Builder extends Path.Builder<RelativePath> {
 
         Builder(List<Segment> segments) {
             super(segments, RelativePath::new);
@@ -187,13 +218,13 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         }
     }
 
-    public static class RelationshipBuilder extends AbstractPath.RelationshipBuilder<RelativePath> {
+    public static class RelationshipBuilder extends Path.RelationshipBuilder<RelativePath> {
         RelationshipBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
     }
 
-    public static class TenantBuilder extends AbstractPath.TenantBuilder<RelativePath> {
+    public static class TenantBuilder extends Path.TenantBuilder<RelativePath> {
 
         TenantBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
@@ -220,19 +251,19 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         }
     }
 
-    public static class ResourceTypeBuilder extends AbstractPath.ResourceTypeBuilder<RelativePath> {
+    public static class ResourceTypeBuilder extends Path.ResourceTypeBuilder<RelativePath> {
         ResourceTypeBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
     }
 
-    public static class MetricTypeBuilder extends AbstractPath.MetricTypeBuilder<RelativePath> {
+    public static class MetricTypeBuilder extends Path.MetricTypeBuilder<RelativePath> {
         MetricTypeBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
     }
 
-    public static class EnvironmentBuilder extends AbstractPath.EnvironmentBuilder<RelativePath> {
+    public static class EnvironmentBuilder extends Path.EnvironmentBuilder<RelativePath> {
         EnvironmentBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
@@ -253,7 +284,7 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         }
     }
 
-    public static class FeedBuilder extends AbstractPath.FeedBuilder<RelativePath> {
+    public static class FeedBuilder extends Path.FeedBuilder<RelativePath> {
 
         FeedBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
@@ -270,7 +301,7 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         }
     }
 
-    public static class ResourceBuilder extends AbstractPath.ResourceBuilder<RelativePath> {
+    public static class ResourceBuilder extends Path.ResourceBuilder<RelativePath> {
 
         ResourceBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
@@ -282,7 +313,7 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
         }
     }
 
-    public static class MetricBuilder extends AbstractPath.MetricBuilder<RelativePath> {
+    public static class MetricBuilder extends Path.MetricBuilder<RelativePath> {
 
         MetricBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
@@ -336,6 +367,33 @@ public final class RelativePath extends AbstractPath<RelativePath> implements Se
 
         public RelativePath get() {
             return constructor.create(0, segments.size(), segments);
+        }
+    }
+
+    public static class Extender extends Path.Extender {
+
+        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions) {
+            super(from, segments, validProgressions);
+        }
+
+        @Override
+        protected RelativePath newPath(int startIdx, int endIdx, List<Segment> segments) {
+            return new RelativePath(startIdx, endIdx, segments);
+        }
+
+        @Override
+        public Extender extend(Segment segment) {
+            return (Extender) super.extend(segment);
+        }
+
+        @Override
+        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+            return (Extender) super.extend(type, id);
+        }
+
+        @Override
+        public RelativePath get() {
+            return (RelativePath) super.get();
         }
     }
 }

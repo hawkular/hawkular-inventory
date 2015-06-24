@@ -32,9 +32,9 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -149,7 +149,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Resources.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public Resources.Single get(Path id) throws EntityNotFoundException {
             return new Single<>(context.proceedTo(id));
         }
     }
@@ -160,7 +160,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Relationship associate(AbstractPath<?> id) throws EntityNotFoundException,
+        public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
             Query sourceQuery = context.sourcePath;
             Query targetResource = Util.queryTo(context, id);
@@ -175,7 +175,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException, IllegalArgumentException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
             Query sourceQuery = context.select().get();
             Query targetResource = Util.queryTo(context, id);
 
@@ -189,7 +189,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             Query sourceQuery = context.select().get();
             Query targetResource = Util.queryTo(context, path);
 

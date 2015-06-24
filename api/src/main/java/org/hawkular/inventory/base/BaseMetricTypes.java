@@ -27,10 +27,10 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractPath;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 
@@ -111,7 +111,7 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public MetricTypes.Single get(Path id) throws EntityNotFoundException {
             return new BaseMetricTypes.Single<>(context.proceedTo(id));
         }
     }
@@ -124,7 +124,7 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public Relationship associate(AbstractPath<?> id) throws EntityNotFoundException,
+        public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
             Query getMetricType = Util.queryTo(context, id);
 
@@ -134,7 +134,7 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public Relationship disassociate(AbstractPath<?> id) throws EntityNotFoundException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
             Query getMetricType = Util.queryTo(context, id);
 
             BE metricType = getSingle(getMetricType, MetricType.class);
@@ -143,7 +143,7 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             return getAssociation(ResourceType.class, path, incorporates);
         }
 
@@ -153,7 +153,7 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Single get(AbstractPath<?> id) throws EntityNotFoundException {
+        public MetricTypes.Single get(Path id) throws EntityNotFoundException {
             return new BaseMetricTypes.Single<>(context.proceedTo(id));
         }
     }

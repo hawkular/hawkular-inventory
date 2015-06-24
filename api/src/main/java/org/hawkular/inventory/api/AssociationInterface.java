@@ -17,7 +17,7 @@
 
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractPath;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 
 /**
@@ -60,7 +60,7 @@ interface AssociationInterface {
      *             inventory traversal.
      * @return the relationship that was created as the consequence of the association.
      */
-    Relationship associate(AbstractPath<?> path) throws EntityNotFoundException, RelationAlreadyExistsException;
+    Relationship associate(Path path) throws EntityNotFoundException, RelationAlreadyExistsException;
 
     /**
      * Removes an entity from the relation with the current entity.
@@ -68,18 +68,18 @@ interface AssociationInterface {
      * The current entity and the type of the entity to remove from the relation is determined by the current position
      * in the inventory traversal.
      *
-     * @see #associate(AbstractPath) for explanation of how the current entity and the relation is determined.
+     * @see #associate(Path) for explanation of how the current entity and the relation is determined.
      *
      * @param path the id of the entity to remove from the relation with the current entity.
      *
      * @return the relationship that was deleted as a result of the disassociation
      */
-    Relationship disassociate(AbstractPath<?> path) throws EntityNotFoundException;
+    Relationship disassociate(Path path) throws EntityNotFoundException;
 
     /**
      * Finds the relationship with the entity with the provided id.
      *
-     * @see #associate(AbstractPath) for the discussion of how the entity and the relationship is determined
+     * @see #associate(Path) for the discussion of how the entity and the relationship is determined
      *
      * @param path the id of the entity to find the relation with
      *
@@ -87,5 +87,5 @@ interface AssociationInterface {
      *
      * @throws RelationNotFoundException if a relation with an entity of given id doesn't exist
      */
-    Relationship associationWith(AbstractPath<?> path) throws RelationNotFoundException;
+    Relationship associationWith(Path path) throws RelationNotFoundException;
 }
