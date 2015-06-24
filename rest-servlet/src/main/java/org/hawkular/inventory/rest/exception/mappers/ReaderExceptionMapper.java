@@ -20,7 +20,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.hawkular.inventory.rest.exception.mappers.ExceptionMapperUtils;
 import org.jboss.resteasy.spi.ReaderException;
 
 /**

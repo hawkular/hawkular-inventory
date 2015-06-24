@@ -20,7 +20,6 @@ import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.rest.exception.mappers.ExceptionMapperUtils;
 
 /**
  * Exception mapper for any exception thrown by RESTEasy when HTTP Not Acceptable (406) is encountered.
