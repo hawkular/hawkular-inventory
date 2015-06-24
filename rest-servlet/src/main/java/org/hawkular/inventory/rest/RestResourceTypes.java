@@ -44,7 +44,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
@@ -141,7 +140,7 @@ public class RestResourceTypes extends RestBase {
     public Response create(ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
 
-        if (!security.canCreate(ResourceType.class).under(Tenant.class, tenantId)) {
+        if (!security.canCreate(ResourceType.class).under(CanonicalPath.of().tenant(tenantId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -163,7 +162,7 @@ public class RestResourceTypes extends RestBase {
             @ApiParam(required = true) ResourceType.Update update) {
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -182,7 +181,7 @@ public class RestResourceTypes extends RestBase {
     public Response delete(@PathParam("resourceTypeId") String resourceTypeId) {
         String tenantId = getTenantId();
 
-        if (!security.canDelete(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 

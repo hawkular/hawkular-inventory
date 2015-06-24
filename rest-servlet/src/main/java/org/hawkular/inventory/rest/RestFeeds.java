@@ -16,32 +16,36 @@
  */
 package org.hawkular.inventory.rest;
 
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.rest.json.ApiError;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+
+import java.util.Set;
+
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.util.Set;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.json.ApiError;
+
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -66,12 +70,13 @@ public class RestFeeds extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canCreate(Feed.class).under(Environment.class, tenantId, environmentId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canCreate(Feed.class).under(env)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        Feed feed = inventory.tenants().get(tenantId).environments().get(environmentId).feeds().create(blueprint)
-                .entity();
+        Feed feed = inventory.inspect(env, Environments.Single.class).feeds().create(blueprint).entity();
         return ResponseUtil.created(uriInfo, feed.getId()).entity(feed).build();
     }
 
@@ -128,11 +133,13 @@ public class RestFeeds extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Feed.class, tenantId, environmentId, feedId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canUpdate(env.extend(Feed.class, feedId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().update(feedId, update);
+        inventory.inspect(env, Environments.Single.class).feeds().update(feedId, update);
         return Response.noContent().build();
     }
 
@@ -151,11 +158,13 @@ public class RestFeeds extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Feed.class, tenantId, environmentId, feedId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canDelete(env.extend(Feed.class, feedId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().delete(feedId);
+        inventory.inspect(env, Environments.Single.class).feeds().delete(feedId);
         return Response.noContent().build();
     }
 }

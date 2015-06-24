@@ -17,18 +17,8 @@
 
 package org.hawkular.inventory.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.rest.json.ApiError;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -44,8 +34,19 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.json.ApiError;
+
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -72,11 +73,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canCreate(Metric.class).under(Environment.class, tenantId, environmentId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canCreate(Metric.class).under(env)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics(), metric);
+        createMetric(inventory.inspect(env, Environments.Single.class).feedlessMetrics(), metric);
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }
 
@@ -95,12 +98,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canCreate(Metric.class).under(Feed.class, tenantId, environmentId, feedId)) {
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+
+        if (!security.canCreate(Metric.class).under(feed)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics(),
-                metric);
+        createMetric(inventory.inspect(feed, Feeds.Single.class).metrics(), metric);
 
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }
@@ -212,11 +216,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Metric.class, tenantId, environmentId, metricId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canUpdate(env.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().update(metricId, update);
+        inventory.inspect(env, Environments.Single.class).feedlessMetrics().update(metricId, update);
         return Response.noContent().build();
     }
 
@@ -237,12 +243,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Metric.class, tenantId, environmentId, feedId, metricId)) {
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+
+        if (!security.canUpdate(feed.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
-                .update(metricId, update);
+        inventory.inspect(feed, Feeds.Single.class).metrics().update(metricId, update);
         return Response.noContent().build();
     }
 
@@ -262,11 +269,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Metric.class, tenantId, environmentId, metricId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canDelete(env.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics().delete(metricId);
+        inventory.inspect(env, Environments.Single.class).feedlessMetrics().delete(metricId);
         return Response.noContent().build();
     }
 
@@ -285,12 +294,13 @@ public class RestMetrics extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Metric.class, tenantId, environmentId, feedId, metricId)) {
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+
+        if (!security.canDelete(feed.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).metrics()
-                .delete(metricId);
+        inventory.inspect(feed, Feeds.Single.class).metrics().delete(metricId);
         return Response.noContent().build();
     }
 }

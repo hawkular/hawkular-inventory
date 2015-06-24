@@ -37,7 +37,6 @@ import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -244,18 +243,16 @@ public class Security {
         return getOperation(entityType, OperationType.UPDATE);
     }
 
-    public boolean canUpdate(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), update(entityType),
-                getStableId(entityType, entityPath));
+    public boolean canUpdate(CanonicalPath path) {
+        return safePermissionCheck(path, update(path.getSegment().getElementType()));
     }
 
     private Operation delete(Class<?> entityType) {
         return getOperation(entityType, OperationType.DELETE);
     }
 
-    public boolean canDelete(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), delete(entityType),
-                getStableId(entityType, entityPath));
+    public boolean canDelete(CanonicalPath path) {
+        return safePermissionCheck(path, delete(path.getSegment().getElementType()));
     }
 
     private Operation associate() {
@@ -264,10 +261,6 @@ public class Security {
 
     public boolean canAssociateFrom(CanonicalPath path) {
         return safePermissionCheck(path, associate());
-    }
-
-    public boolean canAssociateFrom(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), associate(), getStableId(entityType, entityPath));
     }
 
     private Operation copy() {
@@ -287,7 +280,6 @@ public class Security {
 
         return ops.get(operationType);
     }
-
 
     private boolean safePermissionCheck(CanonicalPath path, Operation operation) {
         return safePermissionCheck(path.getSegment().getElementType(), path.getSegment().getElementId(),
@@ -460,11 +452,6 @@ public class Security {
 
         private CreatePermissionCheckerFinisher(Class<?> createdType) {
             this.createdType = createdType;
-        }
-
-        boolean under(Class<? extends Entity<?, ?>> parentType, String... parentPath) {
-            String entityId = getStableId(parentType, parentPath);
-            return safePermissionCheck(createdType, last(parentPath), create(createdType), entityId);
         }
 
         boolean under(CanonicalPath path) {

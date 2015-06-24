@@ -23,12 +23,8 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
 import java.util.Set;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -40,10 +36,17 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
+
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -101,7 +104,7 @@ public class RestEnvironments extends RestBase {
     public Response create(@ApiParam(required = true) Environment.Blueprint environmentBlueprint,
             @Context UriInfo uriInfo) throws Exception {
         String tenantId = getTenantId();
-        if (!security.canCreate(Environment.class).under(Tenant.class, tenantId)) {
+        if (!security.canCreate(Environment.class).under(CanonicalPath.of().tenant(tenantId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -124,7 +127,7 @@ public class RestEnvironments extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Environment.class, tenantId, environmentId)) {
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).environment(environmentId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -147,7 +150,7 @@ public class RestEnvironments extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Environment.class, tenantId, environmentId)) {
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).environment(environmentId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
