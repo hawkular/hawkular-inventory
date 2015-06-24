@@ -271,33 +271,31 @@ public interface Inventory extends AutoCloseable {
      *
      * @param path            the path to the element (entity or relationship)
      * @param accessInterface the expected access interface
-     * @param <E>             the type of the element
-     * @param <Single>        the type of the access interface
+     * @param <Access>        the type of the access interface
      * @return the access interface instance
      * @throws java.lang.ClassCastException if the provided access interface doesn't match the element
      */
-    default <E extends AbstractElement<?, ?>, Single extends ResolvableToSingle<E>> Single inspect(CanonicalPath path,
-            Class<Single> accessInterface) {
-        return path.accept(new ElementTypeVisitor<Single, Void>() {
+    default <Access> Access inspect(CanonicalPath path, Class<Access> accessInterface) {
+        return path.accept(new ElementTypeVisitor<Access, Void>() {
             @Override
-            public Single visitTenant(Void parameter) {
+            public Access visitTenant(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()));
             }
 
             @Override
-            public Single visitEnvironment(Void parameter) {
+            public Access visitEnvironment(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId()));
             }
 
             @Override
-            public Single visitFeed(Void parameter) {
+            public Access visitFeed(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId()).feeds().get(path.ids().getFeedId()));
             }
 
             @Override
-            public Single visitMetric(Void parameter) {
+            public Access visitMetric(Void parameter) {
                 Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId());
 
@@ -307,13 +305,13 @@ public interface Inventory extends AutoCloseable {
             }
 
             @Override
-            public Single visitMetricType(Void parameter) {
+            public Access visitMetricType(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).metricTypes()
                         .get(path.ids().getMetricTypeId()));
             }
 
             @Override
-            public Single visitResource(Void parameter) {
+            public Access visitResource(Void parameter) {
                 Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId());
 
@@ -323,18 +321,18 @@ public interface Inventory extends AutoCloseable {
             }
 
             @Override
-            public Single visitResourceType(Void parameter) {
+            public Access visitResourceType(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).resourceTypes()
                         .get(path.ids().getResourceTypeId()));
             }
 
             @Override
-            public Single visitRelationship(Void parameter) {
+            public Access visitRelationship(Void parameter) {
                 return accessInterface.cast(relationships().get(path.ids().getRelationshipId()));
             }
 
             @Override
-            public Single visitUnknown(Void parameter) {
+            public Access visitUnknown(Void parameter) {
                 return null;
             }
         }, null);
