@@ -14,27 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.rest.exception.mappers;
-
-import static javax.ws.rs.core.Response.Status.CONFLICT;
+package org.hawkular.metrics.api.jaxrs.exception.mappers;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.rest.json.ApiError;
+
+import org.hawkular.inventory.rest.exception.mappers.ExceptionMapperUtils;
+import org.jboss.resteasy.spi.BadRequestException;
 
 /**
- * @author Jirka Kremser
- * @since 0.1.0
+ * Exception mapper for any exception thrown by RESTEasy when HTTP Bad Request (400) is encountered.
+ * <p>
+ * This mapper let us reply to the user with a pre-determined message format if, for example, a {@link
+ * javax.ws.rs.ext.ParamConverter} throws an {@link java.lang.IllegalArgumentException}.
+ *
+ * @author Thomas Segismont
  */
 @Provider
-public class EntityAlreadyExistsExceptionMapper implements ExceptionMapper<EntityAlreadyExistsException> {
+public class BadRequestExceptionMapper implements ExceptionMapper<BadRequestException> {
 
     @Override
-    public Response toResponse(EntityAlreadyExistsException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityIdAndPath.fromException(exception)), exception, CONFLICT);
+    public Response toResponse(BadRequestException exception) {
+        return ExceptionMapperUtils.buildResponse(exception, Response.Status.BAD_REQUEST);
     }
 }

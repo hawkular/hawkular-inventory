@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest.exception.mappers;
-
-import static javax.ws.rs.core.Response.Status.CONFLICT;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.rest.json.ApiError;
+
+import org.jboss.resteasy.spi.ReaderException;
 
 /**
- * @author Jirka Kremser
- * @since 0.1.0
+ * Exception mapper for any exception thrown by a body reader chain.
+ * <p>
+ * This mapper let us reply to the user with a pre-determined message format if, for example, a JSON entity cannot be
+ * parsed.
+ *
+ * @author Thomas Segismont
  */
 @Provider
-public class EntityAlreadyExistsExceptionMapper implements ExceptionMapper<EntityAlreadyExistsException> {
+public class ReaderExceptionMapper implements ExceptionMapper<ReaderException> {
 
     @Override
-    public Response toResponse(EntityAlreadyExistsException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityIdAndPath.fromException(exception)), exception, CONFLICT);
+    public Response toResponse(ReaderException exception) {
+        return ExceptionMapperUtils.buildResponse(exception, Response.Status.BAD_REQUEST);
     }
 }

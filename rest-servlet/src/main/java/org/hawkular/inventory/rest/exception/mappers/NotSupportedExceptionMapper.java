@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest.exception.mappers;
 
-import static javax.ws.rs.core.Response.Status.CONFLICT;
-
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.rest.json.ApiError;
 
 /**
- * @author Jirka Kremser
- * @since 0.1.0
+ * Exception mapper for any exception thrown by RESTEasy when HTTP Unsupported Media Type (415) is encountered.
+ * <p>
+ * This mapper let us reply to the user with a pre-determined message format if, for example, receive a
+ * HTTP POST request with unsupported media type.
+ *
+ * @author Jeeva Kandasamy
  */
 @Provider
-public class EntityAlreadyExistsExceptionMapper implements ExceptionMapper<EntityAlreadyExistsException> {
+public class NotSupportedExceptionMapper implements ExceptionMapper<NotSupportedException> {
 
     @Override
-    public Response toResponse(EntityAlreadyExistsException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityIdAndPath.fromException(exception)), exception, CONFLICT);
+    public Response toResponse(NotSupportedException exception) {
+        return ExceptionMapperUtils.buildResponse(exception, Response.Status.UNSUPPORTED_MEDIA_TYPE);
     }
+
 }
