@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -101,32 +102,37 @@ public abstract class Path {
         this.path = Collections.unmodifiableList(path);
     }
 
-    protected static Path fromString(String path, Map<Class<?>,
-            List<Class<?>>> validProgressions, Map<String, Class<?>> shortNameTypes,
-            Function<Class<?>, Boolean> requiresId, ExtenderConstructor extenderConstructor, boolean shouldBeAbsolute) {
+    protected static Path fromString(String path, boolean shouldBeAbsolute, Map<String, Class<?>> shortNameTypes,
+            ExtenderConstructor extenderConstructor, EnhancedTypeProvider typeProvider) {
 
-        Extender extender = extenderConstructor.create(0, new ArrayList<>(), validProgressions);
+        Extender extender = extenderConstructor.create(0, new ArrayList<>());
 
         int startPos = 0;
 
-        if (shouldBeAbsolute) {
-            if (!path.isEmpty() && path.charAt(0) == PATH_DELIM) {
-                startPos = 1;
-            } else {
-                throw new IllegalArgumentException("Supplied path is not absolute.");
+        try {
+            if (shouldBeAbsolute) {
+                if (!path.isEmpty() && path.charAt(0) == PATH_DELIM) {
+                    startPos = 1;
+                } else {
+                    throw new IllegalArgumentException("Supplied path is not absolute.");
+                }
+            }
+
+            ParsingProgress progress = new ParsingProgress(startPos, path);
+
+            Decoder dec = new Decoder(typeProvider);
+
+            while (!progress.isFinished()) {
+                Segment seg = dec.decodeNext(progress);
+                extender.extend(seg);
+            }
+
+            return extender.get();
+        } finally {
+            if (typeProvider != null) {
+                typeProvider.finished();
             }
         }
-
-        ParsingProgress progress = new ParsingProgress(startPos, path);
-
-        Decoder dec = new Decoder(requiresId, shortNameTypes);
-
-        while (!progress.isFinished()) {
-            Segment seg = dec.decodeNext(progress);
-            extender.extend(seg);
-        }
-
-        return extender.get();
     }
 
     @JsonCreator
@@ -135,6 +141,25 @@ public abstract class Path {
             return CanonicalPath.fromString(path);
         } else {
             return RelativePath.fromString(path);
+        }
+    }
+
+    /**
+     * Parses the provided path using the type provider ({@link org.hawkular.inventory.api.model.Path.TypeProvider})
+     * to figure out the types of segments that don't explicitly mention it.
+     *
+     * <p>This is mainly geared at REST API in which this is used to parse the relative paths out of URIs in which
+     * the type of some segments can be easily deduced from the endpoint address.
+     *
+     * @param path         the path to parse
+     * @param typeProvider the type provider used to figure out types of segments that don't explicitly mention it
+     * @return the parsed path
+     */
+    public static Path fromPartiallyUntypedString(String path, TypeProvider typeProvider) {
+        if (path.charAt(0) == PATH_DELIM) {
+            return CanonicalPath.fromPartiallyUntypedString(path, typeProvider);
+        } else {
+            return RelativePath.fromPartiallyUntypedString(path, typeProvider);
         }
     }
 
@@ -347,6 +372,51 @@ public abstract class Path {
         Path create(int startIdx, int endIx, List<Segment> segments);
     }
 
+    /**
+     * An interface that is used to help parsing partially untyped path strings.
+     */
+    public interface TypeProvider {
+
+        /**
+         * This method gets called during the parsing process after a segment is successfully parsed.
+         * This enables the type provider to keep track of the progress of the parsing.
+         *
+         * @param segment the segment parsed
+         */
+        void segmentParsed(Segment segment);
+
+        /**
+         * This is called during parsing of a single segment when the built-in defaults cannot determine the type and
+         * id to use for segment.
+         *
+         * <p>If this method returns null, the parsing of the path will fail with an {@link IllegalArgumentException}.
+         *
+         * @param type   the parsed type name
+         * @param id     the parsed id
+         * @param isLast true if the parsed segment is the last in the path
+         * @return the segment based on the provided info or null if the type provider cannot deduce one.
+         */
+        Segment deduceSegment(String type, String id, boolean isLast);
+
+        /**
+         * Called when the parsing of the path finishes (either successfully or unsuccessfully).
+         */
+        void finished();
+    }
+
+    /**
+     * Used internally by the decoder to provide "type-safe" progression of the path.
+     */
+    abstract static class EnhancedTypeProvider implements TypeProvider {
+
+        /**
+         * Used only for error reporting.
+         *
+         * @return the set of all recognized type names
+         */
+        abstract Set<String> getValidTypeName();
+    }
+
     protected static class ParsingProgress {
         private int pos;
         private final String source;
@@ -375,26 +445,22 @@ public abstract class Path {
 
 
     protected static class Decoder {
-        private final Function<Class<?>, Boolean> requiresId;
-        private final Map<String, Class<?>> typeMap;
+        private final EnhancedTypeProvider typeProvider;
 
-        protected Decoder(Function<Class<?>, Boolean> requiresId, Map<String, Class<?>> typeMap) {
-            this.requiresId = requiresId;
-            this.typeMap = typeMap;
-        }
-
-        private Class<?> getSegmentType(String type) {
-            return typeMap.get(type);
+        protected Decoder(EnhancedTypeProvider typeProvider) {
+            this.typeProvider = typeProvider;
         }
 
         public Segment decodeNext(ParsingProgress progress) {
             StringBuilder currentId = new StringBuilder();
-            Class<?> currentType = null;
+            String currentTypeString = null;
 
             //0 = reading type ordinal
             //1 = reading id
             //2 = reading escape char
             int state = 0;
+
+            loop:
             while (!progress.isFinished()) {
                 char c = progress.getNextChar();
 
@@ -407,30 +473,14 @@ public abstract class Path {
                                             progress.getPos() + " in \"" + progress.getSource() + "\".");
                                 }
 
-                                currentType = getSegmentType(currentId.toString());
-                                if (!requiresId.apply(currentType)) {
-                                    throw new IllegalArgumentException("Type specified by '" + currentId.toString() +
-                                            "' doesn't need to provide an id, but one is found.");
-                                } else if (currentType == null) {
-                                    throw new IllegalArgumentException("Unrecognized entity type id: '" +
-                                            currentId.toString() + "'. Only the following are recognized: " +
-                                            typeMap.keySet());
-                                }
+                                currentTypeString = currentId.toString();
                                 currentId.delete(0, currentId.length());
                                 state = 1; //reading id
                                 break;
                             case PATH_DELIM:
-                                currentType = getSegmentType(currentId.toString());
-                                if (requiresId.apply(currentType)) {
-                                    throw new IllegalArgumentException("Type specified by '" + currentId.toString() +
-                                            "' needs to provide an id, but none found.");
-                                } else if (currentType == null) {
-                                    throw new IllegalArgumentException("Unrecognized entity type id: '" +
-                                            currentId.toString() + "'. Only the following are recognized: " +
-                                            typeMap.keySet());
-                                } else {
-                                    return new Segment(currentType, null);
-                                }
+                                currentTypeString = currentId.toString();
+                                currentId.delete(0, currentId.length());
+                                break loop;
                             default:
                                 currentId.append(c);
                         }
@@ -446,7 +496,7 @@ public abstract class Path {
                                             progress.getPos() + " in \"" + progress.getSource() + "\".");
                                 }
 
-                                return new Segment(currentType, currentId.toString());
+                                break loop;
                             default:
                                 currentId.append(c);
                         }
@@ -458,41 +508,37 @@ public abstract class Path {
                 }
             }
 
-            //we've finished reading the source. So we need to emit the last segment.
-            if (currentType == null) {
-                currentType = getSegmentType(currentId.toString());
-                if (requiresId.apply(currentType)) {
-                    if (requiresId.apply(currentType)) {
-                        throw new IllegalArgumentException("Type specified by '" + currentId.toString() +
-                                "' needs to provide an id, but none found.");
-                    } else if (currentType == null) {
-                        throw new IllegalArgumentException("Unrecognized entity type id: '" +
-                                currentId.toString() + "'. Only the following are recognized: " +
-                                typeMap.keySet());
-                    } else {
-                        return new Segment(currentType, null);
-                    }
-                }
+            //we've finished reading the source. So we need to emit the segment.
+            String currentIdString = currentId.toString();
+            if (currentIdString.isEmpty()) {
+                currentIdString = currentTypeString;
+                currentTypeString = null;
             }
-            if (currentId.length() == 0) {
-                if (requiresId.apply(currentType)) {
-                    throw new IllegalArgumentException("Unspecified entity id in \"" + progress.getSource() + "\".");
-                } else {
-                    return new Segment(currentType, null);
-                }
+
+            Segment ret = typeProvider.deduceSegment(currentTypeString, currentIdString, progress.isFinished());
+
+            if (ret == null) {
+                throw new IllegalArgumentException("Unrecognized entity type '" + currentTypeString + "' for segment" +
+                        " with id: '" + currentIdString + "'. The following types are recognized: " +
+                        typeProvider.getValidTypeName());
             }
-            return new Segment(currentType, currentId.toString());
+
+            typeProvider.segmentParsed(ret);
+
+            return ret;
         }
     }
 
     protected static class Encoder {
         private final Map<Class<?>, String> typeMap;
+        private final Function<Segment, Boolean> requiresId;
 
-        public Encoder(Map<Class<?>, String> typeMap) {
+        public Encoder(Map<Class<?>, String> typeMap, Function<Segment, Boolean> requiresId) {
             this.typeMap = typeMap;
+            this.requiresId = requiresId;
         }
 
-        public <P extends Path> String encode(String prefix, Path path) {
+        public String encode(String prefix, Path path) {
             StringBuilder bld = new StringBuilder(prefix);
 
             for (Segment seg : path.getPath()) {
@@ -501,7 +547,7 @@ public abstract class Path {
                     bld.append(type);
                 }
 
-                if (seg.getElementId() != null) {
+                if (seg.getElementId() != null && requiresId.apply(seg)) {
                     if (type != null) {
                         bld.append(TYPE_DELIM);
                     }
@@ -585,7 +631,7 @@ public abstract class Path {
 
     @FunctionalInterface
     protected interface ExtenderConstructor {
-        Extender create(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions);
+        Extender create(int from, List<Segment> segments);
     }
 
     /**
@@ -595,7 +641,7 @@ public abstract class Path {
      */
     public abstract static class Extender {
         protected final List<Segment> segments;
-        private final Map<Class<?>, List<Class<?>>> validProgressions;
+        private final Function<List<Segment>, List<Class<?>>> validProgressions;
         private final int from;
 
         protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
@@ -603,23 +649,24 @@ public abstract class Path {
         /**
          * Constructs a new extender
          *
-         * @param from
+         * @param from              the start index in segments to be used by the constructed path
          * @param segments          the list of already existing segments.
-         * @param validProgressions the map of valid progressions (from element of type A to elements of other types)
+         * @param validProgressions given the current path, return the valid types of the next segment
          */
-        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions) {
+        Extender(int from, List<Segment> segments, Function<List<Segment>, List<Class<?>>> validProgressions) {
             this.from = from;
             this.segments = segments;
             this.validProgressions = validProgressions;
         }
 
         public Extender extend(Segment segment) {
-            Class<?> first = segments.isEmpty() ? null : segments.get(segments.size() - 1).getElementType();
+            List<Class<?>> progress = validProgressions.apply(segments);
 
-            if (!isValidProgression(first, segment.getElementType())) {
+            if (progress == null || !progress.contains(segment.getElementType())) {
                 throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
                         " of the path: " + segments);
             }
+
             segments.add(segment);
             return this;
         }
@@ -630,14 +677,6 @@ public abstract class Path {
 
         public Path get() {
             return newPath(from, segments.size(), segments);
-        }
-
-        private boolean isValidProgression(Class<?> from, Class<?> to) {
-            List<Class<?>> validNexts = validProgressions.get(from);
-            if (validNexts == null) {
-                return false;
-            }
-            return validNexts.contains(to);
         }
     }
 

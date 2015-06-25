@@ -164,9 +164,9 @@ public class CanonicalPathTest {
 
         Assert.assertEquals("../m;kachna", rp.toString());
 
-        rp = RelativePath.fromString("../r;r/../t;t");
+        rp = RelativePath.fromString("../e;e/../f;f");
 
-        Assert.assertEquals("../r;r/../t;t", rp.toString());
+        Assert.assertEquals("../e;e/../f;f", rp.toString());
 
         try {
             RelativePath.fromString("../r");
@@ -195,6 +195,13 @@ public class CanonicalPathTest {
         } catch (IllegalArgumentException e) {
             //good
         }
+
+        try {
+            RelativePath.fromString("r;r/../e;e"); //environments cannot be inside resources
+            Assert.fail("Invalid relative path should have failed to parse.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
     }
 
     @Test
@@ -214,6 +221,23 @@ public class CanonicalPathTest {
         } catch (IllegalArgumentException e) {
             //good
         }
+    }
+
+    @Test
+    public void testUntypedRelativePath() throws Exception {
+        CanonicalPath cp = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
+
+        RelativePath rp = RelativePath.fromPartiallyUntypedString("../g", cp, Resource.class);
+        Assert.assertEquals("../r;g", rp.toString());
+
+        rp = RelativePath.fromPartiallyUntypedString("../f;x/g", cp, Resource.class);
+        Assert.assertEquals("../f;x/r;g", rp.toString());
+
+        rp = RelativePath.fromPartiallyUntypedString("../r;g/h/i", cp, Resource.class);
+        Assert.assertEquals("../r;g/r;h/r;i", rp.toString());
+
+        rp = RelativePath.fromPartiallyUntypedString("../../env/me", cp, Metric.class);
+        Assert.assertEquals("../../e;env/m;me", rp.toString());
     }
 
     @SuppressWarnings("unchecked")

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -92,7 +93,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @return an empty canonical path to be extended
      */
     public static Extender empty() {
-        return new Extender(0, new ArrayList<>(), VALID_PROGRESSIONS);
+        return new Extender(0, new ArrayList<>());
     }
 
     /**
@@ -112,8 +113,18 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      */
     @JsonCreator
     public static CanonicalPath fromString(String path) {
-        return (CanonicalPath) Path.fromString(path, VALID_PROGRESSIONS, SHORT_NAME_TYPES, (x) -> true,
-                Extender::new, true);
+        return fromPartiallyUntypedString(path, null);
+    }
+
+    /**
+     * @param path         the canonical path to parse
+     * @param typeProvider the type provider used to figure out types of segments that don't explicitly mention it
+     * @return the parsed canonical path
+     * @see Path#fromPartiallyUntypedString(String, TypeProvider)
+     */
+    public static CanonicalPath fromPartiallyUntypedString(String path, TypeProvider typeProvider) {
+        return (CanonicalPath) Path.fromString(path, true, SHORT_NAME_TYPES, Extender::new,
+                new CanonicalTypeProvider(typeProvider));
     }
 
     public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
@@ -190,8 +201,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
     public Extender extend(Class<?> type, String id) {
-        Extender ret = new Extender(startIdx, new ArrayList<>(getPath()), VALID_PROGRESSIONS
-        );
+        Extender ret = new Extender(startIdx, new ArrayList<>(getPath()));
         return ret.extend(new Segment(type, id));
     }
 
@@ -210,7 +220,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     @Override
     @JsonValue
     public String toString() {
-        return new Encoder(SHORT_TYPE_NAMES).encode(Character.toString(PATH_DELIM), this);
+        return new Encoder(SHORT_TYPE_NAMES, x -> true).encode(Character.toString(PATH_DELIM), this);
     }
 
     @Override
@@ -267,8 +277,9 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
     public static class Extender extends Path.Extender {
 
-        Extender(int from, List<Segment> segments, Map<Class<?>, List<Class<?>>> validProgressions) {
-            super(from, segments, validProgressions);
+        Extender(int from, List<Segment> segments) {
+            super(from, segments, (s) -> s.isEmpty() ? Arrays.asList(Tenant.class, Relationship.class)
+                    : VALID_PROGRESSIONS.get(s.get(s.size() - 1).getElementType()));
         }
 
         @Override
@@ -289,6 +300,57 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         @Override
         public CanonicalPath get() {
             return (CanonicalPath) super.get();
+        }
+    }
+
+    private static class CanonicalTypeProvider extends EnhancedTypeProvider {
+        private final TypeProvider wrapped;
+
+        private CanonicalTypeProvider(TypeProvider wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public void segmentParsed(Segment segment) {
+            if (wrapped != null) {
+                wrapped.segmentParsed(segment);
+            }
+        }
+
+        @Override
+        public Segment deduceSegment(String type, String id, boolean isLast) {
+            if (type != null && !type.isEmpty()) {
+                if (id == null || id.isEmpty()) {
+                    return null;
+                } else {
+                    return new Segment(SHORT_NAME_TYPES.get(type), id);
+                }
+            }
+
+            if (id == null || id.isEmpty()) {
+                return null;
+            }
+
+            Class<?> cls = SHORT_NAME_TYPES.get(id);
+            if (cls == null && wrapped != null) {
+                return wrapped.deduceSegment(type, id, isLast);
+            } else if (cls != null) {
+                return new Segment(cls, id);
+            }
+
+            return null;
+        }
+
+        @Override
+        public void finished() {
+            if (wrapped != null) {
+                wrapped.finished();
+            }
+        }
+
+        @Override
+        Set<String> getValidTypeName() {
+            return SHORT_NAME_TYPES.keySet();
         }
     }
 }
