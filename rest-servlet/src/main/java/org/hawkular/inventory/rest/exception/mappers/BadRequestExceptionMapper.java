@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.metrics.api.jaxrs.exception.mappers;
+package org.hawkular.inventory.rest.exception.mappers;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.hawkular.inventory.rest.exception.mappers.ExceptionMapperUtils;
 import org.jboss.resteasy.spi.BadRequestException;
 
 /**
