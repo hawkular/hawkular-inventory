@@ -27,12 +27,14 @@ import java.util.Collection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -213,7 +215,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @GET
-    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @javax.ws.rs.Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
     @ApiOperation("Retrieves the given metric type associated with the given resource type.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metric types"),
@@ -222,10 +224,19 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public MetricType getAssociatedMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-            @PathParam("metricTypeId") String metricTypeId) {
+            @PathParam("metricTypePath") String metricTypePath,
+            @QueryParam("canonical") @DefaultValue("false") boolean isCanonical) {
         String tenantId = getTenantId();
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .metricTypes().get(RelativePath.to().up().metricType(metricTypeId).get()).entity();
+
+        org.hawkular.inventory.api.model.Path mtPath;
+        if (isCanonical) {
+            mtPath = CanonicalPath.fromString(metricTypePath);
+        } else {
+            CanonicalPath rt = CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get();
+            mtPath = RelativePath.fromPartiallyUntypedString(metricTypePath, rt, MetricType.class);
+        }
+
+        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().get(mtPath).entity();
     }
 
     @GET
@@ -247,7 +258,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @DELETE
-    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
     @ApiOperation("Disassociates the given resource type from the given metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -256,7 +267,8 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-            @PathParam("metricTypeId") String metricTypeId) {
+            @PathParam("metricTypePath") String metricTypePath,
+            @QueryParam("canonical") @DefaultValue("false") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
@@ -264,8 +276,16 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(
-                RelativePath.to().up().metricType(metricTypeId).get());
+        org.hawkular.inventory.api.model.Path mtPath;
+        if (isCanonical) {
+            mtPath = CanonicalPath.fromString(metricTypePath);
+        } else {
+            CanonicalPath rt = CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get();
+            mtPath = RelativePath.fromPartiallyUntypedString(metricTypePath, rt, MetricType.class);
+        }
+
+        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(mtPath);
+
         return Response.noContent().build();
     }
 }

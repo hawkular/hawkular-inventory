@@ -50,6 +50,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -126,7 +127,8 @@ public class RestRelationships extends RestBase {
             return Response.status(NOT_FOUND).build();
         }
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
         Pager pager = extractPaging(uriInfo);
         RelationFilter[] filters = extractFilters(propertyName, propertyValue, named, sourceType,
                                                   targetType, uriInfo);
@@ -168,7 +170,8 @@ public class RestRelationships extends RestBase {
         }
         checkForWellKnownLabels(relation.getName(), "delete");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         // delete the relationship
         resolvable.relationships(Relationships.Direction.both).delete(relation.getId());
@@ -200,7 +203,8 @@ public class RestRelationships extends RestBase {
         }
         checkForWellKnownLabels(relation.getName(), "create");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         Relationships.Direction directed;
         CanonicalPath theOtherSide;
@@ -249,7 +253,8 @@ public class RestRelationships extends RestBase {
         // perhaps we could have allowed updating the properties of well-known rels
         checkForWellKnownLabels(relation.getName(), "update");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         // update the relationship
         resolvable.relationships(Relationships.Direction.both).update(relation.getId(), Relationship.Update.builder()
@@ -268,7 +273,8 @@ public class RestRelationships extends RestBase {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> ResolvableToSingleWithRelationships<T> getResolvableFromCanonicalPath(CanonicalPath cPath) {
+    private <E extends AbstractElement<?, U>, U extends AbstractElement.Update>
+    ResolvableToSingleWithRelationships<E, U> getResolvableFromCanonicalPath(CanonicalPath cPath) {
         return inventory.inspect(cPath, ResolvableToSingleWithRelationships.class);
     }
 
