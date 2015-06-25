@@ -116,7 +116,7 @@ public final class Relationships {
     /**
      * Interface for accessing a single relationship.
      */
-    public interface Single extends ResolvableToSingle<Relationship> {
+    public interface Single extends ResolvableToSingle<Relationship, Relationship.Update> {
     }
 
     /**

@@ -24,7 +24,7 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface ResolvableToSingle<Entity> {
+public interface ResolvableToSingle<Entity, Update> {
 
     /**
      * Resolves the entity and returns it.
@@ -52,4 +52,21 @@ public interface ResolvableToSingle<Entity> {
             return false;
         }
     }
+
+    /**
+     * Updates the entity.
+     *
+     * @param update the update to be applied
+     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
+     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
+     */
+    void update(Update update) throws EntityNotFoundException, RelationNotFoundException;
+
+    /**
+     * Deletes the entity.
+     *
+     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
+     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
+     */
+    void delete();
 }

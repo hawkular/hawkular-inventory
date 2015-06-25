@@ -70,7 +70,7 @@ public final class Environments {
     /**
      * Interface for accessing a single environment in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Environment>,
+    public interface Single extends ResolvableToSingleWithRelationships<Environment, Environment.Update>,
             BrowserBase<Feeds.ReadWrite, Resources.ReadWrite, Metrics.ReadWrite> {}
 
     /**

@@ -46,7 +46,7 @@ public final class ResourceTypes {
     /**
      * Interface for accessing a single resource type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<ResourceType>,
+    public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
             BrowserBase<Resources.Read, MetricTypes.ReadAssociate> {}
 
     /**

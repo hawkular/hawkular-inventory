@@ -26,6 +26,6 @@ package org.hawkular.inventory.api;
  * @author Jirka Kremser
  * @since 0.0.1
  */
-public interface ResolvableToSingleWithRelationships<Entity> extends ResolvableToSingle<Entity>,
+public interface ResolvableToSingleWithRelationships<Entity, Update> extends ResolvableToSingle<Entity, Update>,
         Relatable<Relationships.ReadWrite> {
 }

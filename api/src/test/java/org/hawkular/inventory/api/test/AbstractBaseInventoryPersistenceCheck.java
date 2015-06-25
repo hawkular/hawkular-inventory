@@ -250,7 +250,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(), sizeType);
         Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(), sizeType);
 
-        inventory.inspect(e).feedlessMetrics().delete(playroom2Size.getId());
+        inventory.inspect(playroom2Size).delete();
+
         assertDoesNotExist(playroom2Size);
         assertExists(t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
 
@@ -928,7 +929,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertEquals("nails", t.getProperties().get("hammer"));
 
         //reset the change we made back...
-        inventory.tenants().update("com.acme.tenant", Tenant.Update.builder().withProperty("kachny", "moc").build());
+        inventory.tenants().get("com.acme.tenant").update(Tenant.Update.builder().withProperty("kachny", "moc")
+                .build());
+
         testPropertiesCreated();
     }
 

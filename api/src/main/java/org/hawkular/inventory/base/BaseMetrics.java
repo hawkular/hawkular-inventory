@@ -178,14 +178,15 @@ public final class BaseMetrics {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Metric> implements Metrics.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Metric, Metric.Update> implements Metrics.Single {
 
         public Single(TraversalContext<BE, Metric> context) {
             super(context);
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Metric> implements Metrics.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Metric, Metric.Update>
+            implements Metrics.Multiple {
 
         public Multiple(TraversalContext<BE, Metric> context) {
             super(context);

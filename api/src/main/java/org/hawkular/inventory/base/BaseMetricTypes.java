@@ -82,7 +82,8 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class ReadContained<BE> extends Fetcher<BE, MetricType> implements MetricTypes.ReadContained {
+    public static class ReadContained<BE> extends Fetcher<BE, MetricType, MetricType.Update>
+            implements MetricTypes.ReadContained {
 
         public ReadContained(TraversalContext<BE, MetricType> context) {
             super(context);
@@ -99,7 +100,7 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Read<BE> extends Fetcher<BE, MetricType> implements MetricTypes.Read {
+    public static class Read<BE> extends Fetcher<BE, MetricType, MetricType.Update> implements MetricTypes.Read {
 
         public Read(TraversalContext<BE, MetricType> context) {
             super(context);
@@ -158,7 +159,8 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, MetricType> implements MetricTypes.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, MetricType, MetricType.Update>
+            implements MetricTypes.Single {
 
         public Single(TraversalContext<BE, MetricType> context) {
             super(context);
@@ -170,7 +172,7 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, MetricType>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, MetricType, MetricType.Update>
             implements MetricTypes.Multiple {
 
         public Multiple(TraversalContext<BE, MetricType> context) {

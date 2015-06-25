@@ -35,7 +35,7 @@ public final class Feeds {
         Metrics metrics();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed>,
+    public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
             BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,

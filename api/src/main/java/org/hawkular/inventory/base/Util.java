@@ -16,18 +16,28 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.stream.Collectors.toSet;
+
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Relationships.Direction.both;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
@@ -146,7 +156,7 @@ final class Util {
     }
 
     @SuppressWarnings("unchecked")
-    public static Query queryTo(TraversalContext context, Path path) {
+    public static Query queryTo(TraversalContext<?, ?> context, Path path) {
         if (path instanceof CanonicalPath) {
             return Query.to((CanonicalPath) path);
         }
@@ -165,4 +175,122 @@ final class Util {
         return extender.get();
     }
 
+    @SuppressWarnings("unchecked")
+    public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
+            TraversalContext<BE, E> context, Query entityQuery, U update) {
+
+        BE updated = runInTransaction(context.backend, false, (t) -> {
+            Page<BE> entities = context.backend.query(entityQuery, Pager.single());
+            if (entities.isEmpty()) {
+                if (update instanceof Relationship.Update) {
+                    throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
+                } else {
+                    throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
+                            Query.filters(entityQuery));
+                }
+            }
+
+            BE toUpdate = entities.get(0);
+
+            context.backend.update(toUpdate, update);
+            context.backend.commit(t);
+            return toUpdate;
+        });
+
+        E entity = context.backend.convert(updated, context.entityClass);
+        context.notify(entity, new Action.Update<>(entity, update), Action.updated());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <BE, E extends AbstractElement<?, ?>> void delete(TraversalContext<BE, E> context,
+            Query entityQuery) {
+
+        runInTransaction(context.backend, false, (transaction) -> {
+            Page<BE> entities = context.backend.query(entityQuery, Pager.single());
+            if (entities.isEmpty()) {
+                if (context.entityClass.equals(Relationship.class)) {
+                    throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
+                } else {
+                    throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
+                            Query.filters(entityQuery));
+                }
+            }
+
+            BE toDelete = entities.get(0);
+
+            Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+
+            Set<BE> deleted = new HashSet<>();
+            Set<BE> deletedRels = new HashSet<>();
+            Set<AbstractElement<?, ?>> deletedEntities;
+            Set<Relationship> deletedRelationships;
+
+            context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
+                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
+                    verticesToDeleteThatDefineSomething.add(e);
+                } else {
+                    deleted.add(e);
+                }
+                //not only the entity, but also its relationships are going to disappear
+                deletedRels.addAll(context.backend.getRelationships(e, both));
+            });
+
+            if (context.backend.hasRelationship(toDelete, outgoing, defines.name())) {
+                verticesToDeleteThatDefineSomething.add(toDelete);
+            } else {
+                deleted.add(toDelete);
+            }
+            deletedRels.addAll(context.backend.getRelationships(toDelete, both));
+
+            //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
+            //We have to do it prior to actually deleting the objects in the backend so that all information and
+            //relationships is still available.
+            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.extractType(o)))
+                    .collect(Collectors.<AbstractElement<?, ?>>toSet());
+
+            deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
+                    .collect(toSet());
+
+            //k, now we can delete them all... the order is not important anymore
+            for (BE e : deleted) {
+                context.backend.delete(e);
+            }
+
+            for (BE e : verticesToDeleteThatDefineSomething) {
+                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
+                    //we avoid the convert() function here because it assumes the containing entities of the passed in
+                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
+                    //entities from the "top" down the containment chain and the entities are immediately deleted.
+                    String rootId = context.backend.extractId(toDelete);
+                    String definingId = context.backend.extractId(e);
+                    String rootType = context.entityClass.getSimpleName();
+                    String definingType = context.backend.extractType(e).getSimpleName();
+
+                    String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
+                    String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
+
+                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
+                            definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
+                            "entities that are not deleted along with it, which would leave them without a " +
+                            "definition. This is illegal.");
+                } else {
+                    context.backend.delete(e);
+                }
+            }
+
+            context.backend.commit(transaction);
+
+            //report the relationship deletions first - it would be strange to report deletion of a relationship after
+            //reporting that an entity on one end of the relationship has been deleted
+            for (Relationship r : deletedRelationships) {
+                context.notify(r, deleted());
+            }
+
+            for (AbstractElement<?, ?> e : deletedEntities) {
+                context.notify(e, deleted());
+            }
+
+            return null;
+        });
+    }
 }

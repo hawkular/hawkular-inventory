@@ -16,7 +16,21 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.Action;
+import static java.util.stream.Collectors.toSet;
+
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Relationships.Direction.both;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.filters.With.id;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -27,19 +41,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Action.deleted;
-import static org.hawkular.inventory.api.Action.updated;
-import static org.hawkular.inventory.api.Relationships.Direction.both;
-import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.filters.With.id;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Lukas Krejci
@@ -121,15 +122,7 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
     }
 
     public final void update(String id, Update update) throws EntityNotFoundException {
-        BE updated = mutating((t) -> {
-            BE toUpdate = checkExists(id);
-            context.backend.update(toUpdate, update);
-            context.backend.commit(t);
-            return toUpdate;
-        });
-
-        E entity = context.backend.convert(updated, context.entityClass);
-        context.notify(entity, new Action.Update<>(entity, update), updated());
+        Util.update(context, context.select().with(id(id)).get(), update);
     }
 
     public final void delete(String id) throws EntityNotFoundException {

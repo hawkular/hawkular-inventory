@@ -81,7 +81,8 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class ReadContained<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.ReadContained {
+    public static class ReadContained<BE> extends Fetcher<BE, ResourceType, ResourceType.Update>
+            implements ResourceTypes.ReadContained {
 
         public ReadContained(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -98,7 +99,7 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class Read<BE> extends Fetcher<BE, ResourceType> implements ResourceTypes.Read {
+    public static class Read<BE> extends Fetcher<BE, ResourceType, ResourceType.Update> implements ResourceTypes.Read {
 
         public Read(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -115,7 +116,8 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, ResourceType> implements ResourceTypes.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, ResourceType, ResourceType.Update>
+            implements ResourceTypes.Single {
 
         public Single(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -132,7 +134,7 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, ResourceType>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, ResourceType, ResourceType.Update>
             implements ResourceTypes.Multiple {
 
         public Multiple(TraversalContext<BE, ResourceType> context) {

@@ -113,7 +113,8 @@ public final class BaseTenants {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant> implements Tenants.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant, Tenant.Update>
+            implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {
             super(context);
@@ -135,7 +136,7 @@ public final class BaseTenants {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Tenant> implements Tenants.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Tenant, Tenant.Update> implements Tenants.Single {
 
         public Single(TraversalContext<BE, Tenant> context) {
             super(context);

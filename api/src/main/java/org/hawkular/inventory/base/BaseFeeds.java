@@ -94,7 +94,7 @@ public final class BaseFeeds {
         }
     }
 
-    public static class ReadContained<BE> extends Fetcher<BE, Feed> implements Feeds.ReadContained {
+    public static class ReadContained<BE> extends Fetcher<BE, Feed, Feed.Update> implements Feeds.ReadContained {
 
         public ReadContained(TraversalContext<BE, Feed> context) {
             super(context);
@@ -111,7 +111,7 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Read<BE> extends Fetcher<BE, Feed> implements Feeds.Read {
+    public static class Read<BE> extends Fetcher<BE, Feed, Feed.Update> implements Feeds.Read {
 
         public Read(TraversalContext<BE, Feed> context) {
             super(context);
@@ -128,7 +128,7 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Feed> implements Feeds.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {
             super(context);
@@ -145,7 +145,7 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed> implements Feeds.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Multiple {
 
         public Multiple(TraversalContext<BE, Feed> context) {
             super(context);

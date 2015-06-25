@@ -81,6 +81,29 @@ public class EmptyInventory implements Inventory {
         return new EntityNotFoundException(entityClass, (Filter[]) null);
     }
 
+    protected static class SingleBase<E extends Entity<?, ?>, Update> implements ResolvableToSingle<E, Update> {
+        private final Class<E> entityType;
+
+        public SingleBase(Class<E> entityType) {
+            this.entityType = entityType;
+        }
+
+        @Override
+        public E entity() throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(entityType);
+        }
+
+        @Override
+        public void update(Update update) throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(entityType);
+        }
+
+        @Override
+        public void delete() {
+            throw entityNotFound(entityType);
+        }
+    }
+
     public static class TenantsReadContained implements Tenants.ReadContained {
 
         @Override
@@ -168,7 +191,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class TenantsSingle implements Tenants.Single {
+    public static class TenantsSingle extends SingleBase<Tenant, Tenant.Update> implements Tenants.Single {
+
+        public TenantsSingle() {
+            super(Tenant.class);
+        }
 
         @Override
         public ResourceTypes.ReadWrite resourceTypes() {
@@ -193,11 +220,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public Tenant entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Tenant.class);
         }
     }
 
@@ -255,7 +277,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourceTypesSingle implements ResourceTypes.Single {
+    public static class ResourceTypesSingle extends SingleBase<ResourceType, ResourceType.Update>
+            implements ResourceTypes.Single {
+
+        public ResourceTypesSingle() {
+            super(ResourceType.class);
+        }
 
         @Override
         public Resources.Read resources() {
@@ -275,11 +302,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public ResourceType entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(ResourceType.class);
         }
     }
 
@@ -417,7 +439,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricTypesSingle implements MetricTypes.Single {
+    public static class MetricTypesSingle extends SingleBase<MetricType, MetricType.Update>
+            implements MetricTypes.Single {
+
+        public MetricTypesSingle() {
+            super(MetricType.class);
+        }
 
         @Override
         public Metrics.Read metrics() {
@@ -432,11 +459,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public MetricType entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(MetricType.class);
         }
     }
 
@@ -498,7 +520,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class EnvironmentsSingle implements Environments.Single {
+    public static class EnvironmentsSingle extends SingleBase<Environment, Environment.Update>
+            implements Environments.Single {
+
+        public EnvironmentsSingle() {
+            super(Environment.class);
+        }
 
         @Override
         public Feeds.ReadWrite feeds() {
@@ -652,6 +679,16 @@ public class EmptyInventory implements Inventory {
         public Relationship entity() throws EntityNotFoundException, RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
+
+        @Override
+        public void update(Relationship.Update o) throws EntityNotFoundException, RelationNotFoundException {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override
+        public void delete() {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
     }
 
     public static class RelationshipsMultiple implements Relationships.Multiple {
@@ -751,7 +788,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class FeedsSingle implements Feeds.Single {
+    public static class FeedsSingle extends SingleBase<Feed, Feed.Update> implements Feeds.Single {
+
+        public FeedsSingle() {
+            super(Feed.class);
+        }
 
         @Override
         public Resources.ReadWrite resources() {
@@ -771,11 +812,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public Feed entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Feed.class);
         }
     }
 
@@ -890,7 +926,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricsSingle implements Metrics.Single {
+    public static class MetricsSingle extends SingleBase<Metric, Metric.Update> implements Metrics.Single {
+
+        public MetricsSingle() {
+            super(Metric.class);
+        }
 
         @Override
         public Relationships.ReadWrite relationships() {
@@ -900,11 +940,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public Metric entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Metric.class);
         }
     }
 
@@ -980,7 +1015,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourcesSingle implements Resources.Single {
+    public static class ResourcesSingle extends SingleBase<Resource, Resource.Update> implements Resources.Single {
+
+        public ResourcesSingle() {
+            super(Resource.class);
+        }
 
         @Override
         public Metrics.ReadAssociate metrics() {
@@ -1016,11 +1055,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public Resource entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Resource.class);
         }
     }
 

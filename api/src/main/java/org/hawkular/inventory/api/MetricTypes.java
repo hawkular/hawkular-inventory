@@ -42,7 +42,7 @@ public final class MetricTypes {
     /**
      * Interface for accessing a single metric type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<MetricType>, BrowserBase {
+    public interface Single extends ResolvableToSingleWithRelationships<MetricType, MetricType.Update>, BrowserBase {
     }
 
     /**

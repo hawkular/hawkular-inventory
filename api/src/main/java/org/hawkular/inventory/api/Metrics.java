@@ -34,7 +34,7 @@ public final class Metrics {
     /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Metric> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Metric, Metric.Update> {}
 
     /**
      * Interface for traversing over a set of metrics.

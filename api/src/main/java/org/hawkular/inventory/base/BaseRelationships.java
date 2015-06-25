@@ -220,14 +220,16 @@ public final class BaseRelationships {
         }
     }
 
-    public static class Single<BE> extends Fetcher<BE, Relationship> implements Relationships.Single {
+    public static class Single<BE> extends Fetcher<BE, Relationship, Relationship.Update>
+            implements Relationships.Single {
 
         public Single(TraversalContext<BE, Relationship> context) {
             super(context);
         }
     }
 
-    public static class Multiple<BE> extends Fetcher<BE, Relationship> implements Relationships.Multiple {
+    public static class Multiple<BE> extends Fetcher<BE, Relationship, Relationship.Update>
+            implements Relationships.Multiple {
 
         private final Relationships.Direction direction;
 

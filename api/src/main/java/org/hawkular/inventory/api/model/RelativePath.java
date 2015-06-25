@@ -103,8 +103,8 @@ public final class RelativePath extends Path implements Serializable {
      * @param path              the relative path to parse
      * @param initialPosition   the initial position using which the types will be deduced for the segments that don't
      *                          specify the type explicitly
-     * @param intendedFinalType the type of the final element in the path. This can resolve potentially ambiguous
-     *                          situation where, given the initial position, more choices are possible.
+     * @param intendedFinalType the type of the final segment in the path. This can resolve potentially ambiguous
+     *                          situations where, given the initial position, more choices are possible.
      * @return the parsed relative path
      */
     public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,

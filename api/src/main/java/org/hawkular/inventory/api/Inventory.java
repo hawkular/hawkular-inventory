@@ -216,8 +216,8 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface instance
      * @throws java.lang.ClassCastException if the provided access interface doesn't match the element
      */
-    default <E extends AbstractElement<?, ?>, Single extends ResolvableToSingle<E>> Single inspect(E entity,
-            Class<Single> accessInterface) {
+    default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
+    Single inspect(E entity, Class<Single> accessInterface) {
         return entity.accept(new ElementVisitor.Simple<Single, Void>() {
             @Override
             public Single visitTenant(Tenant tenant, Void ignored) {
@@ -271,31 +271,32 @@ public interface Inventory extends AutoCloseable {
      *
      * @param path            the path to the element (entity or relationship)
      * @param accessInterface the expected access interface
-     * @param <Access>        the type of the access interface
+     * @param <Single>        the type of the access interface
      * @return the access interface instance
      * @throws java.lang.ClassCastException if the provided access interface doesn't match the element
      */
-    default <Access> Access inspect(CanonicalPath path, Class<Access> accessInterface) {
-        return path.accept(new ElementTypeVisitor<Access, Void>() {
+    default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
+    Single inspect(CanonicalPath path, Class<Single> accessInterface) {
+        return path.accept(new ElementTypeVisitor<Single, Void>() {
             @Override
-            public Access visitTenant(Void parameter) {
+            public Single visitTenant(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()));
             }
 
             @Override
-            public Access visitEnvironment(Void parameter) {
+            public Single visitEnvironment(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId()));
             }
 
             @Override
-            public Access visitFeed(Void parameter) {
+            public Single visitFeed(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId()).feeds().get(path.ids().getFeedId()));
             }
 
             @Override
-            public Access visitMetric(Void parameter) {
+            public Single visitMetric(Void parameter) {
                 Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId());
 
@@ -305,13 +306,13 @@ public interface Inventory extends AutoCloseable {
             }
 
             @Override
-            public Access visitMetricType(Void parameter) {
+            public Single visitMetricType(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).metricTypes()
                         .get(path.ids().getMetricTypeId()));
             }
 
             @Override
-            public Access visitResource(Void parameter) {
+            public Single visitResource(Void parameter) {
                 Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId());
 
@@ -321,18 +322,18 @@ public interface Inventory extends AutoCloseable {
             }
 
             @Override
-            public Access visitResourceType(Void parameter) {
+            public Single visitResourceType(Void parameter) {
                 return accessInterface.cast(tenants().get(path.ids().getTenantId()).resourceTypes()
                         .get(path.ids().getResourceTypeId()));
             }
 
             @Override
-            public Access visitRelationship(Void parameter) {
+            public Single visitRelationship(Void parameter) {
                 return accessInterface.cast(relationships().get(path.ids().getRelationshipId()));
             }
 
             @Override
-            public Access visitUnknown(Void parameter) {
+            public Single visitUnknown(Void parameter) {
                 return null;
             }
         }, null);

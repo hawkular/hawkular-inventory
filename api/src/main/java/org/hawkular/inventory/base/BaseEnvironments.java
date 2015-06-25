@@ -120,7 +120,8 @@ public final class BaseEnvironments {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Environment> implements Environments.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Environment, Environment.Update>
+            implements Environments.Single {
 
         public Single(TraversalContext<BE, Environment> context) {
             super(context);
@@ -158,7 +159,7 @@ public final class BaseEnvironments {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Environment>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Environment, Environment.Update>
             implements Environments.Multiple {
 
         public Multiple(TraversalContext<BE, Environment> context) {

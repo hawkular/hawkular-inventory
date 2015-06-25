@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import java.util.function.Function;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.ResolvableToMany;
@@ -25,16 +27,15 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 
-import java.util.function.Function;
-
 /**
  * A base class for all interface impls that need to resolve the entities.
  *
  * @author Lukas Krejci
  * @since 0.1.0
  */
-abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE, E> implements ResolvableToSingle<E>,
-                                                                                                ResolvableToMany<E> {
+abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update>
+        extends Traversal<BE, E> implements ResolvableToSingle<E, U>, ResolvableToMany<E> {
+
     public Fetcher(TraversalContext<BE, E> context) {
         super(context);
     }
@@ -62,6 +63,16 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
     }
 
     @Override
+    public void delete() {
+        Util.delete(context, context.select().get());
+    }
+
+    @Override
+    public void update(U u) throws EntityNotFoundException, RelationNotFoundException {
+        Util.update(context, context.select().get(), u);
+    }
+
+    @Override
     public Page<E> entities(Pager pager) {
         return readOnly(() -> {
             Function<BE, E> conversion = (e) -> context.backend.convert(e, context.entityClass);
@@ -75,12 +86,11 @@ abstract class Fetcher<BE, E extends AbstractElement<?, ?>> extends Traversal<BE
     @SuppressWarnings("unchecked")
     private void throwNotFoundException() {
         if (Entity.class.isAssignableFrom(context.entityClass)) {
-            throw new EntityNotFoundException((Class<Entity<?, ?>>) context.entityClass,
+            throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
                     Query.filters(context.select().get()));
         } else {
             //TODO this is not correct?
-            throw new RelationNotFoundException((Class<Entity<?, ?>>) context.entityClass,
-                    Query.filters(context.sourcePath));
+            throw new RelationNotFoundException((String) null, Query.filters(context.sourcePath));
         }
     }
 }

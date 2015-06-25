@@ -198,7 +198,8 @@ public final class BaseResources {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Resource> implements Resources.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Resource, Resource.Update>
+            implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
             super(context);
@@ -230,7 +231,8 @@ public final class BaseResources {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource> implements Resources.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource, Resource.Update>
+            implements Resources.Multiple {
 
         public Multiple(TraversalContext<BE, Resource> context) {
             super(context);

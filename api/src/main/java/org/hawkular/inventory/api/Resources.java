@@ -70,8 +70,8 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Resource>, BrowserBase<Metrics.ReadAssociate,
-            ReadWrite, ReadAssociate> {
+    public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
+            BrowserBase<Metrics.ReadAssociate, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
