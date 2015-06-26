@@ -16,8 +16,13 @@
  */
 package org.hawkular.inventory.api.model;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -163,33 +168,39 @@ public abstract class Path {
         }
     }
 
+    /**
+     * This is
+     *
+     * @param path
+     * @param origin
+     * @param intendedFinalType
+     */
+    public static Path fromPartiallyUntypedString(String path, CanonicalPath origin, Class<?> intendedFinalType) {
+        if (path.charAt(0) == PATH_DELIM) {
+            return CanonicalPath.fromPartiallyUntypedString(path, origin, intendedFinalType);
+        } else {
+            return RelativePath.fromPartiallyUntypedString(path, origin, intendedFinalType);
+        }
+    }
+
     protected abstract Path newInstance(int startIdx, int endIx, List<Segment> segments);
 
     /**
-     * This is equivalent to merely casting this instance to the {@link RelativePath}.
+     * Tries to convert this path to a relative path. This can result in a new instance construction if this instance
+     * is a canonical path.
      *
-     * This method merely provides an ever so slightly nicer API, together with the {@link #isRelative()} and
-     * {@link #isCanonical()} methods.
-     *
-     * @return this instance cast to RelativePath
-     * @throws ClassCastException if this isn't a relative path
+     * @return this instance converted to RelativePath
      */
-    public RelativePath asRelativePath() {
-        return (RelativePath) this;
-    }
+    public abstract RelativePath toRelativePath();
 
     /**
-     * This is equivalent to merely casting this instance to the {@link CanonicalPath}.
+     * Tries to convert this path to a canonical path. This can result in a new instance construction if this instance
+     * is a relative path.
      *
-     * This method merely provides an ever so slightly nicer API, together with the {@link #isRelative()} and
-     * {@link #isCanonical()} methods.
-     *
-     * @return this instance cast to CanonicalPath
-     * @throws ClassCastException if this isn't a relative path
+     * @return this instance converted to CanonicalPath
+     * @throws IllegalArgumentException if this instance is a relative path and it cannot be converted to canonical path
      */
-    public CanonicalPath asCanonicalPath() {
-        return (CanonicalPath) this;
-    }
+    public abstract CanonicalPath toCanonicalPath();
 
     /**
      * @return true if this is an instance of {@link CanonicalPath}, false otherwise
@@ -404,6 +415,11 @@ public abstract class Path {
         void finished();
     }
 
+    @FunctionalInterface
+    protected interface ExtenderConstructor {
+        Extender create(int from, List<Segment> segments);
+    }
+
     /**
      * Used internally by the decoder to provide "type-safe" progression of the path.
      */
@@ -418,8 +434,8 @@ public abstract class Path {
     }
 
     protected static class ParsingProgress {
-        private int pos;
         private final String source;
+        private int pos;
 
         public ParsingProgress(int pos, String source) {
             this.pos = pos;
@@ -442,7 +458,6 @@ public abstract class Path {
             return pos >= source.length();
         }
     }
-
 
     protected static class Decoder {
         private final EnhancedTypeProvider typeProvider;
@@ -629,11 +644,6 @@ public abstract class Path {
         }
     }
 
-    @FunctionalInterface
-    protected interface ExtenderConstructor {
-        Extender create(int from, List<Segment> segments);
-    }
-
     /**
      * While {@link CanonicalPath.Builder} or {@link RelativePath.Builder} provide compile-time-safe canonical path
      * construction, this class provides the same behavior at runtime, throwing {@link IllegalArgumentException}s if
@@ -643,8 +653,6 @@ public abstract class Path {
         protected final List<Segment> segments;
         private final Function<List<Segment>, List<Class<?>>> validProgressions;
         private final int from;
-
-        protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
 
         /**
          * Constructs a new extender
@@ -659,15 +667,25 @@ public abstract class Path {
             this.validProgressions = validProgressions;
         }
 
+        protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
+
         public Extender extend(Segment segment) {
             List<Class<?>> progress = validProgressions.apply(segments);
 
             if (progress == null || !progress.contains(segment.getElementType())) {
                 throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
-                        " of the path: " + segments);
+                        " of the path: " + segments +
+                        (progress == null ? ". There are no further extensions possible."
+                                : ". Valid extension types are: " + progress.stream().map(Class::getSimpleName)
+                                .collect(toList())));
             }
 
             segments.add(segment);
+            return this;
+        }
+
+        public Extender extend(Collection<Segment> segments) {
+            segments.forEach(this::extend);
             return this;
         }
 
@@ -677,6 +695,123 @@ public abstract class Path {
 
         public Path get() {
             return newPath(from, segments.size(), segments);
+        }
+    }
+
+    /**
+     * This is a type provider ({@link org.hawkular.inventory.api.model.Path.TypeProvider}) implementation that tries
+     * to deduce the types on the path based on the current position and the intended type of the final segment of
+     * the path.
+     */
+    public static class HintedTypeProvider implements TypeProvider {
+        private final Class<?> intendedFinalType;
+        private final Extender extender;
+
+        /**
+         * Constructs a new instance.
+         *
+         * @param intendedFinalType the anticipated type of the final segment
+         * @param extender          an initial path
+         */
+        public HintedTypeProvider(Class<?> intendedFinalType, Extender extender) {
+            this.intendedFinalType = intendedFinalType;
+            this.extender = extender;
+        }
+
+        @Override
+        public void segmentParsed(Segment segment) {
+            extender.extend(segment);
+        }
+
+        @Override
+        public Segment deduceSegment(String type, String id, boolean isLast) {
+            if (type != null && !type.isEmpty()) {
+                //we're here only to figure out what the default handler couldn't, if there was a type
+                //the default handler should have figured it out and we have no additional information
+                //to resolve the situation.
+                return null;
+            }
+
+            CanonicalPath full = extender.get().toCanonicalPath();
+
+            Class<?> nextStep = unambiguousPathNextStep(intendedFinalType,
+                    full.getSegment().getElementType(), isLast, new HashMap<>());
+
+            if (nextStep != null) {
+                return new Segment(nextStep, id);
+            }
+
+            return null;
+        }
+
+        @Override
+        public void finished() {
+        }
+
+        private Class<?> unambiguousPathNextStep(Class<?> targetType, Class<?> currentType,
+                boolean isLast, Map<Class<?>, Boolean> visitedTypes) {
+
+            if (targetType.equals(currentType)) {
+                return targetType;
+            }
+
+            Set<Class<?>> ret = new HashSet<>();
+
+            fillPossiblePathsToTarget(targetType, currentType, ret, visitedTypes, true);
+
+            if (ret.size() == 0) {
+                return null;
+            } else if (ret.size() == 1) {
+                return ret.iterator().next();
+            } else if (isLast) {
+                //there are multiple progressions to the intended type possible, but we're processing the
+                //last path segment. So if one of the possible progressions is the intended type itself,
+                //we're actually good.
+                if (ret.contains(intendedFinalType)) {
+                    return intendedFinalType;
+                }
+            }
+
+            throw new IllegalArgumentException("Cannot unambiguously deduce types of the untyped path" +
+                    " segments.");
+        }
+
+        private boolean fillPossiblePathsToTarget(Class<?> targetType, Class<?> currentType,
+                Set<Class<?>> result, Map<Class<?>, Boolean> visitedTypes, boolean isStart) {
+
+            if (targetType.equals(currentType)) {
+                if (isStart) {
+                    result.add(currentType);
+                }
+                return true;
+            }
+
+            List<Class<?>> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
+
+            if (options == null || options.isEmpty()) {
+                return false;
+            }
+
+            boolean matched = false;
+
+            for (Class<?> option : options) {
+                if (!visitedTypes.containsKey(option)) {
+                    visitedTypes.put(option, false);
+
+                    if (fillPossiblePathsToTarget(targetType, option, result, visitedTypes, false)) {
+                        if (isStart) {
+                            result.add(option);
+                        }
+
+                        visitedTypes.put(option, true);
+                        matched = true;
+                    }
+                } else {
+                    matched |= visitedTypes.get(option);
+                }
+            }
+
+            return matched;
         }
     }
 

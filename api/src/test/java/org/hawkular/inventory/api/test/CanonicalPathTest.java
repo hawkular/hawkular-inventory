@@ -24,6 +24,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -227,17 +228,29 @@ public class CanonicalPathTest {
     public void testUntypedRelativePath() throws Exception {
         CanonicalPath cp = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
 
-        RelativePath rp = RelativePath.fromPartiallyUntypedString("../g", cp, Resource.class);
-        Assert.assertEquals("../r;g", rp.toString());
+        Path mp = Path.fromPartiallyUntypedString("g", cp, Resource.class);
+        Assert.assertEquals("r;g", mp.toString());
 
-        rp = RelativePath.fromPartiallyUntypedString("../f;x/g", cp, Resource.class);
-        Assert.assertEquals("../f;x/r;g", rp.toString());
+        mp = Path.fromPartiallyUntypedString("../g", cp, Resource.class);
+        Assert.assertEquals("../r;g", mp.toString());
 
-        rp = RelativePath.fromPartiallyUntypedString("../r;g/h/i", cp, Resource.class);
-        Assert.assertEquals("../r;g/r;h/r;i", rp.toString());
+        mp = Path.fromPartiallyUntypedString("../f;x/g", cp, Resource.class);
+        Assert.assertEquals("../f;x/r;g", mp.toString());
 
-        rp = RelativePath.fromPartiallyUntypedString("../../env/me", cp, Metric.class);
-        Assert.assertEquals("../../e;env/m;me", rp.toString());
+        mp = Path.fromPartiallyUntypedString("../r;g/h/i", cp, Resource.class);
+        Assert.assertEquals("../r;g/r;h/r;i", mp.toString());
+
+        mp = Path.fromPartiallyUntypedString("../../env/me", cp, Metric.class);
+        Assert.assertEquals("../../e;env/m;me", mp.toString());
+
+        mp = Path.fromPartiallyUntypedString("/g", cp, Resource.class);
+        Assert.assertEquals("/t;t/e;e/f;f/r;g", mp.toString());
+
+        mp = Path.fromPartiallyUntypedString("/g/h", cp, Resource.class);
+        Assert.assertEquals("/t;t/e;e/f;f/r;g/r;h", mp.toString());
+
+        mp = Path.fromPartiallyUntypedString("/g", cp, Metric.class);
+        Assert.assertEquals("/t;t/e;e/f;f/m;g", mp.toString());
     }
 
     @SuppressWarnings("unchecked")

@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -127,8 +128,38 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
                 new CanonicalTypeProvider(typeProvider));
     }
 
+    /**
+     * An overload of {@link #fromPartiallyUntypedString(String, TypeProvider)} which uses the provided initial position
+     * to figure out the possible type if is missing in the provided relative path.
+     *
+     * @param path              the relative path to parse
+     * @param initialPosition   the initial position using which the types will be deduced for the segments that don't
+     *                          specify the type explicitly
+     * @param intendedFinalType the type of the final segment in the path. This can resolve potentially ambiguous
+     *                          situations where, given the initial position, more choices are possible.
+     * @return the parsed relative path
+     */
+    public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
+            Class<?> intendedFinalType) {
+
+        return (CanonicalPath) Path.fromString(path, true, SHORT_NAME_TYPES,
+                (idx, list) -> new Extender(idx, list).extend(initialPosition.getPath()),
+                new CanonicalTypeProvider(new HintedTypeProvider(intendedFinalType,
+                        CanonicalPath.empty().extend(initialPosition.getPath()))));
+    }
+
     public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
         return getSegment().accept(visitor, parameter);
+    }
+
+    @Override
+    public CanonicalPath toCanonicalPath() {
+        return this;
+    }
+
+    @Override
+    public RelativePath toRelativePath() {
+        return RelativePath.empty().extend(getPath()).get();
     }
 
     @SuppressWarnings("unchecked")
@@ -201,8 +232,16 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
     public Extender extend(Class<?> type, String id) {
-        Extender ret = new Extender(startIdx, new ArrayList<>(getPath()));
-        return ret.extend(new Segment(type, id));
+        return modified().extend(new Segment(type, id));
+    }
+
+    /**
+     * The returned extender will produce a modified version of this path. This path will remain unaffected.
+     *
+     * @return an extender initialized with the current path
+     */
+    public Extender modified() {
+        return new Extender(startIdx, new ArrayList<>(getPath()));
     }
 
     /**
@@ -290,6 +329,10 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         @Override
         public Extender extend(Segment segment) {
             return (Extender) super.extend(segment);
+        }
+
+        public Extender extend(Collection<Segment> segments) {
+            return (Extender) super.extend(segments);
         }
 
         @Override

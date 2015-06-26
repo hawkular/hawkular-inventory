@@ -19,9 +19,9 @@ package org.hawkular.inventory.api.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -110,125 +110,9 @@ public final class RelativePath extends Path implements Serializable {
     public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             Class<?> intendedFinalType) {
 
-        return (RelativePath) Path.fromString(path, false, SHORT_NAME_TYPES,
-                (from, segments) -> new Extender(from, segments, (segs) -> {
-                    RelativePath.Extender tmp = RelativePath.empty();
-                    segs.forEach(tmp::extend);
-
-                    CanonicalPath full = segs.isEmpty() ? initialPosition : tmp.get().applyTo(initialPosition);
-
-                    if (!full.isDefined()) {
-                        return Arrays.asList(Tenant.class, Relationship.class);
-                    } else {
-                        return VALID_PROGRESSIONS.get(full.getSegment().getElementType());
-                    }
-                }), new RelativeTypeProvider(new TypeProvider() {
-                    RelativePath.Extender currentPath = RelativePath.empty();
-                    int currentLength;
-
-                    @Override
-                    public void segmentParsed(Segment segment) {
-                        currentPath.extend(segment);
-                        currentLength++;
-                    }
-
-                    @Override
-                    public Segment deduceSegment(String type, String id, boolean isLast) {
-                        if (type != null && !type.isEmpty()) {
-                            //we're here only to figure out what the default handler couldn't, if there was a type
-                            //the default handler should have figured it out and we have no additional information
-                            //to resolve the situation.
-                            return null;
-                        }
-
-                        CanonicalPath full = currentLength == 0 ? initialPosition : currentPath.get()
-                                .applyTo(initialPosition);
-
-                        Class<?> nextStep = unambiguousPathNextStep(intendedFinalType,
-                                full.getSegment().getElementType(), isLast, new HashMap<>());
-
-                        if (nextStep != null) {
-                            return new Segment(nextStep, id);
-                        }
-
-                        return null;
-                    }
-
-                    @Override
-                    public void finished() {
-                    }
-
-                    private Class<?> unambiguousPathNextStep(Class<?> targetType, Class<?> currentType,
-                            boolean isLast, Map<Class<?>, Boolean> visitedTypes) {
-
-                        if (targetType.equals(currentType)) {
-                            return targetType;
-                        }
-
-                        Set<Class<?>> ret = new HashSet<>();
-
-                        fillPossiblePathsToTarget(targetType, currentType, ret, visitedTypes, true);
-
-                        if (ret.size() == 0) {
-                            return null;
-                        } else if (ret.size() == 1) {
-                            return ret.iterator().next();
-                        } else if (isLast) {
-                            //there are multiple progressions to the intended type possible, but we're processing the
-                            //last path segment. So if one of the possible progressions is the intended type itself,
-                            //we're actually good.
-                            if (ret.contains(intendedFinalType)) {
-                                return intendedFinalType;
-                            }
-                        }
-
-                        throw new IllegalArgumentException("Cannot unambiguously deduce types of the untyped path" +
-                                " segments.");
-                    }
-
-                    private boolean fillPossiblePathsToTarget(Class<?> targetType, Class<?> currentType,
-                            Set<Class<?>> result, Map<Class<?>, Boolean> visitedTypes, boolean isStart) {
-
-                        if (targetType.equals(currentType)) {
-                            if (isStart) {
-                                result.add(currentType);
-                            }
-                            return true;
-                        }
-
-                        List<Class<?>> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
-
-                        if (options == null || options.isEmpty()) {
-                            return false;
-                        }
-
-                        boolean matched = false;
-
-                        for (Class<?> option : options) {
-                            if (!visitedTypes.containsKey(option)) {
-                                visitedTypes.put(option, false);
-
-                                if (fillPossiblePathsToTarget(targetType, option, result, visitedTypes, false)) {
-                                    if (isStart) {
-                                        result.add(option);
-                                    }
-
-                                    visitedTypes.put(option, true);
-                                    matched = true;
-                                }
-                            } else {
-                                matched |= visitedTypes.get(option);
-                            }
-                        }
-
-                        return matched;
-                    }
-                }));
-    }
-
-    @Override
-    protected Path newInstance(int startIdx, int endIdx, List<Segment> segments) {
-        return new RelativePath(startIdx, endIdx, segments);
+        return (RelativePath) Path.fromString(path, false, SHORT_NAME_TYPES, Extender::new,
+                new RelativeTypeProvider(new HintedTypeProvider(intendedFinalType,
+                        RelativePath.empty().extend(initialPosition.getPath()))));
     }
 
     /**
@@ -242,13 +126,40 @@ public final class RelativePath extends Path implements Serializable {
         return new Builder(new ArrayList<>());
     }
 
+    @Override
+    protected Path newInstance(int startIdx, int endIdx, List<Segment> segments) {
+        return new RelativePath(startIdx, endIdx, segments);
+    }
+
     /**
      * Applies this relative path on the provided canonical path.
      *
      * @param path
      */
     public CanonicalPath applyTo(CanonicalPath path) {
-        CanonicalPath.Extender extender = new CanonicalPath.Extender(0, new ArrayList<>(path.getPath())) {
+        return toCanonicalPath(new ArrayList<>(path.getPath()));
+    }
+
+    /**
+     * Tries to convert this relative path to a canonical path. This will only succeed if this relative path truly
+     * represents a canonical path and thus can be converted to it.
+     *
+     * <p>I.e. this will not work on relative paths like {@code ../r;id} which doesn't itself represent a full canonical
+     * path.
+     *
+     * @return a canonical path constructed from this relative path
+     * @throws IllegalArgumentException if the attempt to convert to canonical path fails
+     */
+    public CanonicalPath toCanonicalPath() {
+        return toCanonicalPath(new ArrayList<>());
+    }
+
+    public RelativePath toRelativePath() {
+        return this;
+    }
+
+    private CanonicalPath toCanonicalPath(List<Segment> startSegments) {
+        CanonicalPath.Extender extender = new CanonicalPath.Extender(0, startSegments) {
             @Override
             public CanonicalPath.Extender extend(Segment segment) {
                 if (Up.class.equals(segment.getElementType())) {
@@ -525,9 +436,13 @@ public final class RelativePath extends Path implements Serializable {
 
                 if (Up.class.equals(lastType)) {
                     int idx = segs.size() - 2;
+                    int jump = 1;
                     while (idx >= 0 && Up.class.equals(segs.get(idx).getElementType())) {
                         idx--;
+                        jump++;
                     }
+
+                    idx -= jump;
 
                     if (idx < 0) {
                         return ALL_VALID_TYPES;
@@ -552,6 +467,10 @@ public final class RelativePath extends Path implements Serializable {
         @Override
         public Extender extend(Segment segment) {
             return (Extender) super.extend(segment);
+        }
+
+        public Extender extend(Collection<Segment> segments) {
+            return (Extender) super.extend(segments);
         }
 
         @Override
