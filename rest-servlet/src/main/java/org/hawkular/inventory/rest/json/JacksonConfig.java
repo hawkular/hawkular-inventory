@@ -16,16 +16,19 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-import org.hawkular.inventory.api.model.Relationship;
 
 /**
  * @author Jirka Kremser
@@ -43,11 +46,14 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
         this.mapper = new ObjectMapper();
         this.embeddedRelationshipsMapper = new EmbeddedObjectMapper();
         initializeObjectMapper(this.mapper);
+        initializeObjectMapper(this.embeddedRelationshipsMapper);
+
         SimpleModule relationshipModule = new SimpleModule("RelationshipModule",
                                                            new Version(0, 1, 0, null, "org.hawkular.inventory",
                                                                        "inventory-rest-api"));
         relationshipModule.addSerializer(Relationship.class, new RelationshipJacksonSerializer());
         relationshipModule.addDeserializer(Relationship.class, new RelationshipJacksonDeserializer());
+
         this.mapper.registerModule(relationshipModule);
     }
 
@@ -56,6 +62,7 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
         mapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
         mapper.disable(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        mapper.addMixInAnnotations(CanonicalPath.class, CanonicalPathSerializationMixin.class);
     }
 
     @Override
