@@ -30,6 +30,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
 import java.util.Collection;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -48,14 +49,13 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.rest.filters.ResourceFilters;
 import org.hawkular.inventory.rest.json.ApiError;
 
 
@@ -141,13 +141,8 @@ public class RestResources extends RestBase {
 
         ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.feedlessResources() : envs.allResources();
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-            rs = rr.getAll(Defined.by(rt)).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        ResourceFilters filters = new ResourceFilters(tenantId, uriInfo.getQueryParameters());
+        Page<Resource> rs = rr.getAll(filters.get()).entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
@@ -160,21 +155,15 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getResourcesByType(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @QueryParam("type") String typeId,
-            @QueryParam("typeVersion") String typeVersion, @Context UriInfo uriInfo) {
+            @PathParam("feedId") String feedId, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
         Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .feeds().get(feedId).resources();
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
-            rs = rr.getAll(Defined.by(rt)).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        ResourceFilters filters = new ResourceFilters(tenantId, uriInfo.getQueryParameters());
+        Page<Resource> rs = rr.getAll(filters.get()).entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
