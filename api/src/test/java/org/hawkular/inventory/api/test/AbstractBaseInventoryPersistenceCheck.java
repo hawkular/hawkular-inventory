@@ -154,32 +154,31 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .tenant("com.acme.tenant").metricType("ResponseTime").get());
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessMetrics()
-                .create(new Metric.Blueprint("ResponseTime", "host1_ping_response")).entity().getId()
+                .create(new Metric.Blueprint("/ResponseTime", "host1_ping_response")).entity().getId()
                 .equals("host1_ping_response");
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                .create(new Resource.Blueprint("host1", "URL")).entity()
+                .create(new Resource.Blueprint("host1", "/URL")).entity()
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                .get("host1").metrics().associate(CanonicalPath.of().tenant("com.acme.tenant").environment("production")
-                .metric("host1_ping_response").get());
+                .get("host1").metrics().associate(RelativePath.fromString("../m;host1_ping_response"));
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
                 .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource1", "URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource1", "/URL")).entity().getId()
                 .equals("feedResource1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource2", "URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource2", "/URL")).entity().getId()
                 .equals("feedResource2");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource3", "URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource3", "/URL")).entity().getId()
                 .equals("feedResource3");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .metrics().create(new Metric.Blueprint("ResponseTime", "feedMetric1")).entity().getId()
+                .metrics().create(new Metric.Blueprint("/ResponseTime", "feedMetric1")).entity().getId()
                 .equals("feedMetric1");
 
         assert inventory.tenants().create(new Tenant.Blueprint("com.example.tenant")).entity().getId()
@@ -196,13 +195,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .associate(RelativePath.to().up().metricType("Size").get());
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
-                .create(new Metric.Blueprint("Size", "playroom1_size")).entity().getId().equals("playroom1_size");
+                .create(new Metric.Blueprint("/Size", "playroom1_size")).entity().getId().equals("playroom1_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
-                .create(new Metric.Blueprint("Size", "playroom2_size")).entity().getId().equals("playroom2_size");
+                .create(new Metric.Blueprint("/Size", "playroom2_size")).entity().getId().equals("playroom2_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom1", "Playroom")).entity().getId().equals("playroom1");
+                .create(new Resource.Blueprint("playroom1", "/Playroom")).entity().getId().equals("playroom1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom2", "Playroom")).entity().getId().equals("playroom2");
+                .create(new Resource.Blueprint("playroom2", "/Playroom")).entity().getId().equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").metrics().associate(RelativePath.to().up().metric("playroom1_size").get());
@@ -211,10 +210,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .environment("test").metric("playroom2_size").get());
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.1", "Playroom")).entity()
+                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.1", "/Playroom")).entity()
                 .getId().equals("playroom1.1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.2", "Playroom")).entity()
+                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.2", "/Playroom")).entity()
                 .getId().equals("playroom1.2");
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
@@ -1245,7 +1244,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             inventory.tenants().get("t").metricTypes().create(new MetricType.Blueprint("mt", MetricUnit.BYTE));
 
             inventory.tenants().get("t").environments().get("e").feedlessMetrics()
-                    .create(new Metric.Blueprint("mt", "m"));
+                    .create(new Metric.Blueprint("/mt", "m"));
             inventory.tenants().get("t").environments().get("e").feedlessMetrics().update("m",
                     Metric.Update.builder().build());
 
@@ -1264,12 +1263,12 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     .withUnit(MetricUnit.BYTE).build());
 
             inventory.tenants().get("t").environments().get("e").feedlessResources()
-                    .create(new Resource.Blueprint("r", "rt"));
+                    .create(new Resource.Blueprint("r", "/rt"));
             inventory.tenants().get("t").environments().get("e").feedlessResources().update("r",
                     Resource.Update.builder().build());
 
             Metric m = inventory.tenants().get("t").environments().get("e").feedlessMetrics()
-                    .create(Metric.Blueprint.builder().withId("m").withMetricTypeId("mt").build()).entity();
+                    .create(Metric.Blueprint.builder().withId("m").withMetricTypePath("/mt").build()).entity();
 
             List<Relationship> createdRelationships = new ArrayList<>();
 

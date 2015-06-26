@@ -69,11 +69,12 @@ public final class BaseResources {
 
             BE resourceTypeObject;
             try {
-                resourceTypeObject = context.backend.find(CanonicalPath.of()
-                        .tenant(parentPath.getRoot().getSegment().getElementId())
-                        .resourceType(blueprint.getResourceTypeId()).get());
+                CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
+                Path resourceTypePath = Path.fromPartiallyUntypedString(blueprint.getResourceTypePath(), tenant,
+                        parentPath, ResourceType.class);
+                resourceTypeObject = context.backend.find(resourceTypePath.toCanonicalPath());
             } catch (ElementNotFoundException e) {
-                throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypeId() + "' not found" +
+                throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
                         " in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
             }
 

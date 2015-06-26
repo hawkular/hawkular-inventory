@@ -228,28 +228,28 @@ public class CanonicalPathTest {
     public void testUntypedRelativePath() throws Exception {
         CanonicalPath cp = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
 
-        Path mp = Path.fromPartiallyUntypedString("g", cp, Resource.class);
+        Path mp = Path.fromPartiallyUntypedString("g", cp, cp, Resource.class);
         Assert.assertEquals("r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../g", cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("../g", cp, cp, Resource.class);
         Assert.assertEquals("../r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../f;x/g", cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("../f;x/g", cp, cp, Resource.class);
         Assert.assertEquals("../f;x/r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../r;g/h/i", cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("../r;g/h/i", cp, cp, Resource.class);
         Assert.assertEquals("../r;g/r;h/r;i", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../../env/me", cp, Metric.class);
+        mp = Path.fromPartiallyUntypedString("../../env/me", cp, cp, Metric.class);
         Assert.assertEquals("../../e;env/m;me", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g", cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("/g", cp, cp, Resource.class);
         Assert.assertEquals("/t;t/e;e/f;f/r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g/h", cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("/g/h", cp, cp, Resource.class);
         Assert.assertEquals("/t;t/e;e/f;f/r;g/r;h", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g", cp, Metric.class);
+        mp = Path.fromPartiallyUntypedString("/g", cp, cp, Metric.class);
         Assert.assertEquals("/t;t/e;e/f;f/m;g", mp.toString());
     }
 

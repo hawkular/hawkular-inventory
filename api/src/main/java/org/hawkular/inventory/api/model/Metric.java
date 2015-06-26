@@ -16,14 +16,15 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.Expose;
+import java.util.Collections;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Collections;
-import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.Expose;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
@@ -88,7 +89,7 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
         @XmlAttribute
-        private final String metricTypeId;
+        private final String metricTypePath;
 
         public static Builder builder() {
             return new Builder();
@@ -102,17 +103,17 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
             this(null, null, null);
         }
 
-        public Blueprint(String metricTypeId, String id) {
-            this(metricTypeId, id, Collections.emptyMap());
+        public Blueprint(String metricTypePath, String id) {
+            this(metricTypePath, id, Collections.emptyMap());
         }
 
-        public Blueprint(String metricTypeId, String id, Map<String, Object> properties) {
+        public Blueprint(String metricTypePath, String id, Map<String, Object> properties) {
             super(id, properties);
-            this.metricTypeId = metricTypeId;
+            this.metricTypePath = metricTypePath;
         }
 
-        public String getMetricTypeId() {
-            return metricTypeId;
+        public String getMetricTypePath() {
+            return metricTypePath;
         }
 
         @Override
@@ -123,8 +124,8 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private String metricTypeId;
 
-            public Builder withMetricTypeId(String metricTypeId) {
-                this.metricTypeId = metricTypeId;
+            public Builder withMetricTypePath(String metricTypePath) {
+                this.metricTypeId = metricTypePath;
                 return this;
             }
 

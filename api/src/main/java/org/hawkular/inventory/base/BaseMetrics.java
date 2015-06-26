@@ -65,11 +65,13 @@ public final class BaseMetrics {
             BE metricTypeObject;
 
             try {
-                metricTypeObject = context.backend.find(parentPath.getRoot().extend(MetricType.class,
-                        blueprint.getMetricTypeId()).get());
+                CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
+                Path metricTypePath = Path.fromPartiallyUntypedString(blueprint.getMetricTypePath(), tenant, parentPath,
+                        MetricType.class);
+                metricTypeObject = context.backend.find(metricTypePath.toCanonicalPath());
 
             } catch (ElementNotFoundException e) {
-                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypeId() +
+                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypePath() +
                         "' not found in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
             }
 

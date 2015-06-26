@@ -118,7 +118,7 @@ public class RestMetrics extends RestBase {
             throw new IllegalArgumentException("metric id not specified");
         }
 
-        if (metric.getMetricTypeId() == null) {
+        if (metric.getMetricTypePath() == null) {
             throw new IllegalArgumentException("metric type id not specified");
         }
 
