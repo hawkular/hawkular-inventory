@@ -210,11 +210,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .environment("test").metric("playroom2_size").get());
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.1", "/Playroom")).entity()
-                .getId().equals("playroom1.1");
+                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.1", "/Playroom"))
+                .entity().getId().equals("playroom1.1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.2", "/Playroom")).entity()
-                .getId().equals("playroom1.2");
+                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.2", "/Playroom"))
+                .entity().getId().equals("playroom1.2");
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").resource("playroom2").get());

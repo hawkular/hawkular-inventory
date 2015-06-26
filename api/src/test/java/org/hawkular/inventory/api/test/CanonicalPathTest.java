@@ -165,9 +165,9 @@ public class CanonicalPathTest {
 
         Assert.assertEquals("../m;kachna", rp.toString());
 
-        rp = RelativePath.fromString("../e;e/../f;f");
-
-        Assert.assertEquals("../e;e/../f;f", rp.toString());
+        //the '..' lead us up to the "unknown" before trying to go down to the tenant, so this is valid
+        rp = RelativePath.fromString("../e;e/../t;t");
+        Assert.assertEquals("../e;e/../t;t", rp.toString());
 
         try {
             RelativePath.fromString("../r");
@@ -198,7 +198,7 @@ public class CanonicalPathTest {
         }
 
         try {
-            RelativePath.fromString("r;r/../e;e"); //environments cannot be inside resources
+            RelativePath.fromString("f;f/r;r/../e;e"); //environments cannot be inside feeds
             Assert.fail("Invalid relative path should have failed to parse.");
         } catch (IllegalArgumentException e) {
             //good

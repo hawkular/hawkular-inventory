@@ -434,9 +434,9 @@ public final class RelativePath extends Path implements Serializable {
 
                 Class<?> lastType = segs.get(segs.size() - 1).getElementType();
 
-                if (Up.class.equals(lastType)) {
-                    int idx = segs.size() - 2;
-                    int jump = 1;
+                int idx = segs.size() - 2;
+                int jump = 1;
+                while (Up.class.equals(lastType)) {
                     while (idx >= 0 && Up.class.equals(segs.get(idx).getElementType())) {
                         idx--;
                         jump++;
