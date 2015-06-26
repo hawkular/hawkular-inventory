@@ -169,17 +169,24 @@ public abstract class Path {
     }
 
     /**
-     * This is
+     * This is mostly meant as a helper to REST API.
      *
-     * @param path
-     * @param origin
-     * @param intendedFinalType
+     * If the provided path is canonical (starts with a slash) the {@code canonicalPathOrigin} together with the
+     * {@code intendedFinalType} will be used to construct a full canonical path from the potentially untyped input.
+     *
+     * If the input path is relative, the {@code relativePathsOrigin} will be used instead.
+     *
+     * @param path the potentially partially untyped input path
+     * @param canonicalPathsOrigin the origin to "prefix" the path if it is canonical
+     * @param relativePathsOrigin the origin to resolve the relative path against (if the input path is relative)
+     * @param intendedFinalType the intended type of the final segment of the path
      */
-    public static Path fromPartiallyUntypedString(String path, CanonicalPath origin, Class<?> intendedFinalType) {
+    public static Path fromPartiallyUntypedString(String path, CanonicalPath canonicalPathsOrigin,
+            CanonicalPath relativePathsOrigin, Class<?> intendedFinalType) {
         if (path.charAt(0) == PATH_DELIM) {
-            return CanonicalPath.fromPartiallyUntypedString(path, origin, intendedFinalType);
+            return CanonicalPath.fromPartiallyUntypedString(path, canonicalPathsOrigin, intendedFinalType);
         } else {
-            return RelativePath.fromPartiallyUntypedString(path, origin, intendedFinalType);
+            return RelativePath.fromPartiallyUntypedString(path, relativePathsOrigin, intendedFinalType);
         }
     }
 

@@ -550,9 +550,13 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, Collection<Path> metricIds) {
+            @PathParam("resourcePath") String resourcePath,
+            @ApiParam("A list of paths to metrics to be associated with the resource. They can either be canonical or" +
+                    " relative to the resource.") Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
@@ -562,7 +566,8 @@ public class RestResources extends RestBase {
 
         Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
 
-        metricIds.forEach(metricDao::associate);
+        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
+                .forEach(metricDao::associate);
 
         return Response.noContent().build();
     }
@@ -578,9 +583,11 @@ public class RestResources extends RestBase {
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            Collection<Path> metricPaths) {
+            Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
@@ -590,7 +597,8 @@ public class RestResources extends RestBase {
 
         Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
 
-        metricPaths.forEach(metricDao::associate);
+        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
+                .forEach(metricDao::associate);
 
         return Response.noContent().build();
     }
@@ -642,17 +650,27 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") Path metricPath) {
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric path should be considered canonical, false by default.")
+            boolean isCanonical) {
 
         String tenantId = getTenantId();
 
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
-        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(metricPath).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
 
         return Response.ok(m).build();
     }
@@ -669,16 +687,25 @@ public class RestResources extends RestBase {
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricPath") Path metricPath) {
+            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+    @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
+
         String tenantId = getTenantId();
 
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
-        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(metricPath).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
         return Response.ok(m).build();
     }
 
@@ -693,21 +720,30 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") Path metricPath) {
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
         if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(metricPath);
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
 
         return Response.noContent().build();
     }
@@ -724,21 +760,29 @@ public class RestResources extends RestBase {
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricPath") Path metricPath) {
+            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+    @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
         if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        if (Security.isTenantEscapeAttempt(rp, metricPath)) {
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(metricPath);
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
 
         return Response.noContent().build();
     }
