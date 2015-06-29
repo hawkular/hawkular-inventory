@@ -132,8 +132,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getResourcesByType(@PathParam("environmentId") String environmentId,
-            @QueryParam("type") String typeId, @QueryParam("typeVersion") String typeVersion,
-            @QueryParam("feedless") @DefaultValue("false") boolean feedless, @Context UriInfo uriInfo) {
+            @QueryParam("type") String typeId, @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+            @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -142,8 +142,8 @@ public class RestResources extends RestBase {
         ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.feedlessResources() : envs.allResources();
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+        if (typeId != null) {
+            ResourceType rt = new ResourceType(tenantId, typeId);
             rs = rr.getAll(Defined.by(rt)).entities(pager);
         } else {
             rs = rr.getAll().entities(pager);
@@ -160,8 +160,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getResourcesByType(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @QueryParam("type") String typeId,
-            @QueryParam("typeVersion") String typeVersion, @Context UriInfo uriInfo) {
+            @PathParam("feedId") String feedId, @QueryParam("type") String typeId, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -169,8 +168,8 @@ public class RestResources extends RestBase {
                 .feeds().get(feedId).resources();
         Pager pager = extractPaging(uriInfo);
         Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            ResourceType rt = new ResourceType(tenantId, typeId, typeVersion);
+        if (typeId != null) {
+            ResourceType rt = new ResourceType(tenantId, typeId);
             rs = rr.getAll(Defined.by(rt)).entities(pager);
         } else {
             rs = rr.getAll().entities(pager);

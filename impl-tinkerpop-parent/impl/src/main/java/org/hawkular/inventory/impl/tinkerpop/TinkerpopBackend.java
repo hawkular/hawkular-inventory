@@ -320,8 +320,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             feedVertex == null ? null : extractId(feedVertex), extractId(v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractId(getTenantVertexOf(v)), extractId(v), (String) v.getProperty(
-                            Constants.Property.__version.name()));
+                    e = new ResourceType(extractId(getTenantVertexOf(v)), extractId(v));
                     break;
                 case tenant:
                     e = new Tenant(extractId(v));
@@ -512,7 +511,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitResourceType(ResourceType.Update type, Void parameter) {
                 common(type.getProperties(), ResourceType.class);
-                entity.setProperty(Constants.Property.__version.name(), type.getVersion());
                 return null;
             }
 
