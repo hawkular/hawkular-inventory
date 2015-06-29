@@ -129,8 +129,7 @@ public final class CanonicalPath {
                 return new Environment(getTenantId(), getEnvironmentId());
             }
         } else if (getResourceTypeId() != null) {
-            // hc: version 1.0 because the version can't be inferred from the path
-            return new ResourceType(getTenantId(), getResourceTypeId(), "1.0");
+            return new ResourceType(getTenantId(), getResourceTypeId());
         } else if (getMetricTypeId() != null) {
             return new MetricType(getTenantId(), getMetricTypeId(), null);
         } else if (getTenantId() != null) {

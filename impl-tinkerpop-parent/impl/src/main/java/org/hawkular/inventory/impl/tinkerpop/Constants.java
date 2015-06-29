@@ -31,7 +31,6 @@ import org.hawkular.inventory.api.model.Tenant;
 import java.util.Arrays;
 
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__version;
 
 /**
  * @author Lukas Krejci
@@ -56,12 +55,6 @@ final class Constants {
         __eid,
 
         /**
-         * Present on the resource type entity, this is the name of the property that we use to store the version
-         * of the resource type represented by the vertex.
-         */
-        __version,
-
-        /**
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
@@ -81,7 +74,7 @@ final class Constants {
      */
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
-        resourceType(ResourceType.class, __version), metricType(MetricType.class, __unit), resource(Resource.class),
+        resourceType(ResourceType.class), metricType(MetricType.class, __unit), resource(Resource.class),
         metric(Metric.class), relationship(Relationship.class);
 
         private final String[] mappedProperties;

@@ -50,7 +50,7 @@ public class StableIdsTest {
     private final Feed feed = new Feed(tenantId, environmentId, feedId);
     private final MetricType metricType = new MetricType(tenantId, metricTypeId, MetricUnit.SECONDS);
     private final Metric metric = new Metric(tenantId, environmentId, feedId, metricId, metricType);
-    private final ResourceType resourceType = new ResourceType(tenantId, resourceTypeId, "1.0");
+    private final ResourceType resourceType = new ResourceType(tenantId, resourceTypeId);
     private final Resource resource = new Resource(tenantId, environmentId, feedId, resourceId, resourceType);
 
     private final String longString = String.join("", Collections.nCopies(50, "trololo"));
