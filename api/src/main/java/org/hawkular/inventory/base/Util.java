@@ -293,4 +293,29 @@ final class Util {
             return null;
         });
     }
+
+    /**
+     * If the provided path is canonical, it is prefixed with the {@code canonicalPrefix} and returned. If the provided
+     * path is relative, it is resolved against the {@code relativeOrigin} and then converted to a canonical path.
+     *
+     * <p>The path can be partially untyped.
+     *
+     * @param path              the string representation of a path (either canonical or relative)
+     * @param canonicalPrefix   the prefix to apply to a canonical path
+     * @param relativeOrigin    origin to resolve a relative path against
+     * @param intendedFinalType the intended type of the final segment of the path
+     * @return the canonical path represented by the provided path string
+     * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, Class)
+     */
+    public static CanonicalPath canonicalize(String path, CanonicalPath canonicalPrefix, CanonicalPath relativeOrigin,
+            Class<?> intendedFinalType) {
+
+        Path p = Path.fromPartiallyUntypedString(path, canonicalPrefix, relativeOrigin, intendedFinalType);
+
+        if (p instanceof RelativePath) {
+            return ((RelativePath) p).applyTo(relativeOrigin);
+        } else {
+            return p.toCanonicalPath();
+        }
+    }
 }

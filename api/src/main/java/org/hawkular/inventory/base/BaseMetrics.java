@@ -66,9 +66,9 @@ public final class BaseMetrics {
 
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
-                Path metricTypePath = Path.fromPartiallyUntypedString(blueprint.getMetricTypePath(), tenant, parentPath,
+                CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
                         MetricType.class);
-                metricTypeObject = context.backend.find(metricTypePath.toCanonicalPath());
+                metricTypeObject = context.backend.find(metricTypePath);
 
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypePath() +
