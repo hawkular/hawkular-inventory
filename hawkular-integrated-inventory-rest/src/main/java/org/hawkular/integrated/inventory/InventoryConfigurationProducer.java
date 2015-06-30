@@ -16,7 +16,9 @@
  */
 package org.hawkular.integrated.inventory;
 
-import java.io.UnsupportedEncodingException;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,15 +34,34 @@ import org.hawkular.inventory.cdi.InventoryConfigurationData;
 @Singleton
 public class InventoryConfigurationProducer {
 
+    public static final String EXTERNAL_CONF_FILE_PROPERTY_NAME = "hawkular-inventory.conf";
+
     @Produces
-    public InventoryConfigurationData getConfigurationFileName() throws UnsupportedEncodingException {
-        //TODO this should probably be read from somewhere else than from a config file embedded in this jar.
-        //that file should be more of a default than a real means of configuration
-
+    public InventoryConfigurationData getConfigurationData() throws IOException {
         Map<String, String> props = new HashMap<>();
-        System.getProperties().stringPropertyNames().forEach((k) -> props.put(k, System.getProperty(k)));
 
-        return new InventoryConfigurationData(getClass().getClassLoader().getResource("hawkular-inventory.properties"),
-                props);
+        for (String prop : System.getProperties().stringPropertyNames()) {
+            props.put(prop, System.getProperties().getProperty(prop));
+        }
+
+        return new InventoryConfigurationData(getConfigurationFile(), props);
+    }
+
+    private URL getConfigurationFile() throws IOException {
+        String confFileName = System.getProperty(EXTERNAL_CONF_FILE_PROPERTY_NAME);
+
+        File confFile;
+
+        if (confFileName == null) {
+            confFile = new File(System.getProperty("user.home"), "." + EXTERNAL_CONF_FILE_PROPERTY_NAME);
+            if (!confFile.exists()) {
+                confFile = null;
+            }
+        } else {
+            confFile = new File(confFileName);
+        }
+
+        return confFile == null ? getClass().getClassLoader().getResource("hawkular-inventory.properties")
+                : confFile.toURI().toURL();
     }
 }

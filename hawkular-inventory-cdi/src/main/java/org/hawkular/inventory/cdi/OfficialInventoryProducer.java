@@ -32,6 +32,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
@@ -42,6 +43,10 @@ import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
  */
 @Singleton
 public class OfficialInventoryProducer {
+
+    private static final Configuration.Property IMPL_PROPERTY = Configuration.Property.builder()
+            .withPropertyNameAndSystemProperty("hawkular.inventory.impl")
+            .withEnvironmentVariables("HAWKULAR_INVENTORY_IMPL").build();
 
     @Inject
     private Event<InventoryInitialized> inventoryInitializedEvent;
@@ -55,7 +60,7 @@ public class OfficialInventoryProducer {
     @Produces
     @Singleton
     @Official
-    public Inventory getInventory() {
+    public Inventory getInventory() throws InterruptedException {
         Inventory inventory = initInventory();
         inventoryInitializedEvent.fire(new InventoryInitialized(inventory));
         return inventory;
@@ -66,7 +71,7 @@ public class OfficialInventoryProducer {
         dispose(inventory);
     }
 
-    private Inventory initInventory() {
+    private Inventory initInventory() throws InterruptedException {
         Map<String, String> config = new HashMap<>();
 
         if (!configData.isUnsatisfied()) {
@@ -81,22 +86,27 @@ public class OfficialInventoryProducer {
             conf.forEach((k, v) -> config.put(k.toString(), v == null ? null : v.toString()));
         }
 
-        Inventory inventory = ServiceLoader.load(Inventory.class).iterator().next();
+        org.hawkular.inventory.api.Configuration cfg = org.hawkular.inventory.api.Configuration.builder()
+                .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
+                        //.withResultFilter(securityIntegration) results filtering not required for the current
+                        // security model
+                .withConfiguration(config).build();
+
+        Inventory inventory = instantiateNew(cfg);
+
+        Log.LOG.iUsingImplementation(inventory.getClass().getName());
 
         int failures = 0;
         int maxFailures = 5;
         boolean initialized = false;
         while (failures++ < maxFailures) {
             try {
-                inventory.initialize(org.hawkular.inventory.api.Configuration.builder()
-                        .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
-                                //.withResultFilter(securityIntegration) results filtering not required for the current
-                                // security model
-                        .withConfiguration(config).build());
+                inventory.initialize(cfg);
 
                 initialized = true;
             } catch (Exception e) {
                 Log.LOG.wInitializationFailure(failures, maxFailures);
+                Thread.sleep(1000);
             }
         }
 
@@ -104,12 +114,27 @@ public class OfficialInventoryProducer {
             throw new IllegalStateException("Could not initialize inventory.");
         }
 
+        Log.LOG.iInitialized();
+
         return inventory;
     }
 
     private void dispose(Inventory inventory) throws Exception {
         if (inventory != null) {
             inventory.close();
+        }
+    }
+
+    private Inventory instantiateNew(Configuration config) {
+        String implClass = config.getProperty(IMPL_PROPERTY, null);
+        if (implClass != null) {
+            try {
+                return (Inventory) Class.forName(implClass).newInstance();
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                throw new IllegalStateException("Failed to instantiate inventory using class '" + implClass + "'.", e);
+            }
+        } else {
+            return ServiceLoader.load(Inventory.class).iterator().next();
         }
     }
 }

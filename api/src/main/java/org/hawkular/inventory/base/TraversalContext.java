@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.filters.With.type;
+
+import java.util.Iterator;
+
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
@@ -26,11 +30,8 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+
 import rx.subjects.Subject;
-
-import java.util.Iterator;
-
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * Holds the data needed throughout the construction of inventory traversal.
@@ -71,9 +72,11 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     private final ObservableContext observableContext;
 
+    private final int transactionRetries;
+
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
-            InventoryBackend<BE> backend,
-            Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
+            InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
+            ObservableContext observableContext) {
         this.inventory = inventory;
         this.sourcePath = sourcePath;
         this.selectCandidates = selectCandidates;
@@ -81,6 +84,24 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.entityClass = entityClass;
         this.configuration = configuration;
         this.observableContext = observableContext;
+
+        String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "5");
+
+        transactionRetries = Integer.parseInt(retries);
+    }
+
+    private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
+            InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
+            ObservableContext observableContext, int transactionRetries) {
+
+        this.inventory = inventory;
+        this.sourcePath = sourcePath;
+        this.selectCandidates = selectCandidates;
+        this.backend = backend;
+        this.entityClass = entityClass;
+        this.configuration = configuration;
+        this.observableContext = observableContext;
+        this.transactionRetries = transactionRetries;
     }
 
     /**
@@ -91,7 +112,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     Builder<BE, E> proceed() {
         return new Builder<>(inventory, hop(), Query.filter(), backend, entityClass, configuration,
-                observableContext);
+                observableContext, transactionRetries);
     }
 
     /**
@@ -107,7 +128,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     <T extends Entity<?, ?>> Builder<BE, T> proceedTo(Relationships.WellKnown over, Class<T> entityType) {
         return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration,
-                observableContext)
+                observableContext, transactionRetries)
                 .hop(Related.by(over), type(entityType));
     }
 
@@ -121,7 +142,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     Builder<BE, Relationship> proceedToRelationships(Relationships.Direction direction) {
         return new Builder<>(inventory, hop(), Query.filter(), backend, Relationship.class, configuration,
-                observableContext).hop(new SwitchElementType(direction, false));
+                observableContext, transactionRetries).hop(new SwitchElementType(direction, false));
     }
 
     /**
@@ -134,8 +155,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
             Class<T> entityType) {
-        return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration, observableContext)
-                .hop(new SwitchElementType(direction, true)).where(type(entityType));
+        return new Builder<>(inventory, hop(), Query.filter(), backend, entityType, configuration, observableContext,
+                transactionRetries).hop(new SwitchElementType(direction, true)).where(type(entityType));
     }
 
     /**
@@ -164,7 +185,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
-                observableContext);
+                observableContext, transactionRetries);
     }
 
     /**
@@ -196,6 +217,10 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         }
     }
 
+    public int getTransactionRetriesCount() {
+        return transactionRetries;
+    }
+
     /**
      * Builds a new traversal context.
      *
@@ -210,10 +235,12 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         private final Class<E> entityClass;
         private final Configuration configuration;
         private final ObservableContext observableContext;
+        private final int transactionRetries;
 
         public Builder(BaseInventory<BE> inventory, Query.SymmetricExtender pathExtender,
                 Query.SymmetricExtender selectExtender, InventoryBackend<BE> backend,
-                Class<E> entityClass, Configuration configuration, ObservableContext observableContext) {
+                Class<E> entityClass, Configuration configuration, ObservableContext observableContext,
+                int transactionRetries) {
             this.inventory = inventory;
             this.pathExtender = pathExtender;
             this.selectExtender = selectExtender;
@@ -221,6 +248,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
             this.entityClass = entityClass;
             this.configuration = configuration;
             this.observableContext = observableContext;
+            this.transactionRetries = transactionRetries;
         }
 
         /**
@@ -293,7 +321,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
          */
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityClass,
-                    configuration, observableContext);
+                    configuration, observableContext, transactionRetries);
         }
 
         /**
@@ -305,7 +333,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
          */
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
             return new TraversalContext<>(inventory, pathExtender.get(), selectExtender.get(), backend, entityType,
-                    configuration, observableContext);
+                    configuration, observableContext, transactionRetries);
         }
     }
 }

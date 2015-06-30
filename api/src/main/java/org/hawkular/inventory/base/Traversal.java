@@ -38,15 +38,9 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
 
     protected final TraversalContext<BE, E> context;
-    private final int transactionRetryAttempts;
 
     protected Traversal(TraversalContext<BE, E> context) {
         this.context = context;
-
-        String retries = context.configuration.getImplementationConfiguration()
-                .getOrDefault("hawkular.inventory.base.transaction.retries", "5");
-
-        transactionRetryAttempts = Integer.parseInt(retries);
     }
 
     /**
@@ -114,7 +108,9 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
         int failures = 0;
         Exception lastException = null;
 
-        while (failures++ < transactionRetryAttempts) {
+        int maxFailures = context.getTransactionRetriesCount();
+
+        while (failures++ < maxFailures) {
             try {
                 InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
                 try {
@@ -130,7 +126,8 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
                 }
             } catch (CommitFailureException e) {
                 //if the backend fails the commit, we can retry
-                Log.LOGGER.debug("Transaction failed due to: " + e.getMessage(), e);
+                Log.LOGGER.debugf(e, "Commit attempt %d/%d failed: %s", failures, maxFailures, e.getMessage());
+
                 lastException = e;
             }
         }

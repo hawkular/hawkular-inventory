@@ -41,4 +41,12 @@ public interface Log extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 3501, value = "Inventory backend failed to initialize in an attempt %d of %d.")
     void wInitializationFailure(int attempt, int maxAttempts);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 3502, value = "Using inventory implementation: %s")
+    void iUsingImplementation(String className);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 3503, value = "Inventory initialized.")
+    void iInitialized();
 }

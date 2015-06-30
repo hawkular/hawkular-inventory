@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+
 import rx.Observable;
 
 /**
@@ -39,14 +40,20 @@ import rx.Observable;
  */
 public abstract class BaseInventory<E> implements Inventory {
 
+    public static final Configuration.Property TRANSACTION_RETRIES = Configuration.Property.builder()
+            .withPropertyNameAndSystemProperty("hawkular.inventory.transaction.retries")
+            .withEnvironmentVariables("HAWKULAR_INVENTORY_TRANSACTION_RETRIES").build();
+
     private InventoryBackend<E> backend;
-    private Configuration configuration;
     private final ObservableContext observableContext = new ObservableContext();
+    private TraversalContext<E, Tenant> startContext;
 
     @Override
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
-        this.configuration = configuration;
+        startContext = new TraversalContext<>(this, Query.empty(),
+                Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
+                observableContext);
     }
 
     /**
@@ -68,9 +75,7 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new BaseTenants.ReadWrite<>(new TraversalContext<>(this, Query.empty(),
-                Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
-                observableContext));
+        return new BaseTenants.ReadWrite<>(startContext);
     }
 
     /**
