@@ -56,7 +56,9 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
 import rx.Subscription;
 
 import java.io.FileInputStream;
@@ -179,7 +181,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         assert inventory.tenants().get("com.example.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("Kachna")).entity().getId().equals("Kachna");
         assert inventory.tenants().get("com.example.tenant").resourceTypes()
-                .create(new ResourceType.Blueprint("Playroom")).entity().getId().equals("Playroom");
+                .create(new ResourceType.Blueprint("Playroom", new HashMap<String, Object>() {{
+                    put("ownedByDepartment", "Facilities");
+                }})).entity().getId().equals("Playroom");
         assert inventory.tenants().get("com.example.tenant").metricTypes()
                 .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes().associate("Size");
@@ -713,6 +717,18 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         Assert.assertEquals(6, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
+    }
+
+    @Test @Ignore // TODO remove @Ignore once HWKINVENT-81 is fixed
+    public void testResourcesFilteredByTypeProperty() throws Exception {
+        Set<Resource> resources = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().getAll(new Filter[][]{
+                        {Defined.by(new ResourceType("com.example.tenant", "Playroom")),
+                            With.propertyValue("ownedByDepartment", "Facilities")},
+                        })
+                .entities();
+        Assert.assertEquals(1, resources.size());
+        Assert.assertEquals("playroom1", resources.iterator().next().getId());
     }
 
     @Test
