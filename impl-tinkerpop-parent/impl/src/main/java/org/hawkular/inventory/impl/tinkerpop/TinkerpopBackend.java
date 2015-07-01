@@ -16,11 +16,31 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
+import static java.util.stream.Collectors.toSet;
+
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.StreamSupport;
+
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -41,32 +61,15 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toSet;
-import static org.hawkular.inventory.api.Relationships.Direction.incoming;
-import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.environment;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.feed;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metric;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.metricType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resource;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.resourceType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.tenant;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 
 /**
  * @author Lukas Krejci
@@ -539,8 +542,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void commit(Transaction t) {
-        context.commit(t);
+    public void commit(Transaction t) throws CommitFailureException {
+        try {
+            context.commit(t);
+        } catch (Exception e) {
+            throw new CommitFailureException(e);
+        }
     }
 
     @Override

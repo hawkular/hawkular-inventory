@@ -213,7 +213,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * Commits the transaction.
      * @param transaction the transaction to commit
      */
-    void commit(Transaction transaction);
+    void commit(Transaction transaction) throws CommitFailureException;
 
     /**
      * Rolls back the transaction.

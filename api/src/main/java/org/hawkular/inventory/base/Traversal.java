@@ -16,15 +16,16 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
@@ -37,9 +38,15 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
 
     protected final TraversalContext<BE, E> context;
+    private final int transactionRetryAttempts;
 
     protected Traversal(TraversalContext<BE, E> context) {
         this.context = context;
+
+        String retries = context.configuration.getImplementationConfiguration()
+                .getOrDefault("hawkular.inventory.base.transaction.retries", "5");
+
+        transactionRetryAttempts = Integer.parseInt(retries);
     }
 
     /**
@@ -77,17 +84,23 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * during its execution. If the payload throws an exception the transaction is automatically rolled back and
      * the exception rethrown.
      *
+     * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
+     * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
+     *
      * @param payload the payload to execute in transaction
      * @param <R> the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(Function<InventoryBackend.Transaction, R> payload) {
+    protected <R> R mutating(PotentiallyCommittingPayload<R> payload) {
         return inTransaction(false, payload);
     }
 
     /**
      * A "shortcut" method for executing read-only payloads in transaction. Such payloads don't have to have a reference
      * to the transaction in which they're being executed.
+     *
+     * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
+     * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
      *
      * @param payload the read-only payload to execute
      * @param <R>     the type of the return value
@@ -97,18 +110,35 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
         return inTransaction(true, (t) -> payload.get());
     }
 
-    private <R> R inTransaction(boolean readOnly, Function<InventoryBackend.Transaction, R> payload) {
-        InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
-        try {
-            R ret = payload.apply(t);
-            if (readOnly) {
-                context.backend.commit(t);
-            }
+    private <R> R inTransaction(boolean readOnly, PotentiallyCommittingPayload<R> payload) {
+        int failures = 0;
+        Exception lastException = null;
 
-            return ret;
-        } catch (Throwable e) {
-            context.backend.rollback(t);
-            throw e;
+        while (failures++ < transactionRetryAttempts) {
+            try {
+                InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
+                try {
+                    R ret = payload.run(t);
+                    if (readOnly) {
+                        context.backend.commit(t);
+                    }
+
+                    return ret;
+                } catch (Throwable e) {
+                    context.backend.rollback(t);
+                    throw e;
+                }
+            } catch (CommitFailureException e) {
+                //if the backend fails the commit, we can retry
+                Log.LOGGER.debug("Transaction failed due to: " + e.getMessage(), e);
+                lastException = e;
+            }
         }
+        throw new TransactionFailureException(lastException, failures);
+    }
+
+    @FunctionalInterface
+    public interface PotentiallyCommittingPayload<R> {
+        R run(InventoryBackend.Transaction t) throws CommitFailureException;
     }
 }

@@ -14,33 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.api;
+package org.hawkular.inventory.base.spi;
 
 /**
+ * This exception is to be thrown by the backends when a commit fails. This exception is then used by the implementation
+ * as a trigger for retrying the transaction.
+ *
+ * <p>Note that this is a checked exception on purpose because the {@link org.hawkular.inventory.base.BaseInventory}
+ * uses this for transaction failure recovery and thus must handle it.
+ *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.2.0
  */
-public class InventoryException extends RuntimeException {
-
-    public InventoryException() {
+public class CommitFailureException extends Exception {
+    public CommitFailureException() {
     }
 
-    public InventoryException(Throwable cause) {
+    public CommitFailureException(Throwable cause) {
         super(cause);
     }
 
-    public InventoryException(String message) {
+    public CommitFailureException(String message) {
         super(message);
     }
 
-    public InventoryException(String message, Throwable cause) {
+    public CommitFailureException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    protected InventoryException(String message, Throwable cause, boolean enableSuppression,
-                                 boolean writableStackTrace) {
-
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

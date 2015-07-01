@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.integrated.inventory;
+package org.hawkular.inventory.cdi;
 
+import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
@@ -25,25 +26,19 @@ import org.jboss.logging.annotations.ValidIdRange;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.2
+ * @since 0.2.0
  */
 @MessageLogger(projectCode = "HAWKINV")
-@ValidIdRange(min = 3000, max = 3499)
-public interface Log {
+@ValidIdRange(min = 3500, max = 3999)
+public interface Log extends BasicLogger {
 
-    Log LOGGER = Logger.getMessageLogger(Log.class, "org.hawkular.integration.inventory");
+    Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.cdi");
 
-    @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 3000, value = "Bus Integration initialization failed. Inventory will not notify about changes on " +
-            "the Hawkular message bus.")
-    void busInitializationFailed(@Cause Throwable cause);
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3500, value = "Cannot read the Hawkular Inventory configuration file at '%s'.")
+    void wCannotReadConfigurationFile(String fileName, @Cause Throwable cause);
 
-    @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 3001, value = "HACK ALERT: Auto-created the %s '%s' for newly created tenant '%s'.")
-    void autoCreatedEntity(String entityType, String entityId, String tenantId);
-
-    @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 3002, value = "HACK ALERT: Failed to auto-create tenant metadata. This is most probably due to it" +
-            " being already created in parallel.")
-    void failedToAutoCreateEntities(@Cause Throwable cause);
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3501, value = "Inventory backend failed to initialize in an attempt %d of %d.")
+    void wInitializationFailure(int attempt, int maxAttempts);
 }
