@@ -20,6 +20,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+import org.jboss.logging.annotations.ValidIdRange;
 
 /**
  * Logger for the Inventory impl.
@@ -29,16 +30,12 @@ import org.jboss.logging.annotations.MessageLogger;
  * @author Heiko W. Rupp
  */
 @MessageLogger(projectCode = "HAWKINV")
+@ValidIdRange(min = 1000, max = 1999)
 interface Log {
 
-    Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.impl");
+    Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.impl.tinkerpop");
 
-    @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 1000, value = "Something bad has happened: %s")
-    void warn(String s);
-
-    @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 1001, value = "No Topic Connection found (is 'java:/topic/HawkularInventoryChanges' bound?), not " +
-            "sending")
-    void wNoTopicConnection();
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 1000, value = "Using graph provider: %s")
+    void iUsingGraphProvider(String backend);
 }

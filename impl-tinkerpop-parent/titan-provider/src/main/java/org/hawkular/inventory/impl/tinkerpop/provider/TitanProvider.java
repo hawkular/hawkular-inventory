@@ -16,17 +16,22 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 
 /**
  * @author Lukas Krejci
@@ -35,7 +40,8 @@ import java.util.Map;
 public class TitanProvider implements GraphProvider<TitanGraph> {
     @Override
     public TitanGraph instantiateGraph(Configuration configuration) {
-        return TitanFactory.open(new MapConfiguration(configuration.getImplementationConfiguration()));
+        return TitanFactory.open(new MapConfiguration(configuration.getImplementationConfiguration(
+                EnumSet.allOf(PropertyKeys.class))));
     }
 
     @Override
@@ -97,5 +103,39 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
         }
 
         return bld.toString();
+    }
+
+    @SuppressWarnings("unused")
+    private enum PropertyKeys implements Configuration.Property {
+        STORAGE_HOSTNAME("storage.hostname", "hawkular.inventory.titan.storage.hostname",
+                "HAWKULAR_INVENTORY_TITAN_STORAGE_HOSTNAME", "CASSANDRA_NODES"),
+        STORAGE_PORT("storage.port", "hawkular.inventory.titan.storage.port", "HAWKULAR_INVENTORY_TITAN_STORAGE_PORT"),
+        STORAGE_CASSANDRA_KEYSPACE("storage.cassandra.keyspace", "hawkular.inventory.titan.storage.cassandra.keyspace",
+                "HAWKULAR_INVENTORY_TITAN_STORAGE_CASSANDRA_KEYSPACE");
+
+        private final String propertyName;
+        private final List<String> systemPropertyName;
+        private final List<String> environmentVariableName;
+
+        PropertyKeys(String propertyName, String systemPropertyName, String... environmentVariableName) {
+            this.propertyName = propertyName;
+            this.systemPropertyName = Collections.unmodifiableList(Collections.singletonList(systemPropertyName));
+            this.environmentVariableName = Collections.unmodifiableList(Arrays.asList(environmentVariableName));
+        }
+
+        @Override
+        public String getPropertyName() {
+            return propertyName;
+        }
+
+        @Override
+        public List<String> getSystemPropertyNames() {
+            return systemPropertyName;
+        }
+
+        @Override
+        public List<String> getEnvironmentVariableNames() {
+            return environmentVariableName;
+        }
     }
 }
