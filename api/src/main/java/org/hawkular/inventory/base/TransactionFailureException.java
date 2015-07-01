@@ -14,33 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.base;
 
-package org.hawkular.inventory.api;
+import org.hawkular.inventory.api.InventoryException;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.2.0
  */
-public class InventoryException extends RuntimeException {
+public class TransactionFailureException extends InventoryException {
+    private final int attemptsMade;
 
-    public InventoryException() {
+    public TransactionFailureException(int attemptsMade) {
+        this.attemptsMade = attemptsMade;
     }
 
-    public InventoryException(Throwable cause) {
+    public TransactionFailureException(Throwable cause, int attemptsMade) {
         super(cause);
+        this.attemptsMade = attemptsMade;
     }
 
-    public InventoryException(String message) {
-        super(message);
-    }
-
-    public InventoryException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    protected InventoryException(String message, Throwable cause, boolean enableSuppression,
-                                 boolean writableStackTrace) {
-
-        super(message, cause, enableSuppression, writableStackTrace);
+    @Override
+    public String getMessage() {
+        return "Failed to commit a transaction in " + attemptsMade + " attempts." + (getCause() == null ? "" :
+                "The last error message was: " + getCause().getMessage());
     }
 }
