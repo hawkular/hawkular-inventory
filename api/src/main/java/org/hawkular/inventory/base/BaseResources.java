@@ -168,7 +168,7 @@ public final class BaseResources {
 
             BE targetEntity = getSingle(targetResource, Resource.class);
 
-            EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context.backend, sourceQuery,
+            EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);
 
             context.notifyAll(rel);
@@ -182,7 +182,7 @@ public final class BaseResources {
 
             BE targetEntity = getSingle(targetResource, Resource.class);
 
-            EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context.backend, sourceQuery,
+            EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);
 
             context.notifyAll(rel);
@@ -194,7 +194,7 @@ public final class BaseResources {
             Query sourceQuery = context.select().get();
             Query targetResource = Util.queryTo(context, path);
 
-            return Util.getAssociation(context.backend, sourceQuery, Resource.class, targetResource, Resource.class,
+            return Util.getAssociation(context, sourceQuery, Resource.class, targetResource, Resource.class,
                     isParentOf.name());
         }
     }

@@ -16,21 +16,26 @@
  */
 package org.hawkular.inventory.cdi;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
-import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
-import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
+import static org.hawkular.inventory.cdi.Log.LOG;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ServiceLoader;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Disposes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
+import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 
 /**
  * @author Lukas Krejci
@@ -39,16 +44,23 @@ import java.util.Map;
 @Singleton
 public class OfficialInventoryProducer {
 
+    private static final Configuration.Property IMPL_PROPERTY = Configuration.Property.builder()
+            .withPropertyNameAndSystemProperty("hawkular.inventory.impl")
+            .withEnvironmentVariables("HAWKULAR_INVENTORY_IMPL").build();
+
     @Inject
     private Event<InventoryInitialized> inventoryInitializedEvent;
 
     @Inject
     private Event<DisposingInventory> disposingInventoryEvent;
 
+    @Inject
+    private Instance<InventoryConfigurationData> configData;
+
     @Produces
     @Singleton
     @Official
-    public Inventory getInventory() {
+    public Inventory getInventory() throws InterruptedException {
         Inventory inventory = initInventory();
         inventoryInitializedEvent.fire(new InventoryInitialized(inventory));
         return inventory;
@@ -59,30 +71,50 @@ public class OfficialInventoryProducer {
         dispose(inventory);
     }
 
-
-    private Inventory initInventory() {
-        // TODO this is crude and ties CDI to tinkerpop impl.
-        // Once we have a more established way of configuring hawkular components, we can rewrite this to use a more
-        // generic approach using ServiceLoader.
-
+    private Inventory initInventory() throws InterruptedException {
         Map<String, String> config = new HashMap<>();
-        System.getProperties().forEach((k, v) -> config.put(k.toString(), v == null ? null : v.toString()));
 
-        if (config.get("blueprints.graph") == null) {
-            config.put("blueprints.graph", DummyTransactionalGraph.class.getName());
+        if (!configData.isUnsatisfied()) {
+            Properties conf = new Properties();
+
+            try (Reader rdr = configData.get().open()) {
+                conf.load(rdr);
+            } catch (IOException e) {
+                LOG.wCannotReadConfigurationFile(null, e);
+            }
+
+            conf.forEach((k, v) -> config.put(k.toString(), v == null ? null : v.toString()));
         }
 
-        if (config.get("blueprints.tg.directory") == null) {
-            config.put("blueprints.tg.directory", new File(config.get("jboss.server.data.dir"), "hawkular-inventory")
-                    .getAbsolutePath());
-        }
-
-        TinkerpopInventory inventory = new TinkerpopInventory();
-
-        inventory.initialize(org.hawkular.inventory.api.Configuration.builder()
+        org.hawkular.inventory.api.Configuration cfg = org.hawkular.inventory.api.Configuration.builder()
                 .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
-//.withResultFilter(securityIntegration) results filtering not required for the current security model
-                .withConfiguration(config).build());
+                        //.withResultFilter(securityIntegration) results filtering not required for the current
+                        // security model
+                .withConfiguration(config).build();
+
+        Inventory inventory = instantiateNew(cfg);
+
+        Log.LOG.iUsingImplementation(inventory.getClass().getName());
+
+        int failures = 0;
+        int maxFailures = 5;
+        boolean initialized = false;
+        while (failures++ < maxFailures) {
+            try {
+                inventory.initialize(cfg);
+
+                initialized = true;
+            } catch (Exception e) {
+                Log.LOG.wInitializationFailure(failures, maxFailures);
+                Thread.sleep(1000);
+            }
+        }
+
+        if (!initialized) {
+            throw new IllegalStateException("Could not initialize inventory.");
+        }
+
+        Log.LOG.iInitialized();
 
         return inventory;
     }
@@ -93,21 +125,16 @@ public class OfficialInventoryProducer {
         }
     }
 
-    public static class DummyTransactionalGraph extends TinkerGraph implements TransactionalGraph {
-        public DummyTransactionalGraph(org.apache.commons.configuration.Configuration configuration) {
-            super(configuration);
-        }
-
-        @Override
-        public void commit() {
-        }
-
-        @Override
-        public void stopTransaction(Conclusion conclusion) {
-        }
-
-        @Override
-        public void rollback() {
+    private Inventory instantiateNew(Configuration config) {
+        String implClass = config.getProperty(IMPL_PROPERTY, null);
+        if (implClass != null) {
+            try {
+                return (Inventory) Class.forName(implClass).newInstance();
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                throw new IllegalStateException("Failed to instantiate inventory using class '" + implClass + "'.", e);
+            }
+        } else {
+            return ServiceLoader.load(Inventory.class).iterator().next();
         }
     }
 }

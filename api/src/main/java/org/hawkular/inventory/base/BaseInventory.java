@@ -42,14 +42,25 @@ import rx.Observable;
  */
 public abstract class BaseInventory<E> implements Inventory {
 
+    public static final Configuration.Property TRANSACTION_RETRIES = Configuration.Property.builder()
+            .withPropertyNameAndSystemProperty("hawkular.inventory.transaction.retries")
+            .withEnvironmentVariables("HAWKULAR_INVENTORY_TRANSACTION_RETRIES").build();
+
     private InventoryBackend<E> backend;
-    private Configuration configuration;
     private final ObservableContext observableContext = new ObservableContext();
+    private TraversalContext<E, Tenant> tenantContext;
+    private TraversalContext<E, Relationship> relationshipContext;
 
     @Override
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
-        this.configuration = configuration;
+
+        tenantContext = new TraversalContext<>(this, Query.empty(),
+                Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
+                observableContext);
+
+        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
+                Relationship.class, configuration, observableContext);
     }
 
     /**
@@ -71,15 +82,12 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new BaseTenants.ReadWrite<>(new TraversalContext<>(this, Query.empty(),
-                Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
-                observableContext));
+        return new BaseTenants.ReadWrite<>(tenantContext);
     }
 
     @Override
     public Relationships.Read relationships() {
-        return new BaseRelationships.Read<>(new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
-                Relationship.class, configuration, observableContext));
+        return new BaseRelationships.Read<>(relationshipContext);
     }
 
     /**

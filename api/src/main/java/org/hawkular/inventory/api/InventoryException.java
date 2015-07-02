@@ -19,22 +19,22 @@ package org.hawkular.inventory.api;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public class InventoryException extends RuntimeException {
 
-    InventoryException() {
+    public InventoryException() {
     }
 
-    InventoryException(Throwable cause) {
+    public InventoryException(Throwable cause) {
         super(cause);
     }
 
-    InventoryException(String message) {
+    public InventoryException(String message) {
         super(message);
     }
 
-    InventoryException(String message, Throwable cause) {
+    public InventoryException(String message, Throwable cause) {
         super(message, cause);
     }
 

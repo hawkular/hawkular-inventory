@@ -53,6 +53,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -323,8 +324,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     e = new Resource(extractCanonicalPath(v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractCanonicalPath(v), (String) v.getProperty(
-                            Constants.Property.__version.name()));
+                    e = new ResourceType(extractCanonicalPath(v));
                     break;
                 case tenant:
                     e = new Tenant(extractCanonicalPath(v));
@@ -518,7 +518,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitResourceType(ResourceType.Update type, Void parameter) {
                 common(type.getProperties(), ResourceType.class);
-                entity.setProperty(Constants.Property.__version.name(), type.getVersion());
                 return null;
             }
 
@@ -547,8 +546,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void commit(Transaction t) {
-        context.commit(t);
+    public void commit(Transaction t) throws CommitFailureException {
+        try {
+            context.commit(t);
+        } catch (Exception e) {
+            throw new CommitFailureException(e);
+        }
     }
 
     @Override

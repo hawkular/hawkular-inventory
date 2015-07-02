@@ -59,10 +59,10 @@ public final class BaseResourceTypes {
         protected EntityAndPendingNotifications<ResourceType> wireUpNewEntity(BE entity,
                 ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
 
-            context.backend.update(entity, ResourceType.Update.builder().withVersion(blueprint.getVersion()).build());
+            context.backend.update(entity, ResourceType.Update.builder().build());
 
             return new EntityAndPendingNotifications<>(new ResourceType(parentPath.extend(ResourceType.class,
-                    context.backend.extractId(entity)).get(), blueprint.getVersion(), blueprint.getProperties()));
+                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override

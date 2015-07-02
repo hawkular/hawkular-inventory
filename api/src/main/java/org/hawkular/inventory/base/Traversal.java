@@ -16,14 +16,12 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * A base class for all the inventory traversal interfaces. Contains only a minimal set of helper methods and holds the
@@ -69,27 +67,29 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * during its execution. If the payload throws an exception the transaction is automatically rolled back and
      * the exception rethrown.
      *
+     * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
+     * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
+     *
      * @param payload the payload to execute in transaction
      * @param <R> the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(Function<InventoryBackend.Transaction, R> payload) {
-        return inTransaction(false, payload);
+    protected <R> R mutating(Util.PotentiallyCommittingPayload<R> payload) {
+        return Util.runInTransaction(context, false, payload);
     }
 
     /**
      * A "shortcut" method for executing read-only payloads in transaction. Such payloads don't have to have a reference
      * to the transaction in which they're being executed.
      *
+     * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
+     * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
+     *
      * @param payload the read-only payload to execute
      * @param <R>     the type of the return value
      * @return the return value provided by the payload
      */
     protected <R> R readOnly(Supplier<R> payload) {
-        return inTransaction(true, (t) -> payload.get());
-    }
-
-    private <R> R inTransaction(boolean readOnly, Function<InventoryBackend.Transaction, R> payload) {
-        return Util.runInTransaction(context.backend, readOnly, payload);
+        return Util.runInTransaction(context, true, (t) -> payload.get());
     }
 }

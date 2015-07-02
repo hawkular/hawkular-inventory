@@ -16,17 +16,19 @@
  */
 package org.hawkular.integrated.inventory;
 
-import org.jboss.logging.Cause;
-import org.jboss.logging.LogMessage;
 import org.jboss.logging.Logger;
-import org.jboss.logging.Message;
+import org.jboss.logging.annotations.Cause;
+import org.jboss.logging.annotations.LogMessage;
+import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+import org.jboss.logging.annotations.ValidIdRange;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.2
  */
 @MessageLogger(projectCode = "HAWKINV")
+@ValidIdRange(min = 3000, max = 3499)
 public interface Log {
 
     Log LOGGER = Logger.getMessageLogger(Log.class, "org.hawkular.integration.inventory");

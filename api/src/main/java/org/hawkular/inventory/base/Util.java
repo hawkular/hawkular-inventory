@@ -27,11 +27,11 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
@@ -46,6 +46,7 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -59,21 +60,41 @@ final class Util {
 
     }
 
-    public static <R> R runInTransaction(InventoryBackend<?> backend, boolean readOnly,
-            Function<InventoryBackend.Transaction, R> payload) {
+    public static <R> R runInTransaction(TraversalContext<?, ?> context, boolean readOnly,
+            PotentiallyCommittingPayload<R> payload) {
 
-        InventoryBackend.Transaction t = backend.startTransaction(!readOnly);
-        try {
-            R ret = payload.apply(t);
-            if (readOnly) {
-                backend.commit(t);
+        int failures = 0;
+        Exception lastException = null;
+
+        int maxFailures = context.getTransactionRetriesCount();
+
+        while (failures++ < maxFailures) {
+            try {
+                InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
+                try {
+                    R ret = payload.run(t);
+                    if (readOnly) {
+                        context.backend.commit(t);
+                    }
+
+                    return ret;
+                } catch (Throwable e) {
+                    context.backend.rollback(t);
+                    throw e;
+                }
+            } catch (CommitFailureException e) {
+                //if the backend fails the commit, we can retry
+                Log.LOGGER.debugf(e, "Commit attempt %d/%d failed: %s", failures, maxFailures, e.getMessage());
+
+                lastException = e;
             }
-
-            return ret;
-        } catch (Throwable e) {
-            backend.rollback(t);
-            throw e;
         }
+        throw new TransactionFailureException(lastException, failures);
+    }
+
+    @FunctionalInterface
+    public interface PotentiallyCommittingPayload<R> {
+        R run(InventoryBackend.Transaction t) throws CommitFailureException;
     }
 
     public static <BE> BE getSingle(InventoryBackend<BE> backend, Query query,
@@ -87,31 +108,33 @@ final class Util {
         return results.get(0);
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship> createAssociation(InventoryBackend<BE> backend,
+    public static <BE> EntityAndPendingNotifications<Relationship> createAssociation(TraversalContext<BE, ?> context,
             Query sourceQuery, Class<? extends Entity<?, ?>> sourceType, String relationship, BE target) {
 
-        return runInTransaction(backend, false, (t) -> {
-            BE source = getSingle(backend, sourceQuery, sourceType);
+        return runInTransaction(context, false, (t) -> {
+            BE source = getSingle(context.backend, sourceQuery, sourceType);
 
-            if (backend.hasRelationship(source, target, relationship)) {
+            if (context.backend.hasRelationship(source, target, relationship)) {
                 throw new RelationAlreadyExistsException(relationship, Query.filters(sourceQuery));
             }
 
-            RelationshipRules.checkCreate(backend, source, Relationships.Direction.outgoing, relationship, target);
-            BE relationshipObject = backend.relate(source, target, relationship, null);
+            RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
+                    target);
+            BE relationshipObject = context.backend.relate(source, target, relationship, null);
 
-            backend.commit(t);
+            context.backend.commit(t);
 
-            Relationship ret = backend.convert(relationshipObject, Relationship.class);
+            Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
 
             return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
         });
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship> deleteAssociation(InventoryBackend<BE> backend,
+    public static <BE> EntityAndPendingNotifications<Relationship> deleteAssociation(TraversalContext<BE, ?> context,
             Query sourceQuery, Class<? extends Entity<?, ?>> sourceType, String relationship, BE target) {
 
-        return runInTransaction(backend, false, (t) -> {
+        InventoryBackend<BE> backend = context.backend;
+        return runInTransaction(context, false, (t) -> {
             BE source = getSingle(backend, sourceQuery, sourceType);
 
             BE relationshipObject;
@@ -123,7 +146,8 @@ final class Util {
                         null, null);
             }
 
-            RelationshipRules.checkDelete(backend, source, Relationships.Direction.outgoing, relationship, target);
+            RelationshipRules.checkDelete(backend, source, Relationships.Direction.outgoing, relationship,
+                    target);
 
             Relationship ret = backend.convert(relationshipObject, Relationship.class);
 
@@ -135,11 +159,13 @@ final class Util {
         });
     }
 
-    public static <BE> Relationship getAssociation(InventoryBackend<BE> backend, Query sourceQuery,
+    public static <BE> Relationship getAssociation(TraversalContext<BE, ?> context, Query sourceQuery,
             Class<? extends Entity<?, ?>> sourceType, Query targetQuery, Class<? extends Entity<?, ?>> targetType,
             String rel) {
 
-        return runInTransaction(backend, true, (t) -> {
+        InventoryBackend<BE> backend = context.backend;
+
+        return runInTransaction(context, true, (t) -> {
             BE source = getSingle(backend, sourceQuery, sourceType);
             BE target = getSingle(backend, targetQuery, targetType);
 
@@ -179,7 +205,7 @@ final class Util {
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
             TraversalContext<BE, E> context, Query entityQuery, U update) {
 
-        BE updated = runInTransaction(context.backend, false, (t) -> {
+        BE updated = runInTransaction(context, false, (t) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
             if (entities.isEmpty()) {
                 if (update instanceof Relationship.Update) {
@@ -205,7 +231,7 @@ final class Util {
     public static <BE, E extends AbstractElement<?, ?>> void delete(TraversalContext<BE, E> context,
             Query entityQuery) {
 
-        runInTransaction(context.backend, false, (transaction) -> {
+        runInTransaction(context, false, (transaction) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
             if (entities.isEmpty()) {
                 if (context.entityClass.equals(Relationship.class)) {

@@ -21,7 +21,7 @@
   <parent>
     <artifactId>inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -47,19 +47,30 @@
       <artifactId>cdi-api</artifactId>
     </dependency>
 
-    <!-- Temporarily, until we are able to correctly load and configure the implementation, we'll just depend on the
-         tinkerpop impl here. -->
+    <!-- Logging -->
+
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-tinkerpop</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-processor</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Test deps -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

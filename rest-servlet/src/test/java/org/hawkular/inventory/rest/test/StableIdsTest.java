@@ -42,10 +42,10 @@ public class StableIdsTest {
     private final String tenantId = UUID.nameUUIDFromBytes("acme".getBytes()).toString();
     private final String environmentId = "test";
     private final String feedId = "smith";
-    private final String metricId  = "duration";
-    private final String metricTypeId  = "durationType";
-    private final String resourceId  = "res1";
-    private final String resourceTypeId  = "URL";
+    private final String metricId = "duration";
+    private final String metricTypeId = "durationType";
+    private final String resourceId = "res1";
+    private final String resourceTypeId = "URL";
 
     private final Tenant tenant = new Tenant(CanonicalPath.of().tenant(tenantId).get());
     private final Environment environment = new Environment(CanonicalPath.of().tenant(tenantId)
@@ -57,7 +57,7 @@ public class StableIdsTest {
     private final Metric metric = new Metric(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
             .metric(metricId).get(), metricType);
     private final ResourceType resourceType = new ResourceType(CanonicalPath.of().tenant(tenantId)
-            .resourceType(resourceTypeId).get(), "1.0");
+            .resourceType(resourceTypeId).get());
     private final Resource resource = new Resource(CanonicalPath.of().tenant(tenantId).environment(environmentId)
             .feed(feedId).resource(resourceId).get(), resourceType);
 
@@ -93,6 +93,7 @@ public class StableIdsTest {
                 : tenantId + "/" + environmentId + "/" + feedId + "/metrics/" + metricId + " should be equal to " +
                 Security.getStableId(metric);
     }
+
     @Test
     public void testStableIdForMetric2() throws Exception {
         Metric feedless = new Metric(CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(metricId)
@@ -144,7 +145,7 @@ public class StableIdsTest {
         Metric metric = new Metric(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
                 .metric(longString).get(), metricType);
         String uuid = UUID.nameUUIDFromBytes((tenantId + "/" + environmentId + "/" + feedId + "/metrics/" + longString)
-                                                     .getBytes()).toString();
+                .getBytes()).toString();
         assert (tenantId + "/" + uuid).equals(Security.getStableId(metric))
                 : tenantId + "/" + uuid + " should be equal to " + Security.getStableId(metric);
     }

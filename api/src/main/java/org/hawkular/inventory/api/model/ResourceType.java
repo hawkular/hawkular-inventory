@@ -16,14 +16,13 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.Expose;
-
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collections;
 import java.util.Map;
+
+import javax.xml.bind.annotation.XmlRootElement;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -34,71 +33,31 @@ import java.util.Map;
 @XmlRootElement
 public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
-    @XmlAttribute
-    @Expose
-    private final String version;
-
     /**
      * JAXB support
      */
     @SuppressWarnings("unused")
     private ResourceType() {
-        this.version = null;
     }
 
-    public ResourceType(CanonicalPath path, String version) {
-        this(path, version, null);
+    public ResourceType(CanonicalPath path) {
+        super(path);
     }
 
     @JsonCreator
-    public ResourceType(@JsonProperty("path") CanonicalPath path, @JsonProperty("version") String version,
+    public ResourceType(@JsonProperty("path") CanonicalPath path,
             @JsonProperty("properties") Map<String, Object> properties) {
         super(path, properties);
-
-        if (version == null) {
-            throw new IllegalArgumentException("version == null");
-        }
-
-        this.version = version;
     }
 
     @Override
     public Updater<Update, ResourceType> update() {
-        return new Updater<>((u) -> new ResourceType(getPath(),
-                u.version == null ? this.version : u.version, u.getProperties()));
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        ResourceType that = (ResourceType) o;
-
-        return version.equals(that.version);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + version.hashCode();
-        return result;
+        return new Updater<>((u) -> new ResourceType(getPath(), u.getProperties()));
     }
 
     @Override
     public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
         return visitor.visitResourceType(this, parameter);
-    }
-
-    @Override
-    protected void appendToString(StringBuilder toStringBuilder) {
-        super.appendToString(toStringBuilder);
-        toStringBuilder.append(", version=").append(version);
     }
 
     /**
@@ -109,8 +68,6 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
-        @XmlAttribute
-        private final String version;
 
         public static Builder builder() {
             return new Builder();
@@ -119,20 +76,15 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null);
+            this(null, null);
         }
 
-        public Blueprint(String id, String version) {
-            this(id, version, Collections.emptyMap());
+        public Blueprint(String id) {
+            this(id, Collections.emptyMap());
         }
 
-        public Blueprint(String id, String version, Map<String, Object> properties) {
+        public Blueprint(String id, Map<String, Object> properties) {
             super(id, properties);
-            this.version = version;
-        }
-
-        public String getVersion() {
-            return version;
         }
 
         @Override
@@ -141,22 +93,15 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
-            private String version;
-
-            public Builder withVersion(String version) {
-                this.version = version;
-                return this;
-            }
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, version, properties);
+                return new Blueprint(id, properties);
             }
         }
     }
 
     public static final class Update extends AbstractElement.Update {
-        private final String version;
 
         public static Builder builder() {
             return new Builder();
@@ -165,16 +110,11 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         //JAXB support
         @SuppressWarnings("unused")
         private Update() {
-            this(null, null);
+            this(null);
         }
 
-        public Update(Map<String, Object> properties, String version) {
+        public Update(Map<String, Object> properties) {
             super(properties);
-            this.version = version;
-        }
-
-        public String getVersion() {
-            return version;
         }
 
         @Override
@@ -183,16 +123,10 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         }
 
         public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
-            private String version;
-
-            public Builder withVersion(String version) {
-                this.version = version;
-                return this;
-            }
 
             @Override
             public Update build() {
-                return new Update(properties, version);
+                return new Update(properties);
             }
         }
     }

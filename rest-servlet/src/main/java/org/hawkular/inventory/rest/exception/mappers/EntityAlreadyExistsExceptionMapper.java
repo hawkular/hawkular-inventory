@@ -17,7 +17,7 @@
 
 package org.hawkular.inventory.rest.exception.mappers;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -34,7 +34,7 @@ public class EntityAlreadyExistsExceptionMapper implements ExceptionMapper<Entit
 
     @Override
     public Response toResponse(EntityAlreadyExistsException exception) {
-            return Response.status(NOT_FOUND).entity(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                    .EntityIdAndPath.fromException(exception))).build();
+        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
+                .EntityIdAndPath.fromException(exception)), exception, CONFLICT);
     }
 }

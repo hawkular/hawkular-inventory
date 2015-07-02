@@ -34,7 +34,7 @@ public class RelationNotFoundExceptionMapper implements ExceptionMapper<Relation
 
     @Override
     public Response toResponse(RelationNotFoundException exception) {
-            return Response.status(NOT_FOUND).entity(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                    .RelationshipNameAndPath.fromException(exception))).build();
+            return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
+                    .RelationshipNameAndPath.fromException(exception)), exception, NOT_FOUND);
     }
 }

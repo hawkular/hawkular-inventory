@@ -40,7 +40,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
 
-        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context.backend, sourceQuery,
+        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
                 sourceType, relationship.name(), target);
 
         context.notifyAll(rel);
@@ -52,7 +52,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
             Relationships.WellKnown relationship, BE target) {
 
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context.backend, sourceQuery,
+        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
                 sourceType, relationship.name(), target);
 
         context.notifyAll(rel);
@@ -69,6 +69,6 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) targetPath.getSegment()
                 .getElementType();
 
-        return Util.getAssociation(context.backend, sourceQuery, sourceType, targetQuery, targetType, rel.name());
+        return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }
 }

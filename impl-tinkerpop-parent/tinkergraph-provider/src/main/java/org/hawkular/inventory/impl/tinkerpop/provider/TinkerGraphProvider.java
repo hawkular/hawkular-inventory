@@ -16,17 +16,20 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
+import java.util.Collections;
+import java.util.List;
+import java.util.WeakHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
-import java.util.WeakHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
+import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 
 /**
  * @author Lukas Krejci
@@ -37,7 +40,9 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
     private final WeakHashMap<WrappedTinkerGraph, ReentrantReadWriteLock> transactionLocks = new WeakHashMap<>();
     @Override
     public WrappedTinkerGraph instantiateGraph(Configuration configuration) {
-        return new WrappedTinkerGraph(new MapConfiguration(configuration.getImplementationConfiguration()));
+        return new WrappedTinkerGraph(new MapConfiguration(
+                configuration.getImplementationConfiguration(
+                        Collections.singleton(PropertyKey.DIRECTORY_NAME))));
     }
 
     @Override
@@ -118,6 +123,36 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
         public SimulatedSerializedTransaction(boolean mutating, ReentrantReadWriteLock lock) {
             super(mutating);
             this.lock = lock;
+        }
+    }
+
+    private enum PropertyKey implements Configuration.Property {
+        DIRECTORY_NAME("blueprints.tg.directory", "blueprints.tg.directory", null);
+
+        private final String propertyName;
+        private final List<String> sysPropName;
+        private final List<String> envVarName;
+
+        PropertyKey(String propertyName, String sysPropName, String envVarName) {
+            this.envVarName = envVarName == null ? Collections.emptyList() : Collections.singletonList(envVarName);
+            this.propertyName = propertyName;
+            this.sysPropName = sysPropName == null ? Collections.emptyList() : Collections.singletonList(sysPropName);
+        }
+
+
+        @Override
+        public String getPropertyName() {
+            return propertyName;
+        }
+
+        @Override
+        public List<String> getSystemPropertyNames() {
+            return sysPropName;
+        }
+
+        @Override
+        public List<String> getEnvironmentVariableNames() {
+            return envVarName;
         }
     }
 }

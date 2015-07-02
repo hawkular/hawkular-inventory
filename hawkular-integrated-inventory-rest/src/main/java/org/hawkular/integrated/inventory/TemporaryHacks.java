@@ -55,8 +55,7 @@ public class TemporaryHacks {
     }
 
     private void createTenantMetadata(Tenant tenant, Inventory inventory) {
-        inventory.inspect(tenant).resourceTypes().create(ResourceType.Blueprint.builder().withId("URL")
-                .withVersion("1.0").build());
+        inventory.inspect(tenant).resourceTypes().create(ResourceType.Blueprint.builder().withId("URL").build());
         Log.LOGGER.autoCreatedEntity("resource type", "URL", tenant.getId());
 
         inventory.inspect(tenant).metricTypes().create(MetricType.Blueprint.builder().withId("status.code.type")

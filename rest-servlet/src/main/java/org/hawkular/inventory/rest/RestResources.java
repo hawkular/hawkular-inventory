@@ -44,7 +44,6 @@ import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -55,6 +54,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.rest.filters.ResourceFilters;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;
@@ -62,7 +62,6 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-
 
 /**
  * @author Lukas Krejci
@@ -193,9 +192,9 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getResourcesByType(@PathParam("environmentId") String environmentId,
-            @QueryParam("type") String typeId, @QueryParam("typeVersion") String typeVersion,
-            @QueryParam("feedless") @DefaultValue("false") boolean feedless, @Context UriInfo uriInfo) {
+    public Response getResources(@PathParam("environmentId") String environmentId,
+            @QueryParam("type") String typeId, @QueryParam("feedless") @DefaultValue("false") boolean feedless,
+            @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -203,12 +202,8 @@ public class RestResources extends RestBase {
 
         ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.feedlessResources() : envs.allResources();
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            rs = rr.getAll(Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(typeId).get())).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        ResourceFilters filters = new ResourceFilters(tenantId, uriInfo.getQueryParameters());
+        Page<Resource> rs = rr.getAll(filters.get()).entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
@@ -220,21 +215,16 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getResourcesByType(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @QueryParam("type") String typeId,
-            @QueryParam("typeVersion") String typeVersion, @Context UriInfo uriInfo) {
+    public Response getResources(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
         Resources.ReadWrite rr = inventory.tenants().get(tenantId).environments().get(environmentId)
                 .feeds().get(feedId).resources();
         Pager pager = extractPaging(uriInfo);
-        Page<Resource> rs;
-        if (typeId != null && typeVersion != null) {
-            rs = rr.getAll(Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(typeId).get())).entities(pager);
-        } else {
-            rs = rr.getAll().entities(pager);
-        }
+        ResourceFilters filters = new ResourceFilters(tenantId, uriInfo.getQueryParameters());
+        Page<Resource> rs = rr.getAll(filters.get()).entities(pager);
         return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 

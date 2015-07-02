@@ -16,22 +16,27 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.ServiceLoader;
+
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
-import java.util.ServiceLoader;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 
 /**
  * @author Lukas Krejci
  * @since 0.1.0
  */
 public final class TinkerpopInventory extends BaseInventory<Element> {
+    public static final Configuration.Property GRAPH_PROVIDER_IMPL_CLASS = Configuration.Property.builder()
+            .withPropertyNameAndSystemProperty("hawkular.inventory.tinkerpop.graph-provider-impl")
+            .withEnvironmentVariables("HAWKULAR_INVENTORY_TINKERPOP_GRAPH_PROVIDER_IMPL").build();
+
     @Override
     protected InventoryBackend<Element> doInitialize(Configuration configuration) {
         InventoryContext<?> context = loadGraph(configuration);
@@ -40,7 +45,9 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
 
     private <T extends TransactionalGraph> InventoryContext<T> loadGraph(Configuration configuration) {
         @SuppressWarnings("unchecked")
-        GraphProvider<T> gp = ServiceLoader.load(GraphProvider.class).iterator().next();
+        GraphProvider<T> gp = (GraphProvider<T>) instantiateGraphProvider(configuration);
+
+        Log.LOG.iUsingGraphProvider(gp.getClass().getName());
 
         T g = ensureIndices(gp, configuration);
 
@@ -60,5 +67,18 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withProperty(Constants.Property.__type.name(), String.class).build());
 
         return graph;
+    }
+
+    private GraphProvider<?> instantiateGraphProvider(Configuration config) {
+        String implClass = config.getProperty(GRAPH_PROVIDER_IMPL_CLASS, null);
+        if (implClass != null) {
+            try {
+                return (GraphProvider<?>) Class.forName(implClass).newInstance();
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                throw new IllegalStateException("Could not instantiate graph provider class '" + implClass + "'.", e);
+            }
+        } else {
+            return ServiceLoader.load(GraphProvider.class).iterator().next();
+        }
     }
 }

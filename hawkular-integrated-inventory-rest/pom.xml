@@ -21,7 +21,7 @@
   <parent>
     <artifactId>inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -73,6 +73,51 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- These 3 are to be included in Hawkular - We're using Titan on Cassandra there -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-impl-tinkerpop-titan-provider</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-impl-tinkerpop</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-cassandra</artifactId>
+      <version>0.5.4</version>
+      <scope>runtime</scope>
+      <exclusions>
+        <exclusion>
+          <!-- We get a newer version from Cassandra -->
+          <groupId>org.jboss.netty</groupId>
+          <artifactId>netty</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- TODO HACK ALERT: We're coupling pinger here... -->
+          <!-- We need to depend on another version that is also used in Pinger. This should disappear once pinger
+          becomes a proper remote client of inventory. -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- TODO HACK ALERT: We're coupling pinger here... -->
+    <!-- This is being used by Pinger which also depends on us. Going forward should work shouldn't it? ;) -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.3.1</version>
+    </dependency>
+
+    <!-- Logging -->
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
