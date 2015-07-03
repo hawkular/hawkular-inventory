@@ -759,8 +759,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .feedlessResources().getAll(new Filter[][]{
                         {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                                 With.propertyValue("ownedByDepartment", "Facilities")},
-                })
-                .entities();
+                }).entities();
         Assert.assertEquals(1, resources.size());
         Assert.assertEquals("playroom1", resources.iterator().next().getId());
     }
@@ -1066,12 +1065,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             Filter[][] paths = e.getFilters();
             Assert.assertEquals(2, paths.length);
             Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
-                    type(Environment.class), id("non-env"), by(contains), type(Resource.class),
-                    asTargetBy(contains), by(contains), type(Metric.class), id("x")).get(), paths[0]);
+                            type(Environment.class), id("non-env"), by(contains), type(Resource.class), by(incorporates),
+                            type(Metric.class), asTargetBy(contains), by(contains), type(Metric.class), id("x")).get(),
+                    paths[0]);
             Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
                     type(Environment.class), id("non-env"), by(contains), type(Feed.class),
-                    by(contains), type(Resource.class), asTargetBy(contains), by(contains), type(Metric.class),
-                    id("x")).get(), paths[1]);
+                    by(contains), type(Resource.class), by(incorporates), type(Metric.class), asTargetBy(contains),
+                    by(contains), type(Metric.class), id("x")).get(), paths[1]);
         }
     }
 

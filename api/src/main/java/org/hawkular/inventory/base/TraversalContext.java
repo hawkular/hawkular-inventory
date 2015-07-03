@@ -194,7 +194,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         if (!entityClass.equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
         }
-        return replacePath(Util.queryTo(this, path));
+        return replacePath(Util.extendTo(this, path));
     }
 
     /**
