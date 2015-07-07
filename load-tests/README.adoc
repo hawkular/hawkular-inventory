@@ -1,0 +1,24 @@
+= Hawkular Inventory Load Tests
+
+A simple load testing tool for Hawkular Inventory
+
+== Why a Maven project?
+
+Because it makes it easier for developers to fire a load test:
+there's no need to download, extract and configure PATH.
+
+== The scenario
+
+The simulation creates `n` resource types (configurable by `-DresourceTypes=n`) and for each resource type `m` metric types (`-DmetricTypes=m`).
+It creates the entities and also associates them together.
+
+See the scenario file for the list of options.
+
+== Running
+
+ mvn gatling:execute -Dxxx=y ...
+
+Each scenario option can be set with a system property.
+
+The scenario assumes a Hawkular server is running somewhere and does not start one.
+By default, it tries to connect to `http://localhost:8080`.

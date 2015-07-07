@@ -48,6 +48,7 @@
     <module>bus</module>
     <module>bus-api</module>
     <module>hawkular-integrated-inventory-rest</module>
+    <module>load-tests</module>
   </modules>
 
   <build>
