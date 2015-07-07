@@ -52,7 +52,7 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
- * @since 0.1.0
+ * @since 0.2.0
  */
 final class Util {
 

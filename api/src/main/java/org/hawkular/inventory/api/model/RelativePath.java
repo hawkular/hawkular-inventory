@@ -44,7 +44,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * {@link org.hawkular.inventory.api.model.RelativePath.Up} class that can be used to go up in the relative path.
  *
  * @author Lukas Krejci
- * @since 0.1.0
+ * @since 0.2.0
  */
 public final class RelativePath extends Path implements Serializable {
 

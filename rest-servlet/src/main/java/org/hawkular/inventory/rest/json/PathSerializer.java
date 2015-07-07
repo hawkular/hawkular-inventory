@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  * and shared and therefore cannot be used for a context-specific, and therefore stateful, work.
  *
  * @author Lukas Krejci
- * @since 0.1.0
+ * @since 0.2.0
  */
 public class PathSerializer extends JsonSerializer<CanonicalPath> {
     @Override

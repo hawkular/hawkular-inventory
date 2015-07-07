@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>For description of the basic behavior and serialized form of the path, please consult {@link Path}.
  *
  * @author Lukas Krejci
- * @since 0.1.0
+ * @since 0.2.0
  */
 public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 

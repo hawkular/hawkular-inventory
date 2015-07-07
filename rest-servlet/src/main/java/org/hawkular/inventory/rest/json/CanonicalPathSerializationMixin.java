@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * @author Lukas Krejci
  * @see com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
  * @see JacksonConfig
- * @since 0.1.0
+ * @since 0.2.0
  */
 @JsonSerialize(using = PathSerializer.class)
 public final class CanonicalPathSerializationMixin {
