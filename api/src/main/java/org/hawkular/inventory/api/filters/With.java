@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.RelativePath;
 
 /**
  * @author Lukas Krejci
@@ -53,6 +54,37 @@ public final class With {
 
     public static CanonicalPaths paths(CanonicalPath... paths) {
         return new CanonicalPaths(paths);
+    }
+
+    /**
+     * Constructs a new filter to only contain elements at the current position in the graph traversal that
+     * can also be reached using the provided relative path.
+     *
+     * <p>If the label is null, the relative path is applied directly to the current position in the traversal.
+     *
+     * @param markerLabel the filter chain this filter is being added to can contain a {@link Marker} with this
+     *                    label that marks the position against which the relative path would be resolved against
+     * @param path        the relative path of the elements.
+     * @return a new filter
+     */
+    public static RelativePaths relativePath(String markerLabel, RelativePath path) {
+        return new RelativePaths(markerLabel, path);
+    }
+
+    /**
+     * Constructs a new filter to only contain elements at the current position in the graph traversal that
+     * can also be reached using at least one of the provided relative paths.
+     *
+     * <p>If the label is null, the relative path is applied directly to the current position in the traversal.
+     *
+     * @param markerLabel the filter chain this filter is being added to can contain a {@link Marker} with this
+     *                    label that marks the position against which the relative path would be resolved against
+     * @param paths       the relative paths of the elements.
+     * @return a new filter
+     * @see #relativePath(String, RelativePath)
+     */
+    public static RelativePaths relativePaths(String markerLabel, RelativePath... paths) {
+        return new RelativePaths(markerLabel, paths);
     }
 
     /**
@@ -184,6 +216,44 @@ public final class With {
             if (!(o instanceof CanonicalPaths)) return false;
 
             CanonicalPaths other = (CanonicalPaths) o;
+
+            return Arrays.equals(paths, other.paths);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(paths);
+        }
+    }
+
+    public static final class RelativePaths extends Filter {
+        private final String markerLabel;
+        private final RelativePath[] paths;
+
+        public RelativePaths(String markerLabel, RelativePath... paths) {
+            this.markerLabel = markerLabel;
+            this.paths = paths;
+        }
+
+        public String getMarkerLabel() {
+            return markerLabel;
+        }
+
+        public RelativePath[] getPaths() {
+            return paths;
+        }
+
+        @Override
+        public String toString() {
+            return "RelativePaths" + Arrays.asList(paths).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof RelativePaths)) return false;
+
+            RelativePaths other = (RelativePaths) o;
 
             return Arrays.equals(paths, other.paths);
         }

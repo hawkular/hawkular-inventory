@@ -17,10 +17,16 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
@@ -230,5 +236,70 @@ class FilterVisitor {
                         filter.getPaths()[i].toString()));
 
         query.or(idChecks);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <E> void visit(HawkularPipeline<?, E> query, With.RelativePaths filter) {
+        String label = filter.getMarkerLabel();
+
+        Set<E> seen = new HashSet<>();
+
+        if (filter.getPaths().length == 1) {
+            if (label != null) {
+                apply(filter.getPaths()[0].getSegment(), query);
+                query.store(seen);
+                query.back(label);
+            }
+            convertToPipeline(filter.getPaths()[0], query);
+        } else {
+            if (label != null) {
+                HawkularPipeline[] narrower = new HawkularPipeline[filter.getPaths().length];
+                Arrays.setAll(narrower, i -> {
+                    HawkularPipeline<?, ?> p = new HawkularPipeline<>();
+                    apply(filter.getPaths()[i].getSegment(), p);
+                    return p;
+                });
+
+                query.or(narrower);
+
+                query.store(seen);
+
+                query.back(label);
+            }
+
+            HawkularPipeline[] pipes = new HawkularPipeline[filter.getPaths().length];
+
+            Arrays.setAll(pipes, i -> {
+                HawkularPipeline<?, ?> p = new HawkularPipeline<>();
+                convertToPipeline(filter.getPaths()[i], p);
+                return p;
+            });
+
+            query.or(pipes);
+        }
+
+        if (label != null) {
+            query.retain(seen);
+        }
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, Marker filter) {
+        query.as(filter.getLabel());
+    }
+
+    private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {
+        for (Path.Segment s : path.getPath()) {
+            if (RelativePath.Up.class.equals(s.getElementType())) {
+                pipeline.in(Relationships.WellKnown.contains.name());
+            } else {
+                pipeline.out(Relationships.WellKnown.contains.name());
+                apply(s, pipeline);
+            }
+        }
+    }
+
+    private void apply(Path.Segment segment, HawkularPipeline<?, ?> pipeline) {
+        pipeline.hasType(Constants.Type.of(segment.getElementType()));
+        pipeline.hasEid(segment.getElementId());
     }
 }

@@ -25,9 +25,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,8 +35,7 @@ import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -188,48 +185,24 @@ final class Util {
     public static Query queryTo(TraversalContext<?, ?> context, Path path) {
         if (path instanceof CanonicalPath) {
             return Query.to((CanonicalPath) path);
+        } else {
+            Query.SymmetricExtender extender = context.sourcePath.extend().path();
+
+            extender.with(With.relativePath(null, (RelativePath) path));
+
+            return extender.get();
         }
-
-        Query.SymmetricExtender extender = context.sourcePath.extend().path();
-
-        for (Path.Segment s : path.getPath()) {
-            if (RelativePath.Up.class.equals(s.getElementType())) {
-                extender.with(Related.asTargetBy(contains));
-            } else {
-                extender.with(Related.by(contains), With.type((Class<? extends Entity<?, ?>>) s.getElementType()),
-                        With.id(s.getElementId()));
-            }
-        }
-
-        return extender.get();
     }
 
     @SuppressWarnings("unchecked")
     public static Query extendTo(TraversalContext<?, ?> context, Path path) {
-        Query.SymmetricExtender extender = context.select();
-
         if (path instanceof CanonicalPath) {
-//            extender = context.select();
-            extender.with(With.path((CanonicalPath) path));
+            return context.select().with(With.path((CanonicalPath) path)).get();
         } else {
-//            extender = context.sourcePath.extend().filter();
-            List<Filter> containsPath = new ArrayList<>();
-            for (Path.Segment s : path.getPath()) {
-                if (RelativePath.Up.class.equals(s.getElementType())) {
-                    containsPath.add(Related.asTargetBy(contains));
-                } else {
-                    containsPath.add(Related.by(contains));
-                    containsPath.add(With.type((Class<? extends Entity<?, ?>>) s.getElementType()));
-                    containsPath.add(With.id(s.getElementId()));
-                }
-            }
-
-            Filter[][] pathCheck = new Filter[1][];
-            pathCheck[0] = containsPath.toArray(new Filter[containsPath.size()]);
-
-            extender.with(pathCheck);
+            Marker marker = Marker.next();
+            return context.sourcePath.extend().filter().with(marker).with(context.selectCandidates)
+                    .with(With.relativePath(marker.getLabel(), (RelativePath) path)).get();
         }
-        return extender.get();
     }
 
     @SuppressWarnings("unchecked")

@@ -28,6 +28,7 @@ import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Incorporated;
+import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -65,6 +66,8 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(SwitchElementType.class, SwitchElementTypeApplicator.class);
         applicators.put(NoopFilter.class, NoopApplicator.class);
         applicators.put(With.CanonicalPaths.class, CanonicalPathApplicator.class);
+        applicators.put(With.RelativePaths.class, RelativePathApplicator.class);
+        applicators.put(Marker.class, MarkerApplicator.class);
     }
 
     protected final T filter;
@@ -337,6 +340,30 @@ abstract class FilterApplicator<T extends Filter> {
     private static final class CanonicalPathApplicator extends FilterApplicator<With.CanonicalPaths> {
 
         private CanonicalPathApplicator(With.CanonicalPaths f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class RelativePathApplicator extends FilterApplicator<With.RelativePaths> {
+
+        private RelativePathApplicator(With.RelativePaths f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class MarkerApplicator extends FilterApplicator<Marker> {
+
+        private MarkerApplicator(Marker f) {
             super(f);
         }
 

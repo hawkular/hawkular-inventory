@@ -33,7 +33,9 @@ import static org.hawkular.inventory.api.filters.With.type;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -49,6 +51,7 @@ import java.util.stream.StreamSupport;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Interest;
@@ -74,6 +77,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -252,10 +256,23 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(), sizeType);
         Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(), sizeType);
 
+        //when an association is deleted, it should not be possible to access the target entity through the same
+        //traversal again
+        inventory.inspect(playroom2).metrics().disassociate(playroom2Size.getPath());
+        Assert.assertFalse(inventory.inspect(playroom2).metrics().get(playroom2Size.getPath()).exists());
+        Assert.assertFalse(inventory.inspect(playroom2).metrics().get(
+                RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
+
         inventory.inspect(playroom2Size).delete();
 
         assertDoesNotExist(playroom2Size);
         assertExists(t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
+
+        //disassociation using a relative path should work, too
+        inventory.inspect(playroom1).metrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId()).get());
+        Assert.assertFalse(inventory.inspect(playroom1).metrics().get(playroom1Size.getPath()).exists());
+        Assert.assertFalse(inventory.inspect(playroom1).metrics().get(
+                RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
 
         inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
         assertDoesNotExist(kachnaType);
@@ -1055,27 +1072,6 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
-    public void testAllPathsMentionedInExceptions() throws Exception {
-        RelativePath metricPath = RelativePath.to().up().metric("x").get();
-        try {
-            inventory.tenants().get("non-tenant").environments().get("non-env").allResources().getAll().metrics()
-                    .get(metricPath).entity();
-            Assert.fail("Fetching non-existant entity should have failed");
-        } catch (EntityNotFoundException e) {
-            Filter[][] paths = e.getFilters();
-            Assert.assertEquals(2, paths.length);
-            Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
-                            type(Environment.class), id("non-env"), by(contains), type(Resource.class), by(incorporates),
-                            type(Metric.class), asTargetBy(contains), by(contains), type(Metric.class), id("x")).get(),
-                    paths[0]);
-            Assert.assertArrayEquals(Filter.by(type(Tenant.class), id("non-tenant"), by(contains),
-                    type(Environment.class), id("non-env"), by(contains), type(Feed.class),
-                    by(contains), type(Resource.class), by(incorporates), type(Metric.class), asTargetBy(contains),
-                    by(contains), type(Metric.class), id("x")).get(), paths[1]);
-        }
-    }
-
-    @Test
     public void testFilterByPropertyValues() throws Exception {
         Assert.assertTrue(inventory.tenants().getAll(With.property("kachny")).anyExists());
         Assert.assertFalse(inventory.tenants().getAll(With.property("kachna")).anyExists());
@@ -1188,6 +1184,58 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     //good
                 }
                 break;
+            }
+        }
+    }
+
+    @Test
+    public void testRelativePathHandlingDuringDisassociationWhenThereAreMultipleRels() throws Exception {
+        Environments.Single env = inventory.inspect(CanonicalPath.fromString("/t;com.example.tenant/e;test"),
+                Environments.Single.class);
+
+        Feed f = null;
+        Resource r = null;
+        Metric m1 = null;
+        Metric m2 = null;
+
+        try {
+            r = env.feedlessResources().create(Resource.Blueprint.builder().withId("assocR1")
+                    .withResourceTypePath("/rt;Playroom").build()).entity();
+
+            //notice that m1 and m2 have the same ID, only a different path
+
+            m1 = env.feedlessMetrics().create(Metric.Blueprint.builder().withId("assocMetric")
+                    .withMetricTypePath("/mt;Size").build()).entity();
+
+            f = env.feeds().create(Feed.Blueprint.builder().withId("assocF").build()).entity();
+
+            m2 = env.feeds().get("assocF").metrics().create(Metric.Blueprint.builder().withId("assocMetric")
+                    .withMetricTypePath("/mt;Size").build()).entity();
+
+            inventory.inspect(r).metrics().associate(m1.getPath());
+            inventory.inspect(r).metrics().associate(m2.getPath());
+
+            Assert.assertEquals(new HashSet<>(Arrays.asList(m1, m2)),
+                    inventory.inspect(r).metrics().getAll().entities());
+
+            inventory.inspect(r).metrics().disassociate(Path.fromString("../m;assocMetric"));
+
+            Assert.assertEquals(Collections.singleton(m2), inventory.inspect(r).metrics().getAll().entities());
+        } finally {
+            if (r != null) {
+                inventory.inspect(r).delete();
+            }
+
+            if (m1 != null) {
+                inventory.inspect(m1).delete();
+            }
+
+            if (m2 != null) {
+                inventory.inspect(m2).delete();
+            }
+
+            if (f != null) {
+                inventory.inspect(f).delete();
             }
         }
     }
