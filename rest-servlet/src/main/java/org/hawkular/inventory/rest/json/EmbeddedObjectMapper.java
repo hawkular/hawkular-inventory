@@ -16,10 +16,11 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import org.hawkular.inventory.api.model.Relationship;
+
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.hawkular.inventory.api.model.Relationship;
 
 /**
  * @author Jirka Kremser

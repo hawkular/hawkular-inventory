@@ -17,40 +17,42 @@
 
 package org.hawkular.inventory.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
-import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.rest.json.ApiError;
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.json.ApiError;
 
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -139,7 +141,7 @@ public class RestResourceTypes extends RestBase {
     public Response create(ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
 
-        if (!security.canCreate(ResourceType.class).under(Tenant.class, tenantId)) {
+        if (!security.canCreate(ResourceType.class).under(CanonicalPath.of().tenant(tenantId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -161,7 +163,7 @@ public class RestResourceTypes extends RestBase {
             @ApiParam(required = true) ResourceType.Update update) {
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -180,7 +182,7 @@ public class RestResourceTypes extends RestBase {
     public Response delete(@PathParam("resourceTypeId") String resourceTypeId) {
         String tenantId = getTenantId();
 
-        if (!security.canDelete(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -198,33 +200,53 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
-            Collection<String> metricTypeIds) {
+            @ApiParam("A list of paths to metric types to be associated with the resource type. They can either be" +
+                    " canonical or relative to the resource type.") Collection<String> metricTypePaths) {
         String tenantId = getTenantId();
-        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+
+        if (!security.canAssociateFrom(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+
         ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
                 .metricTypes();
-        metricTypeIds.forEach(metricTypesDao::associate);
+
+        metricTypePaths.stream()
+                .map((p) -> org.hawkular.inventory.api.model.Path.fromPartiallyUntypedString(p, tenant, rt,
+                        MetricType.class)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
     }
 
     @GET
-    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @javax.ws.rs.Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
     @ApiOperation("Retrieves the given metric type associated with the given resource type.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metric types"),
             @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
-            response = ApiError.class),
+                    response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public MetricType getAssociatedMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-            @PathParam("metricTypeId") String metricTypeId) {
-        String tenantId = getTenantId();
-        return inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
-                .metricTypes().get(metricTypeId).entity();
+            @PathParam("metricTypePath") String metricTypePath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric type path should be considered canonical, false by default.")
+            boolean isCanonical) {
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
+        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+
+        if (isCanonical) {
+            metricTypePath = "/" + metricTypePath;
+        }
+
+        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+
+        return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
     }
 
     @GET
@@ -233,7 +255,7 @@ public class RestResourceTypes extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metric types"),
             @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
-            response = ApiError.class),
+                    response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
@@ -246,7 +268,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @DELETE
-    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypeId}")
+    @Path("/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
     @ApiOperation("Disassociates the given resource type from the given metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -255,15 +277,27 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-            @PathParam("metricTypeId") String metricTypeId) {
+            @PathParam("metricTypePath") String metricTypePath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric path should be considered canonical, false by default.")
+            boolean isCanonical) {
 
-        String tenantId = getTenantId();
+        CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
+        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
 
-        if (!security.canAssociateFrom(ResourceType.class, tenantId, resourceTypeId)) {
+        if (!security.canAssociateFrom(rt)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId).metricTypes().disassociate(metricTypeId);
+        if (isCanonical) {
+            metricTypePath = "/" + metricTypePath;
+        }
+
+        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+
+        inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);
+
         return Response.noContent().build();
     }
 }

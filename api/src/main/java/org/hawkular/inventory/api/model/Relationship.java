@@ -16,13 +16,14 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.base.spi.CanonicalPath;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Map;
+
+import org.hawkular.inventory.api.Relationships;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * Represents a relationship between 2 entities. A relationship has a source and target entities (somewhat obviously),
@@ -37,13 +38,17 @@ import java.util.Map;
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
     @XmlAttribute
     @Expose
+    private final String id;
+
+    @XmlAttribute
+    @Expose
     private final String name;
 
     @Expose
-    private final Entity source;
+    private final CanonicalPath source;
 
     @Expose
-    private final Entity target;
+    private final CanonicalPath target;
 
     /** JAXB support */
     @SuppressWarnings("unused")
@@ -56,12 +61,14 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         return visitor.visitRelationship(this, parameter);
     }
 
-    public Relationship(String id, String name, Entity source, Entity target) {
+    public Relationship(String id, String name, CanonicalPath source, CanonicalPath target) {
         this(id, name, source, target, null);
     }
 
-    public Relationship(String id, String name, Entity source, Entity target, Map<String, Object> properties) {
-        super(id, properties);
+    public Relationship(String id, String name, CanonicalPath source, CanonicalPath target,
+            Map<String, Object> properties) {
+        super(CanonicalPath.of().relationship(id).get(), properties);
+        this.id = id;
         this.name = name;
         this.source = source;
         this.target = target;
@@ -72,15 +79,20 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         return new Updater<>((u) -> new Relationship(getId(), getName(), getSource(), getTarget(), u.getProperties()));
     }
 
+    @Override
+    public String getId() {
+        return id;
+    }
+
     public String getName() {
         return name;
     }
 
-    public Entity getSource() {
+    public CanonicalPath getSource() {
         return source;
     }
 
-    public Entity getTarget() {
+    public CanonicalPath getTarget() {
         return target;
     }
 

@@ -48,20 +48,18 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
         unit = null;
     }
 
-    public MetricType(String tenantId, String id) {
-        super(tenantId, id);
-        this.unit = MetricUnit.NONE;
+    public MetricType(CanonicalPath path) {
+        this(path, MetricUnit.NONE, null);
     }
 
-    public MetricType(String tenantId, String id, MetricUnit unit) {
-        super(tenantId, id);
-        this.unit = unit;
+    public MetricType(CanonicalPath path, MetricUnit unit) {
+        this(path, unit, null);
     }
 
     @JsonCreator
-    public MetricType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
-            @JsonProperty("unit") MetricUnit unit, @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, id, properties);
+    public MetricType(@JsonProperty("path") CanonicalPath path, @JsonProperty("unit") MetricUnit unit,
+            @JsonProperty("properties") Map<String, Object> properties) {
+        super(path, properties);
         this.unit = unit;
     }
 
@@ -71,8 +69,7 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
 
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(getTenantId(), getId(), valueOrDefault(u.unit, this.unit),
-                u.getProperties()));
+        return new Updater<>((u) -> new MetricType(getPath(), valueOrDefault(u.unit, this.unit), u.getProperties()));
     }
 
     @Override

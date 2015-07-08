@@ -16,14 +16,11 @@
  */
 package org.hawkular.inventory.rest.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.base.spi.CanonicalPath;
-import org.hawkular.inventory.rest.Security;
+import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.FIELD_ID;
+import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.FIELD_NAME;
+import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.FIELD_PROPERTIES;
+import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.FIELD_SOURCE;
+import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.FIELD_TARGET;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,7 +31,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.hawkular.inventory.rest.json.RelationshipJacksonSerializer.*;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.rest.Security;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  *
@@ -58,18 +62,16 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
         if (node.get(FIELD_NAME) != null) {
             name = node.get(FIELD_NAME).asText();
         }
-        Entity source = null, target = null;
+        CanonicalPath source = null, target = null;
         if (node.get(FIELD_SOURCE) != null && !node.get(FIELD_SOURCE).asText().isEmpty()) {
             String sourcePath = node.get(FIELD_SOURCE).asText();
             validatePath(sourcePath);
-            CanonicalPath sourceCPath = Security.getCanonicalPath(sourcePath);
-            source = sourceCPath.toEntity();
+            source = Security.getCanonicalPath(sourcePath);
         }
         if (node.get(FIELD_TARGET) != null && !node.get(FIELD_TARGET).asText().isEmpty()) {
             String targetPath = node.get(FIELD_TARGET).asText();
             validatePath(targetPath);
-            CanonicalPath targetCPath = Security.getCanonicalPath(targetPath);
-            target = targetCPath.toEntity();
+            target = Security.getCanonicalPath(targetPath);
         }
 
         JsonNode properties = node.get(FIELD_PROPERTIES);

@@ -37,30 +37,28 @@ import java.util.function.Function;
 public abstract class AbstractElement<B extends AbstractElement.Blueprint, U extends AbstractElement.Update> {
     public static final String ID_PROPERTY = "id";
 
-    @XmlAttribute
+    @XmlAttribute(name = "path")
     @Expose
-    protected final String id;
+    private final CanonicalPath path;
+
+
     @Expose
     protected final Map<String, Object> properties;
 
     //JAXB support
     AbstractElement() {
-        id = null;
         properties = null;
+        path = null;
     }
 
-    AbstractElement(String id, Map<String, Object> properties) {
-        if (id == null) {
-            throw new IllegalArgumentException("id == null");
-        }
-
-        this.id = id;
+    AbstractElement(CanonicalPath path, Map<String, Object> properties) {
         if (properties == null) {
             this.properties = null;
         } else {
             this.properties = new HashMap<>(properties);
             this.properties.remove(ID_PROPERTY);
         }
+        this.path = path;
     }
 
     /**
@@ -75,10 +73,17 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
     public abstract <R, P> R accept(ElementVisitor<R, P> visitor, P parameter);
 
     /**
-     * @return the id of the entity.
+     * @return canonical path to the element
+     */
+    public CanonicalPath getPath() {
+        return path;
+    }
+
+    /**
+     * @return the id of the element.
      */
     public String getId() {
-        return id;
+        return path.getSegment().getElementId();
     }
 
     /**
@@ -108,12 +113,12 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
 
         AbstractElement<?, ?> entity = (AbstractElement<?, ?>) o;
 
-        return id.equals(entity.id);
+        return path.equals(entity.path);
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return getPath().hashCode();
     }
 
     public abstract static class Update {

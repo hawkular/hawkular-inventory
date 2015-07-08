@@ -14,25 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.filters;
+package org.hawkular.inventory.rest.json;
 
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * A helper class to create filters on the "contains" relationship. This can also be achieved by using the
- * {@link Related} filter.
+ * We can't touch the CanonicalPath code here, but Jackson enables us to use mixins to "re-annotate" the classes.
  *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @see com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
+ * @see JacksonConfig
+ * @since 0.2.0
  */
-public final class Contained extends Related {
-
-    private Contained(CanonicalPath entity) {
-        super(entity, Relationships.WellKnown.contains.name(), EntityRole.TARGET);
-    }
-
-    public static Contained in(CanonicalPath entityPath) {
-        return new Contained(entityPath);
-    }
+@JsonSerialize(using = PathSerializer.class)
+public final class CanonicalPathSerializationMixin {
 }

@@ -90,9 +90,9 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
 
     private void unlock(InventoryBackend.Transaction t) {
         ReentrantReadWriteLock lock = ((SimulatedSerializedTransaction) t).lock;
-        if (t.isMutating()) {
+        if (t.isMutating() && lock.writeLock().isHeldByCurrentThread()) {
             lock.writeLock().unlock();
-        } else {
+        } else if (lock.getReadHoldCount() > 0) {
             lock.readLock().unlock();
         }
     }

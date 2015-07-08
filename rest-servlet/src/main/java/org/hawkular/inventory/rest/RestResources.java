@@ -23,12 +23,6 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
@@ -37,7 +31,6 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -46,31 +39,42 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.filters.ResourceFilters;
 import org.hawkular.inventory.rest.json.ApiError;
 
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
  * @since 1.0
  */
-@Path("/")
+@javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 @Api(value = "/", description = "Resources CRUD")
 public class RestResources extends RestBase {
 
     @POST
-    @Path("/{environmentId}/resources")
+    @javax.ws.rs.Path("/{environmentId}/resources")
     @ApiOperation("Creates a new resource")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Resource successfully created"),
@@ -84,18 +88,46 @@ public class RestResources extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canCreate(Resource.class).under(Environment.class, tenantId, environmentId)) {
+        CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
+
+        if (!security.canCreate(Resource.class).under(env)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
-                .create(resource);
+        inventory.inspect(env, Environments.Single.class).feedlessResources().create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }
 
     @POST
-    @Path("/{environmentId}/{feedId}/resources")
+    @javax.ws.rs.Path("/{environmentId}/resources/{parentPath:.+}")
+    @ApiOperation("Creates a new resource")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Resource successfully created"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response addResource(@PathParam("environmentId") String environmentId,
+            @PathParam("parentPath") String parentPath, @ApiParam(required = true) Resource.Blueprint resource,
+            @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, parentPath);
+
+        if (!security.canCreate(Resource.class).under(parent)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(parent, Resources.Single.class).containedChildren().create(resource);
+
+        return ResponseUtil.created(uriInfo, resource.getId()).build();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources")
     @ApiOperation("Creates a new resource")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Resource successfully created"),
@@ -104,17 +136,46 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response addResource(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @ApiParam(required =  true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
+    public Response addFeedResource(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @ApiParam(required = true) Resource.Blueprint resource,
+            @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
-        if (!security.canCreate(Resource.class).under(Feed.class, tenantId, environmentId, feedId)) {
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+
+        if (!security.canCreate(Resource.class).under(feed)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
-                .create(resource);
+        inventory.inspect(feed, Feeds.Single.class).resources().create(resource);
+
+        return ResponseUtil.created(uriInfo, resource.getId()).build();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{parentPath:.+}")
+    @ApiOperation("Creates a new resource")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Resource successfully created"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response addFeedResource(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @PathParam("parentPath") String parentPath,
+            @ApiParam(required = true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, parentPath);
+
+        if (!security.canCreate(Resource.class).under(parent)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(parent, Resources.Single.class).containedChildren().create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }
@@ -123,7 +184,7 @@ public class RestResources extends RestBase {
     // Copy the approach taken here on appropriate places or go with something more generic like a textual
     // representation of our Java API?
     @GET
-    @Path("/{environmentId}/resources")
+    @javax.ws.rs.Path("/{environmentId}/resources")
     @ApiOperation("Retrieves resources in the environment, optionally filtering by resource type. Accepts paging " +
             "query parameters.")
     @ApiResponses({
@@ -147,7 +208,7 @@ public class RestResources extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resources")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources")
     @ApiOperation("Retrieves resources in the feed, optionally filtering by resource type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -168,7 +229,7 @@ public class RestResources extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/resources/{resourceId}")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -176,13 +237,14 @@ public class RestResources extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Resource getResource(@PathParam("environmentId") String environmentId, @PathParam("resourceId") String uid) {
+    public Resource getResource(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath) {
         return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
-                .get(uid).entity();
+                .get(resourcePath).entity();
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -191,13 +253,185 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Resource getResource(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourceId") String uid) {
+            @PathParam("resourcePath") String resourcePath) {
         return inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId).resources()
-                .get(uid).entity();
+                .get(resourcePath).entity();
     }
 
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/children")
+    @ApiOperation("Retrieves child resources of a resource. This can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getChildren(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        Pager pager = extractPaging(uriInfo);
+
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/children")
+    @ApiOperation("Retrieves child resources of a resource. This can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getChildren(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        Pager pager = extractPaging(uriInfo);
+
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/parents")
+    @ApiOperation("Retrieves parents resources of the resource. This can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getParents(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        Pager pager = extractPaging(uriInfo);
+
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).parents().getAll().entities(pager);
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/parents")
+    @ApiOperation("Retrieves parent resources of a resource. This can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getParents(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        Pager pager = extractPaging(uriInfo);
+
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).parents().getAll().entities(pager);
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/parent")
+    @ApiOperation("Retrieves the parent resources that contains the given resource. Such parent resource will not" +
+            " exist for resources directly contained in an environment or a feed.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Resource getParent(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        return inventory.inspect(resource, Resources.Single.class).parent().entity();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/parent")
+    @ApiOperation("Retrieves the parent resources that contains the given resource. Such parent resource will not" +
+            " exist for resources directly contained in an environment or a feed.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment, feed or the resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Resource getParent(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+            @PathParam("resourcePath") String resourcePath) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        return inventory.inspect(resource, Resources.Single.class).parent().entity();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/children")
+    @ApiOperation("Associates given resources as children of a given resource.")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response associateChildren(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath, @ApiParam("resources") Collection<Path> resources) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
+
+        resources.forEach(access::associate);
+
+        return Response.noContent().build();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/children")
+    @ApiOperation("Associates given resources as children of a given resource.")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response associateChildren(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @ApiParam("resources") Collection<Path> resources) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
+
+        resources.forEach(access::associate);
+
+        return Response.noContent().build();
+    }
+
+    @SuppressWarnings("unchecked")
     @PUT
-    @Path("/{environmentId}/resources/{resourceId}")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}")
     @ApiOperation("Update a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -205,23 +439,24 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 404, message = "Resource doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("environmentId") String environmentId, @PathParam("resourceId") String resourceId,
-            @ApiParam(required = true) Resource.Update update) {
+    public Response update(@PathParam("environmentId") String environmentId,
+            @PathParam("resourcePath") String resourcePath, @ApiParam(required = true) Resource.Update update) {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (!security.canUpdate(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().update(resourceId,
-                update);
+        inventory.inspect(resource, ResolvableToSingle.class).update(update);
 
         return Response.noContent().build();
     }
 
     @PUT
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}")
     @ApiOperation("Update a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -230,23 +465,24 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourceId") String resourceId, @ApiParam(required = true) Resource.Update update) {
+            @PathParam("resourcePath") String resourcePath, @ApiParam(required = true) Resource.Update update) {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (!security.canUpdate(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
-                .update(resourceId, update);
+        inventory.inspect(resource, Resources.Single.class).update(update);
 
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/resources/{resourceId}")
-    @ApiOperation("Retrieves a single resource")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}")
+    @ApiOperation("Deletes a single resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
@@ -254,20 +490,23 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteResource(@PathParam("environmentId") String environmentId,
-            @PathParam("resourceId") String resourceId) {
+            @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (!security.canDelete(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().delete(resourceId);
+        inventory.inspect(resource, Resources.Single.class).delete();
+
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -276,21 +515,23 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteResource(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourceId") String resourceId) {
+            @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (!security.canDelete(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
-                .delete(resourceId);
+        inventory.inspect(resource, Resources.Single.class).delete();
+
         return Response.noContent().build();
     }
 
     @POST
-    @Path("/{environmentId}/resources/{resourceId}/metrics/")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics/")
     @ApiOperation("Associates a pre-existing metric with a resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -299,24 +540,30 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("resourceId") String resourceId, Collection<String> metricIds) {
+            @PathParam("resourcePath") String resourcePath,
+            @ApiParam("A list of paths to metrics to be associated with the resource. They can either be canonical or" +
+                    " relative to the resource.") Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (!security.canAssociateFrom(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
-                .feedlessResources().get(resourceId).metrics();
+        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
 
-        metricIds.forEach(metricDao::associate);
+        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
+                .forEach(metricDao::associate);
 
         return Response.noContent().build();
     }
 
     @POST
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics/")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/")
     @ApiOperation("Associates a pre-existing metric with a resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -325,25 +572,29 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
-            Collection<String> metricIds) {
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, feedId, resourceId)) {
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (!security.canAssociateFrom(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
-        Metrics.ReadAssociate metricDao = inventory.tenants().get(tenantId).environments().get(environmentId)
-                .feeds().get(feedId).resources().get(resourceId).metrics();
+        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
 
-        metricIds.forEach(metricDao::associate);
+        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
+                .forEach(metricDao::associate);
 
         return Response.noContent().build();
     }
 
     @GET
-    @Path("/{environmentId}/resources/{resourceId}/metrics")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics")
     @ApiOperation("Retrieves all metrics associated with a resource. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metrics"),
@@ -352,15 +603,16 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
-            @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
+            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentID)
-                    .feedlessResources().get(resourceId).metrics().getAll().entities(extractPaging(uriInfo));
+                .feedlessResources().descend(getResourcePath(resourcePath)).getAll().metrics().getAll()
+                .entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics")
     @ApiOperation("Retrieves all metrics associated with a resource. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metrics"),
@@ -369,16 +621,17 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId, @Context UriInfo uriInfo) {
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @Context UriInfo uriInfo) {
         Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                 .feeds().get(feedId).resources().get(resourceId).metrics().getAll()
+                .feeds().get(feedId).resources().descend(getResourcePath(resourcePath)).getAll().metrics().getAll()
                  .entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
 
     @GET
-    @Path("/{environmentId}/resources/{resourceId}/metrics/{metricId}")
-    @ApiOperation("Retrieves a single resource")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
+    @ApiOperation("Retrieves a single metric associated with a resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
             @ApiResponse(code = 404,
@@ -387,32 +640,67 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
-        Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
-                .get(resourceId).metrics().get(metricId).entity();
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric path should be considered canonical, false by default.")
+            boolean isCanonical) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
+
         return Response.ok(m).build();
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics/{metricId}")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
             @ApiResponse(code = 404,
-                    message = "Tenant, environment, feed, resource or metric does not exist or the metric is not " +
+                    message = "Tenant, environment, feed, resource or metric doesn't exist or if the metric is not " +
                             "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
-            @PathParam("metricId") String metricId) {
-        Metric m = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId)
-                .resources().get(resourceId).metrics().get(metricId).entity();
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+    @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
         return Response.ok(m).build();
     }
 
     @DELETE
-    @Path("/{environmentId}/resources/{resourceId}/metrics/{metricId}")
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -422,20 +710,36 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourceId") String resourceId, @PathParam("metricId") String metricId) {
+            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
+            @QueryParam("canonical") @DefaultValue("false")
+            @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources().get(resourceId)
-                .metrics().disassociate(metricId);
+
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
+
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/resources/{resourceId}/metrics/{metricId}")
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -445,17 +749,56 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourceId") String resourceId,
-            @PathParam("metricId") String metricId) {
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+    @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
-        if (!security.canAssociateFrom(Resource.class, tenantId, environmentId, resourceId)) {
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId).resources()
-                .get(resourceId).metrics().disassociate(metricId);
+
+        if (isCanonical) {
+            metricPath = "/" + metricPath;
+        }
+
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+
+        if (Security.isTenantEscapeAttempt(rp, mp)) {
+            Response.status(FORBIDDEN).build();
+        }
+
+        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
+
         return Response.noContent().build();
     }
 
+    private CanonicalPath composeCanonicalPath(String tenantId, String envId, String feedId, String resourcePath) {
+        CanonicalPath.Extender bld = CanonicalPath.empty().extend(Tenant.class, tenantId)
+                .extend(Environment.class, envId);
+
+        if (feedId != null) {
+            bld = bld.extend(Feed.class, feedId);
+        }
+
+        for (String rid : resourcePath.split("/")) {
+            bld = bld.extend(Resource.class, rid);
+        }
+
+        return bld.get();
+    }
+
+    private RelativePath getResourcePath(String path) {
+        RelativePath.Extender ret = RelativePath.empty();
+
+        for (String s : path.split("/")) {
+            ret.extend(Resource.class, s);
+        }
+
+        return ret.get();
+    }
 }

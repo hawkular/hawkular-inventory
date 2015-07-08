@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
@@ -144,6 +145,24 @@ public interface InventoryBackend<E> extends AutoCloseable {
     E getRelationship(E source, E target, String relationshipName) throws ElementNotFoundException;
 
     /**
+     * @param relationship the relationship in question
+     * @return the source of the relationship
+     */
+    E getRelationshipSource(E relationship);
+
+    /**
+     * @param relationship the relationship in question
+     * @return the target of the relationship
+     */
+    E getRelationshipTarget(E relationship);
+
+    /**
+     * @param relationship the relationship in question
+     * @return the name of the relationship
+     */
+    String extractRelationshipName(E relationship);
+
+    /**
      * The element type is opaque from the point of the caller. This method provides the caller with the ability to
      * extract the ID of the entity represented by the object.
      *
@@ -159,6 +178,15 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @return the type of the object represented
      */
     Class<? extends AbstractElement<?, ?>> extractType(E entityRepresentation);
+
+    /**
+     * Each element (including relationships) stores the canonical path to it. This will extract that value from the
+     * entity representation.
+     *
+     * @param entityRepresentation the representation object
+     * @return the extracted canonical path
+     */
+    CanonicalPath extractCanonicalPath(E entityRepresentation);
 
     /**
      * Converts the provided representation object to a inventory element of provided type.
@@ -184,14 +212,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
     E relate(E sourceEntity, E targetEntity, String name, Map<String, Object> properties);
 
     /**
-     * Persists a new entity with the provided assigned ID (this is NOT a unique identifier, namely a context-sensitive
-     * ID provided by the user).
+     * Persists a new entity with the provided assigned path.
      *
-     * @param id        the ID to use, may be different from the ID given in the blueprint
+     * @param path      the canonical path to the entity
      * @param blueprint the blueprint of the entity
      * @return the representation object of the newly created entity
      */
-    E persist(String id, AbstractElement.Blueprint blueprint);
+    E persist(CanonicalPath path, AbstractElement.Blueprint blueprint);
 
     /**
      * Updates given entity with the data provided in the update object.

@@ -16,23 +16,26 @@
  */
 package org.hawkular.inventory.api;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import rx.Observable;
 
-import java.util.Collections;
-import java.util.Map;
+import rx.Observable;
 
 /**
  * This is more or a less a helper class to be used in cases where an implementor or a user would like to swap out the
@@ -56,6 +59,11 @@ public class EmptyInventory implements Inventory {
     }
 
     @Override
+    public Relationships.Read relationships() {
+        return new RelationshipsRead();
+    }
+
+    @Override
     public boolean hasObservers(Interest<?, ?> interest) {
         return false;
     }
@@ -69,8 +77,44 @@ public class EmptyInventory implements Inventory {
         return new Page<>(Collections.emptyList(), pager, 0);
     }
 
-    protected static EntityNotFoundException entityNotFound(Class<? extends Entity> entityClass) {
+    protected static EntityNotFoundException entityNotFound(Class<? extends Entity<?, ?>> entityClass) {
         return new EntityNotFoundException(entityClass, (Filter[]) null);
+    }
+
+    protected static class SingleBase<E extends Entity<?, ?>, Update> implements ResolvableToSingle<E, Update> {
+        private final Class<E> entityType;
+
+        public SingleBase(Class<E> entityType) {
+            this.entityType = entityType;
+        }
+
+        @Override
+        public E entity() throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(entityType);
+        }
+
+        @Override
+        public void update(Update update) throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(entityType);
+        }
+
+        @Override
+        public void delete() {
+            throw entityNotFound(entityType);
+        }
+    }
+
+    public static class TenantsReadContained implements Tenants.ReadContained {
+
+        @Override
+        public Tenants.Multiple getAll(Filter[][] filters) {
+            return new TenantsMultiple();
+        }
+
+        @Override
+        public Tenants.Single get(String id) throws EntityNotFoundException {
+            return new TenantsSingle();
+        }
     }
 
     public static class TenantsRead implements Tenants.Read {
@@ -81,7 +125,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Tenants.Single get(String id) throws EntityNotFoundException {
+        public Tenants.Single get(Path path) throws EntityNotFoundException {
             return new TenantsSingle();
         }
     }
@@ -117,18 +161,18 @@ public class EmptyInventory implements Inventory {
     public static class TenantsMultiple implements Tenants.Multiple {
 
         @Override
-        public ResourceTypes.Read resourceTypes() {
-            return new ResourceTypesRead();
+        public ResourceTypes.ReadContained resourceTypes() {
+            return new ResourceTypesReadContained();
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return new MetricTypesRead();
+        public MetricTypes.ReadContained metricTypes() {
+            return new MetricTypesReadContained();
         }
 
         @Override
-        public Environments.Read environments() {
-            return new EnvironmentsRead();
+        public Environments.ReadContained environments() {
+            return new EnvironmentsReadContained();
         }
 
         @Override
@@ -147,7 +191,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class TenantsSingle implements Tenants.Single {
+    public static class TenantsSingle extends SingleBase<Tenant, Tenant.Update> implements Tenants.Single {
+
+        public TenantsSingle() {
+            super(Tenant.class);
+        }
 
         @Override
         public ResourceTypes.ReadWrite resourceTypes() {
@@ -173,10 +221,18 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
+    }
+
+    public static class ResourceTypesReadContained implements ResourceTypes.ReadContained {
 
         @Override
-        public Tenant entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Tenant.class);
+        public ResourceTypes.Multiple getAll(Filter[][] filters) {
+            return new ResourceTypesMultiple();
+        }
+
+        @Override
+        public ResourceTypes.Single get(String id) throws EntityNotFoundException {
+            return new ResourceTypesSingle();
         }
     }
 
@@ -188,7 +244,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResourceTypes.Single get(String id) throws EntityNotFoundException {
+        public ResourceTypes.Single get(Path path) throws EntityNotFoundException {
             return new ResourceTypesSingle();
         }
     }
@@ -221,7 +277,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourceTypesSingle implements ResourceTypes.Single {
+    public static class ResourceTypesSingle extends SingleBase<ResourceType, ResourceType.Update>
+            implements ResourceTypes.Single {
+
+        public ResourceTypesSingle() {
+            super(ResourceType.class);
+        }
 
         @Override
         public Resources.Read resources() {
@@ -242,11 +303,6 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
-
-        @Override
-        public ResourceType entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(ResourceType.class);
-        }
     }
 
     public static class ResourceTypesMultiple implements ResourceTypes.Multiple {
@@ -257,8 +313,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return new MetricTypesRead();
+        public MetricTypes.ReadContained metricTypes() {
+            return new MetricTypesReadContained();
         }
 
         @Override
@@ -277,7 +333,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricTypesRead implements MetricTypes.Read {
+    public static class MetricTypesReadContained implements MetricTypes.ReadContained {
 
         @Override
         public MetricTypes.Multiple getAll(Filter[][] filters) {
@@ -286,6 +342,19 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public MetricTypes.Single get(String id) throws EntityNotFoundException {
+            return new MetricTypesSingle();
+        }
+    }
+
+    public static class MetricTypesRead implements MetricTypes.Read {
+
+        @Override
+        public MetricTypes.Multiple getAll(Filter[][] filters) {
+            return new MetricTypesMultiple();
+        }
+
+        @Override
+        public MetricTypes.Single get(Path path) throws EntityNotFoundException {
             return new MetricTypesSingle();
         }
     }
@@ -321,17 +390,18 @@ public class EmptyInventory implements Inventory {
     public static class MetricTypesReadAssociate implements MetricTypes.ReadAssociate {
 
         @Override
-        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
+        public Relationship associate(Path id) throws EntityNotFoundException,
+                RelationAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship disassociate(String id) throws EntityNotFoundException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship associationWith(String id) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -341,7 +411,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Single get(String id) throws EntityNotFoundException {
+        public MetricTypes.Single get(Path id) throws EntityNotFoundException {
             return new MetricTypesSingle();
         }
     }
@@ -369,7 +439,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricTypesSingle implements MetricTypes.Single {
+    public static class MetricTypesSingle extends SingleBase<MetricType, MetricType.Update>
+            implements MetricTypes.Single {
+
+        public MetricTypesSingle() {
+            super(MetricType.class);
+        }
 
         @Override
         public Metrics.Read metrics() {
@@ -385,10 +460,18 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
+    }
+
+    public static class EnvironmentsReadContained implements Environments.ReadContained {
 
         @Override
-        public MetricType entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(MetricType.class);
+        public Environments.Multiple getAll(Filter[][] filters) {
+            return new EnvironmentsMultiple();
+        }
+
+        @Override
+        public Environments.Single get(String id) throws EntityNotFoundException {
+            return new EnvironmentsSingle();
         }
     }
 
@@ -400,7 +483,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Environments.Single get(String id) throws EntityNotFoundException {
+        public Environments.Single get(Path id) throws EntityNotFoundException {
             return new EnvironmentsSingle();
         }
     }
@@ -437,7 +520,12 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class EnvironmentsSingle implements Environments.Single {
+    public static class EnvironmentsSingle extends SingleBase<Environment, Environment.Update>
+            implements Environments.Single {
+
+        public EnvironmentsSingle() {
+            super(Environment.class);
+        }
 
         @Override
         public Feeds.ReadWrite feeds() {
@@ -455,13 +543,13 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return filters -> new ResourcesMultiple();
+        public Resources.Read allResources() {
+            return new ResourcesRead();
         }
 
         @Override
-        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return filters -> new MetricsMultiple();
+        public Metrics.Read allMetrics() {
+            return new MetricsRead();
         }
 
         @Override
@@ -483,28 +571,28 @@ public class EmptyInventory implements Inventory {
     public static class EnvironmentsMultiple implements Environments.Multiple {
 
         @Override
-        public Feeds.Read feeds() {
-            return new FeedsRead();
+        public Feeds.ReadContained feeds() {
+            return new FeedsReadContained();
         }
 
         @Override
-        public Resources.Read feedlessResources() {
+        public Resources.ReadContained feedlessResources() {
+            return new ResourcesReadContained();
+        }
+
+        @Override
+        public Metrics.ReadContained feedlessMetrics() {
+            return new MetricsReadContained();
+        }
+
+        @Override
+        public Resources.Read allResources() {
             return new ResourcesRead();
         }
 
         @Override
-        public Metrics.Read feedlessMetrics() {
+        public Metrics.Read allMetrics() {
             return new MetricsRead();
-        }
-
-        @Override
-        public ResolvingToMultiple<Resources.Multiple> allResources() {
-            return filters -> new ResourcesMultiple();
-        }
-
-        @Override
-        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
-            return filters -> new MetricsMultiple();
         }
 
         @Override
@@ -569,14 +657,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Relationships.Single linkWith(String name, Entity<?, ?> targetOrSource,
-                Map<String, Object> properties) throws IllegalArgumentException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Relationships.Single linkWith(Relationships.WellKnown name, Entity<?, ?> targetOrSource,
-                Map<String, Object> properties) throws IllegalArgumentException {
+        public Relationships.Single linkWith(String name, CanonicalPath targetOrSource, Map<String, Object> properties)
+                throws IllegalArgumentException {
             throw new UnsupportedOperationException();
         }
 
@@ -595,6 +677,16 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Relationship entity() throws EntityNotFoundException, RelationNotFoundException {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override
+        public void update(Relationship.Update o) throws EntityNotFoundException, RelationNotFoundException {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override
+        public void delete() {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
     }
@@ -642,7 +734,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class FeedsRead implements Feeds.Read {
+    public static class FeedsReadContained implements Feeds.ReadContained {
 
         @Override
         public Feeds.Multiple getAll(Filter[][] filters) {
@@ -651,6 +743,19 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Feeds.Single get(String id) throws EntityNotFoundException {
+            return new FeedsSingle();
+        }
+    }
+
+    public static class FeedsRead implements Feeds.Read {
+
+        @Override
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new FeedsMultiple();
+        }
+
+        @Override
+        public Feeds.Single get(Path id) throws EntityNotFoundException {
             return new FeedsSingle();
         }
     }
@@ -683,7 +788,11 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class FeedsSingle implements Feeds.Single {
+    public static class FeedsSingle extends SingleBase<Feed, Feed.Update> implements Feeds.Single {
+
+        public FeedsSingle() {
+            super(Feed.class);
+        }
 
         @Override
         public Resources.ReadWrite resources() {
@@ -704,23 +813,18 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
-
-        @Override
-        public Feed entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Feed.class);
-        }
     }
 
     public static class FeedsMultiple implements Feeds.Multiple {
 
         @Override
-        public Resources.Read resources() {
-            return new ResourcesRead();
+        public Resources.ReadContained resources() {
+            return new ResourcesReadContained();
         }
 
         @Override
-        public Metrics.Read metrics() {
-            return new MetricsRead();
+        public Metrics.ReadContained metrics() {
+            return new MetricsReadContained();
         }
 
         @Override
@@ -739,7 +843,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricsRead implements Metrics.Read {
+    public static class MetricsReadContained implements Metrics.ReadContained {
 
         @Override
         public Metrics.Multiple getAll(Filter[][] filters) {
@@ -748,6 +852,19 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Metrics.Single get(String id) throws EntityNotFoundException {
+            return new MetricsSingle();
+        }
+    }
+
+    public static class MetricsRead implements Metrics.Read {
+
+        @Override
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new MetricsMultiple();
+        }
+
+        @Override
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
             return new MetricsSingle();
         }
     }
@@ -783,17 +900,18 @@ public class EmptyInventory implements Inventory {
     public static class MetricsReadAssociate implements Metrics.ReadAssociate {
 
         @Override
-        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
+        public Relationship associate(
+                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship disassociate(String id) throws EntityNotFoundException {
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Relationship associationWith(String id) throws RelationNotFoundException {
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -803,12 +921,16 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException {
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
             return new MetricsSingle();
         }
     }
 
-    public static class MetricsSingle implements Metrics.Single {
+    public static class MetricsSingle extends SingleBase<Metric, Metric.Update> implements Metrics.Single {
+
+        public MetricsSingle() {
+            super(Metric.class);
+        }
 
         @Override
         public Relationships.ReadWrite relationships() {
@@ -818,11 +940,6 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
-        }
-
-        @Override
-        public Metric entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Metric.class);
         }
     }
 
@@ -844,7 +961,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourcesRead implements Resources.Read {
+    public static class ResourcesReadContained implements Resources.ReadContained {
 
         @Override
         public Resources.Multiple getAll(Filter[][] filters) {
@@ -853,6 +970,19 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Resources.Single get(String id) throws EntityNotFoundException {
+            return new ResourcesSingle();
+        }
+    }
+
+    public static class ResourcesRead implements Resources.Read {
+
+        @Override
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new ResourcesMultiple();
+        }
+
+        @Override
+        public Resources.Single get(Path id) throws EntityNotFoundException {
             return new ResourcesSingle();
         }
     }
@@ -885,11 +1015,36 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourcesSingle implements Resources.Single {
+    public static class ResourcesSingle extends SingleBase<Resource, Resource.Update> implements Resources.Single {
+
+        public ResourcesSingle() {
+            super(Resource.class);
+        }
 
         @Override
         public Metrics.ReadAssociate metrics() {
             return new MetricsReadAssociate();
+        }
+
+
+        @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ResourcesReadAssociate();
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ResourcesReadWrite();
+        }
+
+        @Override
+        public Resources.Single parent() {
+            return new ResourcesSingle();
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new ResourcesRead();
         }
 
         @Override
@@ -901,11 +1056,6 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
-
-        @Override
-        public Resource entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(Resource.class);
-        }
     }
 
     public static class ResourcesMultiple implements Resources.Multiple {
@@ -913,6 +1063,21 @@ public class EmptyInventory implements Inventory {
         @Override
         public Metrics.Read metrics() {
             return new MetricsRead();
+        }
+
+        @Override
+        public Resources.ReadAssociate allChildren() {
+            return new ResourcesReadAssociate();
+        }
+
+        @Override
+        public Resources.ReadWrite containedChildren() {
+            return new ResourcesReadWrite();
+        }
+
+        @Override
+        public Resources.Read parents() {
+            return new ResourcesRead();
         }
 
         @Override
@@ -928,6 +1093,35 @@ public class EmptyInventory implements Inventory {
         @Override
         public Page<Resource> entities(Pager pager) {
             return emptyPage(pager);
+        }
+    }
+
+    public static class ResourcesReadAssociate implements Resources.ReadAssociate {
+
+        @Override
+        public Relationship associate(
+                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override
+        public Resources.Multiple getAll(Filter[][] filters) {
+            return new ResourcesMultiple();
+        }
+
+        @Override
+        public Resources.Single get(Path id) throws EntityNotFoundException {
+            return new ResourcesSingle();
         }
     }
 }

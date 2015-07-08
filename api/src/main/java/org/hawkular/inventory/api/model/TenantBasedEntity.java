@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-
-import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
 
 /**
@@ -30,55 +27,24 @@ import java.util.Map;
 public abstract class TenantBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends Entity<B, U> {
 
-    @XmlAttribute(name = "tenant")
-    @Expose
-    private final String tenantId;
-
     /**
      * JAXB support
      */
     TenantBasedEntity() {
-        tenantId = null;
     }
 
-    TenantBasedEntity(String tenantId, String id) {
-        super(id);
-        if (tenantId == null) {
-            throw new IllegalArgumentException("tenantId == null");
+    TenantBasedEntity(CanonicalPath path) {
+        this(path, null);
+    }
+
+    TenantBasedEntity(CanonicalPath path, Map<String, Object> properties) {
+        super(path, properties);
+        if (!Tenant.class.equals(path.getRoot().getSegment().getElementType())) {
+            throw new IllegalArgumentException("A tenant based entity should be rooted at a tenant.");
         }
-
-        this.tenantId = tenantId;
-    }
-
-    TenantBasedEntity(String tenantId, String id, Map<String, Object> properties) {
-        super(id, properties);
-        this.tenantId = tenantId;
     }
 
     public String getTenantId() {
-        return tenantId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!super.equals(o)) return false;
-
-        TenantBasedEntity entity = (TenantBasedEntity) o;
-
-        return tenantId.equals(entity.tenantId);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + tenantId.hashCode();
-        return result;
-    }
-
-    @Override
-    protected void appendToString(StringBuilder toStringBuilder) {
-        super.appendToString(toStringBuilder);
-        toStringBuilder.append(", tenantId='").append(tenantId).append("'");
+        return getPath().getRoot().getSegment().getElementId();
     }
 }

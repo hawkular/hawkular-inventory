@@ -24,18 +24,12 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -51,12 +45,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Providers;
-import org.hawkular.inventory.api.Environments;
+
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -68,9 +63,16 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.EmbeddedObjectMapper;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Jiri Kremser
@@ -106,11 +108,11 @@ public class RestRelationships extends RestBase {
     @Path("{path:.*}/relationships")
     @ApiOperation("Retrieves relationships")
     @ApiResponses({
-                          @ApiResponse(code = 200, message = "The list of relationships"),
-                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
-                                  .class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 200, message = "The list of relationships"),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                    .class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response get(@PathParam("path") String path,
                         @DefaultValue("both") @QueryParam("direction") String direction,
                         @DefaultValue("") @QueryParam("property") String propertyName,
@@ -118,14 +120,15 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("") @QueryParam("named") String named,
                         @DefaultValue("") @QueryParam("sourceType") String sourceType,
                         @DefaultValue("") @QueryParam("targetType") String targetType,
-                        @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
+            @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = toSecurityId(path);
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
         }
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
         Pager pager = extractPaging(uriInfo);
         RelationFilter[] filters = extractFilters(propertyName, propertyValue, named, sourceType,
                                                   targetType, uriInfo);
@@ -153,11 +156,11 @@ public class RestRelationships extends RestBase {
     @Path("{path:.*}/relationships")
     @ApiOperation("Deletes a relationship")
     @ApiResponses({
-                          @ApiResponse(code = 200, message = "The list of relationships"),
-                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
-                                  .class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 200, message = "The list of relationships"),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+                    .class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response delete(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -167,7 +170,8 @@ public class RestRelationships extends RestBase {
         }
         checkForWellKnownLabels(relation.getName(), "delete");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         // delete the relationship
         resolvable.relationships(Relationships.Direction.both).delete(relation.getId());
@@ -183,13 +187,13 @@ public class RestRelationships extends RestBase {
     @Path("{path:.*}/relationships")
     @ApiOperation("Creates a relationship")
     @ApiResponses({
-                          @ApiResponse(code = 201, message = "OK"),
-                          @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
-                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
-                                  ApiError.class),
-                          @ApiResponse(code = 409, message = "Relationship already exists", response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 201, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                    ApiError.class),
+            @ApiResponse(code = 409, message = "Relationship already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response create(@PathParam("path") String path,
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
@@ -199,16 +203,17 @@ public class RestRelationships extends RestBase {
         }
         checkForWellKnownLabels(relation.getName(), "create");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         Relationships.Direction directed;
-        Entity theOtherSide;
+        CanonicalPath theOtherSide;
         String[] chunks = path.split("/");
         String currentEntityId = chunks[chunks.length - 1];
-        if (currentEntityId.equals(relation.getSource().getId())) {
+        if (currentEntityId.equals(relation.getSource().getSegment().getElementId())) {
             directed = Relationships.Direction.outgoing;
             theOtherSide = relation.getTarget();
-        } else if (currentEntityId.equals(relation.getTarget().getId())) {
+        } else if (currentEntityId.equals(relation.getTarget().getSegment().getElementId())) {
             directed = Relationships.Direction.incoming;
             theOtherSide = relation.getSource();
         } else {
@@ -231,15 +236,15 @@ public class RestRelationships extends RestBase {
     @Path("{path:.*}/relationships")
     @ApiOperation("Updates a relationship")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
-                          @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
-                                  ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
+                    ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response update(@PathParam("path") String path,
-                           @ApiParam(required = true) Relationship relation,
-                           @Context UriInfo uriInfo) {
+            @ApiParam(required = true) Relationship relation,
+            @Context UriInfo uriInfo) {
         String securityId = toSecurityId(path);
         if (!Security.isValidId(securityId)) {
             return Response.status(NOT_FOUND).build();
@@ -248,14 +253,15 @@ public class RestRelationships extends RestBase {
         // perhaps we could have allowed updating the properties of well-known rels
         checkForWellKnownLabels(relation.getName(), "update");
         CanonicalPath cPath = Security.getCanonicalPath(securityId);
-        ResolvableToSingleWithRelationships<Relationship> resolvable = getResolvableFromCanonicalPath(cPath);
+        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+                getResolvableFromCanonicalPath(cPath);
 
         // update the relationship
         resolvable.relationships(Relationships.Direction.both).update(relation.getId(), Relationship.Update.builder()
                 .withProperties(relation.getProperties()).build());
         if (RestApiLogger.LOGGER.isDebugEnabled()) {
             RestApiLogger.LOGGER.debug("updating relationship with id: " + relation.getId() + " and name: " +
-                                               relation.getName());
+                    relation.getName());
         }
 
         return Response.noContent().build();
@@ -266,32 +272,10 @@ public class RestRelationships extends RestBase {
         return urlPath.startsWith("tenants") ? urlPath : getTenantId() + "/" + urlPath;
     }
 
-    private ResolvableToSingleWithRelationships getResolvableFromCanonicalPath(CanonicalPath cPath) {
-        Tenants.Single tenant = inventory.tenants().get(getTenantId());
-        ResolvableToSingleWithRelationships resolvable = tenant;
-        if (cPath.getEnvironmentId() != null) {
-            Environments.Single env = tenant.environments().get(cPath.getEnvironmentId());
-            if (cPath.getFeedId() != null) {
-                if (cPath.getResourceId() != null) {
-                    resolvable = env.feeds().get(cPath.getFeedId()).resources().get(cPath.getResourceId());
-                } else if (cPath.getMetricId() != null) {
-                    resolvable = env.feeds().get(cPath.getFeedId()).metrics().get(cPath.getMetricId());
-                } else {
-                    resolvable = env.feeds().get(cPath.getFeedId());
-                }
-            } else if (cPath.getResourceId() != null) {
-                resolvable = env.feedlessResources().get(cPath.getResourceId());
-            } else if (cPath.getMetricId() != null) {
-                resolvable = env.feedlessMetrics().get(cPath.getMetricId());
-            } else {
-                resolvable = env;
-            }
-        } else if (cPath.getResourceTypeId() != null) {
-            resolvable = tenant.resourceTypes().get(cPath.getResourceTypeId());
-        } else if (cPath.getMetricTypeId() != null) {
-            resolvable = tenant.metricTypes().get(cPath.getMetricTypeId());
-        }
-        return resolvable;
+    @SuppressWarnings("unchecked")
+    private <E extends AbstractElement<?, U>, U extends AbstractElement.Update>
+    ResolvableToSingleWithRelationships<E, U> getResolvableFromCanonicalPath(CanonicalPath cPath) {
+        return inventory.inspect(cPath, ResolvableToSingleWithRelationships.class);
     }
 
     public static RelationFilter[] extractFilters(String propertyName,
@@ -344,7 +328,7 @@ public class RestRelationships extends RestBase {
     private void checkForWellKnownLabels(String name, String operation) {
         if (Arrays.stream(Relationships.WellKnown.values()).anyMatch(x -> x.name().equals(name))) {
             throw new IllegalArgumentException("Unable to " + operation + " a relationship with well defined name. " +
-                                               "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
+                    "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
         }
     }
 }

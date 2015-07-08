@@ -21,9 +21,14 @@ import org.hawkular.inventory.api.model.Entity;
 /**
  * Helper interface that melds {@link ReadInterface} and {@link WriteInterface}.
  *
+ * <p>The write interface implies the use of {@link org.hawkular.inventory.api.Relationships.WellKnown#contains}
+ * relationship between the "source" entity and the newly created one (which is possible through the methods in the
+ * write interface). Because the "siblings" in the contains relationship must have mutually different IDs, it is
+ * enough in this case to address them by merely string ids (as opposed to full canonical path).
+ *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 interface ReadWriteInterface<Update, Blueprint extends Entity.Blueprint, Single, Multiple>
-        extends ReadInterface<Single, Multiple>, WriteInterface<Update, Blueprint, Single> {
+        extends ReadInterface<Single, Multiple, String>, WriteInterface<Update, Blueprint, Single> {
 }

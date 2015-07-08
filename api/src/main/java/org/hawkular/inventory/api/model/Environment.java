@@ -39,22 +39,21 @@ public final class Environment extends TenantBasedEntity<Environment.Blueprint, 
 
     @SuppressWarnings("unused")
     private Environment() {
-        this(null, null);
     }
 
-    public Environment(String tenantId, String id) {
-        super(tenantId, id);
+    public Environment(CanonicalPath path) {
+        this(path, null);
     }
 
     @JsonCreator
-    public Environment(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
+    public Environment(@JsonProperty("path") CanonicalPath path,
             @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, id, properties);
+        super(path, properties);
     }
 
     @Override
     public Updater<Update, Environment> update() {
-        return new Updater<>((u) -> new Environment(getTenantId(), getId(), u.getProperties()));
+        return new Updater<>((u) -> new Environment(getPath(), u.getProperties()));
     }
 
     @Override

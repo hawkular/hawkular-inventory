@@ -17,6 +17,20 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.Pager;
+
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
@@ -33,18 +47,6 @@ import com.tinkerpop.pipes.util.structures.Pair;
 import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
 import com.tinkerpop.pipes.util.structures.Tree;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.paging.Order;
-import org.hawkular.inventory.api.paging.Pager;
-
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
 
 /**
  * A slight extension of the Gremlin pipeline providing a couple of utility overloads of existing methods that accept
@@ -71,6 +73,11 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         super(starts, doQueryOptimization);
     }
 
+    public String nextRandomLabel() {
+        //exceptionally random, right? ;)
+        return ")(*)#(*&$(" + asLabelCount++;
+    }
+
     /**
      * Together with {@link #recall()}, this is a simpler replacement of the {@link #as(String)} and
      * {@link #back(String)} pair.
@@ -83,7 +90,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
      * @return the pipeline that "remembers" the current step
      */
     public HawkularPipeline<S, E> remember() {
-        String label = ")(*)#(*&$(" + asLabelCount++;
+        String label = nextRandomLabel();
         labelStack.push(label);
         return as(label);
     }
@@ -117,6 +124,10 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
 
     public HawkularPipeline<S, ? extends Element> hasEid(String eid) {
         return cast(has(Constants.Property.__eid.name(), eid));
+    }
+
+    public HawkularPipeline<S, ? extends Element> hasCanonicalPath(CanonicalPath path) {
+        return cast(has(Constants.Property.__cp.name(), path.toString()));
     }
 
     public HawkularPipeline<S, Vertex> out(Relationships.WellKnown... rel) {

@@ -16,10 +16,19 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Owned;
+import org.hawkular.inventory.api.filters.Incorporated;
+import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
@@ -28,14 +37,6 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.QueryFragment;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A filter applicator applies a filter to a Gremlin query.
@@ -53,7 +54,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(Related.class, RelatedApplicator.class);
         applicators.put(Contained.class, RelatedApplicator.class);
         applicators.put(Defined.class, RelatedApplicator.class);
-        applicators.put(Owned.class, RelatedApplicator.class);
+        applicators.put(Incorporated.class, RelatedApplicator.class);
         applicators.put(With.Ids.class, WithIdsApplicator.class);
         applicators.put(With.Types.class, WithTypesApplicator.class);
         applicators.put(With.PropertyValues.class, WithPropertyValuesApplicator.class);
@@ -64,6 +65,9 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(RelationWith.SourceOrTargetOfType.class, RelationWithSourcesOrTargetsOfTypesApplicator.class);
         applicators.put(SwitchElementType.class, SwitchElementTypeApplicator.class);
         applicators.put(NoopFilter.class, NoopApplicator.class);
+        applicators.put(With.CanonicalPaths.class, CanonicalPathApplicator.class);
+        applicators.put(With.RelativePaths.class, RelativePathApplicator.class);
+        applicators.put(Marker.class, MarkerApplicator.class);
     }
 
     protected final T filter;
@@ -213,9 +217,9 @@ abstract class FilterApplicator<T extends Filter> {
         return "FilterApplicator[filter=" + filter + "]";
     }
 
-    private static final class RelatedApplicator extends FilterApplicator<Related<?>> {
+    private static final class RelatedApplicator extends FilterApplicator<Related> {
 
-        private RelatedApplicator(Related<?> filter) {
+        private RelatedApplicator(Related filter) {
             super(filter);
         }
 
@@ -324,6 +328,42 @@ abstract class FilterApplicator<T extends Filter> {
     private static final class WithPropertyValuesApplicator extends FilterApplicator<With.PropertyValues> {
 
         private WithPropertyValuesApplicator(With.PropertyValues f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class CanonicalPathApplicator extends FilterApplicator<With.CanonicalPaths> {
+
+        private CanonicalPathApplicator(With.CanonicalPaths f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class RelativePathApplicator extends FilterApplicator<With.RelativePaths> {
+
+        private RelativePathApplicator(With.RelativePaths f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class MarkerApplicator extends FilterApplicator<Marker> {
+
+        private MarkerApplicator(Marker f) {
             super(f);
         }
 

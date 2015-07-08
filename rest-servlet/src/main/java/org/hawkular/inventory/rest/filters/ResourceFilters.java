@@ -23,7 +23,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.rest.RestApiLogger;
 
 /**
@@ -34,7 +34,7 @@ public class ResourceFilters extends AbstractFilters<ResourceFilters.Parameter> 
         typeId("type.id"), properties("properties");
         private final String key;
 
-        private Parameter(String key) {
+        Parameter(String key) {
             this.key = key;
         }
 
@@ -56,7 +56,7 @@ public class ResourceFilters extends AbstractFilters<ResourceFilters.Parameter> 
         String typeId;
         if ((typeId = get(Parameter.typeId)) != null) {
             RestApiLogger.LOGGER.tracef("Filtering resources by %s=%s", Parameter.typeId.getKey(), typeId);
-            result.add(Filter.by(Defined.by(new ResourceType(tenantId, typeId))).get());
+            result.add(Filter.by(Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(typeId).get())).get());
         }
         result.add(getPropertyFilters(Parameter.properties));
         return result.toArray(new Filter[result.size()][]);

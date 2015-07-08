@@ -16,12 +16,13 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collections;
 import java.util.Map;
+
+import javax.xml.bind.annotation.XmlRootElement;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -39,19 +40,19 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
     private ResourceType() {
     }
 
-    public ResourceType(String tenantId, String id) {
-        super(tenantId, id);
+    public ResourceType(CanonicalPath path) {
+        super(path);
     }
 
     @JsonCreator
-    public ResourceType(@JsonProperty("tenant") String tenantId, @JsonProperty("id") String id,
+    public ResourceType(@JsonProperty("path") CanonicalPath path,
             @JsonProperty("properties") Map<String, Object> properties) {
-        super(tenantId, id, properties);
+        super(path, properties);
     }
 
     @Override
     public Updater<Update, ResourceType> update() {
-        return new Updater<>((u) -> new ResourceType(getTenantId(), getId(), u.getProperties()));
+        return new Updater<>((u) -> new ResourceType(getPath(), u.getProperties()));
     }
 
     @Override

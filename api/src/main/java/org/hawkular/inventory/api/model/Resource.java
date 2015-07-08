@@ -16,13 +16,14 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.util.Collections;
+import java.util.Map;
+
+import javax.xml.bind.annotation.XmlRootElement;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
-
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -45,24 +46,21 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
         type = null;
     }
 
-    public Resource(String tenantId, String environmentId, String feedId, String id, ResourceType type) {
-        super(tenantId, environmentId, feedId, id);
-        this.type = type;
+    public Resource(CanonicalPath path, ResourceType type) {
+        this(path, type, null);
     }
 
     @JsonCreator
-    public Resource(@JsonProperty("tenant") String tenantId, @JsonProperty("environment") String environmentId,
-            @JsonProperty("feed") String feedId, @JsonProperty("id") String id, @JsonProperty("type") ResourceType type,
+    public Resource(@JsonProperty("path") CanonicalPath path, @JsonProperty("type") ResourceType type,
             @JsonProperty("properties") Map<String, Object> properties) {
 
-        super(tenantId, environmentId, feedId, id, properties);
+        super(path, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Resource> update() {
-        return new Updater<>((u) -> new Resource(getTenantId(), getEnvironmentId(), getFeedId(), getId(), getType(),
-                u.getProperties()));
+        return new Updater<>((u) -> new Resource(getPath(), getType(), u.getProperties()));
     }
 
     public ResourceType getType() {
@@ -88,7 +86,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
-        private final String resourceTypeId;
+        private final String resourceTypePath;
 
         public static Builder builder() {
             return new Builder();
@@ -102,17 +100,17 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
             this(null, null, null);
         }
 
-        public Blueprint(String id, String resourceTypeId) {
-            this(id, resourceTypeId, Collections.emptyMap());
+        public Blueprint(String id, String resourceTypePath) {
+            this(id, resourceTypePath, Collections.emptyMap());
         }
 
-        public Blueprint(String id, String resourceTypeId, Map<String, Object> properties) {
+        public Blueprint(String id, String resourceTypePath, Map<String, Object> properties) {
             super(id, properties);
-            this.resourceTypeId = resourceTypeId;
+            this.resourceTypePath = resourceTypePath;
         }
 
-        public String getResourceTypeId() {
-            return resourceTypeId;
+        public String getResourceTypePath() {
+            return resourceTypePath;
         }
 
         @Override
@@ -121,16 +119,16 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
-            private String resourceTypeId;
+            private String resourceTypePath;
 
-            public Builder withResourceType(String resourceTypeId) {
-                this.resourceTypeId = resourceTypeId;
+            public Builder withResourceTypePath(String resourceTypePath) {
+                this.resourceTypePath = resourceTypePath;
                 return this;
             }
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, resourceTypeId, properties);
+                return new Blueprint(id, resourceTypePath, properties);
             }
         }
     }

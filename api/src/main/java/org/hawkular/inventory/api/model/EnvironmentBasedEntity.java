@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-
-import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Map;
 
 /**
@@ -30,56 +27,24 @@ import java.util.Map;
 public abstract class EnvironmentBasedEntity<B extends Entity.Blueprint, U extends AbstractElement.Update>
         extends TenantBasedEntity<B, U> {
 
-    @XmlAttribute(name = "environment")
-    @Expose
-    private final String environmentId;
-
     /**
      * JAXB support
      */
     EnvironmentBasedEntity() {
-        environmentId = null;
     }
 
-    EnvironmentBasedEntity(String tenantId, String environmentId, String id) {
-        super(tenantId, id);
+    EnvironmentBasedEntity(CanonicalPath path) {
+        this(path, null);
+    }
 
-        if (environmentId == null) {
-            throw new IllegalArgumentException("environmentId == null");
+    EnvironmentBasedEntity(CanonicalPath path, Map<String, Object> properties) {
+        super(path, properties);
+        if (!Environment.class.equals(path.getRoot().down().getSegment().getElementType())) {
+            throw new IllegalArgumentException("An environment based entity should be contained in an environment.");
         }
-
-        this.environmentId = environmentId;
-    }
-
-    EnvironmentBasedEntity(String tenantId, String environmentId, String id, Map<String, Object> properties) {
-        super(tenantId, id, properties);
-        this.environmentId = environmentId;
     }
 
     public String getEnvironmentId() {
-        return environmentId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!super.equals(o)) return false;
-
-        EnvironmentBasedEntity that = (EnvironmentBasedEntity) o;
-
-        return environmentId.equals(that.environmentId);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + environmentId.hashCode();
-        return result;
-    }
-
-    @Override
-    protected void appendToString(StringBuilder toStringBuilder) {
-        super.appendToString(toStringBuilder);
-        toStringBuilder.append(", environmentId='").append(environmentId).append('\'');
+        return getPath().getRoot().down().getSegment().getElementId();
     }
 }

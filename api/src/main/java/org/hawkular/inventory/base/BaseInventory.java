@@ -19,8 +19,10 @@ package org.hawkular.inventory.base;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -46,14 +48,19 @@ public abstract class BaseInventory<E> implements Inventory {
 
     private InventoryBackend<E> backend;
     private final ObservableContext observableContext = new ObservableContext();
-    private TraversalContext<E, Tenant> startContext;
+    private TraversalContext<E, Tenant> tenantContext;
+    private TraversalContext<E, Relationship> relationshipContext;
 
     @Override
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
-        startContext = new TraversalContext<>(this, Query.empty(),
+
+        tenantContext = new TraversalContext<>(this, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext);
+
+        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
+                Relationship.class, configuration, observableContext);
     }
 
     /**
@@ -75,7 +82,12 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new BaseTenants.ReadWrite<>(startContext);
+        return new BaseTenants.ReadWrite<>(tenantContext);
+    }
+
+    @Override
+    public Relationships.Read relationships() {
+        return new BaseRelationships.Read<>(relationshipContext);
     }
 
     /**

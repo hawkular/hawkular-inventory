@@ -17,15 +17,10 @@
 
 package org.hawkular.inventory.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.rest.json.ApiError;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -39,9 +34,16 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.json.ApiError;
+
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -92,7 +94,7 @@ public class RestMetricTypes extends RestBase {
     public Response create(@ApiParam(required = true) MetricType.Blueprint metricType, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
 
-        if (!security.canCreate(MetricType.class).under(Tenant.class, tenantId)) {
+        if (!security.canCreate(MetricType.class).under(CanonicalPath.of().tenant(tenantId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -115,7 +117,7 @@ public class RestMetricTypes extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(MetricType.class, tenantId, metricTypeId)) {
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).metricType(metricTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -137,7 +139,7 @@ public class RestMetricTypes extends RestBase {
 
         String tenantId = getTenantId();
 
-        if (!security.canDelete(MetricType.class, tenantId, metricTypeId)) {
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).metricType(metricTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 

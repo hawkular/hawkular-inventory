@@ -16,18 +16,24 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Marker;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.base.spi.SwitchElementType;
+
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.PropertyFilterPipe;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.RelationWith;
-import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.base.spi.NoopFilter;
-import org.hawkular.inventory.base.spi.SwitchElementType;
-
-import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
@@ -36,7 +42,7 @@ import java.util.Arrays;
  */
 class FilterVisitor {
 
-    public void visit(HawkularPipeline<?, ?> query, Related<? extends Entity> related) {
+    public void visit(HawkularPipeline<?, ?> query, Related related) {
         switch (related.getEntityRole()) {
             case TARGET:
                 if (null != related.getRelationshipName()) {
@@ -66,10 +72,8 @@ class FilterVisitor {
                 }
         }
 
-        if (related.getEntity() != null) {
-            Constants.Type desiredType = Constants.Type.of(related.getEntity());
-
-            query.hasType(desiredType).hasEid(related.getEntity().getId());
+        if (related.getEntityPath() != null) {
+            query.hasCanonicalPath(related.getEntityPath());
         }
     }
 
@@ -216,5 +220,86 @@ class FilterVisitor {
 
             query.or(checks);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter) {
+        if (filter.getPaths().length == 1) {
+            query.has(Constants.Property.__cp.name(), filter.getPaths()[0].toString());
+            return;
+        }
+
+        Pipe[] idChecks = new Pipe[filter.getPaths().length];
+
+        Arrays.setAll(idChecks, i ->
+                new PropertyFilterPipe<Element, String>(Constants.Property.__cp.name(), Compare.EQUAL,
+                        filter.getPaths()[i].toString()));
+
+        query.or(idChecks);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <E> void visit(HawkularPipeline<?, E> query, With.RelativePaths filter) {
+        String label = filter.getMarkerLabel();
+
+        Set<E> seen = new HashSet<>();
+
+        if (filter.getPaths().length == 1) {
+            if (label != null) {
+                apply(filter.getPaths()[0].getSegment(), query);
+                query.store(seen);
+                query.back(label);
+            }
+            convertToPipeline(filter.getPaths()[0], query);
+        } else {
+            if (label != null) {
+                HawkularPipeline[] narrower = new HawkularPipeline[filter.getPaths().length];
+                Arrays.setAll(narrower, i -> {
+                    HawkularPipeline<?, ?> p = new HawkularPipeline<>();
+                    apply(filter.getPaths()[i].getSegment(), p);
+                    return p;
+                });
+
+                query.or(narrower);
+
+                query.store(seen);
+
+                query.back(label);
+            }
+
+            HawkularPipeline[] pipes = new HawkularPipeline[filter.getPaths().length];
+
+            Arrays.setAll(pipes, i -> {
+                HawkularPipeline<?, ?> p = new HawkularPipeline<>();
+                convertToPipeline(filter.getPaths()[i], p);
+                return p;
+            });
+
+            query.or(pipes);
+        }
+
+        if (label != null) {
+            query.retain(seen);
+        }
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, Marker filter) {
+        query.as(filter.getLabel());
+    }
+
+    private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {
+        for (Path.Segment s : path.getPath()) {
+            if (RelativePath.Up.class.equals(s.getElementType())) {
+                pipeline.in(Relationships.WellKnown.contains.name());
+            } else {
+                pipeline.out(Relationships.WellKnown.contains.name());
+                apply(s, pipeline);
+            }
+        }
+    }
+
+    private void apply(Path.Segment segment, HawkularPipeline<?, ?> pipeline) {
+        pipeline.hasType(Constants.Type.of(segment.getElementType()));
+        pipeline.hasEid(segment.getElementId());
     }
 }

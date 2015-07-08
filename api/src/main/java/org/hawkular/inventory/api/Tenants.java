@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
@@ -50,7 +51,7 @@ public final class Tenants {
     /**
      * Interface for accessing a single tenant in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Tenant>,
+    public interface Single extends ResolvableToSingleWithRelationships<Tenant, Tenant.Update>,
             BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite> {}
 
     /**
@@ -58,15 +59,17 @@ public final class Tenants {
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<Tenant>,
-            BrowserBase<ResourceTypes.Read, MetricTypes.Read, Environments.Read> {}
+            BrowserBase<ResourceTypes.ReadContained, MetricTypes.ReadContained, Environments.ReadContained> {}
 
     /**
      * Provides readonly access to tenants.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     /**
      * Provides methods for read-write access to tenants.

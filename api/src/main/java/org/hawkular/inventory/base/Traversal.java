@@ -19,14 +19,9 @@ package org.hawkular.inventory.base;
 import java.util.function.Supplier;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CommitFailureException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * A base class for all the inventory traversal interfaces. Contains only a minimal set of helper methods and holds the
@@ -64,13 +59,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @throws EntityNotFoundException if the query doesn't return any results
      */
     protected BE getSingle(Query query, Class<? extends Entity<?, ?>> entityType) {
-        Page<BE> results = context.backend.query(query, Pager.single());
-
-        if (results.isEmpty()) {
-            throw new EntityNotFoundException(entityType, Query.filters(query));
-        }
-
-        return results.get(0);
+        return Util.getSingle(context.backend, query, entityType);
     }
 
     /**
@@ -85,8 +74,8 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @param <R> the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(PotentiallyCommittingPayload<R> payload) {
-        return inTransaction(false, payload);
+    protected <R> R mutating(Util.PotentiallyCommittingPayload<R> payload) {
+        return Util.runInTransaction(context, false, payload);
     }
 
     /**
@@ -101,41 +90,6 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @return the return value provided by the payload
      */
     protected <R> R readOnly(Supplier<R> payload) {
-        return inTransaction(true, (t) -> payload.get());
-    }
-
-    private <R> R inTransaction(boolean readOnly, PotentiallyCommittingPayload<R> payload) {
-        int failures = 0;
-        Exception lastException = null;
-
-        int maxFailures = context.getTransactionRetriesCount();
-
-        while (failures++ < maxFailures) {
-            try {
-                InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
-                try {
-                    R ret = payload.run(t);
-                    if (readOnly) {
-                        context.backend.commit(t);
-                    }
-
-                    return ret;
-                } catch (Throwable e) {
-                    context.backend.rollback(t);
-                    throw e;
-                }
-            } catch (CommitFailureException e) {
-                //if the backend fails the commit, we can retry
-                Log.LOGGER.debugf(e, "Commit attempt %d/%d failed: %s", failures, maxFailures, e.getMessage());
-
-                lastException = e;
-            }
-        }
-        throw new TransactionFailureException(lastException, failures);
-    }
-
-    @FunctionalInterface
-    public interface PotentiallyCommittingPayload<R> {
-        R run(InventoryBackend.Transaction t) throws CommitFailureException;
+        return Util.runInTransaction(context, true, (t) -> payload.get());
     }
 }

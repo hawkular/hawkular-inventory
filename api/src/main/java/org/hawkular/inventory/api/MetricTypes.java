@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on metric types.
@@ -41,7 +42,7 @@ public final class MetricTypes {
     /**
      * Interface for accessing a single metric type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<MetricType>, BrowserBase {
+    public interface Single extends ResolvableToSingleWithRelationships<MetricType, MetricType.Update>, BrowserBase {
     }
 
     /**
@@ -49,7 +50,7 @@ public final class MetricTypes {
      *
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
-     * {@link ReadInterface#get(String)} method).
+     * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<MetricType>, BrowserBase {
     }
@@ -63,7 +64,9 @@ public final class MetricTypes {
     /**
      * Provides read-only access to metric types.
      */
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     /**
      * Provides read-only access to metric types with the additional ability to relate the metric types to the current

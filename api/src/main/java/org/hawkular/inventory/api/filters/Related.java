@@ -16,22 +16,20 @@
  */
 package org.hawkular.inventory.api.filters;
 
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-
 import java.util.Objects;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
  * Defines a filter on entities having specified relationship.
  *
- * @param <T> The type of the entity using which the filter is constructed.
- *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public class Related<T extends Entity> extends Filter {
+public class Related extends Filter {
 
-    private final T entity;
+    private final CanonicalPath entityPath;
     private final String relationshipName;
     private final String relationshipId;
     private final EntityRole entityRole;
@@ -39,26 +37,24 @@ public class Related<T extends Entity> extends Filter {
     /**
      * Specifies a filter for entities that are sources of a relationship with the specified entity.
      *
-     * @param entity the entity that is the target of the relationship
+     * @param entityPath the entity that is the target of the relationship
      * @param relationship the name of the relationship
-     * @param <U> the type of the entity
      * @return a new "related" filter instance
      */
-    public static <U extends Entity> Related<U> with(U entity, String relationship) {
-        return new Related<>(entity, relationship, EntityRole.SOURCE);
+    public static Related with(CanonicalPath entityPath, String relationship) {
+        return new Related(entityPath, relationship, EntityRole.SOURCE);
     }
 
     /**
-     * An overloaded version of {@link #with(org.hawkular.inventory.api.model.Entity, String)} that uses one of the
-     * {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
+     * An overloaded version of {@link #with(org.hawkular.inventory.api.model.CanonicalPath, String)} that uses one of
+     * the {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
      *
-     * @param entity the entity that is the target of the relationship
+     * @param entityPath the entity that is the target of the relationship
      * @param relationship the type of the relationship
-     * @param <U> the type of the entity
      * @return a new "related" filter instance
      */
-    public static <U extends Entity> Related<U> with(U entity, Relationships.WellKnown relationship) {
-        return new Related<>(entity, relationship.name(), EntityRole.SOURCE);
+    public static Related with(CanonicalPath entityPath, Relationships.WellKnown relationship) {
+        return new Related(entityPath, relationship.name(), EntityRole.SOURCE);
     }
 
     /**
@@ -68,8 +64,8 @@ public class Related<T extends Entity> extends Filter {
      * @param relationshipName the name of the relationship
      * @return a new "related" filter instance
      */
-    public static Related<?> by(String relationshipName) {
-        return new Related<>(null, relationshipName, EntityRole.SOURCE);
+    public static Related by(String relationshipName) {
+        return new Related(null, relationshipName, EntityRole.SOURCE);
     }
 
     /**
@@ -79,8 +75,8 @@ public class Related<T extends Entity> extends Filter {
      * @param relationship the type of the relationship
      * @return a new "related" filter instance
      */
-    public static Related<?> by(Relationships.WellKnown relationship) {
-        return new Related<>(null, relationship.name(), EntityRole.SOURCE);
+    public static Related by(Relationships.WellKnown relationship) {
+        return new Related(null, relationship.name(), EntityRole.SOURCE);
     }
 
     /**
@@ -90,33 +86,31 @@ public class Related<T extends Entity> extends Filter {
      * @param relationshipId the id of the relationship
      * @return a new "related" filter instance
      */
-    public static Related<?> byRelationshipWithId(String relationshipId) {
-        return new Related<>(null, null, relationshipId, EntityRole.SOURCE);
+    public static Related byRelationshipWithId(String relationshipId) {
+        return new Related(null, relationshipId, EntityRole.SOURCE);
     }
 
     /**
      * Specifies a filter for entities that are targets of a relationship with the specified entity.
      *
-     * @param entity the entity that is the source of the relationship
+     * @param entityPath the entity that is the source of the relationship
      * @param relationship the name of the relationship
-     * @param <U> the type of the entity
      * @return a new "related" filter instance
      */
-    public static <U extends Entity> Related<U> asTargetWith(U entity, String relationship) {
-        return new Related<>(entity, relationship, EntityRole.TARGET);
+    public static Related asTargetWith(CanonicalPath entityPath, String relationship) {
+        return new Related(entityPath, relationship, EntityRole.TARGET);
     }
 
     /**
-     * An overloaded version of {@link #asTargetWith(org.hawkular.inventory.api.model.Entity, String)} that uses one of
-     * the {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
+     * An overloaded version of {@link #asTargetWith(org.hawkular.inventory.api.model.CanonicalPath, String)} that uses
+     * one of the {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
      *
-     * @param entity the entity that is the source of the relationship
+     * @param entityPath the entity that is the source of the relationship
      * @param relationship the type of the relationship
-     * @param <U> the type of the entity
      * @return a new "related" filter instance
      */
-    public static <U extends Entity> Related<U> asTargetWith(U entity, Relationships.WellKnown relationship) {
-        return new Related<>(entity, relationship.name(), EntityRole.TARGET);
+    public static Related asTargetWith(CanonicalPath entityPath, Relationships.WellKnown relationship) {
+        return new Related(entityPath, relationship.name(), EntityRole.TARGET);
     }
 
     /**
@@ -126,8 +120,8 @@ public class Related<T extends Entity> extends Filter {
      * @param relationshipName the name of the relationship
      * @return a new "related" filter instance
      */
-    public static Related<?> asTargetBy(String relationshipName) {
-        return new Related<>(null, relationshipName, EntityRole.TARGET);
+    public static Related asTargetBy(String relationshipName) {
+        return new Related(null, relationshipName, EntityRole.TARGET);
     }
 
     /**
@@ -137,26 +131,26 @@ public class Related<T extends Entity> extends Filter {
      * @param relationship the type of the relationship
      * @return a new "related" filter instance
      */
-    public static Related<?> asTargetBy(Relationships.WellKnown relationship) {
-        return new Related<>(null, relationship.name(), EntityRole.TARGET);
+    public static Related asTargetBy(Relationships.WellKnown relationship) {
+        return new Related(null, relationship.name(), EntityRole.TARGET);
     }
 
-    protected Related(T entity, String relationshipName, String relationshipId, EntityRole entityRole) {
-        this.entity = entity;
+    protected Related(CanonicalPath entityPath, String relationshipName, String relationshipId, EntityRole entityRole) {
+        this.entityPath = entityPath;
         this.relationshipName = relationshipName;
         this.relationshipId = relationshipId;
         this.entityRole = entityRole;
     }
 
-    protected Related(T entity, String relationshipName, EntityRole entityRole) {
-        this(entity, relationshipName, null, entityRole);
+    protected Related(CanonicalPath entityPath, String relationshipName, EntityRole entityRole) {
+        this(entityPath, relationshipName, null, entityRole);
     }
 
     /**
      * @return the entity used for creating this filter.
      */
-    public T getEntity() {
-        return entity;
+    public CanonicalPath getEntityPath() {
+        return entityPath;
     }
 
     /**
@@ -180,13 +174,13 @@ public class Related<T extends Entity> extends Filter {
         return entityRole;
     }
 
-    public static enum EntityRole {
+    public enum EntityRole {
         TARGET, SOURCE, ANY
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + (entity != null ? "entity=" + String.valueOf(entity) : "")
+        return getClass().getSimpleName() + "[" + (entityPath != null ? "entity=" + String.valueOf(entityPath) : "")
                 + ", rel='" + relationshipName + "', role=" + entityRole.name() + "]";
     }
 
@@ -195,9 +189,9 @@ public class Related<T extends Entity> extends Filter {
         if (this == o) return true;
         if (!(o instanceof Related)) return false;
 
-        Related<?> related = (Related<?>) o;
+        Related related = (Related) o;
 
-        if (!Objects.equals(entity, related.entity)) {
+        if (!Objects.equals(entityPath, related.entityPath)) {
             return false;
         }
 
@@ -205,7 +199,7 @@ public class Related<T extends Entity> extends Filter {
             return false;
         }
 
-        if (!Objects.equals(relationshipId,related.relationshipId)) {
+        if (!Objects.equals(relationshipId, related.relationshipId)) {
             return false;
         }
 
@@ -215,7 +209,7 @@ public class Related<T extends Entity> extends Filter {
 
     @Override
     public int hashCode() {
-        int result = entity != null ? entity.hashCode() : 0;
+        int result = entityPath != null ? entityPath.hashCode() : 0;
         result = 31 * result + (relationshipName != null ? relationshipName.hashCode() : 0);
         result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
         result = 31 * result + (entityRole != null ? entityRole.hashCode() : 0);

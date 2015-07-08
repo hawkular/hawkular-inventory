@@ -17,10 +17,10 @@
 
 package org.hawkular.inventory.api;
 
+import java.util.Arrays;
+
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
-
-import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
@@ -28,21 +28,21 @@ import java.util.Arrays;
  */
 public final class EntityNotFoundException extends InventoryException {
 
-    private final Class<? extends Entity> entityType;
+    private final Class<? extends Entity<?, ?>> entityType;
     private final Filter[][] filters;
 
-    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters) {
+    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[] filters) {
         this.entityType = entityClass;
         this.filters = new Filter[1][];
         this.filters[0] = filters;
     }
 
-    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[][] filters) {
+    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[][] filters) {
         this.entityType = entityClass;
         this.filters = filters;
     }
 
-    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters, Throwable cause) {
+    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[] filters, Throwable cause) {
         super(cause);
         this.entityType = entityClass;
         this.filters = new Filter[1][];
@@ -52,7 +52,7 @@ public final class EntityNotFoundException extends InventoryException {
     /**
      * @return the type of the entity that was not found.
      */
-    public Class<? extends Entity> getEntityType() {
+    public Class<? extends Entity<?, ?>> getEntityType() {
         return entityType;
     }
 

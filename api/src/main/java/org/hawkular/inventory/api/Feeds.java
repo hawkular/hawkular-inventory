@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * @author Lukas Krejci
@@ -34,13 +35,15 @@ public final class Feeds {
         Metrics metrics();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed>,
+    public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
             BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
-            BrowserBase<Resources.Read, Metrics.Read> {}
+            BrowserBase<Resources.ReadContained, Metrics.ReadContained> {}
 
-    public interface Read extends ReadInterface<Single, Multiple> {}
+    public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
+
+    public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
     public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
 

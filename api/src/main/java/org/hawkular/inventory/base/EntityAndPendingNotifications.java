@@ -27,11 +27,10 @@ import java.util.List;
  * A class for holding the results of wiring up a newly created element.
  *
  * @param <E> the type of the newly create inventory element
- *
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class NewEntityAndPendingNotifications<E extends AbstractElement<?, ?>> {
+public final class EntityAndPendingNotifications<E extends AbstractElement<?, ?>> {
 
     private final E entity;
     private final List<Notification<?, ?>> notifications;
@@ -43,10 +42,16 @@ public final class NewEntityAndPendingNotifications<E extends AbstractElement<?,
      * @param notifications the list of notifications to be sent out describing the actions performed during the wiring
      *                      up of the new element.
      */
-    NewEntityAndPendingNotifications(E entity, Notification<?, ?>... notifications) {
+    EntityAndPendingNotifications(E entity, Notification<?, ?>... notifications) {
         this.entity = entity;
         this.notifications = new ArrayList<>();
         Collections.addAll(this.notifications, notifications);
+    }
+
+    EntityAndPendingNotifications(E entity, Iterable<Notification<?, ?>> notifications) {
+        this.entity = entity;
+        this.notifications = new ArrayList<>();
+        notifications.forEach(this.notifications::add);
     }
 
     public E getEntity() {

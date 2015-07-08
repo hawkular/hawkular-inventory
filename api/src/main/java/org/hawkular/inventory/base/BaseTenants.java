@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
@@ -23,14 +26,12 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.CanonicalPath;
-
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
 
 /**
  * @author Lukas Krejci
@@ -55,11 +56,11 @@ public final class BaseTenants {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+        protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
 
-            return new NewEntityAndPendingNotifications<>(new Tenant(context.backend.extractId(entity),
-                    blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new Tenant(CanonicalPath.of()
+                    .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override
@@ -78,9 +79,9 @@ public final class BaseTenants {
         }
     }
 
-    public static class Read<BE> extends Traversal<BE, Tenant> implements Tenants.Read {
+    public static class ReadContained<BE> extends Traversal<BE, Tenant> implements Tenants.ReadContained {
 
-        public Read(TraversalContext<BE, Tenant> context) {
+        public ReadContained(TraversalContext<BE, Tenant> context) {
             super(context);
         }
 
@@ -95,29 +96,47 @@ public final class BaseTenants {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant> implements Tenants.Multiple {
+    public static class Read<BE> extends Traversal<BE, Tenant> implements Tenants.Read {
+
+        public Read(TraversalContext<BE, Tenant> context) {
+            super(context);
+        }
+
+        @Override
+        public Tenants.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Tenants.Single get(Path id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
+        }
+    }
+
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Tenant, Tenant.Update>
+            implements Tenants.Multiple {
 
         public Multiple(TraversalContext<BE, Tenant> context) {
             super(context);
         }
 
         @Override
-        public ResourceTypes.Read resourceTypes() {
-            return new BaseResourceTypes.Read<>(context.proceedTo(contains, ResourceType.class).get());
+        public ResourceTypes.ReadContained resourceTypes() {
+            return new BaseResourceTypes.ReadContained<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return new BaseMetricTypes.Read<>(context.proceedTo(contains, MetricType.class).get());
+        public MetricTypes.ReadContained metricTypes() {
+            return new BaseMetricTypes.ReadContained<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
-        public Environments.Read environments() {
-            return new BaseEnvironments.Read<>(context.proceedTo(contains, Environment.class).get());
+        public Environments.ReadContained environments() {
+            return new BaseEnvironments.ReadContained<>(context.proceedTo(contains, Environment.class).get());
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Tenant> implements Tenants.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Tenant, Tenant.Update> implements Tenants.Single {
 
         public Single(TraversalContext<BE, Tenant> context) {
             super(context);

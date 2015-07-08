@@ -16,10 +16,11 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Entity;
 
 /**
  * Base for {@code *Single} implementations on entities.
@@ -27,7 +28,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-class SingleEntityFetcher<BE, E extends Entity<?, ?>> extends Fetcher<BE, E> {
+class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends AbstractElement.Update> extends Fetcher<BE, E, U> {
     public SingleEntityFetcher(TraversalContext<BE, E> context) {
         super(context);
     }

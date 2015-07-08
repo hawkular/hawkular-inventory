@@ -16,14 +16,16 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.rest.Security;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import java.io.IOException;
-import java.util.Map;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.rest.Security;
 
 /**
  * @author Jirka Kremser
@@ -96,7 +98,7 @@ public class RelationshipEmbeddedJacksonSerializer extends JsonSerializer<Relati
         jg.writeEndObject();
     }
 
-    private void serializeEntity(Entity entity, JsonGenerator jsonGenerator, String fieldName)
+    private void serializeEntity(CanonicalPath entity, JsonGenerator jsonGenerator, String fieldName)
             throws IOException {
         jsonGenerator.writeFieldName(fieldName);
         jsonGenerator.writeStartObject();
@@ -105,10 +107,10 @@ public class RelationshipEmbeddedJacksonSerializer extends JsonSerializer<Relati
         jsonGenerator.writeString(Security.getStableId(entity));
 
         jsonGenerator.writeFieldName(FIELD_SHORT_ID);
-        jsonGenerator.writeString(entity.getId());
+        jsonGenerator.writeString(entity.getSegment().getElementId());
 
         jsonGenerator.writeFieldName(FIELD_TYPE);
-        jsonGenerator.writeString(entity.getClass().getSimpleName());
+        jsonGenerator.writeString(entity.getSegment().getElementType().getSimpleName());
 
         jsonGenerator.writeEndObject();
     }

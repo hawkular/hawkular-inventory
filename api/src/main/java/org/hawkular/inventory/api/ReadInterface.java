@@ -19,11 +19,12 @@ package org.hawkular.inventory.api;
 /**
  * Generic methods for readonly access to entities.
  *
- * @param <Single> an interface for traversing and resolving a single entity
+ * @param <Single>   an interface for traversing and resolving a single entity
  * @param <Multiple> an interface for traversing and resolving multiple entities
- *
+ * @param <Address>  the type of addressing to resolve a single entity
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public interface ReadInterface<Single, Multiple> extends ResolvingToSingle<Single>, ResolvingToMultiple<Multiple> {
+public interface ReadInterface<Single, Multiple, Address> extends ResolvingToSingle<Single, Address>,
+        ResolvingToMultiple<Multiple> {
 }

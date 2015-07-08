@@ -16,12 +16,15 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -93,13 +96,24 @@ public interface Inventory extends AutoCloseable {
     void initialize(Configuration configuration);
 
     /**
-     * Entry point into the inventory. Select one ({@link org.hawkular.inventory.api.Tenants.ReadWrite#get(String)}) or
+     * Entry point into the inventory. Select one ({@link org.hawkular.inventory.api.Tenants.ReadWrite#get(Object)}) or
      * more ({@link org.hawkular.inventory.api.Tenants.ReadWrite#getAll(org.hawkular.inventory.api.filters.Filter...)})
      * tenants and navigate further to the entities of interest.
      *
      * @return full CRUD and navigation interface to tenants
      */
     Tenants.ReadWrite tenants();
+
+    /**
+     * Global access to all relationships. Use this with caution as it may result in scanning across the potentially
+     * very large number of relationships present in the inventory.
+     *
+     * <p>To create relationships, first navigate to one of its endpoint entities and create it from there using the
+     * API calls.
+     *
+     * @return the read access to relationships.
+     */
+    Relationships.Read relationships();
 
     /**
      * Provides an access interface for inspecting given tenant.
@@ -183,23 +197,27 @@ public interface Inventory extends AutoCloseable {
         return tenants().get(resourceType.getTenantId()).resourceTypes().get(resourceType.getId());
     }
 
+    default Relationships.Single inspect(Relationship relationship) {
+        return relationships().get(relationship.getId());
+    }
+
     /**
-     * A generic version of the {@code inspect} methods that accepts an entity and returns the access interface to it.
+     * A generic version of the {@code inspect} methods that accepts an element and returns the access interface to it.
      *
-     * <p>If you don't know the type of entity (and therefore cannot deduce access interface type) you can always use
+     * <p>If you don't know the type of element (and therefore cannot deduce access interface type) you can always use
      * {@link org.hawkular.inventory.api.ResolvableToSingle} type which is guaranteed to be the super interface of
      * all access interfaces returned from this method (which makes it almost useless but at least you can get the
      * instance of it).
      *
-     * @param entity          the entity to inspect
+     * @param entity          the element to inspect
      * @param accessInterface the expected access interface
-     * @param <E>             the type of the entity
+     * @param <E>             the type of the element
      * @param <Single>        the type of the access interface
      * @return the access interface instance
-     * @throws java.lang.ClassCastException if the provided access interface doesn't match the entity
+     * @throws java.lang.ClassCastException if the provided access interface doesn't match the element
      */
-    default <E extends Entity<?, ?>, Single extends ResolvableToSingle<E>> Single inspect(E entity,
-            Class<Single> accessInterface) {
+    default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
+    Single inspect(E entity, Class<Single> accessInterface) {
         return entity.accept(new ElementVisitor.Simple<Single, Void>() {
             @Override
             public Single visitTenant(Tenant tenant, Void ignored) {
@@ -234,6 +252,89 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitResourceType(ResourceType type, Void ignored) {
                 return accessInterface.cast(inspect(type));
+            }
+
+            @Override
+            public Single visitRelationship(Relationship relationship, Void parameter) {
+                return accessInterface.cast(relationships().get(relationship.getId()));
+            }
+        }, null);
+    }
+
+    /**
+     * Another generic version of the inspect method, this time using the {@link CanonicalPath} to an element.
+     *
+     * <p>If you don't know the type of element (and therefore cannot deduce access interface type) you can always use
+     * {@link org.hawkular.inventory.api.ResolvableToSingle} type which is guaranteed to be the super interface of
+     * all access interfaces returned from this method (which makes it almost useless but at least you can get the
+     * instance of it).
+     *
+     * @param path            the path to the element (entity or relationship)
+     * @param accessInterface the expected access interface
+     * @param <Single>        the type of the access interface
+     * @return the access interface instance
+     * @throws java.lang.ClassCastException if the provided access interface doesn't match the element
+     */
+    default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
+    Single inspect(CanonicalPath path, Class<Single> accessInterface) {
+        return path.accept(new ElementTypeVisitor<Single, Void>() {
+            @Override
+            public Single visitTenant(Void parameter) {
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()));
+            }
+
+            @Override
+            public Single visitEnvironment(Void parameter) {
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
+                        .get(path.ids().getEnvironmentId()));
+            }
+
+            @Override
+            public Single visitFeed(Void parameter) {
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
+                        .get(path.ids().getEnvironmentId()).feeds().get(path.ids().getFeedId()));
+            }
+
+            @Override
+            public Single visitMetric(Void parameter) {
+                Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
+                        .get(path.ids().getEnvironmentId());
+
+                return accessInterface.cast(path.ids().getFeedId() == null
+                        ? env.feedlessMetrics().get(path.ids().getMetricId())
+                        : env.feeds().get(path.ids().getFeedId()).metrics().get(path.ids().getMetricId()));
+            }
+
+            @Override
+            public Single visitMetricType(Void parameter) {
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).metricTypes()
+                        .get(path.ids().getMetricTypeId()));
+            }
+
+            @Override
+            public Single visitResource(Void parameter) {
+                Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
+                        .get(path.ids().getEnvironmentId());
+
+                return accessInterface.cast(path.ids().getFeedId() == null
+                        ? env.feedlessResources().get(path.ids().getResourceId())
+                        : env.feeds().get(path.ids().getFeedId()).resources().get(path.ids().getResourceId()));
+            }
+
+            @Override
+            public Single visitResourceType(Void parameter) {
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).resourceTypes()
+                        .get(path.ids().getResourceTypeId()));
+            }
+
+            @Override
+            public Single visitRelationship(Void parameter) {
+                return accessInterface.cast(relationships().get(path.ids().getRelationshipId()));
+            }
+
+            @Override
+            public Single visitUnknown(Void parameter) {
+                return null;
             }
         }, null);
     }

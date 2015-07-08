@@ -27,7 +27,9 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
@@ -188,6 +190,13 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
                 observableContext, transactionRetries);
     }
 
+    TraversalContext<BE, E> proceedTo(Path path) {
+        if (!entityClass.equals(path.getSegment().getElementType())) {
+            throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
+        }
+        return replacePath(Util.extendTo(this, path));
+    }
+
     /**
      * Sends out the notification to the subscribers.
      *
@@ -219,6 +228,26 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     public int getTransactionRetriesCount() {
         return transactionRetries;
+    }
+
+    /**
+     * Sends out all the pending notifications in the supplied object.
+     *
+     * @param entityAndNotifications the list of pending notifications
+     */
+    void notifyAll(EntityAndPendingNotifications<?> entityAndNotifications) {
+        entityAndNotifications.getNotifications().forEach(this::notify);
+    }
+
+    /**
+     * Another way of sending out a notification.
+     *
+     * @param notification the notification to send out
+     * @param <C>          the type of the action description (aka context)
+     * @param <V>          the type of the entity on which the action occurred
+     */
+    <C, V> void notify(Notification<C, V> notification) {
+        notify(notification.getValue(), notification.getActionContext(), notification.getAction());
     }
 
     /**

@@ -16,21 +16,10 @@
  */
 package org.hawkular.inventory.rest;
 
-import org.hawkular.accounts.api.OperationService;
-import org.hawkular.accounts.api.PermissionChecker;
-import org.hawkular.accounts.api.model.Operation;
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.ElementVisitor;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -41,11 +30,23 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import org.hawkular.inventory.base.spi.CanonicalPath;
+
+import org.hawkular.accounts.api.OperationService;
+import org.hawkular.accounts.api.PermissionChecker;
+import org.hawkular.accounts.api.model.Operation;
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.
@@ -73,60 +74,41 @@ public class Security {
     @javax.annotation.Resource
     private UserTransaction transaction;
 
-    public static String getStableId(AbstractElement<?, ?> element) {
-        if (element instanceof Relationship) {
-            return element.getId();
+    public static String getStableId(CanonicalPath path) {
+        Class<?> type = path.getSegment().getElementType();
+        CanonicalPath.IdExtractor ids = path.ids();
+        if (Tenant.class.isAssignableFrom(type)) {
+            return join("tenants", ids.getTenantId());
+        } else if (Environment.class.isAssignableFrom(type)) {
+            return join(ids.getTenantId(), "environments", ids.getEnvironmentId());
+        } else if (ResourceType.class.isAssignableFrom(type)) {
+            return join(ids.getTenantId(), "resourceTypes", ids.getResourceTypeId());
+        } else if (MetricType.class.isAssignableFrom(type)) {
+            return join(ids.getTenantId(), "metricTypes", ids.getMetricTypeId());
+        } else if (Feed.class.isAssignableFrom(type)) {
+            return join(ids.getTenantId(), ids.getEnvironmentId(), "feeds", ids.getFeedId());
+        } else if (Resource.class.isAssignableFrom(type)) {
+            if (ids.getFeedId() == null) {
+                return join(ids.getTenantId(), ids.getEnvironmentId(), "resources", ids.getResourceId());
+            } else {
+                return join(ids.getTenantId(), ids.getEnvironmentId(), ids.getFeedId(), "resources",
+                        ids.getResourceId());
+            }
+        } else if (Metric.class.isAssignableFrom(type)) {
+            if (ids.getFeedId() == null) {
+                return join(ids.getTenantId(), ids.getEnvironmentId(), "metrics", ids.getMetricId());
+            } else {
+                return join(ids.getTenantId(), ids.getEnvironmentId(), ids.getFeedId(), "metrics", ids.getMetricId());
+            }
+        } else if (Relationship.class.isAssignableFrom(type)) {
+            return "relationships/" + ids.getRelationshipId();
         } else {
-            return ((Entity<?, ?>) element).accept(new ElementVisitor.Simple<String, Void>() {
-                @Override
-                public String visitTenant(Tenant tenant, Void parameter) {
-                    return getStableId(Tenant.class, tenant.getId());
-                }
-
-                @Override
-                public String visitEnvironment(Environment environment, Void parameter) {
-                    return getStableId(Environment.class, environment.getTenantId(), environment.getId());
-                }
-
-                @Override
-                public String visitFeed(Feed feed, Void parameter) {
-                    return getStableId(Feed.class, feed.getTenantId(), feed.getEnvironmentId(), feed.getId());
-                }
-
-                @Override
-                public String visitMetric(Metric metric, Void parameter) {
-                    if (metric.getFeedId() == null) {
-                        return getStableId(Metric.class, metric.getTenantId(), metric.getEnvironmentId(),
-                                metric.getId());
-                    } else {
-                        return getStableId(Metric.class, metric.getTenantId(), metric.getEnvironmentId(),
-                                metric.getFeedId(), metric.getId());
-
-                    }
-                }
-
-                @Override
-                public String visitMetricType(MetricType metricType, Void parameter) {
-                    return getStableId(MetricType.class, metricType.getTenantId(), metricType.getId());
-                }
-
-                @Override
-                public String visitResource(Resource resource, Void parameter) {
-                    if (resource.getFeedId() == null) {
-                        return getStableId(Resource.class, resource.getTenantId(), resource.getEnvironmentId(),
-                                resource.getId());
-                    } else {
-                        return getStableId(Resource.class, resource.getTenantId(), resource.getEnvironmentId(),
-                                resource.getFeedId(), resource.getId());
-                    }
-                }
-
-                @Override
-                public String visitResourceType(ResourceType type, Void parameter) {
-                    return getStableId(ResourceType.class, type.getTenantId(), type.getId());
-                }
-            }, null);
+            throw new IllegalArgumentException("Unknown entity type: " + type);
         }
+    }
+
+    public static String getStableId(AbstractElement<?, ?> element) {
+        return getStableId(element.getPath());
     }
 
     public static boolean isValidId(String id) {
@@ -137,7 +119,8 @@ public class Security {
         if (chunks == null || chunks.length < 2) {
             return false;
         }
-        if (chunks.length == 2 && "tenants".equals(chunks[0]) && chunks[1].length() > 0) {
+        if (chunks.length == 2 && ("tenants".equals(chunks[0]) || "relationships".equals(chunks[0]))
+                && chunks[1].length() > 0) {
             return true;
         }
         if (chunks.length == 3 && chunks[0].length() > 0 && chunks[2].length() > 0) {
@@ -156,40 +139,35 @@ public class Security {
 
     public static CanonicalPath getCanonicalPath(String id) {
         String[] chunks = id.split("/");
-        CanonicalPath.Builder builder = CanonicalPath.builder();
-        if (chunks.length == 2 && "tenants".equals(chunks[0])) {
-            builder.withTenantId(chunks[1]);
+        CanonicalPath.Extender path = CanonicalPath.empty();
+        if (chunks.length == 2) {
+            if ("tenants".equals(chunks[0])) {
+                path.extend(Tenant.class, chunks[1]);
+            } else if ("relationships".equals(chunks[0])) {
+                path.extend(Relationship.class, chunks[1]);
+            }
         } else if (chunks.length == 3) {
             if ("environments".equals(chunks[1])) {
-                builder.withTenantId(chunks[0]);
-                builder.withEnvironmentId(chunks[2]);
+                path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[2]);
             } else if ("resourceTypes".equals(chunks[1])) {
-                builder.withTenantId(chunks[0]);
-                builder.withResourceTypeId(chunks[2]);
+                path.extend(Tenant.class, chunks[0]).extend(ResourceType.class, chunks[2]);
             } else if ("metricTypes".equals(chunks[1])) {
-                builder.withTenantId(chunks[0]);
-                builder.withMetricTypeId(chunks[2]);
+                path.extend(Tenant.class, chunks[0]).extend(MetricType.class, chunks[2]);
             }
         } else if (chunks.length == 4 && "resources".equals(chunks[2])) {
-            builder.withTenantId(chunks[0]);
-            builder.withEnvironmentId(chunks[1]);
-            builder.withResourceId(chunks[3]);
+            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Resource.class,
+                    chunks[3]);
         } else if (chunks.length == 4 && "metrics".equals(chunks[2])) {
-            builder.withTenantId(chunks[0]);
-            builder.withEnvironmentId(chunks[1]);
-            builder.withMetricId(chunks[3]);
+            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Metric.class,
+                    chunks[3]);
         } else if (chunks.length == 5 && "resources".equals(chunks[3])) {
-            builder.withTenantId(chunks[0]);
-            builder.withEnvironmentId(chunks[1]);
-            builder.withFeedId(chunks[2]);
-            builder.withMetricId(chunks[4]);
+            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
+                    .extend(Resource.class, chunks[4]);
         } else if (chunks.length == 5 && "metrics".equals(chunks[3])) {
-            builder.withTenantId(chunks[0]);
-            builder.withEnvironmentId(chunks[1]);
-            builder.withFeedId(chunks[2]);
-            builder.withMetricId(chunks[4]);
+            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
+                    .extend(Metric.class, chunks[4]);
         }
-        return builder.build();
+        return path.get();
     }
 
     public static String getStableId(Class<? extends AbstractElement<?, ?>> type, String... ids) {
@@ -219,6 +197,15 @@ public class Security {
             return "relationships/" + ids[0];
         } else {
             throw new IllegalArgumentException("Unknown entity type: " + type);
+        }
+    }
+
+    public static boolean isTenantEscapeAttempt(CanonicalPath origin, Path extension) {
+        if (extension instanceof CanonicalPath) {
+            return !((CanonicalPath) extension).ids().getTenantId().equals(origin.ids().getTenantId());
+        } else {
+            CanonicalPath target = ((RelativePath) extension).applyTo(origin);
+            return !target.ids().getTenantId().equals(origin.ids().getTenantId());
         }
     }
 
@@ -256,35 +243,32 @@ public class Security {
         return getOperation(entityType, OperationType.UPDATE);
     }
 
-    public boolean canUpdate(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), update(entityType),
-                getStableId(entityType, entityPath));
+    public boolean canUpdate(CanonicalPath path) {
+        return safePermissionCheck(path, update(path.getSegment().getElementType()));
     }
 
     private Operation delete(Class<?> entityType) {
         return getOperation(entityType, OperationType.DELETE);
     }
 
-    public boolean canDelete(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), delete(entityType),
-                getStableId(entityType, entityPath));
+    public boolean canDelete(CanonicalPath path) {
+        return safePermissionCheck(path, delete(path.getSegment().getElementType()));
     }
 
     private Operation associate() {
         return operationsByType.get(Relationship.class).get(OperationType.ASSOCIATE);
     }
 
-    public boolean canAssociateFrom(Class<? extends Entity<?, ?>> entityType, String... entityPath) {
-        return safePermissionCheck(entityType, last(entityPath), associate(), getStableId(entityType, entityPath));
+    public boolean canAssociateFrom(CanonicalPath path) {
+        return safePermissionCheck(path, associate());
     }
 
     private Operation copy() {
         return operationsByType.get(Environment.class).get(OperationType.COPY);
     }
 
-    public boolean canCopyEnvironment(String... environmentPath) {
-        return safePermissionCheck(Environment.class, last(environmentPath), copy(),
-                getStableId(Environment.class, environmentPath));
+    public boolean canCopyEnvironment(CanonicalPath path) {
+        return safePermissionCheck(path, copy());
     }
 
     private Operation getOperation(Class<?> cls, OperationType operationType) {
@@ -297,6 +281,10 @@ public class Security {
         return ops.get(operationType);
     }
 
+    private boolean safePermissionCheck(CanonicalPath path, Operation operation) {
+        return safePermissionCheck(path.getSegment().getElementType(), path.getSegment().getElementId(),
+                operation, getStableId(path));
+    }
 
     private boolean safePermissionCheck(Class<?> entityType, String entityId, Operation operation, String stableId) {
         try {
@@ -466,9 +454,9 @@ public class Security {
             this.createdType = createdType;
         }
 
-        boolean under(Class<? extends Entity<?, ?>> parentType, String... parentPath) {
-            String entityId = getStableId(parentType, parentPath);
-            return safePermissionCheck(createdType, last(parentPath), create(createdType), entityId);
+        boolean under(CanonicalPath path) {
+            String entityId = getStableId(path);
+            return safePermissionCheck(createdType, path.getSegment().getElementId(), create(createdType), entityId);
         }
     }
 }

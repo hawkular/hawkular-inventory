@@ -17,28 +17,24 @@
 package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
- * A helper class to create filters on the "owns" relationship.  This can also be achieved by using the {@link Related}
- * filter.
+ * A helper class to create filters on the "incorporates" relationship.  This can also be achieved by using the
+ * {@link Related} filter.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.1.0
  */
-public final class Owned<T extends Entity> extends Related<T> {
+public final class Incorporated extends Related {
 
-    private Owned(T entity) {
-        super(entity, Relationships.WellKnown.owns.name(), EntityRole.TARGET);
+    public static final Incorporated entities = new Incorporated(null);
+
+    private Incorporated(CanonicalPath entity) {
+        super(entity, Relationships.WellKnown.incorporates.name(), EntityRole.TARGET);
     }
 
-    public static Owned<Resource> by(Resource resource) {
-        return new Owned<>(resource);
-    }
-
-    public static Owned<ResourceType> by(ResourceType resourceType) {
-        return new Owned<>(resourceType);
+    public static Incorporated by(CanonicalPath entity) {
+        return new Incorporated(entity);
     }
 }

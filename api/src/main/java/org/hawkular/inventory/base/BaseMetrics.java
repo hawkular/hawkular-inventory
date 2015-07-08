@@ -16,30 +16,25 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.filters.With.id;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.TenantBasedEntity;
-import org.hawkular.inventory.base.NewEntityAndPendingNotifications.Notification;
-import org.hawkular.inventory.base.spi.CanonicalPath;
+import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
-import static org.hawkular.inventory.api.filters.Related.asTargetBy;
-import static org.hawkular.inventory.api.filters.Related.by;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -64,35 +59,34 @@ public final class BaseMetrics {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
+        protected EntityAndPendingNotifications<Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
-
-            Class<? extends AbstractElement<?, ?>> parentType = context.backend.extractType(parent);
-
-            @SuppressWarnings("unchecked")
-            TenantBasedEntity<?, ?> parentEntity = context.backend.convert(parent,
-                    (Class<? extends TenantBasedEntity<?, ?>>) parentType);
 
             BE metricTypeObject;
 
             try {
-                metricTypeObject = context.backend.find(CanonicalPath.builder().withTenantId(parentEntity.getTenantId())
-                        .withMetricTypeId(blueprint.getMetricTypeId()).build());
+                CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
+                CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
+                        MetricType.class);
+                metricTypeObject = context.backend.find(metricTypePath);
+
             } catch (ElementNotFoundException e) {
-                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypeId() +
-                        "' not found in tenant '" + parentEntity.getTenantId() + "'.");
+                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypePath() +
+                        "' not found in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
             }
 
-            BE r = context.backend.relate(metricTypeObject, entity, defines.name(), null);
+            BE r = relate(metricTypeObject, entity, defines.name());
+
+            CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
 
             MetricType metricType = context.backend.convert(metricTypeObject, MetricType.class);
 
-            Metric ret = new Metric(parentPath.getTenantId(), parentPath.getEnvironmentId(), parentPath.getFeedId(),
-                    context.backend.extractId(entity), metricType, blueprint.getProperties());
+            Metric ret = new Metric(parentPath.extend(Metric.class,
+                    context.backend.extractId(entity)).get(), metricType, blueprint.getProperties());
 
-            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), metricType, ret);
+            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), parentPath, entityPath);
 
-            return new NewEntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
+            return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
         }
 
         @Override
@@ -111,6 +105,23 @@ public final class BaseMetrics {
         }
     }
 
+    public static class ReadContained<BE> extends Traversal<BE, Metric> implements Metrics.ReadContained {
+
+        public ReadContained(TraversalContext<BE, Metric> context) {
+            super(context);
+        }
+
+        @Override
+        public Metrics.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Metrics.Single get(String id) throws EntityNotFoundException {
+            return new Single<>(context.proceed().where(id(id)).get());
+        }
+    }
+
     public static class Read<BE> extends Traversal<BE, Metric> implements Metrics.Read {
 
         public Read(TraversalContext<BE, Metric> context) {
@@ -123,8 +134,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(id)).get());
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
         }
     }
 
@@ -135,32 +146,27 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Relationship associate(String id) throws EntityNotFoundException, RelationAlreadyExistsException {
-            //the sourcePath is a resource - that is the only way the API allows this method
-            //to be called.
-            //to get from the resource to the metric in question, we first go out of the metric to its owner
-            //then down again to metrics and finally filter by the id.
-            Query getMetric = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Metric.class), id(id)).get();
+        public Relationship associate(
+                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
+            Query getMetric = Util.queryTo(context, id);
 
             BE metric = getSingle(getMetric, Metric.class);
 
-            return createAssociation(Resource.class, owns, metric);
+            return createAssociation(Resource.class, incorporates, metric);
         }
 
         @Override
-        public Relationship disassociate(String id) throws EntityNotFoundException {
-            Query getMetric = context.sourcePath.extend().path().with(asTargetBy(contains), by(contains),
-                    type(Metric.class), id(id)).get();
+        public Relationship disassociate(Path id) throws EntityNotFoundException {
+            Query getMetric = Util.queryTo(context, id);
 
             BE metric = getSingle(getMetric, Metric.class);
 
-            return deleteAssociation(Resource.class, owns, Metric.class, metric);
+            return deleteAssociation(Resource.class, incorporates, metric);
         }
 
         @Override
-        public Relationship associationWith(String id) throws RelationNotFoundException {
-            return getAssociation(Resource.class, id, Metric.class, owns);
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
+            return getAssociation(Resource.class, path, incorporates);
         }
 
         @Override
@@ -169,19 +175,20 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(id)).get());
+        public Metrics.Single get(Path id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Metric> implements Metrics.Single {
+    public static class Single<BE> extends SingleEntityFetcher<BE, Metric, Metric.Update> implements Metrics.Single {
 
         public Single(TraversalContext<BE, Metric> context) {
             super(context);
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Metric> implements Metrics.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Metric, Metric.Update>
+            implements Metrics.Multiple {
 
         public Multiple(TraversalContext<BE, Metric> context) {
             super(context);

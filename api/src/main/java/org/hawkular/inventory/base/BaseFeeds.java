@@ -16,22 +16,23 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.CanonicalPath;
-
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -67,14 +68,14 @@ public final class BaseFeeds {
             String tenantId = env.getTenantId();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory,
-                    new Feed(tenantId, envId, blueprint.getId()));
+                    new Feed(CanonicalPath.of().tenant(tenantId).environment(envId).feed(blueprint.getId()).get()));
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
+        protected EntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
-            return new NewEntityAndPendingNotifications<>(new Feed(parentPath.getTenantId(),
-                    parentPath.getEnvironmentId(), context.backend.extractId(entity), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new Feed(parentPath.extend(Feed.class,
+                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override
@@ -93,9 +94,9 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Read<BE> extends Fetcher<BE, Feed> implements Feeds.Read {
+    public static class ReadContained<BE> extends Fetcher<BE, Feed, Feed.Update> implements Feeds.ReadContained {
 
-        public Read(TraversalContext<BE, Feed> context) {
+        public ReadContained(TraversalContext<BE, Feed> context) {
             super(context);
         }
 
@@ -110,7 +111,24 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Feed> implements Feeds.Single {
+    public static class Read<BE> extends Fetcher<BE, Feed, Feed.Update> implements Feeds.Read {
+
+        public Read(TraversalContext<BE, Feed> context) {
+            super(context);
+        }
+
+        @Override
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Feeds.Single get(Path id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
+        }
+    }
+
+    public static class Single<BE> extends SingleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {
             super(context);
@@ -127,20 +145,20 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed> implements Feeds.Multiple {
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Multiple {
 
         public Multiple(TraversalContext<BE, Feed> context) {
             super(context);
         }
 
         @Override
-        public Resources.Read resources() {
-            return new BaseResources.Read<>(context.proceedTo(contains, Resource.class).get());
+        public Resources.ReadContained resources() {
+            return new BaseResources.ReadContained<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
-        public Metrics.Read metrics() {
-            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+        public Metrics.ReadContained metrics() {
+            return new BaseMetrics.ReadContained<>(context.proceedTo(contains, Metric.class).get());
         }
     }
 }

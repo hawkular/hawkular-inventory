@@ -16,24 +16,24 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.Related.by;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.base.spi.CanonicalPath;
-
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.Related.by;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
 
 /**
  * @author Lukas Krejci
@@ -58,11 +58,10 @@ public final class BaseEnvironments {
         }
 
         @Override
-        protected NewEntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity,
-                Environment.Blueprint blueprint, CanonicalPath parentPath,
-                BE parent) {
-            return new NewEntityAndPendingNotifications<>(new Environment(parentPath.getTenantId(),
-                    context.backend.extractId(entity), blueprint.getProperties()));
+        protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
+                CanonicalPath parentPath, BE parent) {
+            return new EntityAndPendingNotifications<>(new Environment(parentPath.extend(Environment.class,
+                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override
@@ -87,9 +86,9 @@ public final class BaseEnvironments {
         }
     }
 
-    public static class Read<BE> extends Traversal<BE, Environment> implements Environments.Read {
+    public static class ReadContained<BE> extends Traversal<BE, Environment> implements Environments.ReadContained {
 
-        public Read(TraversalContext<BE, Environment> context) {
+        public ReadContained(TraversalContext<BE, Environment> context) {
             super(context);
         }
 
@@ -104,7 +103,25 @@ public final class BaseEnvironments {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Environment> implements Environments.Single {
+    public static class Read<BE> extends Traversal<BE, Environment> implements Environments.Read {
+
+        public Read(TraversalContext<BE, Environment> context) {
+            super(context);
+        }
+
+        @Override
+        public Environments.Multiple getAll(Filter[][] filters) {
+            return new Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Environments.Single get(Path id) throws EntityNotFoundException {
+            return new Single<>(context.proceedTo(id));
+        }
+    }
+
+    public static class Single<BE> extends SingleEntityFetcher<BE, Environment, Environment.Update>
+            implements Environments.Single {
 
         public Single(TraversalContext<BE, Environment> context) {
             super(context);
@@ -126,7 +143,7 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public ResolvingToMultiple<Resources.Multiple> allResources() {
+        public Resources.Read allResources() {
             return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
@@ -134,7 +151,7 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+        public Metrics.Read allMetrics() {
             return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
@@ -142,7 +159,7 @@ public final class BaseEnvironments {
         }
     }
 
-    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Environment>
+    public static class Multiple<BE> extends MultipleEntityFetcher<BE, Environment, Environment.Update>
             implements Environments.Multiple {
 
         public Multiple(TraversalContext<BE, Environment> context) {
@@ -150,22 +167,22 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Feeds.Read feeds() {
-            return new BaseFeeds.Read<>(context.proceedTo(contains, Feed.class).get());
+        public Feeds.ReadContained feeds() {
+            return new BaseFeeds.ReadContained<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override
-        public Resources.Read feedlessResources() {
-            return new BaseResources.Read<>(context.proceedTo(contains, Resource.class).get());
+        public Resources.ReadContained feedlessResources() {
+            return new BaseResources.ReadContained<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
-        public Metrics.Read feedlessMetrics() {
-            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+        public Metrics.ReadContained feedlessMetrics() {
+            return new BaseMetrics.ReadContained<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
-        public ResolvingToMultiple<Resources.Multiple> allResources() {
+        public Resources.Read allResources() {
             return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
                     {by(contains), type(Feed.class), by(contains), type(Resource.class)}
@@ -173,7 +190,7 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public ResolvingToMultiple<Metrics.Multiple> allMetrics() {
+        public Metrics.Read allMetrics() {
             return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
                     {by(contains), type(Feed.class), by(contains), type(Metric.class)}
