@@ -109,7 +109,7 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
 
         public Blueprint(String id, MetricUnit unit, Map<String, Object> properties) {
             super(id, properties);
-            this.unit = unit;
+            this.unit = unit == null ? MetricUnit.NONE : unit;
         }
 
         public MetricUnit getUnit() {
