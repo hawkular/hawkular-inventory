@@ -29,28 +29,33 @@ class AgentSimulation extends Simulation {
   val baseURI: String = System.getProperty("baseURI", "http://localhost:8080")
   val username: String = System.getProperty("username", "jdoe")
   val password: String = System.getProperty("password", "password")
+  val logLevel: Int = Integer.getInteger("logLevel", 0)
 
   // Number of concurrent clients (agents)
-  val clients: Int = Integer.getInteger("clients", 1)
+  val clients: Int = Integer.getInteger("clients", 7)
   // Delay before firing up another client
-  val ramp: Long = java.lang.Long.getLong("ramp", 0L)
+  val ramp: Long = java.lang.Long.getLong("ramp", 7L)
 
   // The number of resource types for each client
-  val resourceTypesNumber: Int = Integer.getInteger("resourceTypes", 10)
+  val resourceTypesNumber: Int = Integer.getInteger("resourceTypes", 2)
 
   // The number of metric types for each client
   val metricTypesNumber: Int = Integer.getInteger("metricTypes", resourceTypesNumber * 2)
 
   // The number of resources for each client
-  val resourcesNumber: Int = Integer.getInteger("resources", 10)
+  val resourcesNumber: Int = Integer.getInteger("resources", 2)
 
   // The number of metrics for each client
   val metricsNumber: Int = Integer.getInteger("metrics", resourcesNumber * 2)
 
-  // Interval between requests that don't have to be synchronized
+  // Interval between requests that don't have to be synchronized (in millis)
   val interval: Int = Integer.getInteger("interval", 1)
 
   // ---------------------------
+
+  def log(lvl: Int, str: String): Unit = if (logLevel >= lvl) println(str) else ()
+  def log(str: String): Unit = log(1, str)
+  def logd(str: String): Unit = log(2, str)
 
   // http://git.io/vqEnX
   val httpConf = http
@@ -61,19 +66,22 @@ class AgentSimulation extends Simulation {
     .contentTypeHeader("application/json;charset=utf-8")
     .acceptEncodingHeader("gzip, deflate")
     .extraInfoExtractor(info => {
-      println("\nREQUEST:\nrequestUrl: " + info.request.getUrl)
-      println("requestHeader: " + info.request.getHeaders)
-      println("requestCookies: " + info.request.getCookies)
-      println("requestBody: " + info.request.getStringData)
+      log("\nSending " + info.request.getMethod + " -> URL: " + info.request.getUrl)
+      logd("requestHeader: " + info.request.getHeaders)
+      logd("requestCookies: " + info.request.getCookies)
+      log("requestBody: " + info.request.getStringData)
 
-      println("\nRESPONSE:\nresponseHeader: " + info.response.headers)
-      println("responseCookies: " + info.response.cookies)
-      println("responseBody: " + info.response.body)
+      log("RESPONSE http " + info.response.statusCode.get)
+      logd("responseHeader: " + info.response.headers)
+      logd("responseCookies: " + info.response.cookies)
+      logd("responseBody: " + info.response.body)
+      log("")
       List(info.response.bodyLength)
     })
 
   val random = new util.Random
 
+// curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceType
   def resourceTypeJson(id: String): String = s"""
     {
       "id": "resType-$id",
@@ -83,6 +91,7 @@ class AgentSimulation extends Simulation {
     }
   """
 
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTE", "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
   def metricTypeJson(id: String): String = s"""
     {
       "id": "metricType-$id",
@@ -93,48 +102,108 @@ class AgentSimulation extends Simulation {
     }
   """
 
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["aaa"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes/footype/metricTypes
   def associateTypesJson(id: String): String = s"""
     ["metricType-$id"]
   """
 
-
-  val simulation = repeat(resourceTypesNumber, "resTypesN") {
-    def resTypeId = random.nextLong.toString
-
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceType
-    exec(http("Creating ${resTypesN}. resource type")
-      .post("resourceTypes")
-      .body(StringBody(session => resourceTypeJson(resTypeId)))
-      .check(status.in(200 to 304))
-    )
-    .pause(interval seconds)
-    .repeat(metricTypesNumber, "metricTypesN") {
-      def metricTypeId = random.nextLong.toString
-
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTE", "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
-      exec(http("Creating ${metricTypesN}. metric type")
-        .post("metricTypes")
-        .body(StringBody(session => metricTypeJson(metricTypeId)))
-        .check(status.in(200 to 304))
-      )
-      .pause(interval seconds)
-
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["aaa"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes/footype/metricTypes
-      .exec(http("Associating metric type (${metricTypesN}) with resource type (${resTypesN})")
-        .post(s"resourceTypes/resType-$resTypeId/metricTypes")
-        .body(StringBody(session => associateTypesJson(metricTypeId)))
-        .check(status.in(200 to 304))
-      )
-      .pause(interval seconds)
+//curl -ivX POST -H "Content-Type: application/json" -H "Accept: application/json" -d '{"id": "foobar", "resourceTypeId": "URL"}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources | less
+  def resourceJson(id: String): String = s"""
+    {
+      "id": "res-$id",
+      "resourceTypeId": "resType-something",
+      "properties": {
+        "foo": "bar",
+        "bar": "barbar",
+        "barbar": "foo"
+      }
     }
-    .exec(session => {
-      println("session after one resource-metric type creation and association :" + session) 
+  """
+
+//curl -ivX POST -H "Accept: application/json" -H "Content-Type: application/json" -d '{"id": "fooMetric", "metricTypeId": "status.code.type"}' 'http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/metrics'
+  def metricJson(id: String): String = s"""
+    {
+      "id": "metric-$id",
+      "metricTypeId": "status.code.type",
+      "properties": {
+        "bla": "blabla",
+        "bar": "barbar",
+        "kus": "kuskus"
+      }
+    }
+  """
+
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["fooMetric"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources/foobar/metrics
+  def associateMetricResourceJson(id: String): String = s"""
+    ["metric-$id"]
+  """
+
+  def simulation(types: Boolean = true) = {
+    // hellpers
+    def generateRandomString = random.nextLong.toString
+    def jsonHelper(getXTypeJson: (String => String), getXJson: (String => String), key: String) =
+      StringBody(session => {
+        val id = session(key).as[String] 
+        if (types) getXTypeJson(id) else getXJson(id)
+      })
+    val typesStr = if (types) " type" else ""
+
+    exec(session => {
+      logd(s"params:\nresourceTypes  ...  $resourceTypesNumber")
+      logd(s"metricTypes    ...  $metricTypesNumber")
+      logd(s"resources      ...  $resourcesNumber")
+      logd(s"metrics        ...  $metricsNumber\n")
       session
     })
+    .doIf(session => !types) {
+      // create some resource type (creating resources with type URL leads pinger to glut the server log)
+      exec(http("preparation - create res type")
+        .post("resourceTypes")
+        .body(StringBody(session => resourceTypeJson("something")))
+        .check(status.in(List(201, 409)))
+      )
+    }
+    .repeat(if (types) resourceTypesNumber else resourcesNumber, "resTypesN") {
+      exec(session => {
+        // storing the generated resource (type) id into session
+        session.set("key1", generateRandomString)
+      })
+      .exec(http("Creating a resource" + typesStr)
+        .post(if (types) "resourceTypes" else "test/resources")
+        .body(jsonHelper(resourceTypeJson, resourceJson, "key1"))
+        .check(status.in(200 to 304))
+      )
+      .pause(interval millis)
+      .repeat(if (types) metricTypesNumber else metricsNumber, "metricTypesN") {
+
+        exec(session => 
+          // storing the generated metric (type) id into session
+          session.set("key2", generateRandomString)
+        )
+        .exec(http("Creating a metric" + typesStr)
+          .post(if (types) "metricTypes" else "test/metrics")
+          .body(jsonHelper(metricTypeJson, metricJson, "key2"))
+          .check(status.in(200 to 304))
+        )
+        .pause(interval millis)
+        .exec(http("Associating metric" + typesStr + " to resource" + typesStr)
+          .post(if (types) "resourceTypes/resType-${key1}/metricTypes" else "test/resources/res-${key1}/metrics")
+          .body(jsonHelper(associateTypesJson, associateMetricResourceJson, "key2"))
+          .check(status.in(200 to 304))
+        )
+        .pause(interval millis)
+      }
+      .exec(session => {
+        logd("session after one resource-metric" + typesStr + " creation and association :" + session) 
+        session
+      })
+    }
   }
 
-  val scn = scenario("AgentSimulation").exec(simulation)
+  val scenario1 = scenario("AgentSimulation")
+    .exec(simulation(true))
+    .exec(simulation(false))
 
-  setUp(scn.inject(rampUsers(clients) over (ramp seconds))).protocols(httpConf)
+  setUp(scenario1.inject(rampUsers(clients) over (ramp seconds))).protocols(httpConf)
 }
 

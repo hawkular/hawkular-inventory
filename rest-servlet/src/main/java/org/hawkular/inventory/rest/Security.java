@@ -306,7 +306,9 @@ public class Security {
                     inventory.tenants().create(Tenant.Blueprint.builder().withId(entityId).build());
                 }
             }
-            RestApiLogger.LOGGER.debug("Operation: " + operation + ", stableId: " + stableId);
+            if (RestApiLogger.LOGGER.isDebugEnabled()) {
+                RestApiLogger.LOGGER.debug("Operation: " + operation + ", stableId: " + stableId);
+            }
             return permissions.isAllowedTo(operation, stableId);
         } catch (Exception e) {
             RestApiLogger.LOGGER.securityCheckFailed(stableId, e);
