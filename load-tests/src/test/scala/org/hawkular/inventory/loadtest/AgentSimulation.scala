@@ -31,8 +31,12 @@ class AgentSimulation extends Simulation {
   val password: String = System.getProperty("password", "password")
   val logLevel: Int = Integer.getInteger("logLevel", 0)
 
-  // Number of concurrent clients (agents)
-  val clients: Int = Integer.getInteger("clients", 7)
+  // Number of concurrent clients (simulates agents)
+  val writeUsers: Int = Integer.getInteger("writeUsers", 7)
+
+  // Number of concurrent read clients
+  val readUsers: Int = Integer.getInteger("readUsers", writeUsers * 2)
+
   // Delay before firing up another client
   val ramp: Long = java.lang.Long.getLong("ramp", 7L)
 
@@ -48,6 +52,9 @@ class AgentSimulation extends Simulation {
   // The number of metrics for each client
   val metricsNumber: Int = Integer.getInteger("metrics", resourcesNumber * 2)
 
+  // The number reads fo perform for each entity for each client
+  val readEntityNumber: Int = Integer.getInteger("readEntity", 2)
+
   // Interval between requests that don't have to be synchronized (in millis)
   val interval: Int = Integer.getInteger("interval", 1)
 
@@ -60,11 +67,11 @@ class AgentSimulation extends Simulation {
   // http://git.io/vqEnX
   val httpConf = http
     .baseURL(baseURI + "/hawkular/inventory/")
-    .disableWarmUp
-    .basicAuth(username, password) // perhaps Basic should be there
+    //.disableWarmUp
+    .basicAuth(username, password)
     .acceptHeader("application/json")
-    .contentTypeHeader("application/json;charset=utf-8")
-    .acceptEncodingHeader("gzip, deflate")
+    .contentTypeHeader("application/json")
+    //.acceptEncodingHeader("gzip, deflate")
     .extraInfoExtractor(info => {
       log("\nSending " + info.request.getMethod + " -> URL: " + info.request.getUrl)
       logd("requestHeader: " + info.request.getHeaders)
@@ -138,7 +145,17 @@ class AgentSimulation extends Simulation {
     ["metric-$id"]
   """
 
-  def simulation(types: Boolean = true) = {
+  def createSomeResourceType = http("preparation - create res type")
+      // create some resource type (creating resources with type URL leads pinger to glut the server log)
+      .post("resourceTypes")
+      .body(StringBody(session => resourceTypeJson("something")))
+      .check(status.in(List(201, 409))
+    )
+
+  def agentSimulation(types: Boolean = true) = {
+    // if types is true it creates `resourceTypesNumber` resource types and for each it creates `metricTypesNumber` metric types and associates the two together
+    // if types is false it does the same thing for resources and metrics
+
     // hellpers
     def generateRandomString = random.nextLong.toString
     def jsonHelper(getXTypeJson: (String => String), getXJson: (String => String), key: String) =
@@ -155,41 +172,34 @@ class AgentSimulation extends Simulation {
       logd(s"metrics        ...  $metricsNumber\n")
       session
     })
-    .doIf(session => !types) {
-      // create some resource type (creating resources with type URL leads pinger to glut the server log)
-      exec(http("preparation - create res type")
-        .post("resourceTypes")
-        .body(StringBody(session => resourceTypeJson("something")))
-        .check(status.in(List(201, 409)))
-      )
-    }
-    .repeat(if (types) resourceTypesNumber else resourcesNumber, "resTypesN") {
+    .repeat(if (types) resourceTypesNumber else resourcesNumber) {
       exec(session => {
         // storing the generated resource (type) id into session
         session.set("key1", generateRandomString)
       })
-      .exec(http("Creating a resource" + typesStr)
+      .exec(http(s"Creating resource$typesStr")
         .post(if (types) "resourceTypes" else "test/resources")
         .body(jsonHelper(resourceTypeJson, resourceJson, "key1"))
-        .check(status.in(200 to 304))
+        //.check(status.in(200 to 304))
+        .check(status is 201)
       )
       .pause(interval millis)
-      .repeat(if (types) metricTypesNumber else metricsNumber, "metricTypesN") {
+      .repeat(if (types) metricTypesNumber else metricsNumber) {
 
         exec(session => 
           // storing the generated metric (type) id into session
           session.set("key2", generateRandomString)
         )
-        .exec(http("Creating a metric" + typesStr)
+        .exec(http(s"Creating metric$typesStr")
           .post(if (types) "metricTypes" else "test/metrics")
           .body(jsonHelper(metricTypeJson, metricJson, "key2"))
-          .check(status.in(200 to 304))
+          .check(status is 201)
         )
         .pause(interval millis)
-        .exec(http("Associating metric" + typesStr + " to resource" + typesStr)
+        .exec(http(s"Assoc. metric$typesStr to resource$typesStr")
           .post(if (types) "resourceTypes/resType-${key1}/metricTypes" else "test/resources/res-${key1}/metrics")
           .body(jsonHelper(associateTypesJson, associateMetricResourceJson, "key2"))
-          .check(status.in(200 to 304))
+          .check(status is 204)
         )
         .pause(interval millis)
       }
@@ -200,10 +210,46 @@ class AgentSimulation extends Simulation {
     }
   }
 
-  val scenario1 = scenario("AgentSimulation")
-    .exec(simulation(true))
-    .exec(simulation(false))
+  val readSimulation = {
+    // it queries all the resource types, metric types, resources and metrics and for the whole list of the results of given entity type
+    // it subsequently perform a singe read operation `readEntityNumber` times
+    def readEntityMultipleTimes(entityName: String, pathPrefix: String = "") = {
+      val plural = entityName + "s"
+      exec(http(s"Geting all $plural")
+        .get(pathPrefix + plural)
+        .check(status is 200)
+        .check(jsonPath("$[*].id").findAll.saveAs("entityIds"))
+      ).exec(s => {
+          if (logLevel >= 2) println("\nids:\n" + s("entityIds"))
+          s
+      })
+      .pause(interval millis)
+      .foreach("${entityIds}", "entityId") {
+        repeat(readEntityNumber) {
+          exec(http(s"Getting one $entityName")
+            .get(pathPrefix + plural + "/${entityId}")
+            .check(status is 200)
+          )
+        }
+      }
+    }
+    readEntityMultipleTimes("resourceType")
+    .exec(readEntityMultipleTimes("metricType"))
+    .exec(readEntityMultipleTimes("resource", "test/"))
+    .exec(readEntityMultipleTimes("metric", "test/"))
+  }
 
-  setUp(scenario1.inject(rampUsers(clients) over (ramp seconds))).protocols(httpConf)
+  val scenario1 = scenario("AgentSimulation (fill the inventory)")
+    .exec(createSomeResourceType)
+    .exec(agentSimulation(true))
+    .exec(agentSimulation(false))
+
+  val scenario2 = scenario("Reads")
+    .exec(readSimulation)
+
+  setUp(
+    scenario1.inject(rampUsers(writeUsers) over (ramp seconds))
+    ,scenario2.inject(atOnceUsers(readUsers))
+  ).protocols(httpConf)
 }
 
