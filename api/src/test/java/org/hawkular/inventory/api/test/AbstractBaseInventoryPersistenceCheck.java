@@ -988,6 +988,33 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         r = inventory.tenants().get("com.acme.tenant").relationships()
                 .getAll(RelationWith.name("contains")).entities().iterator().next();
 
+        Assert.assertEquals(2, r.getProperties().size());
+    }
+
+//    @Ignore
+    @Test
+    public void testPropertiesUpdateOnRelationshipsToEmpty() throws Exception {
+        final String tenantName = "com.acme.tenant";
+        Relationship r = inventory.tenants().get(tenantName).relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
+        inventory.tenants().get(tenantName).relationships().update(r.getId(),
+                Relationship.Update.builder().withProperty("ducks", "many").withProperty("hammer", "nails").build());
+
+        r = inventory.tenants().get(tenantName).relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
+        Assert.assertEquals(2, r.getProperties().size());
+        Assert.assertEquals("many", r.getProperties().get("ducks"));
+        Assert.assertEquals("nails", r.getProperties().get("hammer"));
+
+        //reset the change we made back...
+        inventory.tenants().get(tenantName).relationships().update(r.getId(),
+                new Relationship.Update(new HashMap<String, Object>()));
+
+        r = inventory.tenants().get(tenantName).relationships()
+                .getAll(RelationWith.name("contains")).entities().iterator().next();
+
         Assert.assertEquals(0, r.getProperties().size());
     }
 

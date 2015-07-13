@@ -125,13 +125,10 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
         private final Map<String, Object> properties;
 
         public Update(Map<String, Object> properties) {
-            this.properties = properties == null ? null : Collections.unmodifiableMap(new HashMap<>(properties));
+            this.properties = properties;
         }
 
         public Map<String, Object> getProperties() {
-            if (properties == null) {
-                return Collections.emptyMap();
-            }
             return properties;
         }
 

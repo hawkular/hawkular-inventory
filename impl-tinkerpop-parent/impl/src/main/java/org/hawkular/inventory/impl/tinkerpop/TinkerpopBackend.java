@@ -506,7 +506,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitMetricType(MetricType.Update definition, Void parameter) {
                 common(definition.getProperties(), MetricType.class);
-                entity.setProperty(Constants.Property.__unit.name(), definition.getUnit().getDisplayName());
+                if (definition.getUnit() != null) {
+                    entity.setProperty(Constants.Property.__unit.name(), definition.getUnit().getDisplayName());
+                }
                 return null;
             }
 
@@ -597,6 +599,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
      * @param disallowedProperties the list of properties that are not allowed to change.
      */
     static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
+        if (properties == null) {
+            return;
+        }
+
         Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
 
         //remove all non-mapped properties, that are not in the update
