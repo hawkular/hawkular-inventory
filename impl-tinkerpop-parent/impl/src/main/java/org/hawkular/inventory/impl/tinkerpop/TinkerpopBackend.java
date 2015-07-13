@@ -409,7 +409,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             ElementHelper.setProperties(e, properties);
         }
         e.setProperty(Constants.Property.__eid.name(), e.getId().toString());
-        e.setProperty(Constants.Property.__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get());
+        e.setProperty(Constants.Property.__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get()
+                .toString());
         return e;
     }
 
