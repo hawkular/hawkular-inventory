@@ -16,6 +16,18 @@
  */
 package org.hawkular.inventory.rest;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.rest.RestApiLogger.LOGGER;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+
 import org.hawkular.accounts.api.PersonaService;
 import org.hawkular.accounts.api.ResourceService;
 import org.hawkular.accounts.api.model.Persona;
@@ -24,30 +36,18 @@ import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.EnvironmentBasedEntity;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.FeedBasedEntity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.model.TenantBasedEntity;
 import org.hawkular.inventory.cdi.DisposingInventory;
 import org.hawkular.inventory.cdi.InventoryInitialized;
+
 import rx.Subscription;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Action.deleted;
-import static org.hawkular.inventory.rest.RestApiLogger.LOGGER;
 
 /**
  * Integrates the security concerns with the inventory.
@@ -125,61 +125,19 @@ public class SecurityIntegration {
     }
 
     private org.hawkular.accounts.api.model.Resource ensureParent(AbstractElement<?, ?> entity) {
-        String feedId = null;
-        String environmentId = null;
-        String tenantId = null;
+        CanonicalPath parentPath = entity.getPath().up();
 
-        if (entity instanceof FeedBasedEntity) {
-            feedId = ((FeedBasedEntity) entity).getFeedId();
+        if (!parentPath.isDefined()) {
+            //tenants and relationships
+            return null;
         }
 
-        if (entity instanceof EnvironmentBasedEntity) {
-            environmentId = ((EnvironmentBasedEntity) entity).getEnvironmentId();
-        }
+        String parentStableId = Security.getStableId(parentPath);
 
-        if (entity instanceof TenantBasedEntity) {
-            tenantId = ((TenantBasedEntity) entity).getTenantId();
-        }
-
-        org.hawkular.accounts.api.model.Resource parent = null;
         Persona owner = personas.getCurrent();
-
-        if (tenantId != null) {
-            String parentStableId = Security.getStableId(Tenant.class, tenantId);
-
-            org.hawkular.accounts.api.model.Resource tenantResource = storage.get(parentStableId);
-
-            if (tenantResource == null) {
-                tenantResource = storage.create(parentStableId, null, owner);
-            } else {
-                owner = establishOwner(tenantResource, owner);
-            }
-
-            parent = tenantResource;
-
-            if (environmentId != null) {
-                parentStableId = Security.getStableId(Environment.class, tenantId, environmentId);
-                org.hawkular.accounts.api.model.Resource envResource = storage.get(parentStableId);
-
-                if (envResource == null) {
-                    envResource = storage.create(parentStableId, tenantResource, owner);
-                } else {
-                    owner = establishOwner(envResource, owner);
-                }
-
-                parent = envResource;
-
-                if (feedId != null) {
-                    parentStableId = Security.getStableId(Feed.class, tenantId, environmentId, feedId);
-                    org.hawkular.accounts.api.model.Resource feedResource = storage.get(parentStableId);
-
-                    if (feedResource == null) {
-                        storage.create(parentStableId, envResource, owner);
-                    }
-
-                    parent = feedResource;
-                }
-            }
+        org.hawkular.accounts.api.model.Resource parent = storage.get(parentStableId);
+        if (parent == null) {
+            parent = storage.create(parentStableId, null, owner);
         }
 
         return parent;

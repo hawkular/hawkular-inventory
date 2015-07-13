@@ -16,28 +16,26 @@
  */
 package org.hawkular.inventory.rest;
 
-import javax.inject.Inject;
-
-import org.hawkular.accounts.api.PersonaService;
-import org.hawkular.inventory.api.Inventory;
-
 /**
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.2.0
  */
-public class RestBase {
+public class TenantId {
+    private String tenantId;
 
-    @Inject
-    @AutoTenant
-    protected Inventory inventory;
+    protected TenantId() {
 
-    @Inject
-    protected Security security;
+    }
 
-    @Inject
-    PersonaService personas;
+    public TenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
 
-    protected String getTenantId() {
-        return personas.getCurrent().getId();
+    public String get() {
+        return tenantId;
+    }
+
+    public void set(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

@@ -75,47 +75,18 @@ public class Security {
     private UserTransaction transaction;
 
     public static String getStableId(CanonicalPath path) {
-        Class<?> type = path.getSegment().getElementType();
-        CanonicalPath.IdExtractor ids = path.ids();
-        if (Tenant.class.isAssignableFrom(type)) {
-            return join("tenants", ids.getTenantId());
-        } else if (Environment.class.isAssignableFrom(type)) {
-            return join(ids.getTenantId(), "environments", ids.getEnvironmentId());
-        } else if (ResourceType.class.isAssignableFrom(type)) {
-            return join(ids.getTenantId(), "resourceTypes", ids.getResourceTypeId());
-        } else if (MetricType.class.isAssignableFrom(type)) {
-            return join(ids.getTenantId(), "metricTypes", ids.getMetricTypeId());
-        } else if (Feed.class.isAssignableFrom(type)) {
-            return join(ids.getTenantId(), ids.getEnvironmentId(), "feeds", ids.getFeedId());
-        } else if (Resource.class.isAssignableFrom(type)) {
-            if (ids.getFeedId() == null) {
-                return join(ids.getTenantId(), ids.getEnvironmentId(), "resources", ids.getResourceId());
-            } else {
-                return join(ids.getTenantId(), ids.getEnvironmentId(), ids.getFeedId(), "resources",
-                        ids.getResourceId());
-            }
-        } else if (Metric.class.isAssignableFrom(type)) {
-            if (ids.getFeedId() == null) {
-                return join(ids.getTenantId(), ids.getEnvironmentId(), "metrics", ids.getMetricId());
-            } else {
-                return join(ids.getTenantId(), ids.getEnvironmentId(), ids.getFeedId(), "metrics", ids.getMetricId());
-            }
-        } else if (Relationship.class.isAssignableFrom(type)) {
-            return "relationships/" + ids.getRelationshipId();
-        } else {
-            throw new IllegalArgumentException("Unknown entity type: " + type);
-        }
+        return shortenIfNeeded(path);
     }
 
     public static String getStableId(AbstractElement<?, ?> element) {
         return getStableId(element.getPath());
     }
 
-    public static boolean isValidId(String id) {
-        if (id == null || id.trim().isEmpty()) {
+    public static boolean isValidRestPath(String restPath) {
+        if (restPath == null || restPath.trim().isEmpty()) {
             return false;
         }
-        String[] chunks = id.split("/");
+        String[] chunks = restPath.split("/");
         if (chunks == null || chunks.length < 2) {
             return false;
         }
@@ -137,8 +108,8 @@ public class Security {
         return false;
     }
 
-    public static CanonicalPath getCanonicalPath(String id) {
-        String[] chunks = id.split("/");
+    public static CanonicalPath toCanonicalPath(String restPath) {
+        String[] chunks = restPath.split("/");
         CanonicalPath.Extender path = CanonicalPath.empty();
         if (chunks.length == 2) {
             if ("tenants".equals(chunks[0])) {
@@ -170,36 +141,6 @@ public class Security {
         return path.get();
     }
 
-    public static String getStableId(Class<? extends AbstractElement<?, ?>> type, String... ids) {
-        if (Tenant.class.isAssignableFrom(type)) {
-            return join("tenants", ids[0]);
-        } else if (Environment.class.isAssignableFrom(type)) {
-            return join(ids[0], "environments", ids[1]);
-        } else if (ResourceType.class.isAssignableFrom(type)) {
-            return join(ids[0], "resourceTypes", ids[1]);
-        } else if (MetricType.class.isAssignableFrom(type)) {
-            return join(ids[0], "metricTypes", ids[1]);
-        } else if (Feed.class.isAssignableFrom(type)) {
-            return join(ids[0], ids[1], "feeds", ids[2]);
-        } else if (Resource.class.isAssignableFrom(type)) {
-            if (ids.length == 3) {
-                return join(ids[0], ids[1], "resources", ids[2]);
-            } else {
-                return join(ids[0], ids[1], ids[2], "resources", ids[3]);
-            }
-        } else if (Metric.class.isAssignableFrom(type)) {
-            if (ids.length == 3) {
-                return join(ids[0], ids[1], "metrics", ids[2]);
-            } else {
-                return join(ids[0], ids[1], ids[2], "metrics", ids[3]);
-            }
-        } else if (Relationship.class.isAssignableFrom(type)) {
-            return "relationships/" + ids[0];
-        } else {
-            throw new IllegalArgumentException("Unknown entity type: " + type);
-        }
-    }
-
     public static boolean isTenantEscapeAttempt(CanonicalPath origin, Path extension) {
         if (extension instanceof CanonicalPath) {
             return !((CanonicalPath) extension).ids().getTenantId().equals(origin.ids().getTenantId());
@@ -209,25 +150,13 @@ public class Security {
         }
     }
 
-    private static String join(String... strings) {
-        if (strings.length == 0) {
-            return null;
-        } else if (strings.length == 1) {
-            return strings[0];
-        } else {
-            StringBuilder bld = new StringBuilder(strings[0]);
-            for (int i = 1; i < strings.length; ++i) {
-                bld.append('/').append(strings[i]);
-            }
+    private static String shortenIfNeeded(CanonicalPath path) {
+        String id = path.toString();
 
-            String retString = bld.toString();
-            if (retString.length() > 250) {
-                // the length is too long, let's create a 'uuid hash' of the url and prefix it with the tenant uuid
-                StringBuilder bld2 = new StringBuilder(strings[0]);
-                bld2.append('/').append(UUID.nameUUIDFromBytes(retString.getBytes()));
-                return bld2.toString();
-            }
-            return retString;
+        if (id.length() > 250) {
+            return UUID.nameUUIDFromBytes(id.getBytes()).toString();
+        } else {
+            return id;
         }
     }
 
@@ -302,10 +231,6 @@ public class Security {
             RestApiLogger.LOGGER.securityCheckFailed(stableId, e);
             return false;
         }
-    }
-
-    private static String last(String... elements) {
-        return elements[elements.length - 1];
     }
 
     @PostConstruct

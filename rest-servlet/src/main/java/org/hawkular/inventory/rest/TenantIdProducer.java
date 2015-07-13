@@ -16,28 +16,28 @@
  */
 package org.hawkular.inventory.rest;
 
+import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
-import org.hawkular.accounts.api.PersonaService;
-import org.hawkular.inventory.api.Inventory;
+import org.hawkular.accounts.api.CurrentUser;
+import org.hawkular.accounts.api.model.Persona;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.2.0
  */
-public class RestBase {
+public class TenantIdProducer {
 
     @Inject
-    @AutoTenant
-    protected Inventory inventory;
+    @CurrentUser
+    private Persona currentUser;
 
-    @Inject
-    protected Security security;
-
-    @Inject
-    PersonaService personas;
-
-    protected String getTenantId() {
-        return personas.getCurrent().getId();
+    @Produces
+    @Default
+    @RequestScoped
+    public TenantId getTenantId() {
+        return new TenantId(currentUser.getId());
     }
 }
