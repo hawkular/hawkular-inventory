@@ -19,9 +19,7 @@ package org.hawkular.inventory.json;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.EnvironmentBasedEntity;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.FeedBasedEntity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -29,12 +27,9 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.model.TenantBasedEntity;
 import org.hawkular.inventory.json.mixins.AbstractElementMixin;
 import org.hawkular.inventory.json.mixins.CanonicalPathMixin;
-import org.hawkular.inventory.json.mixins.EnvironmentBasedEntityMixin;
 import org.hawkular.inventory.json.mixins.EnvironmentMixin;
-import org.hawkular.inventory.json.mixins.FeedBasedEntityMixin;
 import org.hawkular.inventory.json.mixins.FeedMixin;
 import org.hawkular.inventory.json.mixins.MetricMixin;
 import org.hawkular.inventory.json.mixins.MetricTypeMixin;
@@ -42,7 +37,6 @@ import org.hawkular.inventory.json.mixins.RelationshipMixin;
 import org.hawkular.inventory.json.mixins.RelativePathMixin;
 import org.hawkular.inventory.json.mixins.ResourceMixin;
 import org.hawkular.inventory.json.mixins.ResourceTypeMixin;
-import org.hawkular.inventory.json.mixins.TenantBasedEntityMixin;
 import org.hawkular.inventory.json.mixins.TenantMixin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,9 +68,7 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixInAnnotations(AbstractElement.class, AbstractElementMixin.class);
         objectMapper.addMixInAnnotations(CanonicalPath.class, CanonicalPathMixin.class);
         objectMapper.addMixInAnnotations(Environment.class, EnvironmentMixin.class);
-        objectMapper.addMixInAnnotations(EnvironmentBasedEntity.class, EnvironmentBasedEntityMixin.class);
         objectMapper.addMixInAnnotations(Feed.class, FeedMixin.class);
-        objectMapper.addMixInAnnotations(FeedBasedEntity.class, FeedBasedEntityMixin.class);
         objectMapper.addMixInAnnotations(Metric.class, MetricMixin.class);
         objectMapper.addMixInAnnotations(MetricType.class, MetricTypeMixin.class);
         objectMapper.addMixInAnnotations(Relationship.class, RelationshipMixin.class);
@@ -84,6 +76,5 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixInAnnotations(Resource.class, ResourceMixin.class);
         objectMapper.addMixInAnnotations(ResourceType.class, ResourceTypeMixin.class);
         objectMapper.addMixInAnnotations(Tenant.class, TenantMixin.class);
-        objectMapper.addMixInAnnotations(TenantBasedEntity.class, TenantBasedEntityMixin.class);
     }
 }

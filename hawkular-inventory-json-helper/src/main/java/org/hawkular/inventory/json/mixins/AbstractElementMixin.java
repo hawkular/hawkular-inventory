@@ -16,16 +16,12 @@
  */
 package org.hawkular.inventory.json.mixins;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * @author Lukas Krejci
  * @since 0.2.0
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AbstractElementMixin {
-
-    @JsonIgnore
-    String getId() {
-        return null;
-    }
 }
