@@ -23,6 +23,8 @@ import javax.ws.rs.ext.Provider;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.Version;
@@ -62,7 +64,11 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
         mapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
         mapper.disable(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        mapper.addMixInAnnotations(CanonicalPath.class, CanonicalPathSerializationMixin.class);
+
+        InventoryJacksonConfig.configure(mapper);
+        //need to reconfigure for path serialization
+        mapper.addMixInAnnotations(CanonicalPath.class, PathSerializationMixin.class);
+        mapper.addMixInAnnotations(RelativePath.class, PathSerializationMixin.class);
     }
 
     @Override

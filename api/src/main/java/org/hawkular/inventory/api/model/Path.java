@@ -27,11 +27,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Represents a path in an inventory. The path is either {@link CanonicalPath} or {@link RelativePath}.
@@ -107,8 +105,8 @@ public abstract class Path {
         this.path = Collections.unmodifiableList(path);
     }
 
-    protected static Path fromString(String path, boolean shouldBeAbsolute, Map<String, Class<?>> shortNameTypes,
-            ExtenderConstructor extenderConstructor, EnhancedTypeProvider typeProvider) {
+    protected static Path fromString(String path, boolean shouldBeAbsolute, ExtenderConstructor extenderConstructor,
+            EnhancedTypeProvider typeProvider) {
 
         Extender extender = extenderConstructor.create(0, new ArrayList<>());
 
@@ -140,7 +138,6 @@ public abstract class Path {
         }
     }
 
-    @JsonCreator
     public static Path fromString(String path) {
         if (path.charAt(0) == PATH_DELIM) {
             return CanonicalPath.fromString(path);
@@ -380,7 +377,6 @@ public abstract class Path {
     }
 
     @Override
-    @JsonValue
     public String toString() {
         return super.toString();
     }
@@ -634,7 +630,7 @@ public abstract class Path {
 
             Segment segment = (Segment) o;
 
-            return elementType == segment.elementType && entityId.equals(segment.entityId);
+            return elementType == segment.elementType && Objects.equals(entityId, segment.entityId);
 
         }
 
@@ -657,38 +653,88 @@ public abstract class Path {
      * the segments being added to a path are invalid in given context.
      */
     public abstract static class Extender {
-        protected final List<Segment> segments;
+        private final List<Segment> segments;
         private final Function<List<Segment>, List<Class<?>>> validProgressions;
         private final int from;
+        private int checkIndex;
 
         /**
          * Constructs a new extender
          *
          * @param from              the start index in segments to be used by the constructed path
          * @param segments          the list of already existing segments.
+         * @param mergeWithInitial  if true, the extensions will first be compared against the segments provided in the
+         *                          constructor and if they correspond, they will be "merged" instead of extending the
+         *                          initial segments
          * @param validProgressions given the current path, return the valid types of the next segment
          */
-        Extender(int from, List<Segment> segments, Function<List<Segment>, List<Class<?>>> validProgressions) {
+        Extender(int from, List<Segment> segments, boolean mergeWithInitial,
+                Function<List<Segment>, List<Class<?>>> validProgressions) {
             this.from = from;
             this.segments = segments;
             this.validProgressions = validProgressions;
+            this.checkIndex = mergeWithInitial ? from : -1;
         }
 
         protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
 
         public Extender extend(Segment segment) {
-            List<Class<?>> progress = validProgressions.apply(segments);
+            if (checkIndex >= 0 && checkIndex < segments.size()) {
+                Segment matching = segments.get(checkIndex);
+                if (matching.equals(segment)) {
+                    //ok, the the caller adds a segment that matches our initial path
+                    checkIndex++;
+                    return this;
+                } else {
+                    if (checkIndex == from) {
+                        // slight hack commences ;)
+                        // the reasoning behind this is that a) this is the first segment of a path we're creating
+                        // and b) we're adding a relationship segment.
+                        // Relationships are top-level and cannot be followed by anything else.
+                        // Also relationships are independent of any entity hierarchy so it doesn't really make sense
+                        // to "force them under" some custom "root path".
+                        if (Relationship.class.equals(segment.getElementType())) {
+                            segments.clear();
+                        }
+
+                        // this is the first extension we're getting. if it does not match the expected segment
+                        // in the initial list then that means that the caller doesn't actually take into account
+                        // the fact that they can go through the initial list (or is not actually even aware of it).
+                        checkIndex = segments.size();
+                    } else {
+                        throw new IllegalArgumentException("The provided segment " + segment + " does not match the" +
+                                " expected origin of the path.");
+                    }
+                }
+            }
+
+            List<Segment> currentSegs = checkIndex >= 0 ? segments.subList(from, checkIndex) : segments;
+
+            List<Class<?>> progress = validProgressions.apply(currentSegs);
 
             if (progress == null || !progress.contains(segment.getElementType())) {
                 throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
-                        " of the path: " + segments +
+                        " of the path: " + currentSegs +
                         (progress == null ? ". There are no further extensions possible."
                                 : ". Valid extension types are: " + progress.stream().map(Class::getSimpleName)
                                 .collect(toList())));
             }
 
             segments.add(segment);
+            if (checkIndex >= 0) {
+                checkIndex++;
+            }
+
             return this;
+        }
+
+        protected void removeLastSegment() {
+            if (segments.size() > 0) {
+                segments.remove(segments.size() - 1);
+                if (checkIndex > 0) {
+                    checkIndex--;
+                }
+            }
         }
 
         public Extender extend(Collection<Segment> segments) {

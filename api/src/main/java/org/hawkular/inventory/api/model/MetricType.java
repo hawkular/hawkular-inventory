@@ -16,14 +16,13 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.Expose;
+import java.util.Collections;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Collections;
-import java.util.Map;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by
@@ -56,9 +55,7 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
         this(path, unit, null);
     }
 
-    @JsonCreator
-    public MetricType(@JsonProperty("path") CanonicalPath path, @JsonProperty("unit") MetricUnit unit,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public MetricType(CanonicalPath path, MetricUnit unit, Map<String, Object> properties) {
         super(path, properties);
         this.unit = unit;
     }

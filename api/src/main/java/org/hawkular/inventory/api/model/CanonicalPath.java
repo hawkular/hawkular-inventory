@@ -27,9 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 /**
  * A path represents the canonical traversal to an element through the inventory graph. The canonical traversal
  * always starts at a tenant and follows only the "contains" relationships down to the entity in question. For
@@ -112,7 +109,6 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @param path the string representation of the path
      * @return a new path instance
      */
-    @JsonCreator
     public static CanonicalPath fromString(String path) {
         return fromPartiallyUntypedString(path, null);
     }
@@ -124,7 +120,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @see Path#fromPartiallyUntypedString(String, TypeProvider)
      */
     public static CanonicalPath fromPartiallyUntypedString(String path, TypeProvider typeProvider) {
-        return (CanonicalPath) Path.fromString(path, true, SHORT_NAME_TYPES, Extender::new,
+        return (CanonicalPath) Path.fromString(path, true, Extender::new,
                 new CanonicalTypeProvider(typeProvider));
     }
 
@@ -142,10 +138,15 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             Class<?> intendedFinalType) {
 
-        return (CanonicalPath) Path.fromString(path, true, SHORT_NAME_TYPES,
-                (idx, list) -> new Extender(idx, list).extend(initialPosition.getPath()),
-                new CanonicalTypeProvider(new HintedTypeProvider(intendedFinalType,
-                        CanonicalPath.empty().extend(initialPosition.getPath()))));
+        ExtenderConstructor ctor = (idx, list) -> {
+            list.addAll(initialPosition.getPath());
+            return new Extender(idx, list);
+        };
+
+        return (CanonicalPath) Path.fromString(path, true, ctor, new CanonicalTypeProvider(
+                        new HintedTypeProvider(intendedFinalType,
+                                new Extender(0, new ArrayList<>(initialPosition.getPath()))))
+        );
     }
 
     public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
@@ -257,7 +258,6 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     }
 
     @Override
-    @JsonValue
     public String toString() {
         return new Encoder(SHORT_TYPE_NAMES, x -> true).encode(Character.toString(PATH_DELIM), this);
     }
@@ -317,7 +317,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     public static class Extender extends Path.Extender {
 
         Extender(int from, List<Segment> segments) {
-            super(from, segments, (s) -> s.isEmpty() ? Arrays.asList(Tenant.class, Relationship.class)
+            super(from, segments, true, (s) -> s.isEmpty() ? Arrays.asList(Tenant.class, Relationship.class)
                     : VALID_PROGRESSIONS.get(s.get(s.size() - 1).getElementType()));
         }
 

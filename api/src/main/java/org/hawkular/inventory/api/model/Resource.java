@@ -21,8 +21,6 @@ import java.util.Map;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -50,9 +48,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
         this(path, type, null);
     }
 
-    @JsonCreator
-    public Resource(@JsonProperty("path") CanonicalPath path, @JsonProperty("type") ResourceType type,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public Resource(CanonicalPath path, ResourceType type, Map<String, Object> properties) {
 
         super(path, properties);
         this.type = type;

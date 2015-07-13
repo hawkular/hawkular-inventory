@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest.json;
+package org.hawkular.inventory.json;
 
 import java.io.IOException;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.RelativePath;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -29,16 +29,30 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  * Used to strip the tenant from the canonical path. REST API transparently strips it in the output and re-adds it when
  * processing the input.
  *
- * <p>Note that while the stripping can be done using a custom serializer, the re-introduction of the tenant id to the
- * paths needs to be done manually in each of the "affected" REST API methods because (de-)serializers are stateless
- * and shared and therefore cannot be used for a context-specific, and therefore stateful, work.
+ * <p>Note that while the stripping can be done using a custom serializer statelessly, the re-introduction of the tenant
+ * id to the paths needs manual intervention because the resolution is contextual - it depends on the tenant ID as well
+ * as the intended type of the target entity and the path that the path is relative against (if the path is relative).
+ * That's why the {@link PathDeserializer} contains a couple of static methods to inject this context into it.
  *
+ * <p>So while this serializer is universally usable, the deserializer is not. It can only be used in places that can
+ * reliably inject the necessary state before the deserialization occurs.
+ *
+ * <p>To use this path serializer to serialize canonical (and relative) paths, you need to configure Jackson for example
+ * by providing a mixin class with custom annotations.
+ *
+ * @see  com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
  * @author Lukas Krejci
  * @since 0.2.0
  */
-public class PathSerializer extends JsonSerializer<CanonicalPath> {
+public final class PathSerializer extends JsonSerializer<Path> {
     @Override
-    public void serialize(CanonicalPath value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(Path value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+        //this is easy for relative paths - just use its string representation
+        if (value instanceof RelativePath) {
+            jgen.writeString(value.toString());
+            return;
+        }
+
         //strip the tenant from the canonical path so that it appears to users it doesn't even exist. They don't
         //need to provide it in their paths and the API doesn't show it to them either.
 
