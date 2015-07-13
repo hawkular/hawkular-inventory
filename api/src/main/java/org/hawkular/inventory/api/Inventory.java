@@ -317,8 +317,8 @@ public interface Inventory extends AutoCloseable {
                         .get(path.ids().getEnvironmentId());
 
                 return accessInterface.cast(path.ids().getFeedId() == null
-                        ? env.feedlessResources().get(path.ids().getResourceId())
-                        : env.feeds().get(path.ids().getFeedId()).resources().get(path.ids().getResourceId()));
+                        ? env.feedlessResources().descend(path.ids().getResourcePath())
+                        : env.feeds().get(path.ids().getFeedId()).resources().descend(path.ids().getResourcePath()));
             }
 
             @Override

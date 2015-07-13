@@ -278,27 +278,43 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricTypeId() {
-            return idIfTypeCorrect(getRoot().down(), MetricType.class);
+            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
         }
 
         public String getResourceTypeId() {
-            return idIfTypeCorrect(getRoot().down(), ResourceType.class);
+            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
         }
 
         public String getFeedId() {
             return idIfTypeCorrect(getRoot().down(2), Feed.class);
         }
 
-        public String getResourceId() {
-            String id = idIfTypeCorrect(getRoot().down(2), Resource.class);
+        public RelativePath getResourcePath() {
+            Iterator<Segment> it = getPath().iterator();
+            Segment rootResource = null;
+            while (it.hasNext()) {
+                Segment s = it.next();
+                if (Resource.class.equals(s.getElementType())) {
+                    rootResource = s;
+                    break;
+                }
+            }
 
-            return id != null ? id : idIfTypeCorrect(getRoot().down(3), Resource.class);
+            if (rootResource == null) {
+                return null;
+            }
+
+            RelativePath.Extender ret = RelativePath.empty().extend(rootResource);
+
+            while (it.hasNext()) {
+                ret.extend(it.next());
+            }
+
+            return ret.get();
         }
 
         public String getMetricId() {
-            String id = idIfTypeCorrect(getRoot().down(2), Metric.class);
-
-            return id != null ? id : idIfTypeCorrect(getRoot().down(3), Metric.class);
+            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
         }
 
         public String getRelationshipId() {
