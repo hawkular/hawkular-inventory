@@ -21,9 +21,6 @@ import java.util.Map;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
  * present in the resources of this type.
@@ -44,9 +41,7 @@ public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint
         super(path);
     }
 
-    @JsonCreator
-    public ResourceType(@JsonProperty("path") CanonicalPath path,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public ResourceType(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 

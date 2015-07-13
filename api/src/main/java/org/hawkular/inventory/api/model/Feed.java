@@ -16,11 +16,9 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Map;
 
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
@@ -47,8 +45,7 @@ public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Upda
         this(path, null);
     }
 
-    @JsonCreator
-    public Feed(@JsonProperty("path") CanonicalPath path, @JsonProperty("properties") Map<String, Object> properties) {
+    public Feed(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 

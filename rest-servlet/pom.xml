@@ -74,6 +74,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-json-helper</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- these will be provided by our RA - the MDB itself will never need ActiveMQ specific classes -->
     <dependency>
       <groupId>org.apache.activemq</groupId>

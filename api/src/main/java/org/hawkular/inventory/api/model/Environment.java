@@ -16,12 +16,10 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collections;
 import java.util.Map;
+
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
@@ -45,9 +43,7 @@ public final class Environment extends TenantBasedEntity<Environment.Blueprint, 
         this(path, null);
     }
 
-    @JsonCreator
-    public Environment(@JsonProperty("path") CanonicalPath path,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public Environment(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 

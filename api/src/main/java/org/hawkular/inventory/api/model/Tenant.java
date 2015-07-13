@@ -16,12 +16,10 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collections;
 import java.util.Map;
+
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
@@ -41,9 +39,7 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
         this(path, null);
     }
 
-    @JsonCreator
-    public Tenant(@JsonProperty("path") CanonicalPath path,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public Tenant(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 

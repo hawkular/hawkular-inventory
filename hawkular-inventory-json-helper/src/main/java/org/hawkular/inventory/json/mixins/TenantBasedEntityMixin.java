@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest.json;
+package org.hawkular.inventory.json.mixins;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * We can't touch the CanonicalPath code here, but Jackson enables us to use mixins to "re-annotate" the classes.
- *
  * @author Lukas Krejci
- * @see com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
- * @see JacksonConfig
  * @since 0.2.0
  */
-@JsonSerialize(using = PathSerializer.class)
-public final class CanonicalPathSerializationMixin {
+public final class TenantBasedEntityMixin {
+
+    @JsonIgnore
+    public String getTenantId() {
+        return null;
+    }
 }

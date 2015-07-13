@@ -22,8 +22,6 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -52,9 +50,7 @@ public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Updat
         this(path, type, null);
     }
 
-    @JsonCreator
-    public Metric(@JsonProperty("path") CanonicalPath path, @JsonProperty("type") MetricType type,
-            @JsonProperty("properties") Map<String, Object> properties) {
+    public Metric(CanonicalPath path, MetricType type, Map<String, Object> properties) {
 
         super(path, properties);
         this.type = type;

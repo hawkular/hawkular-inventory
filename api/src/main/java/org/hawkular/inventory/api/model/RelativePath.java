@@ -28,9 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 /**
  * A relative path is used in the API to refer to other entities during association. Its precise meaning is
  * context-sensitive but the basic idea is that given a position in the graph, you want to refer to other entities that
@@ -80,7 +77,6 @@ public final class RelativePath extends Path implements Serializable {
         super(start, end, segments);
     }
 
-    @JsonCreator
     public static RelativePath fromString(String path) {
         return fromPartiallyUntypedString(path, null);
     }
@@ -92,7 +88,7 @@ public final class RelativePath extends Path implements Serializable {
      * @see Path#fromPartiallyUntypedString(String, TypeProvider)
      */
     public static RelativePath fromPartiallyUntypedString(String path, TypeProvider typeProvider) {
-        return (RelativePath) Path.fromString(path, false, SHORT_NAME_TYPES, Extender::new,
+        return (RelativePath) Path.fromString(path, false, Extender::new,
                 new RelativeTypeProvider(typeProvider));
     }
 
@@ -110,9 +106,9 @@ public final class RelativePath extends Path implements Serializable {
     public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             Class<?> intendedFinalType) {
 
-        return (RelativePath) Path.fromString(path, false, SHORT_NAME_TYPES, Extender::new,
+        return (RelativePath) Path.fromString(path, false, Extender::new,
                 new RelativeTypeProvider(new HintedTypeProvider(intendedFinalType,
-                        RelativePath.empty().extend(initialPosition.getPath()))));
+                        new RelativePath.Extender(0, new ArrayList<>(initialPosition.getPath())))));
     }
 
     /**
@@ -163,7 +159,7 @@ public final class RelativePath extends Path implements Serializable {
             @Override
             public CanonicalPath.Extender extend(Segment segment) {
                 if (Up.class.equals(segment.getElementType())) {
-                    segments.remove(segments.size() - 1);
+                    removeLastSegment();
                 } else {
                     super.extend(segment);
                 }
@@ -209,7 +205,6 @@ public final class RelativePath extends Path implements Serializable {
         return (RelativePath) super.up(distance);
     }
 
-    @JsonValue
     @Override
     public String toString() {
         return new Encoder(SHORT_TYPE_NAMES, (s) -> !Up.class.equals(s.getElementType())).encode("", this);
@@ -456,7 +451,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         Extender(int from, List<Segment> segments, Function<List<Segment>, List<Class<?>>> validProgressions) {
-            super(from, segments, validProgressions);
+            super(from, segments, false, validProgressions);
         }
 
         @Override
