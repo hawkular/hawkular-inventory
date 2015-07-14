@@ -284,7 +284,7 @@ class FilterVisitor {
     }
 
     public void visit(HawkularPipeline<?, ?> query, Marker filter) {
-        query.as(filter.getLabel());
+        query._().as(filter.getLabel());
     }
 
     private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {

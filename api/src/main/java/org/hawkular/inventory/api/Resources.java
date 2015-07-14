@@ -16,12 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import java.util.Iterator;
-import java.util.function.Consumer;
-
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
@@ -94,63 +90,42 @@ public final class Resources {
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {
 
         /**
-         * A shortcut for {@code getAll(id(id1)).allChildren().getAll(id(id2))...} given the path {@code id1->id2->...}.
+         * A shortcut for {@code get(firstChild).allChildren().get(furtherChildren[0]).allChildren()
+         * .get(furtherChildren[1])...}.
          *
-         * @param path the path to descend to
-         * @return access to all children reachable using the relative path
+         * <p>Each of the paths in further children is either a canonical path or a relative path that is relative
+         * to the preceding child.
+         *
+         * <p>Remember that relative paths are resolved using the
+         * <b>{@link org.hawkular.inventory.api.Relationships.WellKnown#contains}</b> relationship while descend follows
+         * the {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} relationships.
+         *
+         * @param firstChild      the id of the first contained child
+         * @param furtherChildren the list of paths to the grand children and on
+         * @return access to all children of the last child mentioned
          */
-        default Read descend(RelativePath path) {
-            if (path.getPath().size() == 0) {
-                throw new IllegalArgumentException("empty relative path");
+        default Read descend(Address firstChild, Path... furtherChildren) {
+            if (firstChild == null) {
+                throw new IllegalArgumentException("no first child");
             }
 
-            int[] depth = new int[1];
+            Read last = get(firstChild).allChildren();
 
-            Consumer<Path.Segment> checker = (s) -> {
-                if (RelativePath.Up.class.equals(s.getElementType())) {
-                    --depth[0];
-                    if (depth[0] < 0) {
-                    }
-                } else if (Resource.class.equals(s.getElementType())) {
-                    depth[0]++;
-                } else {
+            for (Path p : furtherChildren) {
+                if (!Resource.class.equals(p.getSegment().getElementType())) {
                     throw new IllegalArgumentException("Descend can only traverse child resources.");
                 }
-            };
-
-            Iterator<Path.Segment> it = path.getPath().iterator();
-            Path.Segment seg = it.next();
-
-            checker.accept(seg);
-
-            Read last = get(toAddress(seg)).allChildren();
-
-            while (it.hasNext()) {
-                last = last.get(RelativePath.empty().extend(it.next()).get()).allChildren();
+                last = last.get(p).allChildren();
             }
 
             return last;
         }
-
-        /**
-         * A helper method implemented by {@link org.hawkular.inventory.api.Resources.ReadContained} and
-         * {@link org.hawkular.inventory.api.Resources.Read}. This is used in the default implementation of the
-         * {@link #descend(RelativePath)} method.
-         *
-         * @param pathSegment the path segment to convert to an address valid for this access interface
-         * @return the converted address
-         */
-        Address toAddress(Path.Segment pathSegment);
     }
 
     /**
      * Provides read-only access to resources following the containment chain.
      */
     public interface ReadContained extends ReadBase<String> {
-
-        default String toAddress(Path.Segment segment) {
-            return segment.getElementId();
-        }
     }
 
     /**
@@ -158,10 +133,6 @@ public final class Resources {
      * introduce ambiguity when addressing using a relative path.
      */
     public interface Read extends ReadBase<Path> {
-
-        default Path toAddress(Path.Segment segment) {
-            return RelativePath.empty().extend(segment).get();
-        }
     }
 
     /**

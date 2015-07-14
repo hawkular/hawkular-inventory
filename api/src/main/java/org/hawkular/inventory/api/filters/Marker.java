@@ -36,7 +36,7 @@ public final class Marker extends Filter {
     }
 
     public Marker() {
-        this.label = "marker-" + cnt;
+        this.label = "marker-" + cnt.getAndIncrement();
     }
 
     public String getLabel() {

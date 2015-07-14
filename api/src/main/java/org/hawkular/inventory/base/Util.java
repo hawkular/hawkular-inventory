@@ -200,7 +200,7 @@ final class Util {
             return context.select().with(With.path((CanonicalPath) path)).get();
         } else {
             Marker marker = Marker.next();
-            return context.sourcePath.extend().filter().with(marker).with(context.selectCandidates)
+            return context.sourcePath.extend().path().with(marker).with(context.selectCandidates)
                     .with(With.relativePath(marker.getLabel(), (RelativePath) path)).get();
         }
     }
