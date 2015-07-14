@@ -31,14 +31,11 @@ class AgentSimulation extends Simulation {
   val password: String = System.getProperty("password", "password")
   val logLevel: Int = Integer.getInteger("logLevel", 0)
 
-  // Number of concurrent clients (simulates agents)
-  val writeUsers: Int = Integer.getInteger("writeUsers", 7)
-
-  // Number of concurrent read clients
-  val readUsers: Int = Integer.getInteger("readUsers", writeUsers * 2)
+  // Number of concurrent clients
+  val users: Int = Integer.getInteger("users", 7)
 
   // Delay before firing up another client
-  val ramp: Long = java.lang.Long.getLong("ramp", 7L)
+  val ramp: Long = java.lang.Long.getLong("ramp", 5L)
 
   // The number of resource types for each client
   val resourceTypesNumber: Int = Integer.getInteger("resourceTypes", 2)
@@ -71,7 +68,7 @@ class AgentSimulation extends Simulation {
     .basicAuth(username, password)
     .acceptHeader("application/json")
     .contentTypeHeader("application/json")
-    //.acceptEncodingHeader("gzip, deflate")
+    .acceptEncodingHeader("gzip, deflate")
     .extraInfoExtractor(info => {
       log("\nSending " + info.request.getMethod + " -> URL: " + info.request.getUrl)
       logd("requestHeader: " + info.request.getHeaders)
@@ -88,7 +85,7 @@ class AgentSimulation extends Simulation {
 
   val random = new util.Random
 
-// curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceType
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes
   def resourceTypeJson(id: String): String = s"""
     {
       "id": "resType-$id",
@@ -109,16 +106,16 @@ class AgentSimulation extends Simulation {
     }
   """
 
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["aaa"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes/footype/metricTypes
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["/aaa"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes/footype/metricTypes
   def associateTypesJson(id: String): String = s"""
-    ["metricType-$id"]
+    ["/metricType-$id"]
   """
 
-//curl -ivX POST -H "Content-Type: application/json" -H "Accept: application/json" -d '{"id": "foobar", "resourceTypeId": "URL"}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources | less
+//curl -ivX POST -H "Content-Type: application/json" -H "Accept: application/json" -d '{"id": "foobar", "resourceTypePath": "../URL"}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources | less
   def resourceJson(id: String): String = s"""
     {
       "id": "res-$id",
-      "resourceTypeId": "resType-something",
+      "resourceTypePath": "../resType-something",
       "properties": {
         "foo": "bar",
         "bar": "barbar",
@@ -127,11 +124,11 @@ class AgentSimulation extends Simulation {
     }
   """
 
-//curl -ivX POST -H "Accept: application/json" -H "Content-Type: application/json" -d '{"id": "fooMetric", "metricTypeId": "status.code.type"}' 'http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/metrics'
+//curl -ivX POST -H "Accept: application/json" -H "Content-Type: application/json" -d '{"id": "fooMetric", "metricTypePath": "../status.code.type"}' 'http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/metrics'
   def metricJson(id: String): String = s"""
     {
       "id": "metric-$id",
-      "metricTypeId": "status.code.type",
+      "metricTypePath": "../status.code.type",
       "properties": {
         "bla": "blabla",
         "bar": "barbar",
@@ -140,9 +137,9 @@ class AgentSimulation extends Simulation {
     }
   """
 
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["fooMetric"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources/foobar/metrics
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '["../fooMetric"]' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/test/resources/foobar/metrics
   def associateMetricResourceJson(id: String): String = s"""
-    ["metric-$id"]
+    ["../metric-$id"]
   """
 
   def createSomeResourceType = http("preparation - create res type")
@@ -222,14 +219,16 @@ class AgentSimulation extends Simulation {
       ).exec(s => {
           if (logLevel >= 2) println("\nids:\n" + s("entityIds"))
           s
-      })
+     })
       .pause(interval millis)
       .foreach("${entityIds}", "entityId") {
         repeat(readEntityNumber) {
-          exec(http(s"Getting one $entityName")
-            .get(pathPrefix + plural + "/${entityId}")
-            .check(status is 200)
-          )
+          exec(session => {
+            http(s"Getting one $entityName")
+              .get(pathPrefix + plural + session("entityId").as[String].replaceAll(" ", "%20"))//"/${java.net.URLEncoder.encode(entityId).toString}")
+              .check(status is 200)
+            session
+          })
         }
       }
     }
@@ -239,17 +238,22 @@ class AgentSimulation extends Simulation {
     .exec(readEntityMultipleTimes("metric", "test/"))
   }
 
-  val scenario1 = scenario("AgentSimulation (fill the inventory)")
+  val setupScenario = scenario("Setup")
     .exec(createSomeResourceType)
+
+  val scenario1 = scenario("AgentSimulation (fill the inventory)")
     .exec(agentSimulation(true))
     .exec(agentSimulation(false))
 
   val scenario2 = scenario("Reads")
     .exec(readSimulation)
 
+  val allScenarios = scenario1
+    .exec(scenario2)
+
   setUp(
-    scenario1.inject(rampUsers(writeUsers) over (ramp seconds))
-    ,scenario2.inject(atOnceUsers(readUsers))
+    setupScenario.inject(atOnceUsers(1)),
+    allScenarios.inject(rampUsers(users) over (ramp seconds))
   ).protocols(httpConf)
 }
 
