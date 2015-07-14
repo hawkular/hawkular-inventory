@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.test;
 
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
@@ -991,7 +992,6 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertEquals(2, r.getProperties().size());
     }
 
-//    @Ignore
     @Test
     public void testPropertiesUpdateOnRelationshipsToEmpty() throws Exception {
         final String tenantName = "com.acme.tenant";
@@ -1016,6 +1016,18 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .getAll(RelationWith.name("contains")).entities().iterator().next();
 
         Assert.assertEquals(0, r.getProperties().size());
+    }
+
+    @Test
+    public void testCreationMetricTypeWithProperties() {
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put("p1", "1");
+        properties.put("p2", "2");
+        inventory.tenants().get("com.acme.tenant").metricTypes().create(
+                new MetricType.Blueprint("test", MetricUnit.BYTE, properties));
+
+        Assert.assertThat(inventory.tenants().get("com.acme.tenant").metricTypes().get("test").entity().getProperties()
+                .size(), equalTo(properties.size()));
     }
 
     @Test

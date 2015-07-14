@@ -135,15 +135,23 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
         public abstract <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter);
 
         public abstract static class Builder<U extends Update, This extends Builder<U, This>> {
-            protected final Map<String, Object> properties = new HashMap<>();
+            protected Map<String, Object> properties;
+
+            private Map<String, Object> getProperties() {
+                if (properties == null) {
+                    properties = new HashMap<>();
+                }
+
+                return properties;
+            }
 
             public This withProperty(String key, Object value) {
-                properties.put(key, value);
+                getProperties().put(key, value);
                 return castThis();
             }
 
             public This withProperties(Map<String, Object> properties) {
-                this.properties.putAll(properties);
+                getProperties().putAll(properties);
                 return castThis();
             }
 
