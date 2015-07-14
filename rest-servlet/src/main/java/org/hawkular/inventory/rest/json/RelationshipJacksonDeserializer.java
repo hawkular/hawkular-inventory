@@ -55,7 +55,7 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
     public Relationship deserialize(JsonParser jp, DeserializationContext deserializationContext) throws
             IOException {
         JsonNode node = jp.getCodec().readTree(jp);
-        String id = node.get(FIELD_ID).asText();
+        String id = node.get(FIELD_ID) != null ? node.get(FIELD_ID).asText(): null;
 
         // other fields are not compulsory, e.g. when deleting the relationship {id: foo} is just fine
         String name = "";
