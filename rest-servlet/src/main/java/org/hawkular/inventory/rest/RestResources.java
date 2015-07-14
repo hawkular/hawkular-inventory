@@ -604,9 +604,9 @@ public class RestResources extends RestBase {
     })
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
             @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
-        Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentID)
-                .feedlessResources().descend(getResourcePath(resourcePath)).getAll().metrics().getAll()
-                .entities(extractPaging(uriInfo));
+        CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentID, null, resourcePath);
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+                extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
@@ -623,9 +623,10 @@ public class RestResources extends RestBase {
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
             @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
             @Context UriInfo uriInfo) {
-        Page<Metric> ms = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .feeds().get(feedId).resources().descend(getResourcePath(resourcePath)).getAll().metrics().getAll()
-                 .entities(extractPaging(uriInfo));
+        CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentId, feedId, resourcePath);
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+                extractPaging(uriInfo));
+
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
 
