@@ -278,11 +278,11 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
+            return idIfTypeCorrect(CanonicalPath.this, MetricType.class);
         }
 
         public String getResourceTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
+            return idIfTypeCorrect(CanonicalPath.this, ResourceType.class);
         }
 
         public String getFeedId() {
@@ -314,7 +314,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricId() {
-            return idIfTypeCorrect(CanonicalPath.this, Resource.class);
+            return idIfTypeCorrect(CanonicalPath.this, Metric.class);
         }
 
         public String getRelationshipId() {
