@@ -16,13 +16,14 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.hawkular.inventory.api.model.Relationship;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import java.io.IOException;
-import java.util.Map;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.rest.Security;
 
 /**
  * @author Jirka Kremser
@@ -73,10 +74,10 @@ public class RelationshipJacksonSerializer extends JsonSerializer<Relationship> 
         jg.writeString(relationship.getName());
 
         jg.writeFieldName(FIELD_SOURCE);
-        jg.writeString(Security.getStableId(relationship.getSource()));
+        jg.writeString(relationship.getSource().toString());
 
         jg.writeFieldName(FIELD_TARGET);
-        jg.writeString(Security.getStableId(relationship.getTarget()));
+        jg.writeString(relationship.getTarget().toString());
 
         if (relationship.getProperties() != null && !relationship.getProperties().isEmpty()) {
             jg.writeFieldName(FIELD_PROPERTIES);

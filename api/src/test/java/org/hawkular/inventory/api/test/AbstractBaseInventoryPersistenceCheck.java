@@ -226,6 +226,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").resource("playroom2").get());
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
+                .get("playroom2").containedChildren().create(new Resource.Blueprint("playroom2.1", "/Playroom"))
+                .entity().getId().equals("playroom2.1");
 
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
@@ -615,8 +618,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Set<Resource> resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named
                         ("defines").resources().getAll().entities();
-        assert resources.stream().allMatch(res -> Arrays.asList("playroom1", "playroom2", "playroom1.1", "playroom1.2")
-                .contains(res.getId())) : "ResourceType[Playroom] -defines-> resources called playroom*";
+        assert resources.stream().allMatch(res -> Arrays.asList("playroom1", "playroom2", "playroom1.1", "playroom1.2",
+                "playroom2.1").contains(res.getId())) : "ResourceType[Playroom] -defines-> resources called playroom*";
 
         resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships().named
                 ("incorporates").resources().getAll().entities(); // empty
@@ -766,7 +769,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(8, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(9, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
     }
 
@@ -1277,6 +1280,24 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 inventory.inspect(f).delete();
             }
         }
+    }
+
+    @Test
+    public void testInspectChildResource() throws Exception {
+        Resources.Single access = inventory.inspect(CanonicalPath.of().tenant("com.example.tenant").environment("test")
+                .resource("playroom1").resource("playroom1.1").get(), Resources.Single.class);
+
+        Assert.assertEquals("playroom1.1", access.entity().getId());
+    }
+
+    @Test
+    public void testDescendChildResource() throws Exception {
+
+        Resources.Single r = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().descend("playroom1", RelativePath.fromString("../r;playroom2"))
+                .get(RelativePath.fromString("r;playroom2.1"));
+
+        Assert.assertEquals("playroom2.1", r.entity().getId());
     }
 
     @Test

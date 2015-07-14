@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.api;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
@@ -25,6 +29,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -316,9 +321,31 @@ public interface Inventory extends AutoCloseable {
                 Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
                         .get(path.ids().getEnvironmentId());
 
-                return accessInterface.cast(path.ids().getFeedId() == null
-                        ? env.feedlessResources().get(path.ids().getResourceId())
-                        : env.feeds().get(path.ids().getFeedId()).resources().get(path.ids().getResourceId()));
+                @SuppressWarnings("ConstantConditions")
+                RelativePath parentResource = path.ids().getResourcePath().up();
+
+                Resources.Single access;
+
+                if (path.ids().getFeedId() == null) {
+                    if (parentResource.isDefined()) {
+                        access = env.feedlessResources().descend(
+                                path.ids().getResourcePath().getPath().get(0).getElementId(),
+                                allResourceSegments(path, 1, 1)).get(path);
+                    } else {
+                        access = env.feedlessResources().get(path.getSegment().getElementId());
+                    }
+                } else {
+                    Feeds.Single feed = env.feeds().get(path.ids().getFeedId());
+
+                    if (parentResource.isDefined()) {
+                        access = feed.resources().descend(path.ids().getResourcePath().getPath().get(0).getElementId(),
+                                allResourceSegments(path, 1, 1)).get(path);
+                    } else {
+                        access = feed.resources().get(path.getSegment().getElementId());
+                    }
+                }
+
+                return accessInterface.cast(access);
             }
 
             @Override
@@ -335,6 +362,26 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitUnknown(Void parameter) {
                 return null;
+            }
+
+            private CanonicalPath[] allResourceSegments(CanonicalPath path, int leaveOutTop, int leaveOutBottom) {
+                List<CanonicalPath> ret = new ArrayList<>();
+
+                Iterator<CanonicalPath> it = path.descendingIterator();
+                int leftOutTop = 0;
+                while (it.hasNext()) {
+                    CanonicalPath p = it.next();
+                    if (Resource.class.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
+                        ret.add(p);
+                    }
+                }
+
+                if (ret.size() - leaveOutBottom > 0) {
+                    int len = ret.size() - leaveOutBottom;
+                    return ret.subList(0, len).toArray(new CanonicalPath[len]);
+                } else {
+                    return new CanonicalPath[0];
+                }
             }
         }, null);
     }

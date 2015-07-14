@@ -65,13 +65,11 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
         CanonicalPath source = null, target = null;
         if (node.get(FIELD_SOURCE) != null && !node.get(FIELD_SOURCE).asText().isEmpty()) {
             String sourcePath = node.get(FIELD_SOURCE).asText();
-            validatePath(sourcePath);
-            source = Security.getCanonicalPath(sourcePath);
+            source = CanonicalPath.fromString(sourcePath);
         }
         if (node.get(FIELD_TARGET) != null && !node.get(FIELD_TARGET).asText().isEmpty()) {
             String targetPath = node.get(FIELD_TARGET).asText();
-            validatePath(targetPath);
-            target = Security.getCanonicalPath(targetPath);
+            target = CanonicalPath.fromString(targetPath);
         }
 
         JsonNode properties = node.get(FIELD_PROPERTIES);
@@ -95,7 +93,7 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
     }
 
     private void validatePath(String path){
-        if (!Security.isValidId(path)) {
+        if (!Security.isValidRestPath(path)) {
             throw new IllegalArgumentException("Error during relationship deserialization," +
                     " unable to recognize following path: " + path);
         }

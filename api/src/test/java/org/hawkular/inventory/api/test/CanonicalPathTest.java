@@ -120,11 +120,11 @@ public class CanonicalPathTest {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("r").get();
         Assert.assertEquals("t", p.ids().getTenantId());
         Assert.assertEquals("e", p.ids().getEnvironmentId());
-        Assert.assertEquals("r", p.ids().getResourceId());
+        Assert.assertEquals("r;r", p.ids().getResourcePath().toString());
 
         Assert.assertEquals("f", p.up().extend(Feed.class, "f").get().ids().getFeedId());
-        Assert.assertEquals("r", p.up().extend(Feed.class, "f").extend(Resource.class, "r").get().ids()
-                .getResourceId());
+        Assert.assertEquals("r;r", p.up().extend(Feed.class, "f").extend(Resource.class, "r").get().ids()
+                .getResourcePath().toString());
     }
 
     @Test

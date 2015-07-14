@@ -328,12 +328,12 @@ public abstract class Path {
 
             @Override
             public boolean hasNext() {
-                return idx < endIdx;
+                return idx <= endIdx;
             }
 
             @Override
             public Path next() {
-                if (idx >= endIdx) {
+                if (idx > endIdx) {
                     throw new NoSuchElementException();
                 }
                 return newInstance(startIdx, idx++, path);

@@ -109,7 +109,7 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         // check here.
         String label = labelStack.pop();
         List<Pipe> pipes = FluentUtility.removePreviousPipes(this, label);
-        if (pipes.isEmpty()) {
+        if (this.pipes.isEmpty()) {
             return this;
         } else {
             pipes.forEach(this::add);
