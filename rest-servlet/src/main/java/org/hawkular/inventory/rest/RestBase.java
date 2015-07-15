@@ -20,11 +20,13 @@ import javax.inject.Inject;
 
 import org.hawkular.accounts.api.PersonaService;
 import org.hawkular.inventory.api.Inventory;
+import org.jboss.resteasy.annotations.GZIP;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
+@GZIP
 public class RestBase {
 
     @Inject
