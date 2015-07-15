@@ -33,6 +33,9 @@ public interface ResolvingToMultiple<Multiple> {
      * Returns access interface to all entities conforming to provided filters in the current position in the inventory
      * traversal.
      *
+     * <p>Each of the filters is applied on the source entities. If you want the filters to be applied sequentially
+     * on the intermediate results, use {@link #getAll(Filter[][])}.
+     *
      * @param filters the (possibly empty) list of filters to apply.
      * @return the (read-only) access interface to the found entities
      */
@@ -41,8 +44,11 @@ public interface ResolvingToMultiple<Multiple> {
         if (filters.length == 0) {
             fs = new Filter[0][0];
         } else {
-            fs = new Filter[1][];
-            fs[0] = filters;
+            fs = new Filter[filters.length][1];
+            int idx = 0;
+            for (Filter f : filters) {
+                fs[idx++][0] = f;
+            }
         }
         return getAll(fs);
     }
@@ -52,9 +58,9 @@ public interface ResolvingToMultiple<Multiple> {
      * inventory traversal.
      *
      * <p>The filters parameter is actually composed of individual sets of filters each of which is applied to
-     * the "source" entities. Each set can have multiple filters that are then applied one after another. This becomes
-     * useful when you want to filter by sources having some kind of relationships with other entities and in addition
-     * filter on the sources themselves, too.
+     * the "source" entities. Each set can have multiple filters that are then applied one after another on their
+     * intermediate results. This becomes useful when you want to filter by sources having some kind of relationships
+     * with other entities and in addition filter on the sources themselves, too.
      * E.g.:
      * <pre>{@code
      * inventory.tenants().getAll(new Filter[][]{{Related.by("myRel"), With.type(ResourceType.class)},

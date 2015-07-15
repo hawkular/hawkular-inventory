@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.api.test;
 
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
+
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
@@ -94,7 +97,6 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -774,13 +776,36 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
-    @Ignore // TODO remove @Ignore once HWKINVENT-81 is fixed
     public void testResourcesFilteredByTypeProperty() throws Exception {
         Set<Resource> resources = inventory.tenants().get("com.example.tenant").environments().get("test")
                 .feedlessResources().getAll(new Filter[][]{
                         {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                                 With.propertyValue("ownedByDepartment", "Facilities")},
                 }).entities();
+        Assert.assertEquals(2, resources.size());
+        Assert.assertEquals(new HashSet<>(asList("playroom1", "playroom2")),
+                resources.stream().map(AbstractElement::getId).collect(toSet()));
+
+        resources = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().getAll(new Filter[][]{
+                        {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
+                                With.propertyValue("ownedByDepartment", "kachny")},
+                }).entities();
+        Assert.assertTrue(resources.isEmpty());
+
+        resources = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().getAll(new Filter[][]{
+                        {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
+                                With.propertyValue("ownedByDepartment", "Facilities")},
+                        {With.id("playroom1")}
+                }).entities();
+        Assert.assertEquals(1, resources.size());
+        Assert.assertEquals("playroom1", resources.iterator().next().getId());
+
+        resources = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().getAll(
+                        Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
+                        With.id("playroom1")).entities();
         Assert.assertEquals(1, resources.size());
         Assert.assertEquals("playroom1", resources.iterator().next().getId());
     }
