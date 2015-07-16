@@ -20,6 +20,7 @@ import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -58,11 +59,13 @@ public class TemporaryHacks {
         inventory.inspect(tenant).resourceTypes().create(ResourceType.Blueprint.builder().withId("URL").build());
         Log.LOGGER.autoCreatedEntity("resource type", "URL", tenant.getId());
 
-        inventory.inspect(tenant).metricTypes().create(MetricType.Blueprint.builder().withId("status.code.type")
+        inventory.inspect(tenant).metricTypes()
+                .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId("status.code.type")
                 .withUnit(MetricUnit.NONE).build());
         Log.LOGGER.autoCreatedEntity("metric type", "status.code.type", tenant.getId());
 
-        inventory.inspect(tenant).metricTypes().create(MetricType.Blueprint.builder().withId("status.duration.type")
+        inventory.inspect(tenant).metricTypes()
+                .create(MetricType.Blueprint.builder(MetricDataType.AVAILABILITY).withId("status.duration.type")
                 .withUnit(MetricUnit.MILLI_SECOND).build());
         Log.LOGGER.autoCreatedEntity("metric type", "status.duration.type", tenant.getId());
     }

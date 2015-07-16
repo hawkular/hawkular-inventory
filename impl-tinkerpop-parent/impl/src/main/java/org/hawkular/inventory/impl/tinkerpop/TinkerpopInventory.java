@@ -65,6 +65,10 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
                         .withProperty(Constants.Property.__type.name(), String.class).build());
+                IndexSpec.builder()
+                        .withElementType(Vertex.class)
+                        .withProperty(Constants.Property.__type.name(), String.class)
+                        .withProperty(Constants.Property.__metric_data_type.name(), String.class).build();
 
         return graph;
     }

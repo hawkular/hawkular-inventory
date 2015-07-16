@@ -79,6 +79,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Path;
@@ -155,8 +156,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         assert inventory.tenants().get("com.acme.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("URL")).entity().getId().equals("URL");
         assert inventory.tenants().get("com.acme.tenant").metricTypes()
-                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLI_SECOND)).entity().getId()
-                .equals("ResponseTime");
+                .create(new MetricType.Blueprint("ResponseTime",
+                     MetricUnit.MILLI_SECOND, MetricDataType.COUNTER)).entity().getId().equals("ResponseTime");
 
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes().associate(CanonicalPath.of()
                 .tenant("com.acme.tenant").metricType("ResponseTime").get());
@@ -200,7 +201,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     put("ownedByDepartment", "Facilities");
                 }})).entity().getId().equals("Playroom");
         assert inventory.tenants().get("com.example.tenant").metricTypes()
-                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE)).entity().getId().equals("Size");
+                .create(new MetricType.Blueprint("Size", MetricUnit.BYTE, MetricDataType.COUNTER))
+                    .entity().getId().equals("Size");
         inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes()
                 .associate(RelativePath.to().up().metricType("Size").get());
 
@@ -1052,7 +1054,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         properties.put("p1", "1");
         properties.put("p2", "2");
         inventory.tenants().get("com.acme.tenant").metricTypes().create(
-                new MetricType.Blueprint("test", MetricUnit.BYTE, properties));
+                new MetricType.Blueprint("test", MetricUnit.BYTE, MetricDataType.COUNTER, properties));
 
         Assert.assertThat(inventory.tenants().get("com.acme.tenant").metricTypes().get("test").entity().getProperties()
                 .size(), equalTo(properties.size()));
@@ -1353,8 +1355,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             inventory.tenants().get("t").resourceTypes().create(new ResourceType.Blueprint("rt"));
             inventory.tenants().get("t").resourceTypes().update("rt", new ResourceType.Update(null));
 
-            MetricType mt = inventory.tenants().get("t").metricTypes().create(MetricType.Blueprint.builder()
-                    .withId("mt").withUnit(MetricUnit.BYTE).build()).entity();
+            MetricType mt = inventory.tenants().get("t").metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.COUNTER)
+                                    .withId("mt").withUnit(MetricUnit.BYTE).build()).entity();
 
             List<Relationship> createdRelationships = new ArrayList<>();
 
@@ -1378,7 +1381,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
 
             inventory.tenants().get("t").metricTypes()
-                    .create(new MetricType.Blueprint("mt", MetricUnit.BYTE));
+                    .create(new MetricType.Blueprint("mt", MetricUnit.BYTE, MetricDataType.COUNTER));
             inventory.tenants().get("t").metricTypes().update("mt", MetricType.Update.builder()
                     .withUnit(MetricUnit.MILLI_SECOND).build());
             inventory.tenants().get("t").metricTypes().delete("mt");
@@ -1390,7 +1393,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(Metric.class, 4, 2, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
             inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
-            inventory.tenants().get("t").metricTypes().create(new MetricType.Blueprint("mt", MetricUnit.BYTE));
+            inventory.tenants().get("t").metricTypes()
+                    .create(new MetricType.Blueprint("mt", MetricUnit.BYTE, MetricDataType.COUNTER));
 
             inventory.tenants().get("t").environments().get("e").feedlessMetrics()
                     .create(new Metric.Blueprint("/mt", "m"));
@@ -1407,8 +1411,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
             inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
             inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder().withId("rt").build());
-            inventory.tenants().get("t").metricTypes().create(MetricType.Blueprint.builder().withId("mt")
-                    .withUnit(MetricUnit.BYTE).build());
+            inventory.tenants().get("t").metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId("mt")
+                                    .withUnit(MetricUnit.BYTE).build());
 
             inventory.tenants().get("t").environments().get("e").feedlessResources()
                     .create(new Resource.Blueprint("r", "/rt"));

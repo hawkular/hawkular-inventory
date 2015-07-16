@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Relationship;
@@ -315,8 +316,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     e = new Metric(extractCanonicalPath(v), md);
                     break;
                 case metricType:
-                    e = new MetricType(extractCanonicalPath(v), MetricUnit.fromDisplayName(
-                            v.getProperty(Constants.Property.__unit.name())));
+                    e = new MetricType(extractCanonicalPath(v),
+                        MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
+                        MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())));
                     break;
                 case resource:
                     Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
@@ -384,7 +386,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private <U extends AbstractElement.Update> T common(AbstractElement<?, U> entity,
-                    AbstractElement.Update.Builder<U, ?> bld) {
+                                                                AbstractElement.Update.Builder<U, ?> bld) {
                 return entityType.cast(entity.update().with(bld.withProperties(filteredProperties).build()));
             }
         }, null);
@@ -440,7 +442,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             @Override
             public Element visitMetricType(MetricType.Blueprint definition, Void parameter) {
-                return common(path, blueprint.getProperties(), MetricType.class);
+                Element entity = common(path, blueprint.getProperties(), MetricType.class);
+
+                entity.setProperty(Constants.Property.__metric_data_type.name(), definition.getType().getDisplayName());
+                return entity;
             }
 
             @Override
@@ -459,7 +464,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private Element common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
-                    Class<? extends AbstractElement<?, ?>> cls) {
+                                   Class<? extends AbstractElement<?, ?>> cls) {
                 checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
                 Vertex v = context.getGraph().addVertex(null);
