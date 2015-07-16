@@ -31,15 +31,10 @@
 
   <name>Hawkular Inventory Load Tests</name>
 
-  <properties>
-    <version.io.gatling>2.1.6</version.io.gatling>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.gatling.highcharts</groupId>
       <artifactId>gatling-charts-highcharts</artifactId>
-      <version>${version.io.gatling}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -49,7 +44,6 @@
       <plugin>
         <groupId>io.gatling</groupId>
         <artifactId>gatling-maven-plugin</artifactId>
-        <version>${version.io.gatling}</version>
         <configuration>
           <simulationClass>org.hawkular.inventory.loadtest.AgentSimulation</simulationClass>
           <propagateSystemProperties>true</propagateSystemProperties>
