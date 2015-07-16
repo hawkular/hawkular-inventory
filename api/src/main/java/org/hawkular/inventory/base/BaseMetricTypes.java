@@ -63,7 +63,8 @@ public final class BaseMetricTypes {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             return new EntityAndPendingNotifications<>(new MetricType(parentPath.extend(MetricType.class,
-                    context.backend.extractId(entity)).get(), blueprint.getUnit(), blueprint.getProperties()));
+                    context.backend.extractId(entity)).get(), blueprint.getUnit(), blueprint.getType(), blueprint
+                    .getProperties()));
         }
 
         @Override
@@ -78,6 +79,11 @@ public final class BaseMetricTypes {
 
         @Override
         public MetricTypes.Single create(MetricType.Blueprint blueprint) throws EntityAlreadyExistsException {
+            if (blueprint.getType() == null || blueprint.getUnit() == null) {
+                String msg = (blueprint.getType() == null ? "Data type" : "Metric unit") + " is null";
+                throw new IllegalArgumentException(msg);
+            }
+
             return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
     }

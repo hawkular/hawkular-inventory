@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -137,7 +138,7 @@ public class SerializationTest {
         PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
         PathDeserializer.setCurrentEntityType(MetricType.class);
 
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTE, MetricDataType.GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});

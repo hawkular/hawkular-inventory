@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.model.Tenant;
 
 import java.util.Arrays;
 
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
 
 /**
@@ -61,9 +62,15 @@ final class Constants {
         __unit,
 
         /**
+         * Property used on metric type to distinguish type of metric e.g. gauge, counter...
+         */
+        __metric_data_type,
+
+        /**
          * Property used to store the canonical path of an element.
          */
         __cp;
+
 
         public static String mapUserDefined(String property) {
             if (AbstractElement.ID_PROPERTY.equals(property)) {
@@ -79,8 +86,8 @@ final class Constants {
      */
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
-        resourceType(ResourceType.class), metricType(MetricType.class, __unit), resource(Resource.class),
-        metric(Metric.class), relationship(Relationship.class);
+        resourceType(ResourceType.class), metricType(MetricType.class, __unit, __metric_data_type),
+        resource(Resource.class), metric(Metric.class), relationship(Relationship.class);
 
         private final String[] mappedProperties;
         private final Class<? extends AbstractElement<?, ?>> entityType;

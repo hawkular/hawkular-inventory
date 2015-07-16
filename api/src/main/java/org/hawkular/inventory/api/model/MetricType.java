@@ -39,34 +39,45 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
     @Expose
     private final MetricUnit unit;
 
+    @XmlAttribute
+    @Expose
+    private final MetricDataType type;
+
     /**
      * JAXB support
      */
     @SuppressWarnings("unused")
     private MetricType() {
         unit = null;
+        type = null;
     }
 
     public MetricType(CanonicalPath path) {
-        this(path, MetricUnit.NONE, null);
+        this(path, MetricUnit.NONE, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit) {
-        this(path, unit, null);
+    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type) {
+        this(path, unit, type, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, Map<String, Object> properties) {
+    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
         super(path, properties);
         this.unit = unit;
+        this.type = type;
     }
 
     public MetricUnit getUnit() {
         return unit;
     }
 
+    public MetricDataType getType() {
+        return type;
+    }
+
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(getPath(), valueOrDefault(u.unit, this.unit), u.getProperties()));
+        return new Updater<>((u) -> new MetricType(getPath(), valueOrDefault(u.unit, this.unit),
+               type, u.getProperties()));
     }
 
     @Override
@@ -90,9 +101,10 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
     public static final class Blueprint extends Entity.Blueprint {
         @XmlAttribute
         private final MetricUnit unit;
+        private final MetricDataType type;
 
-        public static Builder builder() {
-            return new Builder();
+        public static Builder builder(MetricDataType type) {
+            return new Builder(type);
         }
 
         /**
@@ -100,20 +112,25 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null);
+            this(null, null, null, null);
         }
 
-        public Blueprint(String id, MetricUnit unit) {
-            this(id, unit, Collections.emptyMap());
+        public Blueprint(String id, MetricUnit unit, MetricDataType type) {
+            this(id, unit, type, Collections.emptyMap());
         }
 
-        public Blueprint(String id, MetricUnit unit, Map<String, Object> properties) {
+        public Blueprint(String id, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
             super(id, properties);
             this.unit = unit == null ? MetricUnit.NONE : unit;
+            this.type = type;
         }
 
         public MetricUnit getUnit() {
             return unit;
+        }
+
+        public MetricDataType getType() {
+            return type;
         }
 
         @Override
@@ -123,15 +140,26 @@ public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, Me
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private MetricUnit unit;
+            private MetricDataType type;
+
+
+            public Builder(MetricDataType type) {
+                this.type = type;
+            }
 
             public Builder withUnit(MetricUnit unit) {
                 this.unit = unit;
                 return this;
             }
 
+            public Builder withType(MetricDataType type) {
+                this.type = type;
+                return this;
+            }
+
             @Override
             public Blueprint build() {
-                return new Blueprint(id, unit, properties);
+                return new Blueprint(id, unit, type, properties);
             }
         }
     }
