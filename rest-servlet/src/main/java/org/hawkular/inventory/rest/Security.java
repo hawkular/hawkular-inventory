@@ -24,10 +24,6 @@ import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
@@ -234,8 +230,7 @@ public class Security {
     }
 
     @PostConstruct
-    public void initOperationsMap() throws SystemException, NotSupportedException, HeuristicRollbackException,
-            HeuristicMixedException, RollbackException {
+    public void initOperationsMap() {
 
         // Monitor – a read-only role. Cannot modify any resource.
         // Operator – Monitor permissions, plus can modify runtime state, but cannot modify anything that ends up in the
@@ -254,9 +249,8 @@ public class Security {
         // Auditor – can read anything. Can only modify the resources related to the administrative audit logging
         //           system.
 
-        transaction.begin();
-
         try {
+            transaction.begin();
             operations.setup("update-tenant").add("SuperUser").persist();
             operations.setup("delete-tenant").add("SuperUser").persist();
 
@@ -289,8 +283,12 @@ public class Security {
 
             transaction.commit();
         } catch (Throwable t) {
-            transaction.rollback();
-            throw t;
+            try {
+                transaction.rollback();
+            } catch (SystemException e) {
+                throw new IllegalStateException("Unable to do the rollback: " + e.getMessage(), t);
+            }
+            throw new IllegalStateException(t);
         }
 
         Operation updateTenantOperation = operations.getByName("update-tenant");
