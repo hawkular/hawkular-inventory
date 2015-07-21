@@ -41,7 +41,10 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.MetricTypes.ReadAssociate;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -69,13 +72,15 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Retrieves all resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resource types"),
-            @ApiResponse(code = 404, message = "Tenant doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@Context UriInfo uriInfo) {
-        Page<ResourceType> ret = inventory.tenants().get(getTenantId()).resourceTypes().getAll()
-                .entities(extractPaging(uriInfo));
+    public Response getAll(@QueryParam("feedless") @DefaultValue("false") boolean feedless, @Context UriInfo uriInfo) {
+
+        Tenants.Single tenants = inventory.tenants().get(getTenantId());
+
+        Page<ResourceType> ret = (feedless ? tenants.feedlessResourceTypes() : tenants.allResourceTypes())
+                .getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
@@ -85,12 +90,11 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Retrieves a single resource type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the resource type"),
-            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public ResourceType get(@PathParam("resourceTypeId") String resourceTypeId) {
-        return inventory.tenants().get(getTenantId()).resourceTypes().get(resourceTypeId).entity();
+        return inventory.tenants().get(getTenantId()).feedlessResourceTypes().get(resourceTypeId).entity();
     }
 
     @GET
@@ -103,8 +107,8 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetricTypes(@PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
-        Page<MetricType> ret = inventory.tenants().get(getTenantId()).resourceTypes().get(resourceTypeId).metricTypes()
-                .getAll().entities(extractPaging(uriInfo));
+        Page<MetricType> ret = inventory.tenants().get(getTenantId()).feedlessResourceTypes().
+                get(resourceTypeId).metricTypes().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
@@ -114,15 +118,14 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Retrieves all resources with given resource types. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of resources"),
-            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getResources(@PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
-        ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
+        ResourceTypes.Single single = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId);
         single.entity(); // check whether it exists
         Page<Resource> ret = single.resources().getAll().entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ret).build();
@@ -145,7 +148,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
+        inventory.tenants().get(tenantId).feedlessResourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
     }
@@ -167,7 +170,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().update(resourceTypeId, update);
+        inventory.tenants().get(tenantId).feedlessResourceTypes().update(resourceTypeId, update);
         return Response.noContent().build();
     }
 
@@ -186,7 +189,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().delete(resourceTypeId);
+        inventory.tenants().get(tenantId).feedlessResourceTypes().delete(resourceTypeId);
         return Response.noContent().build();
     }
 
@@ -196,7 +199,7 @@ public class RestResourceTypes extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant, resource type or metric type doesn't exist",
-                    response = ApiError.class),
+                         response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
@@ -211,12 +214,12 @@ public class RestResourceTypes extends RestBase {
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
 
-        ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+        ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId)
                 .metricTypes();
 
         metricTypePaths.stream()
                 .map((p) -> org.hawkular.inventory.api.model.Path.fromPartiallyUntypedString(p, tenant, rt,
-                        MetricType.class)).forEach(metricTypesDao::associate);
+                 MetricType.class)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
     }
@@ -226,8 +229,7 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Retrieves the given metric type associated with the given resource type.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metric types"),
-            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public MetricType getAssociatedMetricType(@PathParam("resourceTypeId") String resourceTypeId,
@@ -254,14 +256,13 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Retrieves metric types associated with the given resource type. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metric types"),
-            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
             @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
-        Page<MetricType> mTypes = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
+        Page<MetricType> mTypes = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId)
                 .metricTypes().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, mTypes).build();
@@ -272,8 +273,7 @@ public class RestResourceTypes extends RestBase {
     @ApiOperation("Disassociates the given resource type from the given metric type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant or resource type does not exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetricType(@PathParam("resourceTypeId") String resourceTypeId,
@@ -284,6 +284,266 @@ public class RestResourceTypes extends RestBase {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
         CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+
+        if (!security.canAssociateFrom(rt)) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        if (isCanonical) {
+            metricTypePath = "/" + metricTypePath;
+        }
+
+        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+
+        inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);
+
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{environmentId}/{feedId}/resourceTypes")
+    @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getAll(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                            @Context UriInfo uriInfo) {
+
+        Page<ResourceType> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public ResourceType get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                        @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+
+        return inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId).entity();
+    }
+
+    @GET
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getMetricTypes(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                                   @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+
+        Page<MetricType> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId)
+                .metricTypes().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @GET
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/resources")
+    @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getResources(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                                 @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+
+        Page<Resource> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId)
+                .resources().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
+    }
+
+    @POST
+    @Path("/{environmentId}/{feedId}/resourceTypes")
+    @ApiOperation("Creates a new resource type")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 409, message = "Resource type already exists", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response create(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                           ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
+
+        if (!security.canCreate(ResourceType.class).under(CanonicalPath.of().tenant(tenantId)
+                .environment(environmentId).feed(feedId).get())) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
+                .resourceTypes().create(resourceType);
+
+        return ResponseUtil.created(uriInfo, resourceType.getId()).build();
+    }
+
+    @PUT
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Update a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
+            @ApiResponse(code = 404, message = "Resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response update(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                           @PathParam("resourceTypeId") String resourceTypeId,
+                           @ApiParam(required = true) ResourceType.Update update) {
+        String tenantId = getTenantId();
+
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
+                                        .resourceType(resourceTypeId).get())) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
+                .resourceTypes().update(resourceTypeId, update);
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @ApiOperation("Deletes a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response delete(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+                           @PathParam("resourceTypeId") String resourceTypeId) {
+        String tenantId = getTenantId();
+
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
+                                        .resourceType(resourceTypeId).get())) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
+                .resourceTypes().delete(resourceTypeId);
+        return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Associates a pre-existing metric type with a resource type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, resource type or metric type doesn't exist",
+                         response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response associateMetricTypes(@PathParam("environmentId") String environmentId,
+                                         @PathParam("feedId") String feedId,
+                                         @PathParam("resourceTypeId") String  resourceTypeId,
+            @ApiParam("A list of paths to metric types to be associated with the resource type. They can either be" +
+                      " canonical or relative to the resource type.") Collection<String> metricTypePaths) {
+        String tenantId = getTenantId();
+
+        if (!security.canAssociateFrom(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
+                .resourceType(resourceTypeId).get())) {
+            return Response.status(FORBIDDEN).build();
+        }
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
+        CanonicalPath rt = tenant.extend(Environment.class, environmentId).extend(Feed.class, feedId)
+                .extend(ResourceType.class, resourceTypeId).get();
+
+        ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId).metricTypes();
+
+        metricTypePaths.stream()
+                .map((p) -> org.hawkular.inventory.api.model.Path.fromPartiallyUntypedString(p, tenant, rt,
+                 MetricType.class)).forEach(metricTypesDao::associate);
+
+        return Response.noContent().build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
+    @ApiOperation("Retrieves the given metric type associated with the given resource type.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of metric types"),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public MetricType getAssociatedMetricType(@PathParam("environmentId") String environmentId,
+                                              @PathParam("feedId") String feedId,
+                                              @PathParam("resourceTypeId") String resourceTypeId,
+                                              @PathParam("metricTypePath") String metricTypePath,
+                                              @QueryParam("canonical") @DefaultValue("false")
+                              @ApiParam("True if metric type path should be considered canonical, false by default.")
+                                              boolean isCanonical) {
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
+        CanonicalPath rt = tenant.extend(Environment.class, environmentId).extend(Feed.class, feedId)
+                .extend(ResourceType.class, resourceTypeId).get();
+
+        if (isCanonical) {
+            metricTypePath = "/" + metricTypePath;
+        }
+
+        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+            .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+
+        return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
+    }
+
+    @GET
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/metricTypes")
+    @ApiOperation("Retrieves metric types associated with the given resource type. Accepts paging query parameters.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "The list of metric types"),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getAssociatedMetricTypes(@PathParam("environmentId") String environmentId,
+                                             @PathParam("feedId") String feedId,
+                                             @PathParam("resourceTypeId") String resourceTypeId,
+                                             @Context UriInfo uriInfo) {
+        String tenantId = getTenantId();
+        Page<MetricType> mTypes = inventory.tenants().get(tenantId).environments().get(environmentId)
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId)
+                .metricTypes().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, mTypes).build();
+    }
+
+    @DELETE
+    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/metricTypes/{metricTypePath:.+}")
+    @ApiOperation("Disassociates the given resource type from the given metric type")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response disassociateMetricType(@PathParam("environmentId") String environmentId,
+                                           @PathParam("feedId") String feedId,
+                                           @PathParam("resourceTypeId") String resourceTypeId,
+                                           @PathParam("metricTypePath") String metricTypePath,
+                                           @QueryParam("canonical") @DefaultValue("false")
+                                   @ApiParam("True if metric path should be considered canonical, false by default.")
+                                           boolean isCanonical) {
+
+        CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
+        CanonicalPath rt = tenant.extend(Environment.class, environmentId).extend(Feed.class, feedId)
+                .extend(ResourceType.class, resourceTypeId).get();
 
         if (!security.canAssociateFrom(rt)) {
             return Response.status(FORBIDDEN).build();

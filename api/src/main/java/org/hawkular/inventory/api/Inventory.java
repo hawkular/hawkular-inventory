@@ -173,7 +173,12 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the metric type
      */
     default MetricTypes.Single inspect(MetricType metricType) throws EntityNotFoundException {
-        return tenants().get(metricType.getId()).metricTypes().get(metricType.getId());
+        if (metricType.getFeedId() == null) {
+            return tenants().get(metricType.getId()).feedlessMetricTypes().get(metricType.getId());
+        } else {
+            return tenants().get(metricType.getId()).environments().get(metricType.getEnvironmentId())
+                    .feeds().get(metricType.getFeedId()).metricTypes().get(metricType.getId());
+        }
     }
 
     /**
@@ -199,7 +204,12 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the resource type
      */
     default ResourceTypes.Single inspect(ResourceType resourceType) throws EntityNotFoundException {
-        return tenants().get(resourceType.getTenantId()).resourceTypes().get(resourceType.getId());
+        if (resourceType.getFeedId() == null) {
+            return tenants().get(resourceType.getId()).feedlessResourceTypes().get(resourceType.getId());
+        } else {
+            return tenants().get(resourceType.getId()).environments().get(resourceType.getEnvironmentId())
+                    .feeds().get(resourceType.getFeedId()).resourceTypes().get(resourceType.getId());
+        }
     }
 
     default Relationships.Single inspect(Relationship relationship) {
@@ -312,7 +322,7 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitMetricType(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).metricTypes()
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).feedlessMetricTypes()
                         .get(path.ids().getMetricTypeId()));
             }
 
@@ -350,7 +360,7 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitResourceType(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).resourceTypes()
+                return accessInterface.cast(tenants().get(path.ids().getTenantId()).feedlessResourceTypes()
                         .get(path.ids().getResourceTypeId()));
             }
 

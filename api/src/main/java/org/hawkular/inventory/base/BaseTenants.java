@@ -18,6 +18,8 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.Related.by;
+import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -28,6 +30,7 @@ import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -121,18 +124,36 @@ public final class BaseTenants {
         }
 
         @Override
-        public ResourceTypes.ReadContained resourceTypes() {
+        public ResourceTypes.ReadContained feedlessResourceTypes() {
             return new BaseResourceTypes.ReadContained<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.ReadContained metricTypes() {
+        public MetricTypes.ReadContained feedlessMetricTypes() {
             return new BaseMetricTypes.ReadContained<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.ReadContained environments() {
             return new BaseEnvironments.ReadContained<>(context.proceedTo(contains, Environment.class).get());
+        }
+
+        @Override
+        public MetricTypes.Read allMetricTypes() {
+            return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
+                    {by(contains), type(MetricType.class)},
+                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
+                            by(contains), type(MetricType.class)}
+            }).getting(MetricType.class));
+        }
+
+        @Override
+        public ResourceTypes.Read allResourceTypes() {
+            return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
+                    {by(contains), type(ResourceType.class)},
+                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
+                            by(contains), type(ResourceType.class)}
+            }).getting(ResourceType.class));
         }
     }
 
@@ -143,18 +164,36 @@ public final class BaseTenants {
         }
 
         @Override
-        public ResourceTypes.ReadWrite resourceTypes() {
+        public ResourceTypes.ReadWrite feedlessResourceTypes() {
             return new BaseResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.ReadWrite metricTypes() {
+        public MetricTypes.ReadWrite feedlessMetricTypes() {
             return new BaseMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
         }
 
         @Override
         public Environments.ReadWrite environments() {
             return new BaseEnvironments.ReadWrite<>(context.proceedTo(contains, Environment.class).get());
+        }
+
+        @Override
+        public MetricTypes.Read allMetricTypes() {
+            return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
+                    {by(contains), type(MetricType.class)},
+                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
+                            by(contains), type(MetricType.class)}
+            }).getting(MetricType.class));
+        }
+
+        @Override
+        public ResourceTypes.Read allResourceTypes() {
+            return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
+                    {by(contains), type(ResourceType.class)},
+                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
+                            by(contains), type(ResourceType.class)}
+            }).getting(ResourceType.class));
         }
     }
 }

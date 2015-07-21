@@ -847,9 +847,13 @@ public abstract class Path {
             }
 
             List<Class<?>> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
-
             if (options == null || options.isEmpty()) {
                 return false;
+            }
+
+            if (options != null && options.contains(targetType) && isStart) {
+                result.add(targetType);
+                return true;
             }
 
             boolean matched = false;
@@ -997,6 +1001,16 @@ public abstract class Path {
         public MetricBuilder<Impl> metric(String id) {
             segments.add(new Segment(Metric.class, id));
             return new MetricBuilder<>(segments, constructor);
+        }
+
+        public MetricTypeBuilder<Impl> metricType(String id) {
+            segments.add(new Segment(MetricType.class, id));
+            return new MetricTypeBuilder<>(segments, constructor);
+        }
+
+        public ResourceTypeBuilder<Impl> resourceType(String id) {
+            segments.add(new Segment(ResourceType.class, id));
+            return new ResourceTypeBuilder<>(segments, constructor);
         }
 
         public Impl get() {

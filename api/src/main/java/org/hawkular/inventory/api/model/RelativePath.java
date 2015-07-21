@@ -65,7 +65,8 @@ public final class RelativePath extends Path implements Serializable {
         VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class,
                 Up.class));
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class, Up.class));
-        VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, Up.class));
+        VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
+                ResourceType.class, Up.class));
         VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, Up.class));
         VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class, Up.class));
         VALID_PROGRESSIONS.put(Metric.class, justUp);
@@ -347,6 +348,16 @@ public final class RelativePath extends Path implements Serializable {
         public MetricBuilder metric(String id) {
             segments.add(new Segment(Metric.class, id));
             return new MetricBuilder(segments);
+        }
+
+        public MetricTypeBuilder metricType(String id) {
+            segments.add(new Segment(MetricType.class, id));
+            return new MetricTypeBuilder(segments);
+        }
+
+        public ResourceTypeBuilder resourceType(String id) {
+            segments.add(new Segment(ResourceType.class, id));
+            return new ResourceTypeBuilder(segments);
         }
     }
 

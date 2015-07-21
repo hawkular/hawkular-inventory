@@ -161,18 +161,28 @@ public class EmptyInventory implements Inventory {
     public static class TenantsMultiple implements Tenants.Multiple {
 
         @Override
-        public ResourceTypes.ReadContained resourceTypes() {
+        public ResourceTypes.ReadContained feedlessResourceTypes() {
             return new ResourceTypesReadContained();
         }
 
         @Override
-        public MetricTypes.ReadContained metricTypes() {
+        public MetricTypes.ReadContained feedlessMetricTypes() {
             return new MetricTypesReadContained();
         }
 
         @Override
         public Environments.ReadContained environments() {
             return new EnvironmentsReadContained();
+        }
+
+        @Override
+        public MetricTypes.Read allMetricTypes() {
+            return new MetricTypesRead();
+        }
+
+        @Override
+        public ResourceTypes.Read allResourceTypes() {
+            return new ResourceTypesRead();
         }
 
         @Override
@@ -198,18 +208,28 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResourceTypes.ReadWrite resourceTypes() {
+        public ResourceTypes.ReadWrite feedlessResourceTypes() {
             return new ResourceTypesReadWrite();
         }
 
         @Override
-        public MetricTypes.ReadWrite metricTypes() {
+        public MetricTypes.ReadWrite feedlessMetricTypes() {
             return new MetricTypesReadWrite();
         }
 
         @Override
         public Environments.ReadWrite environments() {
             return new EnvironmentReadWrite();
+        }
+
+        @Override
+        public MetricTypes.Read allMetricTypes() {
+            return new MetricTypesRead();
+        }
+
+        @Override
+        public ResourceTypes.Read allResourceTypes() {
+            return new ResourceTypesRead();
         }
 
         @Override
@@ -805,6 +825,16 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public MetricTypes.ReadWrite metricTypes() {
+            return new MetricTypesReadWrite();
+        }
+
+        @Override
+        public ResourceTypes.ReadWrite resourceTypes() {
+            return new ResourceTypesReadWrite();
+        }
+
+        @Override
         public Relationships.ReadWrite relationships() {
             return new RelationshipsReadWrite();
         }
@@ -825,6 +855,16 @@ public class EmptyInventory implements Inventory {
         @Override
         public Metrics.ReadContained metrics() {
             return new MetricsReadContained();
+        }
+
+        @Override
+        public MetricTypes.ReadContained metricTypes() {
+            return new MetricTypesReadContained();
+        }
+
+        @Override
+        public ResourceTypes.ReadContained resourceTypes() {
+            return new ResourceTypesReadContained();
         }
 
         @Override
