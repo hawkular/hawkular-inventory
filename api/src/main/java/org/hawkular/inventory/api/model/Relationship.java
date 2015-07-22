@@ -23,7 +23,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.api.Relationships;
 
-import com.google.gson.annotations.Expose;
 
 /**
  * Represents a relationship between 2 entities. A relationship has a source and target entities (somewhat obviously),
@@ -37,17 +36,13 @@ import com.google.gson.annotations.Expose;
 @XmlRootElement
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
     @XmlAttribute
-    @Expose
     private final String id;
 
     @XmlAttribute
-    @Expose
     private final String name;
 
-    @Expose
     private final CanonicalPath source;
 
-    @Expose
     private final CanonicalPath target;
 
     /** JAXB support */

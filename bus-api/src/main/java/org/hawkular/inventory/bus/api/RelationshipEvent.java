@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.bus.api;
 
-import com.google.gson.annotations.Expose;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Relationship;
 
@@ -25,7 +24,7 @@ import org.hawkular.inventory.api.model.Relationship;
  * @since 0.0.1
  */
 public final class RelationshipEvent extends InventoryEvent<Relationship> {
-    @Expose
+
     private Relationship object;
 
     public RelationshipEvent() {

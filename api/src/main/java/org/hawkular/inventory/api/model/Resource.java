@@ -21,7 +21,6 @@ import java.util.Map;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.google.gson.annotations.Expose;
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -33,7 +32,6 @@ import com.google.gson.annotations.Expose;
 @XmlRootElement
 public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource.Update> {
 
-    @Expose
     private final ResourceType type;
 
     /**

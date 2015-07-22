@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.api.model;
 
-import com.google.gson.annotations.Expose;
-
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import java.util.Collections;
@@ -38,11 +36,8 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
     public static final String ID_PROPERTY = "id";
 
     @XmlAttribute(name = "path")
-    @Expose
     private final CanonicalPath path;
 
-
-    @Expose
     protected final Map<String, Object> properties;
 
     //JAXB support
