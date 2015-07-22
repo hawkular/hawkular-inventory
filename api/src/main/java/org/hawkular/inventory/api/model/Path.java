@@ -477,6 +477,7 @@ public abstract class Path {
             //1 = reading id
             //2 = reading escape char
             int state = 0;
+            int stateBeforeEscapeChar = -1;
 
             loop:
             while (!progress.isFinished()) {
@@ -499,6 +500,10 @@ public abstract class Path {
                                 currentTypeString = currentId.toString();
                                 currentId.delete(0, currentId.length());
                                 break loop;
+                            case ESCAPE_CHAR:
+                                state = 2; // reading escape char
+                                stateBeforeEscapeChar = 0;
+                                break;
                             default:
                                 currentId.append(c);
                         }
@@ -507,6 +512,7 @@ public abstract class Path {
                         switch (c) {
                             case ESCAPE_CHAR:
                                 state = 2; // reading escape char
+                                stateBeforeEscapeChar = 1;
                                 break;
                             case PATH_DELIM:
                                 if (currentId.length() == 0) {
@@ -521,7 +527,8 @@ public abstract class Path {
                         break;
                     case 2: //reading escape char
                         currentId.append(c);
-                        state = 1;
+                        state = stateBeforeEscapeChar;
+                        stateBeforeEscapeChar = -1;
                         break;
                 }
             }

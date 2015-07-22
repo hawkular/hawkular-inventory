@@ -82,7 +82,7 @@ public class Security {
         if (restPath == null || restPath.trim().isEmpty()) {
             return false;
         }
-        String[] chunks = restPath.split("/");
+        String[] chunks = restPath.split("(?<=[^\\\\])/");
         if (chunks == null || chunks.length < 2) {
             return false;
         }
@@ -105,7 +105,7 @@ public class Security {
     }
 
     public static CanonicalPath toCanonicalPath(String restPath) {
-        String[] chunks = restPath.split("/");
+        String[] chunks = restPath.split("(?<=[^\\\\])/");
         CanonicalPath.Extender path = CanonicalPath.empty();
         if (chunks.length == 2) {
             if ("tenants".equals(chunks[0])) {
@@ -219,9 +219,8 @@ public class Security {
                     inventory.tenants().create(Tenant.Blueprint.builder().withId(entityId).build());
                 }
             }
-            if (RestApiLogger.LOGGER.isDebugEnabled()) {
-                RestApiLogger.LOGGER.debug("Operation: " + operation + ", stableId: " + stableId);
-            }
+            RestApiLogger.LOGGER.debugf("Permission check for operation '%s' for entity with stable ID '%s'",
+                operation.getName(), stableId);
             return permissions.isAllowedTo(operation, stableId);
         } catch (Exception e) {
             RestApiLogger.LOGGER.securityCheckFailed(stableId, e);
