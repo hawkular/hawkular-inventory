@@ -787,9 +787,9 @@ public class RestResources extends RestBase {
         }
 
         // split on every slash that is not preceded by the backward slash (escaped slash)
-        for (String rid : resourcePath.split("(?<=[^\\\\])/")) {
-            bld = bld.extend(Resource.class, rid);
-        }
+//        for (String rid : resourcePath.split("(?<=[^\\\\])/")) {
+            bld = bld.extend(Resource.class, resourcePath);
+//        }
 
         return bld.get();
     }
