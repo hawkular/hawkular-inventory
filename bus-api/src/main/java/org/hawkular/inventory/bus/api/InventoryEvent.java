@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.bus.api;
 
-import com.google.gson.annotations.Expose;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -34,7 +33,7 @@ import org.hawkular.inventory.api.model.Tenant;
  * @since 0.0.1
  */
 public abstract class InventoryEvent<T> extends BasicMessage {
-    @Expose
+
     private Action.Enumerated action;
 
     public static InventoryEvent<?> from(Action<?, ?> action, Object object) {
