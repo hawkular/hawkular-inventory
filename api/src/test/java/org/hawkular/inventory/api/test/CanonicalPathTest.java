@@ -92,18 +92,14 @@ public class CanonicalPathTest {
     @Test
     public void testParseWithEscapedChars() throws Exception {
         CanonicalPath p = CanonicalPath.fromString("/t;te\\/n\\;a\\/nt/e;e\\/nv/f;f\\/\\\\eed/r;r\\;\\;\\/es");
-        checkPath(p, Tenant.class, "te\\/n\\;a\\/nt", Environment.class, "e\\/nv", Feed.class, "f\\/\\\\eed",
-            Resource.class, "r\\;\\;\\/es");
+        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/\\eed",
+                Resource.class, "r;;/es");
 
         p = CanonicalPath
             .fromString("/t;te\\/n\\;a\\/nt/e;e\\/nv/f;f\\/\\\\eed/r;r\\;\\;\\/es1/r;r\\;\\;\\/es2/r;r\\;\\;\\/es3");
         // not sure if this should pass
-        checkPath(p, Tenant.class, "te\\/n\\;a\\/nt", Environment.class, "e\\/nv", Feed.class, "f\\/\\\\eed",
-            Resource.class, "r;r\\;\\;\\/es1/r;r\\;\\;\\/es2/r;r\\;\\;\\/es3");
-
-        // or this should pass (or both)
-        checkPath(p, Tenant.class, "te\\/n\\;a\\/nt", Environment.class, "e\\/nv", Feed.class, "f\\/\\\\eed",
-            Resource.class, "r\\;\\;\\/es1", Resource.class, "r\\;\\;\\/es2", Resource.class, "r\\;\\;\\/es3");
+        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/\\eed",
+                Resource.class, "r;;/es1", Resource.class, "r;;/es2", Resource.class, "r;;/es3");
     }
 
     @Test
@@ -115,11 +111,11 @@ public class CanonicalPathTest {
         Assert.assertEquals("/rl;r", CanonicalPath.of().relationship("r").get().toString());
 
         // escaped chars scenario
-        Assert.assertEquals("/t;te\\/nant/e;e\\;nv/r;r\\\\\\/es\\;\\;", CanonicalPath.of().tenant("te\\/nant")
-            .environment("e\\;nv").resource("r\\\\\\/es\\;\\;").get().toString());
+        Assert.assertEquals("/t;te\\/nant/e;e\\;nv/r;r\\\\\\/es\\;\\;", CanonicalPath.of().tenant("te/nant")
+                .environment("e;nv").resource("r\\/es;;").get().toString());
 
-        Assert.assertEquals("/t;t/e;e/res\\/1;res\\2/res\\;3", CanonicalPath.of().tenant("t").environment("e")
-            .resource("res\\/1").resource("res\\/2").resource("res\\;3").get().toString());
+        Assert.assertEquals("/t;t/e;e/r;res\\/1\\;res\\\\2/r;res\\;3", CanonicalPath.of().tenant("t").environment("e")
+                .resource("res/1;res\\2").resource("res;3").get().toString());
     }
 
     @Test
@@ -142,25 +138,12 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t/e;e", p.up().up().toString());
 
         CanonicalPath p2 = CanonicalPath.of().tenant("t").environment("e").feed("f").metric(
-            "m\\/e\\;t\\\\r\\|\\C").get();
-        Assert.assertEquals("/t;t/e;e/f;f/m;m\\/e\\;t\\r\\|\\C", p2.down().up().toString());
+                "m/e;t\\r\\|\\C").get();
+        Assert.assertEquals("/t;t/e;e/f;f/m;m\\/e\\;t\\\\r\\\\|\\\\C", p2.down().up().toString());
 
         CanonicalPath p3 = CanonicalPath.of().tenant("t").environment("e").feed("f").resource(
             "res1").resource("res2").get();
         Assert.assertEquals("/t;t/e;e/f;f/r;res1/r;res2", p3.down().up().toString());
-
-        try {
-            CanonicalPath.of().tenant("t").environment("e").feed("f").metric("metr/c").get();
-            Assert.fail("Invalid id, it should fail to parse because of unescaped '/'");
-        } catch (IllegalArgumentException e) {
-            // good
-        }
-        try {
-            CanonicalPath.of().tenant("t").environment("e").feed("f").metric("metr;c").get();
-            Assert.fail("Invalid id, it should fail to parse because of unescaped ';'");
-        } catch (IllegalArgumentException e) {
-            // good
-        }
     }
 
     @Test
@@ -179,26 +162,13 @@ public class CanonicalPathTest {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
 
         CanonicalPath p2 = p.extend(Metric.class, "m\\et\\/ric").get();
-        Assert.assertEquals("/t;t/e;e/f;f/m;m\\et\\/ric", p2.toString());
+        Assert.assertEquals("/t;t/e;e/f;f/m;m\\\\et\\\\\\/ric", p2.toString());
 
-        p2 = p.getRoot().extend(MetricType.class, "m\\et\\/ric\\;type").get();
-        Assert.assertEquals("/t;t/mt;m\\et\\/ric\\;type", p2.toString());
+        p2 = p.getRoot().extend(MetricType.class, "m\\et\\/ric;type").get();
+        Assert.assertEquals("/t;t/mt;m\\\\et\\\\\\/ric\\;type", p2.toString());
 
-        CanonicalPath p3 = p.extend(Metric.class, "\\/\\;\\/\\\\").get();
+        CanonicalPath p3 = p.extend(Metric.class, "/;/\\").get();
         Assert.assertEquals("/t;t/e;e/f;f/m;\\/\\;\\/\\\\", p3.toString());
-
-        try {
-            p.extend(Metric.class, "metr/c").get();
-            Assert.fail("Invalid id, it should fail to parse because of unescaped '/'");
-        } catch (IllegalArgumentException e) {
-            // good
-        }
-        try {
-            p.extend(Metric.class, "metr;c").get();
-            Assert.fail("Invalid id, it should fail to parse because of unescaped ';'");
-        } catch (IllegalArgumentException e) {
-            // good
-        }
     }
 
     @Test
@@ -215,12 +185,12 @@ public class CanonicalPathTest {
 
     @Test
     public void testIdExtractionWithEscapedChars() throws Exception {
-        CanonicalPath p = CanonicalPath.of().tenant("t\\/e\\;n\\/\\\\").environment("\\/\\;env\\/")
-            .resource("\\/res\\/").get();
-        Assert.assertEquals("t\\/e\\;n\\/\\\\", p.ids().getTenantId());
-        Assert.assertEquals("\\/\\;env\\/", p.ids().getEnvironmentId());
+        CanonicalPath p = CanonicalPath.of().tenant("t/e;n/\\").environment("/;env/")
+                .resource("/res/").get();
+        Assert.assertEquals("t/e;n/\\", p.ids().getTenantId());
+        Assert.assertEquals("/;env/", p.ids().getEnvironmentId());
         Assert.assertEquals("r;\\/res\\/", p.ids().getResourcePath().toString());
-        Assert.assertEquals("f\\/\\;e", p.up().extend(Feed.class, "f\\/\\;e").get().ids().getFeedId());
+        Assert.assertEquals("f/;e", p.up().extend(Feed.class, "f/;e").get().ids().getFeedId());
     }
 
     @Test
@@ -228,13 +198,6 @@ public class CanonicalPathTest {
         try {
             new Environment(CanonicalPath.of().tenant("t").get());
             Assert.fail("Creating an entity with a path pointing to a different entity type should not be possible.");
-        } catch (IllegalArgumentException e) {
-            //good
-        }
-        try {
-            new Tenant(CanonicalPath.of().tenant("t/").get());
-            new Tenant(CanonicalPath.of().tenant(";").get());
-            Assert.fail("Invalid id, it should fail to parse because of unescaped '/' or ';'");
         } catch (IllegalArgumentException e) {
             //good
         }
