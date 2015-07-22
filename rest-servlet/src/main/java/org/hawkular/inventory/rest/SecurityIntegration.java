@@ -102,7 +102,9 @@ public class SecurityIntegration {
                 createSecurityResource(entity);
                 break;
             case DELETED:
-                storage.delete(Security.getStableId(entity));
+                String stableId = Security.getStableId(entity);
+                storage.delete(stableId);
+                LOGGER.debugf("Deleted security entity with stable ID '%s' for entity %s", stableId, entity);
                 break;
         }
     }

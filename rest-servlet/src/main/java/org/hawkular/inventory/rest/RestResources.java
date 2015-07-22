@@ -786,7 +786,8 @@ public class RestResources extends RestBase {
             bld = bld.extend(Feed.class, feedId);
         }
 
-        for (String rid : resourcePath.split("/")) {
+        // split on every slash that is not preceded by the backward slash (escaped slash)
+        for (String rid : resourcePath.split("(?<=[^\\\\])/")) {
             bld = bld.extend(Resource.class, rid);
         }
 
@@ -796,7 +797,7 @@ public class RestResources extends RestBase {
     private RelativePath getResourcePath(String path) {
         RelativePath.Extender ret = RelativePath.empty();
 
-        for (String s : path.split("/")) {
+        for (String s : path.split("(?<=[^\\\\])/")) {
             ret.extend(Resource.class, s);
         }
 
