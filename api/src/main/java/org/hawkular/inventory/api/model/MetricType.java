@@ -22,7 +22,6 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.google.gson.annotations.Expose;
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by
@@ -36,11 +35,9 @@ import com.google.gson.annotations.Expose;
 public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, MetricType.Update> {
 
     @XmlAttribute
-    @Expose
     private final MetricUnit unit;
 
     @XmlAttribute
-    @Expose
     private final MetricDataType type;
 
     /**

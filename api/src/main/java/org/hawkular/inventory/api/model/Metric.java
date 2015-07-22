@@ -22,8 +22,6 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.google.gson.annotations.Expose;
-
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
  * in an environment and can be "incorporated" by {@link Resource resources} (surprisingly, many resources can
@@ -35,7 +33,6 @@ import com.google.gson.annotations.Expose;
 @XmlRootElement
 public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Update> {
 
-    @Expose
     private final MetricType type;
 
     /**
