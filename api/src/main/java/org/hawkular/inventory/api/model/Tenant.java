@@ -35,6 +35,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
+    private Tenant() {
+    }
+
     public Tenant(CanonicalPath path) {
         this(path, null);
     }

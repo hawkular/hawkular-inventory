@@ -16,9 +16,11 @@
  */
 package org.hawkular.inventory.bus.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -27,6 +29,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.hawkular.inventory.json.mixins.CanonicalPathWithTenantMixin;
 
 /**
  * @author Lukas Krejci
@@ -94,4 +98,19 @@ public abstract class InventoryEvent<T> extends BasicMessage {
     public abstract T getObject();
 
     public abstract void setObject(T object);
+
+    @Override
+    protected  ObjectMapper buildObjectMapperForSerialization() {
+        final ObjectMapper mapper = new ObjectMapper();
+        InventoryJacksonConfig.configure(mapper);
+        mapper.addMixIn(CanonicalPath.class, CanonicalPathWithTenantMixin.class);
+        return mapper;
+    }
+
+     public static ObjectMapper buildObjectMapperForDeserialization() {
+        final ObjectMapper mapper = new ObjectMapper();
+        InventoryJacksonConfig.configure(mapper);
+        mapper.addMixIn(CanonicalPath.class, CanonicalPathWithTenantMixin.class);
+        return mapper;
+    }
 }
