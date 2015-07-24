@@ -94,7 +94,7 @@ public class OfficialInventoryProducer {
 
         Inventory inventory = instantiateNew(cfg);
 
-        Log.LOG.iUsingImplementation(inventory.getClass().getName());
+        LOG.iUsingImplementation(inventory.getClass().getName());
 
         int failures = 0;
         int maxFailures = 5;
@@ -105,7 +105,8 @@ public class OfficialInventoryProducer {
 
                 initialized = true;
             } catch (Exception e) {
-                Log.LOG.wInitializationFailure(failures, maxFailures);
+                LOG.debugf("Unable to initialize inventory, exception thrown: ", e);
+                LOG.wInitializationFailure(failures, maxFailures);
                 Thread.sleep(1000);
             }
         }
@@ -114,7 +115,7 @@ public class OfficialInventoryProducer {
             throw new IllegalStateException("Could not initialize inventory.");
         }
 
-        Log.LOG.iInitialized();
+        LOG.iInitialized();
 
         return inventory;
     }
