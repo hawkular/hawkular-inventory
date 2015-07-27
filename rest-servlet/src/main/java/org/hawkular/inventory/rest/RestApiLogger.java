@@ -54,5 +54,9 @@ public interface RestApiLogger extends BasicLogger {
     @Message(id = 2003, value = "Security check failed on entity: [%s]")
     void securityCheckFailed(String entityId, @Cause Throwable cause);
 
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 2004, value = "Accepting:\nHTTP %s -> %s\n\nheaders:\n%s\npayload:\n%s\n")
+    void restCall(String method, String url, String headers, String jsonPayload);
+
 
 }

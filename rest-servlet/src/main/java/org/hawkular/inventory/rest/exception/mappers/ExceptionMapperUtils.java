@@ -27,6 +27,8 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.json.ApiError;
 
+import org.jboss.logging.Logger;
+
 /**
  *
  * @author Lukas Krejci
@@ -38,16 +40,20 @@ public class ExceptionMapperUtils {
 
     }
 
-    public static Response buildResponse(ApiError error, Throwable exception, Response.Status status){
-        RestApiLogger.LOGGER.warn("RestEasy exception, ", exception);
-        return Response.status(status)
-                .entity(error)
-                .type(MediaType.APPLICATION_JSON_TYPE)
-                .build();
-    }
-
     public static Response buildResponse(Throwable exception, Response.Status status){
         return buildResponse(new ApiError(Throwables.getRootCause(exception).getMessage()), exception, status);
+    }
+
+    public static Response buildResponse(ApiError error, Throwable exception, Response.Status status){
+        return buildResponse(Logger.Level.WARN, error, exception, status);
+    }
+
+    public static Response buildResponse(Logger.Level lvl, ApiError error, Throwable exception, Response.Status status){
+        RestApiLogger.LOGGER.log(lvl, "RestEasy exception, ", exception);
+        return Response.status(status)
+            .entity(error)
+            .type(MediaType.APPLICATION_JSON_TYPE)
+            .build();
     }
 
     public static class EntityTypeAndPath {
