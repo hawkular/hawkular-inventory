@@ -65,16 +65,16 @@ public final class InventoryJacksonConfig {
      * @param objectMapper the jackson object mapper
      */
     public static void configure(ObjectMapper objectMapper) {
-        objectMapper.addMixInAnnotations(AbstractElement.class, AbstractElementMixin.class);
-        objectMapper.addMixInAnnotations(CanonicalPath.class, CanonicalPathMixin.class);
-        objectMapper.addMixInAnnotations(Environment.class, EnvironmentMixin.class);
-        objectMapper.addMixInAnnotations(Feed.class, FeedMixin.class);
-        objectMapper.addMixInAnnotations(Metric.class, MetricMixin.class);
-        objectMapper.addMixInAnnotations(MetricType.class, MetricTypeMixin.class);
-        objectMapper.addMixInAnnotations(Relationship.class, RelationshipMixin.class);
-        objectMapper.addMixInAnnotations(RelativePath.class, RelativePathMixin.class);
-        objectMapper.addMixInAnnotations(Resource.class, ResourceMixin.class);
-        objectMapper.addMixInAnnotations(ResourceType.class, ResourceTypeMixin.class);
-        objectMapper.addMixInAnnotations(Tenant.class, TenantMixin.class);
+        objectMapper.addMixIn(AbstractElement.class, AbstractElementMixin.class);
+        objectMapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
+        objectMapper.addMixIn(Environment.class, EnvironmentMixin.class);
+        objectMapper.addMixIn(Feed.class, FeedMixin.class);
+        objectMapper.addMixIn(Metric.class, MetricMixin.class);
+        objectMapper.addMixIn(MetricType.class, MetricTypeMixin.class);
+        objectMapper.addMixIn(Relationship.class, RelationshipMixin.class);
+        objectMapper.addMixIn(RelativePath.class, RelativePathMixin.class);
+        objectMapper.addMixIn(Resource.class, ResourceMixin.class);
+        objectMapper.addMixIn(ResourceType.class, ResourceTypeMixin.class);
+        objectMapper.addMixIn(Tenant.class, TenantMixin.class);
     }
 }

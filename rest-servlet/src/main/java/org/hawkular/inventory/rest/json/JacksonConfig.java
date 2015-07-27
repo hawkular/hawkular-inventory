@@ -67,8 +67,8 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
         InventoryJacksonConfig.configure(mapper);
         //need to reconfigure for path serialization
-        mapper.addMixInAnnotations(CanonicalPath.class, PathSerializationMixin.class);
-        mapper.addMixInAnnotations(RelativePath.class, PathSerializationMixin.class);
+        mapper.addMixIn(CanonicalPath.class, PathSerializationMixin.class);
+        mapper.addMixIn(RelativePath.class, PathSerializationMixin.class);
     }
 
     @Override
