@@ -27,11 +27,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 import org.apache.commons.io.IOUtils;
 import org.hawkular.inventory.rest.RestApiLogger;
+import org.hawkular.inventory.rest.json.JacksonConfig;
 
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 
@@ -44,9 +43,9 @@ import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 @ServerInterceptor
 public class LoggingInterceptor implements ContainerRequestFilter {
 
-    private static final ObjectWriter WRITER = new ObjectMapper().writerWithDefaultPrettyPrinter();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     static {
-        WRITER.with(SerializationFeature.INDENT_OUTPUT);
+        JacksonConfig.initializeObjectMapper(MAPPER);
     }
 
     @Override
@@ -66,8 +65,7 @@ public class LoggingInterceptor implements ContainerRequestFilter {
                 IOUtils.copy(containerRequestContext.getEntityStream(), baos);
                 byte[] jsonBytes = baos.toByteArray();
                 json = new String(jsonBytes, "UTF-8");
-
-                json = WRITER.writeValueAsString(json);
+                json = MAPPER.writeValueAsString(json);
                 containerRequestContext.setEntityStream(new ByteArrayInputStream(jsonBytes));
             }
             RestApiLogger.LOGGER.restCall(method, url, headersStr.toString(), json == null ? "empty" : json);
