@@ -40,6 +40,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <version.org.hawkular.bus>0.3.2.Final</version.org.hawkular.bus>
+  </properties>
+
   <modules>
     <module>api</module>
     <module>hawkular-inventory-json-helper</module>

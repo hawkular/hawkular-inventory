@@ -595,6 +595,10 @@ public abstract class Path {
         private final Class<?> elementType;
         private final String entityId;
 
+        private Segment() {
+            this(null, null);
+        }
+
         public Segment(Class<?> elementType, String entityId) {
             this.entityId = entityId;
             this.elementType = elementType;
