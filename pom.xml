@@ -41,7 +41,7 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.bus>0.3.2.Final</version.org.hawkular.bus>
+    <version.org.hawkular.bus>0.3.3.Final</version.org.hawkular.bus>
   </properties>
 
   <modules>
