@@ -25,6 +25,8 @@ import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.rest.json.ApiError;
 
+import org.jboss.logging.Logger;
+
 /**
  * @author Jirka Kremser
  * @since 0.1.0
@@ -34,7 +36,7 @@ public class EntityAlreadyExistsExceptionMapper implements ExceptionMapper<Entit
 
     @Override
     public Response toResponse(EntityAlreadyExistsException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityIdAndPath.fromException(exception)), exception, CONFLICT);
+        return ExceptionMapperUtils.buildResponse(Logger.Level.DEBUG, new ApiError(exception.getMessage(),
+            ExceptionMapperUtils.EntityIdAndPath.fromException(exception)), exception, CONFLICT);
     }
 }

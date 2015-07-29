@@ -25,6 +25,8 @@ import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.rest.json.ApiError;
 
+import org.jboss.logging.Logger;
+
 /**
  * @author Jirka Kremser
  * @since 0.1.0
@@ -34,7 +36,7 @@ public class EntityNotFoundExceptionMapper implements ExceptionMapper<EntityNotF
 
     @Override
     public Response toResponse(EntityNotFoundException exception) {
-        return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                .EntityTypeAndPath.fromException(exception)), exception, NOT_FOUND);
+        return ExceptionMapperUtils.buildResponse(Logger.Level.DEBUG, new ApiError(exception.getMessage(),
+            ExceptionMapperUtils.EntityTypeAndPath.fromException(exception)), exception, NOT_FOUND);
     }
 }

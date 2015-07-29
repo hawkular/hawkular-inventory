@@ -25,6 +25,8 @@ import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.rest.json.ApiError;
 
+import org.jboss.logging.Logger;
+
 /**
  * @author Jirka Kremser
  * @since 0.1.0
@@ -34,7 +36,7 @@ public class RelationNotFoundExceptionMapper implements ExceptionMapper<Relation
 
     @Override
     public Response toResponse(RelationNotFoundException exception) {
-            return ExceptionMapperUtils.buildResponse(new ApiError(exception.getMessage(), ExceptionMapperUtils
-                    .RelationshipNameAndPath.fromException(exception)), exception, NOT_FOUND);
+            return ExceptionMapperUtils.buildResponse(Logger.Level.DEBUG, new ApiError(exception.getMessage(),
+                ExceptionMapperUtils.RelationshipNameAndPath.fromException(exception)), exception, NOT_FOUND);
     }
 }
