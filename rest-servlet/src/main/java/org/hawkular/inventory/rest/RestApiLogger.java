@@ -36,6 +36,8 @@ public interface RestApiLogger extends BasicLogger {
 
     RestApiLogger LOGGER = Logger.getMessageLogger(RestApiLogger.class, "org.hawkular.inventory.rest");
 
+    RestApiLogger REQUESTS_LOGGER = Logger
+        .getMessageLogger(RestApiLogger.class, "org.hawkular.inventory.rest.requests");
 
     @LogMessage(level = Logger.Level.INFO)
     @Message(id = 2000, value = "Hawkular-Inventory REST Api is starting...")

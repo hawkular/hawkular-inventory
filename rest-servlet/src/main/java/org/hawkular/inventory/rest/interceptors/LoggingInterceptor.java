@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.rest.interceptors;
 
+import static org.hawkular.inventory.rest.RestApiLogger.REQUESTS_LOGGER;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +31,6 @@ import javax.ws.rs.ext.Provider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.IOUtils;
-import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.json.JacksonConfig;
 
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
@@ -50,8 +51,7 @@ public class LoggingInterceptor implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext containerRequestContext) throws IOException {
-        // perhaps better than logger lvl could be a system property passed by -Dx=y
-        if (RestApiLogger.LOGGER.isDebugEnabled()) {
+        if (REQUESTS_LOGGER.isDebugEnabled()) {
             final String method = containerRequestContext.getMethod();
             final String url = containerRequestContext.getUriInfo().getRequestUri().toString();
             final StringBuilder headersStr = new StringBuilder();
@@ -65,10 +65,11 @@ public class LoggingInterceptor implements ContainerRequestFilter {
                 IOUtils.copy(containerRequestContext.getEntityStream(), baos);
                 byte[] jsonBytes = baos.toByteArray();
                 json = new String(jsonBytes, "UTF-8");
-                json = MAPPER.writeValueAsString(json);
+                Object jsonObject = MAPPER.readValue(json, Object.class);
+                json = MAPPER.writeValueAsString(jsonObject);
                 containerRequestContext.setEntityStream(new ByteArrayInputStream(jsonBytes));
             }
-            RestApiLogger.LOGGER.restCall(method, url, headersStr.toString(), json == null ? "empty" : json);
+            REQUESTS_LOGGER.restCall(method, url, headersStr.toString(), json == null ? "empty" : json);
         }
     }
 }
