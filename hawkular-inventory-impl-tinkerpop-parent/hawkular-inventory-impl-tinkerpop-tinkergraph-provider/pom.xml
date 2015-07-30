@@ -21,26 +21,22 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>inventory-impl-tinkerpop-parent</artifactId>
+    <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
     <version>0.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>inventory-impl-tinkerpop-spi</artifactId>
+  <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
 
-  <name>Hawkular Inventory Tinkerpop SPI</name>
+  <name>Hawkular Inventory Tinkerpop TinkerGraph Provider</name>
 
+  <!-- This will probably be independently versioned in the future, because it doesn't really make sense to release
+       a new version with every version of the Tinkerpop impl. -->
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-core</artifactId>
-      <version>${version.com.tinkerpop}</version>
+      <artifactId>hawkular-inventory-impl-tinkerpop-spi</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
   </dependencies>
 

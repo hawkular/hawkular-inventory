@@ -21,26 +21,31 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>inventory-impl-tinkerpop-parent</artifactId>
+    <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
     <version>0.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
+  <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
+  <packaging>pom</packaging>
 
-  <name>Hawkular Inventory Tinkerpop TinkerGraph Provider</name>
+  <name>Hawkular Inventory Tinkerpop implementation parent POM</name>
 
-  <!-- This will probably be independently versioned in the future, because it doesn't really make sense to release
-       a new version with every version of the Tinkerpop impl. -->
-  <dependencies>
-    <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-tinkerpop-spi</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>hawkular-inventory-impl-tinkerpop</module>
+    <module>hawkular-inventory-impl-tinkerpop-spi</module>
+    <module>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</module>
+    <module>hawkular-inventory-impl-tinkerpop-titan-provider</module>
+  </modules>
 
-  <build>
-    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-  </build>
+  <scm>
+    <url>https://github.com/hawkular/hawkular-inventory</url>
+    <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
+    <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <version.com.tinkerpop>2.6.0</version.com.tinkerpop>
+  </properties>
 </project>

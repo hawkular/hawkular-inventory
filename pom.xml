@@ -27,22 +27,22 @@
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
-  <artifactId>inventory-parent</artifactId>
+  <artifactId>hawkular-inventory-parent</artifactId>
   <version>0.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
 
   <modules>
-    <module>api</module>
+    <module>hawkular-inventory-api</module>
     <module>hawkular-inventory-json-helper</module>
-    <module>impl-tinkerpop-parent</module>
+    <module>hawkular-inventory-impl-tinkerpop-parent</module>
     <module>hawkular-inventory-cdi</module>
-    <module>rest-servlet</module>
-    <module>bus</module>
-    <module>bus-api</module>
-    <module>hawkular-integrated-inventory-rest</module>
-    <module>load-tests</module>
+    <module>hawkular-inventory-rest-api</module>
+    <module>hawkular-inventory-bus</module>
+    <module>hawkular-inventory-bus-api</module>
+    <module>hawkular-inventory-dist</module>
+    <module>hawkular-inventory-load-tests</module>
   </modules>
 
   <scm>
