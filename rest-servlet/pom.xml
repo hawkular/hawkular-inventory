@@ -28,6 +28,7 @@
 
   <artifactId>inventory-rest-api</artifactId>
   <packaging>war</packaging>
+
   <name>Hawkular Inventory REST API Web Application</name>
 
   <scm>
@@ -170,7 +171,6 @@
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-
     <plugins>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>

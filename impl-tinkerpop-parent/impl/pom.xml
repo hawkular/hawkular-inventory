@@ -83,10 +83,8 @@
     </dependency>
   </dependencies>
 
-
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-
     <testResources>
       <testResource>
         <directory>${project.basedir}/src/test/resources</directory>

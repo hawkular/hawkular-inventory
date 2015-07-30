@@ -27,6 +27,7 @@
   </parent>
 
   <artifactId>inventory-api</artifactId>
+
   <name>Hawkular Inventory API</name>
 
   <scm>
@@ -78,7 +79,6 @@
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-
     <plugins>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
@@ -93,5 +93,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
