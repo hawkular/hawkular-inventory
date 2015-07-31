@@ -207,9 +207,19 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
 
     private BE getParent() {
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
+            @SuppressWarnings("unchecked")
             @Override
             protected BE defaultAction() {
                 Page<BE> res = context.backend.query(context.sourcePath, Pager.single());
+
+                if (res.isEmpty()) {
+                    Class<? extends Entity<?, ?>> parentEntityClass = null;
+                    if (context.previous != null && Entity.class.isAssignableFrom(context.previous.entityClass)) {
+                        parentEntityClass = (Class<? extends Entity<?, ?>>) context.previous.entityClass;
+                    }
+
+                    throw new EntityNotFoundException(parentEntityClass, Query.filters(context.sourcePath));
+                }
 
                 return res.get(0);
             }

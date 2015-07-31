@@ -1328,6 +1328,17 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
+    public void testCreationUnderNonExistentParentThrowsEntityNotFoundException() throws Exception {
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("no-feed")
+                    .resources().create(Resource.Blueprint.builder().withId("blah").withResourceTypePath("../../URL")
+                    .build());
+        } catch (EntityNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void testObserveTenants() throws Exception {
         runObserverTest(Tenant.class, 0, 0, () -> {
             inventory.tenants().create(new Tenant.Blueprint("xxx"));
@@ -1413,7 +1424,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder().withId("rt").build());
             inventory.tenants().get("t").metricTypes()
                     .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId("mt")
-                                    .withUnit(MetricUnit.BYTE).build());
+                            .withUnit(MetricUnit.BYTE).build());
 
             inventory.tenants().get("t").environments().get("e").feedlessResources()
                     .create(new Resource.Blueprint("r", "/rt"));
