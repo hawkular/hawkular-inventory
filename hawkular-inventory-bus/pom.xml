@@ -18,14 +18,16 @@
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
   <parent>
-    <artifactId>inventory-parent</artifactId>
+    <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
     <version>0.2.0-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>inventory-bus</artifactId>
+  <artifactId>hawkular-inventory-bus</artifactId>
+
   <name>Hawkular Inventory Bus Integration</name>
 
   <scm>
@@ -38,13 +40,13 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
+      <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-bus-api</artifactId>
+      <artifactId>hawkular-inventory-bus-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 

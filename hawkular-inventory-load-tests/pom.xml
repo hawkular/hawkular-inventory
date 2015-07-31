@@ -17,33 +17,38 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>inventory-impl-tinkerpop-parent</artifactId>
-    <groupId>org.hawkular.inventory</groupId>
-    <version>0.2.0-SNAPSHOT</version>
-  </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>inventory-impl-tinkerpop-spi</artifactId>
+  <parent>
+    <groupId>org.hawkular.inventory</groupId>
+    <artifactId>hawkular-inventory-parent</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
+  </parent>
 
-  <name>Hawkular Inventory Tinkerpop SPI</name>
+  <artifactId>hawkular-inventory-load-tests</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Hawkular Inventory Load Tests</name>
 
   <dependencies>
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-core</artifactId>
-      <version>${version.com.tinkerpop}</version>
+      <groupId>io.gatling.highcharts</groupId>
+      <artifactId>gatling-charts-highcharts</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
-    <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>io.gatling</groupId>
+        <artifactId>gatling-maven-plugin</artifactId>
+        <configuration>
+          <simulationClass>org.hawkular.inventory.loadtest.AgentSimulation</simulationClass>
+          <propagateSystemProperties>true</propagateSystemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

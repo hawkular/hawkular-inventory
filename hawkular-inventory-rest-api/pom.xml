@@ -22,12 +22,13 @@
 
   <parent>
     <groupId>org.hawkular.inventory</groupId>
-    <artifactId>inventory-parent</artifactId>
+    <artifactId>hawkular-inventory-parent</artifactId>
     <version>0.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>inventory-rest-api</artifactId>
+  <artifactId>hawkular-inventory-rest-api</artifactId>
   <packaging>war</packaging>
+
   <name>Hawkular Inventory REST API Web Application</name>
 
   <scm>
@@ -58,19 +59,19 @@
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
+      <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-tinkerpop</artifactId>
+      <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-bus</artifactId>
+      <artifactId>hawkular-inventory-bus</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -170,7 +171,6 @@
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-
     <plugins>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>

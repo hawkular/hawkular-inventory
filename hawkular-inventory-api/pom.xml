@@ -18,15 +18,17 @@
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>inventory-parent</artifactId>
-    <groupId>org.hawkular.inventory</groupId>
-    <version>0.2.0-SNAPSHOT</version>
-  </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>inventory-bus-api</artifactId>
-  <name>Hawkular Inventory Bus API</name>
+  <parent>
+    <groupId>org.hawkular.inventory</groupId>
+    <artifactId>hawkular-inventory-parent</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hawkular-inventory-api</artifactId>
+
+  <name>Hawkular Inventory API</name>
 
   <scm>
     <url>https://github.com/hawkular/hawkular-inventory</url>
@@ -37,24 +39,58 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
-      <version>${project.version}</version>
+      <groupId>io.reactivex</groupId>
+      <artifactId>rxjava</artifactId>
+      <version>1.0.8</version>
     </dependency>
+
+    <!-- Logging -->
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-json-helper</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.bus</groupId>
-      <artifactId>hawkular-bus-common</artifactId>
-      <version>${version.org.hawkular.bus}</version>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-processor</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- test -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>1.10.19</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>jar</goal>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>

@@ -22,11 +22,11 @@
 
   <parent>
     <groupId>org.hawkular.inventory</groupId>
-    <artifactId>inventory-impl-tinkerpop-parent</artifactId>
+    <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <version>0.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>inventory-impl-tinkerpop</artifactId>
+  <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
   <packaging>jar</packaging>
 
   <name>Hawkular Inventory Tinkerpop Implementation</name>
@@ -34,13 +34,13 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
+      <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-impl-tinkerpop-spi</artifactId>
+      <artifactId>hawkular-inventory-impl-tinkerpop-spi</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -76,17 +76,15 @@
     <!-- test deps -->
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
+      <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
   </dependencies>
 
-
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-
     <testResources>
       <testResource>
         <directory>${project.basedir}/src/test/resources</directory>
@@ -105,7 +103,7 @@
       <dependencies>
         <dependency>
           <groupId>org.hawkular.inventory</groupId>
-          <artifactId>inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
+          <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
           <version>${project.version}</version>
           <scope>runtime</scope>
         </dependency>
@@ -132,7 +130,7 @@
       <dependencies>
         <dependency>
           <groupId>org.hawkular.inventory</groupId>
-          <artifactId>inventory-impl-tinkerpop-titan-provider</artifactId>
+          <artifactId>hawkular-inventory-impl-tinkerpop-titan-provider</artifactId>
           <version>${project.version}</version>
           <scope>runtime</scope>
         </dependency>
