@@ -65,6 +65,7 @@ public final class EntityNotFoundException extends InventoryException {
 
     @Override
     public String getMessage() {
-        return entityType.getSimpleName() + " not found on any of the following paths: " + Arrays.deepToString(filters);
+        return (entityType == null ? "Nothing" : ("No " + entityType.getSimpleName())) +
+                " found on any of the following paths: " + Arrays.deepToString(filters);
     }
 }
