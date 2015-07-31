@@ -57,7 +57,11 @@ public class BusIntegrationProducer {
         // TODO load this from somewhere
         ret.configure(Configuration.getDefaultConfiguration());
 
-        ret.start();
+        try {
+            ret.start();
+        } catch (NamingException | JMSException e) {
+            Log.LOGGER.busInitializationFailed(e);
+        }
 
         return ret;
     }

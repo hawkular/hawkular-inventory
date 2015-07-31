@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.bus;
 
+import javax.jms.JMSException;
+import javax.jms.TopicConnectionFactory;
+import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
@@ -56,12 +59,18 @@ public final class BusIntegration {
         this.configuration = configuration;
     }
 
-    public void start() {
+    public void start() throws NamingException, JMSException {
         if (namingContext != null) {
             return;
         }
 
-        this.messageSender = new MessageSender(configuration);
+        namingContext = new InitialContext();
+        TopicConnectionFactory tcf = (TopicConnectionFactory) namingContext.lookup(
+                configuration.getConnectionFactoryJndiName());
+
+        ConnectionContextFactory ccf = new ConnectionContextFactory(tcf);
+
+        this.messageSender = new MessageSender(ccf, configuration.getInventoryChangesTopicName());
 
         install();
     }
