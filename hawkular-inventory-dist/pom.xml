@@ -26,10 +26,14 @@
     <version>0.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-integrated-inventory-rest</artifactId>
+  <artifactId>hawkular-inventory-dist</artifactId>
   <packaging>war</packaging>
 
-  <name>Hawkular Inventory REST War Integration Overlay</name>
+  <name>Hawkular Inventory REST War Distribution</name>
+  <description>
+    Overlays the rest servlet with bus and sets up the dependencies and default configuration to make it ready for
+    inclusion in Hawkular.
+  </description>
 
   <scm>
     <url>https://github.com/hawkular/hawkular-inventory</url>
