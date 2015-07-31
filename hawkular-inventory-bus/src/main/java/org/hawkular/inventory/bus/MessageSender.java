@@ -16,6 +16,11 @@
  */
 package org.hawkular.inventory.bus;
 
+import javax.jms.TopicConnectionFactory;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import org.hawkular.bus.common.ConnectionContextFactory;
+import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Interest;
@@ -32,23 +37,26 @@ import static org.hawkular.inventory.bus.Log.LOG;
  * @since 0.0.1
  */
 final class MessageSender {
-    private final ProducerConnectionContext producerConnectionContext;
     private final MessageProcessor messageProcessor;
+    private final Configuration configuration;
 
-    public MessageSender(ProducerConnectionContext producerConnectionContext) {
-        this.producerConnectionContext = producerConnectionContext;
+
+    public MessageSender(Configuration configuration) {
+        this.configuration = configuration;
         this.messageProcessor = new MessageProcessor();
     }
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
         InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
         try {
+            ProducerConnectionContext producerConnectionContext = init();
+
             Map<String, String> headers = toHeaders(interest);
             messageProcessor.send(producerConnectionContext, message, headers);
 
             Log.LOG.debugf("Sent message %s with headers %s to %s", message, headers,
                     producerConnectionContext.getDestination());
-        } catch (JMSException e) {
+        } catch (JMSException | NamingException e) {
             LOG.failedToSendMessage(message.toString());
         }
     }
@@ -64,5 +72,19 @@ final class MessageSender {
 
     private String firstLetterLowercased(String source) {
         return Character.toLowerCase(source.charAt(0)) + source.substring(1);
+    }
+
+    private ProducerConnectionContext init() throws JMSException, NamingException {
+        InitialContext namingContext = new InitialContext();
+
+        TopicConnectionFactory tcf = (TopicConnectionFactory) namingContext.lookup(
+                configuration.getConnectionFactoryJndiName());
+
+        ConnectionContextFactory ccf = new ConnectionContextFactory(tcf);
+
+        ProducerConnectionContext producerConnectionContext = ccf.createProducerConnectionContext(
+                new Endpoint(Endpoint.Type.TOPIC, configuration.getInventoryChangesTopicName()));
+
+        return producerConnectionContext;
     }
 }

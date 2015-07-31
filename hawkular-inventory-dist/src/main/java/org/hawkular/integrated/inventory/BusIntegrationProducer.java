@@ -41,7 +41,6 @@ public class BusIntegrationProducer {
         BusIntegration integration = integrations.get(event.getInventory());
         if (integration == null) {
             integration = newIntegration(event.getInventory());
-            integration.start();
             integrations.put(event.getInventory(), integration);
         }
     }
@@ -58,11 +57,7 @@ public class BusIntegrationProducer {
         // TODO load this from somewhere
         ret.configure(Configuration.getDefaultConfiguration());
 
-        try {
-            ret.start();
-        } catch (NamingException | JMSException e) {
-            Log.LOGGER.busInitializationFailed(e);
-        }
+        ret.start();
 
         return ret;
     }
