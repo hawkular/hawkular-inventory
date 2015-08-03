@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.2.0.Final</version>
+    <version>0.2.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-cdi</artifactId>
@@ -34,7 +34,7 @@
     <url>https://github.com/hawkular/hawkular-inventory</url>
     <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
     <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
-    <tag>0.2.0.Final</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <dependencies>
