@@ -16,17 +16,18 @@
  */
 package org.hawkular.integrated.inventory;
 
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.bus.BusIntegration;
-import org.hawkular.inventory.bus.Configuration;
-import org.hawkular.inventory.cdi.DisposingInventory;
-import org.hawkular.inventory.cdi.InventoryInitialized;
+import java.util.IdentityHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
-import java.util.IdentityHashMap;
+
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.bus.BusIntegration;
+import org.hawkular.inventory.bus.Configuration;
+import org.hawkular.inventory.cdi.DisposingInventory;
+import org.hawkular.inventory.cdi.InventoryInitialized;
 
 /**
  * @author Lukas Krejci

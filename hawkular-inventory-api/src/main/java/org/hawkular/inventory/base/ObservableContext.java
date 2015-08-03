@@ -16,20 +16,21 @@
  */
 package org.hawkular.inventory.base;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Log;
+
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.observers.SafeSubscriber;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Hold the observables corresponding to different interests for being notified about on inventory.

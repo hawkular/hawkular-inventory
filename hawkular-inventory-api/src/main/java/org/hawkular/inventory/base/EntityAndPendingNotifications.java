@@ -16,12 +16,12 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.Action;
-import org.hawkular.inventory.api.model.AbstractElement;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.model.AbstractElement;
 
 /**
  * A class for holding the results of wiring up a newly created element.

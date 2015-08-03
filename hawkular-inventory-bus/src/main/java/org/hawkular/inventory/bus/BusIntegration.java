@@ -16,6 +16,14 @@
  */
 package org.hawkular.inventory.bus;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.jms.JMSException;
+import javax.jms.TopicConnectionFactory;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
@@ -32,14 +40,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import rx.Subscription;
 
-import javax.jms.JMSException;
-import javax.jms.TopicConnectionFactory;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import java.util.HashSet;
-import java.util.Set;
+import rx.Subscription;
 
 /**
  * @author Lukas Krejci

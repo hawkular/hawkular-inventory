@@ -16,6 +16,11 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
+
+import java.util.Arrays;
+
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
@@ -27,11 +32,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-
-import java.util.Arrays;
-
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
 
 /**
  * @author Lukas Krejci

@@ -28,12 +28,11 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.commons.io.IOUtils;
 import org.hawkular.inventory.rest.json.JacksonConfig;
-
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Jirka Kremser

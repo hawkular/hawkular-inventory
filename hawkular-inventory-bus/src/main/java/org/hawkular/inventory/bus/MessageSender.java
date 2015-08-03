@@ -16,16 +16,17 @@
  */
 package org.hawkular.inventory.bus;
 
+import static org.hawkular.inventory.bus.Log.LOG;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.jms.JMSException;
+
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.bus.api.InventoryEvent;
-
-import javax.jms.JMSException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.hawkular.inventory.bus.Log.LOG;
 
 /**
  * @author Lukas Krejci

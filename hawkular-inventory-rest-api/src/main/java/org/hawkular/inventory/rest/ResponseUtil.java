@@ -16,15 +16,16 @@
  */
 package org.hawkular.inventory.rest;
 
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.PageContext;
-import org.hawkular.inventory.rest.json.Link;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.PageContext;
+import org.hawkular.inventory.rest.json.Link;
 
 /**
  * @author Lukas Krejci
