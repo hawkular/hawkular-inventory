@@ -16,15 +16,15 @@
  */
 package org.hawkular.integrated.inventory;
 
-import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.cdi.Official;
-
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.inject.Inject;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.cdi.Official;
 
 /**
  * @author Lukas Krejci

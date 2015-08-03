@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.MessageProcessor;

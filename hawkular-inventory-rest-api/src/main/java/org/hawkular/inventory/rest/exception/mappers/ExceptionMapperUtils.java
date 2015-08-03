@@ -16,9 +16,9 @@
  */
 package org.hawkular.inventory.rest.exception.mappers;
 
-import com.google.common.base.Throwables;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
@@ -26,8 +26,9 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.json.ApiError;
-
 import org.jboss.logging.Logger;
+
+import com.google.common.base.Throwables;
 
 /**
  *

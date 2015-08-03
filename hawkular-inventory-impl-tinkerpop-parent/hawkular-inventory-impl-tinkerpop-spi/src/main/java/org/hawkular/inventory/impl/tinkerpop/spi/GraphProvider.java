@@ -16,9 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+
+import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * This is a service interface that the Tinkerpop implementation will use to get a configured and initialized instance

@@ -22,9 +22,9 @@ import static javax.ws.rs.core.Response.Status.CONFLICT;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.rest.json.ApiError;
-
 import org.jboss.logging.Logger;
 
 /**

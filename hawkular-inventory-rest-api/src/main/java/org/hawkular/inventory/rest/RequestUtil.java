@@ -16,14 +16,15 @@
  */
 package org.hawkular.inventory.rest;
 
-import org.hawkular.inventory.api.paging.Order;
-import org.hawkular.inventory.api.paging.PageContext;
-import org.hawkular.inventory.api.paging.Pager;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.PageContext;
+import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci

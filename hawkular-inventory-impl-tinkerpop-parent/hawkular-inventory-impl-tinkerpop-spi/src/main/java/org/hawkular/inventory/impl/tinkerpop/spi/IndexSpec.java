@@ -16,10 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
-import com.tinkerpop.blueprints.Element;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci

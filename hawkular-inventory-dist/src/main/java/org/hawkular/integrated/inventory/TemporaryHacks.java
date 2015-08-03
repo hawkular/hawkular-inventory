@@ -16,6 +16,11 @@
  */
 package org.hawkular.integrated.inventory;
 
+import static org.hawkular.inventory.api.Action.created;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.PartiallyApplied;
@@ -26,12 +31,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.cdi.InventoryInitialized;
+
 import rx.Observable;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-
-import static org.hawkular.inventory.api.Action.created;
 
 /**
  * @author Lukas Krejci

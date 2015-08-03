@@ -16,9 +16,9 @@
  */
 package org.hawkular.inventory.api.filters;
 
-import org.hawkular.inventory.api.model.Entity;
-
 import java.util.Arrays;
+
+import org.hawkular.inventory.api.model.Entity;
 
 /**
  * @author Jirka Kremser

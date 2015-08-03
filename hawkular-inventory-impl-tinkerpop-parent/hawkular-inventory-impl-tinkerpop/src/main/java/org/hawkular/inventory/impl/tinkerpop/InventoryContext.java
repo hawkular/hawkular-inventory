@@ -17,9 +17,10 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
-import com.tinkerpop.blueprints.TransactionalGraph;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
+
+import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * Data needed by various services. Mostly coming from configuration.

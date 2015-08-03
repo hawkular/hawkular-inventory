@@ -16,13 +16,13 @@
  */
 package org.hawkular.inventory.bus;
 
+import static org.hawkular.inventory.bus.Log.LOG;
+
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
-import static org.hawkular.inventory.bus.Log.LOG;
 
 /**
  * @author Lukas Krejci
