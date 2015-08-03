@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.bus;
 
+import org.hawkular.bus.common.ConnectionContextFactory;
+import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Interest;
@@ -32,17 +34,23 @@ import static org.hawkular.inventory.bus.Log.LOG;
  * @since 0.0.1
  */
 final class MessageSender {
-    private final ProducerConnectionContext producerConnectionContext;
     private final MessageProcessor messageProcessor;
+    private final ConnectionContextFactory connectionContextFactory;
+    private final String topicName;
+    private ProducerConnectionContext producerConnectionContext;
 
-    public MessageSender(ProducerConnectionContext producerConnectionContext) {
-        this.producerConnectionContext = producerConnectionContext;
+
+    public MessageSender(ConnectionContextFactory connectionContextFactory, String topicName) {
+        this.connectionContextFactory = connectionContextFactory;
         this.messageProcessor = new MessageProcessor();
+        this.topicName = topicName;
     }
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
         InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
         try {
+            init();
+
             Map<String, String> headers = toHeaders(interest);
             messageProcessor.send(producerConnectionContext, message, headers);
 
@@ -64,5 +72,12 @@ final class MessageSender {
 
     private String firstLetterLowercased(String source) {
         return Character.toLowerCase(source.charAt(0)) + source.substring(1);
+    }
+
+    private void init() throws JMSException {
+        if (producerConnectionContext == null) {
+            producerConnectionContext = connectionContextFactory.createProducerConnectionContext(
+                    new Endpoint(Endpoint.Type.TOPIC, topicName));
+        }
     }
 }

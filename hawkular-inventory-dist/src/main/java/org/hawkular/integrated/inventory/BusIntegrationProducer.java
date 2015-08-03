@@ -41,7 +41,6 @@ public class BusIntegrationProducer {
         BusIntegration integration = integrations.get(event.getInventory());
         if (integration == null) {
             integration = newIntegration(event.getInventory());
-            integration.start();
             integrations.put(event.getInventory(), integration);
         }
     }
