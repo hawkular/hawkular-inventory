@@ -196,7 +196,11 @@ public final class BaseRelationships {
         public Read(TraversalContext<BE, Relationship> context) {
             super(context);
             QueryFragment[] filters = context.selectCandidates.getFragments();
-            direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
+            if (filters.length == 0) {
+                direction = Relationships.Direction.outgoing;
+            } else {
+                direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
+            }
         }
 
         @Override
@@ -211,7 +215,7 @@ public final class BaseRelationships {
 
         @Override
         public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return new Single<>(context.proceed().where(With.id(id)).get());
+            return new Single<>(context.proceed().where(RelationWith.id(id)).get());
         }
 
         @Override
