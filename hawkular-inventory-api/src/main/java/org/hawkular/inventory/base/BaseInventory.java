@@ -109,4 +109,9 @@ public abstract class BaseInventory<E> implements Inventory {
     public <C, V> Observable<C> observable(Interest<C, V> interest) {
         return observableContext.getObservableFor(interest);
     }
+
+    @Override
+    public String getGraphSON(String tenantId) {
+        return getBackend().getGraphSON(tenantId);
+    }
 }

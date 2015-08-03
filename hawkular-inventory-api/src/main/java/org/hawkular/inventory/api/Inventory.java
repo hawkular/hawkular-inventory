@@ -415,4 +415,7 @@ public interface Inventory extends AutoCloseable {
      * mutation
      */
     <C, E> rx.Observable<C> observable(Interest<C, E> interest);
+
+    String getGraphSON(String tenantId);
+
 }

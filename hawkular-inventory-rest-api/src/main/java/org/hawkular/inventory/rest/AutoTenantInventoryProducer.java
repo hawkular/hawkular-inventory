@@ -107,6 +107,11 @@ public class AutoTenantInventoryProducer {
             }
 
             @Override
+            public String getGraphSON(String tenantId) {
+                return inventory.getGraphSON(tenantId);
+            }
+
+            @Override
             public void close() throws Exception {
                 inventory.close();
             }

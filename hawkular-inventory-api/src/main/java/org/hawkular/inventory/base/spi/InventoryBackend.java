@@ -248,6 +248,8 @@ public interface InventoryBackend<E> extends AutoCloseable {
      */
     void rollback(Transaction transaction);
 
+    String getGraphSON(String tenantId);
+
     /**
      * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are
      * encouraged to inherit from this class and add additional information to it. The base inventory implementation

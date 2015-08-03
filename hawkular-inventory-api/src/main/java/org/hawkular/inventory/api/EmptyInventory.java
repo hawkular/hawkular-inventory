@@ -73,6 +73,11 @@ public class EmptyInventory implements Inventory {
         return Observable.empty();
     }
 
+    @Override
+    public String getGraphSON(String tenantId) {
+        throw entityNotFound(Tenant.class);
+    }
+
     protected static <T> Page<T> emptyPage(Pager pager) {
         return new Page<>(Collections.emptyList(), pager, 0);
     }
