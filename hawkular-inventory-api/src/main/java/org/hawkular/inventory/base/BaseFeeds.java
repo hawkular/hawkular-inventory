@@ -22,15 +22,19 @@ import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 
@@ -143,6 +147,16 @@ public final class BaseFeeds {
         public Metrics.ReadWrite metrics() {
             return new BaseMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
         }
+
+        @Override
+        public MetricTypes.ReadWrite metricTypes() {
+            return new BaseMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
+        }
+
+        @Override
+        public ResourceTypes.ReadWrite resourceTypes() {
+            return new BaseResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
+        }
     }
 
     public static class Multiple<BE> extends MultipleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Multiple {
@@ -159,6 +173,16 @@ public final class BaseFeeds {
         @Override
         public Metrics.ReadContained metrics() {
             return new BaseMetrics.ReadContained<>(context.proceedTo(contains, Metric.class).get());
+        }
+
+        @Override
+        public MetricTypes.ReadContained metricTypes() {
+            return new BaseMetricTypes.ReadContained<>(context.proceedTo(contains, MetricType.class).get());
+        }
+
+        @Override
+        public ResourceTypes.ReadContained resourceTypes() {
+            return new BaseResourceTypes.ReadContained<>(context.proceedTo(contains, ResourceType.class).get());
         }
     }
 }

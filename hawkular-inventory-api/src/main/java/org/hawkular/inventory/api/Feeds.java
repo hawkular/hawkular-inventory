@@ -29,17 +29,22 @@ public final class Feeds {
 
     }
 
-    private interface BrowserBase<Resources, Metrics> {
+    private interface BrowserBase<Resources, Metrics, MetricTypes, ResourceTypes> {
         Resources resources();
 
         Metrics metrics();
+
+        MetricTypes metricTypes();
+
+        ResourceTypes resourceTypes();
     }
 
     public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
-            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite> {}
+            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
-            BrowserBase<Resources.ReadContained, Metrics.ReadContained> {}
+            BrowserBase<Resources.ReadContained, Metrics.ReadContained, MetricTypes.ReadContained,
+            ResourceTypes.ReadContained> {}
 
     public interface ReadContained extends ReadInterface<Single, Multiple, String> {}
 

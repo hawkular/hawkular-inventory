@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class MetricType extends TenantBasedEntity<MetricType.Blueprint, MetricType.Update> {
+public final class MetricType extends FeedBasedEntity<MetricType.Blueprint, MetricType.Update> {
 
     @XmlAttribute
     private final MetricUnit unit;
