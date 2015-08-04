@@ -34,10 +34,6 @@ public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends Abst
 
     public FeedBasedEntity(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
-        if (path.getDepth() < 2) {
-            throw new IllegalArgumentException("A feed-based entity must be contained either in an environment or a" +
-                    " feed. The supplied path is too short for that.");
-        }
     }
 
     /**
@@ -48,7 +44,11 @@ public abstract class FeedBasedEntity<B extends Entity.Blueprint, U extends Abst
      * @return the id of the feed this entity lives under or null if this entity lives directly under an environment
      */
     public String getFeedId() {
-        CanonicalPath.Segment seg = getPath().getRoot().down().down().getSegment();
-        return Feed.class.equals(seg.getElementType()) ? seg.getElementId() : null;
+        if (getPath().getDepth() > 1) {
+            CanonicalPath.Segment seg = getPath().getRoot().down().down().getSegment();
+            return Feed.class.equals(seg.getElementType()) ? seg.getElementId() : null;
+        }
+
+        return null;
     }
 }

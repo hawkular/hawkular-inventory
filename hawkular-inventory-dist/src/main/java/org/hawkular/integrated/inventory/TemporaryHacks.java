@@ -56,15 +56,16 @@ public class TemporaryHacks {
     }
 
     private void createTenantMetadata(Tenant tenant, Inventory inventory) {
-        inventory.inspect(tenant).resourceTypes().create(ResourceType.Blueprint.builder().withId("URL").build());
+        inventory.inspect(tenant).feedlessResourceTypes().create(ResourceType.Blueprint.builder().withId("URL")
+            .build());
         Log.LOGGER.autoCreatedEntity("resource type", "URL", tenant.getId());
 
-        inventory.inspect(tenant).metricTypes()
+        inventory.inspect(tenant).feedlessMetricTypes()
                 .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("status.code.type")
                 .withUnit(MetricUnit.NONE).build());
         Log.LOGGER.autoCreatedEntity("metric type", "status.code.type", tenant.getId());
 
-        inventory.inspect(tenant).metricTypes()
+        inventory.inspect(tenant).feedlessMetricTypes()
                 .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("status.duration.type")
                 .withUnit(MetricUnit.MILLI_SECOND).build());
         Log.LOGGER.autoCreatedEntity("metric type", "status.duration.type", tenant.getId());

@@ -28,7 +28,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends TenantBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends FeedBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     /**
      * JAXB support

@@ -31,21 +31,24 @@ public final class Tenants {
 
     }
 
-    private interface BrowserBase<ResourceTypes, MetricTypes, Envs> {
+    private interface BrowserBase<AccessResourceTypes, AccessMetricTypes, Envs> {
         /**
          * @return resources types in the tenant(s)
          */
-        ResourceTypes resourceTypes();
+        AccessResourceTypes feedlessResourceTypes();
 
         /**
          * @return metric types in the tenant(s)
          */
-        MetricTypes metricTypes();
+        AccessMetricTypes feedlessMetricTypes();
 
         /**
          * @return environments in the tenant(s)
          */
         Envs environments();
+
+        MetricTypes.Read allMetricTypes();
+        ResourceTypes.Read allResourceTypes();
     }
 
     /**
