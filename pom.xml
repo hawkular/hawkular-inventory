@@ -56,6 +56,19 @@
     <version.org.hawkular.bus>0.3.3.Final</version.org.hawkular.bus>
   </properties>
 
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.wildfly.bom</groupId>
+        <artifactId>jboss-javaee-7.0-wildfly</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
     <plugins>
       <plugin>
