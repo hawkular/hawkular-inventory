@@ -17,8 +17,8 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.Related.by;
+import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;

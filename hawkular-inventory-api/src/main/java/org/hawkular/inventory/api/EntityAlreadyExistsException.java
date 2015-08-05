@@ -17,10 +17,10 @@
 
 package org.hawkular.inventory.api;
 
+import java.util.Arrays;
+
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
-
-import java.util.Arrays;
 
 /**
  * @author Lukas Krejci

@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -25,10 +29,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * A base class for filters. Defines no filtering logic in and of itself.

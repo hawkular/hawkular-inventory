@@ -16,9 +16,9 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.api.filters.Filter;
-
 import java.util.Arrays;
+
+import org.hawkular.inventory.api.filters.Filter;
 
 /**
  * A query fragment that represents a filtering step (i.e. the possible set of results is filtered down but the query

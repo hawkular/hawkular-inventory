@@ -16,11 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.test;
 
-import com.tinkerpop.blueprints.Element;
-import org.hawkular.inventory.api.test.AbstractBaseInventoryPersistenceCheck;
-import org.hawkular.inventory.base.BaseInventory;
-import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -28,6 +23,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+
+import org.hawkular.inventory.api.test.AbstractBaseInventoryPersistenceCheck;
+import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
+
+import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci

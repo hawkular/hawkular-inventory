@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.bus.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -31,6 +30,8 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.json.mixins.CanonicalPathWithTenantMixin;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Lukas Krejci

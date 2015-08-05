@@ -16,10 +16,11 @@
  */
 package org.hawkular.inventory.json.mixins;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.hawkular.inventory.json.PathWithTenantDeserializer;
 import org.hawkular.inventory.json.PathWithTenantSerializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * @author Pavol Loffay

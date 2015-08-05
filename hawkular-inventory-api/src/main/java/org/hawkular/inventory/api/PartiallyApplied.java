@@ -16,9 +16,9 @@
  */
 package org.hawkular.inventory.api;
 
-import rx.functions.Action1;
-
 import java.util.function.BiConsumer;
+
+import rx.functions.Action1;
 
 /**
  * This is a helper for the observables of the inventory, using which you can pass additional information to the actions

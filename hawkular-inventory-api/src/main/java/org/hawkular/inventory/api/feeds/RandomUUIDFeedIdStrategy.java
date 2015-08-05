@@ -17,11 +17,11 @@
 
 package org.hawkular.inventory.api.feeds;
 
+import java.util.UUID;
+
 import org.hawkular.inventory.api.FeedIdStrategy;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Feed;
-
-import java.util.UUID;
 
 /**
  * A simple ID strategy that will return a random UUID. This is useful for feeds that can remember their assigned IDs

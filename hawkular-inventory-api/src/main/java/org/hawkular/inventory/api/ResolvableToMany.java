@@ -17,12 +17,12 @@
 
 package org.hawkular.inventory.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Base interface for all browser interfaces over multiple entities.
