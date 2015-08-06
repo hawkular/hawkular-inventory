@@ -50,7 +50,7 @@ public final class Feeds {
 
     public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
-    public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple> {
+    public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple, String> {
 
         /**
          * Registers a new feed.

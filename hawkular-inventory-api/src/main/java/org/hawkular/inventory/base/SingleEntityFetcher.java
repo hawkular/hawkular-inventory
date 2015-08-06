@@ -28,7 +28,8 @@ import org.hawkular.inventory.api.model.Entity;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends AbstractElement.Update> extends Fetcher<BE, E, U> {
+class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends AbstractElement.Update>
+        extends Fetcher<BE, E, U> {
     public SingleEntityFetcher(TraversalContext<BE, E> context) {
         super(context);
     }

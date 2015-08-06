@@ -45,7 +45,7 @@ public final class BaseMetricTypes {
     }
 
     public static class ReadWrite<BE>
-            extends Mutator<BE, MetricType, MetricType.Blueprint, MetricType.Update>
+            extends Mutator<BE, MetricType, MetricType.Blueprint, MetricType.Update, String>
             implements MetricTypes.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, MetricType> context) {

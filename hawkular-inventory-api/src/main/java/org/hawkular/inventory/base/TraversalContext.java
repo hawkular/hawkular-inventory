@@ -139,6 +139,20 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     /**
+     * Virtually identical to {@link #proceedTo(Relationships.WellKnown, Class)} only follows the relationship in the
+     * opposite direction.
+     *
+     * @param over       the relationship to retreat over (i.e. if the current position is the target of the
+     *                   relationship, the sought after entity type needs to be the source of the relationship).
+     * @param entityType the type of the entities to retreat to
+     * @param <T>        the type of the "target" entities
+     * @return a context builder with the modified source path, select candidates and type
+     */
+    <T extends Entity<?, ?>> Builder<BE, T> retreatTo(Relationships.WellKnown over, Class<T> entityType) {
+        return new Builder<>(this, hop(), Query.filter(), entityType).hop(Related.asTargetBy(over), type(entityType));
+    }
+
+    /**
      * The new context will have the source path composed by appending current select candidates to the current source
      * path. The new context will have select candidates such that it will select the relationships in given direction
      * stemming from the entities on the new source path.

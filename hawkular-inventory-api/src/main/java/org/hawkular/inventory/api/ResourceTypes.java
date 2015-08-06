@@ -70,5 +70,5 @@ public final class ResourceTypes {
      * Provides read-write access to resource types.
      */
     public interface ReadWrite
-            extends ReadWriteInterface<ResourceType.Update, ResourceType.Blueprint, Single, Multiple> {}
+            extends ReadWriteInterface<ResourceType.Update, ResourceType.Blueprint, Single, Multiple, String> {}
 }

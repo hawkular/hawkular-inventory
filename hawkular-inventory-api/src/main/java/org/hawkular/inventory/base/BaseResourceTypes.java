@@ -43,7 +43,7 @@ public final class BaseResourceTypes {
     }
 
     public static class ReadWrite<BE>
-            extends Mutator<BE, ResourceType, ResourceType.Blueprint, ResourceType.Update>
+            extends Mutator<BE, ResourceType, ResourceType.Blueprint, ResourceType.Update, String>
             implements ResourceTypes.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, ResourceType> context) {

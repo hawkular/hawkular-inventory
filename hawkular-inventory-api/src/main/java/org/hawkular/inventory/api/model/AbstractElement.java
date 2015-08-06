@@ -33,7 +33,8 @@ import javax.xml.bind.annotation.XmlElement;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class AbstractElement<B extends AbstractElement.Blueprint, U extends AbstractElement.Update> {
+public abstract class AbstractElement<B extends org.hawkular.inventory.api.model.Blueprint,
+        U extends AbstractElement.Update> {
     public static final String ID_PROPERTY = "id";
 
     @XmlAttribute(name = "path")
@@ -172,7 +173,7 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
         }
     }
 
-    public abstract static class Blueprint {
+    public abstract static class Blueprint implements org.hawkular.inventory.api.model.Blueprint {
         @XmlElement
         private final Map<String, Object> properties;
 
@@ -183,8 +184,6 @@ public abstract class AbstractElement<B extends AbstractElement.Blueprint, U ext
         public Map<String, Object> getProperties() {
             return properties;
         }
-
-        public abstract <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);
 
         public abstract static class Builder<B, This extends Builder<B, This>> {
             protected Map<String, Object> properties = new HashMap<>();

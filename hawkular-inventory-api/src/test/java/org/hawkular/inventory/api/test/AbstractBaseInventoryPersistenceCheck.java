@@ -54,6 +54,7 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Datas;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
@@ -75,6 +76,7 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -87,6 +89,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
@@ -98,6 +101,7 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -166,7 +170,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .create(new Metric.Blueprint("/ResponseTime", "host1_ping_response")).entity().getId()
                 .equals("host1_ping_response");
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                .create(new Resource.Blueprint("host1", "/URL")).entity()
+                .create(new Resource.Blueprint("host1", "/URL", null, null)).entity()
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .get("host1").metrics().associate(RelativePath.fromString("../m;host1_ping_response"));
@@ -175,15 +179,15 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource1", "/URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource1", "/URL", null, null)).entity().getId()
                 .equals("feedResource1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource2", "/URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource2", "/URL", null, null)).entity().getId()
                 .equals("feedResource2");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource3", "/URL")).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource3", "/URL", null, null)).entity().getId()
                 .equals("feedResource3");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
@@ -211,9 +215,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
                 .create(new Metric.Blueprint("/Size", "playroom2_size")).entity().getId().equals("playroom2_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom1", "/Playroom")).entity().getId().equals("playroom1");
+                .create(new Resource.Blueprint("playroom1", "/Playroom", null, null)).entity().getId()
+                .equals("playroom1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom2", "/Playroom")).entity().getId().equals("playroom2");
+                .create(new Resource.Blueprint("playroom2", "/Playroom", null, null)).entity().getId()
+                .equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").metrics().associate(RelativePath.to().up().metric("playroom1_size").get());
@@ -222,17 +228,20 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .environment("test").metric("playroom2_size").get());
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.1", "/Playroom"))
-                .entity().getId().equals("playroom1.1");
+                .get("playroom1").containedChildren()
+                .create(new Resource.Blueprint("playroom1.1", "/Playroom", null, null)).entity().getId()
+                .equals("playroom1.1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren().create(new Resource.Blueprint("playroom1.2", "/Playroom"))
-                .entity().getId().equals("playroom1.2");
+                .get("playroom1").containedChildren()
+                .create(new Resource.Blueprint("playroom1.2", "/Playroom", null, null)).entity().getId()
+                .equals("playroom1.2");
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").resource("playroom2").get());
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").containedChildren().create(new Resource.Blueprint("playroom2.1", "/Playroom"))
-                .entity().getId().equals("playroom2.1");
+                .get("playroom2").containedChildren()
+                .create(new Resource.Blueprint("playroom2.1", "/Playroom", null, null)).entity().getId()
+                .equals("playroom2.1");
 
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
@@ -248,6 +257,69 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                         new HashMap<String, Object>() {{
                             put("adult", true);
                         }});
+
+        // setup configs
+        StructuredData config = StructuredData.get().map()
+                .putBool("yes", true)
+                .putBool("no", false)
+                .putIntegral("answer", 42L)
+                .putFloatingPoint("approximateAnswer", 42.0)
+                .putString("kachna", "moc")
+                .putUndefined("nothingToSeeHere")
+                .putList("primitives")
+                /**/.addBool(true)
+                /**/.addIntegral(1L)
+                /**/.addFloatingPoint(2.0)
+                /**/.addString("str")
+                /**/.addUndefined()
+                .closeList()
+                .putMap("primitiveMap")
+                /**/.putBool("bool", true)
+                /**/.putFloatingPoint("float", 1.0)
+                /**/.putIntegral("int", 2L)
+                /**/.putString("str", "kachna")
+                /**/.putUndefined("undef")
+                .closeMap()
+                .putList("listOfMaps")
+                /**/.addMap()
+                /**//**/.putBool("listOfMaps_bool", true)
+                /**//**/.putString("listOfMaps_string", "kachny")
+                /**/.closeMap()
+                /**/.addMap()
+                /**//**/.putFloatingPoint("listOfMaps_float", 1.0)
+                /**/.closeMap()
+                .closeList()
+                .putList("listOfLists")
+                /**/.addList()
+                /**//**/.addBool(true)
+                /**//**/.addIntegral(1L)
+                /**/.closeList()
+                .closeList()
+                .putMap("mapOfLists")
+                /**/.putList("list1")
+                /**//**/.addString("ducks")
+                /**//**/.addUndefined()
+                /**/.closeList()
+                /**/.putList("list2")
+                /**//**/.addBool(false)
+                /**//**/.addFloatingPoint(2.0)
+                /**/.closeList()
+                .closeMap()
+                .putMap("mapOfMaps")
+                /**/.putMap("map1")
+                /**//**/.putIntegral("int", 42L)
+                /**//**/.putString("answer", "probably")
+                /**/.closeMap()
+                /**/.putMap("map2")
+                /**//**/.putFloatingPoint("float", 2.0)
+                /**/.closeMap()
+                .closeMap()
+                .build();
+
+        assert inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().get("playroom1").configuration().create(DataEntity.Blueprint.builder()
+                        .withValue(config).build()).entity().getValue().equals(config);
+
     }
 
     private void teardownData() throws Exception {
@@ -900,7 +972,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         try {
             inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                    .create(new Resource.Blueprint("host1", "URL"));
+                    .create(new Resource.Blueprint("host1", "URL", null, null));
             Assert.fail("Creating resource with existing ID should fail");
         } catch (Exception e) {
             //good
@@ -1428,7 +1500,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                             .withUnit(MetricUnit.BYTE).build());
 
             inventory.tenants().get("t").environments().get("e").feedlessResources()
-                    .create(new Resource.Blueprint("r", "/rt"));
+                    .create(new Resource.Blueprint("r", "/rt", null, null));
             inventory.tenants().get("t").environments().get("e").feedlessResources().update("r",
                     Resource.Update.builder().build());
 
@@ -1582,11 +1654,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testBackendGetTransitiveClosure() throws Exception {
         InventoryBackend<E> backend = inventory.getBackend();
 
-        TriFunction<E, String, Relationships.Direction, Stream<? extends AbstractElement<?, ?>>> test =
+        TriFunction<E, String, Relationships.Direction, Stream<? extends Entity<?, ?>>> test =
                 (start, name, direction) -> {
-                    Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, name, direction);
+                    Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
                     return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
-                            false).map((e) -> backend.convert(e, backend.extractType(e)));
+                            false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
                 };
 
         E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
@@ -1696,6 +1768,78 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertEquals(1, results.size());
         Assert.assertEquals("production", backend.extractId(results.get(0)));
 
+    }
+
+    @Test
+    @Ignore
+    public void testCreateConfiguration() throws Exception {
+        Resources.Single res = inventory.tenants().get("com.example.tenant").environments().get("test")
+                .feedlessResources().get("playroom2");
+
+        StructuredData orig = StructuredData.get().map().putBool("yes", true).putBool("no", false).build();
+
+        res.configuration().create(DataEntity.Blueprint.builder().withValue(orig).build());
+
+        StructuredData retrieved = res.configuration().get(null).entity().getValue();
+
+        Assert.assertEquals(orig, retrieved);
+
+        res.configuration().delete(null);
+
+        Assert.assertFalse(res.configuration().get(null).exists());
+    }
+
+    @Test
+    public void testUpdateStructuredDataSimpleValue() throws Exception {
+
+        Datas.Single dataAccess = inventory.inspect(
+                CanonicalPath.fromString("/t;com.example.tenant/e;test/r;playroom1/d;configuration"),
+                Datas.Single.class);
+
+        StructuredData origData = dataAccess.entity().getValue();
+
+        Assert.assertNotNull(origData);
+
+        StructuredData modified = origData.update().toMap().putBool("answer", true).build();
+        dataAccess.update(DataEntity.Update.builder().withValue(modified).build());
+        StructuredData persisted = dataAccess.entity().getValue();
+        Assert.assertEquals(modified, persisted);
+
+        modified = modified.update().toMap().updateList("primitives").setBool(0, false).closeList().build();
+        dataAccess.update(DataEntity.Update.builder().withValue(modified).build());
+        persisted = dataAccess.entity().getValue();
+        Assert.assertEquals(modified, persisted);
+
+        modified = modified.update().toMap().remove("answer").build();
+        dataAccess.update(DataEntity.Update.builder().withValue(modified).build());
+        persisted = dataAccess.entity().getValue();
+        Assert.assertEquals(modified, persisted);
+
+        // restore the original value
+        dataAccess.update(DataEntity.Update.builder().withValue(origData).build());
+    }
+
+    @Test
+    public void testFilteringByData() throws Exception {
+        Datas.Single config = inventory.inspect(
+                CanonicalPath.fromString("/t;com.example.tenant/e;test/r;playroom1/d;configuration"),
+                Datas.Single.class);
+
+        StructuredData allData = config.entity().getValue();
+
+        StructuredData portion = config.data(RelativePath.to().structuredData().key("primitives").index(0).get());
+
+        Assert.assertEquals(allData.map().get("primitives").list().get(0), portion);
+    }
+
+    @Test
+    public void testRetrievingDataPortions() throws Exception {
+
+    }
+
+    @Test
+    public void testRetrievingBareData() throws Exception {
+        // TODO implement
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

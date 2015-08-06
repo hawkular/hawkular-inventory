@@ -22,6 +22,7 @@ import java.util.Map;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -29,8 +30,10 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -78,10 +81,11 @@ public class EmptyInventory implements Inventory {
     }
 
     protected static EntityNotFoundException entityNotFound(Class<? extends Entity<?, ?>> entityClass) {
-        return new EntityNotFoundException(entityClass, (Filter[]) null);
+        return new EntityNotFoundException(entityClass, null);
     }
 
-    protected static class SingleBase<E extends Entity<?, ?>, Update> implements ResolvableToSingle<E, Update> {
+    protected static class SingleBase<E extends Entity<?, ?>, Update>
+            implements ResolvableToSingle<E, Update> {
         private final Class<E> entityType;
 
         public SingleBase(Class<E> entityType) {
@@ -1096,6 +1100,16 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
+
+        @Override
+        public Datas.ReadWrite configuration() {
+            return new DatasReadWrite();
+        }
+
+        @Override
+        public Datas.ReadWrite connectionConfiguration() {
+            return new DatasReadWrite();
+        }
     }
 
     public static class ResourcesMultiple implements Resources.Multiple {
@@ -1134,6 +1148,16 @@ public class EmptyInventory implements Inventory {
         public Page<Resource> entities(Pager pager) {
             return emptyPage(pager);
         }
+
+        @Override
+        public Datas.Read configuration() {
+            return new DatasRead();
+        }
+
+        @Override
+        public Datas.Read connectionConfiguration() {
+            return new DatasRead();
+        }
     }
 
     public static class ResourcesReadAssociate implements Resources.ReadAssociate {
@@ -1162,6 +1186,101 @@ public class EmptyInventory implements Inventory {
         @Override
         public Resources.Single get(Path id) throws EntityNotFoundException {
             return new ResourcesSingle();
+        }
+    }
+
+    public static class DatasRead implements Datas.Read {
+
+        @Override
+        public Datas.Multiple getAll(Filter[][] filters) {
+            return new DatasMultiple();
+        }
+
+        @Override
+        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+            return new DatasSingle();
+        }
+
+        @Override
+        public Resources.Single resource() {
+            return new ResourcesSingle();
+        }
+    }
+
+    public static class DatasReadWrite implements Datas.ReadWrite {
+
+        @Override
+        public Resources.Single resource() {
+            return new ResourcesSingle();
+        }
+
+        @Override
+        public Datas.Multiple getAll(Filter[][] filters) {
+            return new DatasMultiple();
+        }
+
+        @Override
+        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+            return new DatasSingle();
+        }
+
+        @Override
+        public Datas.Single create(DataEntity.Blueprint blueprint) throws EntityAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void update(Void ignored, DataEntity.Update update) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void delete(Void ignored) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class DatasSingle implements Datas.Single {
+        @Override
+        public StructuredData bareData(RelativePath dataPath) {
+            throw entityNotFound(null);
+        }
+
+        @Override
+        public DataEntity entity() throws EntityNotFoundException {
+            throw entityNotFound(null);
+        }
+
+        @Override
+        public StructuredData data(RelativePath dataPath) {
+            throw entityNotFound(null);
+        }
+
+        @Override
+        public void update(DataEntity.Update update) throws EntityNotFoundException, RelationNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void delete() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class DatasMultiple implements Datas.Multiple {
+        @Override
+        public Page<DataEntity> entities(Pager pager) {
+            return emptyPage(pager);
+        }
+
+        @Override
+        public Page<StructuredData> datas(RelativePath dataPath, Pager pager) {
+            return emptyPage(pager);
+        }
+
+        @Override
+        public Page<StructuredData> bareDatas(RelativePath dataPath, Pager pager) {
+            return emptyPage(pager);
         }
     }
 }

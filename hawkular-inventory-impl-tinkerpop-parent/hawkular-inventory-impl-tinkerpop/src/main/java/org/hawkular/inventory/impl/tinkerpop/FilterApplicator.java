@@ -68,6 +68,9 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(With.CanonicalPaths.class, CanonicalPathApplicator.class);
         applicators.put(With.RelativePaths.class, RelativePathApplicator.class);
         applicators.put(Marker.class, MarkerApplicator.class);
+        applicators.put(With.DataAt.class, DataAtApplicator.class);
+        applicators.put(With.DataValued.class, DataValuedApplicator.class);
+        applicators.put(With.DataOfTypes.class, DataOfTypesApplicator.class);
     }
 
     protected final T filter;
@@ -364,6 +367,42 @@ abstract class FilterApplicator<T extends Filter> {
     private static final class MarkerApplicator extends FilterApplicator<Marker> {
 
         private MarkerApplicator(Marker f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class DataAtApplicator extends FilterApplicator<With.DataAt> {
+
+        private DataAtApplicator(With.DataAt f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class DataValuedApplicator extends FilterApplicator<With.DataValued> {
+
+        private DataValuedApplicator(With.DataValued f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query) {
+            visitor.visit(query, filter);
+        }
+    }
+
+    private static final class DataOfTypesApplicator extends FilterApplicator<With.DataOfTypes> {
+
+        private DataOfTypesApplicator(With.DataOfTypes f) {
             super(f);
         }
 

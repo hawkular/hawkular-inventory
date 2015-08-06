@@ -89,10 +89,10 @@ public class SecurityIntegration {
 
     private <E extends AbstractElement<?, ?>> void install(Inventory inventory, Class<E> cls) {
         subscriptions.add(inventory.observable(Interest.in(cls).being(created()))
-                .subscribe(PartiallyApplied.method(this::react).second(created())));
+                .subscribe(PartiallyApplied.procedure(this::react).second(created())));
 
         subscriptions.add(inventory.observable(Interest.in(cls).being(deleted()))
-                .subscribe(PartiallyApplied.method(this::react).second(deleted())));
+                .subscribe(PartiallyApplied.procedure(this::react).second(deleted())));
     }
 
     @Transactional

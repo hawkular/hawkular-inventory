@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +37,7 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import com.tinkerpop.pipes.util.Pipeline;
 
 /**
  * @author Lukas Krejci
@@ -287,6 +291,58 @@ class FilterVisitor {
         query._().as(filter.getLabel());
     }
 
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.DataAt dataPos) {
+        query.out(hasData);
+        for (Path.Segment seg : dataPos.getDataPath().getPath()) {
+            if (RelativePath.Up.class.equals(seg.getElementType())) {
+                query.in(contains);
+            } else {
+                query.out(contains);
+            }
+
+            query.hasType(Constants.Type.structuredData);
+
+            // map members have both index and key (so that the order of the elements is preserved)
+            // list members have only the index
+
+            Integer index = toInteger(seg.getElementId());
+
+            if (index == null) {
+                query.has(Constants.Property.__structuredDataKey.name(), seg.getElementId());
+            } else {
+                //well, the map could have a numeric key, so we cannot say it has to be a list index here.
+                Pipeline[] indexOrKey = new Pipeline[2];
+                indexOrKey[0] = new HawkularPipeline<>().has(Constants.Property.__structuredDataIndex.name(), index)
+                        .hasNot(Constants.Property.__structuredDataKey.name());
+                indexOrKey[1] = new HawkularPipeline<>().has(Constants.Property.__structuredDataKey.name(),
+                        seg.getElementId());
+
+                query.or(indexOrKey);
+            }
+        }
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, With.DataValued dataValue) {
+        query.has(Constants.Property.__structuredDataValue.name(), dataValue);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.DataOfTypes dataTypes) {
+        if (dataTypes.getTypes().length == 1) {
+            query.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[0].name());
+            return;
+        }
+
+        Pipe[] pipes = new PropertyFilterPipe[dataTypes.getTypes().length];
+        for (int i = 0; i < pipes.length; ++i) {
+            pipes[i] = new PropertyFilterPipe<>(Constants.Property.__structuredDataType.name(), Compare.EQUAL,
+                    dataTypes.getTypes()[i].name());
+        }
+
+        query.or(pipes);
+    }
+
     private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {
         for (Path.Segment s : path.getPath()) {
             if (RelativePath.Up.class.equals(s.getElementType())) {
@@ -301,5 +357,31 @@ class FilterVisitor {
     private void apply(Path.Segment segment, HawkularPipeline<?, ?> pipeline) {
         pipeline.hasType(Constants.Type.of(segment.getElementType()));
         pipeline.hasEid(segment.getElementId());
+    }
+
+    /**
+     * A very simplistic conversion of string to positive integer in only decimal radix.
+     *
+     * <p>This is used to figure out whether a segment id represents an index or a key.
+     *
+     * @param str the string potentially representing a number
+     * @return the parsed number or null if the string is not a supported number
+     */
+    private static Integer toInteger(String str) {
+        char[] chars = str.toCharArray();
+
+        int result = 0;
+
+        int multiplier = 1;
+        for (int i = chars.length - 1; i >= 0; --i, multiplier *= 10) {
+            char c = chars[i];
+            if ('0' <= c && c <= '9') {
+                result += (c - '0') * multiplier;
+            } else {
+                return null;
+            }
+        }
+
+        return result;
     }
 }

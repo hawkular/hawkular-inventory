@@ -21,8 +21,10 @@ import static java.util.stream.Collectors.toSet;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,8 +38,11 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
@@ -48,8 +53,10 @@ import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -57,12 +64,14 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.ShallowStructuredData;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
+import com.tinkerpop.pipes.PipeFunction;
 
 /**
  * @author Lukas Krejci
@@ -113,7 +122,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager,
+    public <T> Page<T> query(Query query, Pager pager,
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
         HawkularPipeline<?, ? extends Element> q;
@@ -139,10 +148,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             //operation to converting the vertex to the entity.
             q2 = q.transform(conversion::apply).filter(filter::apply).counter("total")
                     .page(pager, (e, p) -> {
+                        if (!(e instanceof AbstractElement)) {
+                            return null;
+                        }
+
+                        AbstractElement<?, ?> el = (AbstractElement<?, ?>) e;
+
                         if (AbstractElement.ID_PROPERTY.equals(p)) {
-                            return e.getId();
+                            return el.getId();
                         } else {
-                            return (Comparable) e.getProperties().get(p);
+                            return (Comparable) el.getProperties().get(p);
                         }
                     });
         }
@@ -151,8 +166,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Iterator<Element> getTransitiveClosureOver(Element startingPoint, String relationshipName,
-            Relationships.Direction direction) {
+    public Iterator<Element> getTransitiveClosureOver(Element startingPoint, Relationships.Direction direction,
+            String... relationshipNames) {
         if (!(startingPoint instanceof Vertex)) {
             return Collections.<Element>emptyList().iterator();
         } else {
@@ -160,13 +175,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             switch (direction) {
                 case incoming:
-                    ret.in(relationshipName);
+                    ret.in(relationshipNames);
                     break;
                 case outgoing:
-                    ret.out(relationshipName);
+                    ret.out(relationshipNames);
                     break;
                 case both:
-                    ret.both(relationshipName);
+                    ret.both(relationshipNames);
                     break;
             }
 
@@ -274,7 +289,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Class<? extends AbstractElement<?, ?>> extractType(Element entityRepresentation) {
+    public Class<?> extractType(Element entityRepresentation) {
         if (entityRepresentation instanceof Edge) {
             return Relationship.class;
         } else {
@@ -288,10 +303,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public <T extends AbstractElement<?, ?>> T convert(Element entityRepresentation, Class<T> entityType) {
+    public <T> T convert(Element entityRepresentation, Class<T> entityType) {
         Constants.Type type = Constants.Type.of(extractType(entityRepresentation));
 
-        AbstractElement<?, ?> e;
+        Object e;
 
         if (type == relationship) {
             Edge edge = (Edge) entityRepresentation;
@@ -317,19 +332,30 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     break;
                 case metricType:
                     e = new MetricType(extractCanonicalPath(v),
-                        MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
-                        MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())));
+                            MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
+                            MetricDataType.fromDisplayName(v.getProperty(
+                                    Constants.Property.__metric_data_type.name())));
                     break;
                 case resource:
                     Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
                     ResourceType rt = convert(rtv, ResourceType.class);
-                    e = new Resource(extractCanonicalPath(v), rt);
+                    e = new Resource(extractCanonicalPath(v), rt
+                    );
                     break;
                 case resourceType:
                     e = new ResourceType(extractCanonicalPath(v));
                     break;
                 case tenant:
                     e = new Tenant(extractCanonicalPath(v));
+                    break;
+                case structuredData:
+                    e = loadStructuredData(v, StructuredData.class.equals(entityType));
+                    break;
+                case dataEntity:
+                    CanonicalPath cp = extractCanonicalPath(v);
+
+                    e = new DataEntity(cp.up(), DataEntity.Role.valueOf(cp.getSegment().getElementId()),
+                            loadStructuredData(v, hasData));
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown type of vertex");
@@ -344,52 +370,81 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
         });
 
-        return e.accept(new ElementVisitor.Simple<T, Void>() {
-            @Override
-            public T visitTenant(Tenant tenant, Void ignored) {
-                return common(tenant, Tenant.Update.builder());
-            }
+        if (StructuredData.class.equals(entityType)) {
+            return entityType.cast(e);
+        } else if (ShallowStructuredData.class.equals(entityType)) {
+            return entityType.cast(new ShallowStructuredData((StructuredData) e));
+        } else {
+            @SuppressWarnings("ConstantConditions")
+            AbstractElement<?, ?> el = (AbstractElement<?, ?>) e;
 
-            @Override
-            public T visitEnvironment(Environment environment, Void ignored) {
-                return common(environment, Environment.Update.builder());
-            }
+            return el.accept(new ElementVisitor.Simple<T, Void>() {
+                @Override
+                public T visitTenant(Tenant tenant, Void ignored) {
+                    return common(tenant, Tenant.Update.builder());
+                }
 
-            @Override
-            public T visitFeed(Feed feed, Void ignored) {
-                return common(feed, Feed.Update.builder());
-            }
+                @Override
+                public T visitEnvironment(Environment environment, Void ignored) {
+                    return common(environment, Environment.Update.builder());
+                }
 
-            @Override
-            public T visitMetric(Metric metric, Void ignored) {
-                return common(metric, Metric.Update.builder());
-            }
+                @Override
+                public T visitFeed(Feed feed, Void ignored) {
+                    return common(feed, Feed.Update.builder());
+                }
 
-            @Override
-            public T visitMetricType(MetricType metricType, Void ignored) {
-                return common(metricType, MetricType.Update.builder());
-            }
+                @Override
+                public T visitMetric(Metric metric, Void ignored) {
+                    return common(metric, Metric.Update.builder());
+                }
 
-            @Override
-            public T visitResource(Resource resource, Void ignored) {
-                return common(resource, Resource.Update.builder());
-            }
+                @Override
+                public T visitMetricType(MetricType metricType, Void ignored) {
+                    return common(metricType, MetricType.Update.builder());
+                }
 
-            @Override
-            public T visitResourceType(ResourceType type, Void ignored) {
-                return common(type, ResourceType.Update.builder());
-            }
+                @Override
+                public T visitResource(Resource resource, Void ignored) {
+                    return common(resource, Resource.Update.builder());
+                }
 
-            @Override
-            public T visitRelationship(Relationship relationship, Void parameter) {
-                return common(relationship, Relationship.Update.builder());
-            }
+                @Override
+                public T visitResourceType(ResourceType type, Void ignored) {
+                    return common(type, ResourceType.Update.builder());
+                }
 
-            private <U extends AbstractElement.Update> T common(AbstractElement<?, U> entity,
-                                                                AbstractElement.Update.Builder<U, ?> bld) {
-                return entityType.cast(entity.update().with(bld.withProperties(filteredProperties).build()));
-            }
-        }, null);
+                @Override
+                public T visitData(DataEntity data, Void ignored) {
+                    return common(data, DataEntity.Update.builder());
+                }
+
+                @Override
+                public T visitRelationship(Relationship relationship, Void parameter) {
+                    return common(relationship, Relationship.Update.builder());
+                }
+
+                private <U extends AbstractElement.Update> T common(AbstractElement<?, U> entity,
+                        AbstractElement.Update.Builder<U, ?> bld) {
+                    return entityType.cast(entity.update().with(bld.withProperties(filteredProperties).build()));
+                }
+            }, null);
+        }
+    }
+
+    @Override
+    public Element descendToData(Element dataEntityRepresentation, RelativePath dataPath) {
+        Query q = Query.path().with(With.dataAt(dataPath)).get();
+
+        HawkularPipeline<Element, Element> pipeline = new HawkularPipeline<>(dataEntityRepresentation);
+
+        FilterApplicator.applyAll(q, pipeline);
+
+        if (pipeline.hasNext()) {
+            return pipeline.next();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -417,32 +472,32 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element persist(CanonicalPath path, AbstractElement.Blueprint blueprint) {
+    public Element persist(CanonicalPath path, Blueprint blueprint) {
         return blueprint.accept(new ElementBlueprintVisitor.Simple<Element, Void>() {
 
             @Override
             public Element visitTenant(Tenant.Blueprint tenant, Void parameter) {
-                return common(path, blueprint.getProperties(), Tenant.class);
+                return common(path, tenant.getProperties(), Tenant.class);
             }
 
             @Override
             public Element visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return common(path, blueprint.getProperties(), Environment.class);
+                return common(path, environment.getProperties(), Environment.class);
             }
 
             @Override
             public Element visitFeed(Feed.Blueprint feed, Void parameter) {
-                return common(path, blueprint.getProperties(), Feed.class);
+                return common(path, feed.getProperties(), Feed.class);
             }
 
             @Override
             public Element visitMetric(Metric.Blueprint metric, Void parameter) {
-                return common(path, blueprint.getProperties(), Metric.class);
+                return common(path, metric.getProperties(), Metric.class);
             }
 
             @Override
             public Element visitMetricType(MetricType.Blueprint definition, Void parameter) {
-                Element entity = common(path, blueprint.getProperties(), MetricType.class);
+                Element entity = common(path, definition.getProperties(), MetricType.class);
 
                 entity.setProperty(Constants.Property.__metric_data_type.name(), definition.getType().getDisplayName());
                 return entity;
@@ -450,12 +505,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             @Override
             public Element visitResource(Resource.Blueprint resource, Void parameter) {
-                return common(path, blueprint.getProperties(), Resource.class);
+                return common(path, resource.getProperties(), Resource.class);
             }
 
             @Override
             public Element visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return common(path, blueprint.getProperties(), ResourceType.class);
+                return common(path, type.getProperties(), ResourceType.class);
             }
 
             @Override
@@ -463,8 +518,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new IllegalArgumentException("Relationships cannot be persisted using the persist() method.");
             }
 
-            private Element common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
-                                   Class<? extends AbstractElement<?, ?>> cls) {
+            @Override
+            public Element visitData(DataEntity.Blueprint data, Void parameter) {
+                return common(path, data.getProperties(), DataEntity.class);
+            }
+
+            private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
+                    Class<? extends AbstractElement<?, ?>> cls) {
                 checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
                 Vertex v = context.getGraph().addVertex(null);
@@ -479,6 +539,92 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 return v;
             }
         }, null);
+    }
+
+    @Override
+    public Vertex persist(StructuredData structuredData) {
+        Vertex thisVertex = context.getGraph().addVertex(null);
+
+        Pair<Vertex, Vertex> parentAndCurrent = new Pair<>(null, thisVertex);
+
+        structuredData.accept(new StructuredData.Visitor.Simple<Void, StructuredData>() {
+            @Override
+            protected Void defaultAction(Serializable value, StructuredData data) {
+                relateToParent();
+                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                        Constants.Type.structuredData.name());
+                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                        data.getType().name());
+                if (value != null) {
+                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataValue.name(), value);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitList(List<StructuredData> value, StructuredData data) {
+                relateToParent();
+                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                        Constants.Type.structuredData.name());
+                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                        StructuredData.Type.list.name());
+
+                Vertex currentParent = parentAndCurrent.first;
+                Vertex currentCurrent = parentAndCurrent.second;
+
+                parentAndCurrent.first = parentAndCurrent.second;
+
+                int idx = 0;
+                for (StructuredData c : value) {
+                    parentAndCurrent.second = context.getGraph().addVertex(null);
+                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataIndex.name(), idx++);
+                    c.accept(this, c);
+                }
+
+                parentAndCurrent.first = currentParent;
+                parentAndCurrent.second = currentCurrent;
+
+                return null;
+            }
+
+            @Override
+            public Void visitMap(Map<String, StructuredData> value, StructuredData data) {
+                relateToParent();
+                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                        Constants.Type.structuredData.name());
+                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                        StructuredData.Type.map.name());
+
+                Vertex currentParent = parentAndCurrent.first;
+                Vertex currentCurrent = parentAndCurrent.second;
+
+                parentAndCurrent.first = parentAndCurrent.second;
+
+                int idx = 0;
+                for (Map.Entry<String, StructuredData> e : value.entrySet()) {
+                    parentAndCurrent.second = context.getGraph().addVertex(null);
+                    //we need to make sure the maps are stored in the same order as seen - the maps are linked
+                    //and therefore preserve insertion order
+                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataIndex.name(), idx++);
+                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataKey.name(), e.getKey());
+                    e.getValue().accept(this, e.getValue());
+                }
+
+                parentAndCurrent.first = currentParent;
+                parentAndCurrent.second = currentCurrent;
+
+                return null;
+            }
+
+            private void relateToParent() {
+                if (parentAndCurrent.first != null) {
+                    relate(parentAndCurrent.first, parentAndCurrent.second, Relationships.WellKnown.contains.name(),
+                            null);
+                }
+            }
+        }, structuredData);
+
+        return thisVertex;
     }
 
     @Override
@@ -535,6 +681,29 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 return null;
             }
 
+            @Override
+            public Void visitData(DataEntity.Update data, Void parameter) {
+                common(data.getProperties(), DataEntity.class);
+
+                Vertex v = (Vertex) entity;
+                Vertex dataVertex = v.getVertices(Direction.OUT, Relationships.WellKnown.hasData.name()).iterator()
+                        .next();
+
+                Iterator<Element> children = getTransitiveClosureOver(dataVertex,
+                        Relationships.Direction.outgoing, Relationships.WellKnown.contains.name());
+
+                while (children.hasNext()) {
+                    Vertex c = (Vertex) children.next();
+                    context.getGraph().removeVertex(c);
+                }
+                context.getGraph().removeVertex(dataVertex);
+
+                Element newData = persist(data.getValue());
+
+                relate(v, newData, Relationships.WellKnown.hasData.name(), null);
+                return null;
+            }
+
             private void common(Map<String, Object> properties, Class<? extends AbstractElement<?, ?>> entityType) {
                 Class<?> actualType = extractType(entity);
                 if (!actualType.equals(entityType)) {
@@ -554,6 +723,20 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
+    public void deleteStructuredData(Element dataRepresentation) {
+        if (!StructuredData.class.equals(extractType(dataRepresentation))) {
+            throw new IllegalArgumentException("The supplied element is not a data entity's data.");
+        }
+
+        Iterator<Element> dataElements = getTransitiveClosureOver(dataRepresentation, outgoing, contains.name());
+
+        // we know the closure is constructed eagerly in this impl, so this loop is OK.
+        while (dataElements.hasNext()) {
+            delete(dataElements.next());
+        }
+    }
+
+    @Override
     public void commit(Transaction t) throws CommitFailureException {
         try {
             context.commit(t);
@@ -570,6 +753,137 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public void close() throws Exception {
         context.getGraph().shutdown();
+    }
+
+    private StructuredData loadStructuredData(Vertex owner, Relationships.WellKnown owningEdge) {
+        Iterator<Vertex> it = owner.getVertices(Direction.OUT, owningEdge.name()).iterator();
+        if (!it.hasNext()) {
+            return null;
+        }
+
+        return loadStructuredData(it.next(), true);
+    }
+
+    private StructuredData loadStructuredData(Vertex root, boolean recurse) {
+        StructuredData.Type type = StructuredData.Type.valueOf(root.getProperty(
+                Constants.Property.__structuredDataType.name()));
+
+        switch (type) {
+            case bool:
+                return StructuredData.get().bool(root.getProperty(Constants.Property.__structuredDataValue.name()));
+            case integral:
+                return StructuredData.get().integral(root.getProperty(Constants.Property.__structuredDataValue.name()));
+            case floatingPoint:
+                return StructuredData.get()
+                        .floatingPoint(root.getProperty(Constants.Property.__structuredDataValue.name()));
+            case undefined:
+                return StructuredData.get().undefined();
+            case string:
+                return StructuredData.get().string(root.getProperty(Constants.Property.__structuredDataValue.name()));
+            case list:
+                StructuredData.ListBuilder lst = StructuredData.get().list();
+                if (recurse) {
+                    loadStructuredDataList(root, lst);
+                }
+                return lst.build();
+            case map:
+                StructuredData.MapBuilder mp = StructuredData.get().map();
+                if (recurse) {
+                    loadStructuredDataMap(root, mp);
+                }
+                return mp.build();
+            default:
+                throw new IllegalArgumentException("Unknown structured data type stored in db: " + type);
+        }
+    }
+
+    private void loadStructuredDataList(Vertex root, StructuredData.AbstractListBuilder<?> bld) {
+        PipeFunction<com.tinkerpop.pipes.util.structures.Pair<Vertex, Vertex>, Integer> orderFn = (vs) -> {
+            Integer idxA = vs.getA().getProperty(Constants.Property.__structuredDataIndex.name());
+            Integer idxB = vs.getB().getProperty(Constants.Property.__structuredDataIndex.name());
+
+            return idxA - idxB;
+        };
+
+        for (Vertex child : new HawkularPipeline<>(root).out(contains).order(orderFn)) {
+            StructuredData.Type type = StructuredData.Type.valueOf(child.getProperty(
+                    Constants.Property.__structuredDataType.name()));
+
+            switch (type) {
+                case bool:
+                    bld.addBool(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case integral:
+                    bld.addIntegral(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case floatingPoint:
+                    bld.addFloatingPoint(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case undefined:
+                    bld.addUndefined();
+                    break;
+                case string:
+                    bld.addString(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case list:
+                    StructuredData.InnerListBuilder<?> lst = bld.addList();
+                    loadStructuredDataList(child, lst);
+                    lst.closeList();
+                    break;
+                case map:
+                    StructuredData.InnerMapBuilder<?> mp = bld.addMap();
+                    loadStructuredDataMap(child, mp);
+                    mp.closeMap();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown structured data type stored in db: " + type);
+            }
+        }
+    }
+
+    private void loadStructuredDataMap(Vertex root, StructuredData.AbstractMapBuilder<?> bld) {
+        PipeFunction<com.tinkerpop.pipes.util.structures.Pair<Vertex, Vertex>, Integer> orderFn = (vs) -> {
+            Integer idxA = vs.getA().getProperty(Constants.Property.__structuredDataIndex.name());
+            Integer idxB = vs.getB().getProperty(Constants.Property.__structuredDataIndex.name());
+
+            return idxA - idxB;
+        };
+
+        for (Vertex v : new HawkularPipeline<>(root).out(contains).order(orderFn)) {
+            String key = v.getProperty(Constants.Property.__structuredDataKey.name()).toString();
+
+            String type = v.getProperty(Constants.Property.__structuredDataType.name());
+
+            switch (StructuredData.Type.valueOf(type)) {
+                case bool:
+                    bld.putBool(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case integral:
+                    bld.putIntegral(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case floatingPoint:
+                    bld.putFloatingPoint(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case undefined:
+                    bld.putUndefined(key);
+                    break;
+                case string:
+                    bld.putString(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    break;
+                case list:
+                    StructuredData.InnerListBuilder<?> lst = bld.putList(key);
+                    loadStructuredDataList(v, lst);
+                    lst.closeList();
+                    break;
+                case map:
+                    StructuredData.InnerMapBuilder<?> mp = bld.putMap(key);
+                    loadStructuredDataMap(v, mp);
+                    mp.closeMap();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown structured data type stored in db: " + type);
+            }
+        }
     }
 
     /**
@@ -706,5 +1020,15 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     static Direction toNative(Relationships.Direction direction) {
         return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
+    }
+
+    private static final class Pair<F, S> {
+        public F first;
+        public S second;
+
+        public Pair(F first, S second) {
+            this.first = first;
+            this.second = second;
+        }
     }
 }

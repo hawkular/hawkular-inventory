@@ -72,6 +72,7 @@ import java.util.function.Function;
  * <li><b>m</b> - metric,
  * <li><b>r</b> - resource,
  * <li><b>rl</b> - relationship
+ * <li><b>d</b> - structured data (configurations)
  * <p> In addition to that, the relative paths can contain the special "up" token - <code>..</code> - instead of the
  * {@code type:id} pair. E.g. a relative path may look like this: {@code ../e;production/r;myResource}.
  *
@@ -99,9 +100,6 @@ public abstract class Path {
     Path(int startIdx, int endIdx, List<Segment> path) {
         this.startIdx = startIdx;
         this.endIdx = endIdx;
-        if (path.isEmpty()) {
-            throw new IllegalArgumentException("Empty path is not valid.");
-        }
         this.path = Collections.unmodifiableList(path);
     }
 
@@ -621,6 +619,8 @@ public abstract class Path {
                 return visitor.visitResourceType(parameter);
             } else if (Tenant.class.equals(elementType)) {
                 return visitor.visitTenant(parameter);
+            } else if (DataEntity.class.equals(elementType)) {
+                return visitor.visitData(parameter);
             } else {
                 return visitor.visitUnknown(parameter);
             }
@@ -762,12 +762,35 @@ public abstract class Path {
         }
     }
 
+    public static class StructuredDataHintingTypeProvider implements TypeProvider {
+
+        private boolean insideDataEntity;
+
+        @Override
+        public void segmentParsed(Segment segment) {
+            insideDataEntity = DataEntity.class.equals(segment.getElementType());
+        }
+
+        @Override
+        public Segment deduceSegment(String type, String id, boolean isLast) {
+            if (type == null && insideDataEntity) {
+                return new Segment(StructuredData.class, id);
+            }
+            return null;
+        }
+
+        @Override
+        public void finished() {
+            insideDataEntity = false;
+        }
+    }
+
     /**
      * This is a type provider ({@link org.hawkular.inventory.api.model.Path.TypeProvider}) implementation that tries
      * to deduce the types on the path based on the current position and the intended type of the final segment of
      * the path.
      */
-    public static class HintedTypeProvider implements TypeProvider {
+    public static class HintedTypeProvider extends StructuredDataHintingTypeProvider {
         private final Class<?> intendedFinalType;
         private final Extender extender;
 
@@ -1033,6 +1056,15 @@ public abstract class Path {
             return this;
         }
 
+        public StructuredDataBuilder<Impl> configuration() {
+            segments.add(new Segment(DataEntity.class, DataEntity.Role.configuration.name()));
+            return new StructuredDataBuilder<>(segments, constructor);
+        }
+
+        public StructuredDataBuilder<Impl> connectionConfiguration() {
+            segments.add(new Segment(DataEntity.class, DataEntity.Role.connectionConfiguration.name()));
+            return new StructuredDataBuilder<>(segments, constructor);
+        }
         public Impl get() {
             return constructor.create(0, segments.size(), segments);
         }
@@ -1042,6 +1074,27 @@ public abstract class Path {
 
         MetricBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
+        }
+
+        public Impl get() {
+            return constructor.create(0, segments.size(), segments);
+        }
+    }
+
+    public static class StructuredDataBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+
+        StructuredDataBuilder(List<Segment> segments, Constructor<Impl> constructor) {
+            super(segments, constructor);
+        }
+
+        public StructuredDataBuilder<Impl> key(String name) {
+            segments.add(new Segment(StructuredData.class, name));
+            return this;
+        }
+
+        public StructuredDataBuilder<Impl> index(int index) {
+            segments.add(new Segment(StructuredData.class, "" + index));
+            return this;
         }
 
         public Impl get() {

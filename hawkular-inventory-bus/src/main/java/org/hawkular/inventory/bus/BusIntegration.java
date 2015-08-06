@@ -115,7 +115,7 @@ public final class BusIntegration {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);
 
-        Subscription s = inventory.observable(interest).subscribe(PartiallyApplied.method(sender::send)
+        Subscription s = inventory.observable(interest).subscribe(PartiallyApplied.procedure(sender::send)
                 .first(interest));
         subscriptions.add(s);
     }

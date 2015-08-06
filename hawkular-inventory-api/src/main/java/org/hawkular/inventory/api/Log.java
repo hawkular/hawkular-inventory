@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
@@ -36,4 +37,8 @@ public interface Log extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 1, value = "Error while sending inventory event.")
     void wErrorSendingEvent(@Cause Throwable cause);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2, value = "No data associated with data entity on path %s that is being deleted.")
+    void wNoDataAssociatedWithEntity(CanonicalPath dataEntityPath);
 }

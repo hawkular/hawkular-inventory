@@ -58,8 +58,9 @@ public final class MetricTypes {
     /**
      * Provides read-write access to metric types.
      */
-    public interface ReadWrite extends ReadWriteInterface<MetricType.Update, MetricType.Blueprint, Single,
-            Multiple> {}
+    public interface ReadWrite
+            extends ReadWriteInterface<MetricType.Update, MetricType.Blueprint, Single, Multiple, String
+            > {}
 
     /**
      * Provides read-only access to metric types.

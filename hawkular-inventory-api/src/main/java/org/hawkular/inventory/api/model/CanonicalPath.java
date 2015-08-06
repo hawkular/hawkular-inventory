@@ -52,6 +52,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_NAME_TYPES.put("rt", ResourceType.class);
         SHORT_NAME_TYPES.put("mt", MetricType.class);
         SHORT_NAME_TYPES.put("rl", Relationship.class);
+        SHORT_NAME_TYPES.put("d", DataEntity.class);
 
         SHORT_TYPE_NAMES.put(Tenant.class, "t");
         SHORT_TYPE_NAMES.put(Environment.class, "e");
@@ -61,12 +62,15 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_TYPE_NAMES.put(ResourceType.class, "rt");
         SHORT_TYPE_NAMES.put(MetricType.class, "mt");
         SHORT_TYPE_NAMES.put(Relationship.class, "rl");
+        SHORT_TYPE_NAMES.put(DataEntity.class, "d");
 
         VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class));
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
-        VALID_PROGRESSIONS.put(Resource.class, Collections.singletonList(Resource.class));
+        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
+        VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
+        VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class));
     }
 
@@ -111,7 +115,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @return a new path instance
      */
     public static CanonicalPath fromString(String path) {
-        return fromPartiallyUntypedString(path, null);
+        return fromPartiallyUntypedString(path, new StructuredDataHintingTypeProvider());
     }
 
     /**
@@ -229,7 +233,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * a resource, etc.
      *
      * @param type the type of the entity to append
-     * @param id the id of the appended entity
+     * @param id   the id of the appended entity
      * @return a new path instance
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
@@ -320,6 +324,20 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public String getRelationshipId() {
             return idIfTypeCorrect(getRoot(), Relationship.class);
+        }
+
+        public DataEntity.Role getDataRole() {
+            CanonicalPath currentPath = CanonicalPath.this;
+
+            //move up from the potential data path segments
+            while (StructuredData.class.equals(currentPath.getSegment().getElementType())) {
+                currentPath = currentPath.up();
+            }
+
+            //now we should be at the data entity, which should contain our role
+            String roleStr = idIfTypeCorrect(currentPath, DataEntity.class);
+
+            return roleStr == null ? null : DataEntity.Role.valueOf(roleStr);
         }
 
         private String idIfTypeCorrect(CanonicalPath path, Class<? extends AbstractElement<?, ?>> desiredType) {

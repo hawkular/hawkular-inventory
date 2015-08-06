@@ -17,11 +17,19 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataIndex;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataKey;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -31,6 +39,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
@@ -38,6 +47,19 @@ import org.hawkular.inventory.api.model.Tenant;
  * @since 0.0.1
  */
 final class Constants {
+
+    private static final Map<Class<?>, String> STRUCTURED_DATA_TYPE_NAMES;
+
+    static {
+        STRUCTURED_DATA_TYPE_NAMES = new HashMap<>();
+        STRUCTURED_DATA_TYPE_NAMES.put(Boolean.class, "bool");
+        STRUCTURED_DATA_TYPE_NAMES.put(Integer.class, "integral");
+        STRUCTURED_DATA_TYPE_NAMES.put(Double.class, "floatingPoint");
+        STRUCTURED_DATA_TYPE_NAMES.put(String.class, "string");
+        STRUCTURED_DATA_TYPE_NAMES.put(Void.class, "undefined");
+        STRUCTURED_DATA_TYPE_NAMES.put(List.class, "list");
+        STRUCTURED_DATA_TYPE_NAMES.put(Map.class, "map");
+    }
 
     /**
      * The vertices in the graph have certain well-known properties.
@@ -69,7 +91,28 @@ final class Constants {
         /**
          * Property used to store the canonical path of an element.
          */
-        __cp;
+        __cp,
+
+        /**
+         * The type of the data stored by the structured data vertex
+         */
+        __structuredDataType,
+
+        /**
+         * The key using which a structured data value is stored in a map.
+         */
+        __structuredDataKey,
+
+        /**
+         * The index on which a structured data value is stored in a list.
+         */
+        __structuredDataIndex,
+
+        /**
+         * The name of the property on the structured data vertex that holds the primitive value of that vertex.
+         * List and maps don't hold the value directly but instead have edges going out to the child vertices.
+         */
+        __structuredDataValue;
 
 
         public static String mapUserDefined(String property) {
@@ -87,12 +130,14 @@ final class Constants {
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
         resourceType(ResourceType.class), metricType(MetricType.class, __unit, __metric_data_type),
-        resource(Resource.class), metric(Metric.class), relationship(Relationship.class);
+        resource(Resource.class), metric(Metric.class), relationship(Relationship.class),
+        dataEntity(DataEntity.class), structuredData(StructuredData.class, __structuredDataType, __structuredDataValue,
+                __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;
-        private final Class<? extends AbstractElement<?, ?>> entityType;
+        private final Class<?> entityType;
 
-        Type(Class<? extends AbstractElement<?, ?>> entityType, Property... mappedProperties) {
+        Type(Class<?> entityType, Property... mappedProperties) {
             this.entityType = entityType;
             this.mappedProperties = new String[mappedProperties.length + 3];
             Arrays.setAll(this.mappedProperties, i -> {
@@ -196,13 +241,21 @@ final class Constants {
                 }
 
                 @Override
+                public Type visitData(Void parameter) {
+                    return dataEntity;
+                }
+
+                @Override
                 public Type visitUnknown(Void parameter) {
+                    if (StructuredData.class.equals(ec)) {
+                        return structuredData;
+                    }
                     throw new IllegalArgumentException("Unsupported entity class " + ec);
                 }
             }, null);
         }
 
-        public Class<? extends AbstractElement<?, ?>> getEntityType() {
+        public Class<?> getEntityType() {
             return entityType;
         }
 

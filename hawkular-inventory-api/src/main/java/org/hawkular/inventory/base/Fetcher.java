@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -43,6 +47,23 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     @SuppressWarnings("unchecked")
     @Override
     public E entity() throws EntityNotFoundException, RelationNotFoundException {
+        return loadEntity((b, e) -> e);
+    }
+
+    /**
+     * Loads the entity from the backend and let's the caller do some conversion on either the backend representation of
+     * the entity or the converted entity (both of these are required even during the loading so no unnecessary work is
+     * done by providing both of the to the caller).
+     *
+     * @param conversion the conversion function taking the backend entity as well as the model entity
+     * @param <T>        the result type
+     * @return the converted result of loading the entity
+     * @throws EntityNotFoundException
+     * @throws RelationNotFoundException
+     */
+    protected <T> T loadEntity(BiFunction<BE, E, T> conversion)
+            throws EntityNotFoundException, RelationNotFoundException {
+
         return readOnly(() -> {
             Page<BE> results = context.backend.query(context.select().get(), Pager.single());
 
@@ -50,21 +71,21 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
                 throwNotFoundException();
             }
 
-            BE entity = results.get(0);
+            BE backendEntity = results.get(0);
 
-            E ret = context.backend.convert(entity, context.entityClass);
+            E entity = context.backend.convert(backendEntity, context.entityClass);
 
-            if (!isApplicable(ret)) {
+            if (!isApplicable(entity)) {
                 throwNotFoundException();
             }
 
-            return ret;
+            return conversion.apply(backendEntity, entity);
         });
     }
 
     @Override
     public void delete() {
-        Util.delete(context, context.select().get());
+        Util.delete(context, context.select().get(), null);
     }
 
     @Override
@@ -74,12 +95,36 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     @Override
     public Page<E> entities(Pager pager) {
-        return readOnly(() -> {
-            Function<BE, E> conversion = (e) -> context.backend.convert(e, context.entityClass);
-            Function<E, Boolean> filter = context.configuration.getResultFilter() == null ? null :
-                    (e) -> context.configuration.getResultFilter().isApplicable(e);
+        return loadEntities(pager, (b, e) -> e);
+    }
 
-            return context.backend.<E>query(context.select().get(), pager, conversion, filter);
+    /**
+     * Loads the entities given the pager and converts them using the provided conversion function to the desired type.
+     *
+     * <p>Note that the conversion function accepts both the backend entity and the converted entity because both
+     * of them are required anyway during the loading and thus the function can choose which one to use without any
+     * additional conversion cost.
+     *
+     * @param pager              the pager specifying the page of the data to load
+     * @param conversionFunction the conversion function to convert to the desired target type
+     * @param <T>                the desired target type of the elements of the returned page
+     * @return the page of the results as specified by the pager
+     */
+    protected <T> Page<T> loadEntities(Pager pager, BiFunction<BE, E, T> conversionFunction) {
+        return readOnly(() -> {
+            Function<BE, Pair<BE, E>> conversion =
+                    (e) -> new Pair<>(e, context.backend.convert(e, context.entityClass));
+
+            Function<Pair<BE, E>, Boolean> filter = context.configuration.getResultFilter() == null ? null :
+                    (p) -> context.configuration.getResultFilter().isApplicable(p.second);
+
+            Page<Pair<BE, E>> intermediate =
+                    context.backend.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
+
+            List<T> converted = intermediate.stream().map((p) -> conversionFunction.apply(p.first, p.second))
+                    .collect(toList());
+
+            return new Page<>(converted, intermediate.getPageContext(), intermediate.getTotalSize());
         });
     }
 
@@ -91,6 +136,16 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
         } else {
             //TODO this is not correct?
             throw new RelationNotFoundException((String) null, Query.filters(context.sourcePath));
+        }
+    }
+
+    private static final class Pair<F, S> {
+        private final F first;
+        private final S second;
+
+        public Pair(F first, S second) {
+            this.first = first;
+            this.second = second;
         }
     }
 }

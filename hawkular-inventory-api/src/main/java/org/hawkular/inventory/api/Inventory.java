@@ -284,6 +284,12 @@ public interface Inventory extends AutoCloseable {
      * all access interfaces returned from this method (which makes it almost useless but at least you can get the
      * instance of it).
      *
+     * <p>Note that this does NOT support paths that end inside a structured data, because structured data is not a
+     * standalone inventory entity and does not have a separate access interface. For such paths, you need to extract
+     * the parent path to the data entity, pass it to this method and then use the
+     * {@link org.hawkular.inventory.api.Datas.Single#data(RelativePath)} or {@link Datas.Single#bareData(RelativePath)}
+     * methods to get at the target portion of the structured data specified by the path.
+     *
      * @param path            the path to the element (entity or relationship)
      * @param accessInterface the expected access interface
      * @param <Single>        the type of the access interface
@@ -367,6 +373,21 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitRelationship(Void parameter) {
                 return accessInterface.cast(relationships().get(path.ids().getRelationshipId()));
+            }
+
+            @Override
+            public Single visitData(Void parameter) {
+
+                Resources.Single res = inspect(path.up(), Resources.Single.class);
+
+                switch (path.ids().getDataRole()) {
+                    case configuration:
+                        return accessInterface.cast(res.configuration().get(null));
+                    case connectionConfiguration:
+                        return accessInterface.cast(res.connectionConfiguration().get(null));
+                    default:
+                        throw new IllegalStateException("Incomplete mapping of data roles in Inventory#inspect()");
+                }
             }
 
             @Override

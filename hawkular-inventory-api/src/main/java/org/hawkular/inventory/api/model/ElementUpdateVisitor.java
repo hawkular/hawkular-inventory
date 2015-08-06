@@ -37,6 +37,8 @@ public interface ElementUpdateVisitor<R, P> {
 
     R visitRelationship(Relationship.Update relationship, P parameter);
 
+    R visitData(DataEntity.Update data, P parameter);
+
     R visitUnknown(Object update, P parameter);
 
     class Simple<R, P> implements ElementUpdateVisitor<R, P> {
@@ -91,6 +93,11 @@ public interface ElementUpdateVisitor<R, P> {
 
         @Override
         public R visitRelationship(Relationship.Update relationship, P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitData(DataEntity.Update data, P parameter) {
             return defaultAction();
         }
 

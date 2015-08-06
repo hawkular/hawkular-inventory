@@ -24,31 +24,21 @@ import org.hawkular.inventory.api.model.Entity;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public final class EntityNotFoundException extends InventoryException {
 
     private final Class<? extends Entity<?, ?>> entityType;
     private final Filter[][] filters;
 
-    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[] filters) {
-        this.entityType = entityClass;
-        this.filters = new Filter[1][];
-        this.filters[0] = filters;
-    }
-
     public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[][] filters) {
         this.entityType = entityClass;
         this.filters = filters;
     }
 
-    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[] filters, Throwable cause) {
-        super(cause);
-        this.entityType = entityClass;
-        this.filters = new Filter[1][];
-        this.filters[0] = filters;
+    public EntityNotFoundException(Filter[][] filters) {
+        this(null, filters);
     }
-
     /**
      * @return the type of the entity that was not found.
      */

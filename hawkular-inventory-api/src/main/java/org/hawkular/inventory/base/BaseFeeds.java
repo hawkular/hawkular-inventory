@@ -48,7 +48,7 @@ public final class BaseFeeds {
 
     }
 
-    public static class ReadWrite<BE> extends Mutator<BE, Feed, Feed.Blueprint, Feed.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Feed, Feed.Blueprint, Feed.Update, String>
             implements Feeds.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Feed> context) {
