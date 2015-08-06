@@ -47,6 +47,10 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
         this.value = value;
     }
 
+    public DataEntity(CanonicalPath path, StructuredData value, Map<String, Object> properties) {
+        this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, properties);
+    }
+
     public StructuredData getValue() {
         return value;
     }

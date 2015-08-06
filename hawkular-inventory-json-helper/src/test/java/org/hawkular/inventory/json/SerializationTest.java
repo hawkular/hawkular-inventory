@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -263,6 +264,13 @@ public class SerializationTest {
         test(StructuredData.get().list().addMap().putIntegral("answer", 42L).closeMap().build());
         test(StructuredData.get().map().putBool("yes", true).build());
         test(StructuredData.get().map().putList("answer-list").addIntegral(42L).closeList().build());
+    }
+
+    @Test
+    public void testDataEntity() throws Exception {
+        test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
+                DataEntity.Role.connectionConfiguration,
+                StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 
     private void test(Object o) throws Exception {
