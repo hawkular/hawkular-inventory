@@ -299,7 +299,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public CanonicalPath extractCanonicalPath(Element entityRepresentation) {
-        return CanonicalPath.fromString(entityRepresentation.getProperty(Constants.Property.__cp.name()));
+        String cp = entityRepresentation.getProperty(Constants.Property.__cp.name());
+        if (cp == null) {
+            throw new IllegalArgumentException("Element is not representable using a canonical path. Element type is "
+                    + extractType(entityRepresentation).getSimpleName() + ", element id is '"
+                    + extractId(entityRepresentation) + "'.");
+        }
+        return CanonicalPath.fromString(cp);
     }
 
     @Override

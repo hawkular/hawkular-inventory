@@ -111,7 +111,9 @@ public final class BaseDatas {
             BE value = context.backend.persist(blueprint.getValue());
 
             //don't report this relationship, it is implicit
-            relate(entity, value, hasData.name());
+            //also, don't run the RelationshipRules checks - we're in the "privileged code" that is allowed to do
+            //this
+            context.backend.relate(entity, value, hasData.name(), null);
 
             return new EntityAndPendingNotifications<>(data, notifications);
         }
@@ -136,6 +138,7 @@ public final class BaseDatas {
             BE structuredData = context.backend.getRelationshipTarget(dataRel);
 
             context.backend.deleteStructuredData(structuredData);
+            context.backend.delete(dataRel);
         }
 
         @Override

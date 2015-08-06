@@ -27,6 +27,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
@@ -1378,6 +1379,35 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             if (f != null) {
                 inventory.inspect(f).delete();
             }
+        }
+    }
+
+    @Test
+    public void testCannotCreateOrDeleteHasDataRelationship() throws Exception {
+        Relationships.Multiple rels = inventory.relationships()
+                .getAll(RelationWith.name(Relationships.WellKnown.hasData.name()),
+                        RelationWith.sourceOfType(DataEntity.class));
+
+        try {
+            Relationship rel = rels.entities().iterator().next();
+
+            //we actually shouldn't be able to get here, because hasData relationship's target is a structured data
+            //which is not addressable using a canonical path.
+
+            inventory.relationships().get(rel.getId()).delete();
+
+            Assert.fail("Explicitly deleting hasData relationship shouldn't be possible.");
+        } catch (IllegalArgumentException e) {
+            // good
+        }
+
+        try {
+            inventory.tenants().get("com.example.tenant").relationships()
+                    .linkWith(hasData, CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get(),
+                            null);
+            Assert.fail("Explicitly creating hasData relationship shouldn't be possible.");
+        } catch (IllegalArgumentException e) {
+            //good
         }
     }
 

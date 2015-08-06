@@ -20,6 +20,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.connectsUsing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isConfiguredBy;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 
@@ -61,12 +62,14 @@ public final class RelationshipRules {
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
         CREATE_RULES.put(isConfiguredBy, Collections.singletonList(RelationshipRules::checkIs1To1));
         CREATE_RULES.put(connectsUsing, Collections.singletonList(RelationshipRules::checkIs1To1));
+        CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
                 RelationshipRules::disallowDeleteOfIsParentOfWhenTheresContainsToo));
         DELETE_RULES.put(isConfiguredBy, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(connectsUsing, Collections.singletonList(RelationshipRules::disallowDelete));
+        DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));
     }
 
     private RelationshipRules() {
@@ -161,6 +164,11 @@ public final class RelationshipRules {
     private static <E> void disallowDelete(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
             String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly deleted.");
+    }
+
+    private static <E> void disallowCreate(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
+            String relationship, E target) {
+        throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly created.");
     }
 
     private static <E> void disallowDeleteOfIsParentOfWhenTheresContainsToo(InventoryBackend<E> backend, E origin,

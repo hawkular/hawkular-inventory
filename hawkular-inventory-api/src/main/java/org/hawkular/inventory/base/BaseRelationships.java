@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+
 import java.util.Map;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -175,7 +177,7 @@ public final class BaseRelationships {
                     BE target = context.backend.getRelationshipTarget(relationshipObject);
                     String relationshipName = context.backend.extractRelationshipName(relationshipObject);
 
-                    RelationshipRules.checkDelete(context.backend, source, Relationships.Direction.outgoing,
+                    RelationshipRules.checkDelete(context.backend, source, outgoing,
                             relationshipName, target);
 
                     context.backend.delete(relationshipObject);
@@ -196,7 +198,11 @@ public final class BaseRelationships {
         public Read(TraversalContext<BE, Relationship> context) {
             super(context);
             QueryFragment[] filters = context.selectCandidates.getFragments();
-            direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
+            if (filters.length == 0) {
+                direction = outgoing;
+            } else {
+                direction = ((SwitchElementType) filters[filters.length - 1].getFilter()).getDirection();
+            }
         }
 
         @Override
