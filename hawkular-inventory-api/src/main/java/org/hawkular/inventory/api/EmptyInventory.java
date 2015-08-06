@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
@@ -74,7 +75,7 @@ public class EmptyInventory implements Inventory {
     }
 
     @Override
-    public String getGraphSON(String tenantId) {
+    public InputStream getGraphSON(String tenantId) {
         throw entityNotFound(Tenant.class);
     }
 

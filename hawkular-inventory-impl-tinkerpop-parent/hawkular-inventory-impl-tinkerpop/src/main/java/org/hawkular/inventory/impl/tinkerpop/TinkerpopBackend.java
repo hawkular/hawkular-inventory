@@ -17,13 +17,16 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import static java.util.stream.Collectors.toSet;
+
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,14 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
-
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
@@ -66,6 +61,14 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 
 /**
  * @author Lukas Krejci
@@ -711,14 +714,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
     }
 
-    public String getGraphSON(String tenantId) {
-//        PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public InputStream getGraphSON(String tenantId) {
+        PipedInputStream in = new PipedInputStream();
         try {
-            GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), baos, GraphSONMode.NORMAL);
+            PipedOutputStream out = new PipedOutputStream(in);
+            //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
+            new Thread(
+                    () -> {
+                        try {
+                            GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
+                        }
+                    }
+            ).start();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
         }
-        return baos.toString();
+        return in;
     }
 }

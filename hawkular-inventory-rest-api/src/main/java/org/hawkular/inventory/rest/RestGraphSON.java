@@ -19,22 +19,24 @@ package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+import java.io.InputStream;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
+import org.hawkular.inventory.rest.json.ApiError;
+
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
-import org.hawkular.inventory.rest.json.ApiError;
-
 /**
  * @author Jirka Kremser
- * @since 0.2.0
+ * @since 0.2.1
  */
 @Path("/graph")
 @Produces(APPLICATION_JSON)
@@ -53,7 +55,7 @@ public class RestGraphSON extends RestBase {
     })
     public Response getGraph() {
         String tenantId = getTenantId();
-        String json = inventory.getGraphSON(tenantId);
-        return Response.ok(json).build();
+        InputStream jsonStream = inventory.getGraphSON(tenantId);
+        return Response.ok(jsonStream).build();
     }
 }
