@@ -16,11 +16,11 @@
  */
 package org.hawkular.inventory.base.spi;
 
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Filter;
-
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Filter;
 
 /**
  * Filter used internally by the base impl for jumping from a vertex to an edge or back.
