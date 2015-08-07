@@ -324,7 +324,7 @@ class FilterVisitor {
     }
 
     public void visit(HawkularPipeline<?, ?> query, With.DataValued dataValue) {
-        query.has(Constants.Property.__structuredDataValue.name(), dataValue);
+        query.has(Constants.Property.__structuredDataValue.name(), dataValue.getValue());
     }
 
     @SuppressWarnings("unchecked")

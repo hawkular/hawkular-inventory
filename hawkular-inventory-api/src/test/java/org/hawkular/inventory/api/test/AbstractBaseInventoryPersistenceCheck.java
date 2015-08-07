@@ -1392,7 +1392,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             Relationship rel = rels.entities().iterator().next();
 
             //we actually shouldn't be able to get here, because hasData relationship's target is a structured data
-            //which is not addressable using a canonical path.
+            //which is not a legal target for a relationship.
 
             inventory.relationships().get(rel.getId()).delete();
 
@@ -1851,6 +1851,39 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testFilteringByData() throws Exception {
+        Datas.Read configs = inventory.tenants().getAll().environments().getAll().allResources().getAll()
+                .configuration();
+
+        Assert.assertEquals(1, configs.getAll(With.dataAt(RelativePath.to().structuredData().key("primitives").index(0)
+                .get())).entities().size());
+
+        Assert.assertEquals(0, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").index(0).get()),
+                With.dataValue(false)}}).entities().size());
+
+        Assert.assertEquals(1, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").index(0).get()),
+                With.dataValue(true)}}).entities().size());
+
+        Assert.assertEquals(1, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").get()),
+                With.dataOfTypes(StructuredData.Type.list)}}).entities().size());
+
+        Assert.assertEquals(1, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").index(0).get()),
+                With.dataOfTypes(StructuredData.Type.bool)}}).entities().size());
+
+        Assert.assertEquals(0, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").get()),
+                With.dataOfTypes(StructuredData.Type.map)}}).entities().size());
+
+        Assert.assertEquals(0, configs.getAll(new Filter[][]{{
+                With.dataAt(RelativePath.to().structuredData().key("primitives").index(0).get()),
+                With.dataOfTypes(StructuredData.Type.integral)}}).entities().size());
+    }
+
+    @Test
+    public void testRetrievingDataPortions() throws Exception {
         Datas.Single config = inventory.inspect(
                 CanonicalPath.fromString("/t;com.example.tenant/e;test/r;playroom1/d;configuration"),
                 Datas.Single.class);
@@ -1858,18 +1891,21 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         StructuredData allData = config.entity().getValue();
 
         StructuredData portion = config.data(RelativePath.to().structuredData().key("primitives").index(0).get());
-
         Assert.assertEquals(allData.map().get("primitives").list().get(0), portion);
-    }
 
-    @Test
-    public void testRetrievingDataPortions() throws Exception {
+        portion = config.data(RelativePath.empty().get());
+        Assert.assertEquals(allData, portion);
 
-    }
+        portion = config.bareData(RelativePath.to().structuredData().key("primitives").index(0).get());
+        Assert.assertEquals(allData.map().get("primitives").list().get(0), portion);
 
-    @Test
-    public void testRetrievingBareData() throws Exception {
-        // TODO implement
+        portion = config.bareData(RelativePath.empty().get());
+        //noinspection AssertEqualsBetweenInconvertibleTypes
+        Assert.assertEquals(Collections.emptyMap(), portion.getValue());
+
+        portion = config.bareData(RelativePath.to().structuredData().key("primitives").get());
+        //noinspection AssertEqualsBetweenInconvertibleTypes
+        Assert.assertEquals(Collections.emptyList(), portion.getValue());
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
