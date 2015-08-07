@@ -79,7 +79,7 @@ public final class Datas {
          *
          * @param dataPath the path to the subset of the data.
          * @return the subset of the data stored with the data entity
-         * @see #bareData(RelativePath)
+         * @see #flatData(RelativePath)
          */
         StructuredData data(RelativePath dataPath);
 
@@ -93,12 +93,12 @@ public final class Datas {
          * @param dataPath the path to the subset of the data to return
          * @return the subset of the data stored with the data entity
          */
-        StructuredData bareData(RelativePath dataPath);
+        StructuredData flatData(RelativePath dataPath);
 
         @Override
         default boolean exists() {
             try {
-                bareData(RelativePath.empty().get());
+                flatData(RelativePath.empty().get());
                 return true;
             } catch (EntityNotFoundException | RelationNotFoundException ignored) {
                 return false;
@@ -128,17 +128,17 @@ public final class Datas {
         Page<StructuredData> datas(RelativePath dataPath, Pager pager);
 
         /**
-         * Similar to {@link Single#bareData(RelativePath)}, only resolved over multiple entities.
+         * Similar to {@link Single#flatData(RelativePath)}, only resolved over multiple entities.
          *
          * @param dataPath the path to the data entry inside the data entity
          * @param pager    pager to use to page the data
          * @return the page of the data entries
          */
-        Page<StructuredData> bareDatas(RelativePath dataPath, Pager pager);
+        Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager);
 
         @Override
         default boolean anyExists() {
-            return !bareDatas(RelativePath.empty().get(),
+            return !flatDatas(RelativePath.empty().get(),
                     Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).isEmpty();
         }
     }

@@ -176,7 +176,7 @@ public final class BaseDatas {
         }
 
         @Override
-        public StructuredData bareData(RelativePath dataPath) {
+        public StructuredData flatData(RelativePath dataPath) {
             return loadEntity((b, e) -> {
                 BE dataEntity = context.backend.descendToData(b, dataPath);
                 return dataEntity == null ? null : context.backend.convert(dataEntity, ShallowStructuredData.class)
@@ -202,7 +202,7 @@ public final class BaseDatas {
         }
 
         @Override
-        public Page<StructuredData> bareDatas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager) {
             return loadEntities(pager, (b, e) -> {
                 BE dataEntity = context.backend.descendToData(b, dataPath);
                 return context.backend.convert(dataEntity, ShallowStructuredData.class).getData();

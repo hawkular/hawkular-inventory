@@ -1896,14 +1896,14 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         portion = config.data(RelativePath.empty().get());
         Assert.assertEquals(allData, portion);
 
-        portion = config.bareData(RelativePath.to().structuredData().key("primitives").index(0).get());
+        portion = config.flatData(RelativePath.to().structuredData().key("primitives").index(0).get());
         Assert.assertEquals(allData.map().get("primitives").list().get(0), portion);
 
-        portion = config.bareData(RelativePath.empty().get());
+        portion = config.flatData(RelativePath.empty().get());
         //noinspection AssertEqualsBetweenInconvertibleTypes
         Assert.assertEquals(Collections.emptyMap(), portion.getValue());
 
-        portion = config.bareData(RelativePath.to().structuredData().key("primitives").get());
+        portion = config.flatData(RelativePath.to().structuredData().key("primitives").get());
         //noinspection AssertEqualsBetweenInconvertibleTypes
         Assert.assertEquals(Collections.emptyList(), portion.getValue());
     }

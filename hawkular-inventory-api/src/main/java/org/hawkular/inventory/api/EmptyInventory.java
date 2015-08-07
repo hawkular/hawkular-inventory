@@ -1248,7 +1248,7 @@ public class EmptyInventory implements Inventory {
 
     public static class DatasSingle implements Datas.Single {
         @Override
-        public StructuredData bareData(RelativePath dataPath) {
+        public StructuredData flatData(RelativePath dataPath) {
             throw entityNotFound(null);
         }
 
@@ -1285,7 +1285,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Page<StructuredData> bareDatas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager) {
             return emptyPage(pager);
         }
     }

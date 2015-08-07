@@ -288,7 +288,7 @@ public interface Inventory extends AutoCloseable {
      * <p>Note that this does NOT support paths that end inside a structured data, because structured data is not a
      * standalone inventory entity and does not have a separate access interface. For such paths, you need to extract
      * the parent path to the data entity, pass it to this method and then use the
-     * {@link org.hawkular.inventory.api.Datas.Single#data(RelativePath)} or {@link Datas.Single#bareData(RelativePath)}
+     * {@link org.hawkular.inventory.api.Datas.Single#data(RelativePath)} or {@link Datas.Single#flatData(RelativePath)}
      * methods to get at the target portion of the structured data specified by the path.
      *
      * @param path            the path to the element (entity or relationship)
