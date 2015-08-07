@@ -120,7 +120,7 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("") @QueryParam("named") String named,
                         @DefaultValue("") @QueryParam("sourceType") String sourceType,
                         @DefaultValue("") @QueryParam("targetType") String targetType,
-            @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
+                        @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
         if (!Security.isValidRestPath(securityId)) {
@@ -131,25 +131,33 @@ public class RestRelationships extends RestBase {
                 getResolvableFromCanonicalPath(cPath);
         Pager pager = extractPaging(uriInfo);
         RelationFilter[] filters = extractFilters(propertyName, propertyValue, named, sourceType,
-                                                  targetType, uriInfo);
+            targetType, uriInfo);
         Relationships.Direction directed = Relationships.Direction.valueOf(direction);
         Page<Relationship> relations = resolvable.relationships(directed).getAll(filters).entities(pager);
 
-        ContextResolver<ObjectMapper> contextResolver =
-                providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
-
-        // json-ld serialization
-        if (Boolean.parseBoolean(jsonLd)) {
-            ObjectMapper mapper = contextResolver.getContext(EmbeddedObjectMapper.class);
-            Object json;
-            try {
-                json = mapper.writeValueAsString(relations);
-            } catch (JsonProcessingException e) {
-                json = relations;
-            }
+        boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
+        Object json = getSerializedForm(jsonLdBool, relations);
+        if (jsonLdBool) {
             return pagedResponse(Response.ok(), uriInfo, relations, json).build();
         }
         return pagedResponse(Response.ok(), uriInfo, relations).build();
+    }
+
+    @GET
+    @Path("/relationships/{relationshipId}")
+    @ApiOperation("Retrieves relationship info")
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The details of relationship"),
+        @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
+            .class),
+        @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
+    public Response getRelationship(@PathParam("relationshipId") String relationshipId,
+                                    @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
+                                    @Context UriInfo uriInfo) {
+        Relationship relationship = inventory.relationships().get(relationshipId).entity();
+        Object json = getSerializedForm(Boolean.parseBoolean(jsonLd), relationship);
+        return Response.ok(json).build();
     }
 
     @DELETE
@@ -270,7 +278,7 @@ public class RestRelationships extends RestBase {
 
     private String fixUpRestPath(String urlPath) {
         if (urlPath == null) return null;
-        return urlPath.startsWith("tenants") ? urlPath : getTenantId() + "/" + urlPath;
+        return urlPath.startsWith("tenants") ? "tenants/" + getTenantId() : getTenantId() + "/" + urlPath;
     }
 
     @SuppressWarnings("unchecked")
@@ -331,5 +339,21 @@ public class RestRelationships extends RestBase {
             throw new IllegalArgumentException("Unable to " + operation + " a relationship with well defined name. " +
                     "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
         }
+    }
+
+    private Object getSerializedForm(boolean jsonLd, Object object) {
+        ContextResolver<ObjectMapper> contextResolver =
+            providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
+        if (jsonLd) {
+            ObjectMapper mapper = contextResolver.getContext(EmbeddedObjectMapper.class);
+            Object json;
+            try {
+                json = mapper.writeValueAsString(object);
+            } catch (JsonProcessingException e) {
+                json = object;
+            }
+            return json;
+        }
+        return object;
     }
 }

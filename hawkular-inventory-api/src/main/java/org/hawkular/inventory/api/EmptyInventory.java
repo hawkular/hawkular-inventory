@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
@@ -74,6 +75,11 @@ public class EmptyInventory implements Inventory {
     @Override
     public <C, E> Observable<C> observable(Interest<C, E> interest) {
         return Observable.empty();
+    }
+
+    @Override
+    public InputStream getGraphSON(String tenantId) {
+        throw entityNotFound(Tenant.class);
     }
 
     protected static <T> Page<T> emptyPage(Pager pager) {

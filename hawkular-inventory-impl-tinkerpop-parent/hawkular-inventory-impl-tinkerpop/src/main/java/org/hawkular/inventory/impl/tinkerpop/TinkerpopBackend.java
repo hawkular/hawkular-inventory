@@ -24,6 +24,10 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,6 +75,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import com.tinkerpop.pipes.PipeFunction;
 
 /**
@@ -1026,6 +1032,26 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     static Direction toNative(Relationships.Direction direction) {
         return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
+    }
+
+    public InputStream getGraphSON(String tenantId) {
+        PipedInputStream in = new PipedInputStream();
+        try {
+            PipedOutputStream out = new PipedOutputStream(in);
+            //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
+            new Thread(
+                    () -> {
+                        try {
+                            GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
+                        }
+                    }
+            ).start();
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
+        }
+        return in;
     }
 
     private static final class Pair<F, S> {

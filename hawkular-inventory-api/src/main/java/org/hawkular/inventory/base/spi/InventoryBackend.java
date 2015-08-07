@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.base.spi;
 
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -280,6 +281,11 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param transaction the transaction to roll back
      */
     void rollback(Transaction transaction);
+
+    /**
+     * See the javadoc in {@link org.hawkular.inventory.api.Inventory#getGraphSON(String)}
+     */
+    InputStream getGraphSON(String tenantId);
 
     /**
      * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are

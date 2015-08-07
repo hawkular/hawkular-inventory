@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import java.io.InputStream;
+
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
@@ -108,5 +110,10 @@ public abstract class BaseInventory<E> implements Inventory {
     @Override
     public <C, V> Observable<C> observable(Interest<C, V> interest) {
         return observableContext.getObservableFor(interest);
+    }
+
+    @Override
+    public InputStream getGraphSON(String tenantId) {
+        return getBackend().getGraphSON(tenantId);
     }
 }
