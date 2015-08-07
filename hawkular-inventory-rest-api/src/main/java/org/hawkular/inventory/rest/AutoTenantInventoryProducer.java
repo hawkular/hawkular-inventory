@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.rest;
 
+import java.io.InputStream;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -104,6 +106,11 @@ public class AutoTenantInventoryProducer {
             @Override
             public <C, E> Observable<C> observable(Interest<C, E> interest) {
                 return inventory.observable(interest);
+            }
+
+            @Override
+            public InputStream getGraphSON(String tenantId) {
+                return inventory.getGraphSON(tenantId);
             }
 
             @Override

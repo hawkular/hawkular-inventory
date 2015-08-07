@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -415,4 +416,14 @@ public interface Inventory extends AutoCloseable {
      * mutation
      */
     <C, E> rx.Observable<C> observable(Interest<C, E> interest);
+
+    /**
+     * This method returns the {@link java.io.InputStream} with the GraphSON representation of the whole sub-graph
+     * of given tenantId. It's basically the graph dump.
+     *
+     * @param tenantId the tenantId for which we want the GraphSON
+     * @return the InputStream with the GraphSON representation
+     */
+    InputStream getGraphSON(String tenantId);
+
 }
