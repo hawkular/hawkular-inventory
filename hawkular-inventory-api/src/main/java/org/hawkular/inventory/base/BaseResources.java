@@ -17,11 +17,9 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Relationships.WellKnown.connectsUsing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-import static org.hawkular.inventory.api.Relationships.WellKnown.isConfiguredBy;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.model.DataEntity.Role.configuration;
@@ -36,7 +34,6 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -48,7 +45,6 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.base.EntityAndPendingNotifications.Notification;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
@@ -105,15 +101,6 @@ public final class BaseResources {
             List<Notification<?, ?>> notifications = new ArrayList<>();
             notifications.add(new Notification<>(definesRel, definesRel, created()));
 
-            Notification<?, ?> n = persistConfiguration(blueprint.getConfiguration(), isConfiguredBy);
-            if (n != null) {
-                notifications.add(n);
-            }
-            n = persistConfiguration(blueprint.getConnectionConfiguration(), connectsUsing);
-            if (n != null) {
-                notifications.add(n);
-            }
-
             if (context.backend.extractType(parent).equals(Resource.class)) {
                 //we're creating a child resource... need to also create the implicit isParentOf
                 r = relate(parent, entity, isParentOf.name());
@@ -140,17 +127,6 @@ public final class BaseResources {
         @Override
         public Resources.Single create(Resource.Blueprint blueprint) throws EntityAlreadyExistsException {
             return new Single<>(context.replacePath(doCreate(blueprint)));
-        }
-
-        private Notification<?, ?> persistConfiguration(StructuredData config,
-                Relationships.WellKnown configRelationship) {
-
-            if (config == null || config.isUndefined()) {
-                return null;
-            }
-
-            // TODO implement
-            return null;
         }
     }
 

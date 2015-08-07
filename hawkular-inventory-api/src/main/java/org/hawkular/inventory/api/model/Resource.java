@@ -75,13 +75,12 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
      * Data required to create a resource.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
+     * called.
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
         private final String resourceTypePath;
-        private final StructuredData configuration;
-        private final StructuredData connectionConfiguration;
 
         public static Builder builder() {
             return new Builder();
@@ -97,28 +96,16 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
 
         public Blueprint(String id, String resourceTypePath, StructuredData configuration,
                 StructuredData connectionConfiguration) {
-            this(id, resourceTypePath, configuration, connectionConfiguration, Collections.emptyMap());
+            this(id, resourceTypePath, Collections.emptyMap());
         }
 
-        public Blueprint(String id, String resourceTypePath, StructuredData configuration,
-                StructuredData connectionConfiguration,
-                Map<String, Object> properties) {
+        public Blueprint(String id, String resourceTypePath, Map<String, Object> properties) {
             super(id, properties);
             this.resourceTypePath = resourceTypePath;
-            this.configuration = configuration;
-            this.connectionConfiguration = connectionConfiguration;
         }
 
         public String getResourceTypePath() {
             return resourceTypePath;
-        }
-
-        public StructuredData getConfiguration() {
-            return configuration;
-        }
-
-        public StructuredData getConnectionConfiguration() {
-            return connectionConfiguration;
         }
 
         @Override
@@ -128,8 +115,6 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private String resourceTypePath;
-            private StructuredData configuration;
-            private StructuredData connectionConfiguration;
 
             public Builder withResourceTypePath(String resourceTypePath) {
                 this.resourceTypePath = resourceTypePath;
@@ -138,7 +123,7 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, resourceTypePath, configuration, connectionConfiguration, properties);
+                return new Blueprint(id, resourceTypePath, properties);
             }
         }
     }

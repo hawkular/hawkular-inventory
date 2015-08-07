@@ -42,7 +42,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 
 /**
- * This a helper class for working with structured data.
+ * Contains acccess interface implementations for accessing data entities.
  *
  * @author Lukas Krejci
  * @since 0.3.0

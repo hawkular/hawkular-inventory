@@ -24,9 +24,6 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structu
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -47,19 +44,6 @@ import org.hawkular.inventory.api.model.Tenant;
  * @since 0.0.1
  */
 final class Constants {
-
-    private static final Map<Class<?>, String> STRUCTURED_DATA_TYPE_NAMES;
-
-    static {
-        STRUCTURED_DATA_TYPE_NAMES = new HashMap<>();
-        STRUCTURED_DATA_TYPE_NAMES.put(Boolean.class, "bool");
-        STRUCTURED_DATA_TYPE_NAMES.put(Integer.class, "integral");
-        STRUCTURED_DATA_TYPE_NAMES.put(Double.class, "floatingPoint");
-        STRUCTURED_DATA_TYPE_NAMES.put(String.class, "string");
-        STRUCTURED_DATA_TYPE_NAMES.put(Void.class, "undefined");
-        STRUCTURED_DATA_TYPE_NAMES.put(List.class, "list");
-        STRUCTURED_DATA_TYPE_NAMES.put(Map.class, "map");
-    }
 
     /**
      * The vertices in the graph have certain well-known properties.
