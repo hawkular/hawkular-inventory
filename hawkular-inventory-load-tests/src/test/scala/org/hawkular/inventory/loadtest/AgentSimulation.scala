@@ -100,6 +100,7 @@ class AgentSimulation extends Simulation {
     {
       "id": "metricType-$id",
       "unit": "BYTE",
+      "type": "GAUGE",
       "properties": {
         "a": "b"
       }
@@ -141,6 +142,10 @@ class AgentSimulation extends Simulation {
   def associateMetricResourceJson(id: String): String = s"""
     ["../metric-$id"]
   """
+
+  def getTenant = http("preparation - get tenant")
+      .get("tenant")
+      .check(status is 200)
 
   def createSomeResourceType = http("preparation - create res type")
       // create some resource type (creating resources with type URL leads pinger to glut the server log)
@@ -239,17 +244,19 @@ class AgentSimulation extends Simulation {
   }
 
   val setupScenario = scenario("Setup")
+    .exec(getTenant)
+    .pause(1 seconds)
     .exec(createSomeResourceType)
 
   val scenario1 = scenario("AgentSimulation (fill the inventory)")
+    .pause(4 seconds)
     .exec(agentSimulation(true))
     .exec(agentSimulation(false))
 
   val scenario2 = scenario("Reads")
     .exec(readSimulation)
 
-  val allScenarios = scenario1
-    .exec(scenario2)
+  val allScenarios = scenario1.exec(scenario2)
 
   setUp(
     setupScenario.inject(atOnceUsers(1)),
