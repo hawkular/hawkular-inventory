@@ -105,7 +105,7 @@
           <groupId>org.hawkular.inventory</groupId>
           <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
           <version>${project.version}</version>
-          <scope>runtime</scope>
+          <scope>test</scope>
         </dependency>
       </dependencies>
 
