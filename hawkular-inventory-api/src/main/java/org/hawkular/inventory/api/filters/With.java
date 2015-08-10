@@ -16,11 +16,14 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.StructuredData;
 
 /**
  * @author Lukas Krejci
@@ -117,6 +120,39 @@ public final class With {
      */
     public static PropertyValues propertyValues(String name, Object... values) {
         return new PropertyValues(name, values);
+    }
+
+    /**
+     * Checks whether there is data on the provided relative path. This filter is only really applicable
+     * on the {@link org.hawkular.inventory.api.model.DataEntity}. I.e. the relative path is always resolved
+     * against the current position in the traversal, which is assumed to resolve to a data entity.
+     *
+     * @param dataPath the relative path to the data
+     * @return the filter
+     */
+    public static DataAt dataAt(RelativePath dataPath) {
+        return new DataAt(dataPath);
+    }
+
+    /**
+     * Filters for structured data with exactly the specified value.
+     *
+     * @param value the value to look for
+     * @return the filter
+     */
+    public static DataValued dataValue(Serializable value) {
+        return new DataValued(value);
+    }
+
+    /**
+     * Filters for structured data with one of the provided types.
+     *
+     * @param types the types to filter the structured data with
+     * @return the filter
+     * @see StructuredData#getType()
+     */
+    public static DataOfTypes dataOfTypes(StructuredData.Type... types) {
+        return new DataOfTypes(types);
     }
 
     public static final class Ids extends Filter {
@@ -301,6 +337,104 @@ public final class With {
             int result = name.hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
+        }
+    }
+
+    public static final class DataValued extends Filter {
+        private final Serializable value;
+
+        public DataValued(Serializable value) {
+            this.value = value;
+        }
+
+        public Serializable getValue() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            return "DataValued[" + "value=" + value + ']';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DataValued)) return false;
+
+            DataValued that = (DataValued) o;
+
+            return Objects.equals(value, that.value);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return value != null ? value.hashCode() : 0;
+        }
+    }
+
+    public static final class DataAt extends Filter {
+        private final RelativePath dataPath;
+
+        public DataAt(RelativePath dataPath) {
+            this.dataPath = dataPath;
+        }
+
+        public RelativePath getDataPath() {
+            return dataPath;
+        }
+
+        @Override
+        public String toString() {
+            return "DataAt[" + "dataPath=" + dataPath + ']';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DataAt)) return false;
+
+            DataAt dataAt = (DataAt) o;
+
+            return dataPath.equals(dataAt.dataPath);
+        }
+
+        @Override
+        public int hashCode() {
+            return dataPath.hashCode();
+        }
+    }
+
+    public static final class DataOfTypes extends Filter {
+        private final StructuredData.Type[] types;
+
+        public DataOfTypes(StructuredData.Type... types) {
+            this.types = types;
+        }
+
+        public StructuredData.Type[] getTypes() {
+            return types;
+        }
+
+        @Override
+        public String toString() {
+            return "DataOfTypes[" + "types=" + Arrays.toString(types) + ']';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DataOfTypes)) return false;
+
+            DataOfTypes that = (DataOfTypes) o;
+
+            return Arrays.equals(types, that.types);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(types);
         }
     }
 }

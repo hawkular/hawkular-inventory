@@ -46,7 +46,7 @@ public final class BaseTenants {
 
     }
 
-    public static class ReadWrite<BE> extends Mutator<BE, Tenant, Tenant.Blueprint, Tenant.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Tenant, Tenant.Blueprint, Tenant.Update, String>
             implements Tenants.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Tenant> context) {

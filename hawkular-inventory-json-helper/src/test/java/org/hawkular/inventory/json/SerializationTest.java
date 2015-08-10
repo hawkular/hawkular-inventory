@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -30,6 +31,7 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -249,6 +251,26 @@ public class SerializationTest {
                 deserialize("{\"path\":\"/t;t/e;e/f;f/m;c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
         //a detyped variant should work, too
         Assert.assertEquals(m, deserialize("{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
+    }
+
+    @Test
+    public void testStructuredData() throws Exception {
+        test(StructuredData.get().bool(true));
+        test(StructuredData.get().integral(42L));
+        test(StructuredData.get().floatingPoint(1.D));
+        test(StructuredData.get().string("answer"));
+        test(StructuredData.get().list().addBool(true).build());
+        test(StructuredData.get().list().addList().addBool(true).addIntegral(2L).closeList().build());
+        test(StructuredData.get().list().addMap().putIntegral("answer", 42L).closeMap().build());
+        test(StructuredData.get().map().putBool("yes", true).build());
+        test(StructuredData.get().map().putList("answer-list").addIntegral(42L).closeList().build());
+    }
+
+    @Test
+    public void testDataEntity() throws Exception {
+        test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
+                DataEntity.Role.connectionConfiguration,
+                StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 
     private void test(Object o) throws Exception {

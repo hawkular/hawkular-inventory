@@ -77,5 +77,5 @@ public final class Tenants {
     /**
      * Provides methods for read-write access to tenants.
      */
-    public interface ReadWrite extends ReadWriteInterface<Tenant.Update, Tenant.Blueprint, Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<Tenant.Update, Tenant.Blueprint, Single, Multiple, String> {}
 }

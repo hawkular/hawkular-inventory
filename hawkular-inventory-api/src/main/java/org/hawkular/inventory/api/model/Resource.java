@@ -47,7 +47,6 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
     }
 
     public Resource(CanonicalPath path, ResourceType type, Map<String, Object> properties) {
-
         super(path, properties);
         this.type = type;
     }
@@ -76,7 +75,8 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
      * Data required to create a resource.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
+     * called.
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
@@ -91,10 +91,11 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null);
+            this(null, null, null, null);
         }
 
-        public Blueprint(String id, String resourceTypePath) {
+        public Blueprint(String id, String resourceTypePath, StructuredData configuration,
+                StructuredData connectionConfiguration) {
             this(id, resourceTypePath, Collections.emptyMap());
         }
 

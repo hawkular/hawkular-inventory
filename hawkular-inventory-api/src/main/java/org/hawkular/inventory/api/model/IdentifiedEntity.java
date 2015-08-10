@@ -21,21 +21,23 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
- * Base class for all Hawkular entities.
+ * A base class for all entities that have a user-defined id that is used to distinguish the entity amongst its
+ * siblings.
  *
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.3.0
  */
-public abstract class Entity<B extends Blueprint, U extends AbstractElement.Update> extends AbstractElement<B, U> {
+public abstract class IdentifiedEntity<B extends IdentifiedEntity.Blueprint, U extends AbstractElement.Update>
+        extends Entity<B, U> {
 
-    Entity() {
+    IdentifiedEntity() {
     }
 
-    Entity(CanonicalPath path) {
+    IdentifiedEntity(CanonicalPath path) {
         this(path, null);
     }
 
-    Entity(CanonicalPath path, Map<String, Object> properties) {
+    IdentifiedEntity(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
         if (!this.getClass().equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
@@ -44,33 +46,6 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
         }
     }
 
-    /**
-     * Use this to append additional information to the string representation of this instance
-     * returned from the (final) {@link #toString()}.
-     *
-     * <p>Generally, one should call the super method first and then only add additional information
-     * to the builder.
-     *
-     * @param toStringBuilder the builder to append stuff to.
-     */
-    protected void appendToString(StringBuilder toStringBuilder) {
-
-    }
-
-    @Override
-    public final String toString() {
-        StringBuilder bld = new StringBuilder(getClass().getSimpleName());
-        bld.append("[path='").append(getPath()).append('\'');
-        appendToString(bld);
-        bld.append(']');
-
-        return bld.toString();
-    }
-
-    /**
-     * Base class for the blueprint types of concrete subclasses. Note that while it will usually fit the purpose,
-     * the subclasses are free to use a blueprint type not inheriting from this one.
-     */
     public abstract static class Blueprint extends AbstractElement.Blueprint {
         @XmlAttribute
         private final String id;

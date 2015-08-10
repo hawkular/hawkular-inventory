@@ -60,7 +60,7 @@ public final class Metrics {
     /**
      * Provides read-write access to metrics.
      */
-    public interface ReadWrite extends ReadWriteInterface<Metric.Update, Metric.Blueprint, Single, Multiple> {}
+    public interface ReadWrite extends ReadWriteInterface<Metric.Update, Metric.Blueprint, Single, Multiple, String> {}
 
     /**
      * Provides read-only access to metrics with the additional ability to relate the metrics to the current

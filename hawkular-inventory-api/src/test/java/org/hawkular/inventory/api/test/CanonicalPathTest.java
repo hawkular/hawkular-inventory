@@ -110,6 +110,12 @@ public class CanonicalPathTest {
                 .get().toString());
         Assert.assertEquals("/rl;r", CanonicalPath.of().relationship("r").get().toString());
 
+        Assert.assertEquals("/t;t/e;e/r;r/d;configuration/blah/1/key", CanonicalPath.of().tenant("t").environment("e")
+                .resource("r").configuration().key("blah").index(1).key("key").get().toString());
+
+        Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl\\/ah", CanonicalPath.of().tenant("t")
+                .environment("e").resource("r").connectionConfiguration().key("bl/ah").get().toString());
+
         // escaped chars scenario
         Assert.assertEquals("/t;te\\/nant/e;e\\;nv/r;r\\\\\\/es\\;\\;", CanonicalPath.of().tenant("te/nant")
                 .environment("e;nv").resource("r\\/es;;").get().toString());

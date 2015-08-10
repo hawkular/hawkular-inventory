@@ -16,19 +16,20 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Blueprint;
 
 /**
  * Generic methods to write access to entities.
  *
- * @param <Update> type of entity update class
- * @param <Blueprint> the blueprint type that supplies data necessary to create a new entity
+ * @param <Id> the type of the identification of the entity (usually a string)
+ * @param <U> type of entity update class
+ * @param <B> the blueprint type that supplies data necessary to create a new entity
  * @param <Single> the access interface to a single entity
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-public interface WriteInterface<Update, Blueprint extends Entity.Blueprint, Single> {
+public interface WriteInterface<U, B extends Blueprint, Single, Id> {
 
     /**
      * Creates a new entity at the current position in the inventory traversal.
@@ -40,7 +41,7 @@ public interface WriteInterface<Update, Blueprint extends Entity.Blueprint, Sing
      * @throws IllegalArgumentException if the blueprint or context in which the entity is being create is somehow
      *                                  invalid
      */
-    Single create(Blueprint blueprint) throws EntityAlreadyExistsException;
+    Single create(B blueprint) throws EntityAlreadyExistsException;
 
     /**
      * Persists the provided entity on the current position in the inventory traversal.
@@ -51,15 +52,15 @@ public interface WriteInterface<Update, Blueprint extends Entity.Blueprint, Sing
      * @throws EntityNotFoundException if the entity is not found in the database
      * @throws java.lang.IllegalArgumentException if the supplied entity could not be updated for some reason
      */
-    void update(String id, Update update) throws EntityNotFoundException;
+    void update(Id id, U update) throws EntityNotFoundException;
 
     /**
      * Deletes an entity with the provided id from the current position in the inventory traversal.
      *
      * @param id the id of the entity to delete
-     * @throws EntityNotFoundException if an entity with given ID doesn't exist on the current postion in the inventory
+     * @throws EntityNotFoundException if an entity with given ID doesn't exist on the current position in the inventory
      *                                 traversal
      * @throws java.lang.IllegalArgumentException if the supplied entity could not be deleted for some reason
      */
-    void delete(String id) throws EntityNotFoundException;
+    void delete(Id id) throws EntityNotFoundException;
 }

@@ -93,7 +93,8 @@ public final class Environments {
     /**
      * Provides methods for read-write access to environments.
      */
-    public interface ReadWrite extends ReadWriteInterface<Environment.Update, Environment.Blueprint, Single, Multiple> {
+    public interface ReadWrite
+            extends ReadWriteInterface<Environment.Update, Environment.Blueprint, Single, Multiple, String> {
         void copy(String sourceEnvironmentId, String targetEnvironmentId);
     }
 }

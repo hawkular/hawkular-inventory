@@ -87,7 +87,30 @@ public final class Relationships {
          * <p>When deleting a resource, all its contained child resources are deleted along with it as mandated by the
          * contract of the {@link #contains} relationship.
          */
-        isParentOf
+        isParentOf,
+
+        /**
+         * A relationship from a resource to a structural data that contains the configuration of that resource.
+         *
+         * <p>The relationship is 1-to-1. There is no sharing of configuration objects between different resources.
+         */
+        isConfiguredBy,
+
+        /**
+         * A relationship from a resource to a structural data that stores info about how the feed should connect to
+         * the resource.
+         *
+         * <p>The relationship is 1-to-1. There is no sharing of configuration objects between different resources.
+         */
+        connectsUsing,
+
+        /**
+         * This relationship is used to link the {@link org.hawkular.inventory.api.model.DataEntity} to its data.
+         * This relationship is invisible to the API users, because one cannot obtain a {@link Relationship} object
+         * of it using the API but it is specified here nevertheless because it is a part of the contract of the API
+         * with the backend storage.
+         */
+        hasData
     }
 
     /**
@@ -110,7 +133,20 @@ public final class Relationships {
          * Relative to the current position in the inventory traversal, this value expresses all the relationships
          * I (the entity(ies) on the current pos) have with other entity(ies).
          */
-        both
+        both;
+
+        public Direction opposite() {
+            switch (this) {
+                case outgoing:
+                    return incoming;
+                case incoming:
+                    return outgoing;
+                case both:
+                    return both;
+                default:
+                    throw new AssertionError("Incomplete opposite direction mapping.");
+            }
+        }
     }
 
     /**

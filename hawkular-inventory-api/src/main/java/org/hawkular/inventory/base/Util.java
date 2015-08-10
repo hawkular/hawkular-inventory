@@ -27,10 +27,12 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.InventoryException;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -233,7 +235,7 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, ?>> void delete(TraversalContext<BE, E> context,
-            Query entityQuery) {
+            Query entityQuery, Consumer<BE> cleanupFunction) {
 
         runInTransaction(context, false, (transaction) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
@@ -244,18 +246,25 @@ final class Util {
                     throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
                             Query.filters(entityQuery));
                 }
+            } else if (entities.size() > 1) {
+                throw new InventoryException("Ambiguous delete query. More than 1 results found for query "
+                        + entityQuery);
             }
 
             BE toDelete = entities.get(0);
+
+            if (cleanupFunction != null) {
+                cleanupFunction.accept(toDelete);
+            }
 
             Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
 
             Set<BE> deleted = new HashSet<>();
             Set<BE> deletedRels = new HashSet<>();
-            Set<AbstractElement<?, ?>> deletedEntities;
+            Set<?> deletedEntities;
             Set<Relationship> deletedRelationships;
 
-            context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
+            context.backend.getTransitiveClosureOver(toDelete, outgoing, contains.name()).forEachRemaining((e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
                 } else {
@@ -275,10 +284,12 @@ final class Util {
             //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
             //We have to do it prior to actually deleting the objects in the backend so that all information and
             //relationships is still available.
-            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.extractType(o)))
-                    .collect(Collectors.<AbstractElement<?, ?>>toSet());
+            deletedEntities = deleted.stream().filter((o) -> isRepresentableInAPI(context, o))
+                    .map((o) -> context.backend.convert(o, context.backend.extractType(o)))
+                    .collect(Collectors.<Object>toSet());
 
-            deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
+            deletedRelationships = deletedRels.stream().filter((o) -> isRepresentableInAPI(context, o))
+                    .map((o) -> context.backend.convert(o, Relationship.class))
                     .collect(toSet());
 
             //k, now we can delete them all... the order is not important anymore
@@ -316,7 +327,7 @@ final class Util {
                 context.notify(r, deleted());
             }
 
-            for (AbstractElement<?, ?> e : deletedEntities) {
+            for (Object e : deletedEntities) {
                 context.notify(e, deleted());
             }
 
@@ -347,5 +358,24 @@ final class Util {
         } else {
             return p.toCanonicalPath();
         }
+    }
+
+    /**
+     * Certain constructs in backend are not representable in API - such as the
+     * {@link org.hawkular.inventory.api.Relationships.WellKnown#hasData} relationship.
+     *
+     * @param context the context using which to access backend
+     * @param entity  the entity to decide on
+     * @param <BE>    the type of the backend entity
+     * @return true if the entity can be represented in API results, false otherwise
+     */
+    public static <BE> boolean isRepresentableInAPI(TraversalContext<BE, ?> context, BE entity) {
+        if (Relationship.class.equals(context.backend.extractType(entity))) {
+            if (Relationships.WellKnown.hasData.name().equals(context.backend.extractRelationshipName(entity))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

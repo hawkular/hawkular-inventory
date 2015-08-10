@@ -24,7 +24,10 @@ import java.util.function.Function;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.Query;
@@ -82,8 +85,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param <T>        the type of the returned elements
      * @return the page of results according to the supplied parameters
      */
-    <T extends AbstractElement<?, ?>> Page<T> query(Query query, Pager pager, Function<E, T> conversion,
-            Function<T, Boolean> filter);
+    <T> Page<T> query(Query query, Pager pager, Function<E, T> conversion, Function<T, Boolean> filter);
 
     /**
      * Going from the starting poing, this will return an iterator over all elements that are connected to the starting
@@ -91,12 +93,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * them.
      *
      * @param startingPoint    the starting element
-     * @param relationshipName the name of the relationship to follow when composing the transitive closure
      * @param direction        any of the valid directions including
-     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both}.
+     *                         {@link Relationships.Direction#both}.
+     * @param relationshipNames the names of the relationships to follow when composing the transitive closure
      * @return an iterator over the transitive closure, may be "lazy" and evaluate the closure on demand.
      */
-    Iterator<E> getTransitiveClosureOver(E startingPoint, String relationshipName, Relationships.Direction direction);
+    Iterator<E> getTransitiveClosureOver(E startingPoint, Relationships.Direction direction,
+            String... relationshipNames);
 
     /**
      * Checks whether there exists any relationship in given direction relative to the given entity with given name.
@@ -178,7 +181,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param entityRepresentation the representation object.
      * @return the type of the object represented
      */
-    Class<? extends AbstractElement<?, ?>> extractType(E entityRepresentation);
+    Class<?> extractType(E entityRepresentation);
 
     /**
      * Each element (including relationships) stores the canonical path to it. This will extract that value from the
@@ -190,15 +193,29 @@ public interface InventoryBackend<E> extends AutoCloseable {
     CanonicalPath extractCanonicalPath(E entityRepresentation);
 
     /**
-     * Converts the provided representation object to a inventory element of provided type.
+     * Converts the provided representation object to an inventory element of provided type.
+     *
+     * <p>This must support all the concrete subclasses of {@link AbstractElement}, {@link StructuredData} <b>and</b>
+     * {@link ShallowStructuredData}.
      *
      * @param entityRepresentation the object representing the element
      * @param entityType           the desired type of the element
      * @param <T>                  the desired type of the element
-     * @return the converted invetory element
+     * @return the converted inventory element
      * @throws ClassCastException if the representation object doesn't correspond to the provided type
      */
-    <T extends AbstractElement<?, ?>> T convert(E entityRepresentation, Class<T> entityType);
+    <T> T convert(E entityRepresentation, Class<T> entityType);
+
+    /**
+     * Given the representation of the data entity, this will return the representation of a structured data element
+     * on the given path "inside" the data entity.
+     *
+     * @param dataEntityRepresentation the representation of the {@link org.hawkular.inventory.api.model.DataEntity}
+     *                                 instance
+     * @param dataPath                 the path in the data to descend to.
+     * @see org.hawkular.inventory.api.Datas.Single#data(RelativePath)
+     */
+    E descendToData(E dataEntityRepresentation, RelativePath dataPath);
 
     /**
      * Creates a new relationship from source to target with given name and properties.
@@ -219,7 +236,16 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param blueprint the blueprint of the entity
      * @return the representation object of the newly created entity
      */
-    E persist(CanonicalPath path, AbstractElement.Blueprint blueprint);
+    E persist(CanonicalPath path, Blueprint blueprint);
+
+    /**
+     * Persists the structured data and returns a reference to it. It is the responsibility of the caller to wire it up
+     * to some other entity by some relationship.
+     *
+     * @param structuredData the structured data to persist
+     * @return the representation of the newly persisted structured data
+     */
+    E persist(StructuredData structuredData);
 
     /**
      * Updates given entity with the data provided in the update object.
@@ -236,6 +262,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param entity the entity to delete
      */
     void delete(E entity);
+
+    /**
+     * Deletes the structured data represented by the provided object.
+     *
+     * @param dataRepresentation the backend-specific object representing the structured data to delete
+     */
+    void deleteStructuredData(E dataRepresentation);
 
     /**
      * Commits the transaction.

@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Blueprint;
 
 /**
  * Helper interface that melds {@link ReadInterface} and {@link WriteInterface}.
@@ -26,9 +26,15 @@ import org.hawkular.inventory.api.model.Entity;
  * write interface). Because the "siblings" in the contains relationship must have mutually different IDs, it is
  * enough in this case to address them by merely string ids (as opposed to full canonical path).
  *
+ * @param <Id> the type of the id of the entities, usually a string
+ * @param <U> the update type
+ * @param <B> the blueprint type
+ * @param <Single> the access interface for a single entity
+ * @param <Multiple> the access interface for multiple entities
+ *
  * @author Lukas Krejci
  * @since 0.0.1
  */
-interface ReadWriteInterface<Update, Blueprint extends Entity.Blueprint, Single, Multiple>
-        extends ReadInterface<Single, Multiple, String>, WriteInterface<Update, Blueprint, Single> {
+interface ReadWriteInterface<U, B extends Blueprint, Single, Multiple, Id>
+        extends ReadInterface<Single, Multiple, Id>, WriteInterface<U, B, Single, Id> {
 }

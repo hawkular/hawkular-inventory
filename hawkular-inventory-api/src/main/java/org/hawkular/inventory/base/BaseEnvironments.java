@@ -45,7 +45,8 @@ public final class BaseEnvironments {
 
     }
 
-    public static class ReadWrite<BE> extends Mutator<BE, Environment, Environment.Blueprint, Environment.Update>
+    public static class ReadWrite<BE>
+            extends Mutator<BE, Environment, Environment.Blueprint, Environment.Update, String>
             implements Environments.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Environment> context) {

@@ -31,7 +31,7 @@ public final class Resources {
     private Resources() {
     }
 
-    private interface BrowserBase<Metrics, ContainedAccess, AllAccess> {
+    private interface BrowserBase<Metrics, Data, ContainedAccess, AllAccess> {
 
         /**
          * @return access to metrics owned by the resource(s)
@@ -61,13 +61,17 @@ public final class Resources {
          * @return the parent resource(s) of the current resource(s)
          */
         Read parents();
+
+        Data configuration();
+
+        Data connectionConfiguration();
     }
 
     /**
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadAssociate, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadAssociate, Datas.ReadWrite, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
@@ -85,7 +89,8 @@ public final class Resources {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple
-            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, ReadContained, Read> {}
+            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Datas.Read,
+            ReadContained, Read> {}
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {
 
@@ -138,7 +143,8 @@ public final class Resources {
     /**
      * Provides read-write access to resources.
      */
-    public interface ReadWrite extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple>,
+    public interface ReadWrite
+            extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple, String>,
             ReadContained {}
 
     /**

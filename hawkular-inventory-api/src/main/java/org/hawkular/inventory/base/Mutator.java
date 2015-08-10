@@ -16,24 +16,18 @@
  */
 package org.hawkular.inventory.base;
 
-import static java.util.stream.Collectors.toSet;
-
 import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Action.deleted;
-import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.filters.With.id;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -46,8 +40,8 @@ import org.hawkular.inventory.api.paging.Pager;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extends Entity.Blueprint,
-        Update extends AbstractElement.Update> extends Traversal<BE, E> {
+abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extends AbstractElement.Update, Id>
+        extends Traversal<BE, E> {
 
     protected Mutator(TraversalContext<BE, E> context) {
         super(context);
@@ -59,18 +53,18 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
      * @param blueprint the blueprint of the entity to be created
      * @return the ID to be used for the new entity
      */
-    protected abstract String getProposedId(Blueprint blueprint);
+    protected abstract String getProposedId(B blueprint);
 
     /**
      * A helper method to be used in the implementation of the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Blueprint)} method.
      *
      * <p>The callers may merely use the returned query and construct a new {@code *Single} instance using it.
      *
      * @param blueprint the blueprint of the new entity
      * @return the query to the newly created entity.
      */
-    protected final Query doCreate(Blueprint blueprint) {
+    protected final Query doCreate(B blueprint) {
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
 
@@ -121,88 +115,28 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
         });
     }
 
-    public final void update(String id, Update update) throws EntityNotFoundException {
-        Util.update(context, context.select().with(id(id)).get(), update);
+    public final void update(Id id, U update) throws EntityNotFoundException {
+        Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+        Util.update(context, q, update);
     }
 
-    public final void delete(String id) throws EntityNotFoundException {
-        mutating((transaction) -> {
-            BE toDelete = checkExists(id);
+    public final void delete(Id id) throws EntityNotFoundException {
+        Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+        Util.delete(context, q, PartiallyApplied.procedure(this::cleanup).first(id).asConsumer());
+    }
 
-            Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+    /**
+     * A hook that can run additional clean up logic inside the delete transaction.
+     *
+     * <p>This hook is called prior to anything being deleted.
+     *
+     * <p>By default this does nothing.
+     *
+     * @param id                   the id of the entity being deleted
+     * @param entityRepresentation the backend specific representation of the entity
+     */
+    protected void cleanup(Id id, BE entityRepresentation) {
 
-            Set<BE> deleted = new HashSet<>();
-            Set<BE> deletedRels = new HashSet<>();
-            Set<AbstractElement<?, ?>> deletedEntities;
-            Set<Relationship> deletedRelationships;
-
-            context.backend.getTransitiveClosureOver(toDelete, contains.name(), outgoing).forEachRemaining((e) -> {
-                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
-                    verticesToDeleteThatDefineSomething.add(e);
-                } else {
-                    deleted.add(e);
-                }
-                //not only the entity, but also its relationships are going to disappear
-                deletedRels.addAll(context.backend.getRelationships(e, both));
-            });
-
-            if (context.backend.hasRelationship(toDelete, outgoing, defines.name())) {
-                verticesToDeleteThatDefineSomething.add(toDelete);
-            } else {
-                deleted.add(toDelete);
-            }
-            deletedRels.addAll(context.backend.getRelationships(toDelete, both));
-
-            //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
-            //We have to do it prior to actually deleting the objects in the backend so that all information and
-            //relationships is still available.
-            deletedEntities = deleted.stream().map((o) -> context.backend.convert(o, context.backend.extractType(o)))
-                    .collect(Collectors.<AbstractElement<?, ?>>toSet());
-
-            deletedRelationships = deletedRels.stream().map((o) -> context.backend.convert(o, Relationship.class))
-                    .collect(toSet());
-
-            //k, now we can delete them all... the order is not important anymore
-            for (BE e : deleted) {
-                context.backend.delete(e);
-            }
-
-            for (BE e : verticesToDeleteThatDefineSomething) {
-                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
-                    //we avoid the convert() function here because it assumes the containing entities of the passed in
-                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
-                    //entities from the "top" down the containment chain and the entities are immediately deleted.
-                    String rootId = context.backend.extractId(toDelete);
-                    String definingId = context.backend.extractId(e);
-                    String rootType = context.entityClass.getSimpleName();
-                    String definingType = context.backend.extractType(e).getSimpleName();
-
-                    String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
-                    String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
-
-                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                            definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
-                            "entities that are not deleted along with it, which would leave them without a " +
-                            "definition. This is illegal.");
-                } else {
-                    context.backend.delete(e);
-                }
-            }
-
-            context.backend.commit(transaction);
-
-            //report the relationship deletions first - it would be strange to report deletion of a relationship after
-            //reporting that an entity on one end of the relationship has been deleted
-            for (Relationship r : deletedRelationships) {
-                context.notify(r, deleted());
-            }
-
-            for (AbstractElement<?, ?> e : deletedEntities) {
-                context.notify(e, deleted());
-            }
-
-            return null;
-        });
     }
 
     private BE getParent() {
@@ -250,21 +184,6 @@ abstract class Mutator<BE, E extends Entity<Blueprint, Update>, Blueprint extend
      * @return an object with the initialized and converted entity together with any pending notifications to be sent
      * out
      */
-    protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, Blueprint blueprint,
+    protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, B blueprint,
             CanonicalPath parentPath, BE parent);
-
-    private BE checkExists(String id) {
-        //sourcePath is "path to the parent"
-        //selectCandidates - is the elements possibly matched by this mutator
-        //we're given the id to select from these
-        Query query = context.select().with(id(id)).get();
-
-        Page<BE> result = context.backend.query(query, Pager.single());
-
-        if (result.isEmpty()) {
-            throw new EntityNotFoundException(context.entityClass, Query.filters(query));
-        }
-
-        return result.get(0);
-    }
 }

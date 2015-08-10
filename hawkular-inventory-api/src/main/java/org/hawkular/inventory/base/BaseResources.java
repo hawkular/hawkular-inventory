@@ -22,7 +22,13 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.model.DataEntity.Role.configuration;
+import static org.hawkular.inventory.api.model.DataEntity.Role.connectionConfiguration;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hawkular.inventory.api.Datas;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
@@ -33,6 +39,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
@@ -51,7 +58,7 @@ public final class BaseResources {
 
     }
 
-    public static class ReadWrite<BE> extends Mutator<BE, Resource, Resource.Blueprint, Resource.Update>
+    public static class ReadWrite<BE> extends Mutator<BE, Resource, Resource.Blueprint, Resource.Update, String>
             implements Resources.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Resource> context) {
@@ -88,8 +95,11 @@ public final class BaseResources {
             Resource ret = new Resource(parentPath.extend(Resource.class, context.backend.extractId(entity)).get(),
                     resourceType, blueprint.getProperties());
 
-            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
+            Relationship definesRel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
                     entityPath);
+
+            List<Notification<?, ?>> notifications = new ArrayList<>();
+            notifications.add(new Notification<>(definesRel, definesRel, created()));
 
             if (context.backend.extractType(parent).equals(Resource.class)) {
                 //we're creating a child resource... need to also create the implicit isParentOf
@@ -98,11 +108,10 @@ public final class BaseResources {
                 Relationship parentRel = new Relationship(context.backend.extractId(r), isParentOf.name(),
                         parentPath, entityPath);
 
-                return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()),
-                        new Notification<>(parentRel, parentRel, created()));
-            } else {
-                return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
+                notifications.add(new Notification<>(parentRel, parentRel, created()));
             }
+
+            return new EntityAndPendingNotifications<>(ret, notifications);
         }
 
         @Override
@@ -230,6 +239,18 @@ public final class BaseResources {
         public Resources.Read parents() {
             return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
         }
+
+        @Override
+        public Datas.ReadWrite configuration() {
+            return new BaseDatas.ReadWrite<>(configuration,
+                    context.proceedTo(configuration.getCorrespondingRelationship(), DataEntity.class).get());
+        }
+
+        @Override
+        public Datas.ReadWrite connectionConfiguration() {
+            return new BaseDatas.ReadWrite<>(connectionConfiguration,
+                    context.proceedTo(connectionConfiguration.getCorrespondingRelationship(), DataEntity.class).get());
+        }
     }
 
     public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource, Resource.Update>
@@ -257,6 +278,18 @@ public final class BaseResources {
         @Override
         public Resources.Read parents() {
             return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Datas.Read configuration() {
+            return new BaseDatas.Read<>(configuration, context.proceedTo(configuration.getCorrespondingRelationship(),
+                    DataEntity.class).get());
+        }
+
+        @Override
+        public Datas.Read connectionConfiguration() {
+            return new BaseDatas.Read<>(connectionConfiguration,
+                    context.proceedTo(connectionConfiguration.getCorrespondingRelationship(), DataEntity.class).get());
         }
     }
 }

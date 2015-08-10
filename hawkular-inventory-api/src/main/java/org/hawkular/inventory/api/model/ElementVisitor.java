@@ -40,6 +40,8 @@ public interface ElementVisitor<R, P> {
 
     R visitRelationship(Relationship relationship, P parameter);
 
+    R visitData(DataEntity data, P parameter);
+
     R visitUnknown(Object entity, P parameter);
 
     /**
@@ -112,6 +114,11 @@ public interface ElementVisitor<R, P> {
 
         @Override
         public R visitRelationship(Relationship relationship, P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitData(DataEntity data, P parameter) {
             return defaultAction();
         }
 

@@ -50,7 +50,8 @@ public final class RelativePath extends Path implements Serializable {
     private static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
 
     private static final List<Class<?>> ALL_VALID_TYPES = Arrays.asList(Tenant.class, ResourceType.class,
-            MetricType.class, Environment.class, Feed.class, Metric.class, Resource.class, Up.class);
+            MetricType.class, Environment.class, Feed.class, Metric.class, Resource.class, StructuredData.class,
+            Up.class);
 
     static {
 
@@ -67,11 +68,13 @@ public final class RelativePath extends Path implements Serializable {
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class, Up.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class, Up.class));
-        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, Up.class));
+        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class, Up.class));
         VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class, Up.class));
         VALID_PROGRESSIONS.put(Metric.class, justUp);
         VALID_PROGRESSIONS.put(ResourceType.class, justUp);
         VALID_PROGRESSIONS.put(MetricType.class, justUp);
+        VALID_PROGRESSIONS.put(DataEntity.class, Arrays.asList(StructuredData.class, Up.class));
+        VALID_PROGRESSIONS.put(StructuredData.class, Arrays.asList(StructuredData.class, Up.class));
     }
 
     private RelativePath(int start, int end, List<Segment> segments) {
@@ -79,7 +82,7 @@ public final class RelativePath extends Path implements Serializable {
     }
 
     public static RelativePath fromString(String path) {
-        return fromPartiallyUntypedString(path, null);
+        return fromPartiallyUntypedString(path, new StructuredDataHintingTypeProvider());
     }
 
     /**
@@ -262,6 +265,15 @@ public final class RelativePath extends Path implements Serializable {
             return new MetricBuilder(segments);
         }
 
+        public StructuredDataBuilder dataEntity(DataEntity.Role role) {
+            segments.add(new Segment(DataEntity.class, role.name()));
+            return new StructuredDataBuilder(segments);
+        }
+
+        public StructuredDataBuilder structuredData() {
+            return new StructuredDataBuilder(segments);
+        }
+
         public UpBuilder up() {
             segments.add(new Segment(Up.class, null));
             return new UpBuilder(segments);
@@ -376,6 +388,13 @@ public final class RelativePath extends Path implements Serializable {
     public static class MetricBuilder extends Path.MetricBuilder<RelativePath> {
 
         MetricBuilder(List<Segment> segments) {
+            super(segments, RelativePath::new);
+        }
+    }
+
+    public static class StructuredDataBuilder extends Path.StructuredDataBuilder<RelativePath> {
+
+        StructuredDataBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
     }

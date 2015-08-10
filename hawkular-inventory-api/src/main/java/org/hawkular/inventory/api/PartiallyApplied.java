@@ -17,6 +17,9 @@
 package org.hawkular.inventory.api;
 
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import rx.functions.Action1;
 
@@ -59,14 +62,31 @@ public abstract class PartiallyApplied<P> implements Action1<P> {
      * @param <B>    the type of the second parameter of the method
      * @return a builder for the partial application of the method
      */
-    public static <A, B> Builder<A, B> method(BiConsumer<A, B> method) {
-        return new Builder<>(method);
+    public static <A, B> ActionBuilder<A, B> procedure(BiConsumer<A, B> method) {
+        return new ActionBuilder<>(method);
     }
 
-    public static final class Builder<A, B> {
+    public static <T, U, R> FunctionBuilder<T, U, R> function(BiFunction<T, U, R> method) {
+        return new FunctionBuilder<>(method);
+    }
+
+
+    public abstract static class ActionBase<P> implements Action1<P> {
+
+        /**
+         * Converts the partially applied function from the rxjava's {@link Action1} to java's {@link Consumer}.
+         *
+         * @return the partially applied function as a consumer
+         */
+        public Consumer<P> asConsumer() {
+            return this::call;
+        }
+    }
+
+    public static final class ActionBuilder<A, B> {
         private final BiConsumer<A, B> method;
 
-        private Builder(BiConsumer<A, B> method) {
+        private ActionBuilder(BiConsumer<A, B> method) {
             this.method = method;
         }
 
@@ -76,8 +96,8 @@ public abstract class PartiallyApplied<P> implements Action1<P> {
          * @param param the parameter to be applied
          * @return the partially applied method
          */
-        public First<A, B> first(A param) {
-            return new First<>(method, param);
+        public ActionWithAppliedFirst<A, B> first(A param) {
+            return new ActionWithAppliedFirst<>(method, param);
         }
 
         /**
@@ -86,16 +106,44 @@ public abstract class PartiallyApplied<P> implements Action1<P> {
          * @param param the parameter to be applied
          * @return the partially applied method
          */
-        public Second<B, A> second(B param) {
-            return new Second<>(method, param);
+        public ActionAppliedSecond<B, A> second(B param) {
+            return new ActionAppliedSecond<>(method, param);
         }
     }
 
-    public static final class First<A, P> extends PartiallyApplied<P> {
+    public static final class FunctionBuilder<T, U, R> {
+        private final BiFunction<T, U, R> method;
+
+        private FunctionBuilder(BiFunction<T, U, R> method) {
+            this.method = method;
+        }
+
+        /**
+         * Returns a partially applied method call that has the provided value applied as its first parameter.
+         *
+         * @param param the parameter to be applied
+         * @return the partially applied method
+         */
+        public FunctionWithAppliedFirst<T, U, R> first(T param) {
+            return new FunctionWithAppliedFirst<>(param, method);
+        }
+
+        /**
+         * Returns a partially applied method call that has the provided value applied as its second parameter.
+         *
+         * @param param the parameter to be applied
+         * @return the partially applied method
+         */
+        public FunctionWithAppliedSecond<T, U, R> second(U param) {
+            return new FunctionWithAppliedSecond<>(param, method);
+        }
+    }
+
+    public static final class ActionWithAppliedFirst<A, P> extends ActionBase<P> {
         private final A appliedParam;
         private final BiConsumer<A, P> targetFunction;
 
-        private First(BiConsumer<A, P> targetFunction, A appliedParam) {
+        private ActionWithAppliedFirst(BiConsumer<A, P> targetFunction, A appliedParam) {
             this.appliedParam = appliedParam;
             this.targetFunction = targetFunction;
         }
@@ -106,17 +154,47 @@ public abstract class PartiallyApplied<P> implements Action1<P> {
         }
     }
 
-    public static final class Second<A, P> extends PartiallyApplied<P> {
+    public static final class ActionAppliedSecond<A, P> extends ActionBase<P> {
         private final A appliedParam;
         private final BiConsumer<P, A> targetFunction;
 
-        private Second(BiConsumer<P, A> targetFunction, A appliedParam) {
+        private ActionAppliedSecond(BiConsumer<P, A> targetFunction, A appliedParam) {
             this.appliedParam = appliedParam;
             this.targetFunction = targetFunction;
         }
 
         @Override public void call(P p) {
             targetFunction.accept(p, appliedParam);
+        }
+    }
+
+    public static final class FunctionWithAppliedFirst<T, U, R> implements Function<U, R> {
+        private final T appliedParam;
+        private final BiFunction<T, U, R> function;
+
+        private FunctionWithAppliedFirst(T appliedParam, BiFunction<T, U, R> function) {
+            this.appliedParam = appliedParam;
+            this.function = function;
+        }
+
+        @Override
+        public R apply(U u) {
+            return function.apply(appliedParam, u);
+        }
+    }
+
+    public static final class FunctionWithAppliedSecond<T, U, R> implements Function<T, R> {
+        private final U appliedParam;
+        private final BiFunction<T, U, R> function;
+
+        private FunctionWithAppliedSecond(U appliedParam, BiFunction<T, U, R> function) {
+            this.appliedParam = appliedParam;
+            this.function = function;
+        }
+
+        @Override
+        public R apply(T t) {
+            return function.apply(t, appliedParam);
         }
     }
 }
