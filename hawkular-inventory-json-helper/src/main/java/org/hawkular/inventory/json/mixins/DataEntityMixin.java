@@ -19,20 +19,26 @@ package org.hawkular.inventory.json.mixins;
 import java.util.Map;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.StructuredData;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public class DataEntityMixin {
+public abstract class DataEntityMixin {
 
     @JsonCreator
     public DataEntityMixin(@JsonProperty("path") CanonicalPath path, @JsonProperty("value") StructuredData value,
             @JsonProperty("properties") Map<String, Object> properties) {
     }
+
+    @JsonIgnore abstract String getId();
+
+    @JsonIgnore abstract DataEntity.Role getRole();
 
 }

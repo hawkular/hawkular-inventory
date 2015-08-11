@@ -86,6 +86,11 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
             this.value = value;
         }
 
+        // this is needed for Jackson deserialization
+        public Blueprint() {
+            this(null, null, null);
+        }
+
         public StructuredData getValue() {
             return value;
         }
