@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.JMSException;
+import javax.jms.TopicConnectionFactory;
 
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
@@ -35,24 +36,25 @@ import org.hawkular.inventory.bus.api.InventoryEvent;
  * @since 0.0.1
  */
 final class MessageSender {
-    private final MessageProcessor messageProcessor;
-    private final ConnectionContextFactory connectionContextFactory;
     private final String topicName;
-    private ProducerConnectionContext producerConnectionContext;
+    private final TopicConnectionFactory topicConnectionFactory;
+    private final MessageProcessor messageProcessor;
 
-
-    public MessageSender(ConnectionContextFactory connectionContextFactory, String topicName) {
-        this.connectionContextFactory = connectionContextFactory;
-        this.messageProcessor = new MessageProcessor();
+    public MessageSender(TopicConnectionFactory  topicConnectionFactory, String topicName) {
+        this.topicConnectionFactory = topicConnectionFactory;
         this.topicName = topicName;
+
+        this.messageProcessor = new MessageProcessor();
     }
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
         InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
-        try {
-            init();
+        Map<String, String> headers = toHeaders(interest);
 
-            Map<String, String> headers = toHeaders(interest);
+        try (ConnectionContextFactory ccf = new ConnectionContextFactory(topicConnectionFactory)) {
+
+            ProducerConnectionContext producerConnectionContext = ccf.createProducerConnectionContext(
+                    new Endpoint(Endpoint.Type.TOPIC, topicName));
             messageProcessor.send(producerConnectionContext, message, headers);
 
             Log.LOG.debugf("Sent message %s with headers %s to %s", message, headers,
@@ -73,12 +75,5 @@ final class MessageSender {
 
     private String firstLetterLowercased(String source) {
         return Character.toLowerCase(source.charAt(0)) + source.substring(1);
-    }
-
-    private void init() throws JMSException {
-        if (producerConnectionContext == null) {
-            producerConnectionContext = connectionContextFactory.createProducerConnectionContext(
-                    new Endpoint(Endpoint.Type.TOPIC, topicName));
-        }
     }
 }
