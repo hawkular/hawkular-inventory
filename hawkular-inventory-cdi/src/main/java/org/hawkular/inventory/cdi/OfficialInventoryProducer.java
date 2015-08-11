@@ -99,7 +99,7 @@ public class OfficialInventoryProducer {
         int failures = 0;
         int maxFailures = 5;
         boolean initialized = false;
-        while (failures++ < maxFailures) {
+        while (!initialized && failures++ < maxFailures) {
             try {
                 inventory.initialize(cfg);
 
