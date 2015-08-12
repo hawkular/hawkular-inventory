@@ -91,14 +91,14 @@ public class CanonicalPathTest {
 
     @Test
     public void testParseWithEscapedChars() throws Exception {
-        CanonicalPath p = CanonicalPath.fromString("/t;te\\/n\\;a\\/nt/e;e\\/nv/f;f\\/\\\\eed/r;r\\;\\;\\/es");
-        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/\\eed",
+        CanonicalPath p = CanonicalPath.fromString("/t;te%2Fn;a%2fnt/e;e%2fnv/f;f%2f%25eed/r;r;;%2fes");
+        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/%eed",
                 Resource.class, "r;;/es");
 
         p = CanonicalPath
-            .fromString("/t;te\\/n\\;a\\/nt/e;e\\/nv/f;f\\/\\\\eed/r;r\\;\\;\\/es1/r;r\\;\\;\\/es2/r;r\\;\\;\\/es3");
+                .fromString("/t;te%2Fn;a%2Fnt/e;e%2Fnv/f;f%2F%25eed/r;r;;%2Fes1/r;r;;%2Fes2/r;r;;%2Fes3");
         // not sure if this should pass
-        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/\\eed",
+        checkPath(p, Tenant.class, "te/n;a/nt", Environment.class, "e/nv", Feed.class, "f/%eed",
                 Resource.class, "r;;/es1", Resource.class, "r;;/es2", Resource.class, "r;;/es3");
     }
 
@@ -113,15 +113,15 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t/e;e/r;r/d;configuration/blah/1/key", CanonicalPath.of().tenant("t").environment("e")
                 .resource("r").configuration().key("blah").index(1).key("key").get().toString());
 
-        Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl\\/ah", CanonicalPath.of().tenant("t")
+        Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl%2Fah", CanonicalPath.of().tenant("t")
                 .environment("e").resource("r").connectionConfiguration().key("bl/ah").get().toString());
 
         // escaped chars scenario
-        Assert.assertEquals("/t;te\\/nant/e;e\\;nv/r;r\\\\\\/es\\;\\;", CanonicalPath.of().tenant("te/nant")
-                .environment("e;nv").resource("r\\/es;;").get().toString());
+        Assert.assertEquals("/t;te%2Fnant/e;e;nv/r;r%25%2Fes;;", CanonicalPath.of().tenant("te/nant")
+                .environment("e;nv").resource("r%/es;;").get().toString());
 
-        Assert.assertEquals("/t;t/e;e/r;res\\/1\\;res\\\\2/r;res\\;3", CanonicalPath.of().tenant("t").environment("e")
-                .resource("res/1;res\\2").resource("res;3").get().toString());
+        Assert.assertEquals("/t;t/e;e/r;res%2F1;res%252/r;res;%203", CanonicalPath.of().tenant("t").environment("e")
+                .resource("res/1;res%2").resource("res; 3").get().toString());
     }
 
     @Test
@@ -144,8 +144,8 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t/e;e", p.up().up().toString());
 
         CanonicalPath p2 = CanonicalPath.of().tenant("t").environment("e").feed("f").metric(
-                "m/e;t\\r\\|\\C").get();
-        Assert.assertEquals("/t;t/e;e/f;f/m;m\\/e\\;t\\\\r\\\\|\\\\C", p2.down().up().toString());
+                "m/e;t%r%|%C").get();
+        Assert.assertEquals("/t;t/e;e/f;f/m;m%2Fe;t%25r%25%7C%25C", p2.down().up().toString());
 
         CanonicalPath p3 = CanonicalPath.of().tenant("t").environment("e").feed("f").resource(
             "res1").resource("res2").get();
@@ -167,14 +167,14 @@ public class CanonicalPathTest {
     public void testExtendingWithEscapedChars() throws Exception {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").feed("f").get();
 
-        CanonicalPath p2 = p.extend(Metric.class, "m\\et\\/ric").get();
-        Assert.assertEquals("/t;t/e;e/f;f/m;m\\\\et\\\\\\/ric", p2.toString());
+        CanonicalPath p2 = p.extend(Metric.class, "m%et%/ric").get();
+        Assert.assertEquals("/t;t/e;e/f;f/m;m%25et%25%2Fric", p2.toString());
 
-        p2 = p.getRoot().extend(MetricType.class, "m\\et\\/ric;type").get();
-        Assert.assertEquals("/t;t/mt;m\\\\et\\\\\\/ric\\;type", p2.toString());
+        p2 = p.getRoot().extend(MetricType.class, "m%et%/ric;type").get();
+        Assert.assertEquals("/t;t/mt;m%25et%25%2Fric;type", p2.toString());
 
-        CanonicalPath p3 = p.extend(Metric.class, "/;/\\").get();
-        Assert.assertEquals("/t;t/e;e/f;f/m;\\/\\;\\/\\\\", p3.toString());
+        CanonicalPath p3 = p.extend(Metric.class, "/;/%").get();
+        Assert.assertEquals("/t;t/e;e/f;f/m;%2F;%2F%25", p3.toString());
     }
 
     @Test
@@ -191,11 +191,11 @@ public class CanonicalPathTest {
 
     @Test
     public void testIdExtractionWithEscapedChars() throws Exception {
-        CanonicalPath p = CanonicalPath.of().tenant("t/e;n/\\").environment("/;env/")
+        CanonicalPath p = CanonicalPath.of().tenant("t/e;n/%").environment("/;env/")
                 .resource("/res/").get();
-        Assert.assertEquals("t/e;n/\\", p.ids().getTenantId());
+        Assert.assertEquals("t/e;n/%", p.ids().getTenantId());
         Assert.assertEquals("/;env/", p.ids().getEnvironmentId());
-        Assert.assertEquals("r;\\/res\\/", p.ids().getResourcePath().toString());
+        Assert.assertEquals("/res/", p.ids().getResourcePath().getSegment().getElementId());
         Assert.assertEquals("f/;e", p.up().extend(Feed.class, "f/;e").get().ids().getFeedId());
     }
 
@@ -242,8 +242,8 @@ public class CanonicalPathTest {
         Assert.assertEquals("../e;e/../t;t", rp.toString());
 
         // escaped chars scenario
-        rp = RelativePath.fromString("../e;e\\/\\;nv/../t;t\\/enant");
-        Assert.assertEquals("../e;e\\/\\;nv/../t;t\\/enant", rp.toString());
+        rp = RelativePath.fromString("../e;e%2f;nv/../t;t%2fenant");
+        Assert.assertEquals("../e;e%2F;nv/../t;t%2Fenant", rp.toString());
 
         try {
             RelativePath.fromString("../r");
@@ -336,11 +336,12 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t/e;e/f;f/m;g", mp.toString());
 
         // escaped chars scenario
-        mp = Path.fromPartiallyUntypedString("/res\\/1/res\\/2", cp, cp, Resource.class);
-        Assert.assertEquals("/t;t/e;e/f;f/r;res\\/1/r;res\\/2", mp.toString());
+        mp = Path.fromPartiallyUntypedString("/res%2F1/res%2F2", cp, cp, Resource.class);
+        Assert.assertEquals("/t;t/e;e/f;f/r;res%2F1/r;res%2F2", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/\\/g\\;", cp, cp, Metric.class);
-        Assert.assertEquals("/t;t/e;e/f;f/m;\\/g\\;", mp.toString());
+        //testing robustness against letter case in escape sequences and trailing type delimiter, too
+        mp = Path.fromPartiallyUntypedString("/%2fg;", cp, cp, Metric.class);
+        Assert.assertEquals("/t;t/e;e/f;f/m;%2Fg;", mp.toString());
     }
 
     @SuppressWarnings("unchecked")
