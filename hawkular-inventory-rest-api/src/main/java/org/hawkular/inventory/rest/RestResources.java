@@ -567,7 +567,7 @@ public class RestResources extends RestBase {
     @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Creates the configuration for pre-existing resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 204, message = "OK Created"),
                           @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
@@ -575,50 +575,40 @@ public class RestResources extends RestBase {
     public Response createConfiguration(@PathParam("environmentId") String environmentId,
                                         @PathParam("feedId") String feedId,
                                         @PathParam("resourcePath") String resourcePath,
-                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
-                                        @ApiParam(required = true) DataEntity.Blueprint configuration) {
+                                        @ApiParam(required = true) DataEntity.Blueprint configuration,
+                                        @Context UriInfo uriInfo) {
 
-        return createConfigurationHelper(environmentId, feedId, resourcePath, dataType, configuration);
+        return createConfigurationHelper(environmentId, feedId, resourcePath, configuration, uriInfo);
     }
 
     @POST
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Creates the configuration for pre-existing resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 204, message = "OK Created"),
                           @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response createConfiguration(@PathParam("environmentId") String environmentId,
                                         @PathParam("resourcePath") String resourcePath,
-                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
-                                        @ApiParam(required = true) DataEntity.Blueprint configuration) {
+                                        @ApiParam(required = true) DataEntity.Blueprint configuration,
+                                        @Context UriInfo uriInfo) {
 
-        return createConfigurationHelper(environmentId, null, resourcePath, dataType, configuration);
+        return createConfigurationHelper(environmentId, null, resourcePath, configuration, uriInfo);
     }
 
     private Response createConfigurationHelper(String environmentId, String feedId, String resourcePath,
-                                               DataEntity.Role dataType, DataEntity.Blueprint configuration) {
+                                               DataEntity.Blueprint configuration, UriInfo uriInfo) {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
         if (!security.canUpdate(resource)) {
             return Response.status(FORBIDDEN).build();
         }
+        inventory.inspect(resource, Resources.Single.class).data().create(configuration);
 
-        Resources.Single resourceSingle = inventory.inspect(resource, Resources.Single.class);
-        switch (dataType) {
-            case configuration:
-                resourceSingle.configuration().create(configuration);
-                break;
-            case connectionConfiguration:
-                resourceSingle.connectionConfiguration().create(configuration);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported data type: " + dataType.toString());
-        }
-        return Response.noContent().build();
+        return ResponseUtil.created(uriInfo, configuration.getRole().name()).build();
     }
 
     @GET
@@ -659,19 +649,99 @@ public class RestResources extends RestBase {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
-        Resources.Single resourceSingle = inventory.inspect(resource, Resources.Single.class);
-        DataEntity entity;
-        switch (dataType) {
-            case configuration:
-                entity = resourceSingle.configuration().get(null).entity();
-                break;
-            case connectionConfiguration:
-                entity = resourceSingle.connectionConfiguration().get(null).entity();
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported data type: " + dataType.toString());
-        }
-        return Response.ok(entity).build();
+        DataEntity data = inventory.inspect(resource, Resources.Single.class).data().get(dataType).entity();
+
+        return Response.ok(data).build();
+    }
+
+    @PUT
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @ApiOperation("Updates the configuration of a resource")
+    @ApiResponses({
+                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response updateConfiguration(@PathParam("environmentId") String environmentId,
+                                        @PathParam("feedId") String feedId,
+                                        @PathParam("resourcePath") String resourcePath,
+                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
+                                        @ApiParam(required = true) DataEntity.Update configuration) {
+
+        return updateConfigurationHelper(environmentId, feedId, resourcePath, dataType, configuration);
+    }
+
+    @PUT
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
+    @ApiOperation("Updates the configuration of a resource")
+    @ApiResponses({
+                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response updateConfiguration(@PathParam("environmentId") String environmentId,
+                                        @PathParam("resourcePath") String resourcePath,
+                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
+                                        @ApiParam(required = true) DataEntity.Update configuration) {
+
+        return updateConfigurationHelper(environmentId, null, resourcePath, dataType, configuration);
+    }
+
+    private Response updateConfigurationHelper(String environmentId, String feedId, String resourcePath,
+                                               DataEntity.Role dataType, DataEntity.Update configuration) {
+        String tenantId = getTenantId();
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        inventory.inspect(resource, Resources.Single.class).data().get(dataType).update(configuration);
+
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @ApiOperation("Deletes the configuration of a resource")
+    @ApiResponses({
+                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response deleteConfiguration(@PathParam("environmentId") String environmentId,
+                                        @PathParam("feedId") String feedId,
+                                        @PathParam("resourcePath") String resourcePath,
+                                        @DefaultValue("configuration") @QueryParam("dataType")
+                                            DataEntity.Role dataType) {
+
+        return deleteConfigurationHelper(environmentId, feedId, resourcePath, dataType);
+    }
+
+    @DELETE
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
+    @ApiOperation("Deletes the configuration of a resource")
+    @ApiResponses({
+                          @ApiResponse(code = 204, message = "OK"),
+                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response deleteConfiguration(@PathParam("environmentId") String environmentId,
+                                        @PathParam("resourcePath") String resourcePath,
+                                        @DefaultValue("configuration") @QueryParam("dataType")
+                                            DataEntity.Role dataType) {
+
+        return deleteConfigurationHelper(environmentId, null, resourcePath, dataType);
+    }
+
+    private Response deleteConfigurationHelper(String environmentId, String feedId, String resourcePath,
+                                               DataEntity.Role dataType) {
+        String tenantId = getTenantId();
+        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        inventory.inspect(resource, Resources.Single.class).data().delete(dataType);
+
+        return Response.noContent().build();
     }
 
     @POST

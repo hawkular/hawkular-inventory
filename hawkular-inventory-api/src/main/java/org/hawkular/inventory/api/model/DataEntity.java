@@ -130,6 +130,7 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
     }
 
     public static final class Update extends Entity.Update {
+
         private final StructuredData value;
 
         public static Builder builder() {
@@ -139,6 +140,11 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
         public Update(StructuredData value, Map<String, Object> properties) {
             super(properties);
             this.value = value;
+        }
+
+        // this is needed for Jackson deserialization
+        public Update() {
+            this(null, null);
         }
 
         public StructuredData getValue() {
