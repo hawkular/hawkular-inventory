@@ -140,7 +140,7 @@ public class SerializationTest {
         PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
         PathDeserializer.setCurrentEntityType(MetricType.class);
 
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTE, MetricDataType.GAUGE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, MetricDataType.GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
@@ -148,12 +148,12 @@ public class SerializationTest {
         test(mt);
 
         //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTE\"}",
+        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
                 MetricType.class));
         //a detyped variant should work, too
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTE\"}",
+        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
                 MetricType.class));
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTE\"}",
+        Assert.assertEquals(mt, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
                 MetricType.class));
     }
 

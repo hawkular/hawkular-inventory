@@ -68,7 +68,7 @@ public class TemporaryHacks {
 
         inventory.inspect(tenant).feedlessMetricTypes()
                 .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("status.duration.type")
-                .withUnit(MetricUnit.MILLI_SECOND).build());
+                .withUnit(MetricUnit.MILLISECONDS).build());
         Log.LOGGER.autoCreatedEntity("metric type", "status.duration.type", tenant.getId());
     }
 

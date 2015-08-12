@@ -75,7 +75,7 @@ public class BusTest {
     @Test
     public void messagesSerializationTest() {
         Tenant tenant = new Tenant(CanonicalPath.fromString("/t;c"), objectProperties);
-        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTE,
+        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
         ResourceType resourceType = new ResourceType(CanonicalPath.fromString("/t;t/rt;rt"), objectProperties);
 
@@ -134,13 +134,13 @@ public class BusTest {
 
     @Test
     public void createMetricEventFromJSON() {
-        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTE,
+        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
                 new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
 
         String metricJSON = "{\"action\":\"DELETED\",\"object\":{\"path\":\"/t;t/e;e/m;m\",\"type\"" +
-                ":{\"path\":\"/t;t/mt;mt\",\"properties\":null,\"unit\":\"MINUTE\",\"type\":\"GAUGE\"}," +
+                ":{\"path\":\"/t;t/mt;mt\",\"properties\":null,\"unit\":\"MINUTES\",\"type\":\"GAUGE\"}," +
                 "\"properties\":{}}}";
         MetricEvent metricEventFromJSON = MetricEvent.fromJSON(metricJSON, MetricEvent.class);
 
@@ -206,7 +206,7 @@ public class BusTest {
         broker.start();
 
         // set up message to send
-        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTE,
+        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
         MetricEvent metricEventToSend = new MetricEvent(Action.Enumerated.DELETED,
                 new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
