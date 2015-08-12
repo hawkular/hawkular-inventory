@@ -22,13 +22,11 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.model.DataEntity.Role.configuration;
-import static org.hawkular.inventory.api.model.DataEntity.Role.connectionConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hawkular.inventory.api.Datas;
+import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
@@ -241,16 +239,10 @@ public final class BaseResources {
         }
 
         @Override
-        public Datas.ReadWrite configuration() {
-            return new BaseDatas.ReadWrite<>(configuration,
-                    context.proceedTo(configuration.getCorrespondingRelationship(), DataEntity.class).get());
+        public Data.ReadWrite data() {
+            return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get());
         }
 
-        @Override
-        public Datas.ReadWrite connectionConfiguration() {
-            return new BaseDatas.ReadWrite<>(connectionConfiguration,
-                    context.proceedTo(connectionConfiguration.getCorrespondingRelationship(), DataEntity.class).get());
-        }
     }
 
     public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource, Resource.Update>
@@ -281,15 +273,9 @@ public final class BaseResources {
         }
 
         @Override
-        public Datas.Read configuration() {
-            return new BaseDatas.Read<>(configuration, context.proceedTo(configuration.getCorrespondingRelationship(),
-                    DataEntity.class).get());
+        public Data.Read data() {
+            return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get());
         }
 
-        @Override
-        public Datas.Read connectionConfiguration() {
-            return new BaseDatas.Read<>(connectionConfiguration,
-                    context.proceedTo(connectionConfiguration.getCorrespondingRelationship(), DataEntity.class).get());
-        }
     }
 }

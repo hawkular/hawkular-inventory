@@ -62,16 +62,18 @@ public final class Resources {
          */
         Read parents();
 
-        Data configuration();
-
-        Data connectionConfiguration();
+        /**
+         * @return data associated with the resource. See {@link org.hawkular.inventory.api.model.DataEntity.Role} for
+         * possible kinds of data associated with a resource.
+         */
+        Data data();
     }
 
     /**
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadAssociate, Datas.ReadWrite, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadAssociate, Data.ReadWrite, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
@@ -89,7 +91,7 @@ public final class Resources {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple
-            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Datas.Read,
+            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Data.Read,
             ReadContained, Read> {}
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {

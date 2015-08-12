@@ -27,26 +27,17 @@ import org.hawkular.inventory.api.paging.Pager;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public final class Datas {
+public final class Data {
 
-    private Datas() {
+    private Data() {
 
     }
 
-    protected interface ReadBase {
-
-        /**
-         * @return the access to the resource this data belongs to.
-         */
-        Resources.Single resource();
-    }
-
-    public interface Read extends ReadInterface<Single, Multiple, Void>, ReadBase {
+    public interface Read extends ReadInterface<Single, Multiple, DataEntity.Role> {
     }
 
     public interface ReadWrite
-            extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint, Single, Multiple, Void>,
-            ReadBase {
+            extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint, Single, Multiple, DataEntity.Role> {
     }
 
     public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update> {
@@ -125,7 +116,7 @@ public final class Datas {
          * @param pager    pager to use to page the data
          * @return the page of the data entries
          */
-        Page<StructuredData> datas(RelativePath dataPath, Pager pager);
+        Page<StructuredData> data(RelativePath dataPath, Pager pager);
 
         /**
          * Similar to {@link Single#flatData(RelativePath)}, only resolved over multiple entities.
@@ -134,11 +125,11 @@ public final class Datas {
          * @param pager    pager to use to page the data
          * @return the page of the data entries
          */
-        Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager);
+        Page<StructuredData> flatData(RelativePath dataPath, Pager pager);
 
         @Override
         default boolean anyExists() {
-            return !flatDatas(RelativePath.empty().get(),
+            return !flatData(RelativePath.empty().get(),
                     Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).isEmpty();
         }
     }

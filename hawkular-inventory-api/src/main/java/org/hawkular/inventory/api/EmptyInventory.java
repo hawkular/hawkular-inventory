@@ -1108,14 +1108,10 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Datas.ReadWrite configuration() {
-            return new DatasReadWrite();
+        public Data.ReadWrite data() {
+            return new DataReadWrite();
         }
 
-        @Override
-        public Datas.ReadWrite connectionConfiguration() {
-            return new DatasReadWrite();
-        }
     }
 
     public static class ResourcesMultiple implements Resources.Multiple {
@@ -1156,14 +1152,10 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Datas.Read configuration() {
-            return new DatasRead();
+        public Data.Read data() {
+            return new DataRead();
         }
 
-        @Override
-        public Datas.Read connectionConfiguration() {
-            return new DatasRead();
-        }
     }
 
     public static class ResourcesReadAssociate implements Resources.ReadAssociate {
@@ -1195,58 +1187,48 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class DatasRead implements Datas.Read {
+    public static class DataRead implements Data.Read {
 
         @Override
-        public Datas.Multiple getAll(Filter[][] filters) {
+        public Data.Multiple getAll(Filter[][] filters) {
             return new DatasMultiple();
         }
 
         @Override
-        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+        public Data.Single get(DataEntity.Role ignored) throws EntityNotFoundException {
             return new DatasSingle();
-        }
-
-        @Override
-        public Resources.Single resource() {
-            return new ResourcesSingle();
         }
     }
 
-    public static class DatasReadWrite implements Datas.ReadWrite {
+    public static class DataReadWrite implements Data.ReadWrite {
 
         @Override
-        public Resources.Single resource() {
-            return new ResourcesSingle();
-        }
-
-        @Override
-        public Datas.Multiple getAll(Filter[][] filters) {
+        public Data.Multiple getAll(Filter[][] filters) {
             return new DatasMultiple();
         }
 
         @Override
-        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+        public Data.Single get(DataEntity.Role ignored) throws EntityNotFoundException {
             return new DatasSingle();
         }
 
         @Override
-        public Datas.Single create(DataEntity.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Data.Single create(DataEntity.Blueprint blueprint) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void update(Void ignored, DataEntity.Update update) throws EntityNotFoundException {
+        public void update(DataEntity.Role ignored, DataEntity.Update update) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void delete(Void ignored) throws EntityNotFoundException {
+        public void delete(DataEntity.Role ignored) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
 
-    public static class DatasSingle implements Datas.Single {
+    public static class DatasSingle implements Data.Single {
         @Override
         public StructuredData flatData(RelativePath dataPath) {
             throw entityNotFound(null);
@@ -1273,19 +1255,19 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class DatasMultiple implements Datas.Multiple {
+    public static class DatasMultiple implements Data.Multiple {
         @Override
         public Page<DataEntity> entities(Pager pager) {
             return emptyPage(pager);
         }
 
         @Override
-        public Page<StructuredData> datas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> data(RelativePath dataPath, Pager pager) {
             return emptyPage(pager);
         }
 
         @Override
-        public Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> flatData(RelativePath dataPath, Pager pager) {
             return emptyPage(pager);
         }
     }

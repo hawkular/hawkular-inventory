@@ -90,21 +90,6 @@ public final class Relationships {
         isParentOf,
 
         /**
-         * A relationship from a resource to a structural data that contains the configuration of that resource.
-         *
-         * <p>The relationship is 1-to-1. There is no sharing of configuration objects between different resources.
-         */
-        isConfiguredBy,
-
-        /**
-         * A relationship from a resource to a structural data that stores info about how the feed should connect to
-         * the resource.
-         *
-         * <p>The relationship is 1-to-1. There is no sharing of configuration objects between different resources.
-         */
-        connectsUsing,
-
-        /**
          * This relationship is used to link the {@link org.hawkular.inventory.api.model.DataEntity} to its data.
          * This relationship is invisible to the API users, because one cannot obtain a {@link Relationship} object
          * of it using the API but it is specified here nevertheless because it is a part of the contract of the API

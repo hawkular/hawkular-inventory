@@ -18,10 +18,8 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
-import static org.hawkular.inventory.api.Relationships.WellKnown.connectsUsing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
-import static org.hawkular.inventory.api.Relationships.WellKnown.isConfiguredBy;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 
 import java.util.ArrayList;
@@ -60,15 +58,11 @@ public final class RelationshipRules {
 
         CREATE_RULES.put(contains, Arrays.asList(RelationshipRules::checkDiamonds, RelationshipRules::checkLoops));
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
-        CREATE_RULES.put(isConfiguredBy, Collections.singletonList(RelationshipRules::checkIs1To1));
-        CREATE_RULES.put(connectsUsing, Collections.singletonList(RelationshipRules::checkIs1To1));
         CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
                 RelationshipRules::disallowDeleteOfIsParentOfWhenTheresContainsToo));
-        DELETE_RULES.put(isConfiguredBy, Collections.singletonList(RelationshipRules::disallowDelete));
-        DELETE_RULES.put(connectsUsing, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));
     }
 
@@ -184,20 +178,6 @@ public final class RelationshipRules {
     private static <E> void disallowCreateAcrossTenants(InventoryBackend<E> backend, E origin,
             Relationships.Direction direction, String relationship, E target) {
 
-    }
-
-    private static <E> void checkIs1To1(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target) {
-
-        if (backend.hasRelationship(origin, direction, relationship)) {
-            throw new IllegalArgumentException("Relationship '" + relationship + "' is 1-to-1 but there already is"
-                    + " a relationship coming " + (direction == incoming ? "in" : "out") + " of the entity on path '"
-                    + backend.extractCanonicalPath(origin) + "'.");
-        } else if (backend.hasRelationship(target, direction.opposite(), relationship)) {
-            throw new IllegalArgumentException("Relationship '" + relationship + "' is 1-to-1 but there already is"
-                    + " a relationship coming " + (direction == incoming ? "out" : "in") + " of the entity on path '"
-                    + backend.extractCanonicalPath(target) + "'.");
-        }
     }
 
     @FunctionalInterface

@@ -18,8 +18,6 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Map;
 
-import org.hawkular.inventory.api.Relationships;
-
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
  *
@@ -72,37 +70,28 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
 
     public enum Role {
         configuration, connectionConfiguration;
-
-        /**
-         * @return the relationship that is used to express the role of the data entity. The data entity is related
-         * to its owner by this relationship (going from the owner to the data entity).
-         */
-        public Relationships.WellKnown getCorrespondingRelationship() {
-            switch (this) {
-                case configuration:
-                    return Relationships.WellKnown.isConfiguredBy;
-                case connectionConfiguration:
-                    return Relationships.WellKnown.connectsUsing;
-                default:
-                    throw new AssertionError("Incomplete data entity role to relationship mapping.");
-            }
-        }
     }
 
     public static final class Blueprint extends AbstractElement.Blueprint {
         private final StructuredData value;
+        private final DataEntity.Role role;
 
         public static Builder builder() {
             return new Builder();
         }
 
-        public Blueprint(StructuredData value, Map<String, Object> properties) {
+        public Blueprint(DataEntity.Role role, StructuredData value, Map<String, Object> properties) {
             super(properties);
+            this.role = role;
             this.value = value;
         }
 
         public StructuredData getValue() {
             return value;
+        }
+
+        public Role getRole() {
+            return role;
         }
 
         @Override
@@ -112,6 +101,7 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
 
+            private DataEntity.Role role;
             private StructuredData value;
 
             public Builder withValue(StructuredData value) {
@@ -119,9 +109,17 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
                 return this;
             }
 
+            public Builder withRole(DataEntity.Role role) {
+                this.role = role;
+                return this;
+            }
+
             @Override
             public Blueprint build() {
-                return new Blueprint(value, properties);
+                if (role == null) {
+                    throw new NullPointerException("Data entity role not specified.");
+                }
+                return new Blueprint(role, value, properties);
             }
         }
     }

@@ -34,6 +34,8 @@ import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
+import static org.hawkular.inventory.api.model.DataEntity.Role.configuration;
+import static org.hawkular.inventory.api.model.DataEntity.Role.connectionConfiguration;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -55,7 +57,7 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.api.Datas;
+import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
@@ -102,7 +104,6 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -318,8 +319,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .build();
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom1").configuration().create(DataEntity.Blueprint.builder()
-                        .withValue(config).build()).entity().getValue().equals(config);
+                .feedlessResources().get("playroom1").data().create(DataEntity.Blueprint.builder()
+                        .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
     }
 
@@ -1801,30 +1802,31 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
-    @Ignore
     public void testCreateConfiguration() throws Exception {
         Resources.Single res = inventory.tenants().get("com.example.tenant").environments().get("test")
                 .feedlessResources().get("playroom2");
 
         StructuredData orig = StructuredData.get().map().putBool("yes", true).putBool("no", false).build();
 
-        res.configuration().create(DataEntity.Blueprint.builder().withValue(orig).build());
+        res.data().create(DataEntity.Blueprint.builder().withRole(connectionConfiguration).withValue(orig).build());
 
-        StructuredData retrieved = res.configuration().get(null).entity().getValue();
+        StructuredData retrieved = res.data().get(connectionConfiguration).entity().getValue();
 
         Assert.assertEquals(orig, retrieved);
 
-        res.configuration().delete(null);
+        Assert.assertFalse(res.data().get(configuration).exists());
 
-        Assert.assertFalse(res.configuration().get(null).exists());
+        res.data().delete(connectionConfiguration);
+
+        Assert.assertFalse(res.data().get(connectionConfiguration).exists());
     }
 
     @Test
     public void testUpdateStructuredDataSimpleValue() throws Exception {
 
-        Datas.Single dataAccess = inventory.inspect(
+        Data.Single dataAccess = inventory.inspect(
                 CanonicalPath.fromString("/t;com.example.tenant/e;test/r;playroom1/d;configuration"),
-                Datas.Single.class);
+                Data.Single.class);
 
         StructuredData origData = dataAccess.entity().getValue();
 
@@ -1851,8 +1853,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testFilteringByData() throws Exception {
-        Datas.Read configs = inventory.tenants().getAll().environments().getAll().allResources().getAll()
-                .configuration();
+        Data.Read configs = inventory.tenants().getAll().environments().getAll().allResources().getAll()
+                .data();
 
         Assert.assertEquals(1, configs.getAll(With.dataAt(RelativePath.to().structuredData().key("primitives").index(0)
                 .get())).entities().size());
@@ -1884,9 +1886,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testRetrievingDataPortions() throws Exception {
-        Datas.Single config = inventory.inspect(
+        Data.Single config = inventory.inspect(
                 CanonicalPath.fromString("/t;com.example.tenant/e;test/r;playroom1/d;configuration"),
-                Datas.Single.class);
+                Data.Single.class);
 
         StructuredData allData = config.entity().getValue();
 
