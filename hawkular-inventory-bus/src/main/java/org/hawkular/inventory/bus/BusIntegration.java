@@ -24,7 +24,6 @@ import javax.jms.TopicConnectionFactory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
@@ -70,9 +69,7 @@ public final class BusIntegration {
         TopicConnectionFactory tcf = (TopicConnectionFactory) namingContext.lookup(
                 configuration.getConnectionFactoryJndiName());
 
-        ConnectionContextFactory ccf = new ConnectionContextFactory(tcf);
-
-        this.messageSender = new MessageSender(ccf, configuration.getInventoryChangesTopicName());
+        this.messageSender = new MessageSender(tcf, configuration.getInventoryChangesTopicName());
 
         install();
     }
