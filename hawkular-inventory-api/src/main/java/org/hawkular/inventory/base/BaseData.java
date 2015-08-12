@@ -16,26 +16,20 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Action.created;
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.filters.With.id;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Set;
 
-import org.hawkular.inventory.api.Datas;
+import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -47,66 +41,46 @@ import org.hawkular.inventory.base.spi.ShallowStructuredData;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public final class BaseDatas {
+public final class BaseData {
 
-    private BaseDatas() {
+    private BaseData() {
     }
 
 
-    public static final class Read<BE> extends Traversal<BE, DataEntity> implements Datas.Read {
-
-        private final DataEntity.Role role;
-
-        public Read(DataEntity.Role role, TraversalContext<BE, DataEntity> context) {
+    public static final class Read<BE> extends Traversal<BE, DataEntity> implements Data.Read {
+        public Read(TraversalContext<BE, DataEntity> context) {
             super(context);
-            this.role = role;
         }
 
         @Override
-        public Datas.Multiple getAll(Filter[][] filters) {
+        public Data.Multiple getAll(Filter[][] filters) {
             return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
-        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+        public Data.Single get(DataEntity.Role role) throws EntityNotFoundException {
             return new Single<>(context.proceed().where(id(role.name())).get());
-        }
-
-        @Override
-        public Resources.Single resource() {
-            return new BaseResources.Single<>(context.retreatTo(contains, Resource.class).get());
         }
     }
 
     public static final class ReadWrite<BE>
-            extends Mutator<BE, DataEntity, DataEntity.Blueprint, DataEntity.Update, Void>
-            implements Datas.ReadWrite {
+            extends Mutator<BE, DataEntity, DataEntity.Blueprint, DataEntity.Update, DataEntity.Role>
+            implements Data.ReadWrite {
 
-        private final DataEntity.Role role;
-
-        public ReadWrite(DataEntity.Role role, TraversalContext context) {
+        public ReadWrite(TraversalContext context) {
             super(context);
-            this.role = role;
         }
 
         @Override
         protected String getProposedId(DataEntity.Blueprint blueprint) {
-            return role.name();
+            return blueprint.getRole().name();
         }
 
         @Override
         protected EntityAndPendingNotifications<DataEntity> wireUpNewEntity(BE entity,
                 DataEntity.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
 
-            List<EntityAndPendingNotifications.Notification<?, ?>> notifications = new ArrayList<>();
-
-            DataEntity data = new DataEntity(parentPath, role, blueprint.getValue());
-
-            Relationships.WellKnown rel = role.getCorrespondingRelationship();
-            BE storedRel = relate(parent, entity, rel.name());
-            Relationship relationship = new Relationship(context.backend.extractId(storedRel), rel.name(), parentPath,
-                    data.getPath());
-            notifications.add(new EntityAndPendingNotifications.Notification<>(relationship, relationship, created()));
+            DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue());
 
             BE value = context.backend.persist(blueprint.getValue());
 
@@ -115,16 +89,16 @@ public final class BaseDatas {
             //this
             context.backend.relate(entity, value, hasData.name(), null);
 
-            return new EntityAndPendingNotifications<>(data, notifications);
+            return new EntityAndPendingNotifications<>(data, Collections.emptyList());
         }
 
         @Override
-        public Datas.Single create(DataEntity.Blueprint data) {
+        public Data.Single create(DataEntity.Blueprint data) {
             return new Single<>(context.replacePath(doCreate(data)));
         }
 
         @Override
-        protected void cleanup(Void ignored, BE entityRepresentation) {
+        protected void cleanup(DataEntity.Role role, BE entityRepresentation) {
             Set<BE> rels = context.backend.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
                     hasData.name());
 
@@ -142,24 +116,19 @@ public final class BaseDatas {
         }
 
         @Override
-        public Resources.Single resource() {
-            return new BaseResources.Single<>(context.retreatTo(contains, Resource.class).get());
-        }
-
-        @Override
-        public Datas.Multiple getAll(Filter[][] filters) {
+        public Data.Multiple getAll(Filter[][] filters) {
             return new Multiple<>(context.proceed().whereAll(filters).get());
         }
 
         @Override
-        public Datas.Single get(Void ignored) throws EntityNotFoundException {
+        public Data.Single get(DataEntity.Role role) throws EntityNotFoundException {
             return new Single<>(context.proceed().where(id(role.name())).get());
         }
     }
 
     public static final class Single<BE>
             extends SingleEntityFetcher<BE, DataEntity, DataEntity.Update>
-            implements Datas.Single {
+            implements Data.Single {
 
         public Single(TraversalContext<BE, DataEntity> context) {
             super(context);
@@ -187,14 +156,14 @@ public final class BaseDatas {
 
     public static final class Multiple<BE>
             extends MultipleEntityFetcher<BE, DataEntity, DataEntity.Update>
-            implements Datas.Multiple {
+            implements Data.Multiple {
 
         public Multiple(TraversalContext<BE, DataEntity> context) {
             super(context);
         }
 
         @Override
-        public Page<StructuredData> datas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> data(RelativePath dataPath, Pager pager) {
             return loadEntities(pager, (b, e) -> {
                 BE dataEntity = context.backend.descendToData(b, dataPath);
                 return context.backend.convert(dataEntity, StructuredData.class);
@@ -202,7 +171,7 @@ public final class BaseDatas {
         }
 
         @Override
-        public Page<StructuredData> flatDatas(RelativePath dataPath, Pager pager) {
+        public Page<StructuredData> flatData(RelativePath dataPath, Pager pager) {
             return loadEntities(pager, (b, e) -> {
                 BE dataEntity = context.backend.descendToData(b, dataPath);
                 return context.backend.convert(dataEntity, ShallowStructuredData.class).getData();
