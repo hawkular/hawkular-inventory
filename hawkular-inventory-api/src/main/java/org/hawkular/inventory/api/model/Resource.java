@@ -91,11 +91,10 @@ public final class Resource extends FeedBasedEntity<Resource.Blueprint, Resource
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null, null);
+            this(null, null);
         }
 
-        public Blueprint(String id, String resourceTypePath, StructuredData configuration,
-                StructuredData connectionConfiguration) {
+        public Blueprint(String id, String resourceTypePath) {
             this(id, resourceTypePath, Collections.emptyMap());
         }
 

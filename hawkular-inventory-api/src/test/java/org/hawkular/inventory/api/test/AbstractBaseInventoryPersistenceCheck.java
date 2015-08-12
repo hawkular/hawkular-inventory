@@ -172,7 +172,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .create(new Metric.Blueprint("/ResponseTime", "host1_ping_response")).entity().getId()
                 .equals("host1_ping_response");
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                .create(new Resource.Blueprint("host1", "/URL", null, null)).entity()
+                .create(new Resource.Blueprint("host1", "/URL")).entity()
                 .getId().equals("host1");
         inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .get("host1").metrics().associate(RelativePath.fromString("../m;host1_ping_response"));
@@ -181,15 +181,15 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource1", "/URL", null, null)).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource1", "/URL")).entity().getId()
                 .equals("feedResource1");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource2", "/URL", null, null)).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource2", "/URL")).entity().getId()
                 .equals("feedResource2");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
-                .resources().create(new Resource.Blueprint("feedResource3", "/URL", null, null)).entity().getId()
+                .resources().create(new Resource.Blueprint("feedResource3", "/URL")).entity().getId()
                 .equals("feedResource3");
 
         assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
@@ -217,10 +217,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
                 .create(new Metric.Blueprint("/Size", "playroom2_size")).entity().getId().equals("playroom2_size");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom1", "/Playroom", null, null)).entity().getId()
+                .create(new Resource.Blueprint("playroom1", "/Playroom")).entity().getId()
                 .equals("playroom1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .create(new Resource.Blueprint("playroom2", "/Playroom", null, null)).entity().getId()
+                .create(new Resource.Blueprint("playroom2", "/Playroom")).entity().getId()
                 .equals("playroom2");
 
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
@@ -231,18 +231,18 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").containedChildren()
-                .create(new Resource.Blueprint("playroom1.1", "/Playroom", null, null)).entity().getId()
+                .create(new Resource.Blueprint("playroom1.1", "/Playroom")).entity().getId()
                 .equals("playroom1.1");
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").containedChildren()
-                .create(new Resource.Blueprint("playroom1.2", "/Playroom", null, null)).entity().getId()
+                .create(new Resource.Blueprint("playroom1.2", "/Playroom")).entity().getId()
                 .equals("playroom1.2");
         inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").resource("playroom2").get());
         assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
                 .get("playroom2").containedChildren()
-                .create(new Resource.Blueprint("playroom2.1", "/Playroom", null, null)).entity().getId()
+                .create(new Resource.Blueprint("playroom2.1", "/Playroom")).entity().getId()
                 .equals("playroom2.1");
 
         // some ad-hoc relationships
@@ -974,7 +974,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         try {
             inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                    .create(new Resource.Blueprint("host1", "URL", null, null));
+                    .create(new Resource.Blueprint("host1", "URL"));
             Assert.fail("Creating resource with existing ID should fail");
         } catch (Exception e) {
             //good
@@ -1531,7 +1531,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                             .withUnit(MetricUnit.BYTES).build());
 
             inventory.tenants().get("t").environments().get("e").feedlessResources()
-                    .create(new Resource.Blueprint("r", "/rt", null, null));
+                    .create(new Resource.Blueprint("r", "/rt"));
             inventory.tenants().get("t").environments().get("e").feedlessResources().update("r",
                     Resource.Update.builder().build());
 
