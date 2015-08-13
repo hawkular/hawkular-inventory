@@ -31,6 +31,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Resources;
+
 /**
  * Represents a path in an inventory. The path is either {@link CanonicalPath} or {@link RelativePath}.
  *
@@ -956,6 +959,11 @@ public abstract class Path {
             super(segments, constructor);
         }
 
+        public StructuredDataBuilder<Impl> data(ResourceTypes.DataRole role) {
+            segments.add(new Segment(DataEntity.class, role.name()));
+            return new StructuredDataBuilder<>(segments, constructor);
+        }
+
         public Impl get() {
             return constructor.create(0, segments.size(), segments);
         }
@@ -1038,15 +1046,11 @@ public abstract class Path {
             return this;
         }
 
-        public StructuredDataBuilder<Impl> configuration() {
-            segments.add(new Segment(DataEntity.class, DataEntity.Role.configuration.name()));
+        public StructuredDataBuilder<Impl> data(Resources.DataRole role) {
+            segments.add(new Segment(DataEntity.class, role.name()));
             return new StructuredDataBuilder<>(segments, constructor);
         }
 
-        public StructuredDataBuilder<Impl> connectionConfiguration() {
-            segments.add(new Segment(DataEntity.class, DataEntity.Role.connectionConfiguration.name()));
-            return new StructuredDataBuilder<>(segments, constructor);
-        }
         public Impl get() {
             return constructor.create(0, segments.size(), segments);
         }

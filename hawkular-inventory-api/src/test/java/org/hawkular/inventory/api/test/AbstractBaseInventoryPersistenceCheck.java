@@ -30,12 +30,12 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
+import static org.hawkular.inventory.api.Resources.DataRole.configuration;
+import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
-import static org.hawkular.inventory.api.model.DataEntity.Role.configuration;
-import static org.hawkular.inventory.api.model.DataEntity.Role.connectionConfiguration;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -319,7 +319,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .build();
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom1").data().create(DataEntity.Blueprint.builder()
+                .feedlessResources().get("playroom1").data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
     }
@@ -1808,7 +1808,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         StructuredData orig = StructuredData.get().map().putBool("yes", true).putBool("no", false).build();
 
-        res.data().create(DataEntity.Blueprint.builder().withRole(connectionConfiguration).withValue(orig).build());
+        res.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(connectionConfiguration)
+                .withValue(orig).build());
 
         StructuredData retrieved = res.data().get(connectionConfiguration).entity().getValue();
 
@@ -1853,8 +1854,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testFilteringByData() throws Exception {
-        Data.Read configs = inventory.tenants().getAll().environments().getAll().allResources().getAll()
-                .data();
+        Data.Read<Resources.DataRole> configs = inventory.tenants().getAll().environments().getAll().allResources()
+                .getAll().data();
 
         Assert.assertEquals(1, configs.getAll(With.dataAt(RelativePath.to().structuredData().key("primitives").index(0)
                 .get())).entities().size());

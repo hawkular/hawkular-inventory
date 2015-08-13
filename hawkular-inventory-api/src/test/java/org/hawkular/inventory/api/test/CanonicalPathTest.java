@@ -16,6 +16,9 @@
  */
 package org.hawkular.inventory.api.test;
 
+import static org.hawkular.inventory.api.Resources.DataRole.configuration;
+import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
+
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -111,10 +114,10 @@ public class CanonicalPathTest {
         Assert.assertEquals("/rl;r", CanonicalPath.of().relationship("r").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;configuration/blah/1/key", CanonicalPath.of().tenant("t").environment("e")
-                .resource("r").configuration().key("blah").index(1).key("key").get().toString());
+                .resource("r").data(configuration).key("blah").index(1).key("key").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl%2Fah", CanonicalPath.of().tenant("t")
-                .environment("e").resource("r").connectionConfiguration().key("bl/ah").get().toString());
+                .environment("e").resource("r").data(connectionConfiguration).key("bl/ah").get().toString());
 
         // escaped chars scenario
         Assert.assertEquals("/t;te%2Fnant/e;e;nv/r;r%25%2Fes;;", CanonicalPath.of().tenant("te/nant")

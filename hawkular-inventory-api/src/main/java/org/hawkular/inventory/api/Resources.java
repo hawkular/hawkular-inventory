@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
@@ -29,6 +30,10 @@ import org.hawkular.inventory.api.model.Resource;
 public final class Resources {
 
     private Resources() {
+    }
+
+    public enum DataRole implements DataEntity.Role {
+        configuration, connectionConfiguration
     }
 
     private interface BrowserBase<Metrics, Data, ContainedAccess, AllAccess> {
@@ -73,7 +78,7 @@ public final class Resources {
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadAssociate, Data.ReadWrite, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
@@ -91,7 +96,7 @@ public final class Resources {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple
-            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Data.Read,
+            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Data.Read<DataRole>,
             ReadContained, Read> {}
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {

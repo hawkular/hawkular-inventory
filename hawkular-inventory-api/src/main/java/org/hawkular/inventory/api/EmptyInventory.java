@@ -325,6 +325,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public Data.ReadWrite<ResourceTypes.DataRole> data() {
+            return new DataReadWrite<>();
+        }
+
+        @Override
         public Relationships.ReadWrite relationships() {
             return new RelationshipsReadWrite();
         }
@@ -345,6 +350,11 @@ public class EmptyInventory implements Inventory {
         @Override
         public MetricTypes.ReadContained metricTypes() {
             return new MetricTypesReadContained();
+        }
+
+        @Override
+        public Data.Read<ResourceTypes.DataRole> data() {
+            return new DataRead<>();
         }
 
         @Override
@@ -1108,8 +1118,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.ReadWrite data() {
-            return new DataReadWrite();
+        public Data.ReadWrite<Resources.DataRole> data() {
+            return new DataReadWrite<>();
         }
 
     }
@@ -1152,8 +1162,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Read data() {
-            return new DataRead();
+        public Data.Read<Resources.DataRole> data() {
+            return new DataRead<>();
         }
 
     }
@@ -1187,7 +1197,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class DataRead implements Data.Read {
+    public static class DataRead<Role extends DataEntity.Role> implements Data.Read<Role> {
 
         @Override
         public Data.Multiple getAll(Filter[][] filters) {
@@ -1195,12 +1205,12 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Single get(DataEntity.Role ignored) throws EntityNotFoundException {
+        public Data.Single get(Role ignored) throws EntityNotFoundException {
             return new DatasSingle();
         }
     }
 
-    public static class DataReadWrite implements Data.ReadWrite {
+    public static class DataReadWrite<Role extends DataEntity.Role> implements Data.ReadWrite<Role> {
 
         @Override
         public Data.Multiple getAll(Filter[][] filters) {
@@ -1208,22 +1218,22 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Single get(DataEntity.Role ignored) throws EntityNotFoundException {
+        public Data.Single get(Role ignored) throws EntityNotFoundException {
             return new DatasSingle();
         }
 
         @Override
-        public Data.Single create(DataEntity.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Data.Single create(DataEntity.Blueprint<Role> blueprint) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void update(DataEntity.Role ignored, DataEntity.Update update) throws EntityNotFoundException {
+        public void update(Role ignored, DataEntity.Update update) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void delete(DataEntity.Role ignored) throws EntityNotFoundException {
+        public void delete(Role ignored) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }

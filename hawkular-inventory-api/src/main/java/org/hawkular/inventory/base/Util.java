@@ -27,6 +27,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -209,7 +210,7 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
-            TraversalContext<BE, E> context, Query entityQuery, U update) {
+            TraversalContext<BE, E> context, Query entityQuery, U update, BiConsumer<BE, U> preUpdateCheck) {
 
         BE updated = runInTransaction(context, false, (t) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
@@ -223,6 +224,10 @@ final class Util {
             }
 
             BE toUpdate = entities.get(0);
+
+            if (preUpdateCheck != null) {
+                preUpdateCheck.accept(toUpdate, update);
+            }
 
             context.backend.update(toUpdate, update);
             context.backend.commit(t);

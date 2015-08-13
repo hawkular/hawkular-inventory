@@ -97,7 +97,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Element find(CanonicalPath element) throws ElementNotFoundException {
-        HawkularPipeline<?, ? extends Element> q = translate(Query.to(element));
+        HawkularPipeline<?, ? extends Element> q = translate(null, Query.to(element));
         if (!q.hasNext()) {
             throw new ElementNotFoundException();
         } else {
@@ -106,17 +106,25 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Page<Element> query(Query query, Pager pager) {
-        HawkularPipeline<?, ? extends Element> q = translate(query);
+    public Page<Element> traverse(Element startingPoint, Query query, Pager pager) {
+        HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
 
         q.counter("total").page(pager);
 
         return new Page<>(q.cast(Element.class).toList(), pager, q.getCount("total"));
     }
 
-    private HawkularPipeline<?, ? extends Element> translate(Query query) {
+    @Override
+    public Page<Element> query(Query query, Pager pager) {
+        return traverse(null, query, pager);
+    }
+
+    private HawkularPipeline<?, ? extends Element> translate(Element startingPoint, Query query) {
         HawkularPipeline<?, ? extends Element> q;
-        if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+
+        if (startingPoint != null) {
+            q = new HawkularPipeline<>(startingPoint);
+        } else if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
             q = new HawkularPipeline<>(context.getGraph()).E();
         } else {
             q = new HawkularPipeline<>(context.getGraph()).V();

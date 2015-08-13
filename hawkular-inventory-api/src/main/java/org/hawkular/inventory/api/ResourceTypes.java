@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 
@@ -31,7 +32,11 @@ public final class ResourceTypes {
 
     }
 
-    private interface BrowserBase<Resources, MetricTypes> {
+    public enum DataRole implements DataEntity.Role {
+        configurationSchema, connectionConfigurationSchema
+    }
+
+    private interface BrowserBase<Resources, MetricTypes, Data> {
         /**
          * @return access to resources defined by the resource type(s)
          */
@@ -41,13 +46,18 @@ public final class ResourceTypes {
          * @return access to metrics owned by the resource type(s)
          */
         MetricTypes metricTypes();
+
+        /**
+         * @return access to the data associated with the resource type.
+         */
+        Data data();
     }
 
     /**
      * Interface for accessing a single resource type in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
-            BrowserBase<Resources.Read, MetricTypes.ReadAssociate> {}
+            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, Data.ReadWrite<DataRole>> {}
 
     /**
      * Interface for traversing over a set of resource types.
@@ -57,7 +67,7 @@ public final class ResourceTypes {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<ResourceType>,
-            BrowserBase<Resources.Read, MetricTypes.ReadContained> {}
+            BrowserBase<Resources.Read, MetricTypes.ReadContained, Data.Read<DataRole>> {}
 
     /**
      * Provides read-only access to resource types.
