@@ -83,7 +83,6 @@ public abstract class Path {
 
     public static final char TYPE_DELIM = ';';
     public static final char PATH_DELIM = '/';
-    public static final char ESCAPE_CHAR = '\\';
 
     //all path instances created from this one in the up(), down() and *iterator() methods will share this list
     //and will only differ in their "myIdx" field.
@@ -434,7 +433,7 @@ public abstract class Path {
         abstract Set<String> getValidTypeName();
     }
 
-    protected static class ParsingProgress {
+    private static class ParsingProgress {
         private final String source;
         private int pos;
 
@@ -473,9 +472,7 @@ public abstract class Path {
 
             //0 = reading type ordinal
             //1 = reading id
-            //2 = reading escape char
             int state = 0;
-            int stateBeforeEscapeChar = -1;
 
             loop:
             while (!progress.isFinished()) {
@@ -498,35 +495,17 @@ public abstract class Path {
                                 currentTypeString = currentId.toString();
                                 currentId.delete(0, currentId.length());
                                 break loop;
-                            case ESCAPE_CHAR:
-                                state = 2; // reading escape char
-                                stateBeforeEscapeChar = 0;
-                                break;
                             default:
                                 currentId.append(c);
                         }
                         break;
                     case 1: //reading id
                         switch (c) {
-                            case ESCAPE_CHAR:
-                                state = 2; // reading escape char
-                                stateBeforeEscapeChar = 1;
-                                break;
                             case PATH_DELIM:
-                                if (currentId.length() == 0) {
-                                    throw new IllegalArgumentException("Unspecified entity id at pos " +
-                                            progress.getPos() + " in \"" + progress.getSource() + "\".");
-                                }
-
                                 break loop;
                             default:
                                 currentId.append(c);
                         }
-                        break;
-                    case 2: //reading escape char
-                        currentId.append(c);
-                        state = stateBeforeEscapeChar;
-                        stateBeforeEscapeChar = -1;
                         break;
                 }
             }
@@ -536,7 +515,15 @@ public abstract class Path {
             if (currentIdString.isEmpty()) {
                 currentIdString = currentTypeString;
                 currentTypeString = null;
+
+                //if we saw a type delimiter but then found no other id characters then consider the type delimiter part
+                //of the ID
+                if (state == 1) {
+                    currentIdString += TYPE_DELIM;
+                }
             }
+
+            currentIdString = PathSegmentCodec.decode(currentIdString);
 
             Segment ret = typeProvider.deduceSegment(currentTypeString, currentIdString, progress.isFinished());
 
@@ -575,13 +562,7 @@ public abstract class Path {
                         bld.append(TYPE_DELIM);
                     }
 
-                    for (int j = 0; j < seg.getElementId().length(); ++j) {
-                        char c = seg.getElementId().charAt(j);
-                        if (c == TYPE_DELIM || c == PATH_DELIM || c == ESCAPE_CHAR) {
-                            bld.append(ESCAPE_CHAR);
-                        }
-                        bld.append(c);
-                    }
+                    bld.append(PathSegmentCodec.encode(seg.getElementId()));
                 }
                 bld.append(PATH_DELIM);
             }
@@ -654,7 +635,8 @@ public abstract class Path {
 
         @Override
         public String toString() {
-            return "Segment[" + "entityId='" + entityId + '\'' + ", entityType=" + elementType.getSimpleName() + ']';
+            return "Segment[" + "entityId='" + entityId + '\'' + ", entityType="
+                    + (elementType == null ? "null" : elementType.getSimpleName()) + ']';
         }
     }
 

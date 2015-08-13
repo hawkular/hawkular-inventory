@@ -28,6 +28,7 @@ import java.util.Collection;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -41,7 +42,6 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -50,7 +50,6 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
@@ -111,7 +110,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response addResource(@PathParam("environmentId") String environmentId,
-            @PathParam("parentPath") String parentPath, @ApiParam(required = true) Resource.Blueprint resource,
+            @Encoded @PathParam("parentPath") String parentPath, @ApiParam(required = true) Resource.Blueprint resource,
             @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
@@ -165,7 +164,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response addFeedResource(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("parentPath") String parentPath,
+            @PathParam("feedId") String feedId, @Encoded @PathParam("parentPath") String parentPath,
             @ApiParam(required = true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
@@ -239,9 +238,9 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Resource getResource(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath) {
-        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessResources()
-                .get(resourcePath).entity();
+            @Encoded @PathParam("resourcePath") String resourcePath) {
+        CanonicalPath res = composeCanonicalPath(getTenantId(), environmentId, null, resourcePath);
+        return inventory.inspect(res, Resources.Single.class).entity();
     }
 
     @GET
@@ -254,9 +253,9 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Resource getResource(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath) {
-        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId).resources()
-                .get(resourcePath).entity();
+            @Encoded @PathParam("resourcePath") String resourcePath) {
+        CanonicalPath res = composeCanonicalPath(getTenantId(), environmentId, feedId, resourcePath);
+        return inventory.inspect(res, Resources.Single.class).entity();
     }
 
     @GET
@@ -268,7 +267,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response getChildren(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+            @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -290,7 +289,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response getChildren(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+            @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -312,7 +311,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response getParents(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+            @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -334,7 +333,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response getParents(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+            @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -357,7 +356,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Resource getParent(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath) {
+            @Encoded @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
@@ -376,7 +375,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Resource getParent(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath) {
+            @Encoded @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
@@ -394,15 +393,19 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response associateChildren(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @ApiParam("resources") Collection<Path> resources) {
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @ApiParam("resources") Collection<String> resources) {
 
         String tenantId = getTenantId();
+
+        CanonicalPath tenantPath = CanonicalPath.of().tenant(tenantId).get();
 
         CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
 
-        resources.forEach(access::associate);
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+                .forEach(access::associate);
 
         return Response.noContent().build();
     }
@@ -416,21 +419,87 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response associateChildren(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @ApiParam("resources") Collection<Path> resources) {
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
+            @ApiParam("resources") Collection<String> resources) {
 
         String tenantId = getTenantId();
+
+        CanonicalPath tenantPath = CanonicalPath.of().tenant(tenantId).get();
 
         CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
 
-        resources.forEach(access::associate);
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+                .forEach(access::associate);
 
         return Response.noContent().build();
     }
 
-    @SuppressWarnings("unchecked")
+    @DELETE
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/children/{childPath:.+}")
+    @ApiOperation("Disassociates given child resource from given resource. The the resource doesn't own the child, " +
+            "the child will no longer be considered a child of the resource, otherwise an error will be returned.")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "environment, the parent resource or the child resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response disassociateChild(@PathParam("environmentId") String environmentId,
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("childPath") String childPath,
+            @QueryParam("canonical") @DefaultValue("false") boolean isCanonical) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath tenantPath = CanonicalPath.of().tenant(tenantId).get();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
+
+        if (isCanonical) {
+            childPath = "/" + childPath;
+        }
+
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+
+        inventory.inspect(parent, Resources.Single.class).allChildren().disassociate(child);
+
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/children/{childPath:.+}")
+    @ApiOperation("Disassociates given child resource from given resource. The the resource doesn't own the child, " +
+            "the child will no longer be considered a child of the resource, otherwise an error will be returned.")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "environment, feed, the parent resource or the child resource not " +
+                    "found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response disassociateChild(@PathParam("environmentId") String environmentId,
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("childPath") String childPath,
+            @QueryParam("canonical") @DefaultValue("false") boolean isCanonical) {
+
+        String tenantId = getTenantId();
+
+        CanonicalPath tenantPath = CanonicalPath.of().tenant(tenantId).get();
+
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        if (isCanonical) {
+            childPath = "/" + childPath;
+        }
+
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+
+        inventory.inspect(parent, Resources.Single.class).allChildren().disassociate(child);
+
+        return Response.noContent().build();
+    }
+
+
     @PUT
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}")
     @ApiOperation("Update a resource type")
@@ -441,7 +510,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @ApiParam(required = true) Resource.Update update) {
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @ApiParam(required = true) Resource.Update update) {
 
         String tenantId = getTenantId();
 
@@ -451,7 +521,7 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(resource, ResolvableToSingle.class).update(update);
+        inventory.inspect(resource, Resources.Single.class).update(update);
 
         return Response.noContent().build();
     }
@@ -466,7 +536,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath, @ApiParam(required = true) Resource.Update update) {
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @ApiParam(required = true) Resource.Update update) {
 
         String tenantId = getTenantId();
 
@@ -491,7 +562,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteResource(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath) {
+            @Encoded @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
@@ -516,7 +587,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteResource(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("resourcePath") String resourcePath) {
+            @Encoded @PathParam("resourcePath") String resourcePath) {
 
         String tenantId = getTenantId();
 
@@ -541,7 +612,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("resourcePath") String resourcePath,
             @ApiParam("A list of paths to metrics to be associated with the resource. They can either be canonical or" +
                     " relative to the resource.") Collection<String> metricPaths) {
 
@@ -754,7 +825,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
             Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
@@ -785,7 +856,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
-            @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
+            @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentID, null, resourcePath);
         Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
                 extractPaging(uriInfo));
@@ -803,7 +874,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
             @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentId, feedId, resourcePath);
         Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
@@ -823,10 +894,9 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
-            @QueryParam("canonical") @DefaultValue("false")
-            @ApiParam("True if metric path should be considered canonical, false by default.")
-            boolean isCanonical) {
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+    @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
 
@@ -859,8 +929,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
     @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
@@ -893,8 +963,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("resourcePath") String resourcePath, @PathParam("metricPath") String metricPath,
-            @QueryParam("canonical") @DefaultValue("false")
+            @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
             @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
@@ -932,8 +1002,8 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
+            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
+            @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
     @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
 
         String tenantId = getTenantId();
@@ -961,28 +1031,14 @@ public class RestResources extends RestBase {
     }
 
     private CanonicalPath composeCanonicalPath(String tenantId, String envId, String feedId, String resourcePath) {
-        CanonicalPath.Extender bld = CanonicalPath.empty().extend(Tenant.class, tenantId)
+        CanonicalPath.Extender parent = CanonicalPath.empty().extend(Tenant.class, tenantId)
                 .extend(Environment.class, envId);
 
         if (feedId != null) {
-            bld = bld.extend(Feed.class, feedId);
+            parent = parent.extend(Feed.class, feedId);
         }
 
-        // split on every slash that is not preceded by the backward slash (escaped slash)
-//        for (String rid : resourcePath.split("(?<=[^\\\\])/")) {
-            bld = bld.extend(Resource.class, resourcePath);
-//        }
-
-        return bld.get();
-    }
-
-    private RelativePath getResourcePath(String path) {
-        RelativePath.Extender ret = RelativePath.empty();
-
-        for (String s : path.split("(?<=[^\\\\])/")) {
-            ret.extend(Resource.class, s);
-        }
-
-        return ret.get();
+        return CanonicalPath.fromPartiallyUntypedString(parent.get().toString() + "/" + resourcePath, parent.get(),
+                Resource.class);
     }
 }

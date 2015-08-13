@@ -43,7 +43,7 @@ final class ResponseUtil {
      * @return the response builder with status 201 and location set to the entity with the provided id.
      */
     public static Response.ResponseBuilder created(UriInfo info, String id) {
-        return Response.status(Response.Status.CREATED).location(info.getRequestUriBuilder().path(id).build());
+        return Response.status(Response.Status.CREATED).location(info.getRequestUriBuilder().segment(id).build());
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
