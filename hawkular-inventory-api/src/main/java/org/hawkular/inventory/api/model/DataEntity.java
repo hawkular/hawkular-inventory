@@ -87,7 +87,7 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
         }
 
         // this is needed for Jackson deserialization
-        public Blueprint() {
+        private Blueprint() {
             this(null, null, null);
         }
 
@@ -143,7 +143,7 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
         }
 
         // this is needed for Jackson deserialization
-        public Update() {
+        private Update() {
             this(null, null);
         }
 
