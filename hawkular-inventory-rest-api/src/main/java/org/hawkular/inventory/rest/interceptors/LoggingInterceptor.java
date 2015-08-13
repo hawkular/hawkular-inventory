@@ -21,6 +21,7 @@ import static org.hawkular.inventory.rest.RestApiLogger.REQUESTS_LOGGER;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 import javax.ws.rs.container.ContainerRequestContext;
@@ -31,6 +32,7 @@ import javax.ws.rs.ext.Provider;
 import org.apache.commons.io.IOUtils;
 import org.hawkular.inventory.rest.json.JacksonConfig;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
+import org.jboss.resteasy.core.interception.PostMatchContainerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -58,6 +60,7 @@ public class LoggingInterceptor implements ContainerRequestFilter {
             for (MultivaluedMap.Entry<String, List<String>> header : headers.entrySet()) {
                 headersStr.append(header.getKey()).append(": ").append(header.getValue()).append('\n');
             }
+
             String json = null;
             if ("POST".equals(method) || "PUT".equals(method)) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -68,7 +71,12 @@ public class LoggingInterceptor implements ContainerRequestFilter {
                 json = MAPPER.writeValueAsString(jsonObject);
                 containerRequestContext.setEntityStream(new ByteArrayInputStream(jsonBytes));
             }
-            REQUESTS_LOGGER.restCall(method, url, headersStr.toString(), json == null ? "empty" : json);
+            PostMatchContainerRequestContext pmContext = (PostMatchContainerRequestContext) containerRequestContext;
+            // this should be safe, because if some calling non-existent api the javax.ws.rs.NotFoundException should
+            // be already thrown and this interceptor isn't triggered
+            Method javaMethod = pmContext.getResourceMethod().getMethod();
+            REQUESTS_LOGGER.restCall(method, url, headersStr.toString(), json == null ? "empty" : json,
+                    javaMethod.toGenericString());
         }
     }
 }

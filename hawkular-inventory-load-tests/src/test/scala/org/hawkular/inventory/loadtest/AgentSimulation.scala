@@ -95,11 +95,11 @@ class AgentSimulation extends Simulation {
     }
   """
 
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTE", "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTES", "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
   def metricTypeJson(id: String): String = s"""
     {
       "id": "metricType-$id",
-      "unit": "BYTE",
+      "unit": "BYTES",
       "type": "GAUGE",
       "properties": {
         "a": "b"
