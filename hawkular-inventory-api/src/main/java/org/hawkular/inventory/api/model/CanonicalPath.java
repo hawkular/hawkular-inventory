@@ -68,6 +68,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
+        VALID_PROGRESSIONS.put(ResourceType.class, Collections.singletonList(DataEntity.class));
         VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
         VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));

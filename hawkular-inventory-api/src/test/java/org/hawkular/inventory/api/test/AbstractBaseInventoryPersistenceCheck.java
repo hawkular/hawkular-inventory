@@ -30,6 +30,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
+import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
 import static org.hawkular.inventory.api.Resources.DataRole.configuration;
 import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
@@ -68,8 +69,10 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
@@ -322,6 +325,46 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .feedlessResources().get("playroom1").data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
+        //create some config definitions...
+        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+                .create(ResourceType.Blueprint.builder().withId("Person").build()).data().create(DataEntity.Blueprint
+                .<ResourceTypes.DataRole>builder().withRole(configurationSchema).withValue(StructuredData.get().map()
+                        .putString("title", "Person")
+                        .putString("description", "Utterly complete description of a human.")
+                        .putString("type", "object")
+                        .putMap("properties")
+                        /**/.putMap("firstName")
+                        /**//**/.putString("type", "string")
+                        /**/.closeMap()
+                        /**/.putMap("lastName")
+                        /**//**/.putString("type", "string")
+                        /**/.closeMap()
+                        /**/.putMap("age")
+                        /**//**/.putString("description", "Age in years")
+                        /**//**/.putString("type", "integer")
+                        /**//**/.putIntegral("minimum", 0)
+                        /**/.closeMap()
+                        .closeMap()
+                        .putList("required")
+                        /**/.addString("firstName")
+                        /**/.addString("lastName")
+                        .closeList()
+                        .build()).build());
+
+        //now create some resources with configs
+        Resources.Single people = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .feedlessResources()
+                .create(Resource.Blueprint.builder().withId("people").withResourceTypePath("/Person").build());
+
+        people.containedChildren().create(Resource.Blueprint.builder().withId("Alois").withResourceTypePath("/Person")
+                .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
+                .withValue(StructuredData.get().map().putString("firstName", "Alois").putString("lastName", "Jirasek")
+                        .build()).build());
+
+        people.containedChildren().create(Resource.Blueprint.builder().withId("Hynek").withResourceTypePath("/Person")
+                .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
+                .withValue(StructuredData.get().map().putString("firstName", "Hynek").putString("lastName", "Macha")
+                        .build()).build());
     }
 
     private void teardownData() throws Exception {
@@ -493,7 +536,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .accept(kids);
 
         kids = inventory.tenants().getAll().feedlessResourceTypes().getAll(asTargetBy("contains"));
-        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(3).apply(ResourceType.class).apply(parents)
+        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(4).apply(ResourceType.class).apply(parents)
                 .accept(kids);
 
         kids = inventory.tenants().getAll().feedlessMetricTypes().getAll(asTargetBy("contains"));
@@ -508,7 +551,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         kids = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll(
                 asTargetBy("contains"));
-        testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Resource.class).apply(parents)
+        testHelper.apply(2).apply(Environment.class).apply("contains").apply(4).apply(Resource.class).apply(parents)
                 .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(by("contains"));
@@ -647,7 +690,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 (contains).environments().getAll().relationships().getAll(RelationWith
                 .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
                 .entities();
-        assert rels != null && rels.size() == 6 : "There should be 6 relationships conforming the filters";
+        assert rels != null && rels.size() == 7 : "There should be 6 relationships conforming the filters";
         assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getSegment().getElementId())
                 || "production".equals(rel.getSource().getSegment().getElementId()))
                 : "Source should be either 'test' or 'production'";
@@ -758,7 +801,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Playroom");
 
         Query query = Query.path().with(type(ResourceType.class)).get();
-        assert 3 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).size();
+        assert 4 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).size();
     }
 
     @Test
@@ -847,7 +890,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(9, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(12, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).size());
     }
 
@@ -918,7 +961,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void queryMultipleResourceTypes() throws Exception {
         Set<ResourceType> types = inventory.tenants().getAll().feedlessResourceTypes().getAll().entities();
-        assert types.size() == 3;
+        assert types.size() == 4;
     }
 
     @Test
@@ -930,7 +973,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void queryMultipleResources() throws Exception {
         Set<Resource> rs = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll().entities();
-        assert rs.size() == 3;
+        assert rs.size() == 4;
     }
 
     @Test
@@ -1635,7 +1678,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
         Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
         Set<E> rels = backend.getRelationships(entity, both);
-        Assert.assertEquals(3, rels.size());
+        Assert.assertEquals(4, rels.size());
 
         Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
                 Relationship.class));
@@ -1909,6 +1952,46 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         portion = config.flatData(RelativePath.to().structuredData().key("primitives").get());
         //noinspection AssertEqualsBetweenInconvertibleTypes
         Assert.assertEquals(Collections.emptyList(), portion.getValue());
+    }
+
+    @Test
+    public void testCreateInvalidConfiguration() throws Exception {
+        Resources.Single res = inventory.inspect(CanonicalPath.fromString("/t;com.acme.tenant/e;production/r;people"),
+                Resources.Single.class);
+
+        try {
+            res.data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
+                    .withRole(Resources.DataRole.configuration).withValue(StructuredData.get().map()
+                            .putBool("firstName", false).build()).build());
+            Assert.fail("Creating a config that doesn't conform to the schema shouldn't be possible.");
+        } catch (ValidationException e) {
+            //good, we should get 2 errors - missing last name and invalid value type on the firstName
+            Assert.assertEquals(2, e.getMessages().size());
+            Assert.assertEquals(CanonicalPath.fromString("/t;com.acme.tenant/e;production/r;people/d;configuration"),
+                    e.getDataPath());
+            Assert.assertEquals("ERROR", e.getMessages().get(0).getSeverity());
+            Assert.assertEquals("ERROR", e.getMessages().get(1).getSeverity());
+        }
+    }
+
+    @Test
+    public void testUpdateWithInvalidConfiguration() throws Exception {
+        Resources.Single res = inventory.inspect(
+                CanonicalPath.fromString("/t;com.acme.tenant/e;production/r;people/r;Alois"), Resources.Single.class);
+
+        try {
+            res.data().get(configuration).update(DataEntity.Update.builder().withValue(StructuredData.get().map()
+                    .putBool("firstName", false).build()).build());
+            Assert.fail("Updating a config that doesn't conform to the schema shouldn't be possible.");
+        } catch (ValidationException e) {
+            //good, we should get 2 errors - missing last name and invalid value type on the firstName
+            Assert.assertEquals(2, e.getMessages().size());
+            Assert.assertEquals(CanonicalPath
+                            .fromString("/t;com.acme.tenant/e;production/r;people/r;Alois/d;configuration"),
+                    e.getDataPath());
+            Assert.assertEquals("ERROR", e.getMessages().get(0).getSeverity());
+            Assert.assertEquals("ERROR", e.getMessages().get(1).getSeverity());
+        }
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

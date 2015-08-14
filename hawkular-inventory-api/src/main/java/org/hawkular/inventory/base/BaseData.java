@@ -248,7 +248,7 @@ public final class BaseData {
             if (role == Resources.DataRole.configuration) {
                 throwIfInvalidOwnerType(role, ownerPath, Resource.class);
 
-                validateIfSchemaFound(context, dataEntity, Query.path().with(
+                validateIfSchemaFound(context, data, dataEntity, Query.path().with(
                         //up to the containing resource
                         Related.asTargetBy(contains),
                         //up to the defining resource type
@@ -260,7 +260,7 @@ public final class BaseData {
             } else if (role == Resources.DataRole.connectionConfiguration) {
                 throwIfInvalidOwnerType(role, ownerPath, Resource.class);
 
-                validateIfSchemaFound(context, dataEntity, Query.path().with(
+                validateIfSchemaFound(context, data, dataEntity, Query.path().with(
                         //up to the containing resource
                         Related.asTargetBy(contains),
                         //up to the defining resource type
@@ -275,20 +275,19 @@ public final class BaseData {
 
                 try {
                     JsonNode schema = new JsonNodeReader(new ObjectMapper())
-                            .fromInputStream(BaseData.class.getClassLoader()
-                                    .getResourceAsStream("/json-meta-schema.json"));
+                            .fromInputStream(BaseData.class.getResourceAsStream("/json-meta-schema.json"));
 
-                    DataEntity dataEntityObject = context.backend.convert(dataEntity, DataEntity.class);
+                    CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
 
-                    validate(dataEntityObject.getPath(), convert(dataEntityObject.getValue()), schema);
+                    validate(dataPath, convert(data), schema);
                 } catch (IOException e) {
                     throw new IllegalStateException("Could not load the embedded JSON Schema meta-schema.");
                 }
             }
         }
 
-        private static <BE> void validateIfSchemaFound(TraversalContext<BE, DataEntity> context, BE dataEntity,
-                Query query) {
+        private static <BE> void validateIfSchemaFound(TraversalContext<BE, DataEntity> context, StructuredData data,
+                BE dataEntity, Query query) {
 
             Page<BE> possibleSchema = context.backend.traverse(dataEntity, query, Pager.single());
             if (possibleSchema.isEmpty()) {
@@ -299,10 +298,9 @@ public final class BaseData {
             DataEntity schemaEntity = context.backend.convert(possibleSchema.get(0),
                     DataEntity.class);
 
-            DataEntity dataEntityObject = context.backend.convert(dataEntity, DataEntity.class);
+            CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
 
-            validate(dataEntityObject.getPath(), convert(dataEntityObject.getValue()),
-                    convert(schemaEntity.getValue()));
+            validate(dataPath, convert(data), convert(schemaEntity.getValue()));
         }
 
         private static void validate(CanonicalPath dataPath, JsonNode dataNode, JsonNode schemaNode) {
@@ -311,7 +309,7 @@ public final class BaseData {
                 if (!report.isSuccess()) {
                     List<ValidationMessage> messages = new ArrayList<>();
                     report.forEach((m) ->
-                            messages.add(new ValidationMessage(m.getLogLevel().name(), m.getMessage())));
+                            messages.add(new ValidationMessage(m.getLogLevel().name(), m.toString())));
 
                     throw new ValidationException(dataPath, messages, null);
                 }

@@ -68,7 +68,7 @@ public class ValidationException extends InventoryException {
         private final String severity;
         private final String message;
 
-        public ValidationMessage(String message, String severity) {
+        public ValidationMessage(String severity, String message) {
             this.message = message;
             this.severity = severity;
         }
