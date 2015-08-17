@@ -239,7 +239,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Data.ReadWrite data() {
+        public Data.ReadWrite<Resources.DataRole> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get());
         }
 
@@ -273,7 +273,7 @@ public final class BaseResources {
         }
 
         @Override
-        public Data.Read data() {
+        public Data.Read<Resources.DataRole> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get());
         }
 

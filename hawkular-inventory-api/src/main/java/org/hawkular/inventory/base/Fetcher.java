@@ -85,12 +85,36 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     @Override
     public void delete() {
-        Util.delete(context, context.select().get(), null);
+        Util.delete(context, context.select().get(), this::cleanup);
     }
 
     @Override
     public void update(U u) throws EntityNotFoundException, RelationNotFoundException {
-        Util.update(context, context.select().get(), u);
+        Util.update(context, context.select().get(), u, this::preUpdate);
+    }
+
+    /**
+     * Serves the same purpose as {@link Mutator#cleanup(Object, Object)} and is called during the {@link #delete()}
+     * method inside the transaction.
+     *
+     * @param deletedEntity the backend representation of the deleted entity
+     */
+    protected void cleanup(BE deletedEntity) {
+
+    }
+
+    /**
+     * Hook to be run prior to update. Serves the same purpose as
+     * {@link Mutator#preUpdate(Object, Object, AbstractElement.Update)} but is not supplied the id object that can be
+     * determined from the updated entity.
+     *
+     * <p>By default, this does nothing.
+     *
+     * @param updatedEntity the backend representation of the updated entity
+     * @param update        the update object
+     */
+    protected void preUpdate(BE updatedEntity, U update) {
+
     }
 
     @Override

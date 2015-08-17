@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
@@ -269,7 +270,7 @@ public class SerializationTest {
     @Test
     public void testDataEntity() throws Exception {
         test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
-                DataEntity.Role.connectionConfiguration,
+                Resources.DataRole.connectionConfiguration,
                 StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 

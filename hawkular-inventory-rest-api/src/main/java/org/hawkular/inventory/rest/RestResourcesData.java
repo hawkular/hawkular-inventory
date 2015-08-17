@@ -64,10 +64,9 @@ public class RestResourcesData extends RestResources {
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response createConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("feedId") String feedId,
-                                        @PathParam("resourcePath") String resourcePath,
-                                        @ApiParam(required = true) DataEntity.Blueprint configuration,
-                                        @Context UriInfo uriInfo) {
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @ApiParam(required = true) DataEntity.Blueprint<Resources.DataRole> configuration,
+            @Context UriInfo uriInfo) {
 
         return createConfigurationHelper(environmentId, feedId, resourcePath, configuration, uriInfo);
     }
@@ -82,15 +81,15 @@ public class RestResourcesData extends RestResources {
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response createConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("resourcePath") String resourcePath,
-                                        @ApiParam(required = true) DataEntity.Blueprint configuration,
-                                        @Context UriInfo uriInfo) {
+            @PathParam("resourcePath") String resourcePath,
+            @ApiParam(required = true) DataEntity.Blueprint<Resources.DataRole> configuration,
+            @Context UriInfo uriInfo) {
 
         return createConfigurationHelper(environmentId, null, resourcePath, configuration, uriInfo);
     }
 
     private Response createConfigurationHelper(String environmentId, String feedId, String resourcePath,
-                                               DataEntity.Blueprint configuration, UriInfo uriInfo) {
+            DataEntity.Blueprint<Resources.DataRole> configuration, UriInfo uriInfo) {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
@@ -114,7 +113,7 @@ public class RestResourcesData extends RestResources {
     public Response getConfiguration(@PathParam("environmentId") String environmentId,
                                      @PathParam("feedId") String feedId,
                                      @PathParam("resourcePath") String resourcePath,
-                                     @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType) {
+            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType) {
 
         return getConfigurationHelper(environmentId, feedId, resourcePath, dataType);
     }
@@ -130,13 +129,13 @@ public class RestResourcesData extends RestResources {
                   })
     public Response getConfiguration(@PathParam("environmentId") String environmentId,
                                      @PathParam("resourcePath") String resourcePath,
-                                     @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType) {
+            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType) {
 
         return getConfigurationHelper(environmentId, null, resourcePath, dataType);
     }
 
     private Response getConfigurationHelper(String environmentId, String feedId, String resourcePath,
-                                            DataEntity.Role dataType) {
+            Resources.DataRole dataType) {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
@@ -155,10 +154,9 @@ public class RestResourcesData extends RestResources {
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response updateConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("feedId") String feedId,
-                                        @PathParam("resourcePath") String resourcePath,
-                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
-                                        @ApiParam(required = true) DataEntity.Update configuration) {
+            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
+            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType,
+            @ApiParam(required = true) DataEntity.Update configuration) {
 
         return updateConfigurationHelper(environmentId, feedId, resourcePath, dataType, configuration);
     }
@@ -173,15 +171,15 @@ public class RestResourcesData extends RestResources {
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response updateConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("resourcePath") String resourcePath,
-                                        @DefaultValue("configuration") @QueryParam("dataType") DataEntity.Role dataType,
-                                        @ApiParam(required = true) DataEntity.Update configuration) {
+            @PathParam("resourcePath") String resourcePath,
+            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType,
+            @ApiParam(required = true) DataEntity.Update configuration) {
 
         return updateConfigurationHelper(environmentId, null, resourcePath, dataType, configuration);
     }
 
     private Response updateConfigurationHelper(String environmentId, String feedId, String resourcePath,
-                                               DataEntity.Role dataType, DataEntity.Update configuration) {
+            Resources.DataRole dataType, DataEntity.Update configuration) {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
@@ -203,7 +201,7 @@ public class RestResourcesData extends RestResources {
                                         @PathParam("feedId") String feedId,
                                         @PathParam("resourcePath") String resourcePath,
                                         @DefaultValue("configuration") @QueryParam("dataType")
-                                        DataEntity.Role dataType) {
+                                        Resources.DataRole dataType) {
 
         return deleteConfigurationHelper(environmentId, feedId, resourcePath, dataType);
     }
@@ -220,13 +218,13 @@ public class RestResourcesData extends RestResources {
     public Response deleteConfiguration(@PathParam("environmentId") String environmentId,
                                         @PathParam("resourcePath") String resourcePath,
                                         @DefaultValue("configuration") @QueryParam("dataType")
-                                        DataEntity.Role dataType) {
+                                        Resources.DataRole dataType) {
 
         return deleteConfigurationHelper(environmentId, null, resourcePath, dataType);
     }
 
     private Response deleteConfigurationHelper(String environmentId, String feedId, String resourcePath,
-                                               DataEntity.Role dataType) {
+            Resources.DataRole dataType) {
         String tenantId = getTenantId();
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 

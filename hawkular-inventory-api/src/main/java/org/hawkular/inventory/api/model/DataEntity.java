@@ -16,7 +16,12 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Resources;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
@@ -27,7 +32,7 @@ import java.util.Map;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> {
+public class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     private final StructuredData value;
 
@@ -68,19 +73,54 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
                 valueOrDefault(u.getValue(), getValue()), u.getProperties()));
     }
 
-    public enum Role {
-        configuration, connectionConfiguration;
+    private static final class RoleInstanceHolder {
+        private static final HashMap<String, Role> instances;
+
+        static {
+            instances = new HashMap<>();
+            for (Resources.DataRole r : Resources.DataRole.values()) {
+                instances.put(r.name(), r);
+            }
+
+            for (ResourceTypes.DataRole r : ResourceTypes.DataRole.values()) {
+                instances.put(r.name(), r);
+            }
+        }
     }
 
-    public static final class Blueprint extends AbstractElement.Blueprint {
-        private final StructuredData value;
-        private final DataEntity.Role role;
-
-        public static Builder builder() {
-            return new Builder();
+    /**
+     * An interface a Data entity role must implement.
+     *
+     * <p>Data entity roles are supposed to be enums, but to ensure type safety, we have to have different enums for
+     * different entity types. I.e. resources can only have data of roles from the
+     * {@link org.hawkular.inventory.api.Resources.DataRole} enum and resource types only from
+     * {@link org.hawkular.inventory.api.ResourceTypes.DataRole} enum. To achieve this, the {@link DataEntity} class
+     * works with instances of this interface (which all the individual enums have to implement) and these enums have
+     * to be "registered" in the private class of data entity - {@code RoleInstanceHolder}. Because our data model is
+     * not extensible this is easily achieved.
+     */
+    public interface Role {
+        static Role valueOf(String name) {
+            return RoleInstanceHolder.instances.get(name);
         }
 
-        public Blueprint(DataEntity.Role role, StructuredData value, Map<String, Object> properties) {
+        static Role[] values() {
+            Collection<Role> values = RoleInstanceHolder.instances.values();
+            return values.toArray(new Role[values.size()]);
+        }
+
+        String name();
+    }
+
+    public static final class Blueprint<DataRole extends Role> extends AbstractElement.Blueprint {
+        private final StructuredData value;
+        private final DataRole role;
+
+        public static <R extends Role> Builder<R> builder() {
+            return new Builder<>();
+        }
+
+        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
             super(properties);
             this.role = role;
             this.value = value;
@@ -104,27 +144,27 @@ public class DataEntity extends Entity<DataEntity.Blueprint, DataEntity.Update> 
             return visitor.visitData(this, parameter);
         }
 
-        public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
+        public static final class Builder<R extends Role> extends Entity.Blueprint.Builder<Blueprint, Builder<R>> {
 
-            private DataEntity.Role role;
+            private R role;
             private StructuredData value;
 
-            public Builder withValue(StructuredData value) {
+            public Builder<R> withValue(StructuredData value) {
                 this.value = value;
                 return this;
             }
 
-            public Builder withRole(DataEntity.Role role) {
+            public Builder<R> withRole(R role) {
                 this.role = role;
                 return this;
             }
 
             @Override
-            public Blueprint build() {
+            public Blueprint<R> build() {
                 if (role == null) {
                     throw new NullPointerException("Data entity role not specified.");
                 }
-                return new Blueprint(role, value, properties);
+                return new Blueprint<>(role, value, properties);
             }
         }
     }

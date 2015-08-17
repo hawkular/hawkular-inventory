@@ -37,7 +37,7 @@ public interface ElementBlueprintVisitor<R, P> {
 
     R visitRelationship(Relationship.Blueprint relationship, P parameter);
 
-    R visitData(DataEntity.Blueprint data, P parameter);
+    R visitData(DataEntity.Blueprint<?> data, P parameter);
 
     R visitUnknown(Object blueprint, P parameter);
 
@@ -97,7 +97,7 @@ public interface ElementBlueprintVisitor<R, P> {
         }
 
         @Override
-        public R visitData(DataEntity.Blueprint data, P parameter) {
+        public R visitData(DataEntity.Blueprint<?> data, P parameter) {
             return defaultAction();
         }
 

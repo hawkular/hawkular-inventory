@@ -33,11 +33,17 @@ public final class Data {
 
     }
 
-    public interface Read extends ReadInterface<Single, Multiple, DataEntity.Role> {
+    public interface Read<Role extends DataEntity.Role> extends ReadInterface<Single, Multiple, Role> {
     }
 
-    public interface ReadWrite
-            extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint, Single, Multiple, DataEntity.Role> {
+    public interface ReadWrite<Role extends DataEntity.Role>
+            extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint<Role>, Single, Multiple, Role> {
+
+        @Override
+        Single create(DataEntity.Blueprint<Role> blueprint) throws EntityAlreadyExistsException, ValidationException;
+
+        @Override
+        void update(Role role, DataEntity.Update update) throws EntityNotFoundException, ValidationException;
     }
 
     public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update> {
@@ -95,6 +101,10 @@ public final class Data {
                 return false;
             }
         }
+
+        @Override
+        void update(DataEntity.Update update) throws EntityNotFoundException, RelationNotFoundException,
+                ValidationException;
     }
 
     public interface Multiple extends ResolvableToMany<DataEntity> {

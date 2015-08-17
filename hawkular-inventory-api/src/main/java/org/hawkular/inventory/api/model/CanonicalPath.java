@@ -68,6 +68,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
+        VALID_PROGRESSIONS.put(ResourceType.class, Collections.singletonList(DataEntity.class));
         VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
         VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
@@ -326,7 +327,8 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             return idIfTypeCorrect(getRoot(), Relationship.class);
         }
 
-        public DataEntity.Role getDataRole() {
+        @SuppressWarnings("unchecked")
+        public <R extends DataEntity.Role> R getDataRole() {
             CanonicalPath currentPath = CanonicalPath.this;
 
             //move up from the potential data path segments
@@ -337,7 +339,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             //now we should be at the data entity, which should contain our role
             String roleStr = idIfTypeCorrect(currentPath, DataEntity.class);
 
-            return roleStr == null ? null : DataEntity.Role.valueOf(roleStr);
+            return roleStr == null ? null : (R) DataEntity.Role.valueOf(roleStr);
         }
 
         private String idIfTypeCorrect(CanonicalPath path, Class<? extends AbstractElement<?, ?>> desiredType) {

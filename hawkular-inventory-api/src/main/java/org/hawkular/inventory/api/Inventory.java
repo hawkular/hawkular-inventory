@@ -378,9 +378,15 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitData(Void parameter) {
-                Resources.Single res = inspect(path.up(), Resources.Single.class);
+                if (path.ids().getResourceTypeId() == null) {
+                    Resources.Single res = inspect(path.up(), Resources.Single.class);
 
-                return accessInterface.cast(res.data().get(path.ids().getDataRole()));
+                    return accessInterface.cast(res.data().get(path.ids().getDataRole()));
+                } else {
+                    ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
+
+                    return accessInterface.cast(rt.data().get(path.ids().getDataRole()));
+                }
             }
 
             @Override

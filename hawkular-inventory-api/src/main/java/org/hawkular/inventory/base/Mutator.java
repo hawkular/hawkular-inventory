@@ -117,7 +117,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     public final void update(Id id, U update) throws EntityNotFoundException {
         Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.update(context, q, update);
+        Util.update(context, q, update, (e, u) -> preUpdate(id, e, u));
     }
 
     public final void delete(Id id) throws EntityNotFoundException {
@@ -136,6 +136,20 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param entityRepresentation the backend specific representation of the entity
      */
     protected void cleanup(Id id, BE entityRepresentation) {
+
+    }
+
+    /**
+     * A hook that can run additional logic inside the update transaction before anything has been persisted to the
+     * backend database.
+     *
+     * <p>By default, this does nothing
+     *
+     * @param id                   the id of the entity being updated
+     * @param entityRepresentation the backend representation of the updated entity
+     * @param update               the update object
+     */
+    protected void preUpdate(Id id, BE entityRepresentation, U update) {
 
     }
 
