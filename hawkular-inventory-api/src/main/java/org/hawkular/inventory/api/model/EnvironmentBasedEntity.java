@@ -42,6 +42,11 @@ public abstract class EnvironmentBasedEntity<B extends Entity.Blueprint, U exten
     }
 
     public String getEnvironmentId() {
-        return getPath().getRoot().down().getSegment().getElementId();
+        Path.Segment env = getPath().getRoot().down().getSegment();
+        if (env.getElementType().equals(Environment.class)) {
+            return env.getElementId();
+        }
+
+        return null;
     }
 }
