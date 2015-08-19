@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -367,8 +368,12 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitResourceType(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).feedlessResourceTypes()
-                        .get(path.ids().getResourceTypeId()));
+                Tenants.Single ten = tenants().get(path.ids().getTenantId());
+                return accessInterface.cast(path.ids().getFeedId() == null
+                        ? ten.feedlessResourceTypes().get(path.ids().getResourceTypeId())
+                        : ten.environments().get(path.ids().getEnvironmentId())
+                                .feeds().get(path.ids().getFeedId()).resourceTypes()
+                                .get(path.ids().getResourceTypeId()));
             }
 
             @Override
@@ -445,4 +450,7 @@ public interface Inventory extends AutoCloseable {
      */
     InputStream getGraphSON(String tenantId);
 
+    <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                  Relationships.Direction direction, Class<T> clazz,
+                                                                  String... relationshipNames);
 }

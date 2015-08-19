@@ -18,6 +18,7 @@ package org.hawkular.inventory.api;
 
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.hawkular.inventory.api.filters.Filter;
@@ -79,6 +80,13 @@ public class EmptyInventory implements Inventory {
 
     @Override
     public InputStream getGraphSON(String tenantId) {
+        throw entityNotFound(Tenant.class);
+    }
+
+    @Override
+    public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                         Relationships.Direction direction,
+                                                                         Class<T> clazz, String... relationshipNames) {
         throw entityNotFound(Tenant.class);
     }
 
