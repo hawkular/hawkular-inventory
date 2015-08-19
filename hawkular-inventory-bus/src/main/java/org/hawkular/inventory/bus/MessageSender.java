@@ -57,7 +57,7 @@ final class MessageSender {
                     new Endpoint(Endpoint.Type.TOPIC, topicName));
             messageProcessor.send(producerConnectionContext, message, headers);
 
-            Log.LOG.debugf("Sent message %s with headers %s to %s", message, headers,
+            Log.LOG.tracef("Sent message %s with headers %s to %s", message, headers,
                     producerConnectionContext.getDestination());
         } catch (JMSException e) {
             LOG.failedToSendMessage(message.toString());

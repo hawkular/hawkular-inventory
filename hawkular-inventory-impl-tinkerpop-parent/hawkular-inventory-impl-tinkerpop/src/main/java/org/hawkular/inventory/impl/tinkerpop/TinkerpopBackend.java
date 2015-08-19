@@ -1044,21 +1044,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     public InputStream getGraphSON(String tenantId) {
         PipedInputStream in = new PipedInputStream();
-        try {
-            PipedOutputStream out = new PipedOutputStream(in);
-            //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
-            new Thread(
-                    () -> {
-                        try {
-                            GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
-                        } catch (IOException e) {
-                            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
-                        }
-                    }
-            ).start();
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to create the GraphSON dump.", e);
-        }
+        //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
+        new Thread(() -> {
+            try (PipedOutputStream out = new PipedOutputStream(in);) {
+                GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to create the GraphSON dump.", e);
+            }
+        }).start();
         return in;
     }
 
