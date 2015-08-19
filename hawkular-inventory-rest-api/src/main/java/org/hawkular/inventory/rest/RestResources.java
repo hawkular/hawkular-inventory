@@ -23,7 +23,10 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -41,13 +44,16 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -274,6 +280,8 @@ public class RestResources extends RestBase {
 
         Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
 
+
+//        inventory.inspect(parent, Resources.Single.class).allChildren().get
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
@@ -609,5 +617,80 @@ public class RestResources extends RestBase {
 
         return CanonicalPath.fromPartiallyUntypedString(parent.get().toString() + "/" + resourcePath, parent.get(),
                 Resource.class);
+    }
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/recursiveChildren")
+    @ApiOperation("Recursively retrieves child resources of a resource of given type. Can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getRecursiveChildren(@PathParam("environmentId") String environmentId,
+                                @Encoded @PathParam("resourcePath") String resourcePath,
+                                @Encoded @QueryParam("resourceTypePath") String resourceTypePath,
+                                         @Context UriInfo uriInfo) {
+
+        List<Resource> ret = getRecursiveChildren(environmentId, null, resourcePath, resourceTypePath);
+        Page page = new Page(ret, extractPaging(uriInfo), ret.size());
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
+    }
+
+
+    @GET
+    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/recursiveChildren")
+    @ApiOperation("Recursively retrieves child resources of a resource of given type. Can be paged.")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "A list of child resources"),
+            @ApiResponse(code = 404, message = "environment or the parent resource not found"),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
+    })
+    public Response getRecursiveChildren(@PathParam("environmentId") String environmentId,
+                                         @PathParam("feedId") String feedId,
+                                @Encoded @PathParam("resourcePath") String resourcePath,
+                                @Encoded @QueryParam("resourceTypePath") String resourceTypePath,
+                                         @Context UriInfo uriInfo) {
+
+        List<Resource> ret = getRecursiveChildren(environmentId, feedId, resourcePath, resourceTypePath);
+        Page page = new Page(ret, extractPaging(uriInfo), ret.size());
+
+        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
+    }
+
+    private List<Resource> getRecursiveChildren(String environmentId, String feedId, String resourcePath,
+                                                String resourceTypePath) {
+        String tenantId = getTenantId();
+        CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+
+        ResourceType resourceType = null;
+        if (resourceTypePath != null) {
+            CanonicalPath resourceTypeCanPath = CanonicalPath.fromPartiallyUntypedString(resourceTypePath,
+                    CanonicalPath.of().tenant(tenantId).get(),
+                    ResourceType.class);
+            resourceType =  inventory.inspect(resourceTypeCanPath, ResourceTypes.Single.class).entity();
+        }
+
+        Iterator<Resource> itResources = inventory.getTransitiveClosureOver(parent,
+                Relationships.Direction.outgoing, Resource.class,
+                new String[]{Relationships.WellKnown.isParentOf.toString()});
+
+        List<Resource> ret = filterResources(itResources, resourceType);
+        return ret;
+    }
+
+
+    private List<Resource> filterResources(Iterator<Resource> itResources, ResourceType resourceType) {
+        List<Resource> ret = new ArrayList<>();
+
+        while (itResources.hasNext()) {
+            Resource resource = itResources.next();
+            if (null != resourceType && !resource.getType().getPath().equals(resourceType.getPath())) {
+                continue;
+            }
+            ret.add(resource);
+        }
+        return ret;
     }
 }

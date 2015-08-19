@@ -17,6 +17,7 @@
 package org.hawkular.inventory.rest;
 
 import java.io.InputStream;
+import java.util.Iterator;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -31,6 +32,8 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.cdi.Official;
 
@@ -111,6 +114,13 @@ public class AutoTenantInventoryProducer {
             @Override
             public InputStream getGraphSON(String tenantId) {
                 return inventory.getGraphSON(tenantId);
+            }
+
+            @Override
+            public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                                 Relationships.Direction direction,
+                                                                         Class<T> clazz, String... relationshipNames) {
+                return inventory.getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
             }
 
             @Override

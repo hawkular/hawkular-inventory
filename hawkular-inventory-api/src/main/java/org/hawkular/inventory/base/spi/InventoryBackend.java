@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
@@ -301,6 +302,9 @@ public interface InventoryBackend<E> extends AutoCloseable {
      */
     InputStream getGraphSON(String tenantId);
 
+    <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                  Relationships.Direction direction, Class<T> clazz,
+                                                                  String... relationshipNames);
     /**
      * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are
      * encouraged to inherit from this class and add additional information to it. The base inventory implementation

@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
@@ -50,6 +51,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -181,9 +183,34 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Iterator<Element> getTransitiveClosureOver(Element startingPoint, Relationships.Direction direction,
-            String... relationshipNames) {
+                                                      String... relationshipNames) {
+
+        return getTransitiveClosureOverImpl(startingPoint, direction, relationshipNames).iterator();
+    }
+
+    @Override
+    public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                         Relationships.Direction direction,
+                                                                         Class<T> clazz,
+                                                                         String... relationshipNames) {
+        try {
+            Element startingElement = find(startingPoint);
+            if (!(startingElement instanceof Vertex)) {
+                return Collections.<T>emptyList().iterator();
+            }
+
+            return getTransitiveClosureOverImpl(startingElement, direction, relationshipNames).stream()
+                    .map(vertex -> convert(vertex, clazz)).iterator();
+
+        } catch (ElementNotFoundException e) {
+            throw new EntityNotFoundException(clazz, null);
+        }
+    }
+
+    private List<Element> getTransitiveClosureOverImpl(Element startingPoint, Relationships.Direction direction,
+                                                       String... relationshipNames) {
         if (!(startingPoint instanceof Vertex)) {
-            return Collections.<Element>emptyList().iterator();
+            return Collections.<Element>emptyList();
         } else {
             HawkularPipeline<?, Element> ret = new HawkularPipeline<Element, Element>(startingPoint).as("start");
 
@@ -201,7 +228,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             //toList() is important as it ensures eager evaluation of the closure - the callers might modify the
             //conditions for the evaluation during the iteration which would skew the results.
-            return ret.loop("start", (x) -> true, (x) -> true).toList().iterator();
+            return ret.loop("start", (x) -> true, (x) -> true).toList();
         }
     }
 

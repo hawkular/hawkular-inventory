@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.util.Iterator;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
@@ -24,6 +25,8 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -116,4 +119,13 @@ public abstract class BaseInventory<E> implements Inventory {
     public InputStream getGraphSON(String tenantId) {
         return getBackend().getGraphSON(tenantId);
     }
+
+    @Override
+    public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+                                                                    Relationships.Direction direction, Class<T> clazz,
+                                                                    String... relationshipNames) {
+
+        return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+    }
+
 }
