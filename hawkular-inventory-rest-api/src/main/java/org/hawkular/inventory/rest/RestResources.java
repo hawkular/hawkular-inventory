@@ -629,10 +629,10 @@ public class RestResources extends RestBase {
     })
     public Response getRecursiveChildren(@PathParam("environmentId") String environmentId,
                                 @Encoded @PathParam("resourcePath") String resourcePath,
-                                @Encoded @QueryParam("resourceTypePath") String resourceTypePath,
+                                @Encoded @QueryParam("typeId") String resourceTypeId,
                                          @Context UriInfo uriInfo) {
 
-        List<Resource> ret = getRecursiveChildren(environmentId, null, resourcePath, resourceTypePath);
+        List<Resource> ret = getRecursiveChildren(environmentId, null, resourcePath, resourceTypeId, true);
         Page page = new Page(ret, extractPaging(uriInfo), ret.size());
 
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
@@ -650,25 +650,27 @@ public class RestResources extends RestBase {
     public Response getRecursiveChildren(@PathParam("environmentId") String environmentId,
                                          @PathParam("feedId") String feedId,
                                 @Encoded @PathParam("resourcePath") String resourcePath,
-                                @Encoded @QueryParam("resourceTypePath") String resourceTypePath,
+                                @Encoded @QueryParam("typeId") String resourceTypeId,
+                                         @QueryParam("feedlessType") @DefaultValue("false") boolean feedlesType,
                                          @Context UriInfo uriInfo) {
 
-        List<Resource> ret = getRecursiveChildren(environmentId, feedId, resourcePath, resourceTypePath);
+        List<Resource> ret = getRecursiveChildren(environmentId, feedId, resourcePath, resourceTypeId, feedlesType);
         Page page = new Page(ret, extractPaging(uriInfo), ret.size());
 
         return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
     }
 
     private List<Resource> getRecursiveChildren(String environmentId, String feedId, String resourcePath,
-                                                String resourceTypePath) {
+                                                String resourceTypeId, boolean feedlessType) {
         String tenantId = getTenantId();
         CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
         ResourceType resourceType = null;
-        if (resourceTypePath != null) {
-            CanonicalPath resourceTypeCanPath = CanonicalPath.fromPartiallyUntypedString(resourceTypePath,
-                    CanonicalPath.of().tenant(tenantId).get(),
-                    ResourceType.class);
+        if (null != resourceTypeId) {
+            CanonicalPath resourceTypeCanPath = feedlessType
+                    ? CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get()
+                    : CanonicalPath.of().tenant(tenantId).environment(environmentId).
+                            feed(feedId).resourceType(resourceTypeId).get();
             resourceType =  inventory.inspect(resourceTypeCanPath, ResourceTypes.Single.class).entity();
         }
 
