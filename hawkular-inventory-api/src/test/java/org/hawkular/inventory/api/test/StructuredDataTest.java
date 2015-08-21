@@ -218,5 +218,9 @@ public class StructuredDataTest {
         assertEquals(StructuredData.get().map().build(), map.update().toMap().clear().build());
         assertEquals(StructuredData.get().map().putBool("bool", true).build(),
                 map.update().toMap().remove("int").build());
+
+        assertEquals(StructuredData.get().map().putBool("bool", true).putIntegral("int", 1)
+                        .putMap("new key").putString("p1", "a1").closeMap().build(),
+                map.update().toMap().updateMap("new key").putString("p1", "a1").closeMap().build());
     }
 }
