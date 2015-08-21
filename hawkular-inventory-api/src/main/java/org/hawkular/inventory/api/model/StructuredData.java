@@ -753,7 +753,8 @@ public final class StructuredData {
 
         public InnerMapUpdater<This> updateMap(String key) {
             @SuppressWarnings("unchecked")
-            LinkedHashMap<String, StructuredData> map = this.map.get(key).value instanceof Map
+            LinkedHashMap<String, StructuredData> map =
+                    null != this.map.get(key) && this.map.get(key).value instanceof Map
                     ? new LinkedHashMap<>((Map<String, StructuredData>) this.map.get(key).value)
                     : new LinkedHashMap<>();
 
