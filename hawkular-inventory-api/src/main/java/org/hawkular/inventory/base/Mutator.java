@@ -25,7 +25,6 @@ import java.util.Collections;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -122,7 +121,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     public final void delete(Id id) throws EntityNotFoundException {
         Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.delete(context, q, PartiallyApplied.procedure(this::cleanup).first(id).asConsumer());
+        Util.delete(context, q, (e) -> cleanup(id, e));
     }
 
     /**

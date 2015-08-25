@@ -32,7 +32,7 @@ import org.hawkular.inventory.api.Resources;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
+public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     private final StructuredData value;
 
@@ -68,7 +68,7 @@ public class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Updat
     }
 
     @Override
-    public Updater<Update, ? extends AbstractElement<?, Update>> update() {
+    public Updater<Update, DataEntity> update() {
         return new Updater<>((u) -> new DataEntity(this.getPath().up(), this.getRole(),
                 valueOrDefault(u.getValue(), getValue()), u.getProperties()));
     }
@@ -122,6 +122,9 @@ public class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Updat
 
         public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
             super(properties);
+            if (value == null) {
+                value = StructuredData.get().undefined();
+            }
             this.role = role;
             this.value = value;
         }

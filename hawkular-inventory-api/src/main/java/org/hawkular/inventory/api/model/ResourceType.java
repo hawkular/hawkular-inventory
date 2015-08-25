@@ -59,7 +59,8 @@ public final class ResourceType extends FeedBasedEntity<ResourceType.Blueprint, 
      * Data required to create a resource type.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
+     * called.
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
