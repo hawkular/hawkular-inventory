@@ -1595,6 +1595,28 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
+    public void testObserveDataEntities() throws Exception {
+        runObserverTest(DataEntity.class, 5, 1, () -> {
+            inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
+            inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
+            inventory.tenants().get("t").feedlessResourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
+                    .build());
+            inventory.tenants().get("t").environments().get("e").feedlessResources()
+                    .create(new Resource.Blueprint("r", "/rt"));
+
+            Data.ReadWrite<Resources.DataRole> dataAccess = inventory.tenants().get("t").environments().get("e")
+                    .feedlessResources().get("r").data();
+
+            dataAccess.create(DataEntity.Blueprint.<Resources.DataRole>builder()
+                    .withRole(configuration).build());
+
+            dataAccess.update(configuration, DataEntity.Update.builder().build());
+
+            dataAccess.delete(configuration);
+        });
+    }
+
+    @Test
     public void testBackendFind() throws Exception {
         InventoryBackend<E> backend = inventory.getBackend();
 
@@ -1961,7 +1983,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         try {
             res.data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
-                    .withRole(Resources.DataRole.configuration).withValue(StructuredData.get().map()
+                    .withRole(configuration).withValue(StructuredData.get().map()
                             .putBool("firstName", false).build()).build());
             Assert.fail("Creating a config that doesn't conform to the schema shouldn't be possible.");
         } catch (ValidationException e) {

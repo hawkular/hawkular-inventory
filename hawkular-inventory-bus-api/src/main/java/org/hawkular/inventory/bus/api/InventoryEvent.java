@@ -16,10 +16,18 @@
  */
 package org.hawkular.inventory.bus.api;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -37,9 +45,56 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class InventoryEvent<T> extends BasicMessage {
+public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends BasicMessage {
 
     private Action.Enumerated action;
+    private T object;
+
+    public static Class<? extends InventoryEvent<?>> determineEventType(Message message) {
+        try {
+            String entityType = message.getStringProperty("entityType");
+
+            if (entityType == null) {
+                throw new IllegalArgumentException("Cannot determine inventory message type. " +
+                        "'entityType' header property is missing.");
+            }
+
+            switch (entityType) {
+                case "relationship":
+                    return RelationshipEvent.class;
+                case "tenant":
+                    return TenantEvent.class;
+                case "environment":
+                    return EnvironmentEvent.class;
+                case "resourceType":
+                    return ResourceTypeEvent.class;
+                case "metricType":
+                    return MetricTypeEvent.class;
+                case "feed":
+                    return FeedEvent.class;
+                case "resource":
+                    return ResourceEvent.class;
+                case "metric":
+                    return MetricEvent.class;
+                case "dataEntity":
+                    return DataEntityEvent.class;
+                default:
+                    throw new IllegalArgumentException("Failed to determine inventory event type from the " +
+                            "'entityType' property: " + entityType);
+            }
+        } catch (JMSException e) {
+            throw new IllegalArgumentException("Failed to read inventory event type.", e);
+        }
+    }
+
+    public static InventoryEvent<?> decode(Message message) {
+        try {
+            String body = ((TextMessage) message).getText();
+            return BasicMessage.fromJSON(body, determineEventType(message));
+        } catch (JMSException e) {
+            throw new IllegalArgumentException("Failed to decode inventory event.", e);
+        }
+    }
 
     public static InventoryEvent<?> from(Action<?, ?> action, Object object) {
         if (object == null) {
@@ -66,6 +121,8 @@ public abstract class InventoryEvent<T> extends BasicMessage {
             return new ResourceTypeEvent(action.asEnum(), (ResourceType) object);
         } else if (object instanceof Relationship) {
             return new RelationshipEvent(action.asEnum(), (Relationship) object);
+        } else if (object instanceof DataEntity) {
+            return new DataEntityEvent(action.asEnum(), (DataEntity) object);
         } else if (object instanceof Action.Update) {
             @SuppressWarnings("unchecked")
             AbstractElement<?, AbstractElement.Update> updated =
@@ -84,8 +141,9 @@ public abstract class InventoryEvent<T> extends BasicMessage {
 
     }
 
-    protected InventoryEvent(Action.Enumerated action) {
+    protected InventoryEvent(Action.Enumerated action, T object) {
         this.action = action;
+        this.object = object;
     }
 
     public Action.Enumerated getAction() {
@@ -96,9 +154,23 @@ public abstract class InventoryEvent<T> extends BasicMessage {
         this.action = action;
     }
 
-    public abstract T getObject();
+    public T getObject() {
+        return object;
+    }
 
-    public abstract void setObject(T object);
+    public void setObject(T object) {
+        this.object = object;
+    }
+
+    public Map<String, String> createMessageHeaders() {
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("action", action.name());
+        if (object != null) {
+            headers.put("entityType", firstLetterLowercased(object.getClass().getSimpleName()));
+            headers.put("path", object.getPath().toString());
+        }
+        return headers;
+    }
 
     @Override
     protected ObjectMapper buildObjectMapperForSerialization() {
@@ -108,10 +180,16 @@ public abstract class InventoryEvent<T> extends BasicMessage {
         return mapper;
     }
 
+    @SuppressWarnings("unused")
     public static ObjectMapper buildObjectMapperForDeserialization() {
         final ObjectMapper mapper = new ObjectMapper();
         InventoryJacksonConfig.configure(mapper);
         mapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
         return mapper;
+    }
+
+
+    private static String firstLetterLowercased(String source) {
+        return Character.toLowerCase(source.charAt(0)) + source.substring(1);
     }
 }

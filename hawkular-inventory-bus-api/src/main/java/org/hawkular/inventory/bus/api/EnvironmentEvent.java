@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.Environment;
  */
 public final class EnvironmentEvent extends InventoryEvent<Environment> {
 
-    private Environment object;
-
     public EnvironmentEvent() {
     }
 
     public EnvironmentEvent(Action.Enumerated action, Environment object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public Environment getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(Environment object) {
-        this.object = object;
+        super(action, object);
     }
 }

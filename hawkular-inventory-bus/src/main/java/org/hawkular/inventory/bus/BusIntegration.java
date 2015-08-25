@@ -27,8 +27,8 @@ import javax.naming.NamingException;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -89,6 +89,7 @@ public final class BusIntegration {
         install(inventory, subscriptions, Resource.class, messageSender);
         install(inventory, subscriptions, Metric.class, messageSender);
         install(inventory, subscriptions, Relationship.class, messageSender);
+        install(inventory, subscriptions, DataEntity.class, messageSender);
     }
 
     private void uninstall() {
@@ -112,8 +113,7 @@ public final class BusIntegration {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);
 
-        Subscription s = inventory.observable(interest).subscribe(PartiallyApplied.procedure(sender::send)
-                .first(interest));
+        Subscription s = inventory.observable(interest).subscribe((c) -> sender.send(interest, c));
         subscriptions.add(s);
     }
 }

@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.Metric;
  */
 public final class MetricEvent extends InventoryEvent<Metric> {
 
-    private Metric object;
-
     public MetricEvent() {
     }
 
     public MetricEvent(Action.Enumerated action, Metric object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public Metric getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(Metric object) {
-        this.object = object;
+        super(action, object);
     }
 }

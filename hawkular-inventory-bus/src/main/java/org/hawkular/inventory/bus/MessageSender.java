@@ -18,7 +18,6 @@ package org.hawkular.inventory.bus;
 
 import static org.hawkular.inventory.bus.Log.LOG;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.JMSException;
@@ -49,7 +48,7 @@ final class MessageSender {
 
     public void send(Interest<?, ?> interest, Object inventoryEvent) {
         InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
-        Map<String, String> headers = toHeaders(interest);
+        Map<String, String> headers = message.createMessageHeaders();
 
         try (ConnectionContextFactory ccf = new ConnectionContextFactory(topicConnectionFactory)) {
 
@@ -62,18 +61,5 @@ final class MessageSender {
         } catch (JMSException e) {
             LOG.failedToSendMessage(message.toString());
         }
-    }
-
-    private Map<String, String> toHeaders(Interest<?, ?> interest) {
-        HashMap<String, String> ret = new HashMap<>();
-
-        ret.put("action", interest.getAction().asEnum().name().toLowerCase());
-        ret.put("entityType", firstLetterLowercased(interest.getEntityType().getSimpleName()));
-
-        return ret;
-    }
-
-    private String firstLetterLowercased(String source) {
-        return Character.toLowerCase(source.charAt(0)) + source.substring(1);
     }
 }

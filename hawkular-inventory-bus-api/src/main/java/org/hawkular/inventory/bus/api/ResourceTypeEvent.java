@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.ResourceType;
  */
 public final class ResourceTypeEvent extends InventoryEvent<ResourceType> {
 
-    private ResourceType object;
-
     public ResourceTypeEvent() {
     }
 
     public ResourceTypeEvent(Action.Enumerated action, ResourceType object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public ResourceType getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(ResourceType object) {
-        this.object = object;
+        super(action, object);
     }
 }

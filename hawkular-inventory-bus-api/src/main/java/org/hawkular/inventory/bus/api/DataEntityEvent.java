@@ -16,19 +16,27 @@
  */
 package org.hawkular.inventory.bus.api;
 
+import java.util.Map;
+
 import org.hawkular.inventory.api.Action;
-import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.DataEntity;
 
 /**
  * @author Lukas Krejci
- * @since 0.0.1
+ * @since 0.3.2
  */
-public final class RelationshipEvent extends InventoryEvent<Relationship> {
-
-    public RelationshipEvent() {
+public final class DataEntityEvent extends InventoryEvent<DataEntity> {
+    public DataEntityEvent() {
     }
 
-    public RelationshipEvent(Action.Enumerated action, Relationship object) {
+    public DataEntityEvent(Action.Enumerated action, DataEntity object) {
         super(action, object);
+    }
+
+    @Override
+    public Map<String, String> createMessageHeaders() {
+        Map<String, String> ret = super.createMessageHeaders();
+        ret.put("dataRole", getObject().getRole().name());
+        return ret;
     }
 }

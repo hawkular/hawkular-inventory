@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.Resource;
  */
 public final class ResourceEvent extends InventoryEvent<Resource> {
 
-    private Resource object;
-
     public ResourceEvent() {
     }
 
     public ResourceEvent(Action.Enumerated action, Resource object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public Resource getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(Resource object) {
-        this.object = object;
+        super(action, object);
     }
 }
