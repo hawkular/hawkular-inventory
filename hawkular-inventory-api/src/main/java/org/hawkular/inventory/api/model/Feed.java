@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 1.0
  */
 @XmlRootElement
-public final class Feed extends EnvironmentBasedEntity<Feed.Blueprint, Feed.Update> {
+public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
 
     /**
      * JAXB support
