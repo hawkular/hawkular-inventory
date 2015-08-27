@@ -28,7 +28,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends FeedBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     /**
      * JAXB support
@@ -38,7 +38,7 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
     }
 
     public ResourceType(CanonicalPath path) {
-        this(path, null);
+        super(path);
     }
 
     public ResourceType(CanonicalPath path, Map<String, Object> properties) {
@@ -59,8 +59,7 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
      * Data required to create a resource type.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
-     * called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {

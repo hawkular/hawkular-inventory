@@ -31,7 +31,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 0.0.1
  */
 @XmlRootElement
-public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
+public final class Metric extends FeedBasedEntity<Metric.Blueprint, Metric.Update> {
 
     private final MetricType type;
 
@@ -77,8 +77,7 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
      * Data required to create a new metric.
      *
      * <p>Note that tenantId, etc., are not needed here because they are provided by the context in which the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
-     * called.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Entity.Blueprint)} method is called.
      */
     @XmlRootElement
     public static final class Blueprint extends Entity.Blueprint {
