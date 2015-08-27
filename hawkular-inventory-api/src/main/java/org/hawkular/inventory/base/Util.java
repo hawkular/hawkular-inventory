@@ -26,6 +26,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -59,6 +60,8 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
  */
 final class Util {
 
+    private static final Random rand = new Random();
+
     private Util() {
 
     }
@@ -71,7 +74,10 @@ final class Util {
 
         int maxFailures = context.getTransactionRetriesCount();
 
-        while (failures++ < maxFailures) {
+        //this could be configurable, but let's just start with the hardcoded 100ms as the first retry wait time.
+        int waitTime = 100;
+
+        while (failures < maxFailures) {
             try {
                 InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
                 try {
@@ -86,12 +92,34 @@ final class Util {
                     throw e;
                 }
             } catch (CommitFailureException e) {
+                failures++;
+
                 //if the backend fails the commit, we can retry
-                Log.LOGGER.debugf(e, "Commit attempt %d/%d failed: %s", failures, maxFailures, e.getMessage());
+                Log.LOGGER.debugf(e, "Commit attempt %d/%d failed. Will wait for %d ms before retrying." +
+                        " The failure message was: %s", failures, maxFailures, waitTime, e.getMessage());
 
                 lastException = e;
+
+                if (failures < maxFailures) {
+                    try {
+                        Thread.sleep(waitTime);
+                    } catch (InterruptedException ie) {
+                        Log.LOGGER.wInterruptedWhileWaitingForTransactionRetry();
+                        //reset the interruption flag
+                        Thread.currentThread().interrupt();
+                        //and jump out of the loop to throw the transaction failure exception
+                        break;
+                    }
+
+                    //double the wait time for the next attempt - the assumption is that if the competing transaction
+                    //takes a long time to complete, it probably is going to be really long.
+                    //We randomize the value a little bit so that competing transactions started at roughly same time
+                    //don't knock each other out easily.
+                    waitTime = waitTime * 2 + rand.nextInt(waitTime / 10);
+                }
             }
         }
+
         throw new TransactionFailureException(lastException, failures);
     }
 
