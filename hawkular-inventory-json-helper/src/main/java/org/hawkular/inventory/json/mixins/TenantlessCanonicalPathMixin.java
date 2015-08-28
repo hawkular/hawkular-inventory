@@ -16,17 +16,24 @@
  */
 package org.hawkular.inventory.json.mixins;
 
-import org.hawkular.inventory.json.PathWithTenantDeserializer;
-import org.hawkular.inventory.json.PathWithTenantSerializer;
+import org.hawkular.inventory.json.DetypedPathDeserializer;
+import org.hawkular.inventory.json.TenantlessPathSerializer;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * @author Pavol Loffay
+ * The core inventory API is unaware of JSON and even less so about Jackson, so it can't contain any Jackson specific
+ * code there.
+ *
+ * <p>Fortunately, Jackson has a concept of mixins which can be used to "re-annotate" classes. This mixin class
+ * is meant to provide Jackson annotations for CanonicalPath class.
+ *
+ * @author Lukas Krejci
+ * @see com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
  * @since 0.2.0
  */
-@JsonSerialize(using = PathWithTenantSerializer.class)
-@JsonDeserialize(using = PathWithTenantDeserializer.class)
-public class CanonicalPathWithTenantMixin {
+@JsonSerialize(using = TenantlessPathSerializer.class)
+@JsonDeserialize(using = DetypedPathDeserializer.class)
+public final class TenantlessCanonicalPathMixin {
 }

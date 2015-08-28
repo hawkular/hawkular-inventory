@@ -145,13 +145,16 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             Class<?> intendedFinalType) {
 
         ExtenderConstructor ctor = (idx, list) -> {
-            list.addAll(initialPosition.getPath());
+            if (initialPosition != null) {
+                list.addAll(initialPosition.getPath());
+            }
             return new Extender(idx, list);
         };
 
         return (CanonicalPath) Path.fromString(path, true, ctor, new CanonicalTypeProvider(
                         new HintedTypeProvider(intendedFinalType,
-                                new Extender(0, new ArrayList<>(initialPosition.getPath()))))
+                                new Extender(0, initialPosition == null ? new ArrayList<>()
+                                        : new ArrayList<>(initialPosition.getPath()))))
         );
     }
 

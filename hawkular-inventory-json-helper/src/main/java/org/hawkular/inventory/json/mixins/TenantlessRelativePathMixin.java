@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.json;
+package org.hawkular.inventory.json.mixins;
 
-import java.io.IOException;
+import org.hawkular.inventory.json.DetypedPathDeserializer;
+import org.hawkular.inventory.json.TenantlessPathSerializer;
 
-import org.hawkular.inventory.api.model.Path;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * @author Pavol Loffay
- * @since 0.2.0
+ * @author Lukas Krejci
+ * @since 0.4.0
  */
-public final class PathWithTenantDeserializer extends JsonDeserializer<Path> {
-    @Override
-    public Path deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-        return Path.fromString(jp.getValueAsString());
-    }
+@JsonSerialize(using = TenantlessPathSerializer.class)
+@JsonDeserialize(using = DetypedPathDeserializer.class)
+public final class TenantlessRelativePathMixin {
 }

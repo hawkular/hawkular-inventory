@@ -42,6 +42,7 @@ import org.hawkular.inventory.json.mixins.ResourceMixin;
 import org.hawkular.inventory.json.mixins.ResourceTypeMixin;
 import org.hawkular.inventory.json.mixins.StructuredDataMixin;
 import org.hawkular.inventory.json.mixins.TenantMixin;
+import org.hawkular.inventory.json.mixins.TenantlessCanonicalPathMixin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -49,10 +50,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * A helper class to configure the Jackson's object mapper to correctly serialize and deserialize inventory entities
  * and paths.
  *
- * <p>Beware of the {@link PathDeserializer} - it might not be what you want unless you are able to provide it with
- * necessary contextual information prior to deserialization. If not, you need to reconfigure the object mapper to not
- * use the the {@link PathDeserializer} to deserialize neither {@link CanonicalPath} nor {@link RelativePath} and
- * deserialize the paths manually when the contextual information is available.
+ * <p>By default, the paths are serialized and deserialized with the tenant ID retained. There is an option to not
+ * include them in the serialized form by using the {@link TenantlessPathSerializer} and
+ * {@link DetypedPathDeserializer} (by reconfiguring the object mapper to use {@link TenantlessCanonicalPathMixin}
+ * and {@link org.hawkular.inventory.json.mixins.TenantlessRelativePathMixin} to serialize the {@link CanonicalPath}
+ * or {@link RelativePath} respectively. But beware of the need to pre-configure the deserializer with contextual
+ * information that it will use to inject the tenant id into the deserialized path instances.
  *
  * @author Lukas Krejci
  * @since 0.2.0

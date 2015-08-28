@@ -29,7 +29,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
-import org.hawkular.inventory.json.mixins.CanonicalPathWithTenantMixin;
+import org.hawkular.inventory.json.mixins.CanonicalPathMixin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -101,17 +101,17 @@ public abstract class InventoryEvent<T> extends BasicMessage {
     public abstract void setObject(T object);
 
     @Override
-    protected  ObjectMapper buildObjectMapperForSerialization() {
+    protected ObjectMapper buildObjectMapperForSerialization() {
         final ObjectMapper mapper = new ObjectMapper();
         InventoryJacksonConfig.configure(mapper);
-        mapper.addMixIn(CanonicalPath.class, CanonicalPathWithTenantMixin.class);
+        mapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
         return mapper;
     }
 
-     public static ObjectMapper buildObjectMapperForDeserialization() {
+    public static ObjectMapper buildObjectMapperForDeserialization() {
         final ObjectMapper mapper = new ObjectMapper();
         InventoryJacksonConfig.configure(mapper);
-        mapper.addMixIn(CanonicalPath.class, CanonicalPathWithTenantMixin.class);
+        mapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
         return mapper;
     }
 }

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -34,8 +35,10 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.json.mixins.TenantlessCanonicalPathMixin;
+import org.hawkular.inventory.json.mixins.TenantlessRelativePathMixin;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -49,10 +52,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SerializationTest {
 
-    private static ObjectMapper mapper;
+    private ObjectMapper mapper;
 
-    @BeforeClass
-    public static void setup() {
+    @Before
+    public void setup() {
         JsonFactory f = new JsonFactory();
 
         mapper = new ObjectMapper(f);
@@ -62,15 +65,27 @@ public class SerializationTest {
 
     @Test
     public void testCanonicalPath() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Resource.class);
+        test(CanonicalPath.fromString("/t;t/e;e/r;r"));
+    }
+
+    @Test
+    public void testTenantlessCanonicalPath() throws Exception {
+        mapper.addMixIn(CanonicalPath.class, TenantlessCanonicalPathMixin.class);
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+        DetypedPathDeserializer.setCurrentEntityType(Resource.class);
         test(CanonicalPath.fromString("/t;t/e;e/r;r"));
     }
 
     @Test
     public void testRelativePath() throws Exception {
-        PathDeserializer.setCurrentEntityType(Metric.class);
-        PathDeserializer.setCurrentRelativePathOrigin(CanonicalPath.fromString("/t;t/e;e/r;r"));
+        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class));
+    }
+
+    @Test
+    public void testTenantlessRelativePath() throws Exception {
+        mapper.addMixIn(RelativePath.class, TenantlessRelativePathMixin.class);
+        DetypedPathDeserializer.setCurrentEntityType(Metric.class);
+        DetypedPathDeserializer.setCurrentRelativePathOrigin(CanonicalPath.fromString("/t;t/e;e/r;r"));
         test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class)
         );
 
@@ -82,176 +97,207 @@ public class SerializationTest {
 
     @Test
     public void testTenant() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;c"));
-        PathDeserializer.setCurrentEntityType(Tenant.class);
-
         Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(t);
+    }
 
-        //a detyped variant should work, too
-        Assert.assertEquals(t, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}",
-                Tenant.class));
+    @Test
+    public void testDetypedTenant() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(null);
+
+        Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+        String ser = "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}";
+
+        testDetyped(t, ser);
     }
 
     @Test
     public void testEnvironment() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Environment.class);
-
         Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(env);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(env, deserialize("{\"path\":\"/t;t/e;c\",\"properties\":{\"a\":\"b\"}}",
-                Environment.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(env, deserialize("{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}", Environment.class));
-        Assert.assertEquals(env, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}", Environment.class));
+    @Test
+    public void testDetypedEnvironment() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(env, "{\"path\":\"/e;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(env, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(env, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testResourceType() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(ResourceType.class);
-
         ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(rt);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(rt, deserialize("{\"path\":\"/t;t/rt;c\",\"properties\":{\"a\":\"b\"}}",
-                ResourceType.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(rt, deserialize("{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}",
-                ResourceType.class));
-        Assert.assertEquals(rt, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}",
-                ResourceType.class));
+    @Test
+    public void testDetypedResourceType() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(rt, "{\"path\":\"/t;t/rt;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(rt, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(rt, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testMetricType() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(MetricType.class);
-
         MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, MetricDataType.GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
 
         test(mt);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
-                MetricType.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
-                MetricType.class));
-        Assert.assertEquals(mt, deserialize("{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}",
-                MetricType.class));
+    @Test
+    public void testDetypedMetricType() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, MetricDataType.GAUGE,
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
+
+        testDetyped(mt, "{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
+        testDetyped(mt, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
+        testDetyped(mt, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
     }
 
     @Test
     public void testFeed() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Feed.class);
-
         Feed f = new Feed(CanonicalPath.fromString("/t;t/e;e/f;c"),
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
 
         test(f);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(f,
-                deserialize("{\"path\":\"/t;t/e;e/f;c\",\"properties\":{\"a\":\"b\"}}", Feed.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(f, deserialize("{\"path\":\"/t;t/e/c\",\"properties\":{\"a\":\"b\"}}", Feed.class));
-        Assert.assertEquals(f, deserialize("{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}", Feed.class));
+    @Test
+    public void testDetypedFeed() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Feed f = new Feed(CanonicalPath.fromString("/t;t/e;e/f;c"),
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
+
+        testDetyped(f, "{\"path\":\"/t;t/e;e/f;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(f, "{\"path\":\"/t;t/e/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(f, "{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testResourceInEnvironment() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Resource.class);
-
         Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(r);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(r,
-                deserialize("{\"path\":\"/t;t/e;e/r;c\",\"properties\":{\"a\":\"b\"}}", Resource.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(r, deserialize("{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}", Resource.class));
+    @Test
+    public void testDetypedResourceInEvironment() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(r, "{\"path\":\"/t;t/e;e/r;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(r, "{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testMetricInEnvironment() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Metric.class);
-
         Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), new MetricType(
                 CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(m);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(m,
-                deserialize("{\"path\":\"/t;t/e;e/m;c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(m, deserialize("{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
+    @Test
+    public void testDetypedMetricInEnvironment() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(m, "{\"path\":\"/t;t/e;e/m;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(m, "{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testResourceInFeed() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Resource.class);
-
         Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/f;f/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(r);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(r,
-                deserialize("{\"path\":\"/t;t/e;e/f;f/r;c\",\"properties\":{\"a\":\"b\"}}", Resource.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(r, deserialize("{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}", Resource.class));
+    @Test
+    public void testDetypedResourceInFeed() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/f;f/r;c"), new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(r, "{\"path\":\"/t;t/e;e/f;f/r;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(r, "{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testMetricInFeed() throws Exception {
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
-        PathDeserializer.setCurrentEntityType(Metric.class);
-
         Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/f;f/m;c"), new MetricType(
                 CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
         test(m);
+    }
 
-        //test deserialization with a full path instead of the tenant-less which was tested by the above
-        Assert.assertEquals(m,
-                deserialize("{\"path\":\"/t;t/e;e/f;f/m;c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
-        //a detyped variant should work, too
-        Assert.assertEquals(m, deserialize("{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}", Metric.class));
+    @Test
+    public void testDetypedMetricInFeed() throws Exception {
+        DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
+
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/f;f/m;c"), new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
+            put("a", "b");
+        }});
+
+        testDetyped(m, "{\"path\":\"/t;t/e;e/f;f/m;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(m, "{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
@@ -274,6 +320,13 @@ public class SerializationTest {
                 StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 
+    private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
+        DetypedPathDeserializer.setCurrentEntityType(orig.getClass());
+        mapper.addMixIn(CanonicalPath.class, TenantlessCanonicalPathMixin.class);
+
+        Assert.assertEquals(orig, deserialize(serialized, orig.getClass()));
+    }
+
     private void test(Object o) throws Exception {
         Class<?> cls = o.getClass();
 
@@ -282,7 +335,7 @@ public class SerializationTest {
         Assert.assertEquals(o, o2);
     }
 
-    private static String serialize(Object object) throws IOException {
+    private String serialize(Object object) throws IOException {
         StringWriter out = new StringWriter();
 
         JsonGenerator gen = mapper.getFactory().createGenerator(out);
@@ -296,7 +349,7 @@ public class SerializationTest {
         return out.toString();
     }
 
-    private static <T> T deserialize(String json, Class<T> type) throws Exception {
+    private <T> T deserialize(String json, Class<T> type) throws Exception {
         JsonParser parser = mapper.getFactory().createParser(json);
 
         return parser.readValueAs(type);
