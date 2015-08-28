@@ -806,8 +806,9 @@ public abstract class Path {
 
             CanonicalPath full = extender.get().toCanonicalPath();
 
-            Class<?> nextStep = unambiguousPathNextStep(intendedFinalType,
-                    full.getSegment().getElementType(), isLast, new HashMap<>());
+            Class<?> currentType = full.getDepth() >= 0 ? full.getSegment().getElementType() : null;
+
+            Class<?> nextStep = unambiguousPathNextStep(intendedFinalType, currentType, isLast, new HashMap<>());
 
             if (nextStep != null) {
                 return new Segment(nextStep, id);

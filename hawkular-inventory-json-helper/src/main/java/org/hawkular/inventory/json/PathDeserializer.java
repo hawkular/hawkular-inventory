@@ -18,7 +18,6 @@ package org.hawkular.inventory.json;
 
 import java.io.IOException;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Path;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -26,34 +25,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
- * @author Lukas Krejci
+ * @author Pavol Loffay
  * @since 0.2.0
  */
 public final class PathDeserializer extends JsonDeserializer<Path> {
-    private static ThreadLocal<CanonicalPath> CURRENT_CANONICAL_ORIGIN = new ThreadLocal<>();
-    private static final ThreadLocal<CanonicalPath> CURRENT_RELATIVE_PATH_ORIGIN = new ThreadLocal<>();
-    private static final ThreadLocal<Class<?>> CURRENT_ENTITY_TYPE = new ThreadLocal<>();
-
-    public static void setCurrentCanonicalOrigin(CanonicalPath path) {
-        CURRENT_CANONICAL_ORIGIN.set(path);
-    }
-
-    public static void setCurrentRelativePathOrigin(CanonicalPath path) {
-        CURRENT_RELATIVE_PATH_ORIGIN.set(path);
-    }
-
-    public static void setCurrentEntityType(Class<?> entityType) {
-        CURRENT_ENTITY_TYPE.set(entityType);
-    }
-
     @Override
     public Path deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-        String str = jp.getValueAsString();
-
-        CanonicalPath co = CURRENT_CANONICAL_ORIGIN.get();
-        CanonicalPath ro = CURRENT_RELATIVE_PATH_ORIGIN.get();
-        Class<?> entityType = CURRENT_ENTITY_TYPE.get();
-
-        return Path.fromPartiallyUntypedString(str, co, ro, entityType);
+        return Path.fromString(jp.getValueAsString());
     }
 }

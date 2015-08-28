@@ -23,17 +23,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * The core inventory API is unaware of JSON and even less so about Jackson, so it can't contain any Jackson specific
- * code there.
- *
- * <p>Fortunately, Jackson has a concept of mixins which can be used to "re-annotate" classes. This mixin class
- * is meant to provide Jackson annotations for CanonicalPath class.
- *
- * @author Lukas Krejci
- * @see com.fasterxml.jackson.databind.ObjectMapper#addMixInAnnotations(Class, Class)
+ * @author Pavol Loffay
  * @since 0.2.0
  */
 @JsonSerialize(using = PathSerializer.class)
 @JsonDeserialize(using = PathDeserializer.class)
-public final class CanonicalPathMixin {
+public class CanonicalPathMixin {
 }

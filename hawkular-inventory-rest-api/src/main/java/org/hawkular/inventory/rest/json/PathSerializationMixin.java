@@ -16,15 +16,21 @@
  */
 package org.hawkular.inventory.rest.json;
 
+import org.hawkular.inventory.json.DetypedPathDeserializer;
 import org.hawkular.inventory.json.PathSerializer;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * We need to deserialize paths manually in REST API, because we cannot provide the default
- * {@link org.hawkular.inventory.json.PathDeserializer} with enough info in the early stages of request processing.
+ * {@link DetypedPathDeserializer} with enough info in the early stages of request processing.
  *
- * <p>So we need to configure it with a custom mixin that will be used just for serialization.
+ * <p>So we need to configure it with a custom mixin that will be used just for serialization. Note that the paths
+ * are serialized <b>WITH</b> the tenant ID included, even though REST API can accept paths WITHOUT a tenant ID and
+ * automagically modify the paths to include the current tenant ID in them. This is so that the clients that use the
+ * paths obtained from the inventory server can use them as opaque identifiers without any requirements on processing
+ * them before passing them along further. The paths obtained from inventory are the "true" stuff, but inventory is
+ * kind enough to let the clients produce simpler, tenant-less, paths when talking to it.
  *
  * @author Lukas Krejci
  * @see JacksonConfig
