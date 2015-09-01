@@ -41,4 +41,8 @@ public interface Log extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 2, value = "No data associated with data entity on path %s that is being deleted.")
     void wNoDataAssociatedWithEntity(CanonicalPath dataEntityPath);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 3, value = "Thread interrupted while waiting for a next retry of a previously failed transaction.")
+    void wInterruptedWhileWaitingForTransactionRetry();
 }
