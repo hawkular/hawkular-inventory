@@ -57,7 +57,7 @@ public class RestPath extends RestBase {
         String tenantId = getTenantId();
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
-        CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(entityPath, tenant, Entity.class);
+        CanonicalPath path = CanonicalPath.fromPartiallyUntypedString('/' + entityPath, tenant, Entity.class);
 
         return Response.ok(inventory.inspect(path, ResolvableToSingle.class).entity()).build();
     }
