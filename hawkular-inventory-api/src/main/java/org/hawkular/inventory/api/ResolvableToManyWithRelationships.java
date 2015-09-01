@@ -24,8 +24,8 @@ package org.hawkular.inventory.api;
  *
  * @author Lukas Krejci
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
-public interface ResolvableToManyWithRelationships<Entity> extends ResolvableToMany<Entity>, Relatable<Relationships
-.Read> {
+public interface ResolvableToManyWithRelationships<Entity> extends ResolvableToMany<Entity>,
+        Relatable<Relationships.Read> {
 }

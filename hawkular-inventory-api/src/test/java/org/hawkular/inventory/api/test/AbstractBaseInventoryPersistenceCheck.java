@@ -1629,52 +1629,52 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
         entity = backend.find(envPath);
         Environment env = backend.convert(entity, Environment.class);
-        Assert.assertEquals("com.acme.tenant", env.getTenantId());
+        Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
         Assert.assertEquals("production", env.getId());
 
         entity = backend.find(envPath.extend(Resource.class, "host1").get());
         Resource r = backend.convert(entity, Resource.class);
-        Assert.assertEquals("com.acme.tenant", r.getTenantId());
-        Assert.assertEquals("production", r.getEnvironmentId());
-        Assert.assertNull(r.getFeedId());
+        Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
+        Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
+        Assert.assertNull(r.getPath().ids().getFeedId());
         Assert.assertEquals("host1", r.getId());
 
         entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
         Metric m = backend.convert(entity, Metric.class);
-        Assert.assertEquals("com.acme.tenant", m.getTenantId());
-        Assert.assertEquals("production", m.getEnvironmentId());
-        Assert.assertNull(m.getFeedId());
+        Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
+        Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
+        Assert.assertNull(m.getPath().ids().getFeedId());
         Assert.assertEquals("host1_ping_response", m.getId());
 
         CanonicalPath feedPath = envPath.extend(Feed.class, "feed1").get();
         entity = backend.find(feedPath);
         Feed f = backend.convert(entity, Feed.class);
-        Assert.assertEquals("com.acme.tenant", f.getTenantId());
-        Assert.assertEquals("production", f.getEnvironmentId());
+        Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
+        Assert.assertEquals("production", f.getPath().ids().getEnvironmentId());
         Assert.assertEquals("feed1", f.getId());
 
         entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
         r = backend.convert(entity, Resource.class);
-        Assert.assertEquals("com.acme.tenant", r.getTenantId());
-        Assert.assertEquals("production", r.getEnvironmentId());
-        Assert.assertEquals("feed1", r.getFeedId());
+        Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
+        Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
+        Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
         Assert.assertEquals("feedResource1", r.getId());
 
         entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
         m = backend.convert(entity, Metric.class);
-        Assert.assertEquals("com.acme.tenant", m.getTenantId());
-        Assert.assertEquals("production", m.getEnvironmentId());
-        Assert.assertEquals("feed1", m.getFeedId());
+        Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
+        Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
+        Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
         Assert.assertEquals("feedMetric1", m.getId());
 
         entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
         ResourceType rt = backend.convert(entity, ResourceType.class);
-        Assert.assertEquals("com.acme.tenant", rt.getTenantId());
+        Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
         Assert.assertEquals("URL", rt.getId());
 
         entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
         MetricType mt = backend.convert(entity, MetricType.class);
-        Assert.assertEquals("com.acme.tenant", mt.getTenantId());
+        Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
         Assert.assertEquals("ResponseTime", mt.getId());
     }
 

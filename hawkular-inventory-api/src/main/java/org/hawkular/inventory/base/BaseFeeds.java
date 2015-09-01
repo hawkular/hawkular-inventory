@@ -66,13 +66,10 @@ public final class BaseFeeds {
 
             BE envObject = envs.get(0);
 
-            Environment env = context.backend.convert(envObject, Environment.class);
+            CanonicalPath feedPath = context.backend.extractCanonicalPath(envObject)
+                    .extend(Feed.class, blueprint.getId()).get();
 
-            String envId = env.getId();
-            String tenantId = env.getTenantId();
-
-            return context.configuration.getFeedIdStrategy().generate(context.inventory,
-                    new Feed(CanonicalPath.of().tenant(tenantId).environment(envId).feed(blueprint.getId()).get()));
+            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));
         }
 
         @Override

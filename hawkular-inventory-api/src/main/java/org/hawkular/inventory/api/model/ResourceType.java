@@ -28,7 +28,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends FeedBasedEntity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update> {
 
     /**
      * JAXB support
@@ -38,7 +38,7 @@ public final class ResourceType extends FeedBasedEntity<ResourceType.Blueprint, 
     }
 
     public ResourceType(CanonicalPath path) {
-        super(path);
+        this(path, null);
     }
 
     public ResourceType(CanonicalPath path, Map<String, Object> properties) {
