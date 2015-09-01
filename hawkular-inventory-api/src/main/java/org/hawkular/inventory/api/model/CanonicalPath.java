@@ -53,6 +53,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_NAME_TYPES.put("mt", MetricType.class);
         SHORT_NAME_TYPES.put("rl", Relationship.class);
         SHORT_NAME_TYPES.put("d", DataEntity.class);
+        SHORT_NAME_TYPES.put("ot", OperationType.class);
 
         SHORT_TYPE_NAMES.put(Tenant.class, "t");
         SHORT_TYPE_NAMES.put(Environment.class, "e");
@@ -63,12 +64,14 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_TYPE_NAMES.put(MetricType.class, "mt");
         SHORT_TYPE_NAMES.put(Relationship.class, "rl");
         SHORT_TYPE_NAMES.put(DataEntity.class, "d");
+        SHORT_TYPE_NAMES.put(OperationType.class, "ot");
 
         VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class));
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
-        VALID_PROGRESSIONS.put(ResourceType.class, Collections.singletonList(DataEntity.class));
+        VALID_PROGRESSIONS.put(ResourceType.class, Arrays.asList(DataEntity.class, OperationType.class));
+        VALID_PROGRESSIONS.put(OperationType.class, Collections.singletonList(DataEntity.class));
         VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
         VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
@@ -287,11 +290,19 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, MetricType.class);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), MetricType.class);
+            } else {
+                return idIfTypeCorrect(getRoot().down(), MetricType.class);
+            }
         }
 
         public String getResourceTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, ResourceType.class);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), ResourceType.class);
+            } else {
+                return idIfTypeCorrect(getRoot().down(), ResourceType.class);
+            }
         }
 
         public String getFeedId() {
@@ -328,6 +339,10 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public String getRelationshipId() {
             return idIfTypeCorrect(getRoot(), Relationship.class);
+        }
+
+        public String getOperationTypeId() {
+            return idIfTypeCorrect(CanonicalPath.this, OperationType.class);
         }
 
         @SuppressWarnings("unchecked")

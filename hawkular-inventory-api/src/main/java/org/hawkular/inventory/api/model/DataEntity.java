@@ -20,8 +20,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.filters.Filter;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
@@ -85,6 +87,10 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             for (ResourceTypes.DataRole r : ResourceTypes.DataRole.values()) {
                 instances.put(r.name(), r);
             }
+
+            for (OperationTypes.DataRole r : OperationTypes.DataRole.values()) {
+                instances.put(r.name(), r);
+            }
         }
     }
 
@@ -109,7 +115,21 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             return values.toArray(new Role[values.size()]);
         }
 
+        /**
+         * @return the unique name of the role
+         */
         String name();
+
+        /**
+         * @return the filters representing a query to go from the data entity to the data entity holding the data of
+         * the schema to validate the data. Can return null if the data entity with this role represents a schema.
+         */
+        Filter[] navigateToSchema();
+
+        /**
+         * @return true if this role represents a schema, false otherwise
+         */
+        boolean isSchema();
     }
 
     public static final class Blueprint<DataRole extends Role> extends AbstractElement.Blueprint {

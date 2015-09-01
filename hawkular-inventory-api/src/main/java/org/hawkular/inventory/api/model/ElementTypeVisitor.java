@@ -43,6 +43,8 @@ public interface ElementTypeVisitor<R, P> {
             return visitor.visitRelationship(parameter);
         } else if (DataEntity.class.equals(entityType)) {
             return visitor.visitData(parameter);
+        } else if (OperationType.class.equals(entityType)) {
+            return visitor.visitOperationType(parameter);
         } else {
             return visitor.visitUnknown(parameter);
         }
@@ -65,6 +67,8 @@ public interface ElementTypeVisitor<R, P> {
     R visitRelationship(P parameter);
 
     R visitData(P parameter);
+
+    R visitOperationType(P parameter);
 
     R visitUnknown(P parameter);
 
@@ -143,6 +147,11 @@ public interface ElementTypeVisitor<R, P> {
 
         @Override
         public R visitData(P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitOperationType(P parameter) {
             return defaultAction();
         }
 

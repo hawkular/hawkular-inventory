@@ -65,6 +65,7 @@ import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
@@ -90,6 +91,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
@@ -326,8 +328,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
         //create some config definitions...
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
-                .create(ResourceType.Blueprint.builder().withId("Person").build()).data().create(DataEntity.Blueprint
+        ResourceTypes.Single personType = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+                .create(ResourceType.Blueprint.builder().withId("Person").build());
+
+        personType.data().create(DataEntity.Blueprint
                 .<ResourceTypes.DataRole>builder().withRole(configurationSchema).withValue(StructuredData.get().map()
                         .putString("title", "Person")
                         .putString("description", "Utterly complete description of a human.")
@@ -350,6 +354,27 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                         /**/.addString("lastName")
                         .closeList()
                         .build()).build());
+
+        OperationTypes.Single startOp = personType.operationTypes().create(OperationType.Blueprint.builder().withId
+                ("start").build());
+        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                .withRole(OperationTypes.DataRole.returnType).withValue(StructuredData.get().map()
+                        .putString("title", "start_returnType")
+                        .putString("description", "start operation result")
+                        .putString("type", "boolean")
+                        .build()).build());
+        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                .withRole(OperationTypes.DataRole.parameterTypes).withValue(StructuredData.get().map()
+                        .putString("title", "start_paramTypes")
+                        .putString("description", "start operation parameter types")
+                        .putString("type", "object")
+                        .putMap("properties")
+                        /**/.putMap("quick")
+                        /**//**/.putString("type", "boolean")
+                        /**/.closeMap()
+                        .closeMap()
+                        .build()).build());
+
 
         //now create some resources with configs
         Resources.Single people = inventory.tenants().get("com.acme.tenant").environments().get("production")
@@ -942,6 +967,23 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.acme.tenant", "production", "host1", "host1_ping_response");
         test.apply("com.example.tenant", "test", "playroom1", "playroom1_size");
         test.apply("com.example.tenant", "test", "playroom2", "playroom2_size");
+    }
+
+    @Test
+    public void testOperationTypes() throws Exception {
+        OperationTypes.Single ots = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+                .get("Person").operationTypes().get("start");
+
+        Assert.assertNotNull(ots.entity());
+        Assert.assertEquals("start", ots.entity().getId());
+
+        StructuredData returnTypeSchema = ots.data().get(OperationTypes.DataRole.returnType).entity().getValue();
+        StructuredData parametersSchema = ots.data().get(OperationTypes.DataRole.parameterTypes).entity().getValue();
+
+        Assert.assertEquals("start_returnType", returnTypeSchema.map().get("title").string());
+        Assert.assertEquals("boolean", returnTypeSchema.map().get("type").string());
+
+        Assert.assertEquals("start_paramTypes", parametersSchema.map().get("title").string());
     }
 
     @Test

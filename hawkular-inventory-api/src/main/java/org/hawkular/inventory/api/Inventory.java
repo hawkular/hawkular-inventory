@@ -361,15 +361,27 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitData(Void parameter) {
-                if (path.ids().getResourceTypeId() == null) {
-                    Resources.Single res = inspect(path.up(), Resources.Single.class);
+                CanonicalPath.IdExtractor ids = path.ids();
+                String rt = ids.getResourceTypeId();
+                String ot = ids.getOperationTypeId();
 
-                    return accessInterface.cast(res.data().get(path.ids().getDataRole()));
+                if (rt != null) {
+                    ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
+
+                    return accessInterface.cast(rts.data().get(ids.getDataRole()));
+                } else if (ot != null) {
+                    OperationTypes.Single ots = inspect(path.up(), OperationTypes.Single.class);
+                    return accessInterface.cast(ots.data().get(ids.getDataRole()));
                 } else {
-                    ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
-
-                    return accessInterface.cast(rt.data().get(path.ids().getDataRole()));
+                    Resources.Single res = inspect(path.up(), Resources.Single.class);
+                    return accessInterface.cast(res.data().get(ids.getDataRole()));
                 }
+            }
+
+            @Override
+            public Single visitOperationType(Void parameter) {
+                ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
+                return accessInterface.cast(rt.operationTypes().get(path.getSegment().getElementId()));
             }
 
             @Override

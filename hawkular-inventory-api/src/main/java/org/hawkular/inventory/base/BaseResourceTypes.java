@@ -25,12 +25,14 @@ import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.MetricTypes;
+import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -136,6 +138,10 @@ public final class BaseResourceTypes {
             return new BaseMetricTypes.ReadAssociate<>(context.proceedTo(incorporates, MetricType.class).get());
         }
 
+        @Override public OperationTypes.ReadWrite operationTypes() {
+            return new BaseOperationTypes.ReadWrite<>(context.proceedTo(contains, OperationType.class).get());
+        }
+
         @Override
         public Data.ReadWrite<ResourceTypes.DataRole> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get());
@@ -157,6 +163,10 @@ public final class BaseResourceTypes {
         @Override
         public MetricTypes.ReadContained metricTypes() {
             return new BaseMetricTypes.ReadContained<>(context.proceedTo(incorporates, MetricType.class).get());
+        }
+
+        @Override public OperationTypes.ReadContained operationTypes() {
+            return new BaseOperationTypes.ReadContained<>(context.proceedTo(contains, OperationType.class).get());
         }
 
         @Override
