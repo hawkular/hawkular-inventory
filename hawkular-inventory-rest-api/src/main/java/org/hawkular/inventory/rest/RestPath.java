@@ -21,8 +21,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -53,11 +56,13 @@ public class RestPath extends RestBase {
             @ApiResponse(code = 404, message = "The entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response get(String entityPath) {
+    public Response get(@PathParam("entityPath") String entityPath, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
-        CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(entityPath, tenant, Entity.class);
+        // "/path".length() == 5
+        CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(uriInfo.getPath(false).substring(5), tenant,
+                Entity.class);
 
         return Response.ok(inventory.inspect(path, ResolvableToSingle.class).entity()).build();
     }
