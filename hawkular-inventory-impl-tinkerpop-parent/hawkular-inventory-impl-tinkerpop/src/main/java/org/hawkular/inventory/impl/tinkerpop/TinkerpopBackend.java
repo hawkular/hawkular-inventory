@@ -745,7 +745,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 }
                 context.getGraph().removeVertex(dataVertex);
 
-                Element newData = persist(data.getValue());
+                StructuredData dataValue = data.getValue();
+                if (dataValue == null) {
+                    dataValue = StructuredData.get().undefined();
+                }
+                Element newData = persist(dataValue);
 
                 relate(v, newData, Relationships.WellKnown.hasData.name(), null);
                 return null;

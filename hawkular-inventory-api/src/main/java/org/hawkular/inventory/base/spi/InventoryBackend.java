@@ -228,7 +228,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @param dataEntityRepresentation the representation of the {@link org.hawkular.inventory.api.model.DataEntity}
      *                                 instance
      * @param dataPath                 the path in the data to descend to.
-     * @see org.hawkular.inventory.api.Datas.Single#data(RelativePath)
+     * @see org.hawkular.inventory.api.Data.Single#data(RelativePath)
      */
     E descendToData(E dataEntityRepresentation, RelativePath dataPath);
 

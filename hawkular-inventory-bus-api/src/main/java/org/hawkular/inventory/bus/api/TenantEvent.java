@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.Tenant;
  */
 public final class TenantEvent extends InventoryEvent<Tenant> {
 
-    private Tenant object;
-
     public TenantEvent() {
     }
 
     public TenantEvent(Action.Enumerated action, Tenant object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public Tenant getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(Tenant object) {
-        this.object = object;
+        super(action, object);
     }
 }

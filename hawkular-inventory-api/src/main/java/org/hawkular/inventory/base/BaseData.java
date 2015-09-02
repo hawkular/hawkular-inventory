@@ -304,6 +304,11 @@ public final class BaseData {
         }
 
         private static void validate(CanonicalPath dataPath, JsonNode dataNode, JsonNode schemaNode) {
+            //explicitly allow null schemas
+            if (dataNode == null || dataNode.isNull()) {
+                return;
+            }
+
             try {
                 ProcessingReport report = VALIDATOR.validate(schemaNode, dataNode, true);
                 if (!report.isSuccess()) {

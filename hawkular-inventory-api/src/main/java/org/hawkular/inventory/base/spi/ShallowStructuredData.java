@@ -22,7 +22,7 @@ import org.hawkular.inventory.api.model.StructuredData;
 /**
  * This is essentially a marker class to distinguish a fully loaded structured data from the "bare" shallow variant that
  * doesn't contain the potential children (see for example
- * {@link org.hawkular.inventory.api.Datas.Single#flatData(RelativePath)}).
+ * {@link org.hawkular.inventory.api.Data.Single#flatData(RelativePath)}).
  *
  * <p>When calling {@link InventoryBackend#convert(Object, Class)}, with {@link StructuredData}, the whole structured
  * data is loaded. On the other hand calling it with {@code ShallowStructuredData} will make the convert method not load

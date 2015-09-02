@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
 
 /**
@@ -60,52 +59,5 @@ public final class EntityAndPendingNotifications<E extends AbstractElement<?, ?>
 
     public List<Notification<?, ?>> getNotifications() {
         return notifications;
-    }
-
-    /**
-     * Represents a notification to be sent out. I.e. this wraps together the data necessary to sending a new inventory
-     * event.
-     *
-     * @param <C> the type of the action context - i.e. the data describing the action
-     * @param <V> the type of the value that the action has been performed upon
-     */
-    public static final class Notification<C, V> {
-        private final C actionContext;
-        private final V value;
-        private final Action<C, V> action;
-
-        /**
-         * Constructs a new instance.
-         *
-         * @param actionContext the data describing the results of the action
-         * @param value         the value that the action has been performed upon
-         * @param action        the action itself
-         */
-        public Notification(C actionContext, V value, Action<C, V> action) {
-            this.actionContext = actionContext;
-            this.value = value;
-            this.action = action;
-        }
-
-        /**
-         * @return the action to be notified about
-         */
-        public Action<C, V> getAction() {
-            return action;
-        }
-
-        /**
-         * @return the data describing the action performed
-         */
-        public C getActionContext() {
-            return actionContext;
-        }
-
-        /**
-         * @return the value the action has been performed upon
-         */
-        public V getValue() {
-            return value;
-        }
     }
 }

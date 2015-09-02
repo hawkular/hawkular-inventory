@@ -25,23 +25,10 @@ import org.hawkular.inventory.api.model.Feed;
  */
 public final class FeedEvent extends InventoryEvent<Feed> {
 
-    private Feed object;
-
     public FeedEvent() {
     }
 
     public FeedEvent(Action.Enumerated action, Feed object) {
-        super(action);
-        this.object = object;
-    }
-
-    @Override
-    public Feed getObject() {
-        return object;
-    }
-
-    @Override
-    public void setObject(Feed object) {
-        this.object = object;
+        super(action, object);
     }
 }
