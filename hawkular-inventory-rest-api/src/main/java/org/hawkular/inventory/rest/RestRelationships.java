@@ -136,7 +136,7 @@ public class RestRelationships extends RestBase {
         Page<Relationship> relations = resolvable.relationships(directed).getAll(filters).entities(pager);
 
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
-        Object json = getSerializedForm(jsonLdBool, relations);
+        Object json = getSerializedForm(jsonLdBool, relations, providers);
         if (jsonLdBool) {
             return pagedResponse(Response.ok(), uriInfo, relations, json).build();
         }
@@ -156,7 +156,7 @@ public class RestRelationships extends RestBase {
                                     @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                                     @Context UriInfo uriInfo) {
         Relationship relationship = inventory.relationships().get(relationshipId).entity();
-        Object json = getSerializedForm(Boolean.parseBoolean(jsonLd), relationship);
+        Object json = getSerializedForm(Boolean.parseBoolean(jsonLd), relationship, providers);
         return Response.ok(json).build();
     }
 
@@ -341,7 +341,7 @@ public class RestRelationships extends RestBase {
         }
     }
 
-    private Object getSerializedForm(boolean jsonLd, Object object) {
+    static Object getSerializedForm(boolean jsonLd, Object object, Providers providers) {
         ContextResolver<ObjectMapper> contextResolver =
             providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
         if (jsonLd) {
