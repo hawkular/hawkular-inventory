@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 
@@ -900,192 +901,305 @@ public abstract class Path {
             this.segments = segments;
             this.constructor = constructor;
         }
+
+        protected Impl get() {
+            return constructor.create(0, segments.size(), segments);
+        }
     }
 
-    public static class Builder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class Builder<Impl extends Path,
+            TB extends TenantBuilder<Impl, EB, RTB, MTB, OTB, SDB, FB, RB, MB>,
+            EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
+            RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
+            MTB extends MetricTypeBuilder<Impl>,
+            RLB extends RelationshipBuilder<Impl>,
+            OTB extends OperationTypeBuilder<Impl, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>,
+            FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, SDB>,
+            MB extends MetricBuilder<Impl>> extends AbstractBuilder<Impl> {
+
         Builder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public TenantBuilder<Impl> tenant(String id) {
+        public TB tenant(String id) {
             segments.add(new Segment(Tenant.class, id));
-            return new TenantBuilder<>(segments, constructor);
+            return tenantBuilder(segments);
         }
 
-        public RelationshipBuilder<Impl> relationship(String id) {
+        public RLB relationship(String id) {
             segments.add(new Segment(Relationship.class, id));
-            return new RelationshipBuilder<>(segments, constructor);
+            return relationshipBuilder(segments);
         }
+
+        protected abstract TB tenantBuilder(List<Segment> segments);
+
+        protected abstract RLB relationshipBuilder(List<Segment> segments);
     }
 
-    public static class RelationshipBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class RelationshipBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         RelationshipBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
     }
 
-    public static class TenantBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class TenantBuilder<Impl extends Path,
+            EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
+            RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
+            MTB extends MetricTypeBuilder<Impl>,
+            OTB extends OperationTypeBuilder<Impl, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>,
+            FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, SDB>,
+            MB extends MetricBuilder<Impl>>
+            extends AbstractBuilder<Impl> {
 
         TenantBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public EnvironmentBuilder<Impl> environment(String id) {
+        public EB environment(String id) {
             segments.add(new Segment(Environment.class, id));
-            return new EnvironmentBuilder<>(segments, constructor);
+            return environmentBuilder(segments);
         }
 
-        public ResourceTypeBuilder<Impl> resourceType(String id) {
+        public RTB resourceType(String id) {
             segments.add(new Segment(ResourceType.class, id));
-            return new ResourceTypeBuilder<>(segments, constructor);
+            return resourceTypeBuilder(segments);
         }
 
-        public MetricTypeBuilder<Impl> metricType(String id) {
+        public MTB metricType(String id) {
             segments.add(new Segment(MetricType.class, id));
-            return new MetricTypeBuilder<>(segments, constructor);
+            return metricTypeBuilder(segments);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
+
+        protected abstract EB environmentBuilder(List<Segment> segments);
+
+        protected abstract RTB resourceTypeBuilder(List<Segment> segment);
+
+        protected abstract MTB metricTypeBuilder(List<Segment> segments);
     }
 
-    public static class ResourceTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class ResourceTypeBuilder<Impl extends Path,
+            OTB extends OperationTypeBuilder<Impl, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>>
+            extends AbstractBuilder<Impl> {
+
         ResourceTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public StructuredDataBuilder<Impl> data(ResourceTypes.DataRole role) {
+        public SDB data(ResourceTypes.DataRole role) {
             segments.add(new Segment(DataEntity.class, role.name()));
-            return new StructuredDataBuilder<>(segments, constructor);
+            return structuredDataBuilder(segments);
         }
 
-        public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+        public OTB operationType(String id) {
+            segments.add(new Segment(OperationType.class, id));
+            return operationTypeBuilder(segments);
         }
+
+        @Override
+        public Impl get() {
+            return super.get();
+        }
+
+        protected abstract OTB operationTypeBuilder(List<Segment> segments);
+
+        protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }
 
-    public static class MetricTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class MetricTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
         MetricTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
     }
 
-    public static class EnvironmentBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class EnvironmentBuilder<Impl extends Path,
+            FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, SDB>,
+            MB extends MetricBuilder<Impl>,
+            RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
+            MTB extends MetricTypeBuilder<Impl>,
+            OTB extends OperationTypeBuilder<Impl, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>>
+            extends AbstractBuilder<Impl> {
+
         EnvironmentBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public FeedBuilder<Impl> feed(String id) {
+        public FB feed(String id) {
             segments.add(new Segment(Feed.class, id));
-            return new FeedBuilder<>(segments, constructor);
+            return feedBuilder(segments);
         }
 
-        public ResourceBuilder<Impl> resource(String id) {
+        public RB resource(String id) {
             segments.add(new Segment(Resource.class, id));
-            return new ResourceBuilder<>(segments, constructor);
+            return resourceBuilder(segments);
         }
 
-        public MetricBuilder<Impl> metric(String id) {
+        public MB metric(String id) {
             segments.add(new Segment(Metric.class, id));
-            return new MetricBuilder<>(segments, constructor);
+            return metricBuilder(segments);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
+
+        protected abstract FB feedBuilder(List<Segment> segments);
+
+        protected abstract RB resourceBuilder(List<Segment> segments);
+
+        protected abstract MB metricBuilder(List<Segment> segments);
     }
 
-    public static class FeedBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class FeedBuilder<Impl extends Path,
+            RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
+            MTB extends MetricTypeBuilder<Impl>,
+            RB extends ResourceBuilder<Impl, RB, SDB>,
+            MB extends MetricBuilder<Impl>,
+            OTB extends OperationTypeBuilder<Impl, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>> extends AbstractBuilder<Impl> {
 
         FeedBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public ResourceBuilder<Impl> resource(String id) {
+        public RB resource(String id) {
             segments.add(new Segment(Resource.class, id));
-            return new ResourceBuilder<>(segments, constructor);
+            return resourceBuilder(segments);
         }
 
-        public MetricBuilder<Impl> metric(String id) {
+        public MB metric(String id) {
             segments.add(new Segment(Metric.class, id));
-            return new MetricBuilder<>(segments, constructor);
+            return metricBuilder(segments);
         }
 
-        public MetricTypeBuilder<Impl> metricType(String id) {
+        public MTB metricType(String id) {
             segments.add(new Segment(MetricType.class, id));
-            return new MetricTypeBuilder<>(segments, constructor);
+            return metricTypeBuilder(segments);
         }
 
-        public ResourceTypeBuilder<Impl> resourceType(String id) {
+        public RTB resourceType(String id) {
             segments.add(new Segment(ResourceType.class, id));
-            return new ResourceTypeBuilder<>(segments, constructor);
+            return resourceTypeBuilder(segments);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
+
+        protected abstract RTB resourceTypeBuilder(List<Segment> segments);
+
+        protected abstract MTB metricTypeBuilder(List<Segment> segments);
+
+        protected abstract RB resourceBuilder(List<Segment> segments);
+
+        protected abstract MB metricBuilder(List<Segment> segments);
     }
 
-    public static class ResourceBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class ResourceBuilder<Impl extends Path,
+            This extends ResourceBuilder<Impl, This, SDB>,
+            SDB extends StructuredDataBuilder<Impl, SDB>>
+            extends AbstractBuilder<Impl> {
 
         ResourceBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public ResourceBuilder<Impl> resource(String id) {
+        @SuppressWarnings("unchecked")
+        public This resource(String id) {
             segments.add(new Segment(Resource.class, id));
-            return this;
+            return (This) this;
         }
 
-        public StructuredDataBuilder<Impl> data(Resources.DataRole role) {
+        public SDB data(Resources.DataRole role) {
             segments.add(new Segment(DataEntity.class, role.name()));
-            return new StructuredDataBuilder<>(segments, constructor);
+            return structuredDataBuilder(segments);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
+
+        protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }
 
-    public static class MetricBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class MetricBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         MetricBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
     }
 
-    public static class StructuredDataBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    protected abstract static class StructuredDataBuilder<Impl extends Path,
+            This extends StructuredDataBuilder<Impl, This>> extends AbstractBuilder<Impl> {
 
         StructuredDataBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
 
-        public StructuredDataBuilder<Impl> key(String name) {
+        @SuppressWarnings("unchecked")
+        public This key(String name) {
             segments.add(new Segment(StructuredData.class, name));
-            return this;
+            return (This) this;
         }
 
-        public StructuredDataBuilder<Impl> index(int index) {
+        @SuppressWarnings("unchecked")
+        public This index(int index) {
             segments.add(new Segment(StructuredData.class, "" + index));
-            return this;
+            return (This) this;
         }
 
+        @Override
         public Impl get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
+    }
+
+    protected abstract static class OperationTypeBuilder<Impl extends Path,
+            SDB extends StructuredDataBuilder<Impl, SDB>> extends AbstractBuilder<Impl> {
+        OperationTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
+            super(segments, constructor);
+        }
+
+        public SDB data(OperationTypes.DataRole role) {
+            segments.add(new Segment(DataEntity.class, role.name()));
+            return structuredDataBuilder(segments);
+        }
+
+        @Override
+        public Impl get() {
+            return super.get();
+        }
+
+        protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }
 }

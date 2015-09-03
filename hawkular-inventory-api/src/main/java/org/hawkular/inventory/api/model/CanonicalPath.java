@@ -39,9 +39,9 @@ import java.util.Set;
  */
 public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 
-    public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
-    public static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
+    static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
+    static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
+    static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
 
     static {
         SHORT_NAME_TYPES.put("t", Tenant.class);
@@ -106,8 +106,8 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     /**
      * @return a new path builder
      */
-    public static Builder<CanonicalPath> of() {
-        return new Builder<>(new ArrayList<>(), CanonicalPath::new);
+    public static Builder of() {
+        return new Builder(new ArrayList<>());
     }
 
     /**
@@ -277,6 +277,169 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     @Override
     public Iterator<CanonicalPath> iterator() {
         return ascendingIterator();
+    }
+
+    public static final class Builder extends Path.Builder<CanonicalPath, TenantBuilder, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, RelationshipBuilder, OperationTypeBuilder, StructuredDataBuilder,
+            FeedBuilder, ResourceBuilder, MetricBuilder> {
+
+        private Builder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected RelationshipBuilder relationshipBuilder(List<Segment> list) {
+            return new RelationshipBuilder(list);
+        }
+
+        @Override
+        protected TenantBuilder tenantBuilder(List<Segment> list) {
+            return new TenantBuilder(list);
+        }
+    }
+
+    public static final class TenantBuilder extends Path.TenantBuilder<CanonicalPath, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder, FeedBuilder,
+            ResourceBuilder, MetricBuilder> {
+
+        private TenantBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected EnvironmentBuilder environmentBuilder(List<Segment> list) {
+            return new EnvironmentBuilder(list);
+        }
+
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> list) {
+            return new ResourceTypeBuilder(list);
+        }
+
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> list) {
+            return new MetricTypeBuilder(list);
+        }
+    }
+
+    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<CanonicalPath, FeedBuilder,
+            ResourceBuilder, MetricBuilder, ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder,
+            StructuredDataBuilder> {
+
+        private EnvironmentBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected FeedBuilder feedBuilder(List<Segment> segments) {
+            return new FeedBuilder(segments);
+        }
+
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
+            return new ResourceBuilder(segments);
+        }
+
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
+        }
+    }
+
+    public static final class ResourceTypeBuilder extends Path.ResourceTypeBuilder<CanonicalPath,
+            OperationTypeBuilder, StructuredDataBuilder> {
+
+        private ResourceTypeBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected OperationTypeBuilder operationTypeBuilder(List<Segment> segments) {
+            return new OperationTypeBuilder(segments);
+        }
+
+        @Override protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class MetricTypeBuilder extends Path.MetricTypeBuilder<CanonicalPath> {
+
+        private MetricTypeBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class OperationTypeBuilder extends Path.OperationTypeBuilder<CanonicalPath,
+            StructuredDataBuilder> {
+
+        private OperationTypeBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class ResourceBuilder extends Path.ResourceBuilder<CanonicalPath, ResourceBuilder,
+            StructuredDataBuilder> {
+        private ResourceBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class MetricBuilder extends Path.MetricBuilder<CanonicalPath> {
+        private MetricBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class FeedBuilder extends Path.FeedBuilder<CanonicalPath, ResourceTypeBuilder,
+            MetricTypeBuilder, ResourceBuilder, MetricBuilder, OperationTypeBuilder, StructuredDataBuilder> {
+        private FeedBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> segments) {
+            return new ResourceTypeBuilder(segments);
+        }
+
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> segments) {
+            return new MetricTypeBuilder(segments);
+        }
+
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
+            return new ResourceBuilder(segments);
+        }
+
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
+        }
+    }
+
+    public static final class RelationshipBuilder extends Path.RelationshipBuilder<CanonicalPath> {
+        private RelationshipBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class StructuredDataBuilder extends Path.StructuredDataBuilder<CanonicalPath,
+            CanonicalPath.StructuredDataBuilder> {
+
+        private StructuredDataBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
     }
 
     public final class IdExtractor {
