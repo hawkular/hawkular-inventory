@@ -180,8 +180,7 @@ public class RestResourceTypesOperationTypes extends RestBase {
     private Response doCreateData(String environmentId, String feedId, String resourceTypeId,
                                   OperationType.Blueprint blueprint, UriInfo uriInfo) {
 
-        CanonicalPath resourceType = CanonicalPath.of().tenant(getTenantId()).environment(environmentId).feed(feedId)
-                .resourceType(resourceTypeId).get();
+        CanonicalPath resourceType = getResourceTypePath(environmentId, feedId, resourceTypeId);
 
         if (!security.canUpdate(resourceType)) {
             return Response.status(FORBIDDEN).build();
@@ -229,6 +228,15 @@ public class RestResourceTypesOperationTypes extends RestBase {
         if (environmentId == null) {
             return CanonicalPath.of().tenant(getTenantId()).resourceType(resourceTypeId).operationType
                     (operationTypeId).get();
+        } else {
+            return CanonicalPath.of().tenant(getTenantId()).environment(environmentId).feed(feedId)
+                    .resourceType(resourceTypeId).get();
+        }
+    }
+
+    private CanonicalPath getResourceTypePath(String environmentId, String feedId, String resourceTypeId) {
+        if (environmentId == null) {
+            return CanonicalPath.of().tenant(getTenantId()).resourceType(resourceTypeId).get();
         } else {
             return CanonicalPath.of().tenant(getTenantId()).environment(environmentId).feed(feedId)
                     .resourceType(resourceTypeId).get();

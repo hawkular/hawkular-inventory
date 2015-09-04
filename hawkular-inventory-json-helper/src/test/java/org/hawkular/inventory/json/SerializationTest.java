@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -298,6 +299,13 @@ public class SerializationTest {
 
         testDetyped(m, "{\"path\":\"/t;t/e;e/f;f/m;c\",\"properties\":{\"a\":\"b\"}}");
         testDetyped(m, "{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}");
+    }
+
+    @Test
+    public void testOperationType() throws Exception {
+        OperationType ot = new OperationType(CanonicalPath.fromString("/t;t/rt;rt/ot;ot"));
+
+        test(ot);
     }
 
     @Test

@@ -975,6 +975,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .get("Person").operationTypes().get("start");
 
         Assert.assertNotNull(ots.entity());
+
+        //also test the inspect path
+        ots = inventory.inspect(CanonicalPath.of().tenant("com.acme.tenant").resourceType("Person").operationType
+                ("start").get(), OperationTypes.Single.class);
+
         Assert.assertEquals("start", ots.entity().getId());
 
         StructuredData returnTypeSchema = ots.data().get(OperationTypes.DataRole.returnType).entity().getValue();

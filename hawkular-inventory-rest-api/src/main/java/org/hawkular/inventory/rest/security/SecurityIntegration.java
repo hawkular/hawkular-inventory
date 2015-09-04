@@ -34,13 +34,13 @@ import org.hawkular.accounts.api.model.Persona;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.PartiallyApplied;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
@@ -108,6 +108,7 @@ public class SecurityIntegration {
             install(inventory, MetricType.class);
             install(inventory, Resource.class);
             install(inventory, Metric.class);
+            install(inventory, OperationType.class);
             //install(inventory, Relationship.class);
         }
     }
@@ -121,10 +122,10 @@ public class SecurityIntegration {
 
     private <E extends AbstractElement<?, ?>> void install(Inventory inventory, Class<E> cls) {
         subscriptions.add(inventory.observable(Interest.in(cls).being(created()))
-                .subscribe(PartiallyApplied.procedure(this::react).second(created())));
+                .subscribe((e) -> react(e, created())));
 
         subscriptions.add(inventory.observable(Interest.in(cls).being(deleted()))
-                .subscribe(PartiallyApplied.procedure(this::react).second(deleted())));
+                .subscribe((e) -> react(e, deleted())));
     }
 
     @Transactional

@@ -181,6 +181,10 @@ public class InventorySecurity implements Security {
                 operations.setup("update-metricType").add("Administrator").persist();
                 operations.setup("delete-metricType").add("Administrator").persist();
 
+                operations.setup("create-operationType").add("Administrator").persist();
+                operations.setup("update-operationType").add("Administrator").persist();
+                operations.setup("delete-operationType").add("Administrator").persist();
+
                 operations.setup("create-feed").add("Administrator").persist();
                 operations.setup("update-feed").add("Administrator").persist();
                 operations.setup("delete-feed").add("Administrator").persist();
@@ -220,6 +224,10 @@ public class InventorySecurity implements Security {
             Operation createMetricTypeOperation = operations.getByName("create-metricType");
             Operation updateMetricTypeOperation = operations.getByName("update-metricType");
             Operation deleteMetricTypeOperation = operations.getByName("delete-metricType");
+
+            Operation createOperationTypeOperation = operations.getByName("create-operationType");
+            Operation updateOperationTypeOperation = operations.getByName("update-operationType");
+            Operation deleteOperationTypeOperation = operations.getByName("delete-operationType");
 
             Operation createFeedOperation = operations.getByName("create-feed");
             Operation updateFeedOperation = operations.getByName("update-feed");
@@ -279,6 +287,13 @@ public class InventorySecurity implements Security {
 
             operationsByType.put(Relationship.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
                 put(OperationType.ASSOCIATE, associate);
+            }});
+
+            operationsByType.put(org.hawkular.inventory.api.model.OperationType.class, new EnumMap<OperationType,
+                    Operation>(OperationType.class) {{
+                put(OperationType.CREATE, createOperationTypeOperation);
+                put(OperationType.UPDATE, updateOperationTypeOperation);
+                put(OperationType.DELETE, deleteOperationTypeOperation);
             }});
         }
     }

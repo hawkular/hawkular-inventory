@@ -24,6 +24,7 @@ import java.util.Map;
  */
 public final class OperationType extends Entity<OperationType.Blueprint, OperationType.Update> {
 
+    @SuppressWarnings("unused")
     private OperationType() {
     }
 
@@ -51,6 +52,14 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
             return new Builder();
         }
 
+        /**
+         * Serialization support
+         */
+        @SuppressWarnings("unused")
+        private Blueprint() {
+            super(null, null);
+        }
+
         public Blueprint(String id, Map<String, Object> properties) {
             super(id, properties);
         }
@@ -72,6 +81,14 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        /**
+         * Serialization support
+         */
+        @SuppressWarnings("unused")
+        private Update() {
+            this(null);
         }
 
         public Update(Map<String, Object> properties) {

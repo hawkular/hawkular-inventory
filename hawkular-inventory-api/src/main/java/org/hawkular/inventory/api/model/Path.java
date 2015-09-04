@@ -588,27 +588,7 @@ public abstract class Path {
         }
 
         public <R, P> R accept(ElementTypeVisitor<R, P> visitor, P parameter) {
-            if (Environment.class.equals(elementType)) {
-                return visitor.visitEnvironment(parameter);
-            } else if (Feed.class.equals(elementType)) {
-                return visitor.visitFeed(parameter);
-            } else if (Metric.class.equals(elementType)) {
-                return visitor.visitMetric(parameter);
-            } else if (MetricType.class.equals(elementType)) {
-                return visitor.visitMetricType(parameter);
-            } else if (Relationship.class.equals(elementType)) {
-                return visitor.visitRelationship(parameter);
-            } else if (Resource.class.equals(elementType)) {
-                return visitor.visitResource(parameter);
-            } else if (ResourceType.class.equals(elementType)) {
-                return visitor.visitResourceType(parameter);
-            } else if (Tenant.class.equals(elementType)) {
-                return visitor.visitTenant(parameter);
-            } else if (DataEntity.class.equals(elementType)) {
-                return visitor.visitData(parameter);
-            } else {
-                return visitor.visitUnknown(parameter);
-            }
+            return ElementTypeVisitor.accept(elementType, visitor, parameter);
         }
 
         public String getElementId() {
