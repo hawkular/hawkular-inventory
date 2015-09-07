@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.security;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
@@ -51,7 +51,7 @@ import rx.Subscription;
 
 /**
  * Integrates the security concerns with the inventory.
- *
+ * <p>
  * <p>Mutation operations must be checked explicitly in the REST classes using the {@link Security} bean and invoking
  * one of its {@code can*()} methods. The creation of the security resources associated with the newly created inventory
  * entities is handled automagically by this class which does that by observing the mutation events on the inventory.
@@ -68,23 +68,31 @@ public class SecurityIntegration {
     @Inject
     PersonaService personas;
 
+    // this flag is here because even if @AllPermissive security is used all over the code, the @PostConstruct method
+    // in Security class is performed. Same applies for @Observes here, if the event is emitted.
+    private static final boolean DUMMY = false;
+
     private final Set<Subscription> subscriptions = new HashSet<>();
 
     public void start(@Observes InventoryInitialized event) {
-        Inventory inventory = event.getInventory();
-        install(inventory, Tenant.class);
-        install(inventory, Environment.class);
-        install(inventory, Feed.class);
-        install(inventory, ResourceType.class);
-        install(inventory, MetricType.class);
-        install(inventory, Resource.class);
-        install(inventory, Metric.class);
-        //install(inventory, Relationship.class);
+        if (!isDummy()) {
+            Inventory inventory = event.getInventory();
+            install(inventory, Tenant.class);
+            install(inventory, Environment.class);
+            install(inventory, Feed.class);
+            install(inventory, ResourceType.class);
+            install(inventory, MetricType.class);
+            install(inventory, Resource.class);
+            install(inventory, Metric.class);
+            //install(inventory, Relationship.class);
+        }
     }
 
     public void stop(@Observes DisposingInventory event) {
-        subscriptions.forEach(Subscription::unsubscribe);
-        subscriptions.clear();
+        if (!isDummy()) {
+            subscriptions.forEach(Subscription::unsubscribe);
+            subscriptions.clear();
+        }
     }
 
     private <E extends AbstractElement<?, ?>> void install(Inventory inventory, Class<E> cls) {
@@ -97,15 +105,17 @@ public class SecurityIntegration {
 
     @Transactional
     public void react(AbstractElement<?, ?> entity, Action<?, ?> action) {
-        switch (action.asEnum()) {
-            case CREATED:
-                createSecurityResource(entity);
-                break;
-            case DELETED:
-                String stableId = Security.getStableId(entity);
-                storage.delete(stableId);
-                LOGGER.debugf("Deleted security entity with stable ID '%s' for entity %s", stableId, entity);
-                break;
+        if (!isDummy()) {
+            switch (action.asEnum()) {
+                case CREATED:
+                    createSecurityResource(entity);
+                    break;
+                case DELETED:
+                    String stableId = EntityIdUtils.getStableId(entity);
+                    storage.delete(stableId);
+                    LOGGER.debugf("Deleted security entity with stable ID '%s' for entity %s", stableId, entity);
+                    break;
+            }
         }
     }
 
@@ -119,7 +129,7 @@ public class SecurityIntegration {
         // because the event handling in inventory is not ordered in any way, we might receive the info about creating
         // a parent after a child has been reported. In that case, the security resource for the parent will already
         // exist.
-        String stableId = Security.getStableId(entity);
+        String stableId = EntityIdUtils.getStableId(entity);
         if (storage.get(stableId) == null) {
             storage.create(stableId, parent, owner);
             LOGGER.debugf("Created security entity with stable ID '%s' for entity %s", stableId, entity);
@@ -134,7 +144,7 @@ public class SecurityIntegration {
             return null;
         }
 
-        String parentStableId = Security.getStableId(parentPath);
+        String parentStableId = EntityIdUtils.getStableId(parentPath);
 
         Persona owner = personas.getCurrent();
         org.hawkular.accounts.api.model.Resource parent = storage.get(parentStableId);
@@ -159,5 +169,9 @@ public class SecurityIntegration {
         }
 
         return current;
+    }
+
+    public static boolean isDummy() {
+        return DUMMY;
     }
 }

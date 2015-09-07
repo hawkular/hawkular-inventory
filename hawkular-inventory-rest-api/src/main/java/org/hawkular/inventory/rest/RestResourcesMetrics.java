@@ -45,6 +45,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
+import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -188,7 +189,7 @@ public class RestResourcesMetrics extends RestResources {
 
         Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
 
-        if (Security.isTenantEscapeAttempt(rp, mp)) {
+        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
@@ -223,7 +224,7 @@ public class RestResourcesMetrics extends RestResources {
 
         Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
 
-        if (Security.isTenantEscapeAttempt(rp, mp)) {
+        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
@@ -261,7 +262,7 @@ public class RestResourcesMetrics extends RestResources {
 
         Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
 
-        if (Security.isTenantEscapeAttempt(rp, mp)) {
+        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
@@ -300,7 +301,7 @@ public class RestResourcesMetrics extends RestResources {
 
         Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
 
-        if (Security.isTenantEscapeAttempt(rp, mp)) {
+        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
         }
 

@@ -16,10 +16,12 @@
  */
 package org.hawkular.inventory.rest;
 
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
-import org.hawkular.accounts.api.PersonaService;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.rest.security.Security;
+import org.hawkular.inventory.rest.security.TenantIdProducer;
 import org.jboss.resteasy.annotations.GZIP;
 
 /**
@@ -33,13 +35,16 @@ public class RestBase {
     @AutoTenant
     protected Inventory inventory;
 
+    // using the @AllPermissive annotation the access will be always granted
     @Inject
     protected Security security;
 
     @Inject
-    PersonaService personas;
+    // using the @AllPermissive annotation the tenant will be always the same
+    @RequestScoped
+    private TenantIdProducer tenantIdProducer;
 
     protected String getTenantId() {
-        return personas.getCurrent().getId();
+        return tenantIdProducer.getTenantId().get();
     }
 }
