@@ -92,7 +92,7 @@ public class EmptyInventory implements Inventory {
     }
 
     protected static <T> Page<T> emptyPage(Pager pager) {
-        return new Page<>(Collections.emptyList(), pager, 0);
+        return new Page<>(Collections.emptyIterator(), pager, 0);
     }
 
     protected static EntityNotFoundException entityNotFound(Class<? extends Entity<?, ?>> entityClass) {

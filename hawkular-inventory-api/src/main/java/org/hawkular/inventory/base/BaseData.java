@@ -255,12 +255,12 @@ public final class BaseData {
                 BE dataEntity, Query query) {
 
             Page<BE> possibleSchema = context.backend.traverse(dataEntity, query, Pager.single());
-            if (possibleSchema.isEmpty()) {
+            if (!possibleSchema.hasNext()) {
                 //no schema means anything is OK
                 return;
             }
 
-            DataEntity schemaEntity = context.backend.convert(possibleSchema.get(0),
+            DataEntity schemaEntity = context.backend.convert(possibleSchema.next(),
                     DataEntity.class);
 
             CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);

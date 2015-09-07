@@ -112,11 +112,11 @@ public final class BaseRelationships {
                 }
 
                 Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
-                if (origins.isEmpty()) {
+                if (!origins.hasNext()) {
                     throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
                 }
 
-                BE origin = origins.get(0);
+                BE origin = origins.next();
 
                 // if this is a well-known relationship, there might be some semantic checks for it...
                 RelationshipRules.checkCreate(context.backend, origin, direction, name, incidenceObject);

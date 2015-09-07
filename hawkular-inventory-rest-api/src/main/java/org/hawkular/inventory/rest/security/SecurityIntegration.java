@@ -94,7 +94,7 @@ public class SecurityIntegration {
 
     // this flag is here because even if @AllPermissive security is used all over the code, the @PostConstruct method
     // in Security class is performed. Same applies for @Observes here, if the event is emitted.
-    private static final boolean DUMMY = false;
+    private static final boolean DUMMY = true;
 
     private final Set<Subscription> subscriptions = new HashSet<>();
 

@@ -87,6 +87,7 @@ final class Util {
 
                     return ret;
                 } catch (Throwable e) {
+                    Log.LOGGER.error("\n\n\nTRANSACTION failed: " + e.getMessage());
                     context.backend.rollback(t);
                     throw e;
                 }
@@ -131,11 +132,11 @@ final class Util {
             Class<? extends Entity<?, ?>> entityType) {
         Page<BE> results = backend.query(query, Pager.single());
 
-        if (results.isEmpty()) {
+        if (!results.hasNext()) {
             throw new EntityNotFoundException(entityType, Query.filters(query));
         }
 
-        return results.get(0);
+        return results.next();
     }
 
     public static <BE> EntityAndPendingNotifications<Relationship> createAssociation(TraversalContext<BE, ?> context,
@@ -241,7 +242,7 @@ final class Util {
 
         BE updated = runInTransaction(context, false, (t) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
-            if (entities.isEmpty()) {
+            if (!entities.hasNext()) {
                 if (update instanceof Relationship.Update) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
@@ -250,7 +251,7 @@ final class Util {
                 }
             }
 
-            BE toUpdate = entities.get(0);
+            BE toUpdate = entities.next();
 
             if (preUpdateCheck != null) {
                 preUpdateCheck.accept(toUpdate, update);
@@ -271,19 +272,21 @@ final class Util {
 
         runInTransaction(context, false, (transaction) -> {
             Page<BE> entities = context.backend.query(entityQuery, Pager.single());
-            if (entities.isEmpty()) {
+            BE toDelete;
+            if (!entities.hasNext()) {
                 if (context.entityClass.equals(Relationship.class)) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
                     throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
                             Query.filters(entityQuery));
                 }
-            } else if (entities.size() > 1) {
-                throw new InventoryException("Ambiguous delete query. More than 1 results found for query "
-                        + entityQuery);
+            } else {
+                toDelete = entities.next();
+                if (entities.hasNext()) {
+                    throw new InventoryException("Ambiguous delete query. More than 1 results found for query "
+                            + entityQuery);
+                }
             }
-
-            BE toDelete = entities.get(0);
 
             if (cleanupFunction != null) {
                 cleanupFunction.accept(toDelete);

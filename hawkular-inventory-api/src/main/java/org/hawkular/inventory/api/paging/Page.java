@@ -16,16 +16,7 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Spliterator;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
 
 /**
  * A read-only list representing a single page of some results.
@@ -35,15 +26,19 @@ import java.util.stream.Stream;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class Page<T> implements List<T> {
-    private final List<T> wrapped;
+public class Page<T> implements Iterator<T> {
+    private final Iterator<T> wrapped;
     private final PageContext pageContext;
     private final long totalSize;
 
-    public Page(List<T> wrapped, PageContext pageContext, long totalSize) {
+    public Page(Iterator<T> wrapped, PageContext pageContext, long totalSize) {
         this.wrapped = wrapped;
         this.pageContext = pageContext;
         this.totalSize = totalSize;
+    }
+
+    protected Page(PageContext pageContext, long totalSize) {
+        this(null, pageContext, totalSize);
     }
 
     /**
@@ -60,220 +55,11 @@ public final class Page<T> implements List<T> {
         return totalSize;
     }
 
-    @Override
-    public boolean add(T t) {
-        throw new UnsupportedOperationException();
+    @Override public boolean hasNext() {
+        return wrapped.hasNext();
     }
 
-    @Override
-    public void add(int index, T element) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends T> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean addAll(int index, Collection<? extends T> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void clear() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        return wrapped.contains(o);
-    }
-
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return wrapped.containsAll(c);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return wrapped.equals(o);
-    }
-
-    @Override
-    public T get(int index) {
-        return wrapped.get(index);
-    }
-
-    @Override
-    public int hashCode() {
-        return wrapped.hashCode();
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        return wrapped.indexOf(o);
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return wrapped.isEmpty();
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        Iterator<T> it = wrapped.iterator();
-        return new Iterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override
-            public T next() {
-                return it.next();
-            }
-        };
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        return wrapped.lastIndexOf(o);
-    }
-
-    @Override
-    public ListIterator<T> listIterator() {
-        ListIterator<T> it = wrapped.listIterator();
-        return new ListIterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override
-            public T next() {
-                return it.next();
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return it.hasPrevious();
-            }
-
-            @Override
-            public T previous() {
-                return it.previous();
-            }
-
-            @Override
-            public int nextIndex() {
-                return it.nextIndex();
-            }
-
-            @Override
-            public int previousIndex() {
-                return it.previousIndex();
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void set(T t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void add(T t) {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    @Override
-    public ListIterator<T> listIterator(int index) {
-        return wrapped.listIterator(index);
-    }
-
-    @Override
-    public T remove(int index) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean remove(Object o) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void replaceAll(UnaryOperator<T> operator) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public T set(int index, T element) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int size() {
-        return wrapped.size();
-    }
-
-    @Override
-    public void sort(Comparator<? super T> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Spliterator<T> spliterator() {
-        return wrapped.spliterator();
-    }
-
-    @Override
-    public List<T> subList(int fromIndex, int toIndex) {
-        return new Page<>(wrapped.subList(fromIndex, toIndex), Pager.unlimited(pageContext.getOrder()), totalSize);
-    }
-
-    @Override
-    public Object[] toArray() {
-        return wrapped.toArray();
-    }
-
-    @Override
-    public <T1> T1[] toArray(T1[] a) {
-        return wrapped.toArray(a);
-    }
-
-    @Override
-    public Stream<T> parallelStream() {
-        return wrapped.parallelStream();
-    }
-
-    @Override
-    public boolean removeIf(Predicate<? super T> filter) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<T> stream() {
-        return wrapped.stream();
-    }
-
-    @Override
-    public void forEach(Consumer<? super T> action) {
-        wrapped.forEach(action);
+    @Override public T next() {
+        return wrapped.next();
     }
 }

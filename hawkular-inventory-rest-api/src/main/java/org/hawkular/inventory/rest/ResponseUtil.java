@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.rest;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +30,8 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.rest.json.Link;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Lukas Krejci
@@ -47,10 +53,10 @@ final class ResponseUtil {
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
-            Page<T> page) {
+                                                             ObjectMapper mapper, Page<T> page) {
 
         //extract the data out of the page
-        List<T> data = new ArrayList<>(page);
+        InputStream data = pageToStream(page, mapper);
         return pagedResponse(response, uriInfo, page, data);
     }
 
@@ -59,6 +65,20 @@ final class ResponseUtil {
         response.entity(data);
         createPagingHeader(response, uriInfo, page);
         return response;
+    }
+
+    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) {
+        PipedInputStream in = new PipedInputStream();
+        new Thread(() -> {
+            try (PipedOutputStream out = new PipedOutputStream(in)) {
+                while (page.hasNext()) {
+                    mapper.writeValue(out, page.next());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to convert page to input stream.", e);
+            }
+        }).start();
+        return in;
     }
 
     /**

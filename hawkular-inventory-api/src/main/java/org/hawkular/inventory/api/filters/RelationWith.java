@@ -64,7 +64,7 @@ public final class RelationWith {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException("there must be at least one value of the relation name");
         }
-        PropertyValues names = new PropertyValues("label", values);
+        PropertyValues names = new PropertyValues("label", (Object[]) values);
         return names;
     }
 

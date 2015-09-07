@@ -114,7 +114,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         q.counter("total").page(pager);
 
-        return new Page<>(q.cast(Element.class).toList(), pager, q.getCount("total"));
+        // here the toList is very expensive
+        return new Page<>(q.cast(Element.class).iterator(), pager, q.getCount("total"));
     }
 
     @Override
@@ -179,7 +180,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     });
         }
 
-        return new Page<>(q2.toList(), pager, q.getCount("total"));
+        return new Page<>(q2, pager, q.getCount("total"));
     }
 
     @Override
@@ -1099,7 +1100,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         PipedInputStream in = new PipedInputStream();
         //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
         new Thread(() -> {
-            try (PipedOutputStream out = new PipedOutputStream(in);) {
+            try (PipedOutputStream out = new PipedOutputStream(in)) {
                 GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to create the GraphSON dump.", e);

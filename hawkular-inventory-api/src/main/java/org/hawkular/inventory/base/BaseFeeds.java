@@ -60,11 +60,11 @@ public final class BaseFeeds {
             Page<BE> envs = context.backend.query(context.sourcePath.extend().filter().with(type(Environment.class))
                     .get(), Pager.single());
 
-            if (envs.isEmpty()) {
+            if (!envs.hasNext()) {
                 throw new EntityNotFoundException(Environment.class, Query.filters(context.sourcePath));
             }
 
-            BE envObject = envs.get(0);
+            BE envObject = envs.next();
 
             CanonicalPath feedPath = context.backend.extractCanonicalPath(envObject)
                     .extend(Feed.class, blueprint.getId()).get();

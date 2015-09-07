@@ -45,6 +45,7 @@ class DrainedRangeFilterPipe<S> extends AbstractPipe<S, S> implements FilterPipe
         }
     }
 
+    // the issue is that this method is called too many times
     protected S processNextStart() {
         while (true) {
             final S s = this.starts.next();

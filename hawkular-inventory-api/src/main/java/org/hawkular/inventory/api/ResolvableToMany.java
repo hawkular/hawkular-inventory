@@ -17,8 +17,10 @@
 
 package org.hawkular.inventory.api;
 
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
@@ -45,13 +47,15 @@ public interface ResolvableToMany<Entity> {
      * @return all the entities on the current position in the traversal and returns them as a set.
      */
     default Set<Entity> entities() {
-        return new HashSet<>(entities(Pager.unlimited(Order.unspecified())));
+        Iterator<Entity> it = entities(Pager.unlimited(Order.unspecified()));
+        Iterable<Entity> iterable = () -> it;
+        return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toSet());
     }
 
     /**
      * @return true if there is at least 1 entity on the current position in the inventory traversal
      */
     default boolean anyExists() {
-        return !entities(Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).isEmpty();
+        return entities(Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).hasNext();
     }
 }

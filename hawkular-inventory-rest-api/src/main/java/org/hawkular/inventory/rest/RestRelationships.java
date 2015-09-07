@@ -22,7 +22,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -139,7 +138,7 @@ public class RestRelationships extends RestBase {
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
         Object json = getSerializedForm(jsonLdBool, relations, providers);
         if (jsonLdBool) {
-            return pagedResponse(Response.ok(), uriInfo, relations, json).build();
+            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, relations, json).build();
         }
         return pagedResponse(Response.ok(), uriInfo, relations).build();
     }

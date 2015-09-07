@@ -19,7 +19,6 @@ package org.hawkular.inventory.rest;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -121,7 +120,7 @@ public class RestPath extends RestBase {
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
         Object json = RestRelationships.getSerializedForm(jsonLdBool, relations, providers);
         if (jsonLdBool) {
-            return pagedResponse(Response.ok(), uriInfo, relations, json).build();
+            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, relations, json).build();
         }
         return pagedResponse(Response.ok(), uriInfo, relations).build();
     }

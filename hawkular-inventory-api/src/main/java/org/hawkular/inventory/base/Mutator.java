@@ -71,7 +71,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
             Page<BE> results = context.backend.query(existenceCheck, Pager.single());
 
-            if (!results.isEmpty()) {
+            if (results.hasNext()) {
                 throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
             }
 
@@ -159,7 +159,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             protected BE defaultAction() {
                 Page<BE> res = context.backend.query(context.sourcePath, Pager.single());
 
-                if (res.isEmpty()) {
+                if (!res.hasNext()) {
                     Class<? extends Entity<?, ?>> parentEntityClass = null;
                     if (context.previous != null && Entity.class.isAssignableFrom(context.previous.entityClass)) {
                         parentEntityClass = (Class<? extends Entity<?, ?>>) context.previous.entityClass;
@@ -168,7 +168,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                     throw new EntityNotFoundException(parentEntityClass, Query.filters(context.sourcePath));
                 }
 
-                return res.get(0);
+                return res.next();
             }
 
             @Override

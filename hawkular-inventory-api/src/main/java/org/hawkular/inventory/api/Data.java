@@ -139,8 +139,8 @@ public final class Data {
 
         @Override
         default boolean anyExists() {
-            return !flatData(RelativePath.empty().get(),
-                    Pager.builder().withPageSize(1).orderBy(Order.unspecified()).build()).isEmpty();
+            return flatData(RelativePath.empty().get(), Pager.builder().withPageSize(1).orderBy(Order.unspecified())
+                    .build()).hasNext();
         }
     }
 }

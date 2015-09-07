@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -30,6 +27,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.api.paging.TransformingPage;
 
 /**
  * A base class for all interface impls that need to resolve the entities.
@@ -67,11 +65,11 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
         return readOnly(() -> {
             Page<BE> results = context.backend.query(context.select().get(), Pager.single());
 
-            if (results.isEmpty()) {
+            if (!results.hasNext()) {
                 throwNotFoundException();
             }
 
-            BE backendEntity = results.get(0);
+            BE backendEntity = results.next();
 
             E entity = context.backend.convert(backendEntity, context.entityClass);
 
@@ -144,11 +142,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
             Page<Pair<BE, E>> intermediate =
                     context.backend.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
-
-            List<T> converted = intermediate.stream().map((p) -> conversionFunction.apply(p.first, p.second))
-                    .collect(toList());
-
-            return new Page<>(converted, intermediate.getPageContext(), intermediate.getTotalSize());
+            return new TransformingPage<>(intermediate, (p) -> conversionFunction.apply(p.first, p.second));
         });
     }
 
