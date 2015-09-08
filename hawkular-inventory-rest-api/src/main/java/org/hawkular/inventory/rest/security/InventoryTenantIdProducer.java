@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.security;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Default;
@@ -28,16 +28,19 @@ import org.hawkular.accounts.api.model.Persona;
  * @author Lukas Krejci
  * @since 0.2.0
  */
-public class TenantIdProducer {
+@RequestScoped
+@Default
+public class InventoryTenantIdProducer implements TenantIdProducer {
 
     @Inject
     @CurrentUser
     private Persona currentUser;
 
+    @Override
     @Produces
     @Default
-    @RequestScoped
     public TenantId getTenantId() {
         return new TenantId(currentUser.getId());
     }
 }
+
