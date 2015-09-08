@@ -19,6 +19,7 @@ package org.hawkular.inventory.bus.api;
 import javax.jms.Message;
 
 import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.consumer.BasicMessageListener;
 import org.hawkular.inventory.api.model.Tenant;
 
@@ -43,10 +44,10 @@ public abstract class InventoryEventMessageListener extends BasicMessageListener
     }
 
     @Override
-    protected InventoryEvent<?> getBasicMessageFromMessage(Message message) {
+    protected BasicMessageWithExtraData<InventoryEvent<?>> parseMessage(Message message) {
         try {
             currentEventType.set(InventoryEvent.determineEventType(message));
-            return super.getBasicMessageFromMessage(message);
+            return super.parseMessage(message);
         } finally {
             currentEventType.set(null);
         }
