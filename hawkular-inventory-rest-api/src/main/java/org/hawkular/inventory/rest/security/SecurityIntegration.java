@@ -54,7 +54,31 @@ import rx.Subscription;
  * <p>
  * <p>Mutation operations must be checked explicitly in the REST classes using the {@link Security} bean and invoking
  * one of its {@code can*()} methods. The creation of the security resources associated with the newly created inventory
- * entities is handled automagically by this class which does that by observing the mutation events on the inventory.
+ * entities is handled automagically by this class which does that by observing the mutation events on the inventory
+ * .</p>
+ *
+ * <p>
+ * To completely disable the auth completely do following:
+ * <ul>
+ *   <li>Use the {@link org.hawkular.inventory.rest.security.dummy.AllPermissive} annotation in RestBase class
+ *       (it's commented there).</li>
+ *   <li>Set the {@link SecurityIntegration#DUMMY} flag to true in {@link SecurityIntegration} class.</li>
+ *   <li>Comment out the secure-deployment element for <code>hawkular-inventory-dist.war</code> in
+ *       <a href="http://git.io/vZkQs">dist/src/main/resources/wildfly/patches/standalone.xsl</a> in hawkular/hawkular
+ *       repo.</li>
+ *   <li>Comment out the keycloak xml elements in <code>jboss-web.xml</code> and <code>web.xml</code>
+ *   (it's commented there).</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <strong>NOTE1:</strong> it can be disabled also only partially, for instance if the
+ * {@link org.hawkular.inventory.rest.security.dummy.AllPermissive} annotation is used only above the
+ * {@link org.hawkular.inventory.rest.RestBase#tenantIdProducer} field the auth will be working but the tenant will
+ * be always the same.
+ * </p>
+ * <p>
+ * <strong>NOTE2:</strong> This may be useful to measure the impact of security aspects to the overall performance.
+ * </p>
  *
  * @author Lukas Krejci
  * @since 0.0.2

@@ -21,6 +21,6 @@
   <context-root>/hawkular/inventory</context-root>
 
   <!-- comment the following line out to disable keycloak auth -->
-  <!--<security-domain>keycloak</security-domain>-->
+  <security-domain>keycloak</security-domain>
 
 </jboss-web>
