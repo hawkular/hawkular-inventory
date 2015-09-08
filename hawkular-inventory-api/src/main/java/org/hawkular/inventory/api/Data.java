@@ -19,7 +19,6 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
-import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 
@@ -139,8 +138,7 @@ public final class Data {
 
         @Override
         default boolean anyExists() {
-            return flatData(RelativePath.empty().get(), Pager.builder().withPageSize(1).orderBy(Order.unspecified())
-                    .build()).hasNext();
+            return flatData(RelativePath.empty().get(), Pager.single()).hasNext();
         }
     }
 }

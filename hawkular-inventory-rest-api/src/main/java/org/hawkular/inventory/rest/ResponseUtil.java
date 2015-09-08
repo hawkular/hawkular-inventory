@@ -54,9 +54,10 @@ final class ResponseUtil {
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
                                                              ObjectMapper mapper, Page<T> page) {
-
         //extract the data out of the page
         InputStream data = pageToStream(page, mapper);
+
+        // the page iterator should be depleted by this time so the total size should be correctly set
         return pagedResponse(response, uriInfo, page, data);
     }
 
@@ -69,7 +70,7 @@ final class ResponseUtil {
 
     private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) {
         PipedInputStream in = new PipedInputStream();
-        new Thread(() -> {
+        Thread work = new Thread(() -> {
             try (PipedOutputStream out = new PipedOutputStream(in)) {
                 while (page.hasNext()) {
                     mapper.writeValue(out, page.next());
@@ -77,7 +78,8 @@ final class ResponseUtil {
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to convert page to input stream.", e);
             }
-        }).start();
+        });
+        PageToStreamThreadPool.getInstance().submit(work);
         return in;
     }
 

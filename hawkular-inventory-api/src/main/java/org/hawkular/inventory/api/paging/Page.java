@@ -16,7 +16,13 @@
  */
 package org.hawkular.inventory.api.paging;
 
+import java.lang.ref.WeakReference;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * A read-only list representing a single page of some results.
@@ -27,12 +33,12 @@ import java.util.Iterator;
  * @since 0.0.1
  */
 public class Page<T> implements Iterator<T> {
-    private final Iterator<T> wrapped;
+    private final WeakReference<Iterator<T>> wrapped;
     private final PageContext pageContext;
     private final long totalSize;
 
     public Page(Iterator<T> wrapped, PageContext pageContext, long totalSize) {
-        this.wrapped = wrapped;
+        this.wrapped = new WeakReference<>(wrapped);
         this.pageContext = pageContext;
         this.totalSize = totalSize;
     }
@@ -55,11 +61,26 @@ public class Page<T> implements Iterator<T> {
         return totalSize;
     }
 
+    /**
+     * Try to avoid calling this method in production code, because it can have bad impact on performance
+     *
+     * @return results in a list form
+     */
+    public List<T> toList() {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+                .collect(Collectors.<T>toList());
+    }
+
     @Override public boolean hasNext() {
-        return wrapped.hasNext();
+        Iterator<T> it = wrapped.get();
+        return it != null && it.hasNext();
     }
 
     @Override public T next() {
-        return wrapped.next();
+        Iterator<T> it = wrapped.get();
+        if (it == null) {
+            throw new IllegalStateException("the weak reference has been cleared");
+        }
+        return it.next();
     }
 }

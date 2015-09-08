@@ -16,38 +16,72 @@
  */
 package org.hawkular.inventory.api.paging;
 
+import java.lang.ref.WeakReference;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * A read-only list representing a single page of some results lazily applying the conversionFunction on each of its
  * elements.
  *
- * @author Jirka Krejci
+ * @author Jirka Kremser
  * @since 0.3.4
  */
-public final class TransformingPage<T, R> extends Page<R> {
-    private final Function<? super T, ? extends R> conversionFunction;
-    private final Page<T> wrappedPage;
+public final class TransformingPage<I, O> extends Page<O> {
+    private final Function<? super I, ? extends O> conversionFunction;
+    private final WeakReference<Page<I>> wrappedPage;
 
-    public TransformingPage(Page<T> wrappedPage, Function<? super T, ? extends R> conversionFunction) {
+    public TransformingPage(Page<I> wrappedPage, Function<? super I, ? extends O> conversionFunction) {
         super(wrappedPage.getPageContext(), wrappedPage.getTotalSize());
+        if (conversionFunction == null) {
+            throw new IllegalArgumentException("conversionFunction can't be null");
+        }
         this.conversionFunction = conversionFunction;
-        this.wrappedPage = wrappedPage;
+        this.wrappedPage = new WeakReference<>(wrappedPage);
     }
 
     /**
      * @return the conversion function that is mapped onto elements when calling {@link #next()}
      */
-    public Function<? super T, ? extends R> getConversionFunction() {
+    public Function<? super I, ? extends O> getConversionFunction() {
         return conversionFunction;
     }
 
     @Override
-    public R next() {
-        return conversionFunction == null ? null : conversionFunction.apply(wrappedPage.next());
+    public O next() {
+        return conversionFunction.apply(getPage().next());
     }
 
     @Override public boolean hasNext() {
-        return wrappedPage.hasNext();
+        Page<I> it = wrappedPage.get();
+        return it != null && it.hasNext();
+    }
+
+    @Override
+    public PageContext getPageContext() {
+        return getPage().getPageContext();
+    }
+
+    @Override
+    public long getTotalSize() {
+        return getPage().getTotalSize();
+    }
+
+    @Override
+    public List<O> toList() {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+                .collect(Collectors.<O>toList());
+    }
+
+    private Page<I> getPage() {
+        Page<I> it = wrappedPage.get();
+        if (it == null) {
+            throw new IllegalStateException("the weak reference has been cleared");
+        }
+        return it;
     }
 }

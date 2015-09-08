@@ -49,12 +49,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -544,11 +542,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
                     Page<E> parents = backend.query(Query.path().with(type(parentType)).get(),
                             Pager.unlimited(Order.unspecified()));
-                    List<E> parentsList = toList(parents);
+                    List<E> parentsList = parents.toList();
 
                     Page<E> children = backend.query(Query.path().with(type(parentType),
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
-                    List<E> childrenList = toList(children);
+                    List<E> childrenList = children.toList();
 
                     assert parentsList.size() == numberOfParents : "There must be exactly " + numberOfParents + " " +
                             parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Backend " +
@@ -814,7 +812,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Query q = Query.empty().asBuilder()
                 .with(PathFragment.from(type(Environment.class))).build();
 
-        Assert.assertEquals(2, toList(inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()))).size());
+        Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).toList().size());
     }
 
     @Test
@@ -839,7 +837,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Playroom");
 
         Query query = Query.path().with(type(ResourceType.class)).get();
-        assert 4 == toList(inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()))).size();
+        assert 4 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList().size();
     }
 
     @Test
@@ -861,7 +859,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Size");
 
         Query query = Query.path().with(type(MetricType.class)).get();
-        assert 2 == toList(inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()))).size();
+        assert 2 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList().size();
     }
 
     @Test
@@ -906,8 +904,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Size", "playroom1_size");
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
-        Assert.assertEquals(4, toList(inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
-                Pager.unlimited(Order.unspecified()))).size());
+        Assert.assertEquals(4, inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
+                Pager.unlimited(Order.unspecified())).toList().size());
     }
 
     @Test
@@ -928,8 +926,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(12, toList(inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
-                Pager.unlimited(Order.unspecified()))).size());
+        Assert.assertEquals(12, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
+                Pager.unlimited(Order.unspecified())).toList().size());
     }
 
     @Test
@@ -1240,8 +1238,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testPaging() throws Exception {
         //the page is not modifiable but we'll need to modify this later on in the tests
-        List<Metric> allResults = toList(inventory.tenants().getAll().environments().getAll().feedlessMetrics()
-                .getAll().entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING))));
+        List<Metric> allResults = inventory.tenants().getAll().environments().getAll().feedlessMetrics()
+                .getAll().entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING))).toList();
 
         assert allResults.size() == 3;
 
@@ -1250,26 +1248,27 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll();
 
         Page<Metric> ms = metrics.entities(firstPage);
-        List<Metric> msList = toList(ms);
+        List<Metric> msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        System.out.println("\n\n\n\n\nPICAAA\n" + ms.getTotalSize());
+        assert ms.getTotalSize() == 3;
         assert msList.get(0).equals(allResults.get(0));
 
         ms = metrics.entities(firstPage.nextPage());
-        msList = toList(ms);
+        msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        assert ms.getTotalSize() == 3;
         assert msList.get(0).equals(allResults.get(1));
 
         ms = metrics.entities(firstPage.nextPage().nextPage());
-        msList = toList(ms);
+        msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        assert ms.getTotalSize() == 3;
         assert msList.get(0).equals(allResults.get(2));
 
         ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
-        msList = toList(ms);
-//        assert ms.getTotalSize() == 3;
+        msList = ms.toList();
+        assert ms.getTotalSize() == 3;
         assert msList.size() == 0;
 
         //try the same with an unspecified order
@@ -1280,29 +1279,29 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         firstPage = new Pager(0, 1, Order.unspecified());
 
         ms = metrics.entities(firstPage);
-        msList = toList(ms);
+        msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        assert ms.getTotalSize() == 3;
         assert allResults
                 .remove(msList.get(0)); //i.e. we check that the result is in all results and remove it from there
         //so that subsequent checks for the same thing cannot get confused by the
         //existence of this metric in all the results.
 
         ms = metrics.entities(firstPage.nextPage());
-        msList = toList(ms);
+        msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        assert ms.getTotalSize() == 3;
         assert allResults.remove(msList.get(0));
 
         ms = metrics.entities(firstPage.nextPage().nextPage());
-        msList = toList(ms);
+        msList = ms.toList();
         assert msList.size() == 1;
-//        assert ms.getTotalSize() == 3;
+        assert ms.getTotalSize() == 3;
         assert allResults.remove(msList.get(0));
 
         ms = metrics.entities(firstPage.nextPage().nextPage().nextPage());
-        msList = toList(ms);
-//        assert ms.getTotalSize() == 3;
+        msList = ms.toList();
+        assert ms.getTotalSize() == 3;
         assert msList.size() == 0;
     }
 
@@ -1357,13 +1356,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Pager pager = Pager.unlimited(Order.unspecified());
 
         Page<Resource> children = res.containedChildren().getAll().entities(pager);
-        Assert.assertEquals(2, toList(children).size());
+        Assert.assertEquals(2, children.toList().size());
 
         children = res.allChildren().getAll().entities(pager);
-        Assert.assertEquals(3, toList(children).size());
+        Assert.assertEquals(3, children.toList().size());
 
         children = res.allChildren().getAll(Related.asTargetWith(res.entity().getPath(), isParentOf)).entities(pager);
-        Assert.assertEquals(3, toList(children).size());
+        Assert.assertEquals(3, children.toList().size());
     }
 
     @Test
@@ -2137,10 +2136,5 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     private interface TetraFunction<T, U, V, W, R> {
         R apply(T t, U u, V v, W w);
-    }
-
-    private <T> List<T> toList(Page<T> page) {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(page, Spliterator.ORDERED),
-                false).collect(Collectors.<T>toList());
     }
 }
