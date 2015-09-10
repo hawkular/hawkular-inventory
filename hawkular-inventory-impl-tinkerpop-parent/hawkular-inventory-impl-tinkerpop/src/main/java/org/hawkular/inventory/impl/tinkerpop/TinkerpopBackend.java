@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
-import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -181,8 +180,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                         }
                     });
         }
-        SizeAwarePage.HasTotalSize getCount = () -> q.getCount("total");
-        return new SizeAwarePage<>(q2, pager, new WeakReference(getCount));
+
+        return new SizeAwarePage<>(q2, pager, () -> q.getCount("total"));
     }
 
     @Override

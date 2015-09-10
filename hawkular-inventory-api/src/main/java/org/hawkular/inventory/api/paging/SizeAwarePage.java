@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -27,10 +27,10 @@ import java.util.Iterator;
  * @since 0.3.4
  */
 public class SizeAwarePage<T> extends Page<T> {
-    private final WeakReference<HasTotalSize> hasTotalSize;
+    private HasTotalSize hasTotalSize;
     private long totalSize;
 
-    public SizeAwarePage(Iterator<T> wrapped, PageContext pageContext, WeakReference<HasTotalSize> hasTotalSize) {
+    public SizeAwarePage(Iterator<T> wrapped, PageContext pageContext, HasTotalSize hasTotalSize) {
         super(wrapped, pageContext, HasTotalSize.NOT_DEPLETED);
         this.totalSize = HasTotalSize.NOT_DEPLETED;
         this.hasTotalSize = hasTotalSize;
@@ -48,11 +48,10 @@ public class SizeAwarePage<T> extends Page<T> {
     @Override
     public long getTotalSize() {
         if (!hasNext() && totalSize == HasTotalSize.NOT_DEPLETED) {
-            HasTotalSize hasTotalSizeInstance = hasTotalSize.get();
-            if (hasTotalSizeInstance == null) {
+            if (hasTotalSize == null) {
                 totalSize = HasTotalSize.GARBAGE_COLLECTED;
             } else {
-                totalSize = hasTotalSizeInstance.getTotalSize();
+                totalSize = hasTotalSize.getTotalSize();
             }
         }
         return totalSize;
@@ -65,6 +64,11 @@ public class SizeAwarePage<T> extends Page<T> {
     @Override
     public T next() {
         return super.next();
+    }
+
+    @Override public void close() throws IOException {
+        this.hasTotalSize = null;
+        super.close();
     }
 
     @FunctionalInterface

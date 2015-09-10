@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 /**
@@ -32,20 +33,18 @@ public class PageToStreamThreadPool {
     private static PageToStreamThreadPool instance;
     private ExecutorService executor;
 
-    private PageToStreamThreadPool() {
-
-    }
-
+    @Produces
+    @Singleton
     public static PageToStreamThreadPool getInstance() {
         if (instance == null) {
             instance = new PageToStreamThreadPool();
+            instance.init();
         }
         return instance;
     }
 
     @PostConstruct
     public void init() {
-//        this.executor = Executors.newFixedThreadPool(16);
         this.executor = Executors.newCachedThreadPool();
     }
 

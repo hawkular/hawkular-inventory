@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -32,8 +32,8 @@ import java.util.stream.StreamSupport;
  * @since 0.3.4
  */
 public final class TransformingPage<I, O> extends Page<O> {
-    private final Function<? super I, ? extends O> conversionFunction;
-    private final WeakReference<Page<I>> wrappedPage;
+    private Function<? super I, ? extends O> conversionFunction;
+    private Page<I> wrappedPage;
 
     public TransformingPage(Page<I> wrappedPage, Function<? super I, ? extends O> conversionFunction) {
         super(wrappedPage.getPageContext(), wrappedPage.getTotalSize());
@@ -41,7 +41,7 @@ public final class TransformingPage<I, O> extends Page<O> {
             throw new IllegalArgumentException("conversionFunction can't be null");
         }
         this.conversionFunction = conversionFunction;
-        this.wrappedPage = new WeakReference<>(wrappedPage);
+        this.wrappedPage = wrappedPage;
     }
 
     /**
@@ -57,8 +57,7 @@ public final class TransformingPage<I, O> extends Page<O> {
     }
 
     @Override public boolean hasNext() {
-        Page<I> it = wrappedPage.get();
-        return it != null && it.hasNext();
+        return wrappedPage != null && wrappedPage.hasNext();
     }
 
     @Override
@@ -77,11 +76,16 @@ public final class TransformingPage<I, O> extends Page<O> {
                 .collect(Collectors.<O>toList());
     }
 
+    @Override public void close() throws IOException {
+        this.wrappedPage = null;
+        this.conversionFunction = null;
+        super.close();
+    }
+
     private Page<I> getPage() {
-        Page<I> it = wrappedPage.get();
-        if (it == null) {
-            throw new IllegalStateException("the weak reference has been cleared");
+        if (wrappedPage == null) {
+            throw new IllegalStateException("the iterator has been already closed");
         }
-        return it;
+        return wrappedPage;
     }
 }

@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -27,18 +27,22 @@ import java.util.stream.StreamSupport;
 /**
  * A read-only list representing a single page of some results.
  *
- * <p>Contains a reference to the paging state object that describes the position of the page in some overall results.
+ * <p>Contains a reference to the paging state object that describes the position of the page in some overall results
+ * .<p/>
+ *
+ * <p>This implements the {@link AutoCloseable} so make sure you call the {@link #close()} method or you use the
+ * try-with-resource statement, in order to prevent potential memory leaks. </p>
  *
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public class Page<T> implements Iterator<T> {
-    private final WeakReference<Iterator<T>> wrapped;
+public class Page<T> implements Iterator<T>, AutoCloseable, Iterable<T> {
+    private Iterator<T> wrapped;
     private final PageContext pageContext;
     private final long totalSize;
 
     public Page(Iterator<T> wrapped, PageContext pageContext, long totalSize) {
-        this.wrapped = new WeakReference<>(wrapped);
+        this.wrapped = wrapped;
         this.pageContext = pageContext;
         this.totalSize = totalSize;
     }
@@ -72,15 +76,21 @@ public class Page<T> implements Iterator<T> {
     }
 
     @Override public boolean hasNext() {
-        Iterator<T> it = wrapped.get();
-        return it != null && it.hasNext();
+        return wrapped != null && wrapped.hasNext();
     }
 
     @Override public T next() {
-        Iterator<T> it = wrapped.get();
-        if (it == null) {
-            throw new IllegalStateException("the weak reference has been cleared");
+        if (wrapped == null) {
+            throw new IllegalStateException("the iterator has been already closed");
         }
-        return it.next();
+        return wrapped.next();
+    }
+
+    @Override public void close() throws IOException {
+        this.wrapped = null;
+    }
+
+    @Override public Iterator<T> iterator() {
+        return this;
     }
 }

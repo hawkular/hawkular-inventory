@@ -32,6 +32,7 @@ import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.rest.json.Link;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 
 /**
  * @author Lukas Krejci
@@ -55,7 +56,12 @@ final class ResponseUtil {
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
                                                              ObjectMapper mapper, Page<T> page) {
         //extract the data out of the page
-        InputStream data = pageToStream(page, mapper);
+        InputStream data = null;
+        try {
+            data = pageToStream(page, mapper);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // the page iterator should be depleted by this time so the total size should be correctly set
         return pagedResponse(response, uriInfo, page, data);
@@ -68,18 +74,20 @@ final class ResponseUtil {
         return response;
     }
 
-    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) {
-        PipedInputStream in = new PipedInputStream();
-        Thread work = new Thread(() -> {
-            try (PipedOutputStream out = new PipedOutputStream(in)) {
-                while (page.hasNext()) {
-                    mapper.writeValue(out, page.next());
+    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) throws IOException {
+        final PipedInputStream in = new PipedInputStream();
+
+        PageToStreamThreadPool.getInstance().submit(() -> {
+            try (Page<T> closeablePage = page;
+                 PipedOutputStream out = new PipedOutputStream(in);
+                 SequenceWriter sequenceWriter = mapper.writer().writeValuesAsArray(out)) {
+                for (T element : closeablePage) {
+                    sequenceWriter.write(element);
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to convert page to input stream.", e);
             }
         });
-        PageToStreamThreadPool.getInstance().submit(work);
         return in;
     }
 
