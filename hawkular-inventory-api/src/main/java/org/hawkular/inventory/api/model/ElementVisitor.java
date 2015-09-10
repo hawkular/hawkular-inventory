@@ -42,6 +42,8 @@ public interface ElementVisitor<R, P> {
 
     R visitData(DataEntity data, P parameter);
 
+    R visitOperationType(OperationType operationType, P parameter);
+
     R visitUnknown(Object entity, P parameter);
 
     /**
@@ -119,6 +121,11 @@ public interface ElementVisitor<R, P> {
 
         @Override
         public R visitData(DataEntity data, P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitOperationType(OperationType operationType, P parameter) {
             return defaultAction();
         }
 

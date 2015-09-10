@@ -16,6 +16,12 @@
  */
 package org.hawkular.inventory.api;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+
+import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
@@ -33,7 +39,46 @@ public final class Resources {
     }
 
     public enum DataRole implements DataEntity.Role {
-        configuration, connectionConfiguration
+        configuration {
+            @Override
+            public boolean isSchema() {
+                return false;
+            }
+
+            @Override
+            public Filter[] navigateToSchema() {
+                return new Filter[]{
+                        //up to the containing resource
+                        Related.asTargetBy(contains),
+                        //up to the defining resource type
+                        Related.asTargetBy(defines),
+                        //down to the contained data entity
+                        Related.by(contains), With.type(DataEntity.class),
+                        //with id of configuration schema
+                        With.id(ResourceTypes.DataRole.configurationSchema.name())
+                };
+            }
+        },
+        connectionConfiguration {
+            @Override
+            public boolean isSchema() {
+                return false;
+            }
+
+            @Override
+            public Filter[] navigateToSchema() {
+                return new Filter[]{
+                        //up to the containing resource
+                        Related.asTargetBy(contains),
+                        //up to the defining resource type
+                        Related.asTargetBy(defines),
+                        //down to the contained data entity
+                        Related.by(contains), With.type(DataEntity.class),
+                        //with id of configuration schema
+                        With.id(ResourceTypes.DataRole.connectionConfigurationSchema.name())
+                };
+            }
+        }
     }
 
     private interface BrowserBase<Metrics, Data, ContainedAccess, AllAccess> {
@@ -50,7 +95,7 @@ public final class Resources {
 
         /**
          * Access to all children.
-         *
+         * <p>
          * Note that children that are existentially bound to this resource (i.e. in addition to
          * {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} there also exists the
          * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains} relationship) cannot be disassociated
@@ -90,24 +135,25 @@ public final class Resources {
 
     /**
      * Interface for traversing over a set of resources.
-     *
+     * <p>
      * <p>Note that traversing over a set of entities enables only read-only access. If you need to use any of the
      * modification methods, you first need to resolve the traversal to a single entity (using the
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple
             extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Data.Read<DataRole>,
-            ReadContained, Read> {}
+            ReadContained, Read> {
+    }
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {
 
         /**
          * A shortcut for {@code get(firstChild).allChildren().get(furtherChildren[0]).allChildren()
          * .get(furtherChildren[1])...}.
-         *
+         * <p>
          * <p>Each of the paths in further children is either a canonical path or a relative path that is relative
          * to the preceding child.
-         *
+         * <p>
          * <p>Remember that relative paths are resolved using the
          * <b>{@link org.hawkular.inventory.api.Relationships.WellKnown#contains}</b> relationship while descend follows
          * the {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf} relationships.
@@ -152,7 +198,8 @@ public final class Resources {
      */
     public interface ReadWrite
             extends ReadWriteInterface<Resource.Update, Resource.Blueprint, Single, Multiple, String>,
-            ReadContained {}
+            ReadContained {
+    }
 
     /**
      * This interface enables the creation of "alternative" tree hierarchies of resources using the
@@ -174,7 +221,6 @@ public final class Resources {
          * @throws IllegalArgumentException if the resource with the supplied path is existentially bound to its parent
          *                                  resource
          */
-        @Override
-        Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException;
+        @Override Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException;
     }
 }

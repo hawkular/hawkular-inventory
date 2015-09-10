@@ -33,6 +33,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -114,9 +115,10 @@ final class Constants {
     enum Type {
         tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
         resourceType(ResourceType.class), metricType(MetricType.class, __unit, __metric_data_type),
-        resource(Resource.class), metric(Metric.class), relationship(Relationship.class),
-        dataEntity(DataEntity.class), structuredData(StructuredData.class, __structuredDataType, __structuredDataValue,
-                __structuredDataIndex, __structuredDataKey);
+        operationType(OperationType.class), resource(Resource.class), metric(Metric.class),
+        relationship(Relationship.class), dataEntity(DataEntity.class),
+        structuredData(StructuredData.class, __structuredDataType, __structuredDataValue, __structuredDataIndex,
+                __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;
@@ -139,7 +141,7 @@ final class Constants {
         }
 
         public static Type of(AbstractElement<?, ?> e) {
-            return e.accept(new ElementVisitor.Simple<Type, Void>() {
+            return e.accept(new ElementVisitor<Type, Void>() {
                 @Override
                 public Type visitRelationship(Relationship relationship, Void parameter) {
                     return Type.relationship;
@@ -179,11 +181,26 @@ final class Constants {
                 public Type visitResourceType(ResourceType type, Void parameter) {
                     return Type.resourceType;
                 }
+
+                @Override
+                public Type visitData(DataEntity data, Void parameter) {
+                    return Type.dataEntity;
+                }
+
+                @Override
+                public Type visitOperationType(OperationType operationType, Void parameter) {
+                    return Type.operationType;
+                }
+
+                @Override
+                public Type visitUnknown(Object entity, Void parameter) {
+                    return null;
+                }
             }, null);
         }
 
         public static Type of(Class<?> ec) {
-            return ElementTypeVisitor.accept(ec, new ElementTypeVisitor.Simple<Type, Void>() {
+            return ElementTypeVisitor.accept(ec, new ElementTypeVisitor<Type, Void>() {
                 @Override
                 public Type visitTenant(Void parameter) {
                     return tenant;
@@ -227,6 +244,11 @@ final class Constants {
                 @Override
                 public Type visitData(Void parameter) {
                     return dataEntity;
+                }
+
+                @Override
+                public Type visitOperationType(Void parameter) {
+                    return operationType;
                 }
 
                 @Override

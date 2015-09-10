@@ -52,8 +52,7 @@ public final class AcceptWithFallbackFeedIdStrategy implements FeedIdStrategy {
     public String generate(Inventory inventory, Feed proposedFeed) throws EntityAlreadyExistsException {
         try {
             if (!Feed.Blueprint.shouldAutogenerateId(proposedFeed)) {
-                inventory.tenants().get(proposedFeed.getTenantId()).environments().get(proposedFeed.getEnvironmentId())
-                        .feeds().get(proposedFeed.getId()).entity();
+                inventory.inspect(proposedFeed).entity();
             }
 
             if (fallback == null || !Feed.Blueprint.shouldAutogenerateId(proposedFeed)) {

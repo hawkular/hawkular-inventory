@@ -33,7 +33,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 1.0
  */
 @XmlRootElement
-public final class Environment extends TenantBasedEntity<Environment.Blueprint, Environment.Update> {
+public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
 
     @SuppressWarnings("unused")
     private Environment() {

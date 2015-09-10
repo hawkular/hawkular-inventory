@@ -14,18 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.hawkular.inventory.json.mixins;
 
-package org.hawkular.inventory.api;
+import java.util.Map;
+
+import org.hawkular.inventory.api.model.CanonicalPath;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Base interface of all browser interfaces over multiple entities that can have relations.
- *
- * @param <Entity> the type of the entity being browsed
- *
  * @author Lukas Krejci
- * @author Jirka Kremser
- * @since 0.0.1
+ * @since 0.4.0
  */
-public interface ResolvableToManyWithRelationships<Entity> extends ResolvableToMany<Entity>,
-        Relatable<Relationships.Read> {
+public abstract class OperationTypeMixin {
+
+    @JsonCreator
+    public OperationTypeMixin(@JsonProperty("path") CanonicalPath path,
+            @JsonProperty("properties") Map<String, Object> properties) {
+    }
 }

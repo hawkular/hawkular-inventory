@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
@@ -333,6 +334,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public OperationTypes.ReadWrite operationTypes() {
+            return new OperationTypesReadWrite();
+        }
+
+        @Override
         public Data.ReadWrite<ResourceTypes.DataRole> data() {
             return new DataReadWrite<>();
         }
@@ -358,6 +364,11 @@ public class EmptyInventory implements Inventory {
         @Override
         public MetricTypes.ReadContained metricTypes() {
             return new MetricTypesReadContained();
+        }
+
+        @Override
+        public OperationTypes.ReadContained operationTypes() {
+            return new OperationTypesReadContained();
         }
 
         @Override
@@ -1286,6 +1297,88 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Page<StructuredData> flatData(RelativePath dataPath, Pager pager) {
+            return emptyPage(pager);
+        }
+    }
+
+    public static class OperationTypesReadContained implements OperationTypes.ReadContained {
+
+        @Override public OperationTypes.Multiple getAll(Filter[][] filters) {
+            return new OperationTypesMultiple();
+        }
+
+        @Override public OperationTypes.Single get(String s) throws EntityNotFoundException {
+            return new OperationTypesSingle();
+        }
+    }
+
+    public static class OperationTypesReadWrite implements OperationTypes.ReadWrite {
+
+        @Override public OperationTypes.Multiple getAll(Filter[][] filters) {
+            return new OperationTypesMultiple();
+        }
+
+        @Override public OperationTypes.Single get(String s) throws EntityNotFoundException {
+            return new OperationTypesSingle();
+        }
+
+        @Override public OperationTypes.Single create(OperationType.Blueprint blueprint)
+                throws EntityAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void update(String s, OperationType.Update update) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void delete(String s) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class OperationTypesSingle implements OperationTypes.Single {
+
+        @Override public Data.ReadWrite<OperationTypes.DataRole> data() {
+            return new DataReadWrite<>();
+        }
+
+        @Override public Relationships.ReadWrite relationships() {
+            return new RelationshipsReadWrite();
+        }
+
+        @Override public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+            return new RelationshipsReadWrite();
+        }
+
+        @Override public OperationType entity() throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(OperationType.class);
+        }
+
+        @Override public void update(OperationType.Update update)
+                throws EntityNotFoundException, RelationNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void delete() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class OperationTypesMultiple implements OperationTypes.Multiple {
+
+        @Override public Data.Read<OperationTypes.DataRole> data() {
+            return new DataRead<>();
+        }
+
+        @Override public Relationships.Read relationships() {
+            return new RelationshipsRead();
+        }
+
+        @Override public Relationships.Read relationships(Relationships.Direction direction) {
+            return new RelationshipsRead();
+        }
+
+        @Override public Page<OperationType> entities(Pager pager) {
             return emptyPage(pager);
         }
     }

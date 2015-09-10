@@ -39,9 +39,9 @@ import java.util.Set;
  */
 public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 
-    public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
-    public static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
+    static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
+    static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
+    static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
 
     static {
         SHORT_NAME_TYPES.put("t", Tenant.class);
@@ -53,6 +53,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_NAME_TYPES.put("mt", MetricType.class);
         SHORT_NAME_TYPES.put("rl", Relationship.class);
         SHORT_NAME_TYPES.put("d", DataEntity.class);
+        SHORT_NAME_TYPES.put("ot", OperationType.class);
 
         SHORT_TYPE_NAMES.put(Tenant.class, "t");
         SHORT_TYPE_NAMES.put(Environment.class, "e");
@@ -63,12 +64,14 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_TYPE_NAMES.put(MetricType.class, "mt");
         SHORT_TYPE_NAMES.put(Relationship.class, "rl");
         SHORT_TYPE_NAMES.put(DataEntity.class, "d");
+        SHORT_TYPE_NAMES.put(OperationType.class, "ot");
 
         VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class));
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
-        VALID_PROGRESSIONS.put(ResourceType.class, Collections.singletonList(DataEntity.class));
+        VALID_PROGRESSIONS.put(ResourceType.class, Arrays.asList(DataEntity.class, OperationType.class));
+        VALID_PROGRESSIONS.put(OperationType.class, Collections.singletonList(DataEntity.class));
         VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
         VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
@@ -103,8 +106,8 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     /**
      * @return a new path builder
      */
-    public static Builder<CanonicalPath> of() {
-        return new Builder<>(new ArrayList<>(), CanonicalPath::new);
+    public static Builder of() {
+        return new Builder(new ArrayList<>());
     }
 
     /**
@@ -276,6 +279,169 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         return ascendingIterator();
     }
 
+    public static final class Builder extends Path.Builder<CanonicalPath, TenantBuilder, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, RelationshipBuilder, OperationTypeBuilder, StructuredDataBuilder,
+            FeedBuilder, ResourceBuilder, MetricBuilder> {
+
+        private Builder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected RelationshipBuilder relationshipBuilder(List<Segment> list) {
+            return new RelationshipBuilder(list);
+        }
+
+        @Override
+        protected TenantBuilder tenantBuilder(List<Segment> list) {
+            return new TenantBuilder(list);
+        }
+    }
+
+    public static final class TenantBuilder extends Path.TenantBuilder<CanonicalPath, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder, FeedBuilder,
+            ResourceBuilder, MetricBuilder> {
+
+        private TenantBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected EnvironmentBuilder environmentBuilder(List<Segment> list) {
+            return new EnvironmentBuilder(list);
+        }
+
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> list) {
+            return new ResourceTypeBuilder(list);
+        }
+
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> list) {
+            return new MetricTypeBuilder(list);
+        }
+    }
+
+    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<CanonicalPath, FeedBuilder,
+            ResourceBuilder, MetricBuilder, ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder,
+            StructuredDataBuilder> {
+
+        private EnvironmentBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected FeedBuilder feedBuilder(List<Segment> segments) {
+            return new FeedBuilder(segments);
+        }
+
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
+            return new ResourceBuilder(segments);
+        }
+
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
+        }
+    }
+
+    public static final class ResourceTypeBuilder extends Path.ResourceTypeBuilder<CanonicalPath,
+            OperationTypeBuilder, StructuredDataBuilder> {
+
+        private ResourceTypeBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected OperationTypeBuilder operationTypeBuilder(List<Segment> segments) {
+            return new OperationTypeBuilder(segments);
+        }
+
+        @Override protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class MetricTypeBuilder extends Path.MetricTypeBuilder<CanonicalPath> {
+
+        private MetricTypeBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class OperationTypeBuilder extends Path.OperationTypeBuilder<CanonicalPath,
+            StructuredDataBuilder> {
+
+        private OperationTypeBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class ResourceBuilder extends Path.ResourceBuilder<CanonicalPath, ResourceBuilder,
+            StructuredDataBuilder> {
+        private ResourceBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+    }
+
+    public static final class MetricBuilder extends Path.MetricBuilder<CanonicalPath> {
+        private MetricBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class FeedBuilder extends Path.FeedBuilder<CanonicalPath, ResourceTypeBuilder,
+            MetricTypeBuilder, ResourceBuilder, MetricBuilder, OperationTypeBuilder, StructuredDataBuilder> {
+        private FeedBuilder(List<Segment> list) {
+            super(list, CanonicalPath::new);
+        }
+
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> segments) {
+            return new ResourceTypeBuilder(segments);
+        }
+
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> segments) {
+            return new MetricTypeBuilder(segments);
+        }
+
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
+            return new ResourceBuilder(segments);
+        }
+
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
+        }
+    }
+
+    public static final class RelationshipBuilder extends Path.RelationshipBuilder<CanonicalPath> {
+        private RelationshipBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
+    public static final class StructuredDataBuilder extends Path.StructuredDataBuilder<CanonicalPath,
+            CanonicalPath.StructuredDataBuilder> {
+
+        private StructuredDataBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
+        }
+    }
+
     public final class IdExtractor {
 
         public String getTenantId() {
@@ -287,11 +453,19 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, MetricType.class);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), MetricType.class);
+            } else {
+                return idIfTypeCorrect(getRoot().down(), MetricType.class);
+            }
         }
 
         public String getResourceTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, ResourceType.class);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), ResourceType.class);
+            } else {
+                return idIfTypeCorrect(getRoot().down(), ResourceType.class);
+            }
         }
 
         public String getFeedId() {
@@ -328,6 +502,10 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public String getRelationshipId() {
             return idIfTypeCorrect(getRoot(), Relationship.class);
+        }
+
+        public String getOperationTypeId() {
+            return idIfTypeCorrect(CanonicalPath.this, OperationType.class);
         }
 
         @SuppressWarnings("unchecked")

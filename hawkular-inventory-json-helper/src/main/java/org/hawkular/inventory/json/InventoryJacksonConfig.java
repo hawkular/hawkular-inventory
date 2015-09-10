@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -36,6 +37,7 @@ import org.hawkular.inventory.json.mixins.EnvironmentMixin;
 import org.hawkular.inventory.json.mixins.FeedMixin;
 import org.hawkular.inventory.json.mixins.MetricMixin;
 import org.hawkular.inventory.json.mixins.MetricTypeMixin;
+import org.hawkular.inventory.json.mixins.OperationTypeMixin;
 import org.hawkular.inventory.json.mixins.RelationshipMixin;
 import org.hawkular.inventory.json.mixins.RelativePathMixin;
 import org.hawkular.inventory.json.mixins.ResourceMixin;
@@ -85,5 +87,6 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(Tenant.class, TenantMixin.class);
         objectMapper.addMixIn(StructuredData.class, StructuredDataMixin.class);
         objectMapper.addMixIn(DataEntity.class, DataEntityMixin.class);
+        objectMapper.addMixIn(OperationType.class, OperationTypeMixin.class);
     }
 }

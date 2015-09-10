@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -45,8 +44,8 @@ import java.util.function.Function;
  */
 public final class RelativePath extends Path implements Serializable {
 
-    public static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    public static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
+    static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
+    static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
     private static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
 
     private static final List<Class<?>> ALL_VALID_TYPES = Arrays.asList(Tenant.class, ResourceType.class,
@@ -61,20 +60,13 @@ public final class RelativePath extends Path implements Serializable {
         SHORT_TYPE_NAMES.putAll(CanonicalPath.SHORT_TYPE_NAMES);
         SHORT_TYPE_NAMES.put(Up.class, "..");
 
-        List<Class<?>> justUp = Collections.singletonList(Up.class);
+        for (Map.Entry<Class<?>, List<Class<?>>> e : CanonicalPath.VALID_PROGRESSIONS.entrySet()) {
+            ArrayList<Class<?>> andUp = new ArrayList<>(e.getValue());
+            andUp.add(Up.class);
+            andUp.trimToSize();
 
-        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class,
-                Up.class));
-        VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class, Up.class));
-        VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
-                ResourceType.class, Up.class));
-        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class, Up.class));
-        VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class, Up.class));
-        VALID_PROGRESSIONS.put(Metric.class, justUp);
-        VALID_PROGRESSIONS.put(ResourceType.class, justUp);
-        VALID_PROGRESSIONS.put(MetricType.class, justUp);
-        VALID_PROGRESSIONS.put(DataEntity.class, Arrays.asList(StructuredData.class, Up.class));
-        VALID_PROGRESSIONS.put(StructuredData.class, Arrays.asList(StructuredData.class, Up.class));
+            VALID_PROGRESSIONS.put(e.getKey(), andUp);
+        }
     }
 
     private RelativePath(int start, int end, List<Segment> segments) {
@@ -219,20 +211,22 @@ public final class RelativePath extends Path implements Serializable {
         }
     }
 
-    public static class Builder extends Path.Builder<RelativePath> {
+    public static final class Builder extends Path.Builder<RelativePath, TenantBuilder, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, RelationshipBuilder, OperationTypeBuilder, StructuredDataBuilder,
+            FeedBuilder, ResourceBuilder, MetricBuilder> {
 
-        Builder(List<Segment> segments) {
-            super(segments, RelativePath::new);
+        private Builder(List<Segment> list) {
+            super(list, RelativePath::new);
         }
 
-        public TenantBuilder tenant(String id) {
-            segments.add(new Segment(Tenant.class, id));
-            return new TenantBuilder(segments);
+        @Override
+        protected RelationshipBuilder relationshipBuilder(List<Segment> list) {
+            return new RelationshipBuilder(list);
         }
 
-        public RelationshipBuilder relationship(String id) {
-            segments.add(new Segment(Relationship.class, id));
-            return new RelationshipBuilder(segments);
+        @Override
+        protected TenantBuilder tenantBuilder(List<Segment> list) {
+            return new TenantBuilder(list);
         }
 
         public EnvironmentBuilder environment(String id) {
@@ -270,6 +264,11 @@ public final class RelativePath extends Path implements Serializable {
             return new StructuredDataBuilder(segments);
         }
 
+        public OperationTypeBuilder operationType(String id) {
+            segments.add(new Segment(OperationType.class, id));
+            return new OperationTypeBuilder(segments);
+        }
+
         public StructuredDataBuilder structuredData() {
             return new StructuredDataBuilder(segments);
         }
@@ -280,31 +279,27 @@ public final class RelativePath extends Path implements Serializable {
         }
     }
 
-    public static class RelationshipBuilder extends Path.RelationshipBuilder<RelativePath> {
-        RelationshipBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
-        }
-    }
+    public static final class TenantBuilder extends Path.TenantBuilder<RelativePath, EnvironmentBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder, FeedBuilder,
+            ResourceBuilder, MetricBuilder> {
 
-    public static class TenantBuilder extends Path.TenantBuilder<RelativePath> {
-
-        TenantBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
+        private TenantBuilder(List<Segment> list) {
+            super(list, RelativePath::new);
         }
 
-        public EnvironmentBuilder environment(String id) {
-            segments.add(new Segment(Environment.class, id));
-            return new EnvironmentBuilder(segments);
+        @Override
+        protected EnvironmentBuilder environmentBuilder(List<Segment> list) {
+            return new EnvironmentBuilder(list);
         }
 
-        public ResourceTypeBuilder resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
-            return new ResourceTypeBuilder(segments);
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> list) {
+            return new ResourceTypeBuilder(list);
         }
 
-        public MetricTypeBuilder metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
-            return new MetricTypeBuilder(segments);
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> list) {
+            return new MetricTypeBuilder(list);
         }
 
         public UpBuilder up() {
@@ -313,89 +308,163 @@ public final class RelativePath extends Path implements Serializable {
         }
     }
 
-    public static class ResourceTypeBuilder extends Path.ResourceTypeBuilder<RelativePath> {
-        ResourceTypeBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
-        }
-    }
+    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<RelativePath, FeedBuilder,
+            ResourceBuilder, MetricBuilder, ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder,
+            StructuredDataBuilder> {
 
-    public static class MetricTypeBuilder extends Path.MetricTypeBuilder<RelativePath> {
-        MetricTypeBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
-        }
-    }
-
-    public static class EnvironmentBuilder extends Path.EnvironmentBuilder<RelativePath> {
-        EnvironmentBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
+        private EnvironmentBuilder(List<Segment> list) {
+            super(list, RelativePath::new);
         }
 
-        public FeedBuilder feed(String id) {
-            segments.add(new Segment(Feed.class, id));
+        @Override
+        protected FeedBuilder feedBuilder(List<Segment> segments) {
             return new FeedBuilder(segments);
         }
 
-        public ResourceBuilder resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
             return new ResourceBuilder(segments);
         }
 
-        public MetricBuilder metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
             return new MetricBuilder(segments);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
         }
     }
 
-    public static class FeedBuilder extends Path.FeedBuilder<RelativePath> {
+    public static final class ResourceTypeBuilder extends Path.ResourceTypeBuilder<RelativePath,
+            OperationTypeBuilder, StructuredDataBuilder> {
 
-        FeedBuilder(List<Segment> segments) {
+        private ResourceTypeBuilder(List<Segment> list) {
+            super(list, RelativePath::new);
+        }
+
+        @Override
+        protected OperationTypeBuilder operationTypeBuilder(List<Segment> segments) {
+            return new OperationTypeBuilder(segments);
+        }
+
+        @Override protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
+        }
+    }
+
+    public static final class MetricTypeBuilder extends Path.MetricTypeBuilder<RelativePath> {
+
+        private MetricTypeBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
 
-        public ResourceBuilder resource(String id) {
-            segments.add(new Segment(Resource.class, id));
-            return new ResourceBuilder(segments);
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
+        }
+    }
+
+    public static final class OperationTypeBuilder extends Path.OperationTypeBuilder<RelativePath,
+            StructuredDataBuilder> {
+
+        private OperationTypeBuilder(List<Segment> segments) {
+            super(segments, RelativePath::new);
         }
 
-        public MetricBuilder metric(String id) {
-            segments.add(new Segment(Metric.class, id));
-            return new MetricBuilder(segments);
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
         }
 
-        public MetricTypeBuilder metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
+        }
+    }
+
+    public static final class ResourceBuilder extends Path.ResourceBuilder<RelativePath, ResourceBuilder,
+            StructuredDataBuilder> {
+        private ResourceBuilder(List<Segment> segments) {
+            super(segments, RelativePath::new);
+        }
+
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+            return new StructuredDataBuilder(segments);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
+        }
+    }
+
+    public static final class MetricBuilder extends Path.MetricBuilder<RelativePath> {
+        private MetricBuilder(List<Segment> segments) {
+            super(segments, RelativePath::new);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
+        }
+    }
+
+    public static final class FeedBuilder extends Path.FeedBuilder<RelativePath, ResourceTypeBuilder,
+            MetricTypeBuilder, ResourceBuilder, MetricBuilder, OperationTypeBuilder, StructuredDataBuilder> {
+        private FeedBuilder(List<Segment> list) {
+            super(list, RelativePath::new);
+        }
+
+        @Override
+        protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> segments) {
+            return new ResourceTypeBuilder(segments);
+        }
+
+        @Override
+        protected MetricTypeBuilder metricTypeBuilder(List<Segment> segments) {
             return new MetricTypeBuilder(segments);
         }
 
-        public ResourceTypeBuilder resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
-            return new ResourceTypeBuilder(segments);
+        @Override
+        protected ResourceBuilder resourceBuilder(List<Segment> segments) {
+            return new ResourceBuilder(segments);
+        }
+
+        @Override
+        protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
         }
     }
 
-    public static class ResourceBuilder extends Path.ResourceBuilder<RelativePath> {
-
-        ResourceBuilder(List<Segment> segments) {
-            super(segments, RelativePath::new);
-        }
-
-        public ResourceBuilder resource(String id) {
-            segments.add(new Segment(Resource.class, id));
-            return this;
-        }
-    }
-
-    public static class MetricBuilder extends Path.MetricBuilder<RelativePath> {
-
-        MetricBuilder(List<Segment> segments) {
+    public static final class RelationshipBuilder extends Path.RelationshipBuilder<RelativePath> {
+        private RelationshipBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
         }
     }
 
-    public static class StructuredDataBuilder extends Path.StructuredDataBuilder<RelativePath> {
+    public static final class StructuredDataBuilder extends Path.StructuredDataBuilder<RelativePath,
+            RelativePath.StructuredDataBuilder> {
 
-        StructuredDataBuilder(List<Segment> segments) {
+        private StructuredDataBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
+        }
+
+        public UpBuilder up() {
+            segments.add(new Segment(Up.class, null));
+            return new UpBuilder(segments);
         }
     }
 
@@ -439,13 +508,28 @@ public final class RelativePath extends Path implements Serializable {
             return new MetricBuilder(segments);
         }
 
+        public StructuredDataBuilder dataEntity(DataEntity.Role role) {
+            segments.add(new Segment(DataEntity.class, role.name()));
+            return new StructuredDataBuilder(segments);
+        }
+
+        public OperationTypeBuilder operationType(String id) {
+            segments.add(new Segment(OperationType.class, id));
+            return new OperationTypeBuilder(segments);
+        }
+
+        public StructuredDataBuilder structuredData() {
+            return new StructuredDataBuilder(segments);
+        }
+
         public UpBuilder up() {
             segments.add(new Segment(Up.class, null));
             return this;
         }
 
+        @Override
         public RelativePath get() {
-            return constructor.create(0, segments.size(), segments);
+            return super.get();
         }
     }
 

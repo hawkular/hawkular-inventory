@@ -18,45 +18,32 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
- * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
- * other Hawkular components like metrics).
- *
- * <p>Note that the feed does not have a dedicated blueprint type (i.e. data required to create a new feed
- * in some context), because the only data needed to create a new feed is its ID, which can easily be modelled
- * by a {@code String}.
- *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.4.0
  */
-@XmlRootElement
-public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
+public final class OperationType extends Entity<OperationType.Blueprint, OperationType.Update> {
 
-    /**
-     * JAXB support
-     */
     @SuppressWarnings("unused")
-    private Feed() {
+    private OperationType() {
     }
 
-    public Feed(CanonicalPath path) {
-        this(path, null);
+    public OperationType(CanonicalPath path) {
+        super(path);
     }
 
-    public Feed(CanonicalPath path, Map<String, Object> properties) {
+    public OperationType(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 
     @Override
-    public Updater<Update, Feed> update() {
-        return new Updater<>((u) -> new Feed(getPath(), u.getProperties()));
+    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
+        return visitor.visitOperationType(this, parameter);
     }
 
     @Override
-    public <R, P> R accept(ElementVisitor<R, P> visitor, P parameter) {
-        return visitor.visitFeed(this, parameter);
+    public Updater<Update, OperationType> update() {
+        return new Updater<>((u) -> new OperationType(getPath(), u.getProperties()));
     }
 
     public static final class Blueprint extends Entity.Blueprint {
@@ -64,43 +51,41 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
         public static Builder builder() {
             return new Builder();
         }
-        private static final String AUTO_ID_FLAG = "__auto-generate-id";
 
-        //JAXB support
+        /**
+         * Serialization support
+         */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
+            super(null, null);
         }
 
         public Blueprint(String id, Map<String, Object> properties) {
-            super(id == null ? AUTO_ID_FLAG : id, properties);
+            super(id, properties);
         }
 
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
-            return visitor.visitFeed(this, parameter);
+            return visitor.visitOperationType(this, parameter);
         }
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
-
             @Override
             public Blueprint build() {
                 return new Blueprint(id, properties);
             }
         }
-
-        public static boolean shouldAutogenerateId(Feed proposedFeed) {
-            return AUTO_ID_FLAG.equals(proposedFeed.getId());
-        }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
 
         public static Builder builder() {
             return new Builder();
         }
 
-        //JAXB support
+        /**
+         * Serialization support
+         */
         @SuppressWarnings("unused")
         private Update() {
             this(null);
@@ -112,10 +97,10 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
 
         @Override
         public <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter) {
-            return visitor.visitFeed(this, parameter);
+            return visitor.visitOperationType(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
                 return new Update(properties);

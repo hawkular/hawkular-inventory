@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.filters.With.id;
 
@@ -32,18 +30,12 @@ import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.ValidationException.ValidationMessage;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -243,36 +235,7 @@ public final class BaseData {
 
             DataEntity.Role role = path.ids().getDataRole();
 
-            CanonicalPath ownerPath = path.up();
-
-            if (role == Resources.DataRole.configuration) {
-                throwIfInvalidOwnerType(role, ownerPath, Resource.class);
-
-                validateIfSchemaFound(context, data, dataEntity, Query.path().with(
-                        //up to the containing resource
-                        Related.asTargetBy(contains),
-                        //up to the defining resource type
-                        Related.asTargetBy(defines),
-                        //down to the contained data entity
-                        Related.by(contains), With.type(DataEntity.class),
-                        //with id of configuration schema
-                        With.id(ResourceTypes.DataRole.configurationSchema.name())).get());
-            } else if (role == Resources.DataRole.connectionConfiguration) {
-                throwIfInvalidOwnerType(role, ownerPath, Resource.class);
-
-                validateIfSchemaFound(context, data, dataEntity, Query.path().with(
-                        //up to the containing resource
-                        Related.asTargetBy(contains),
-                        //up to the defining resource type
-                        Related.asTargetBy(defines),
-                        //down to the contained data entity
-                        Related.by(contains), With.type(DataEntity.class),
-                        //with id of configuration schema
-                        With.id(ResourceTypes.DataRole.connectionConfigurationSchema.name())).get());
-            } else if (role == ResourceTypes.DataRole.configurationSchema
-                    || role == ResourceTypes.DataRole.connectionConfigurationSchema) {
-                throwIfInvalidOwnerType(role, ownerPath, ResourceType.class);
-
+            if (role.isSchema()) {
                 try {
                     JsonNode schema = new JsonNodeReader(new ObjectMapper())
                             .fromInputStream(BaseData.class.getResourceAsStream("/json-meta-schema.json"));
@@ -283,6 +246,8 @@ public final class BaseData {
                 } catch (IOException e) {
                     throw new IllegalStateException("Could not load the embedded JSON Schema meta-schema.");
                 }
+            } else {
+                validateIfSchemaFound(context, data, dataEntity, Query.path().with(role.navigateToSchema()).get());
             }
         }
 
@@ -365,19 +330,5 @@ public final class BaseData {
                 }
             }, null);
         }
-    }
-
-    private static void throwIfInvalidOwnerType(DataEntity.Role role, CanonicalPath ownerPath,
-            Class<?> expectedOwnerType) {
-
-        if (ownerPath.getSegment().getElementType() != expectedOwnerType) {
-            throw invalidOwnerType(role, ownerPath);
-        }
-    }
-
-    private static IllegalStateException invalidOwnerType(DataEntity.Role role, CanonicalPath ownerPath) {
-        return new IllegalStateException("Invalid owner of data entity with role '" + role.name() + "'."
-                + " Expected the owner to be a Resource but found: '"
-                + ownerPath.getSegment().getElementType().getSimpleName() + "'.");
     }
 }

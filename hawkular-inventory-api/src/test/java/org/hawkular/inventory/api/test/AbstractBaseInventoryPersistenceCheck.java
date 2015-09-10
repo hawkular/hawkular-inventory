@@ -65,6 +65,7 @@ import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
@@ -90,6 +91,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
@@ -326,8 +328,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
         //create some config definitions...
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
-                .create(ResourceType.Blueprint.builder().withId("Person").build()).data().create(DataEntity.Blueprint
+        ResourceTypes.Single personType = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+                .create(ResourceType.Blueprint.builder().withId("Person").build());
+
+        personType.data().create(DataEntity.Blueprint
                 .<ResourceTypes.DataRole>builder().withRole(configurationSchema).withValue(StructuredData.get().map()
                         .putString("title", "Person")
                         .putString("description", "Utterly complete description of a human.")
@@ -350,6 +354,27 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                         /**/.addString("lastName")
                         .closeList()
                         .build()).build());
+
+        OperationTypes.Single startOp = personType.operationTypes().create(OperationType.Blueprint.builder().withId
+                ("start").build());
+        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                .withRole(OperationTypes.DataRole.returnType).withValue(StructuredData.get().map()
+                        .putString("title", "start_returnType")
+                        .putString("description", "start operation result")
+                        .putString("type", "boolean")
+                        .build()).build());
+        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                .withRole(OperationTypes.DataRole.parameterTypes).withValue(StructuredData.get().map()
+                        .putString("title", "start_paramTypes")
+                        .putString("description", "start operation parameter types")
+                        .putString("type", "object")
+                        .putMap("properties")
+                        /**/.putMap("quick")
+                        /**//**/.putString("type", "boolean")
+                        /**/.closeMap()
+                        .closeMap()
+                        .build()).build());
+
 
         //now create some resources with configs
         Resources.Single people = inventory.tenants().get("com.acme.tenant").environments().get("production")
@@ -942,6 +967,28 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.acme.tenant", "production", "host1", "host1_ping_response");
         test.apply("com.example.tenant", "test", "playroom1", "playroom1_size");
         test.apply("com.example.tenant", "test", "playroom2", "playroom2_size");
+    }
+
+    @Test
+    public void testOperationTypes() throws Exception {
+        OperationTypes.Single ots = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+                .get("Person").operationTypes().get("start");
+
+        Assert.assertNotNull(ots.entity());
+
+        //also test the inspect path
+        ots = inventory.inspect(CanonicalPath.of().tenant("com.acme.tenant").resourceType("Person").operationType
+                ("start").get(), OperationTypes.Single.class);
+
+        Assert.assertEquals("start", ots.entity().getId());
+
+        StructuredData returnTypeSchema = ots.data().get(OperationTypes.DataRole.returnType).entity().getValue();
+        StructuredData parametersSchema = ots.data().get(OperationTypes.DataRole.parameterTypes).entity().getValue();
+
+        Assert.assertEquals("start_returnType", returnTypeSchema.map().get("title").string());
+        Assert.assertEquals("boolean", returnTypeSchema.map().get("type").string());
+
+        Assert.assertEquals("start_paramTypes", parametersSchema.map().get("title").string());
     }
 
     @Test
@@ -1629,52 +1676,52 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
         entity = backend.find(envPath);
         Environment env = backend.convert(entity, Environment.class);
-        Assert.assertEquals("com.acme.tenant", env.getTenantId());
+        Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
         Assert.assertEquals("production", env.getId());
 
         entity = backend.find(envPath.extend(Resource.class, "host1").get());
         Resource r = backend.convert(entity, Resource.class);
-        Assert.assertEquals("com.acme.tenant", r.getTenantId());
-        Assert.assertEquals("production", r.getEnvironmentId());
-        Assert.assertNull(r.getFeedId());
+        Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
+        Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
+        Assert.assertNull(r.getPath().ids().getFeedId());
         Assert.assertEquals("host1", r.getId());
 
         entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
         Metric m = backend.convert(entity, Metric.class);
-        Assert.assertEquals("com.acme.tenant", m.getTenantId());
-        Assert.assertEquals("production", m.getEnvironmentId());
-        Assert.assertNull(m.getFeedId());
+        Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
+        Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
+        Assert.assertNull(m.getPath().ids().getFeedId());
         Assert.assertEquals("host1_ping_response", m.getId());
 
         CanonicalPath feedPath = envPath.extend(Feed.class, "feed1").get();
         entity = backend.find(feedPath);
         Feed f = backend.convert(entity, Feed.class);
-        Assert.assertEquals("com.acme.tenant", f.getTenantId());
-        Assert.assertEquals("production", f.getEnvironmentId());
+        Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
+        Assert.assertEquals("production", f.getPath().ids().getEnvironmentId());
         Assert.assertEquals("feed1", f.getId());
 
         entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
         r = backend.convert(entity, Resource.class);
-        Assert.assertEquals("com.acme.tenant", r.getTenantId());
-        Assert.assertEquals("production", r.getEnvironmentId());
-        Assert.assertEquals("feed1", r.getFeedId());
+        Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
+        Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
+        Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
         Assert.assertEquals("feedResource1", r.getId());
 
         entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
         m = backend.convert(entity, Metric.class);
-        Assert.assertEquals("com.acme.tenant", m.getTenantId());
-        Assert.assertEquals("production", m.getEnvironmentId());
-        Assert.assertEquals("feed1", m.getFeedId());
+        Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
+        Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
+        Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
         Assert.assertEquals("feedMetric1", m.getId());
 
         entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
         ResourceType rt = backend.convert(entity, ResourceType.class);
-        Assert.assertEquals("com.acme.tenant", rt.getTenantId());
+        Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
         Assert.assertEquals("URL", rt.getId());
 
         entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
         MetricType mt = backend.convert(entity, MetricType.class);
-        Assert.assertEquals("com.acme.tenant", mt.getTenantId());
+        Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
         Assert.assertEquals("ResponseTime", mt.getId());
     }
 

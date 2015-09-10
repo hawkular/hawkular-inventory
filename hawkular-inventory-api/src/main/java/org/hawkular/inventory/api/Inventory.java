@@ -139,7 +139,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the environment
      */
     default Environments.Single inspect(Environment environment) throws EntityNotFoundException {
-        return tenants().get(environment.getTenantId()).environments().get(environment.getId());
+        return inspect(environment.getPath(), Environments.Single.class);
     }
 
     /**
@@ -149,7 +149,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the feed
      */
     default Feeds.Single inspect(Feed feed) throws EntityNotFoundException {
-        return tenants().get(feed.getTenantId()).environments().get(feed.getEnvironmentId()).feeds().get(feed.getId());
+        return inspect(feed.getPath(), Feeds.Single.class);
     }
 
     /**
@@ -159,13 +159,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the metric
      */
     default Metrics.Single inspect(Metric metric) throws EntityNotFoundException {
-        Environments.Single env = tenants().get(metric.getTenantId()).environments().get(metric.getEnvironmentId());
-
-        if (metric.getFeedId() == null) {
-            return env.feedlessMetrics().get(metric.getId());
-        } else {
-            return env.feeds().get(metric.getFeedId()).metrics().get(metric.getId());
-        }
+        return inspect(metric.getPath(), Metrics.Single.class);
     }
 
     /**
@@ -175,12 +169,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the metric type
      */
     default MetricTypes.Single inspect(MetricType metricType) throws EntityNotFoundException {
-        if (metricType.getFeedId() == null) {
-            return tenants().get(metricType.getId()).feedlessMetricTypes().get(metricType.getId());
-        } else {
-            return tenants().get(metricType.getId()).environments().get(metricType.getEnvironmentId())
-                    .feeds().get(metricType.getFeedId()).metricTypes().get(metricType.getId());
-        }
+        return inspect(metricType.getPath(), MetricTypes.Single.class);
     }
 
     /**
@@ -190,13 +179,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the resource
      */
     default Resources.Single inspect(Resource resource) throws EntityNotFoundException {
-        Environments.Single env = tenants().get(resource.getTenantId()).environments().get(resource.getEnvironmentId());
-
-        if (resource.getFeedId() == null) {
-            return env.feedlessResources().get(resource.getId());
-        } else {
-            return env.feeds().get(resource.getFeedId()).resources().get(resource.getId());
-        }
+        return inspect(resource.getPath(), Resources.Single.class);
     }
 
     /**
@@ -206,12 +189,7 @@ public interface Inventory extends AutoCloseable {
      * @return the access interface to the resource type
      */
     default ResourceTypes.Single inspect(ResourceType resourceType) throws EntityNotFoundException {
-        if (resourceType.getFeedId() == null) {
-            return tenants().get(resourceType.getId()).feedlessResourceTypes().get(resourceType.getId());
-        } else {
-            return tenants().get(resourceType.getId()).environments().get(resourceType.getEnvironmentId())
-                    .feeds().get(resourceType.getFeedId()).resourceTypes().get(resourceType.getId());
-        }
+        return inspect(resourceType.getPath(), ResourceTypes.Single.class);
     }
 
     default Relationships.Single inspect(Relationship relationship) {
@@ -383,15 +361,27 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitData(Void parameter) {
-                if (path.ids().getResourceTypeId() == null) {
-                    Resources.Single res = inspect(path.up(), Resources.Single.class);
+                CanonicalPath.IdExtractor ids = path.ids();
+                String rt = ids.getResourceTypeId();
+                String ot = ids.getOperationTypeId();
 
-                    return accessInterface.cast(res.data().get(path.ids().getDataRole()));
+                if (rt != null) {
+                    ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
+
+                    return accessInterface.cast(rts.data().get(ids.getDataRole()));
+                } else if (ot != null) {
+                    OperationTypes.Single ots = inspect(path.up(), OperationTypes.Single.class);
+                    return accessInterface.cast(ots.data().get(ids.getDataRole()));
                 } else {
-                    ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
-
-                    return accessInterface.cast(rt.data().get(path.ids().getDataRole()));
+                    Resources.Single res = inspect(path.up(), Resources.Single.class);
+                    return accessInterface.cast(res.data().get(ids.getDataRole()));
                 }
+            }
+
+            @Override
+            public Single visitOperationType(Void parameter) {
+                ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
+                return accessInterface.cast(rt.operationTypes().get(path.getSegment().getElementId()));
             }
 
             @Override

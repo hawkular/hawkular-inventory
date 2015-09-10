@@ -20,15 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.model.Path;
 
 /**
  * A base class for filters. Defines no filtering logic in and of itself.
@@ -60,51 +55,30 @@ public abstract class Filter {
     }
 
     public static Filter[] pathTo(Entity<?, ?> entity) {
-        return entity.accept(new ElementVisitor.Simple<Accumulator, Accumulator>() {
-            @Override
-            public Accumulator visitTenant(Tenant tenant, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(tenant.getId()));
-            }
+        return pathTo(entity.getPath());
+    }
 
-            @Override
-            public Accumulator visitEnvironment(Environment environment, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(environment.getTenantId()))
-                        .and(With.type(Environment.class)).and(With.id(environment.getId()));
-            }
+    @SuppressWarnings("unchecked")
+    public static Filter[] pathTo(CanonicalPath path) {
+        if (!path.isDefined()) {
+            return new Filter[0];
+        }
 
-            @Override
-            public Accumulator visitFeed(Feed feed, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(feed.getTenantId()))
-                        .and(With.type(Environment.class)).and(With.id(feed.getEnvironmentId()))
-                        .and(With.type(Feed.class)).and(With.id(feed.getId()));
-            }
+        List<Filter> fs = new ArrayList<>();
 
-            @Override
-            public Accumulator visitMetric(Metric metric, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(metric.getTenantId()))
-                        .and(With.type(Environment.class)).and(With.id(metric.getEnvironmentId()))
-                        .and(With.type(Metric.class)).and(With.id(metric.getId()));
-            }
+        for (Path.Segment s : path.getPath()) {
+            fs.add(Related.by(Relationships.WellKnown.contains));
+            fs.add(With.type((Class<? extends Entity<?, ?>>) s.getElementType()));
+            fs.add(With.id(s.getElementId()));
+        }
 
-            @Override
-            public Accumulator visitMetricType(MetricType type, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(type.getTenantId()))
-                        .and(With.type(MetricType.class)).and(With.id(type.getId()));
-            }
-
-            @Override
-            public Accumulator visitResource(Resource resource, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(resource.getTenantId()))
-                        .and(With.type(Environment.class)).and(With.id(resource.getEnvironmentId()))
-                        .and(With.type(Resource.class)).and(With.id(resource.getId()));
-            }
-
-            @Override
-            public Accumulator visitResourceType(ResourceType type, Accumulator acc) {
-                return acc.and(With.type(Tenant.class)).and(With.id(type.getTenantId()))
-                        .and(With.type(ResourceType.class)).and(With.id(type.getId()));
-            }
-        }, by()).get();
+        if (fs.size() < 2) {
+            return new Filter[0];
+        } else {
+            //remove the first 'contains' defined in the loop above
+            List<Filter> ret = fs.subList(1, fs.size());
+            return ret.toArray(new Filter[ret.size()]);
+        }
     }
 
     public static final class Accumulator {

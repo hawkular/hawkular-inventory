@@ -58,6 +58,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -404,6 +405,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     e = new DataEntity(cp.up(), DataEntity.Role.valueOf(cp.getSegment().getElementId()),
                             loadStructuredData(v, hasData));
                     break;
+                case operationType:
+                    e = new OperationType(extractCanonicalPath(v));
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown type of vertex");
             }
@@ -425,7 +429,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @SuppressWarnings("ConstantConditions")
             AbstractElement<?, ?> el = (AbstractElement<?, ?>) e;
 
-            return el.accept(new ElementVisitor.Simple<T, Void>() {
+            return el.accept(new ElementVisitor<T, Void>() {
                 @Override
                 public T visitTenant(Tenant tenant, Void ignored) {
                     return common(tenant, Tenant.Update.builder());
@@ -464,6 +468,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 @Override
                 public T visitData(DataEntity data, Void ignored) {
                     return common(data, DataEntity.Update.builder());
+                }
+
+                @Override public T visitOperationType(OperationType operationType, Void parameter) {
+                    return common(operationType, OperationType.Update.builder());
+                }
+
+                @Override public T visitUnknown(Object entity, Void parameter) {
+                    return null;
                 }
 
                 @Override
@@ -520,7 +532,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Element persist(CanonicalPath path, Blueprint blueprint) {
-        return blueprint.accept(new ElementBlueprintVisitor.Simple<Element, Void>() {
+        return blueprint.accept(new ElementBlueprintVisitor<Element, Void>() {
 
             @Override
             public Element visitTenant(Tenant.Blueprint tenant, Void parameter) {
@@ -568,6 +580,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Element visitData(DataEntity.Blueprint data, Void parameter) {
                 return common(path, data.getProperties(), DataEntity.class);
+            }
+
+            @Override
+            public Element visitOperationType(OperationType.Blueprint operationType, Void parameter) {
+                return common(path, operationType.getProperties(), OperationType.class);
+            }
+
+            @Override
+            public Element visitUnknown(Object blueprint, Void parameter) {
+                throw new IllegalArgumentException("Unknown type of entity blueprint: " + blueprint.getClass());
             }
 
             private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
