@@ -118,7 +118,7 @@ public abstract class Path {
                 if (!path.isEmpty() && path.charAt(0) == PATH_DELIM) {
                     startPos = 1;
                 } else {
-                    throw new IllegalArgumentException("Supplied path is not absolute.");
+                    throw new IllegalArgumentException("Supplied path '"+ path +"' is not absolute.");
                 }
             }
 
@@ -488,7 +488,7 @@ public abstract class Path {
                             case TYPE_DELIM:
                                 if (currentId.length() == 0) {
                                     throw new IllegalArgumentException("Unspecified entity type id at pos " +
-                                            progress.getPos() + " in \"" + progress.getSource() + "\".");
+                                            progress.getPos() + " in '" + progress.getSource() + "'.");
                                 }
 
                                 currentTypeString = currentId.toString();
@@ -532,9 +532,9 @@ public abstract class Path {
             Segment ret = typeProvider.deduceSegment(currentTypeString, currentIdString, progress.isFinished());
 
             if (ret == null) {
-                throw new IllegalArgumentException("Unrecognized entity type '" + currentTypeString + "' for segment" +
-                        " with id: '" + currentIdString + "'. The following types are recognized: " +
-                        typeProvider.getValidTypeName());
+                throw new IllegalArgumentException("Unrecognized entity type '" + currentTypeString + "' for segment"
+                        + " with id: '" + currentIdString + "' in path '" + progress.getSource()
+                        + "'. The following types are recognized: " + typeProvider.getValidTypeName());
             }
 
             typeProvider.segmentParsed(ret);
