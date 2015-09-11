@@ -25,7 +25,6 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.security.Security;
 import org.hawkular.inventory.rest.security.TenantIdProducer;
-import org.hawkular.inventory.rest.security.dummy.AllPermissive;
 import org.jboss.resteasy.annotations.GZIP;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,12 +42,12 @@ public class RestBase {
 
     // using the @AllPermissive annotation the access will be always granted
     @Inject
-    @AllPermissive
+//    @AllPermissive
     protected Security security;
 
     @Inject
     // using the @AllPermissive annotation the tenant will be always the same
-    @AllPermissive
+//    @AllPermissive
     @RequestScoped
     private TenantIdProducer tenantIdProducer;
 

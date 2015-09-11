@@ -1250,7 +1250,6 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Page<Metric> ms = metrics.entities(firstPage);
         List<Metric> msList = ms.toList();
         assert msList.size() == 1;
-        System.out.println("\n\n\n\n\nPICAAA\n" + ms.getTotalSize());
         assert ms.getTotalSize() == 3;
         assert msList.get(0).equals(allResults.get(0));
 

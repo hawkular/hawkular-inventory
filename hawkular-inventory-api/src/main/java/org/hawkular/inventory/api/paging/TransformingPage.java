@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.paging;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -53,6 +54,9 @@ public final class TransformingPage<I, O> extends Page<O> {
 
     @Override
     public O next() {
+        if (conversionFunction == null) {
+            throw new NoSuchElementException("the page has been closed");
+        }
         return conversionFunction.apply(getPage().next());
     }
 

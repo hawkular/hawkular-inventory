@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * Holds the weak reference to the hawkular pipe to be able to correctly calculate the total size, once the
+ * Holds the lambda function to be able to correctly calculate the total size, once the
  * iterator is depleted
  *
  * @author Jirka Kremser
@@ -33,13 +33,15 @@ public class SizeAwarePage<T> extends Page<T> {
     public SizeAwarePage(Iterator<T> wrapped, PageContext pageContext, HasTotalSize hasTotalSize) {
         super(wrapped, pageContext, HasTotalSize.NOT_DEPLETED);
         this.totalSize = HasTotalSize.NOT_DEPLETED;
+        if (hasTotalSize == null) {
+            throw new IllegalArgumentException("hasTotalSize can't be null");
+        }
         this.hasTotalSize = hasTotalSize;
     }
 
     /**
      * This returns <ul>
      * <li>-1 if the iterator hasn't been depleted</li>
-     * <li>-2 if the weak reference was GCed</li>
      * <li>the total size otherwise</li>
      * </ul>
      *
@@ -47,12 +49,8 @@ public class SizeAwarePage<T> extends Page<T> {
      */
     @Override
     public long getTotalSize() {
-        if (!hasNext() && totalSize == HasTotalSize.NOT_DEPLETED) {
-            if (hasTotalSize == null) {
-                totalSize = HasTotalSize.GARBAGE_COLLECTED;
-            } else {
-                totalSize = hasTotalSize.getTotalSize();
-            }
+        if (totalSize == HasTotalSize.NOT_DEPLETED && !hasNext()) {
+            totalSize = hasTotalSize.getTotalSize();
         }
         return totalSize;
     }
@@ -67,6 +65,7 @@ public class SizeAwarePage<T> extends Page<T> {
     }
 
     @Override public void close() throws IOException {
+        getTotalSize();
         this.hasTotalSize = null;
         super.close();
     }
@@ -74,7 +73,6 @@ public class SizeAwarePage<T> extends Page<T> {
     @FunctionalInterface
     public interface HasTotalSize {
         int NOT_DEPLETED = -1;
-        int GARBAGE_COLLECTED = -2;
 
         long getTotalSize();
     }

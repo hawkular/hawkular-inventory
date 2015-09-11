@@ -31,7 +31,7 @@
     </param-value>
   </context-param>
 
-  <!-- to disable the auth, comment out the following elements
+  <!-- to disable the auth, comment out the following elements -->
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>REST endpoints</web-resource-name>
@@ -53,5 +53,5 @@
   <security-role>
     <role-name>admin</role-name>
   </security-role>
--->
+
 </web-app>

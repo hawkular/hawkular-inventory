@@ -116,7 +116,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         q.counter("total").page(pager);
 
         // here the toList is very expensive
-        return new Page<>(q.cast(Element.class).iterator(), pager, q.getCount("total"));
+        return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
     }
 
     @Override

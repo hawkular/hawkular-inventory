@@ -87,7 +87,7 @@ final class Util {
 
                     return ret;
                 } catch (Throwable e) {
-                    Log.LOGGER.error("\n\n\nTRANSACTION failed: " + e.getMessage());
+                    Log.LOGGER.dTransactionFailed(e.getMessage());
                     context.backend.rollback(t);
                     throw e;
                 }
