@@ -42,6 +42,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <checkstyle.suppressions.file>checkstyle-suppressions.xml</checkstyle.suppressions.file>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
@@ -105,6 +109,11 @@
           <artifactId>netty</artifactId>
         </exclusion>
         <exclusion>
+          <!-- we use our own -->
+          <groupId>org.apache.cassandra</groupId>
+          <artifactId>cassandra-all</artifactId>
+        </exclusion>
+        <exclusion>
           <!-- TODO HACK ALERT: We're coupling pinger here... -->
           <!-- We need to depend on another version that is also used in Pinger. This should disappear once pinger
           becomes a proper remote client of inventory. -->
@@ -112,6 +121,11 @@
           <artifactId>httpclient</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra-all</artifactId>
     </dependency>
 
     <!-- TODO HACK ALERT: We're coupling pinger here... -->
