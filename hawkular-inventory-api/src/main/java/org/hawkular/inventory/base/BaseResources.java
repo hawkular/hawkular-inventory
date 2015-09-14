@@ -72,20 +72,21 @@ public final class BaseResources {
                 Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
 
             BE resourceTypeObject;
+            CanonicalPath resourceTypePath = null;
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
-                CanonicalPath resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
+                resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
                         parentPath, ResourceType.class);
                 resourceTypeObject = context.backend.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
-                        " in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
+                        " when resolved to '" + resourceTypePath + "'.");
             }
 
             BE r = relate(resourceTypeObject, entity, defines.name());
 
             CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
-            CanonicalPath resourceTypePath = context.backend.extractCanonicalPath(resourceTypeObject);
+            resourceTypePath = context.backend.extractCanonicalPath(resourceTypeObject);
 
             ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
 

@@ -16,12 +16,16 @@
  */
 package org.hawkular.inventory.rest;
 
+import static javax.ws.rs.core.Response.Status.CREATED;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.stream.StreamSupport;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -51,7 +55,23 @@ final class ResponseUtil {
      * @return the response builder with status 201 and location set to the entity with the provided id.
      */
     public static Response.ResponseBuilder created(UriInfo info, String id) {
-        return Response.status(Response.Status.CREATED).location(info.getRequestUriBuilder().segment(id).build());
+        return Response.status(CREATED).location(info.getRequestUriBuilder().segment(id).build());
+    }
+
+    /**
+     * Similar to {@link #created(UriInfo, String)} but used when more than 1 entity is created during the request.
+     * <p>
+     * The provided list of ids is converted to URIs (by merely appending the ids using the
+     * {@link UriBuilder#segment(String...)} method) and put in the response as its entity.
+     *
+     * @param info uri info to help with converting ids to URIs
+     * @param ids  the list of ids of the entities
+     * @return the response builder with status 201 and entity set
+     */
+    public static Response.ResponseBuilder created(UriInfo info, Spliterator<String> ids) {
+        return Response.status(CREATED)
+                .entity(StreamSupport.stream(ids, false).map(
+                        (id) -> info.getRequestUriBuilder().segment(id).build()));
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
@@ -111,7 +131,7 @@ final class ResponseUtil {
      * @param resultList The collection with its paging information
      */
     public static void createPagingHeader(final Response.ResponseBuilder builder, final UriInfo uriInfo,
-            final Page<?> resultList) {
+                                          final Page<?> resultList) {
 
         UriBuilder uriBuilder;
 

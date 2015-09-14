@@ -472,28 +472,36 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             return idIfTypeCorrect(getRoot().down(2), Feed.class);
         }
 
+        /**
+         * This creates a relative path that represents the resource hierarchy present in this path.
+         * <p>
+         * Note that the returned relative path is backed by this canonical path and therefore you can call
+         * {@link RelativePath#slide(int, int)} on it and modify it to "see" the parts of the path "above" and "below"
+         * the resource segments.
+         *
+         * @return the resource hierarchy in the path represented as a relative path or null if there are no resources
+         * in the path.
+         */
         public RelativePath getResourcePath() {
-            Iterator<Segment> it = getPath().iterator();
-            Segment rootResource = null;
-            while (it.hasNext()) {
-                Segment s = it.next();
-                if (Resource.class.equals(s.getElementType())) {
-                    rootResource = s;
+            int from, to;
+            List<Segment> path = CanonicalPath.this.path;
+
+            for (from = CanonicalPath.this.startIdx; from < CanonicalPath.this.endIdx; ++from) {
+                if (Resource.class.equals(path.get(from).getElementType())) {
                     break;
                 }
             }
 
-            if (rootResource == null) {
+            if (from == path.size()) {
                 return null;
             }
-
-            RelativePath.Extender ret = RelativePath.empty().extend(rootResource);
-
-            while (it.hasNext()) {
-                ret.extend(it.next());
+            for (to = from; to < CanonicalPath.this.endIdx; ++to) {
+                if (!Resource.class.equals(path.get(to).getElementType())) {
+                    break;
+                }
             }
 
-            return ret.get();
+            return new RelativePath(from, to, CanonicalPath.this.path);
         }
 
         public String getMetricId() {

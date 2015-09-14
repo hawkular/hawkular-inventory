@@ -69,7 +69,7 @@ public final class RelativePath extends Path implements Serializable {
         }
     }
 
-    private RelativePath(int start, int end, List<Segment> segments) {
+    RelativePath(int start, int end, List<Segment> segments) {
         super(start, end, segments);
     }
 
@@ -199,6 +199,24 @@ public final class RelativePath extends Path implements Serializable {
     @Override
     public RelativePath up(int distance) {
         return (RelativePath) super.up(distance);
+    }
+
+    /**
+     * Moves the start and end of the path by the provided distances.
+     * <p>
+     * Consider the path:
+     * <pre>{@code a/b/c}</pre>
+     * <p>
+     * {@code p1 = p.slide(1, 0)} will produce {@code p1 = "b/c"}, {@code p1.slide(-1, 0)} will produce a path
+     * equivalent to the original one. {@code p.slide(-1, 0)} will produce an undefined path, because it would go past
+     * the known start of the path (i.e. beyond "a").
+     *
+     * @param startDelta the number of steps to move the start of the path
+     * @param endDelta   the number of steps to move the end of the path
+     * @return a new relative path with modified length and position, possibly undefined
+     */
+    public RelativePath slide(int startDelta, int endDelta) {
+        return new RelativePath(startIdx + startDelta, endIdx + endDelta, path);
     }
 
     @Override

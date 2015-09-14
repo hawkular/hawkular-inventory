@@ -17,6 +17,7 @@
 package org.hawkular.inventory.rest;
 
 
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
@@ -60,4 +61,11 @@ public interface RestApiLogger extends BasicLogger {
     @Message(id = 2004, value = "Accepting:\nHTTP %s -> %s\n\nheaders:\n%s\npayload:\n%s\njavaMethod: %s\n")
     void restCall(String method, String url, String headers, String jsonPayload, String javaMethod);
 
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 2005, value = "Creating a resource under path '%s' is not implemented. This is a bug.")
+    void resourceCreationNotSupported(CanonicalPath path);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2006, value = "Error while creating resource on path '%s' during a bulk create.")
+    void failedToCreateBulkResource(CanonicalPath path, @Cause Throwable cause);
 }
