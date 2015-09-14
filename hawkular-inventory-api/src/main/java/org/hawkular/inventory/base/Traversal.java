@@ -66,22 +66,22 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * Runs the payload in transaction. It is the payload's responsibility to commit the transaction at some point
      * during its execution. If the payload throws an exception the transaction is automatically rolled back and
      * the exception rethrown.
-     *
+     * <p>
      * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
      * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
      *
      * @param payload the payload to execute in transaction
-     * @param <R> the return type
+     * @param <R>     the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(Util.PotentiallyCommittingPayload<R> payload) {
+    protected <R> R mutating(PotentiallyCommittingPayload<R> payload) {
         return Util.runInTransaction(context, false, payload);
     }
 
     /**
      * A "shortcut" method for executing read-only payloads in transaction. Such payloads don't have to have a reference
      * to the transaction in which they're being executed.
-     *
+     * <p>
      * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
      * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
      *
