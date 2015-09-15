@@ -37,7 +37,9 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.TransactionFrame;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -84,70 +86,79 @@ public class RestBulk extends RestBase {
                                                    CanonicalPath rootPath) {
         Map<CanonicalPath, Integer> statuses = new HashMap<>();
 
-        for (Map.Entry<String, List<Resource.Blueprint>> e : resources.entrySet()) {
-            List<Resource.Blueprint> newChildren = e.getValue();
+        TransactionFrame transaction = inventory.newTransactionFrame();
+        Inventory binv = transaction.boundInventory();
 
-            CanonicalPath parentPath = canonicalize(e.getKey(), rootPath);
+        try {
+            for (Map.Entry<String, List<Resource.Blueprint>> e : resources.entrySet()) {
+                List<Resource.Blueprint> newChildren = e.getValue();
 
-            if (!parentPath.modified().canExtendTo(Resource.class)) {
-                statuses.put(parentPath, BAD_REQUEST.getStatusCode());
-                continue; //map iteration
-            }
+                CanonicalPath parentPath = canonicalize(e.getKey(), rootPath);
 
-            if (!security.canCreate(Resource.class).under(parentPath)) {
-                for (Resource.Blueprint b : newChildren) {
-                    statuses.put(parentPath.extend(Resource.class, b.getId()).get(), FORBIDDEN.getStatusCode());
+                if (!parentPath.modified().canExtendTo(Resource.class)) {
+                    statuses.put(parentPath, BAD_REQUEST.getStatusCode());
+                    continue; //map iteration
                 }
-                continue; //map iteration
-            }
 
-            for (Resource.Blueprint b : newChildren) {
-                CanonicalPath childPath = parentPath.extend(Resource.class, b.getId()).get();
-
-                parentPath.accept(new ElementTypeVisitor.Simple<Void, Void>() {
-                    @Override
-                    protected Void defaultAction() {
-                        RestApiLogger.LOGGER.resourceCreationNotSupported(parentPath);
-                        statuses.put(childPath, INTERNAL_SERVER_ERROR.getStatusCode());
-                        return null;
+                if (!security.canCreate(Resource.class).under(parentPath)) {
+                    for (Resource.Blueprint b : newChildren) {
+                        statuses.put(parentPath.extend(Resource.class, b.getId()).get(), FORBIDDEN.getStatusCode());
                     }
+                    continue; //map iteration
+                }
 
-                    @Override
-                    public Void visitEnvironment(Void parameter) {
-                        Environments.Single env = inventory.inspect(parentPath, Environments.Single.class);
-                        statuses.put(childPath, createWithStatus(env.feedlessResources()));
-                        return null;
-                    }
+                for (Resource.Blueprint b : newChildren) {
+                    CanonicalPath childPath = parentPath.extend(Resource.class, b.getId()).get();
 
-                    @Override
-                    public Void visitFeed(Void parameter) {
-                        Feeds.Single feed = inventory.inspect(parentPath, Feeds.Single.class);
-                        statuses.put(childPath, createWithStatus(feed.resources()));
-                        return null;
-                    }
-
-                    @Override
-                    public Void visitResource(Void parameter) {
-                        Resources.Single resource = inventory.inspect(parentPath, Resources.Single.class);
-                        statuses.put(childPath, createWithStatus(resource.containedChildren()));
-                        return null;
-                    }
-
-                    private int createWithStatus(Resources.ReadWrite rw) {
-                        try {
-                            rw.create(b);
-                            return CREATED.getStatusCode();
-                        } catch (EntityAlreadyExistsException e) {
-                            return CONFLICT.getStatusCode();
-                        } catch (Exception e) {
-                            RestApiLogger.LOGGER.failedToCreateBulkResource(childPath, e);
-                            return INTERNAL_SERVER_ERROR.getStatusCode();
+                    parentPath.accept(new ElementTypeVisitor.Simple<Void, Void>() {
+                        @Override
+                        protected Void defaultAction() {
+                            RestApiLogger.LOGGER.resourceCreationNotSupported(parentPath);
+                            statuses.put(childPath, INTERNAL_SERVER_ERROR.getStatusCode());
+                            return null;
                         }
-                    }
-                }, null);
+
+                        @Override
+                        public Void visitEnvironment(Void parameter) {
+                            Environments.Single env = binv.inspect(parentPath, Environments.Single.class);
+                            statuses.put(childPath, createWithStatus(env.feedlessResources()));
+                            return null;
+                        }
+
+                        @Override
+                        public Void visitFeed(Void parameter) {
+                            Feeds.Single feed = binv.inspect(parentPath, Feeds.Single.class);
+                            statuses.put(childPath, createWithStatus(feed.resources()));
+                            return null;
+                        }
+
+                        @Override
+                        public Void visitResource(Void parameter) {
+                            Resources.Single resource = binv.inspect(parentPath, Resources.Single.class);
+                            statuses.put(childPath, createWithStatus(resource.containedChildren()));
+                            return null;
+                        }
+
+                        private int createWithStatus(Resources.ReadWrite rw) {
+                            try {
+                                rw.create(b);
+                                return CREATED.getStatusCode();
+                            } catch (EntityAlreadyExistsException e) {
+                                return CONFLICT.getStatusCode();
+                            } catch (Exception e) {
+                                RestApiLogger.LOGGER.failedToCreateBulkResource(childPath, e);
+                                return INTERNAL_SERVER_ERROR.getStatusCode();
+                            }
+                        }
+                    }, null);
+                }
             }
+            transaction.commit();
+            return statuses;
+        } catch (Throwable t) {
+            transaction.rollback();
+            throw t;
         }
-        return statuses;
     }
 
     private static CanonicalPath canonicalize(String path, CanonicalPath rootPath) {
