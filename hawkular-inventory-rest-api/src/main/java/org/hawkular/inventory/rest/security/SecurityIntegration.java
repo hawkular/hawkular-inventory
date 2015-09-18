@@ -133,7 +133,7 @@ public class SecurityIntegration {
         if (!isDummy()) {
             switch (action.asEnum()) {
                 case CREATED:
-                    createSecurityResource(entity);
+                    createSecurityResource(entity.getPath());
                     break;
                 case DELETED:
                     String stableId = EntityIdUtils.getStableId(entity);
@@ -144,40 +144,30 @@ public class SecurityIntegration {
         }
     }
 
-    private void createSecurityResource(AbstractElement<?, ?> entity) {
-        LOGGER.tracef("Creating security entity for %s", entity);
-
-        org.hawkular.accounts.api.model.Resource parent = ensureParent(entity);
-
-        Persona owner = establishOwner(parent, personas.getCurrent());
-
-        // because the event handling in inventory is not ordered in any way, we might receive the info about creating
-        // a parent after a child has been reported. In that case, the security resource for the parent will already
-        // exist.
-        String stableId = EntityIdUtils.getStableId(entity);
-        if (storage.get(stableId) == null) {
-            storage.create(stableId, parent, owner);
-            LOGGER.debugf("Created security entity with stable ID '%s' for entity %s", stableId, entity);
-        }
-    }
-
-    private org.hawkular.accounts.api.model.Resource ensureParent(AbstractElement<?, ?> entity) {
-        CanonicalPath parentPath = entity.getPath().up();
-
-        if (!parentPath.isDefined()) {
-            //tenants and relationships
+    private org.hawkular.accounts.api.model.Resource createSecurityResource(CanonicalPath path) {
+        if (!path.isDefined()) {
             return null;
         }
 
-        String parentStableId = EntityIdUtils.getStableId(parentPath);
+        LOGGER.tracef("Creating security entity for %s", path);
 
-        Persona owner = personas.getCurrent();
-        org.hawkular.accounts.api.model.Resource parent = storage.get(parentStableId);
-        if (parent == null) {
-            parent = storage.create(parentStableId, null, owner);
+        String stableId = EntityIdUtils.getStableId(path);
+
+        org.hawkular.accounts.api.model.Resource res = storage.get(stableId);
+        if (res == null) {
+            org.hawkular.accounts.api.model.Resource parent = createSecurityResource(path.up());
+
+            // if the parent is null, it means we're creating a security resource for the tenant - we need to assign
+            // it an owner. If the parent exists, we need to establish the owner to assign to the current resource
+            Persona owner = personas.getCurrent();
+            if (parent != null) {
+                owner = establishOwner(parent, owner);
+            }
+            res = storage.create(stableId, parent, owner);
+            LOGGER.debugf("Created security entity with stable ID '%s' for entity %s", stableId, path);
         }
 
-        return parent;
+        return res;
     }
 
     /**
