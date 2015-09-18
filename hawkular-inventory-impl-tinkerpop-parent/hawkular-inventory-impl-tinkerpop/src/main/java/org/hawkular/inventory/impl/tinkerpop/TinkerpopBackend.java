@@ -610,19 +610,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
-                    Class<? extends AbstractElement<?, ?>> cls) {
-                checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
+                                  Class<? extends AbstractElement<?, ?>> cls) {
+                try {
+                    checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
-                Vertex v = context.getGraph().addVertex(null);
-                v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
-                v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
-                v.setProperty(Constants.Property.__cp.name(), path.toString());
+                    Vertex v = context.getGraph().addVertex(null);
+                    v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
+                    v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
+                    v.setProperty(Constants.Property.__cp.name(), path.toString());
 
-                if (properties != null) {
-                    ElementHelper.setProperties(v, properties);
+                    if (properties != null) {
+                        ElementHelper.setProperties(v, properties);
+                    }
+                    return v;
+                } catch (Exception e) {
+                    // todo: perhaps there is a better place to do that
+                    throw (RuntimeException) context.translateException(e);
                 }
-
-                return v;
             }
         }, null);
     }

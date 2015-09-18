@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -23,10 +24,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+
+import javax.naming.directory.SchemaViolationException;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
@@ -43,6 +49,46 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
  * @since 0.0.1
  */
 public class TitanProvider implements GraphProvider<TitanGraph> {
+
+    private static class ExceptionMapper {
+        private Class<? extends Exception> targetException;
+        private Predicate<Exception> predicate;
+
+        public ExceptionMapper(Class<? extends Exception> targetException,
+                               Predicate<Exception> predicate) {
+            this.targetException = targetException;
+            this.predicate = predicate;
+        }
+
+        public Class<? extends Exception> getTargetException() {
+            return targetException;
+        }
+
+        public Predicate<Exception> getPredicate() {
+            return predicate;
+        }
+    }
+
+    private static final Map<Class<? extends Exception>, List<ExceptionMapper>> exceptionMapping = new HashMap<>();
+
+    private static void mapException(Class<? extends Exception> source, Class<? extends Exception> target,
+                                     Predicate<Exception> p) {
+        if (exceptionMapping.get(source) == null) {
+            exceptionMapping.put(source, new ArrayList<>());
+        }
+        exceptionMapping.get(source).add(new ExceptionMapper(target, p));
+    }
+
+    static {
+        try {
+            mapException(SchemaViolationException.class, ElementNotFoundException.class,
+                    e -> e.getMessage().contains("violates a uniqueness constraint [by___cp]"));
+        } catch (Throwable t) {
+            // never fail during the class loading
+        }
+    }
+
+
     @Override
     public TitanGraph instantiateGraph(Configuration configuration) {
         return TitanFactory.open(new MapConfiguration(configuration.getImplementationConfiguration(
@@ -155,5 +201,35 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
         public List<String> getEnvironmentVariableNames() {
             return environmentVariableName;
         }
+    }
+
+    @Override
+    public Exception translateException(Exception inputException) {
+        List<ExceptionMapper> exceptionMappers = exceptionMapping.get(inputException);
+        if (exceptionMappers != null) {
+            Optional<Exception> firstMatch =
+                    exceptionMappers.stream()
+                            .filter(mapper -> mapper.getPredicate().test(inputException))
+                            .findFirst()
+                            .map(mapper -> {
+                                try {
+                                    // todo: find the proper ctor based on parameter match
+//                                    Arrays.stream(mapper.getTargetException().getConstructors()).forEach(
+//                                            constructor ->  {
+//
+//                                                Class<?>[] params = constructor.getParameterTypes();
+//                                            }
+//                                    );
+                                    return mapper.getTargetException().getConstructor(String.class).newInstance
+                                            (inputException.getMessage());
+                                } catch (Exception e) {
+                                    return inputException;
+                                }
+                            });
+            if (firstMatch.isPresent()) {
+                return firstMatch.orElseGet(() -> inputException);
+            }
+        }
+        return null;
     }
 }
