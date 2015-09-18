@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -83,6 +84,12 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
             super(id, properties);
         }
 
+        public Blueprint(String id, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitResourceType(this, parameter);
@@ -92,7 +99,7 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties);
+                return new Blueprint(id, properties, outgoing, incoming);
             }
         }
     }

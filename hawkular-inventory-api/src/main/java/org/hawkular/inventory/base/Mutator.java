@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
  * @author Lukas Krejci
@@ -209,6 +210,20 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     private void createCustomRelationships(BE entity, Relationships.Direction direction,
                                            Map<String, Set<CanonicalPath>> otherEnds,
                                            List<Notification<?, ?>> notifications) {
+        otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
+            try {
+                BE endObject = context.backend.find(end);
 
+                BE from = direction == outgoing ? entity : endObject;
+                BE to = direction == outgoing ? endObject : entity;
+
+                EntityAndPendingNotifications<Relationship> res = Util.createAssociationNoTransaction(context,
+                        from, name, to);
+
+                notifications.addAll(res.getNotifications());
+            } catch (ElementNotFoundException e) {
+                throw new EntityNotFoundException(Query.filters(Query.to(end)));
+            }
+        }));
     }
 }

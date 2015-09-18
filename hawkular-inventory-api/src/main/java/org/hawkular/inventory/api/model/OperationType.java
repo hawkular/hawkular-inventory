@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.model;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Lukas Krejci
@@ -64,6 +65,12 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
             super(id, properties);
         }
 
+        public Blueprint(String id, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitOperationType(this, parameter);
@@ -72,7 +79,7 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties);
+                return new Blueprint(id, properties, outgoing, incoming);
             }
         }
     }

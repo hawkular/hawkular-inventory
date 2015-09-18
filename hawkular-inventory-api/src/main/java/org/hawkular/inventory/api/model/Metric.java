@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -106,6 +107,13 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
             this.metricTypePath = metricTypePath;
         }
 
+        public Blueprint(String metricTypePath, String id, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, properties, outgoing, incoming);
+            this.metricTypePath = metricTypePath;
+        }
+
         public String getMetricTypePath() {
             return metricTypePath;
         }
@@ -125,7 +133,7 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
 
             @Override
             public Blueprint build() {
-                return new Blueprint(metricTypeId, id, properties);
+                return new Blueprint(metricTypeId, id, properties, outgoing, incoming);
             }
         }
     }

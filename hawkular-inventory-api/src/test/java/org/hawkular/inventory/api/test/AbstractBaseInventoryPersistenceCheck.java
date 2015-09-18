@@ -2089,6 +2089,22 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
     }
 
+    @Test
+    public void testCreateWithRelationships() throws Exception {
+        inventory.tenants().get("com.acme.tenant").environments().create(Environment.Blueprint.builder()
+                .withId("env-with-rel")
+                .addOutgoingRelationship("kachna", CanonicalPath.of().tenant("com.acme.tenant").get())
+                .addIncomingRelationship("duck", CanonicalPath.of().tenant("com.acme.tenant").get())
+                .build());
+        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(incoming).named("kachna")
+                .anyExists());
+        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(outgoing).named("duck")
+                .anyExists());
+
+        //clean up
+        inventory.tenants().get("com.acme.tenant").environments().delete("env-with-rel");
+    }
+
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
     void runObserverTest(Class<T> entityClass, int nofCreatedRelationships, int nofDeletedRelationships,
             Runnable payload) {

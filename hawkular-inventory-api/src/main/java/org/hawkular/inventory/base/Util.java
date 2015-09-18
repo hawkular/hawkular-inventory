@@ -173,6 +173,22 @@ final class Util {
     }
 
     public static <BE> EntityAndPendingNotifications<Relationship>
+    createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target) {
+        if (context.backend.hasRelationship(source, target, relationship)) {
+            throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(context.backend
+                    .extractCanonicalPath(source))));
+        }
+
+        RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
+                target);
+        BE relationshipObject = context.backend.relate(source, target, relationship, null);
+
+        Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
+
+        return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
+    }
+
+    public static <BE> EntityAndPendingNotifications<Relationship>
     deleteAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
                       String relationship, BE target) {
 
