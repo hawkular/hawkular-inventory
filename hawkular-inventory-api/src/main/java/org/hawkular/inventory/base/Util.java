@@ -62,31 +62,50 @@ final class Util {
 
     }
 
+    public static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
+                                      R firstCommitSuccessReturnValue,
+                                      PotentiallyCommittingPayload<R> payload, int maxRetries) {
+
+        return commitOrRetry(transaction, backend, (t) -> firstCommitSuccessReturnValue, payload, maxRetries, false);
+    }
+
     public static <R> R runInTransaction(TraversalContext<?, ?> context, boolean readOnly,
-            PotentiallyCommittingPayload<R> payload) {
-
-        int failures = 0;
-        Exception lastException = null;
-
+                                         PotentiallyCommittingPayload<R> payload) {
+        InventoryBackend.Transaction transaction = context.backend.startTransaction(!readOnly);
         int maxFailures = context.getTransactionRetriesCount();
+        return commitOrRetry(transaction, context.backend, payload, payload, maxFailures, true);
+    }
+
+    private static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
+                                       PotentiallyCommittingPayload<R> firstPayload,
+                                       PotentiallyCommittingPayload<R> succeedingPayload, int maxFailures,
+                                       boolean commitOnlyReadonly) {
+        int failures = 0;
+        Exception lastException;
 
         //this could be configurable, but let's just start with the hardcoded 100ms as the first retry wait time.
         int waitTime = 100;
 
-        while (failures < maxFailures) {
+        do {
             try {
-                InventoryBackend.Transaction t = context.backend.startTransaction(!readOnly);
                 try {
-                    R ret = payload.run(t);
-                    if (readOnly) {
-                        context.backend.commit(t);
+                    R ret;
+                    if (failures == 0) {
+                        ret = transaction.execute(firstPayload);
+                    } else {
+                        transaction = backend.startTransaction(transaction.isMutating());
+                        ret = transaction.execute(succeedingPayload);
+                    }
+
+                    if (!(commitOnlyReadonly && transaction.isMutating())) {
+                        backend.commit(transaction);
                     }
 
                     return ret;
-                } catch (Throwable e) {
-                    Log.LOGGER.dTransactionFailed(e.getMessage());
-                    context.backend.rollback(t);
-                    throw e;
+                } catch (Throwable t) {
+                    Log.LOGGER.dTransactionFailed(t.getMessage());
+                    backend.rollback(transaction);
+                    throw t;
                 }
             } catch (CommitFailureException e) {
                 failures++;
@@ -115,14 +134,9 @@ final class Util {
                     waitTime = waitTime * 2 + rand.nextInt(waitTime / 10);
                 }
             }
-        }
+        } while (failures < maxFailures);
 
         throw new TransactionFailureException(lastException, failures);
-    }
-
-    @FunctionalInterface
-    public interface PotentiallyCommittingPayload<R> {
-        R run(InventoryBackend.Transaction t) throws CommitFailureException;
     }
 
     public static <BE> BE getSingle(InventoryBackend<BE> backend, Query query,
@@ -135,8 +149,9 @@ final class Util {
         return result;
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship> createAssociation(TraversalContext<BE, ?> context,
-            Query sourceQuery, Class<? extends Entity<?, ?>> sourceType, String relationship, BE target) {
+    public static <BE> EntityAndPendingNotifications<Relationship>
+    createAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
+                      String relationship, BE target) {
 
         return runInTransaction(context, false, (t) -> {
             BE source = getSingle(context.backend, sourceQuery, sourceType);
@@ -157,8 +172,25 @@ final class Util {
         });
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship> deleteAssociation(TraversalContext<BE, ?> context,
-            Query sourceQuery, Class<? extends Entity<?, ?>> sourceType, String relationship, BE target) {
+    public static <BE> EntityAndPendingNotifications<Relationship>
+    createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target) {
+        if (context.backend.hasRelationship(source, target, relationship)) {
+            throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(context.backend
+                    .extractCanonicalPath(source))));
+        }
+
+        RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
+                target);
+        BE relationshipObject = context.backend.relate(source, target, relationship, null);
+
+        Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
+
+        return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
+    }
+
+    public static <BE> EntityAndPendingNotifications<Relationship>
+    deleteAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
+                      String relationship, BE target) {
 
         InventoryBackend<BE> backend = context.backend;
         return runInTransaction(context, false, (t) -> {
@@ -187,8 +219,9 @@ final class Util {
     }
 
     public static <BE> Relationship getAssociation(TraversalContext<BE, ?> context, Query sourceQuery,
-            Class<? extends Entity<?, ?>> sourceType, Query targetQuery, Class<? extends Entity<?, ?>> targetType,
-            String rel) {
+                                                   Class<? extends Entity<?, ?>> sourceType, Query targetQuery,
+                                                   Class<? extends Entity<?, ?>> targetType,
+                                                   String rel) {
 
         InventoryBackend<BE> backend = context.backend;
 
@@ -286,7 +319,7 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, ?>> void delete(TraversalContext<BE, E> context,
-            Query entityQuery, Consumer<BE> cleanupFunction) {
+                                                                    Query entityQuery, Consumer<BE> cleanupFunction) {
 
         runInTransaction(context, false, (transaction) -> {
             BE entity = context.backend.querySingle(entityQuery);
@@ -384,7 +417,7 @@ final class Util {
     /**
      * If the provided path is canonical, it is prefixed with the {@code canonicalPrefix} and returned. If the provided
      * path is relative, it is resolved against the {@code relativeOrigin} and then converted to a canonical path.
-     *
+     * <p>
      * <p>The path can be partially untyped.
      *
      * @param path              the string representation of a path (either canonical or relative)
@@ -395,7 +428,7 @@ final class Util {
      * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, Class)
      */
     public static CanonicalPath canonicalize(String path, CanonicalPath canonicalPrefix, CanonicalPath relativeOrigin,
-            Class<?> intendedFinalType) {
+                                             Class<?> intendedFinalType) {
 
         Path p = Path.fromPartiallyUntypedString(path, canonicalPrefix, relativeOrigin, intendedFinalType);
 

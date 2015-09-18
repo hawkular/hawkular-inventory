@@ -16,9 +16,11 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-
-import javax.xml.bind.annotation.XmlAttribute;
+import java.util.Set;
 
 /**
  * Base class for all Hawkular entities.
@@ -72,27 +74,89 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
      * the subclasses are free to use a blueprint type not inheriting from this one.
      */
     public abstract static class Blueprint extends AbstractElement.Blueprint {
-        @XmlAttribute
         private final String id;
+        private final Map<String, Set<CanonicalPath>> outgoing;
+        private final Map<String, Set<CanonicalPath>> incoming;
 
         protected Blueprint(String id, Map<String, Object> properties) {
+            this(id, properties, null, null);
+        }
+
+        protected Blueprint(String id, Map<String, Object> properties, Map<String, Set<CanonicalPath>> outgoing,
+                            Map<String, Set<CanonicalPath>> incoming) {
+
             super(properties);
             this.id = id;
+            this.outgoing = outgoing == null ? Collections.emptyMap() : copyAsUnmodifiable(outgoing);
+            this.incoming = incoming == null ? Collections.emptyMap() : copyAsUnmodifiable(incoming);
         }
 
         public String getId() {
             return id;
         }
 
+        public Map<String, Set<CanonicalPath>> getOutgoingRelationships() {
+            return outgoing;
+        }
+
+        public Map<String, Set<CanonicalPath>> getIncomingRelationships() {
+            return incoming;
+        }
+
         public abstract static class Builder<Blueprint, This extends Builder<Blueprint, This>>
                 extends AbstractElement.Blueprint.Builder<Blueprint, This> {
 
             protected String id;
+            protected Map<String, Set<CanonicalPath>> outgoing;
+            protected Map<String, Set<CanonicalPath>> incoming;
 
             public This withId(String id) {
                 this.id = id;
                 return castThis();
             }
+
+            public This withOutgoingRelationships(Map<String, Set<CanonicalPath>> outgoing) {
+                this.outgoing = outgoing;
+                return castThis();
+            }
+
+            public This withIncomingRelationships(Map<String, Set<CanonicalPath>> incoming) {
+                this.incoming = incoming;
+                return castThis();
+            }
+
+            public This addOutgoingRelationship(String label, CanonicalPath target) {
+                outgoing = addRelationship(outgoing, label, target);
+                return castThis();
+            }
+
+            public This addIncomingRelationship(String label, CanonicalPath source) {
+                incoming = addRelationship(incoming, label, source);
+                return castThis();
+            }
+
+            private Map<String, Set<CanonicalPath>> addRelationship(Map<String, Set<CanonicalPath>> map, String label,
+                                                                    CanonicalPath path) {
+                if (map == null) {
+                    map = new HashMap<>();
+                }
+
+                Set<CanonicalPath> paths = map.get(label);
+                if (paths == null) {
+                    paths = new HashSet<>();
+                    map.put(label, paths);
+                }
+
+                paths.add(path);
+
+                return map;
+            }
+        }
+
+        private static Map<String, Set<CanonicalPath>> copyAsUnmodifiable(Map<String, Set<CanonicalPath>> map) {
+            Map<String, Set<CanonicalPath>> ret = new HashMap<>(map.size());
+            map.forEach((k, v) -> ret.put(k, Collections.unmodifiableSet(v)));
+            return Collections.unmodifiableMap(ret);
         }
     }
 }

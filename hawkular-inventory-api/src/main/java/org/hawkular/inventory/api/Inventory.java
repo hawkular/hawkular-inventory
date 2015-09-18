@@ -103,6 +103,24 @@ public interface Inventory extends AutoCloseable {
     void initialize(Configuration configuration);
 
     /**
+     * This creates a new transaction frame that will be responsible for its own transaction handling.
+     * <p>
+     * Note that operations done directly on this inventory instance will be done in their own transactions outside
+     * of the returned frame. To do operations on inventory within that transaction frame, use {@link
+     * TransactionFrame#boundInventory()} method to obtain an inventory instance that will obey the transaction
+     * boundaries set by the frame.
+     * <p>
+     * Note that it is not recommended to operate with more than 1 transaction frame in a single thread of execution.
+     * The behavior might differ depending on the storage backend for the inventory. Concurrent usage of more
+     * transaction frames is fine though (this is because of the weird "transaction-per-thread" policy in Tinkerpop
+     * and yes that means that one of the backend is leaking its requirements into the API, but I can't see a way
+     * around it).
+     *
+     * @return a new transaction frame
+     */
+    TransactionFrame newTransactionFrame();
+
+    /**
      * Entry point into the inventory. Select one ({@link org.hawkular.inventory.api.Tenants.ReadWrite#get(Object)}) or
      * more ({@link org.hawkular.inventory.api.Tenants.ReadWrite#getAll(org.hawkular.inventory.api.filters.Filter...)})
      * tenants and navigate further to the entities of interest.

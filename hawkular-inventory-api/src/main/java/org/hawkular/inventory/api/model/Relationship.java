@@ -151,7 +151,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
             super(properties);
             this.name = name;
             this.otherEnd = otherEnd;
-            this.direction = direction;
+            this.direction = direction == null ? Relationships.Direction.outgoing : direction;
         }
 
         public String getName() {

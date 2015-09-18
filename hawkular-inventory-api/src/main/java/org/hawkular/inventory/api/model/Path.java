@@ -228,7 +228,7 @@ public abstract class Path {
      * @return true if this path is well-formed, false otherwise.
      */
     public boolean isDefined() {
-        return endIdx > startIdx && endIdx <= path.size();
+        return startIdx >= 0 && endIdx > startIdx && endIdx <= path.size();
     }
 
     /**
@@ -280,6 +280,13 @@ public abstract class Path {
     }
 
     /**
+     * @return the top segment in this path or null if this path is not {@link #isDefined() defined}.
+     */
+    public Segment getTop() {
+        return isDefined() ? path.get(startIdx) : null;
+    }
+
+    /**
      * @return the last path segment on the path or null if this path is not {@link #isDefined() defined}. E.g. if this
      * path represents {@code "a/b/c"} then the segment returned from this method is {@code "c"}
      */
@@ -289,7 +296,7 @@ public abstract class Path {
 
     /**
      * Get the full path represented as an array of the individual segments. The 0-th element in the array
-     * represents the segment of the root resource and the last element of the array is the segment of this path
+     * represents the segment of the root entity and the last element of the array is the segment of this path
      * instance.
      *
      * @return the unmodifiable path segments or empty list if this path is {@link #isDefined() undefined}.
@@ -655,49 +662,80 @@ public abstract class Path {
 
         protected abstract Path newPath(int startIdx, int endIdx, List<Segment> segments);
 
+        /**
+         * Checks whether this path can be extended by a segment of the provided type.
+         *
+         * @param segmentType the type of the next segment
+         * @return true if the path can be definitely extended by a segment of the provided type, false if definitely
+         * not or null if the the extension will only succeed with a correct id (which can happen when this extender is
+         * set up with some origin path and has not been extended past it).
+         */
+        public Boolean canExtendTo(Class<?> segmentType) {
+            switch (checkCanProgress(segmentType, false)) {
+                case PROCEED_IF_ID_MATCHES:
+                    return null;
+                case PROCEED:
+                case CLEAR_SEGMENTS_AND_JUMP_TO_END:
+                case JUMP_TO_END:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
+         * Checks whether this path can be extended with the provided segment.
+         *
+         * @param segment the segment to extend the path with
+         * @return true if the path can be extended with the provided segment, false otherwise.
+         */
+        public boolean canExtendTo(Segment segment) {
+            switch (checkCanProgress(segment.elementType, Objects.equals(segment, segments.get(checkIndex)))) {
+                case PROCEED:
+                case CLEAR_SEGMENTS_AND_JUMP_TO_END:
+                case JUMP_TO_END:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public Extender extend(Segment segment) {
-            if (checkIndex >= 0 && checkIndex < segments.size()) {
-                Segment matching = segments.get(checkIndex);
-                if (matching.equals(segment)) {
-                    //ok, the the caller adds a segment that matches our initial path
-                    checkIndex++;
-                    return this;
-                } else {
-                    if (checkIndex == from) {
-                        // slight hack commences ;)
-                        // the reasoning behind this is that a) this is the first segment of a path we're creating
-                        // and b) we're adding a relationship segment.
-                        // Relationships are top-level and cannot be followed by anything else.
-                        // Also relationships are independent of any entity hierarchy so it doesn't really make sense
-                        // to "force them under" some custom "root path".
-                        if (Relationship.class.equals(segment.getElementType())) {
-                            segments.clear();
-                        }
+            //matching ids are only important when we are inside the origin path and checkIndex is therefore "inside"
+            //the segments
+            boolean idMatches = checkIndex >= 0 && checkIndex < segments.size() &&
+                    Objects.equals(segment, segments.get(checkIndex));
 
-                        // this is the first extension we're getting. if it does not match the expected segment
-                        // in the initial list then that means that the caller doesn't actually take into account
-                        // the fact that they can go through the initial list (or is not actually even aware of it).
-                        checkIndex = segments.size();
-                    } else {
-                        throw new IllegalArgumentException("The provided segment " + segment + " does not match the" +
-                                " expected origin of the path.");
-                    }
-                }
+            switch (checkCanProgress(segment.getElementType(), idMatches)) {
+                case PROCEED_IF_ID_MATCHES:
+                case INVALID_IN_ORIGIN:
+                    throw new IllegalArgumentException("The provided segment " + segment + " does not match the" +
+                            " expected origin of the path.");
+                case PROCEED:
+                    break;
+                case CLEAR_SEGMENTS_AND_JUMP_TO_END:
+                    segments.clear();
+                    checkIndex = 0;
+                    break;
+                case JUMP_TO_END:
+                    checkIndex = segments.size();
+                    break;
+                default:
+                    List<Segment> currentSegs = checkIndex >= 0 ? segments.subList(from, checkIndex) : segments;
+
+                    List<Class<?>> progress = validProgressions.apply(currentSegs);
+
+                    throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
+                            " of the path: " + currentSegs +
+                            (progress == null ? ". There are no further extensions possible."
+                                    : ". Valid extension types are: " + progress.stream().map(Class::getSimpleName)
+                                    .collect(toList())));
             }
 
-            List<Segment> currentSegs = checkIndex >= 0 ? segments.subList(from, checkIndex) : segments;
-
-            List<Class<?>> progress = validProgressions.apply(currentSegs);
-
-            if (progress == null || !progress.contains(segment.getElementType())) {
-                throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
-                        " of the path: " + currentSegs +
-                        (progress == null ? ". There are no further extensions possible."
-                                : ". Valid extension types are: " + progress.stream().map(Class::getSimpleName)
-                                .collect(toList())));
+            if (checkIndex < 0 || checkIndex >= segments.size()) {
+                segments.add(segment);
             }
 
-            segments.add(segment);
             if (checkIndex >= 0) {
                 checkIndex++;
             }
@@ -725,6 +763,55 @@ public abstract class Path {
 
         public Path get() {
             return newPath(from, segments.size(), segments);
+        }
+
+        private ProgressCheck checkCanProgress(Class<?> nextSegmentType, boolean idMatches) {
+            int indexToCheck = checkIndex;
+            ProgressCheck ret = ProgressCheck.PROCEED;
+
+            if (checkIndex >= 0 && checkIndex < segments.size()) {
+                Segment matching = segments.get(checkIndex);
+                if (nextSegmentType.equals(matching.elementType)) {
+                    //ok, the the caller might be adding a segment that matches our initial path
+                    return idMatches ? ProgressCheck.PROCEED : ProgressCheck.PROCEED_IF_ID_MATCHES;
+                } else {
+                    if (checkIndex == from) {
+                        // slight hack commences ;)
+                        // the reasoning behind this is that a) this is the first segment of a path we're creating
+                        // and b) we're adding a relationship segment.
+                        // Relationships are top-level and cannot be followed by anything else.
+                        // Also relationships are independent of any entity hierarchy so it doesn't really make sense
+                        // to "force them under" some custom "root path".
+                        if (Relationship.class.equals(nextSegmentType)) {
+                            ret = ProgressCheck.CLEAR_SEGMENTS_AND_JUMP_TO_END;
+                            indexToCheck = 0;
+                        } else {
+                            // this is the first extension we're getting. if it does not match the expected segment
+                            // in the initial list then that means that the caller doesn't actually take into account
+                            // the fact that they can go through the initial list (or is not actually even aware of it).
+                            ret = ProgressCheck.JUMP_TO_END;
+                            indexToCheck = segments.size();
+                        }
+                    } else {
+                        return ProgressCheck.INVALID_IN_ORIGIN;
+                    }
+                }
+            }
+
+            List<Segment> currentSegs = indexToCheck >= 0 ? segments.subList(from, indexToCheck) : segments;
+
+            List<Class<?>> progress = validProgressions.apply(currentSegs);
+
+            if (progress == null || !progress.contains(nextSegmentType)) {
+                return ProgressCheck.INVALID;
+            }
+
+            return ret;
+        }
+
+        private enum ProgressCheck {
+            PROCEED, PROCEED_IF_ID_MATCHES, INCREMENT_INITIAL_POSITION, CLEAR_SEGMENTS_AND_JUMP_TO_END, JUMP_TO_END,
+            INVALID_IN_ORIGIN, INVALID
         }
     }
 

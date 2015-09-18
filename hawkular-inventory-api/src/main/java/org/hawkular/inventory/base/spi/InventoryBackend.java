@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.PotentiallyCommittingPayload;
 import org.hawkular.inventory.base.Query;
 
 /**
@@ -323,6 +324,10 @@ public interface InventoryBackend<E> extends AutoCloseable {
 
         public boolean isMutating() {
             return mutating;
+        }
+
+        public <R> R execute(PotentiallyCommittingPayload<R> payload) throws CommitFailureException {
+            return payload.run(this);
         }
     }
 }

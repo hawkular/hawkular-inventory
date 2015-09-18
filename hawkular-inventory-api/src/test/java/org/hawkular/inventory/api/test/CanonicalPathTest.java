@@ -21,8 +21,10 @@ import static org.hawkular.inventory.api.Resources.DataRole.connectionConfigurat
 
 import java.util.Iterator;
 
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
@@ -345,6 +347,44 @@ public class CanonicalPathTest {
         //testing robustness against letter case in escape sequences and trailing type delimiter, too
         mp = Path.fromPartiallyUntypedString("/%2fg;", cp, cp, Metric.class);
         Assert.assertEquals("/t;t/e;e/f;f/m;%2Fg;", mp.toString());
+    }
+
+    @Test
+    public void testExtensionChecks() throws Exception {
+        Assert.assertTrue(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Environment.class));
+        Assert.assertNull(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Tenant.class));
+        Assert.assertFalse(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Metric.class));
+    }
+
+    @Test
+    public void testResourceIdsBackedByCanonicalPath() throws Exception {
+        CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("1").resource("2").resource("3")
+                .data(Resources.DataRole.configuration).get();
+
+        RelativePath rs = p.ids().getResourcePath();
+
+        Assert.assertNotNull(rs);
+        Assert.assertEquals(3, rs.getPath().size());
+        Assert.assertEquals("3", rs.getSegment().getElementId());
+        Assert.assertEquals("1", rs.getTop().getElementId());
+        Assert.assertEquals("2", rs.up().getSegment().getElementId());
+        Assert.assertEquals(new Path.Segment(Environment.class, "e"), rs.slide(-1, 0).getTop());
+    }
+
+    @Test
+    public void testRelativePathSliding() throws Exception {
+        RelativePath p = RelativePath.to().environment("e").resource("r").data(configuration).index(1).key("a").get();
+
+        Assert.assertEquals(p.up(), p.slide(0, -1));
+        Assert.assertEquals(p.up().down(), p.slide(0, -1).slide(0, 1));
+
+        Assert.assertFalse(p.slide(0, 1).isDefined());
+        Assert.assertFalse(p.slide(-1, 0).isDefined());
+
+        Assert.assertTrue(p.slide(-1, 0).getPath().isEmpty());
+
+        Assert.assertEquals(new Path.Segment(Resource.class, "r"), p.slide(1, 0).getTop());
+        Assert.assertEquals(new Path.Segment(DataEntity.class, "configuration"), p.slide(2, 0).getTop());
     }
 
     @SuppressWarnings("unchecked")

@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.model;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -76,6 +77,12 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
             super(id == null ? AUTO_ID_FLAG : id, properties);
         }
 
+        public Blueprint(String id, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitFeed(this, parameter);
@@ -85,7 +92,7 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties);
+                return new Blueprint(id, properties, outgoing, incoming);
             }
         }
 

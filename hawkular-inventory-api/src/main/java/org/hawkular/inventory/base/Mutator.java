@@ -17,13 +17,19 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -31,6 +37,7 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
  * @author Lukas Krejci
@@ -91,6 +98,16 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
             newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent);
 
+            List<Notification<?, ?>> customRelsNotifications = new ArrayList<>();
+
+            if (blueprint instanceof Entity.Blueprint) {
+                Entity.Blueprint b = (Entity.Blueprint) blueprint;
+                createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(),
+                        customRelsNotifications);
+                createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(),
+                        customRelsNotifications);
+            }
+
             context.backend.commit(transaction);
 
             context.notify(newEntity.getEntity(), created());
@@ -98,6 +115,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 context.notify(context.backend.convert(containsRel, Relationship.class), created());
             }
             context.notifyAll(newEntity);
+            customRelsNotifications.forEach(context::notify);
 
             return Query.to(entityPath);
         });
@@ -188,4 +206,24 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      */
     protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, B blueprint,
             CanonicalPath parentPath, BE parent);
+
+    private void createCustomRelationships(BE entity, Relationships.Direction direction,
+                                           Map<String, Set<CanonicalPath>> otherEnds,
+                                           List<Notification<?, ?>> notifications) {
+        otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
+            try {
+                BE endObject = context.backend.find(end);
+
+                BE from = direction == outgoing ? entity : endObject;
+                BE to = direction == outgoing ? endObject : entity;
+
+                EntityAndPendingNotifications<Relationship> res = Util.createAssociationNoTransaction(context,
+                        from, name, to);
+
+                notifications.addAll(res.getNotifications());
+            } catch (ElementNotFoundException e) {
+                throw new EntityNotFoundException(Query.filters(Query.to(end)));
+            }
+        }));
+    }
 }

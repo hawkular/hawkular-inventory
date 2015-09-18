@@ -54,63 +54,63 @@ public interface ElementBlueprintVisitor<R, P> {
             this.defaultValue = defaultValue;
         }
 
-        protected R defaultAction() {
+        protected R defaultAction(Object blueprint, P parameter) {
             return defaultValue;
         }
 
         @Override
         public R visitTenant(Tenant.Blueprint tenant, P parameter) {
-            return defaultAction();
+            return defaultAction(tenant, parameter);
         }
 
         @Override
         public R visitEnvironment(Environment.Blueprint environment, P parameter) {
-            return defaultAction();
+            return defaultAction(environment, parameter);
         }
 
         @Override
         public R visitFeed(Feed.Blueprint feed, P parameter) {
-            return defaultAction();
+            return defaultAction(feed, parameter);
         }
 
         @Override
         public R visitMetric(Metric.Blueprint metric, P parameter) {
-            return defaultAction();
+            return defaultAction(metric, parameter);
         }
 
         @Override
         public R visitMetricType(MetricType.Blueprint definition, P parameter) {
-            return defaultAction();
+            return defaultAction(definition, parameter);
         }
 
         @Override
         public R visitResource(Resource.Blueprint resource, P parameter) {
-            return defaultAction();
+            return defaultAction(resource, parameter);
         }
 
         @Override
         public R visitResourceType(ResourceType.Blueprint type, P parameter) {
-            return defaultAction();
+            return defaultAction(type, parameter);
         }
 
         @Override
         public R visitRelationship(Relationship.Blueprint relationship, P parameter) {
-            return defaultAction();
+            return defaultAction(relationship, parameter);
         }
 
         @Override
         public R visitData(DataEntity.Blueprint<?> data, P parameter) {
-            return defaultAction();
+            return defaultAction(data, parameter);
         }
 
         @Override
         public R visitOperationType(OperationType.Blueprint operationType, P parameter) {
-            return defaultAction();
+            return defaultAction(operationType, parameter);
         }
 
         @Override
         public R visitUnknown(Object blueprint, P parameter) {
-            return defaultAction();
+            return defaultAction(blueprint, parameter);
         }
     }
 }

@@ -56,6 +56,23 @@ public class EmptyInventory implements Inventory {
     public void initialize(Configuration configuration) {
     }
 
+    @Override public TransactionFrame newTransactionFrame() {
+        return new TransactionFrame() {
+            @Override
+            public void commit() {
+            }
+
+            @Override
+            public void rollback() {
+            }
+
+            @Override
+            public Inventory boundInventory() {
+                return EmptyInventory.this;
+            }
+        };
+    }
+
     @Override
     public void close() throws Exception {
     }

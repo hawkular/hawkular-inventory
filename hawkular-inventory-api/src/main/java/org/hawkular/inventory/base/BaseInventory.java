@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.TransactionFrame;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -55,9 +56,24 @@ public abstract class BaseInventory<E> implements Inventory {
             .withEnvironmentVariables("HAWKULAR_INVENTORY_TRANSACTION_RETRIES").build();
 
     private InventoryBackend<E> backend;
-    private final ObservableContext observableContext = new ObservableContext();
+    private final ObservableContext observableContext;
     private TraversalContext<E, Tenant> tenantContext;
     private TraversalContext<E, Relationship> relationshipContext;
+
+    /**
+     * This is a sort of copy constructor.
+     *
+     * @param backend           the backend
+     * @param observableContext the observable context
+     */
+    protected BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext) {
+        this.backend = backend;
+        this.observableContext = observableContext;
+    }
+
+    protected BaseInventory() {
+        observableContext = new ObservableContext();
+    }
 
     @Override
     public final void initialize(Configuration configuration) {
@@ -69,6 +85,11 @@ public abstract class BaseInventory<E> implements Inventory {
 
         relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
                 Relationship.class, configuration, observableContext);
+    }
+
+    @Override
+    public TransactionFrame newTransactionFrame() {
+        return new BaseTransactionFrame<>(backend, observableContext, tenantContext);
     }
 
     /**
@@ -140,4 +161,16 @@ public abstract class BaseInventory<E> implements Inventory {
         return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
     }
 
+    public static class Initialized<E> extends BaseInventory<E> {
+        public Initialized(InventoryBackend<E> backend, ObservableContext observableContext,
+                           Configuration configuration) {
+            super(backend, observableContext);
+            initialize(configuration);
+        }
+
+        @Override
+        protected InventoryBackend<E> doInitialize(Configuration configuration) {
+            return getBackend();
+        }
+    }
 }
