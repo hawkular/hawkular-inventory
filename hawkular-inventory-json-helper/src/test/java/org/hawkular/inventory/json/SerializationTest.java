@@ -18,7 +18,11 @@ package org.hawkular.inventory.json;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -326,6 +330,26 @@ public class SerializationTest {
         test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
                 Resources.DataRole.connectionConfiguration,
                 StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
+    }
+
+    @Test
+    public void testEntityBlueprint() throws Exception {
+        String ser = serialize(new Environment.Blueprint("env",
+                new HashMap<String, Object>() {{
+                    put("key", "value");
+                }},
+                new HashMap<String, Set<CanonicalPath>>() {{
+                    put("kachna", new HashSet<>(Arrays.asList(CanonicalPath.of().tenant("t").get())));
+                }},
+                null));
+
+        Environment.Blueprint b = deserialize(ser, Environment.Blueprint.class);
+
+        Assert.assertEquals("env", b.getId());
+        Assert.assertEquals(Collections.<String, Set<CanonicalPath>>emptyMap(), b.getIncomingRelationships());
+        Assert.assertEquals(Collections.singleton(CanonicalPath.of().tenant("t").get()),
+                b.getOutgoingRelationships().get("kachna"));
+        Assert.assertEquals("value", b.getProperties().get("key"));
     }
 
     private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
