@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
@@ -84,6 +85,10 @@ public class EmptyInventory implements Inventory {
         throw entityNotFound(Tenant.class);
     }
 
+    @Override public <T extends AbstractElement> T getElement(CanonicalPath path) {
+        throw entityNotFound(Tenant.class);
+    }
+
     @Override
     public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
                                                                          Relationships.Direction direction,
@@ -92,7 +97,7 @@ public class EmptyInventory implements Inventory {
     }
 
     protected static <T> Page<T> emptyPage(Pager pager) {
-        return new Page<>(Collections.emptyList(), pager, 0);
+        return new Page<>(Collections.emptyIterator(), pager, 0);
     }
 
     protected static EntityNotFoundException entityNotFound(Class<? extends Entity<?, ?>> entityClass) {

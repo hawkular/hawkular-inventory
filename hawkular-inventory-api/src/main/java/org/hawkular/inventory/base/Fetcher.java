@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -30,6 +27,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.api.paging.TransformingPage;
 
 /**
  * A base class for all interface impls that need to resolve the entities.
@@ -65,21 +63,19 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             throws EntityNotFoundException, RelationNotFoundException {
 
         return readOnly(() -> {
-            Page<BE> results = context.backend.query(context.select().get(), Pager.single());
+            BE result = context.backend.querySingle(context.select().get());
 
-            if (results.isEmpty()) {
+            if (result == null) {
                 throwNotFoundException();
             }
 
-            BE backendEntity = results.get(0);
-
-            E entity = context.backend.convert(backendEntity, context.entityClass);
+            E entity = context.backend.convert(result, context.entityClass);
 
             if (!isApplicable(entity)) {
                 throwNotFoundException();
             }
 
-            return conversion.apply(backendEntity, entity);
+            return conversion.apply(result, entity);
         });
     }
 
@@ -144,11 +140,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
             Page<Pair<BE, E>> intermediate =
                     context.backend.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
-
-            List<T> converted = intermediate.stream().map((p) -> conversionFunction.apply(p.first, p.second))
-                    .collect(toList());
-
-            return new Page<>(converted, intermediate.getPageContext(), intermediate.getTotalSize());
+            return new TransformingPage<>(intermediate, (p) -> conversionFunction.apply(p.first, p.second));
         });
     }
 

@@ -179,7 +179,7 @@ public class RestMetrics extends RestBase {
         Page<Metric> ret = (feedless ? envs.feedlessMetrics() : envs.allMetrics())
                 .getAll().entities(RequestUtil.extractPaging(uriInfo));
 
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -197,7 +197,7 @@ public class RestMetrics extends RestBase {
 
         Page<Metric> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds()
                 .get(feedId).metrics().getAll().entities(RequestUtil.extractPaging(uriInfo));
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @PUT

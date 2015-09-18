@@ -46,4 +46,7 @@ public interface Log {
     @Message(id = 3002, value = "HACK ALERT: Failed to auto-create tenant metadata. This is most probably due to it" +
             " being already created in parallel.")
     void failedToAutoCreateEntities(@Cause Throwable cause);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 3003, value = "Bus integration succeeded.") void busInitializationSuccess();
 }

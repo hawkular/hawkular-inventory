@@ -16,8 +16,9 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import com.tinkerpop.blueprints.Element;
 
@@ -26,24 +27,30 @@ import com.tinkerpop.blueprints.Element;
  * @since 0.0.1
  */
 public final class IndexSpec {
-    private final Map<String, Class<?>> properties;
+    private final Set<Property> properties;
     private final Class<? extends Element> elementType;
+    private final boolean unique;
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public IndexSpec(Class<? extends Element> elementType, Map<String, Class<?>> properties) {
+    public IndexSpec(Class<? extends Element> elementType, Set<Property> properties, boolean unique) {
         this.elementType = elementType;
         this.properties = properties;
+        this.unique = unique;
     }
 
     public Class<? extends Element> getElementType() {
         return elementType;
     }
 
-    public Map<String, Class<?>> getProperties() {
+    public Set<Property> getProperties() {
         return properties;
+    }
+
+    public boolean isUnique() {
+        return unique;
     }
 
     @Override
@@ -51,16 +58,106 @@ public final class IndexSpec {
         return "IndexSpec[type=" + elementType.getSimpleName() + ",properties=" + properties + "]";
     }
 
+
+    public static final class Property {
+        private final String name;
+        private final Class<?> type;
+        private final boolean unique;
+        private final String labelIndex;
+
+        public Property(String name, Class<?> type, boolean unique, String labelIndex) {
+            this.name = name;
+            this.type = type;
+            this.unique = unique;
+            this.labelIndex = labelIndex;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getLabelIndex() {
+            return labelIndex;
+        }
+
+        public boolean isUnique() {
+            return unique;
+        }
+
+        public Class<?> getType() {
+            return type;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Property property = (Property) o;
+            return Objects.equals(name, property.name);
+        }
+
+        @Override public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        public static final class Builder {
+
+            private String name;
+            private Class<?> type;
+            private boolean unique;
+            private String labelIndex;
+
+            private Builder() {
+
+            }
+
+            public Builder withName(String name) {
+                this.name = name;
+                return this;
+            }
+
+            public Builder withType(Class<?> type) {
+                this.type = type;
+                return this;
+            }
+
+            public Builder withUnique(boolean unique) {
+                this.unique = unique;
+                return this;
+            }
+
+            public Builder withLabelIndex(String labelIndex) {
+                this.labelIndex = labelIndex;
+                return this;
+            }
+
+            public Property build() {
+                return new Property(name, type, unique, labelIndex);
+            }
+
+        }
+
+    }
+
     public static final class Builder {
-        private final Map<String, Class<?>> properties = new HashMap<>();
+
+        private final Set<Property> properties = new HashSet<>();
         private Class<? extends Element> elementType;
+        private boolean unique;
 
         private Builder() {
 
         }
 
-        public Builder withProperty(String propertyName, Class<?> propertyValueType) {
-            properties.put(propertyName, propertyValueType);
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public Builder withProperty(Property property) {
+            properties.add(property);
             return this;
         }
 
@@ -69,8 +166,13 @@ public final class IndexSpec {
             return this;
         }
 
+        public Builder withUnique(boolean unique) {
+            this.unique = unique;
+            return this;
+        }
+
         public IndexSpec build() {
-            return new IndexSpec(elementType, properties);
+            return new IndexSpec(elementType, properties, unique);
         }
     }
 }

@@ -30,15 +30,24 @@ public final class EntityNotFoundException extends InventoryException {
 
     private final Class<? extends Entity<?, ?>> entityType;
     private final Filter[][] filters;
+    private final String msg;
 
     public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[][] filters) {
         this.entityType = entityClass;
         this.filters = filters;
+        this.msg = null;
     }
 
     public EntityNotFoundException(Filter[][] filters) {
         this(null, filters);
     }
+
+    public EntityNotFoundException(String msg) {
+        this.msg = msg;
+        this.entityType = null;
+        this.filters = null;
+    }
+
     /**
      * @return the type of the entity that was not found.
      */
@@ -55,6 +64,9 @@ public final class EntityNotFoundException extends InventoryException {
 
     @Override
     public String getMessage() {
+        if (null != msg) {
+            return msg;
+        }
         return (entityType == null ? "Nothing" : ("No " + entityType.getSimpleName())) +
                 " found on any of the following paths: " + Arrays.deepToString(filters);
     }

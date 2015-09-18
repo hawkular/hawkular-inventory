@@ -16,13 +16,17 @@
  */
 package org.hawkular.inventory.rest;
 
-import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.security.Security;
 import org.hawkular.inventory.rest.security.TenantIdProducer;
 import org.jboss.resteasy.annotations.GZIP;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Lukas Krejci
@@ -41,8 +45,16 @@ public class RestBase {
 
     @Inject
     // using the @AllPermissive annotation the tenant will be always the same
-    @RequestScoped
     private TenantIdProducer tenantIdProducer;
+
+    @Inject
+    protected ObjectMapper mapper;
+
+    protected <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response,
+                                                         UriInfo uriInfo, Page<T> page) {
+        return ResponseUtil.pagedResponse(response, uriInfo, mapper, page);
+    }
+
 
     protected String getTenantId() {
         return tenantIdProducer.getTenantId().get();

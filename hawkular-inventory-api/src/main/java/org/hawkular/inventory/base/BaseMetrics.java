@@ -45,7 +45,8 @@ public final class BaseMetrics {
 
     }
 
-    public static class ReadWrite<BE> extends Mutator<BE, Metric, Metric.Blueprint, Metric.Update, String>
+    public static class ReadWrite<BE> extends Mutator<BE, Metric, Metric.Blueprint,
+            Metric.Update, String>
             implements Metrics.ReadWrite {
 
         public ReadWrite(TraversalContext<BE, Metric> context) {
@@ -147,18 +148,14 @@ public final class BaseMetrics {
         @Override
         public Relationship associate(
                 Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
-            Query getMetric = Util.queryTo(context, id);
-
-            BE metric = getSingle(getMetric, Metric.class);
+            BE metric = Util.find(context, id);
 
             return createAssociation(Resource.class, incorporates, metric);
         }
 
         @Override
         public Relationship disassociate(Path id) throws EntityNotFoundException {
-            Query getMetric = Util.queryTo(context, id);
-
-            BE metric = getSingle(getMetric, Metric.class);
+            BE metric = Util.find(context, id);
 
             return deleteAssociation(Resource.class, incorporates, metric);
         }

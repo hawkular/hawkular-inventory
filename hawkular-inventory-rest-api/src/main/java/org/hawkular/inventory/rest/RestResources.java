@@ -21,7 +21,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
-import static org.hawkular.inventory.rest.ResponseUtil.pagedResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -280,9 +279,7 @@ public class RestResources extends RestBase {
 
         Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
 
-
-//        inventory.inspect(parent, Resources.Single.class).allChildren().get
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -304,7 +301,7 @@ public class RestResources extends RestBase {
 
         Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
 
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -326,7 +323,7 @@ public class RestResources extends RestBase {
 
         Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).parents().getAll().entities(pager);
 
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -348,7 +345,7 @@ public class RestResources extends RestBase {
 
         Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).parents().getAll().entities(pager);
 
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -633,9 +630,7 @@ public class RestResources extends RestBase {
                                          @Context UriInfo uriInfo) {
 
         List<Resource> ret = getRecursiveChildren(environmentId, null, resourcePath, resourceTypeId, true);
-        Page page = new Page(ret, extractPaging(uriInfo), ret.size());
-
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
+        return Response.ok(ret).build();
     }
 
 
@@ -655,9 +650,7 @@ public class RestResources extends RestBase {
                                          @Context UriInfo uriInfo) {
 
         List<Resource> ret = getRecursiveChildren(environmentId, feedId, resourcePath, resourceTypeId, feedlesType);
-        Page page = new Page(ret, extractPaging(uriInfo), ret.size());
-
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, page).build();
+        return Response.ok(ret).build();
     }
 
     private List<Resource> getRecursiveChildren(String environmentId, String feedId, String resourcePath,

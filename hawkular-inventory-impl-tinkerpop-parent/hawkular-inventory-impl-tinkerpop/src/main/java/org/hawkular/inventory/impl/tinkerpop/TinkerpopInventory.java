@@ -60,16 +60,54 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
         graphProvider.ensureIndices(graph,
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
-                        .withProperty(Constants.Property.__type.name(), String.class)
-                        .withProperty(Constants.Property.__eid.name(), String.class).build(),
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__cp.name())
+                                .withType(String.class)
+                                .withUnique(true)
+                                        // this breaks the resource-metric association in REST (not sure why)
+//                                .withLabelIndex(Relationships.WellKnown.contains.name())
+                                .build())
+                        .withUnique(true)
+                        .build(),
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
-                        .withProperty(Constants.Property.__type.name(), String.class).build());
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__eid.name())
+                                .withType(String.class)
+                                .withUnique(true)
+                                .build())
+                        .build(),
                 IndexSpec.builder()
                         .withElementType(Vertex.class)
-                        .withProperty(Constants.Property.__type.name(), String.class)
-                        .withProperty(Constants.Property.__metric_data_type.name(), String.class).build();
-
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__type.name())
+                                .withType(String.class)
+//                                .withUnique(true)
+                                .build())
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__eid.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Vertex.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__type.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Vertex.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__type.name())
+                                .withType(String.class)
+                                .build())
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__metric_data_type.name())
+                                .withType(String.class)
+//                                .withUnique(true)
+                                .build())
+                        .build());
         return graph;
     }
 

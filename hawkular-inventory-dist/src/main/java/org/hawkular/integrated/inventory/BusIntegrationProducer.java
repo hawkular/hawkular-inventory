@@ -39,10 +39,12 @@ public class BusIntegrationProducer {
     private final IdentityHashMap<Inventory, BusIntegration> integrations = new IdentityHashMap<>();
 
     public void install(@Observes InventoryInitialized event) throws JMSException, NamingException {
-        BusIntegration integration = integrations.get(event.getInventory());
-        if (integration == null) {
-            integration = newIntegration(event.getInventory());
-            integrations.put(event.getInventory(), integration);
+        if ("true".equals(System.getProperty("inventory.bus.integration", "true"))) {
+            BusIntegration integration = integrations.get(event.getInventory());
+            if (integration == null) {
+                integration = newIntegration(event.getInventory());
+                integrations.put(event.getInventory(), integration);
+            }
         }
     }
 
@@ -60,6 +62,7 @@ public class BusIntegrationProducer {
 
         try {
             ret.start();
+            Log.LOGGER.busInitializationSuccess();
         } catch (NamingException | JMSException e) {
             Log.LOGGER.busInitializationFailed(e);
         }

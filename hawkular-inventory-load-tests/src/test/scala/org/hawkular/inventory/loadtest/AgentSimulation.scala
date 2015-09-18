@@ -100,10 +100,7 @@ class AgentSimulation extends Simulation {
     {
       "id": "metricType-$id",
       "unit": "BYTES",
-      "type": "GAUGE",
-      "properties": {
-        "a": "b"
-      }
+      "type": "GAUGE"
     }
   """
 
@@ -119,8 +116,7 @@ class AgentSimulation extends Simulation {
       "resourceTypePath": "../resType-something",
       "properties": {
         "foo": "bar",
-        "bar": "barbar",
-        "barbar": "foo"
+        "bar": "foo"
       }
     }
   """
@@ -132,7 +128,6 @@ class AgentSimulation extends Simulation {
       "metricTypePath": "../status.code.type",
       "properties": {
         "bla": "blabla",
-        "bar": "barbar",
         "kus": "kuskus"
       }
     }
@@ -237,10 +232,31 @@ class AgentSimulation extends Simulation {
         }
       }
     }
+
+    def getAllResourcesOfGivenTypeMultipleTimes(resourceType: String) = {
+      repeat(readEntityNumber) {
+        exec(
+          http("Get resources of a type (a)")
+            .get(s"resourceTypes/$resourceType/resources")
+            .check(status is 200)
+        )
+      }
+      .pause(interval millis)
+      .repeat(readEntityNumber) {
+        exec(
+          http("Get resources of a type (b)")
+           .get("test/resources")
+           .queryParam("typeId", resourceType)
+           .check(status is 200)
+        )
+      }
+    }
+
     readEntityMultipleTimes("resourceType")
     .exec(readEntityMultipleTimes("metricType"))
     .exec(readEntityMultipleTimes("resource", "test/"))
     .exec(readEntityMultipleTimes("metric", "test/"))
+    .exec(getAllResourcesOfGivenTypeMultipleTimes("resType-something"))
   }
 
   val setupScenario = scenario("Setup")

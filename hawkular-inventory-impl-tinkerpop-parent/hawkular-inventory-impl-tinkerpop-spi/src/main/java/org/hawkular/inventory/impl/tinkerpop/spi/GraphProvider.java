@@ -91,4 +91,16 @@ public interface GraphProvider<G extends TransactionalGraph> {
     default void rollback(G graph, InventoryBackend.Transaction t) {
         graph.rollback();
     }
+
+    /**
+     * Translates the graph specific exception to an inventory exception.
+     * <p>
+     * <p>The default implementation is an identity function.</p>
+     *
+     * @param inputException an exception to convert
+     * @return converted exception
+     */
+    default Exception translateException(Exception inputException) {
+        return inputException;
+    }
 }

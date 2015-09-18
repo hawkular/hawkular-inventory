@@ -74,7 +74,7 @@ public class RestMetricTypes extends RestBase {
         Page<MetricType> ret = (feedless ? tenants.feedlessMetricTypes() : tenants.allMetricTypes())
                 .getAll().entities(RequestUtil.extractPaging(uriInfo));
 
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
@@ -102,7 +102,7 @@ public class RestMetricTypes extends RestBase {
 
         Page<MetricType> ret =  inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds()
                 .get(feedId).metricTypes().getAll().entities(extractPaging(uriInfo));
-        return ResponseUtil.pagedResponse(Response.ok(), uriInfo, ret).build();
+        return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET

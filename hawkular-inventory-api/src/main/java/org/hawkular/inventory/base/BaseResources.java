@@ -174,9 +174,8 @@ public final class BaseResources {
         public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
             Query sourceQuery = context.sourcePath;
-            Query targetResource = Util.queryTo(context, id);
 
-            BE targetEntity = getSingle(targetResource, Resource.class);
+            BE targetEntity = Util.find(context, id);
 
             EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);
@@ -188,9 +187,7 @@ public final class BaseResources {
         @Override
         public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
             Query sourceQuery = context.select().get();
-            Query targetResource = Util.queryTo(context, id);
-
-            BE targetEntity = getSingle(targetResource, Resource.class);
+            BE targetEntity = Util.find(context, id);
 
             EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);

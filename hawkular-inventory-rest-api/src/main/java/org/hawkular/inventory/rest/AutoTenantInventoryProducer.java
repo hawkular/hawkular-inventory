@@ -32,6 +32,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Tenant;
@@ -114,6 +115,10 @@ public class AutoTenantInventoryProducer {
             @Override
             public InputStream getGraphSON(String tenantId) {
                 return inventory.getGraphSON(tenantId);
+            }
+
+            @Override public <T extends AbstractElement> T getElement(CanonicalPath path) {
+                return inventory.getElement(path);
             }
 
             @Override

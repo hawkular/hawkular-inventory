@@ -67,6 +67,7 @@ import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.api.paging.SizeAwarePage;
 import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
@@ -76,6 +77,7 @@ import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
@@ -99,13 +101,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element find(CanonicalPath element) throws ElementNotFoundException {
-        HawkularPipeline<?, ? extends Element> q = translate(null, Query.to(element));
-        if (!q.hasNext()) {
-            throw new ElementNotFoundException();
-        } else {
-            return q.next();
+    public Element find(CanonicalPath path) throws ElementNotFoundException {
+        GraphQuery query = context.getGraph().query().has(Constants.Property.__cp.name(), path.toString());
+        Iterator<? extends Element> it = query.vertices().iterator();
+        if (!it.hasNext()) {
+            it = query.edges().iterator();
+            if (!it.hasNext()) {
+                throw new ElementNotFoundException();
+            }
         }
+        return it.next();
     }
 
     @Override
@@ -114,12 +119,24 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         q.counter("total").page(pager);
 
-        return new Page<>(q.cast(Element.class).toList(), pager, q.getCount("total"));
+        return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
+    }
+
+    @Override public Element traverseToSingle(Element startingPoint, Query query) {
+        HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
+        if (q.hasNext()) {
+            return q.cast(Element.class).next();
+        }
+        return null;
     }
 
     @Override
     public Page<Element> query(Query query, Pager pager) {
         return traverse(null, query, pager);
+    }
+
+    @Override public Element querySingle(Query query) {
+        return traverseToSingle(null, query);
     }
 
     private HawkularPipeline<?, ? extends Element> translate(Element startingPoint, Query query) {
@@ -179,7 +196,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     });
         }
 
-        return new Page<>(q2.toList(), pager, q.getCount("total"));
+        return new SizeAwarePage<>(q2, pager, () -> q.getCount("total"));
     }
 
     @Override
@@ -593,19 +610,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
-                    Class<? extends AbstractElement<?, ?>> cls) {
-                checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
+                                  Class<? extends AbstractElement<?, ?>> cls) {
+                try {
+                    checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
-                Vertex v = context.getGraph().addVertex(null);
-                v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
-                v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
-                v.setProperty(Constants.Property.__cp.name(), path.toString());
+                    Vertex v = context.getGraph().addVertex(null);
+                    v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
+                    v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
+                    v.setProperty(Constants.Property.__cp.name(), path.toString());
 
-                if (properties != null) {
-                    ElementHelper.setProperties(v, properties);
+                    if (properties != null) {
+                        ElementHelper.setProperties(v, properties);
+                    }
+                    return v;
+                } catch (Exception e) {
+                    // todo: perhaps there is a better place to do that
+                    throw (RuntimeException) context.translateException(e);
                 }
-
-                return v;
             }
         }, null);
     }
@@ -1099,7 +1120,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         PipedInputStream in = new PipedInputStream();
         //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
         new Thread(() -> {
-            try (PipedOutputStream out = new PipedOutputStream(in);) {
+            try (PipedOutputStream out = new PipedOutputStream(in)) {
                 GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to create the GraphSON dump.", e);

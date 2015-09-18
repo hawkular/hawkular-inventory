@@ -59,4 +59,8 @@ final class InventoryContext<G extends TransactionalGraph> {
     public void rollback(InventoryBackend.Transaction t) {
         graphProvider.rollback(graph, t);
     }
+
+    public Exception translateException(Exception inputException) {
+        return graphProvider.translateException(inputException);
+    }
 }

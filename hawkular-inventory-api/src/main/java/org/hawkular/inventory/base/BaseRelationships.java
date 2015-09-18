@@ -41,8 +41,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
@@ -111,12 +109,10 @@ public final class BaseRelationships {
                             Query.filters(Query.to(targetOrSource)));
                 }
 
-                Page<BE> origins = context.backend.query(context.sourcePath, Pager.single());
-                if (origins.isEmpty()) {
+                BE origin = context.backend.querySingle(context.sourcePath);
+                if (origin == null) {
                     throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
                 }
-
-                BE origin = origins.get(0);
 
                 // if this is a well-known relationship, there might be some semantic checks for it...
                 RelationshipRules.checkCreate(context.backend, origin, direction, name, incidenceObject);

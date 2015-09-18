@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.rest;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +30,10 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.rest.json.Link;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 
 /**
  * @author Lukas Krejci
@@ -47,10 +55,16 @@ final class ResponseUtil {
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
-            Page<T> page) {
-
+                                                             ObjectMapper mapper, Page<T> page) {
         //extract the data out of the page
-        List<T> data = new ArrayList<>(page);
+        InputStream data = null;
+        try {
+            data = pageToStream(page, mapper);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // the page iterator should be depleted by this time so the total size should be correctly set
         return pagedResponse(response, uriInfo, page, data);
     }
 
@@ -59,6 +73,32 @@ final class ResponseUtil {
         response.entity(data);
         createPagingHeader(response, uriInfo, page);
         return response;
+    }
+
+    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) throws IOException {
+        final PipedOutputStream outs = new PipedOutputStream();
+        final PipedInputStream ins = new PipedInputStream() {
+            @Override public void close() throws IOException {
+                outs.close();
+                super.close();
+            }
+        };
+        outs.connect(ins);
+        mapper.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+
+        PageToStreamThreadPool.getInstance().submit(() -> {
+            try (Page<T> closeablePage = page;
+                 PipedOutputStream out = outs;
+                 SequenceWriter sequenceWriter = mapper.writer().writeValuesAsArray(out)) {
+                for (T element : closeablePage) {
+                    sequenceWriter.write(element);
+                    sequenceWriter.flush();
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to convert page to input stream.", e);
+            }
+        });
+        return ins;
     }
 
     /**

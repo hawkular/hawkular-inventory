@@ -45,4 +45,7 @@ public interface Log extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 3, value = "Thread interrupted while waiting for a next retry of a previously failed transaction.")
     void wInterruptedWhileWaitingForTransactionRetry();
+
+    @LogMessage(level = Logger.Level.DEBUG)
+    @Message(id = 4, value = "Transaction failed: %s") void dTransactionFailed(String msg);
 }

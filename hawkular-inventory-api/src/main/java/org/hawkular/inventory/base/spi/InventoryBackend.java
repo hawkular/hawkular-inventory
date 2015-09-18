@@ -65,17 +65,6 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * Translates the query to the backend-specific representation and runs it, returning a correct page of results
      * as prescribed by the provided pager object.
      *
-     * @param startingPoint the element which should be the starting point of the traversal
-     * @param query         the query to perform
-     * @param pager         pager to limit the number of results with
-     * @return the page of results, possibly empty, never null
-     */
-    Page<E> traverse(E startingPoint, Query query, Pager pager);
-
-    /**
-     * Translates the query to the backend-specific representation and runs it, returning a correct page of results
-     * as prescribed by the provided pager object.
-     *
      * <p>The difference between this method and {@link #traverse(Object, Query, Pager)} is that this method performs
      * a graph-wide query, while traverse starts from a single element.
      *
@@ -84,6 +73,21 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @return a page of results corresponding to the parameters, possibly empty, never null.
      */
     Page<E> query(Query query, Pager pager);
+
+    E querySingle(Query query);
+
+    /**
+     * Translates the query to the backend-specific representation and runs it, returning a correct page of results
+     * as prescribed by the provided pager object.
+     *
+     * @param startingPoint the element which should be the starting point of the traversal
+     * @param query         the query to perform
+     * @param pager         pager to limit the number of results with
+     * @return the page of results, possibly empty, never null
+     */
+    Page<E> traverse(E startingPoint, Query query, Pager pager);
+
+    E traverseToSingle(E startingPoint, Query query);
 
     /**
      * A variant of the {@link #query(Query, Pager)} method which in addition to querying also converts the results

@@ -23,7 +23,6 @@ import static org.hawkular.inventory.api.filters.With.id;
 
 import java.util.Collections;
 
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
@@ -32,8 +31,6 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
@@ -66,14 +63,6 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     protected final Query doCreate(B blueprint) {
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
-
-            Query existenceCheck = context.hop().filter().with(id(id)).get();
-
-            Page<BE> results = context.backend.query(existenceCheck, Pager.single());
-
-            if (!results.isEmpty()) {
-                throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
-            }
 
             BE parent = getParent();
             CanonicalPath parentCanonicalPath = parent == null ? null : context.backend.extractCanonicalPath(parent);
@@ -157,9 +146,9 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             @SuppressWarnings("unchecked")
             @Override
             protected BE defaultAction() {
-                Page<BE> res = context.backend.query(context.sourcePath, Pager.single());
+                BE res = context.backend.querySingle(context.sourcePath);
 
-                if (res.isEmpty()) {
+                if (res == null) {
                     Class<? extends Entity<?, ?>> parentEntityClass = null;
                     if (context.previous != null && Entity.class.isAssignableFrom(context.previous.entityClass)) {
                         parentEntityClass = (Class<? extends Entity<?, ?>>) context.previous.entityClass;
@@ -168,7 +157,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                     throw new EntityNotFoundException(parentEntityClass, Query.filters(context.sourcePath));
                 }
 
-                return res.get(0);
+                return res;
             }
 
             @Override

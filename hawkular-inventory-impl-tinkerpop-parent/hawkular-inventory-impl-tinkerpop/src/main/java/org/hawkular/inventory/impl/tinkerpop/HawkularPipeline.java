@@ -144,6 +144,16 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         return in(srels);
     }
 
+    public HawkularPipeline<S, E> dropN(int n) {
+        add(new DropNPipe<>(n));
+        return this;
+    }
+
+    public HawkularPipeline<S, E> takeN(int n) {
+        add(new TakeNPipe<>(n, true));
+        return this;
+    }
+
     public HawkularPipeline<S, ? extends Element> page(Pager pager) {
         return cast(Element.class).page(pager, (e, p) -> {
             String prop = Constants.Property.mapUserDefined(p);
@@ -185,7 +195,11 @@ final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Clon
         }
 
         if (pager.isLimited()) {
-            this.drainedRange(pager.getStart(), pager.getEnd() - 1);
+            if (pager.getStart() != 0) {
+                this.dropN(pager.getStart());
+            }
+            this.takeN(pager.getPageSize());
+//            this.drainedRange(pager.getStart(), pager.getEnd() - 1);
         }
 
         return this;
