@@ -16,8 +16,13 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
+
 import java.util.Map;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
@@ -136,6 +141,8 @@ public final class BaseRelationships {
 
                 context.backend.commit(transaction);
 
+                context.notify(context.backend.convert(relationshipObject, Relationship.class), created());
+
                 String id = context.backend.extractId(relationshipObject);
 
                 return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
@@ -151,6 +158,10 @@ public final class BaseRelationships {
                             .get());
                     context.backend.update(relationshipObject, update);
                     context.backend.commit(transaction);
+
+                    Relationship r = context.backend.convert(relationshipObject, Relationship.class);
+
+                    context.notify(r, new Action.Update<>(r, update), updated());
 
                     return null;
                 } catch (ElementNotFoundException e) {
@@ -174,9 +185,12 @@ public final class BaseRelationships {
                     RelationshipRules.checkDelete(context.backend, source, Relationships.Direction.outgoing,
                             relationshipName, target);
 
+                    Relationship r = context.backend.convert(relationshipObject, Relationship.class);
+
                     context.backend.delete(relationshipObject);
                     context.backend.commit(transaction);
 
+                    context.notify(r, deleted());
                     return null;
                 } catch (ElementNotFoundException e) {
                     throw new RelationNotFoundException(id,
