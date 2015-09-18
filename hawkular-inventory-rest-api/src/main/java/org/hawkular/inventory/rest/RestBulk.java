@@ -230,6 +230,11 @@ public class RestBulk extends RestBase {
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((ResourceTypes.Single) single).data();
                             }
+
+                            @Override
+                            public WriteInterface<?, ?, ?, ?> visitOperationType(Void parameter) {
+                                return ((ResourceTypes.Single) single).operationTypes();
+                            }
                         }, null);
                     }
 
@@ -380,7 +385,7 @@ public class RestBulk extends RestBase {
                 return (Blueprint) objectMapper.reader(elementType.blueprintType).readValue(js);
             } catch (IOException e1) {
                 throw new IllegalArgumentException("Failed to deserialize as " + elementType
-                        .blueprintType + " the following data: " + o);
+                        .blueprintType + " the following data: " + o, e1);
             }
         }).collect(Collectors.toList());
     }
@@ -394,7 +399,7 @@ public class RestBulk extends RestBase {
             return;
         }
 
-        if (!security.canCreate(elementType.elementType).under(parentPath)) {
+        if (!canCreateUnderParent(elementType, parentPath)) {
             for (Blueprint b : blueprints) {
                 String id = b.accept(idExtractor, null);
                 putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
@@ -451,6 +456,17 @@ public class RestBulk extends RestBase {
                 putStatus(statuses, elementType, CanonicalPath.of().relationship(fakeId).get(),
                         NOT_FOUND.getStatusCode());
             }
+        }
+    }
+
+    private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath) {
+        switch (elementType) {
+            case data:
+                return security.canUpdate(parentPath);
+            case relationship:
+                throw new IllegalArgumentException("Cannot create anything under a relationship.");
+            default:
+                return security.canCreate(elementType.elementType).under(parentPath);
         }
     }
 
