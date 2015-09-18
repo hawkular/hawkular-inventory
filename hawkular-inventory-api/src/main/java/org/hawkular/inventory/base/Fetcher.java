@@ -63,21 +63,19 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             throws EntityNotFoundException, RelationNotFoundException {
 
         return readOnly(() -> {
-            Page<BE> results = context.backend.query(context.select().get(), Pager.single());
+            BE result = context.backend.querySingle(context.select().get());
 
-            if (!results.hasNext()) {
+            if (result == null) {
                 throwNotFoundException();
             }
 
-            BE backendEntity = results.next();
-
-            E entity = context.backend.convert(backendEntity, context.entityClass);
+            E entity = context.backend.convert(result, context.entityClass);
 
             if (!isApplicable(entity)) {
                 throwNotFoundException();
             }
 
-            return conversion.apply(backendEntity, entity);
+            return conversion.apply(result, entity);
         });
     }
 

@@ -20,15 +20,18 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 import rx.Observable;
@@ -118,6 +121,15 @@ public abstract class BaseInventory<E> implements Inventory {
     @Override
     public InputStream getGraphSON(String tenantId) {
         return getBackend().getGraphSON(tenantId);
+    }
+
+    @Override
+    public AbstractElement getElement(CanonicalPath path) {
+        try {
+            return (AbstractElement) getBackend().find(path);
+        } catch (ElementNotFoundException e) {
+            throw new EntityNotFoundException("No element found on path: " + path.toString());
+        }
     }
 
     @Override

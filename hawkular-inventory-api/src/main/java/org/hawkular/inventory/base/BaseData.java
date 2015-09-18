@@ -254,14 +254,13 @@ public final class BaseData {
         private static <BE> void validateIfSchemaFound(TraversalContext<BE, DataEntity> context, StructuredData data,
                 BE dataEntity, Query query) {
 
-            Page<BE> possibleSchema = context.backend.traverse(dataEntity, query, Pager.single());
-            if (!possibleSchema.hasNext()) {
+            BE possibleSchema = context.backend.traverseToSingle(dataEntity, query);
+            if (possibleSchema == null) {
                 //no schema means anything is OK
                 return;
             }
 
-            DataEntity schemaEntity = context.backend.convert(possibleSchema.next(),
-                    DataEntity.class);
+            DataEntity schemaEntity = context.backend.convert(possibleSchema, DataEntity.class);
 
             CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
 

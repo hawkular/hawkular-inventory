@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.InventoryException;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
@@ -47,8 +46,6 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -129,14 +126,13 @@ final class Util {
     }
 
     public static <BE> BE getSingle(InventoryBackend<BE> backend, Query query,
-            Class<? extends Entity<?, ?>> entityType) {
-        Page<BE> results = backend.query(query, Pager.single());
-
-        if (!results.hasNext()) {
+                                    Class<? extends Entity<?, ?>> entityType) {
+        BE result = backend.querySingle(query);
+        if (result == null) {
             throw new EntityNotFoundException(entityType, Query.filters(query));
         }
 
-        return results.next();
+        return result;
     }
 
     public static <BE> EntityAndPendingNotifications<Relationship> createAssociation(TraversalContext<BE, ?> context,
@@ -225,6 +221,30 @@ final class Util {
         }
     }
 
+    /**
+     * Tries to find an element at given path.
+     *
+     * @param context current context in the traversal (if path is canonical, this is not used)
+     * @param path    either canonical or relative path of the element to find
+     * @return the element
+     * @throws ElementNotFoundException if the element is not found
+     */
+    @SuppressWarnings("unchecked")
+    public static <BE> BE find(TraversalContext<BE, ?> context, Path path) throws EntityNotFoundException {
+        BE element;
+        if (path.isCanonical()) {
+            try {
+                element = context.backend.find(path.toCanonicalPath());
+            } catch (ElementNotFoundException e) {
+                throw new EntityNotFoundException("Entity not found on path: " + path);
+            }
+        } else {
+            Query query = queryTo(context, path);
+            element = getSingle(context.backend, query, null);
+        }
+        return element;
+    }
+
     @SuppressWarnings("unchecked")
     public static Query extendTo(TraversalContext<?, ?> context, Path path) {
         if (path instanceof CanonicalPath) {
@@ -241,8 +261,8 @@ final class Util {
             TraversalContext<BE, E> context, Query entityQuery, U update, BiConsumer<BE, U> preUpdateCheck) {
 
         BE updated = runInTransaction(context, false, (t) -> {
-            Page<BE> entities = context.backend.query(entityQuery, Pager.single());
-            if (!entities.hasNext()) {
+            BE entity = context.backend.querySingle(entityQuery);
+            if (entity == null) {
                 if (update instanceof Relationship.Update) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
@@ -251,15 +271,13 @@ final class Util {
                 }
             }
 
-            BE toUpdate = entities.next();
-
             if (preUpdateCheck != null) {
-                preUpdateCheck.accept(toUpdate, update);
+                preUpdateCheck.accept(entity, update);
             }
 
-            context.backend.update(toUpdate, update);
+            context.backend.update(entity, update);
             context.backend.commit(t);
-            return toUpdate;
+            return entity;
         });
 
         E entity = context.backend.convert(updated, context.entityClass);
@@ -271,25 +289,18 @@ final class Util {
             Query entityQuery, Consumer<BE> cleanupFunction) {
 
         runInTransaction(context, false, (transaction) -> {
-            Page<BE> entities = context.backend.query(entityQuery, Pager.single());
-            BE toDelete;
-            if (!entities.hasNext()) {
+            BE entity = context.backend.querySingle(entityQuery);
+            if (entity == null) {
                 if (context.entityClass.equals(Relationship.class)) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
                     throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
                             Query.filters(entityQuery));
                 }
-            } else {
-                toDelete = entities.next();
-                if (entities.hasNext()) {
-                    throw new InventoryException("Ambiguous delete query. More than 1 results found for query "
-                            + entityQuery);
-                }
             }
 
             if (cleanupFunction != null) {
-                cleanupFunction.accept(toDelete);
+                cleanupFunction.accept(entity);
             }
 
             Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
@@ -299,7 +310,7 @@ final class Util {
             Set<?> deletedEntities;
             Set<Relationship> deletedRelationships;
 
-            context.backend.getTransitiveClosureOver(toDelete, outgoing, contains.name()).forEachRemaining((e) -> {
+            context.backend.getTransitiveClosureOver(entity, outgoing, contains.name()).forEachRemaining((e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
                 } else {
@@ -309,12 +320,12 @@ final class Util {
                 deletedRels.addAll(context.backend.getRelationships(e, both));
             });
 
-            if (context.backend.hasRelationship(toDelete, outgoing, defines.name())) {
-                verticesToDeleteThatDefineSomething.add(toDelete);
+            if (context.backend.hasRelationship(entity, outgoing, defines.name())) {
+                verticesToDeleteThatDefineSomething.add(entity);
             } else {
-                deleted.add(toDelete);
+                deleted.add(entity);
             }
-            deletedRels.addAll(context.backend.getRelationships(toDelete, both));
+            deletedRels.addAll(context.backend.getRelationships(entity, both));
 
             //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
             //We have to do it prior to actually deleting the objects in the backend so that all information and
@@ -337,7 +348,7 @@ final class Util {
                     //we avoid the convert() function here because it assumes the containing entities of the passed in
                     //entity exist. This might not be true during the delete because the transitive closure "walks" the
                     //entities from the "top" down the containment chain and the entities are immediately deleted.
-                    String rootId = context.backend.extractId(toDelete);
+                    String rootId = context.backend.extractId(entity);
                     String definingId = context.backend.extractId(e);
                     String rootType = context.entityClass.getSimpleName();
                     String definingType = context.backend.extractType(e).getSimpleName();

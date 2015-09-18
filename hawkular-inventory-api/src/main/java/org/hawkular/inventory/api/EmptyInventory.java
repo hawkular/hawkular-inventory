@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
@@ -81,6 +82,10 @@ public class EmptyInventory implements Inventory {
 
     @Override
     public InputStream getGraphSON(String tenantId) {
+        throw entityNotFound(Tenant.class);
+    }
+
+    @Override public <T extends AbstractElement> T getElement(CanonicalPath path) {
         throw entityNotFound(Tenant.class);
     }
 

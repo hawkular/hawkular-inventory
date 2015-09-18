@@ -79,6 +79,7 @@ public class RestPath extends RestBase {
                 Entity.class);
 
         return Response.ok(inventory.inspect(path, ResolvableToSingle.class).entity()).build();
+//        return Response.ok(inventory.getElement(path)).build();
     }
 
     @GET

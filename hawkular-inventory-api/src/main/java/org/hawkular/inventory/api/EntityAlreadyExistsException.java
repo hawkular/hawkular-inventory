@@ -30,6 +30,7 @@ public class EntityAlreadyExistsException extends InventoryException {
 
     private final String entityId;
     private final Filter[][] paths;
+    private final String msg;
 
     public EntityAlreadyExistsException(Entity entity) {
         this(entity.getId(), asPaths(entity));
@@ -38,12 +39,20 @@ public class EntityAlreadyExistsException extends InventoryException {
     public EntityAlreadyExistsException(String entityId, Filter[][] paths) {
         this.entityId = entityId;
         this.paths = paths;
+        this.msg = null;
     }
 
     public EntityAlreadyExistsException(Throwable cause, String entityId, Filter[][] paths) {
         super(cause);
         this.entityId = entityId;
         this.paths = paths;
+        this.msg = null;
+    }
+
+    public EntityAlreadyExistsException(String msg) {
+        this.msg = msg;
+        this.entityId = null;
+        this.paths = null;
     }
 
     public String getEntityId() {

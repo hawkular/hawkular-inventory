@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.rest.json.Link;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SequenceWriter;
 
@@ -75,20 +76,29 @@ final class ResponseUtil {
     }
 
     private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) throws IOException {
-        final PipedInputStream in = new PipedInputStream();
+        final PipedOutputStream outs = new PipedOutputStream();
+        final PipedInputStream ins = new PipedInputStream() {
+            @Override public void close() throws IOException {
+                outs.close();
+                super.close();
+            }
+        };
+        outs.connect(ins);
+        mapper.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
 
         PageToStreamThreadPool.getInstance().submit(() -> {
             try (Page<T> closeablePage = page;
-                 PipedOutputStream out = new PipedOutputStream(in);
+                 PipedOutputStream out = outs;
                  SequenceWriter sequenceWriter = mapper.writer().writeValuesAsArray(out)) {
                 for (T element : closeablePage) {
                     sequenceWriter.write(element);
+                    sequenceWriter.flush();
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to convert page to input stream.", e);
             }
         });
-        return in;
+        return ins;
     }
 
     /**

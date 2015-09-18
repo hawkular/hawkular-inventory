@@ -440,6 +440,8 @@ public interface Inventory extends AutoCloseable {
      */
     InputStream getGraphSON(String tenantId);
 
+    <T extends AbstractElement> T getElement(CanonicalPath path);
+
     <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
                                                                   Relationships.Direction direction, Class<T> clazz,
                                                                   String... relationshipNames);

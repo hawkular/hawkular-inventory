@@ -35,8 +35,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * @author Lukas Krejci
@@ -57,16 +55,14 @@ public final class BaseFeeds {
 
         @Override
         protected String getProposedId(Feed.Blueprint blueprint) {
-            Page<BE> envs = context.backend.query(context.sourcePath.extend().filter().with(type(Environment.class))
-                    .get(), Pager.single());
+            BE env = context.backend.querySingle(context.sourcePath.extend().filter().with(type(Environment
+                    .class)).get());
 
-            if (!envs.hasNext()) {
+            if (env == null) {
                 throw new EntityNotFoundException(Environment.class, Query.filters(context.sourcePath));
             }
 
-            BE envObject = envs.next();
-
-            CanonicalPath feedPath = context.backend.extractCanonicalPath(envObject)
+            CanonicalPath feedPath = context.backend.extractCanonicalPath(env)
                     .extend(Feed.class, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));

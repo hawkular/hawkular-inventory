@@ -77,6 +77,7 @@ import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
@@ -100,13 +101,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element find(CanonicalPath element) throws ElementNotFoundException {
-        HawkularPipeline<?, ? extends Element> q = translate(null, Query.to(element));
-        if (!q.hasNext()) {
-            throw new ElementNotFoundException();
-        } else {
-            return q.next();
+    public Element find(CanonicalPath path) throws ElementNotFoundException {
+        GraphQuery query = context.getGraph().query().has(Constants.Property.__cp.name(), path.toString());
+        Iterator<? extends Element> it = query.vertices().iterator();
+        if (!it.hasNext()) {
+            it = query.edges().iterator();
+            if (!it.hasNext()) {
+                throw new ElementNotFoundException();
+            }
         }
+        return it.next();
     }
 
     @Override
@@ -115,13 +119,24 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         q.counter("total").page(pager);
 
-        // here the toList is very expensive
         return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
+    }
+
+    @Override public Element traverseToSingle(Element startingPoint, Query query) {
+        HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
+        if (q.hasNext()) {
+            return q.cast(Element.class).next();
+        }
+        return null;
     }
 
     @Override
     public Page<Element> query(Query query, Pager pager) {
         return traverse(null, query, pager);
+    }
+
+    @Override public Element querySingle(Query query) {
+        return traverseToSingle(null, query);
     }
 
     private HawkularPipeline<?, ? extends Element> translate(Element startingPoint, Query query) {

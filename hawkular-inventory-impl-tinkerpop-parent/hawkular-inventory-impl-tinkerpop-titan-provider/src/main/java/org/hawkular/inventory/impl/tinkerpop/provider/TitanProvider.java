@@ -20,17 +20,22 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 
 /**
@@ -46,47 +51,60 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
 
     @Override
     public void ensureIndices(TitanGraph graph, IndexSpec... indexSpecs) {
-        Map<String, Class<?>> undefinedPropertyKeys = new HashMap<>();
+        Set<IndexSpec.Property> undefinedPropertyKeys = new HashSet<>();
         Map<String, PropertyKey> definedPropertyKeys = new HashMap<>();
         Map<String, IndexSpec> undefinedIndices = new HashMap<>();
 
         TitanManagement mgmt = graph.getManagementSystem();
 
         for (IndexSpec spec : indexSpecs) {
-            String indexName = getIndexName(spec.getProperties().keySet());
+            String indexName = getIndexName(spec.getProperties());
             if (mgmt.getGraphIndex(indexName) == null) {
                 undefinedIndices.put(indexName, spec);
             }
 
             //the indices might share keys, so we need to check for the keys even if the index doesn't exist
-            for (Map.Entry<String, Class<?>> p : spec.getProperties().entrySet()) {
-                PropertyKey key = mgmt.getPropertyKey(p.getKey());
+            for (IndexSpec.Property p : spec.getProperties()) {
+                PropertyKey key = mgmt.getPropertyKey(p.getName());
                 if (key == null) {
-                    undefinedPropertyKeys.put(p.getKey(), p.getValue());
+                    undefinedPropertyKeys.add(p);
                 } else {
-                    if (!key.getDataType().equals(p.getValue())) {
+                    if (!key.getDataType().equals(p.getType())) {
                         throw new IllegalStateException("There already is a key '" + key.getName() +
                                 "' that would be needed for index " + spec + ". The key has a different data type" +
-                                " than expected, though. Expected: '" + p.getValue() + "', actual: '" +
+                                " than expected, though. Expected: '" + p.getType() + "', actual: '" +
                                 key.getDataType() + "'.");
                     }
-                    definedPropertyKeys.put(p.getKey(), key);
+                    definedPropertyKeys.put(p.getName(), key);
                 }
             }
         }
 
         //first define all the undefined property keys
-        for (Map.Entry<String, Class<?>> pk : undefinedPropertyKeys.entrySet()) {
-            PropertyKey key = mgmt.makePropertyKey(pk.getKey()).dataType(pk.getValue()).make();
-
-            definedPropertyKeys.put(pk.getKey(), key);
+        for (IndexSpec.Property p : undefinedPropertyKeys) {
+            PropertyKeyMaker propertyKeyMaker = mgmt.makePropertyKey(p.getName()).dataType(p.getType());
+            if (null != p.getLabelIndex()) {
+                propertyKeyMaker.signature(mgmt.makeEdgeLabel(p.getLabelIndex())
+                        // index on directed edges doesn't work
+                        .unidirected()
+                        .multiplicity(Multiplicity.SIMPLE)
+                        .make());
+            }
+            if (p.isUnique()) {
+                propertyKeyMaker.cardinality(Cardinality.SINGLE);
+            }
+            PropertyKey key = propertyKeyMaker.make();
+            definedPropertyKeys.put(p.getName(), key);
         }
 
         for(Map.Entry<String, IndexSpec> e : undefinedIndices.entrySet()) {
             TitanManagement.IndexBuilder bld = mgmt.buildIndex(e.getKey(), e.getValue().getElementType());
-
-            for (String k : e.getValue().getProperties().keySet()) {
-                bld.addKey(definedPropertyKeys.get(k));
+            if (e.getValue().isUnique()) {
+                bld.unique();
+            }
+            for (IndexSpec.Property k : e.getValue().getProperties()) {
+//                bld.addKey(definedPropertyKeys.get(k.getName()), Parameter.of("mapped-name", k.getName()));
+                bld.addKey(definedPropertyKeys.get(k.getName()));
             }
 
             bld.buildCompositeIndex();
@@ -95,11 +113,11 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
         mgmt.commit();
     }
 
-    private String getIndexName(Iterable<String> propertyNames) {
+    private String getIndexName(Set<IndexSpec.Property> properties) {
         StringBuilder bld = new StringBuilder("by");
 
-        for (String propertyName : propertyNames) {
-            bld.append("_").append(propertyName);
+        for (IndexSpec.Property property : properties) {
+            bld.append("_").append(property.getName());
         }
 
         return bld.toString();

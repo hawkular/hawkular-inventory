@@ -23,6 +23,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
+
 /**
  * @author Jirka Kremser
  * @since 0.1.0
@@ -30,8 +32,13 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class FallbackExceptionMapper implements ExceptionMapper<Exception> {
 
+    private static final String UNIQUE_CP = "violates a uniqueness constraint [by___cp]";
+
     @Override
     public Response toResponse(Exception exception) {
+        if (exception.getMessage().contains(UNIQUE_CP)) {
+            throw new EntityAlreadyExistsException(exception.getMessage());
+        }
         return ExceptionMapperUtils.buildResponse(exception, INTERNAL_SERVER_ERROR);
     }
 }

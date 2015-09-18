@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.rest;
 
-import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -42,13 +41,10 @@ public class RestBase {
 
     // using the @AllPermissive annotation the access will be always granted
     @Inject
-//    @AllPermissive
     protected Security security;
 
     @Inject
     // using the @AllPermissive annotation the tenant will be always the same
-//    @AllPermissive
-    @RequestScoped
     private TenantIdProducer tenantIdProducer;
 
     @Inject

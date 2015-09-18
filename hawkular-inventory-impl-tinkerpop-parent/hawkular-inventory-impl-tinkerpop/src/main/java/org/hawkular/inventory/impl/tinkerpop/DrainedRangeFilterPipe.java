@@ -35,12 +35,14 @@ import com.tinkerpop.pipes.util.PipeHelper;
 class DrainedRangeFilterPipe<S> extends AbstractPipe<S, S> implements FilterPipe<S> {
     private final int low;
     private final int high;
+    private static final int UNBOUNDED = -1;
     private int counter = -1;
+    private boolean drainTheRest = false;
 
     public DrainedRangeFilterPipe(final int low, final int high) {
         this.low = low;
         this.high = high;
-        if (this.low != -1 && this.high != -1 && this.low > this.high) {
+        if (this.high != -1 && this.low > this.high) {
             throw new IllegalArgumentException("Not a legal range: [" + low + ", " + high + "]");
         }
     }
@@ -50,7 +52,7 @@ class DrainedRangeFilterPipe<S> extends AbstractPipe<S, S> implements FilterPipe
         while (true) {
             final S s = this.starts.next();
             this.counter++;
-            if ((this.low == -1 || this.counter >= this.low) && (this.high == -1 || this.counter <= this.high)) {
+            if (this.counter >= this.low && (this.counter <= this.high || this.high == UNBOUNDED)) {
                 return s;
             }
 // This is the only difference from the RangeFilterPipe - we let the pipeline process all the elements instead of
