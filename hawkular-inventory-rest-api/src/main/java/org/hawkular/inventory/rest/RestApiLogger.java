@@ -66,6 +66,6 @@ public interface RestApiLogger extends BasicLogger {
     void resourceCreationNotSupported(CanonicalPath path);
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 2006, value = "Error while creating resource on path '%s' during a bulk create.")
-    void failedToCreateBulkResource(CanonicalPath path, @Cause Throwable cause);
+    @Message(id = 2006, value = "Error while creating entity on path '%s' during a bulk create.")
+    void failedToCreateBulkEntity(CanonicalPath path, @Cause Throwable cause);
 }
