@@ -51,67 +51,66 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-
     public void commit(Transaction transaction) throws CommitFailureException {
         backend.commit(transaction);
     }
 
     @Override
-
     public <T> T convert(E entityRepresentation, Class<T> entityType) {
         return backend.convert(entityRepresentation, entityType);
     }
 
     @Override
-
     public void delete(E entity) {
         backend.delete(entity);
     }
 
     @Override
-
     public void deleteStructuredData(E dataRepresentation) {
         backend.deleteStructuredData(dataRepresentation);
     }
 
     @Override
-
     public E descendToData(E dataEntityRepresentation, RelativePath dataPath) {
         return backend.descendToData(dataEntityRepresentation, dataPath);
     }
 
     @Override
-
     public CanonicalPath extractCanonicalPath(E entityRepresentation) {
         return backend.extractCanonicalPath(entityRepresentation);
     }
 
     @Override
-
     public String extractId(E entityRepresentation) {
         return backend.extractId(entityRepresentation);
     }
 
     @Override
-
     public String extractRelationshipName(E relationship) {
         return backend.extractRelationshipName(relationship);
     }
 
     @Override
-
     public Class<?> extractType(E entityRepresentation) {
         return backend.extractType(entityRepresentation);
     }
 
     @Override
-
     public E find(CanonicalPath element) throws ElementNotFoundException {
         return backend.find(element);
     }
 
     @Override
+    public E querySingle(Query query) {
+        return backend.querySingle(query);
+    }
 
+    @Override
+    public E traverseToSingle(E startingPoint, Query query) {
+        return backend.traverseToSingle(startingPoint, query);
+    }
+
+    @Override
     public InputStream getGraphSON(String tenantId) {
         return backend.getGraphSON(tenantId);
     }
