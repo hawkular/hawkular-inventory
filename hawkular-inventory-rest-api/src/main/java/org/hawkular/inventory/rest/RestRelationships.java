@@ -18,7 +18,6 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
@@ -29,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -42,7 +42,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Providers;
 
 import org.hawkular.inventory.api.Relationships;
@@ -63,7 +62,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.json.EmbeddedObjectMapper;
+import org.hawkular.inventory.rest.json.JsonLd;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -104,6 +103,9 @@ public class RestRelationships extends RestBase {
     @Context
     private Providers providers;
 
+    @Inject @JsonLd
+    private ObjectMapper jsonLdMapper;
+
     @GET
     @Path("{path:.*}/relationships")
     @ApiOperation("Retrieves relationships")
@@ -136,11 +138,11 @@ public class RestRelationships extends RestBase {
         Page<Relationship> relations = resolvable.relationships(directed).getAll(filters).entities(pager);
 
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
-        Object json = getSerializedForm(jsonLdBool, relations, providers);
         if (jsonLdBool) {
-            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, relations, json).build();
+            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
+        } else {
+            return pagedResponse(Response.ok(), uriInfo, relations).build();
         }
-        return pagedResponse(Response.ok(), uriInfo, relations).build();
     }
 
     @GET
@@ -154,9 +156,10 @@ public class RestRelationships extends RestBase {
     })
     public Response getRelationship(@PathParam("relationshipId") String relationshipId,
                                     @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
-                                    @Context UriInfo uriInfo) {
+                                    @Context UriInfo uriInfo) throws JsonProcessingException {
         Relationship relationship = inventory.relationships().get(relationshipId).entity();
-        Object json = getSerializedForm(Boolean.parseBoolean(jsonLd), relationship, providers);
+        ObjectMapper mapper = Boolean.parseBoolean(jsonLd) ? jsonLdMapper : this.mapper;
+        Object json = mapper.writeValueAsString(relationship);
         return Response.ok(json).build();
     }
 
@@ -339,21 +342,5 @@ public class RestRelationships extends RestBase {
             throw new IllegalArgumentException("Unable to " + operation + " a relationship with well defined name. " +
                     "Restricted names: " + Arrays.asList(Relationships.WellKnown.values()));
         }
-    }
-
-    static Object getSerializedForm(boolean jsonLd, Object object, Providers providers) {
-        ContextResolver<ObjectMapper> contextResolver =
-            providers.getContextResolver(ObjectMapper.class, APPLICATION_JSON_TYPE);
-        if (jsonLd) {
-            ObjectMapper mapper = contextResolver.getContext(EmbeddedObjectMapper.class);
-            Object json;
-            try {
-                json = mapper.writeValueAsString(object);
-            } catch (JsonProcessingException e) {
-                json = object;
-            }
-            return json;
-        }
-        return object;
     }
 }

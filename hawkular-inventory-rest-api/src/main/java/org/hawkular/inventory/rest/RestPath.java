@@ -20,6 +20,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -42,7 +43,9 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.rest.json.ApiError;
+import org.hawkular.inventory.rest.json.JsonLd;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -60,6 +63,9 @@ public class RestPath extends RestBase {
 
     @Context
     private Providers providers;
+
+    @Inject @JsonLd
+    private ObjectMapper jsonLdMapper;
 
     @GET
     @Path("/{entityPath:.+}")
@@ -112,6 +118,8 @@ public class RestPath extends RestBase {
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, uriInfo);
         Pager pager = extractPaging(uriInfo);
+
+        @SuppressWarnings("unchecked")
         ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
                 (ResolvableToSingleWithRelationships<Relationship, Relationship.Update>) inventory.inspect(path,
                         ResolvableToSingleWithRelationships.class);
@@ -119,10 +127,10 @@ public class RestPath extends RestBase {
                 resolvable.relationships(Relationships.Direction.valueOf(direction)).getAll(filters).entities(pager);
 
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
-        Object json = RestRelationships.getSerializedForm(jsonLdBool, relations, providers);
         if (jsonLdBool) {
-            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, relations, json).build();
+            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
+        } else {
+            return pagedResponse(Response.ok(), uriInfo, relations).build();
         }
-        return pagedResponse(Response.ok(), uriInfo, relations).build();
     }
 }

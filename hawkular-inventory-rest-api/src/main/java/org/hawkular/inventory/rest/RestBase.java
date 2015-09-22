@@ -47,7 +47,7 @@ public class RestBase {
     // using the @AllPermissive annotation the tenant will be always the same
     private TenantIdProducer tenantIdProducer;
 
-    @Inject
+    @Inject @Our
     protected ObjectMapper mapper;
 
     protected <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response,
