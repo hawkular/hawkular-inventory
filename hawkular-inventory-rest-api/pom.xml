@@ -99,7 +99,7 @@
     <dependency>
       <groupId>org.hawkular.accounts</groupId>
       <artifactId>hawkular-accounts-api</artifactId>
-      <version>1.0.1</version>
+      <version>1.0.14.Final</version>
     </dependency>
 
     <dependency>
