@@ -35,6 +35,8 @@ import java.util.stream.StreamSupport;
 public final class TransformingPage<I, O> extends Page<O> {
     private Function<? super I, ? extends O> conversionFunction;
     private Page<I> wrappedPage;
+    private PageContext pageContext;
+    private Long totalSize;
 
     public TransformingPage(Page<I> wrappedPage, Function<? super I, ? extends O> conversionFunction) {
         super(wrappedPage.getPageContext(), wrappedPage.getTotalSize());
@@ -43,6 +45,7 @@ public final class TransformingPage<I, O> extends Page<O> {
         }
         this.conversionFunction = conversionFunction;
         this.wrappedPage = wrappedPage;
+        this.pageContext = wrappedPage.getPageContext();
     }
 
     /**
@@ -66,12 +69,12 @@ public final class TransformingPage<I, O> extends Page<O> {
 
     @Override
     public PageContext getPageContext() {
-        return getPage().getPageContext();
+        return pageContext;
     }
 
     @Override
     public long getTotalSize() {
-        return getPage().getTotalSize();
+        return totalSize == null ? getPage().getTotalSize() : totalSize;
     }
 
     @Override
@@ -80,7 +83,10 @@ public final class TransformingPage<I, O> extends Page<O> {
                 .collect(Collectors.<O>toList());
     }
 
-    @Override public void close() throws IOException {
+    @Override
+    public void close() throws IOException {
+        this.totalSize = wrappedPage.getTotalSize();
+        this.wrappedPage.close();
         this.wrappedPage = null;
         this.conversionFunction = null;
         super.close();
