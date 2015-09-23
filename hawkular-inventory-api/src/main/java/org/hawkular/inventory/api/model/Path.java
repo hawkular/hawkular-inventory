@@ -106,7 +106,7 @@ public abstract class Path {
         this.path = Collections.unmodifiableList(path);
     }
 
-    protected static Path fromString(String path, boolean shouldBeAbsolute, ExtenderConstructor extenderConstructor,
+    static Path fromString(String path, boolean shouldBeAbsolute, ExtenderConstructor extenderConstructor,
             EnhancedTypeProvider typeProvider) {
 
         Extender extender = extenderConstructor.create(0, new ArrayList<>());
@@ -470,14 +470,14 @@ public abstract class Path {
         }
     }
 
-    protected static class Decoder {
+    private static final class Decoder {
         private final EnhancedTypeProvider typeProvider;
 
-        protected Decoder(EnhancedTypeProvider typeProvider) {
+        Decoder(EnhancedTypeProvider typeProvider) {
             this.typeProvider = typeProvider;
         }
 
-        public Segment decodeNext(ParsingProgress progress) {
+        Segment decodeNext(ParsingProgress progress) {
             StringBuilder currentId = new StringBuilder();
             String currentTypeString = null;
 
@@ -550,7 +550,7 @@ public abstract class Path {
         }
     }
 
-    protected static class Encoder {
+    static final class Encoder {
         private final Map<Class<?>, String> typeMap;
         private final Function<Segment, Boolean> requiresId;
 
@@ -960,7 +960,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class AbstractBuilder<Impl extends Path> {
+    abstract static class AbstractBuilder<Impl extends Path> {
         protected final List<Segment> segments;
         protected final Constructor<Impl> constructor;
 
@@ -974,7 +974,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class Builder<Impl extends Path,
+    abstract static class Builder<Impl extends Path,
             TB extends TenantBuilder<Impl, EB, RTB, MTB, OTB, SDB, FB, RB, MB>,
             EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
@@ -1005,7 +1005,7 @@ public abstract class Path {
         protected abstract RLB relationshipBuilder(List<Segment> segments);
     }
 
-    protected abstract static class RelationshipBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    abstract static class RelationshipBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         RelationshipBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -1017,7 +1017,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class TenantBuilder<Impl extends Path,
+    abstract static class TenantBuilder<Impl extends Path,
             EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
@@ -1059,7 +1059,7 @@ public abstract class Path {
         protected abstract MTB metricTypeBuilder(List<Segment> segments);
     }
 
-    protected abstract static class ResourceTypeBuilder<Impl extends Path,
+    abstract static class ResourceTypeBuilder<Impl extends Path,
             OTB extends OperationTypeBuilder<Impl, SDB>,
             SDB extends StructuredDataBuilder<Impl, SDB>>
             extends AbstractBuilder<Impl> {
@@ -1088,7 +1088,7 @@ public abstract class Path {
         protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }
 
-    protected abstract static class MetricTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    abstract static class MetricTypeBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
         MetricTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
         }
@@ -1099,7 +1099,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class EnvironmentBuilder<Impl extends Path,
+    abstract static class EnvironmentBuilder<Impl extends Path,
             FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
             RB extends ResourceBuilder<Impl, RB, SDB>,
             MB extends MetricBuilder<Impl>,
@@ -1140,7 +1140,7 @@ public abstract class Path {
         protected abstract MB metricBuilder(List<Segment> segments);
     }
 
-    protected abstract static class FeedBuilder<Impl extends Path,
+    abstract static class FeedBuilder<Impl extends Path,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
             RB extends ResourceBuilder<Impl, RB, SDB>,
@@ -1186,7 +1186,7 @@ public abstract class Path {
         protected abstract MB metricBuilder(List<Segment> segments);
     }
 
-    protected abstract static class ResourceBuilder<Impl extends Path,
+    abstract static class ResourceBuilder<Impl extends Path,
             This extends ResourceBuilder<Impl, This, SDB>,
             SDB extends StructuredDataBuilder<Impl, SDB>>
             extends AbstractBuilder<Impl> {
@@ -1214,7 +1214,7 @@ public abstract class Path {
         protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }
 
-    protected abstract static class MetricBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+    abstract static class MetricBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
 
         MetricBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
@@ -1226,7 +1226,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class StructuredDataBuilder<Impl extends Path,
+    abstract static class StructuredDataBuilder<Impl extends Path,
             This extends StructuredDataBuilder<Impl, This>> extends AbstractBuilder<Impl> {
 
         StructuredDataBuilder(List<Segment> segments, Constructor<Impl> constructor) {
@@ -1251,7 +1251,7 @@ public abstract class Path {
         }
     }
 
-    protected abstract static class OperationTypeBuilder<Impl extends Path,
+    abstract static class OperationTypeBuilder<Impl extends Path,
             SDB extends StructuredDataBuilder<Impl, SDB>> extends AbstractBuilder<Impl> {
         OperationTypeBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
