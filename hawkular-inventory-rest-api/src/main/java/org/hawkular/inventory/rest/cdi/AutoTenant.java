@@ -14,34 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
+import javax.inject.Qualifier;
 
 /**
- * Encapsulate a simple string value
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since ${MODULE_VERSION}
  */
-@XmlRootElement(name =  "value")
-public class StringValue {
-
-    String value;
-
-    public StringValue() {
-    }
-
-    public StringValue(String value) {
-        this.value = value;
-    }
-
-    @XmlAttribute
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
+@Qualifier
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AutoTenant {
 }

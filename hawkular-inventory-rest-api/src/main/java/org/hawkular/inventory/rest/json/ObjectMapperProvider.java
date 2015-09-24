@@ -18,7 +18,7 @@ package org.hawkular.inventory.rest.json;
 
 import javax.enterprise.inject.Produces;
 
-import org.hawkular.inventory.rest.Our;
+import org.hawkular.inventory.rest.cdi.Our;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

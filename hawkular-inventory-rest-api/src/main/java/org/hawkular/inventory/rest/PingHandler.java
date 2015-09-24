@@ -39,6 +39,6 @@ public class PingHandler {
     @Produces({ APPLICATION_JSON })
     @ApiOperation("A dummy operation returning the current date on the server.")
     public Response ping() {
-        return Response.ok(new StringValue(new Date().toString())).build();
+        return Response.ok(new Date().toString()).build();
     }
 }

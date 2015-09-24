@@ -57,7 +57,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Action;
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
@@ -74,6 +73,7 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.ValidationException;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,11 +24,14 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
+ * In case there are some ambiguous injection points for certain CDI beans, use this for the default one to use in
+ * our codebase.
+ *
  * @author Lukas Krejci
- * @since ${MODULE_VERSION}
+ * @since 0.4.0
  */
 @Qualifier
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AutoTenant {
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE})
+public @interface Our {
 }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -111,6 +112,10 @@ public class EmptyInventory implements Inventory {
                                                                          Relationships.Direction direction,
                                                                          Class<T> clazz, String... relationshipNames) {
         throw entityNotFound(Tenant.class);
+    }
+
+    @Override public Configuration getConfiguration() {
+        throw new UnsupportedOperationException();
     }
 
     protected static <T> Page<T> emptyPage(Pager pager) {

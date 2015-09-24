@@ -33,6 +33,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
+import org.hawkular.inventory.bus.Log;
 import org.hawkular.inventory.rest.json.Link;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -81,7 +82,7 @@ final class ResponseUtil {
         try {
             data = pageToStream(page, mapper);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.LOG.error(e);
         }
 
         // the page iterator should be depleted by this time so the total size should be correctly set

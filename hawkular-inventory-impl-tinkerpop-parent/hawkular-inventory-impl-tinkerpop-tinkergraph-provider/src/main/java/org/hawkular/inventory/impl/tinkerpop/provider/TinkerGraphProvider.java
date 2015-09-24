@@ -22,7 +22,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.configuration.MapConfiguration;
-import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
@@ -38,6 +38,7 @@ import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvider.WrappedTinkerGraph> {
 
     private final WeakHashMap<WrappedTinkerGraph, ReentrantReadWriteLock> transactionLocks = new WeakHashMap<>();
+
     @Override
     public WrappedTinkerGraph instantiateGraph(Configuration configuration) {
         return new WrappedTinkerGraph(new MapConfiguration(

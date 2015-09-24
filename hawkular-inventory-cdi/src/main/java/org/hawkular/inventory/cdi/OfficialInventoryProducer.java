@@ -32,8 +32,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 
@@ -86,7 +86,7 @@ public class OfficialInventoryProducer {
             conf.forEach((k, v) -> config.put(k.toString(), v == null ? null : v.toString()));
         }
 
-        org.hawkular.inventory.api.Configuration cfg = org.hawkular.inventory.api.Configuration.builder()
+        Configuration cfg = Configuration.builder()
                 .withFeedIdStrategy(new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
                         //.withResultFilter(securityIntegration) results filtering not required for the current
                         // security model

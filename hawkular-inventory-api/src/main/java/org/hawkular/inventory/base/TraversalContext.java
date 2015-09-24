@@ -21,8 +21,8 @@ import static org.hawkular.inventory.api.filters.With.type;
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.Action;
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -81,8 +81,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     private final int transactionRetries;
 
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
-            InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
-            ObservableContext observableContext) {
+                     InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
+                     ObservableContext observableContext) {
         this.inventory = inventory;
         this.sourcePath = sourcePath;
         this.selectCandidates = selectCandidates;
@@ -98,8 +98,9 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
-            InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
-            ObservableContext observableContext, int transactionRetries, TraversalContext<BE, ?> previous) {
+                             InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
+                             ObservableContext observableContext, int transactionRetries,
+                             TraversalContext<BE, ?> previous) {
 
         this.inventory = inventory;
         this.sourcePath = sourcePath;
@@ -167,13 +168,13 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     /**
      * An opposite of {@link #proceedToRelationships(Relationships.Direction)}.
      *
-     * @param direction the direction in which to "leave" the relationships
+     * @param direction  the direction in which to "leave" the relationships
      * @param entityType the type of entities to "hop to"
-     * @param <T> the type of entities to "hop to"
+     * @param <T>        the type of entities to "hop to"
      * @return a context builder with the modified source path, select candidates and type
      */
     <T extends Entity<?, ?>> Builder<BE, T> proceedFromRelationshipsTo(Relationships.Direction direction,
-            Class<T> entityType) {
+                                                                       Class<T> entityType) {
         return new Builder<>(this, hop(), Query.filter(), entityType)
                 .hop(new SwitchElementType(direction, true)).where(type(entityType));
     }
@@ -271,7 +272,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      * Builds a new traversal context.
      *
      * @param <BE> the type of the backend elements
-     * @param <E> the type of the inventory element the new context will represent
+     * @param <E>  the type of the inventory element the new context will represent
      */
     public static final class Builder<BE, E extends AbstractElement<?, ?>> {
         private final TraversalContext<BE, ?> sourceContext;
@@ -280,7 +281,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         private final Class<E> entityClass;
 
         public Builder(TraversalContext<BE, ?> sourceContext, Query.SymmetricExtender pathExtender,
-                Query.SymmetricExtender selectExtender, Class<E> entityClass) {
+                       Query.SymmetricExtender selectExtender, Class<E> entityClass) {
             this.sourceContext = sourceContext;
             this.pathExtender = pathExtender;
             this.selectExtender = selectExtender;

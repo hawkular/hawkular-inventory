@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -23,7 +23,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EmptyInventory;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -32,6 +31,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -81,6 +81,10 @@ public class AutoTenantInventoryProducer {
                 CanonicalPath startingPoint, Relationships.Direction direction, Class<T> clazz,
                 String... relationshipNames) {
             return inventory.getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        }
+
+        @Override public Configuration getConfiguration() {
+            return inventory.getConfiguration();
         }
 
         @Override

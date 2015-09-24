@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 import javax.naming.directory.SchemaViolationException;
 
 import org.apache.commons.configuration.MapConfiguration;
-import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
@@ -143,7 +143,7 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
             definedPropertyKeys.put(p.getName(), key);
         }
 
-        for(Map.Entry<String, IndexSpec> e : undefinedIndices.entrySet()) {
+        for (Map.Entry<String, IndexSpec> e : undefinedIndices.entrySet()) {
             TitanManagement.IndexBuilder bld = mgmt.buildIndex(e.getKey(), e.getValue().getElementType());
             if (e.getValue().isUnique()) {
                 bld.unique();

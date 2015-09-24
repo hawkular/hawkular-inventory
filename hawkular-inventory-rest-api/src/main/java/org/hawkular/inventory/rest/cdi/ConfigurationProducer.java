@@ -14,28 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
+
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
+
+import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.configuration.Configuration;
 
 /**
- * Wrapper around simple strings, as Json Marshalling of "primitive" objects does not just work
+ * This class produces the {@link Configuration} instance.
  *
- * @author Heiko W. Rupp
+ * @author Jirka Kremser
+ * @since 0.4.1
  */
-public class StringWrapper {
-    private String value;
+@Singleton
+public final class ConfigurationProducer {
 
-    public StringWrapper() {
-    }
-
-    public StringWrapper(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
+    @Produces
+    @Default
+    @Singleton
+    public Configuration getConfiguration(@AutoTenant Inventory inventory) {
+        return inventory.getConfiguration();
     }
 }

@@ -18,7 +18,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import java.util.ServiceLoader;
 
-import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;

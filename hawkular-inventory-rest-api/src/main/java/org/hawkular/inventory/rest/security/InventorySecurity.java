@@ -40,8 +40,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.rest.AutoTenant;
 import org.hawkular.inventory.rest.RestApiLogger;
+import org.hawkular.inventory.rest.cdi.AutoTenant;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.
