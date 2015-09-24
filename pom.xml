@@ -108,7 +108,7 @@
           <plugin>
             <groupId>org.revapi</groupId>
             <artifactId>revapi-maven-plugin</artifactId>
-            <version>0.3.6</version>
+            <version>0.3.7</version>
             <dependencies>
               <dependency>
                 <groupId>org.revapi</groupId>
