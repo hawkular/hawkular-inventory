@@ -405,7 +405,7 @@ public final class StructuredData {
         }
     }
 
-    private abstract static class AbstractHierarchyBuilder {
+    public abstract static class AbstractHierarchyBuilder {
         protected abstract void apply(Object context, StructuredData value);
 
         @SuppressWarnings("unchecked")

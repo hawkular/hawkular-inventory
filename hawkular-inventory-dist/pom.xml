@@ -178,6 +178,44 @@
           </overlays>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <analysisConfiguration>
+            <![CDATA[
+              {
+                "revapi": {
+                  "java" : {
+                    "missing-classes" : {
+                      "behavior" : "report"
+                    }
+                  },
+                  "filter": {
+                    "archives": {
+                      //We're ignoring all API incompatibilities and errors in Jackson
+                      //
+                      //we're also excluding anything found in the inventory API. This is because most
+                      //of the other modules depend on it and we don't want to analyze the inventory API again
+                      //as part of the check of those modules.
+                      "exclude": ["com.fasterxml.jackson.core.*",
+                                  "org.hawkular.inventory:hawkular-inventory-api:.*"]
+                    }
+                  },
+                  "ignore": [
+                    {
+                      "code": "java.class.nonPublicPartOfAPI",
+                      "old": "class org.apache.cassandra.db.Memtable.FlushRunnable",
+                      "new": "class org.apache.cassandra.db.Memtable.FlushRunnable",
+                      "justification": "This is because we redeclare org.apache.cassandra.dht.BytesToken. That class is defined in our module to support Titan but is not meant to be a part of our API."
+                    }
+                  ]
+                }
+              }
+            ]]>
+          </analysisConfiguration>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

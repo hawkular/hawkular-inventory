@@ -66,7 +66,7 @@ public abstract class BaseInventory<E> implements Inventory {
      * @param backend           the backend
      * @param observableContext the observable context
      */
-    protected BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext) {
+    BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext) {
         this.backend = backend;
         this.observableContext = observableContext;
     }
@@ -161,8 +161,8 @@ public abstract class BaseInventory<E> implements Inventory {
         return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
     }
 
-    public static class Initialized<E> extends BaseInventory<E> {
-        public Initialized(InventoryBackend<E> backend, ObservableContext observableContext,
+    static class Initialized<E> extends BaseInventory<E> {
+        Initialized(InventoryBackend<E> backend, ObservableContext observableContext,
                            Configuration configuration) {
             super(backend, observableContext);
             initialize(configuration);

@@ -17,7 +17,8 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -79,4 +80,91 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>api-check</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>1.9.1</version>
+            <executions>
+              <execution>
+                <id>parse-version</id>
+                <goals>
+                  <goal>parse-version</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.revapi</groupId>
+            <artifactId>revapi-maven-plugin</artifactId>
+            <version>0.3.8</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-java</artifactId>
+                <version>0.4.4</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
+              <analysisConfiguration>
+                <![CDATA[
+                  {
+                    "revapi" : {
+                      "java" : {
+                        "missing-classes" : {
+                          "behavior" : "report"
+                        }
+                      },
+                      "filter": {
+                        "archives": {
+                          //We're ignoring all API incompatibilities and errors in Jackson
+                          //
+                          //we're also excluding anything found in the inventory API. This is because most
+                          //of the other modules depend on it and we don't want to analyze the inventory API again
+                          //as part of the check of those modules.
+                          "exclude": ["com.fasterxml.jackson.core.*",
+                                      "org.hawkular.inventory:hawkular-inventory-api:.*"]
+                        }
+                      }
+                    }
+                  }
+                ]]>
+              </analysisConfiguration>
+              <analysisConfigurationFiles>
+                <configurationFile>
+                  <path>api-changes.json</path>
+                  <roots>
+                    <root>
+                      ${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.Final
+                    </root>
+                  </roots>
+                </configurationFile>
+              </analysisConfigurationFiles>
+            </configuration>
+            <executions>
+              <execution>
+                <id>api-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

@@ -1,0 +1,64 @@
+{
+  "0.4.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.class.visibilityReduced",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.api\\.model\\.Path\\..*",
+          "justification": "A number of inner classes of the Path class have been 'hidden'. These classes were not meant for public consumption and so this change should not cause much trouble to the users."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.api.model.Path.Decoder::<init>(org.hawkular.inventory.api.model.Path.EnhancedTypeProvider)",
+          "justification": "This is never used in a public capacity and also doesn't have a reason to be used publicly."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method org.hawkular.inventory.api.model.Path.Segment org.hawkular.inventory.api.model.Path.Decoder::decodeNext(org.hawkular.inventory.api.model.Path.ParsingProgress)",
+          "justification": "This is never used in a public capacity and also doesn't have a reason to be used publicly."
+        },
+        {
+          "code": "java.class.nowFinal",
+          "old": "class org.hawkular.inventory.api.model.Path.Decoder",
+          "justification": "This class should not be subclassable. It's also been changed to private so clients will not even see this class anymore."
+        },
+        {
+          "code": "java.class.nowFinal",
+          "old": "class org.hawkular.inventory.api.model.Path.Encoder",
+          "justification": "This class should not be subclassable to ensure uniform encoding of canonical and relative paths."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method org.hawkular.inventory.api.model.Path org.hawkular.inventory.api.model.Path::fromString(java.lang.String, boolean, org.hawkular.inventory.api.model.Path.ExtenderConstructor, org.hawkular.inventory.api.model.Path.EnhancedTypeProvider)",
+          "justification": "This was reduced to package visibility, because all Path subclasses should always be present in the same package in the API."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.model.Version",
+          "justification": "This class hasn't been in use for a couple of releases."
+        },
+        {
+          "code": "java.class.visibilityReduced",
+          "old": "class org.hawkular.inventory.base.BaseInventory.Initialized<E>",
+          "justification": "This is used internally and should not have leaked into the API."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.base.BaseInventory.Initialized<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext, org.hawkular.inventory.api.Configuration)",
+          "justification": "This is used internally and should have not leaked into the API."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext)",
+          "justification": "This is used internally and should have not leaked into the API."
+        },
+        {
+          "code": "java.class.externalClassNoLongerExposedInAPI",
+          "old": "class org.hawkular.inventory.base.ObservableContext",
+          "justification": "This is actually a good thing (tm) :)"
+        }
+      ]
+    }
+  }
+}

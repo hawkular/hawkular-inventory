@@ -97,7 +97,7 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
         }
     }
 
-    static final class WrappedTinkerGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
+    public static final class WrappedTinkerGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
 
         public WrappedTinkerGraph(org.apache.commons.configuration.Configuration configuration) {
             super(new TinkerGraph(configuration));
