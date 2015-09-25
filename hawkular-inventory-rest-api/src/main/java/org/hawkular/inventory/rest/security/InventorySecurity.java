@@ -67,6 +67,8 @@ public class InventorySecurity implements Security {
     @AutoTenant
     private Inventory inventory;
 
+    private boolean inventoryInitialized = false;
+
     @javax.annotation.Resource
     private UserTransaction transaction;
 
@@ -127,11 +129,12 @@ public class InventorySecurity implements Security {
 
     private boolean safePermissionCheck(Class<?> entityType, String entityId, Operation operation, String stableId) {
         try {
-            if (Tenant.class.equals(entityType)) {
+            if (!inventoryInitialized) {
                 //make sure the tenant exists prior to checking perms on it
                 if (!inventory.tenants().get(entityId).exists()) {
                     inventory.tenants().create(Tenant.Blueprint.builder().withId(entityId).build());
                 }
+                inventoryInitialized = true;
             }
             RestApiLogger.LOGGER.debugf("Permission check for operation '%s' for entity with stable ID '%s'",
                     operation.getName(), stableId);
