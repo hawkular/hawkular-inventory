@@ -623,9 +623,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                         ElementHelper.setProperties(v, properties);
                     }
                     return v;
-                } catch (Exception e) {
-                    // todo: perhaps there is a better place to do that
-                    throw (RuntimeException) context.translateException(e);
+                } catch (RuntimeException e) {
+                    throw context.translateException(e);
                 }
             }
         }, null);

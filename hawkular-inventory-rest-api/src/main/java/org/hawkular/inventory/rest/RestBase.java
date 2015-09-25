@@ -22,10 +22,10 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.configuration.Configuration;
-import org.hawkular.inventory.api.configuration.RestConfiguration;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
+import org.hawkular.inventory.rest.security.RestConfiguration;
 import org.hawkular.inventory.rest.security.Security;
 import org.hawkular.inventory.rest.security.TenantIdProducer;
 import org.jboss.resteasy.annotations.GZIP;

@@ -60,7 +60,7 @@ final class InventoryContext<G extends TransactionalGraph> {
         graphProvider.rollback(graph, t);
     }
 
-    public Exception translateException(Exception inputException) {
+    public RuntimeException translateException(RuntimeException inputException) {
         return graphProvider.translateException(inputException);
     }
 }

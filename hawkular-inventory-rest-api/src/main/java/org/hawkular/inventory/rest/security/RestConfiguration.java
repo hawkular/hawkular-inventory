@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.hawkular.inventory.api.configuration;
+package org.hawkular.inventory.rest.security;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.hawkular.inventory.api.configuration.Configuration;
 
 /**
  * @author Jirka Kremser

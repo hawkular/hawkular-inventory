@@ -28,17 +28,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.naming.directory.SchemaViolationException;
-
 import org.apache.commons.configuration.MapConfiguration;
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.configuration.Configuration;
-import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.SchemaViolationException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
@@ -51,28 +50,29 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 public class TitanProvider implements GraphProvider<TitanGraph> {
 
     private static class ExceptionMapper {
-        private Class<? extends Exception> targetException;
-        private Predicate<Exception> predicate;
+        private Class<? extends RuntimeException> targetException;
+        private Predicate<RuntimeException> predicate;
 
-        public ExceptionMapper(Class<? extends Exception> targetException,
-                               Predicate<Exception> predicate) {
+        public ExceptionMapper(Class<? extends RuntimeException> targetException,
+                               Predicate<RuntimeException> predicate) {
             this.targetException = targetException;
             this.predicate = predicate;
         }
 
-        public Class<? extends Exception> getTargetException() {
+        public Class<? extends RuntimeException> getTargetException() {
             return targetException;
         }
 
-        public Predicate<Exception> getPredicate() {
+        public Predicate<RuntimeException> getPredicate() {
             return predicate;
         }
     }
 
-    private static final Map<Class<? extends Exception>, List<ExceptionMapper>> exceptionMapping = new HashMap<>();
+    private static final Map<Class<? extends RuntimeException>, List<ExceptionMapper>> exceptionMapping =
+            new HashMap<>();
 
-    private static void mapException(Class<? extends Exception> source, Class<? extends Exception> target,
-                                     Predicate<Exception> p) {
+    private static void mapException(Class<? extends RuntimeException> source, Class<? extends RuntimeException> target,
+                                     Predicate<RuntimeException> p) {
         if (exceptionMapping.get(source) == null) {
             exceptionMapping.put(source, new ArrayList<>());
         }
@@ -81,7 +81,7 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
 
     static {
         try {
-            mapException(SchemaViolationException.class, ElementNotFoundException.class,
+            mapException(SchemaViolationException.class, EntityAlreadyExistsException.class,
                     e -> e.getMessage().contains("violates a uniqueness constraint [by___cp]"));
         } catch (Throwable t) {
             // never fail during the class loading
@@ -91,8 +91,8 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
 
     @Override
     public TitanGraph instantiateGraph(Configuration configuration) {
-        return TitanFactory.open(new MapConfiguration(configuration.getImplementationConfiguration(
-                EnumSet.allOf(PropertyKeys.class))));
+        return TitanFactory.open(new MapConfiguration(configuration.prefixedWith(ALLOWED_PREFIXES)
+                .getImplementationConfiguration(EnumSet.allOf(PropertyKeys.class))));
     }
 
     @Override
@@ -169,6 +169,9 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
         return bld.toString();
     }
 
+    public static final String[] ALLOWED_PREFIXES = {"attributes", "cache", "cluster", "graph", "ids", "index", "log" +
+            "metrics", "query", "schema", "storage", "tx"};
+
     @SuppressWarnings("unused")
     private enum PropertyKeys implements Configuration.Property {
         STORAGE_HOSTNAME("storage.hostname", "hawkular.inventory.titan.storage.hostname",
@@ -204,10 +207,10 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
     }
 
     @Override
-    public Exception translateException(Exception inputException) {
-        List<ExceptionMapper> exceptionMappers = exceptionMapping.get(inputException);
+    public RuntimeException translateException(RuntimeException inputException) {
+        List<ExceptionMapper> exceptionMappers = exceptionMapping.get(inputException.getClass());
         if (exceptionMappers != null) {
-            Optional<Exception> firstMatch =
+            Optional<RuntimeException> firstMatch =
                     exceptionMappers.stream()
                             .filter(mapper -> mapper.getPredicate().test(inputException))
                             .findFirst()
@@ -230,6 +233,6 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
                 return firstMatch.orElseGet(() -> inputException);
             }
         }
-        return null;
+        return inputException;
     }
 }

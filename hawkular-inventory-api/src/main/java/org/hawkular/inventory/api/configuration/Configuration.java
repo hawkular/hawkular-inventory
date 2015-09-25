@@ -118,6 +118,22 @@ public final class Configuration {
     }
 
     /**
+     * Filters out all the configuration entries whose keys don't start with any of the white-listed prefixes
+     *
+     * @param prefixes
+     * @return
+     */
+    public Configuration prefixedWith(String... prefixes) {
+        if (prefixes == null || prefixes.length == 0) {
+            return this;
+        }
+        Map<String, String> filteredConfig = implementationConfiguration.entrySet().stream()
+                .filter(e -> Arrays.stream(prefixes).anyMatch(p -> e.getKey()
+                        .startsWith(p))).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new Configuration(feedIdStrategy, resultFilter, filteredConfig);
+    }
+
+    /**
      * Returns the implementation configuration with the values changed to conform the provided properties.
      * <p>
      * I.e. if a system property defined by some of the provided property objects overrides a property in the
@@ -137,8 +153,7 @@ public final class Configuration {
         Map<String, T> propsByName = overridableProperties.stream().collect(toMap(Property::getPropertyName,
                 identity()));
 
-        return implementationConfiguration.entrySet().stream().filter(e -> !e.getKey().startsWith
-                (RestConfiguration.PROPERTY_PREFIX)).collect(toMap(Map.Entry::getKey, e -> {
+        return implementationConfiguration.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
             Property p = propsByName.get(e.getKey());
             return p == null ? e.getValue() : getProperty(p, e.getValue());
         }));

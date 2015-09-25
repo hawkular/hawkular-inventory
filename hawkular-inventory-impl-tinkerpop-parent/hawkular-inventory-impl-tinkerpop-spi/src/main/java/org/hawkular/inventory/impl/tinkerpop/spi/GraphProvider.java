@@ -55,7 +55,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
 
     /**
      * Starts a new transaction in the graph.
-     *
+     * <p>
      * <p>The default implementation returns a new instance of
      * {@link org.hawkular.inventory.base.spi.InventoryBackend.Transaction} with the provided mutating flag.
      *
@@ -99,7 +99,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param inputException an exception to convert
      * @return converted exception
      */
-    default Exception translateException(Exception inputException) {
+    default RuntimeException translateException(RuntimeException inputException) {
         return inputException;
     }
 }
