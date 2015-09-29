@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hawkular.inventory.api.configuration;
+package org.hawkular.inventory.api;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import org.hawkular.inventory.api.FeedIdStrategy;
-import org.hawkular.inventory.api.ResultFilter;
 
 /**
  * @author Lukas Krejci
