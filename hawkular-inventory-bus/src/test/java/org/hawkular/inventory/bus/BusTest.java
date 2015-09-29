@@ -138,21 +138,21 @@ public class BusTest {
         String dataEntityJSON = dataEntityEvent.toJSON();
 
         assertThat(tenantEvent.getObject(),
-                   is(equalTo(TenantEvent.fromJSON(tenantJSON, TenantEvent.class).getObject())));
+                is(equalTo(TenantEvent.fromJSON(tenantJSON, TenantEvent.class).getObject())));
         assertThat(environmentEvent.getObject(),
                 is(equalTo(EnvironmentEvent.fromJSON(envJSON, EnvironmentEvent.class).getObject())));
         assertThat(feedEvent.getObject(),
-                   is(equalTo(feedEvent.fromJSON(feedJSON, FeedEvent.class).getObject())));
+                is(equalTo(feedEvent.fromJSON(feedJSON, FeedEvent.class).getObject())));
         assertThat(metricEvent.getObject(),
-                   is(equalTo(MetricEvent.fromJSON(metricJSON, MetricEvent.class).getObject())));
+                is(equalTo(MetricEvent.fromJSON(metricJSON, MetricEvent.class).getObject())));
         assertThat(metricTypeEvent.getObject(),
-                   is(equalTo(MetricTypeEvent.fromJSON(metricTypeJSON, MetricTypeEvent.class).getObject())));
+                is(equalTo(MetricTypeEvent.fromJSON(metricTypeJSON, MetricTypeEvent.class).getObject())));
         assertThat(relationshipEvent.getObject(),
-                   is(equalTo(RelationshipEvent.fromJSON(relationshipJSON, RelationshipEvent.class).getObject())));
+                is(equalTo(RelationshipEvent.fromJSON(relationshipJSON, RelationshipEvent.class).getObject())));
         assertThat(resourceEvent.getObject(),
-                   is(equalTo(ResourceEvent.fromJSON(resourceJSON, ResourceEvent.class).getObject())));
+                is(equalTo(ResourceEvent.fromJSON(resourceJSON, ResourceEvent.class).getObject())));
         assertThat(resourceTypeEvent.getObject(),
-                   is(equalTo(ResourceTypeEvent.fromJSON(resourceTypeJSON, ResourceTypeEvent.class).getObject())));
+                is(equalTo(ResourceTypeEvent.fromJSON(resourceTypeJSON, ResourceTypeEvent.class).getObject())));
         assertThat(dataEntityEvent.getObject(), is(equalTo(DataEntityEvent.fromJSON(dataEntityJSON,
                 DataEntityEvent.class).getObject())));
     }
@@ -317,7 +317,7 @@ public class BusTest {
 
                         @Override
                         public TopicConnection createTopicConnection(String userName,
-                                String password) throws JMSException {
+                                                                     String password) throws JMSException {
                             return createTopicConnection();
                         }
 
@@ -382,7 +382,7 @@ public class BusTest {
     }
 
     private void testHeaders(ConsumerConnectionContext consumerContext, Class<? extends InventoryEvent<?>> eventClass,
-            Runnable inventoryAction, Consumer<Map<String, String>> assertions)
+                             Runnable inventoryAction, Consumer<Map<String, String>> assertions)
             throws JMSException, InterruptedException {
 
         List<InventoryEvent<?>> receivedMessages = new ArrayList<>();

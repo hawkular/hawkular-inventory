@@ -14,21 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.json;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import javax.enterprise.inject.Produces;
 
-import javax.inject.Qualifier;
+import org.hawkular.inventory.rest.cdi.Our;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Lukas Krejci
- * @since ${MODULE_VERSION}
+ * @since 0.4.0
  */
-@Qualifier
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface AutoTenant {
+public class ObjectMapperProvider {
+
+    private final JacksonConfig config = new JacksonConfig();
+
+    @Produces
+    @Our
+    public ObjectMapper getDefaultObjectMapper() {
+        return config.getContext(ObjectMapper.class);
+    }
+
+    @Produces
+    @JsonLd
+    public ObjectMapper getJsonLdObjectMapper() {
+        return config.getContext(EmbeddedObjectMapper.class);
+    }
 }

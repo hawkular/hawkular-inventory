@@ -463,4 +463,6 @@ public interface Inventory extends AutoCloseable {
     <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
                                                                   Relationships.Direction direction, Class<T> clazz,
                                                                   String... relationshipNames);
+
+    Configuration getConfiguration();
 }

@@ -113,6 +113,10 @@ public class EmptyInventory implements Inventory {
         throw entityNotFound(Tenant.class);
     }
 
+    @Override public Configuration getConfiguration() {
+        throw new UnsupportedOperationException();
+    }
+
     protected static <T> Page<T> emptyPage(Pager pager) {
         return new Page<>(Collections.emptyIterator(), pager, 0);
     }

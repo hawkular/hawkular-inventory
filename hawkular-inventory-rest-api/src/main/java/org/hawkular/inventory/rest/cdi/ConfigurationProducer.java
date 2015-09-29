@@ -14,34 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 
+import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Inventory;
 
 /**
- * Encapsulate a simple string value
- * @author Heiko W. Rupp
+ * This class produces the {@link Configuration} instance.
+ *
+ * @author Jirka Kremser
+ * @since 0.4.1
  */
-@XmlRootElement(name =  "value")
-public class StringValue {
+@Singleton
+public final class ConfigurationProducer {
 
-    String value;
-
-    public StringValue() {
-    }
-
-    public StringValue(String value) {
-        this.value = value;
-    }
-
-    @XmlAttribute
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
+    @Produces
+    @Default
+    @Singleton
+    public Configuration getConfiguration(@AutoTenant Inventory inventory) {
+        return inventory.getConfiguration();
     }
 }

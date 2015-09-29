@@ -14,31 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.Date;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-
-import com.wordnik.swagger.annotations.ApiOperation;
+import javax.inject.Qualifier;
 
 /**
- * @author Stefan Negrea
+ * @author Lukas Krejci
+ * @since ${MODULE_VERSION}
  */
-@Path("/ping")
-public class PingHandler {
-
-    @GET
-    @Consumes({ APPLICATION_JSON })
-    @Produces({ APPLICATION_JSON })
-    @ApiOperation("A dummy operation returning the current date on the server.")
-    public Response ping() {
-        return Response.ok(new Date().toString()).build();
-    }
+@Qualifier
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AutoTenant {
 }

@@ -57,6 +57,17 @@
           "code": "java.class.externalClassNoLongerExposedInAPI",
           "old": "class org.hawkular.inventory.base.ObservableContext",
           "justification": "This is actually a good thing (tm) :)"
+        },
+        {
+          "code" : "java.method.addedToInterface",
+          "new" : "method org.hawkular.inventory.api.Configuration org.hawkular.inventory.api.Inventory::getConfiguration()",
+          "justification" : "Exposing the configuration."
+        },
+        {
+          "code" : "java.method.numberOfParametersChanged",
+          "oldMethod" : "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext)",
+          "newMethod" : "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext, org.hawkular.inventory.api.Configuration)",
+          "justification" : "Passing the configuration as a parameter in constructor."
         }
       ]
     }

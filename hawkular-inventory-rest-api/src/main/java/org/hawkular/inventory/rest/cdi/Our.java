@@ -14,28 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.inject.Qualifier;
 
 /**
- * Wrapper around simple strings, as Json Marshalling of "primitive" objects does not just work
+ * In case there are some ambiguous injection points for certain CDI beans, use this for the default one to use in
+ * our codebase.
  *
- * @author Heiko W. Rupp
+ * @author Lukas Krejci
+ * @since 0.4.0
  */
-public class StringWrapper {
-    private String value;
-
-    public StringWrapper() {
-    }
-
-    public StringWrapper(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
+@Qualifier
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE})
+public @interface Our {
 }

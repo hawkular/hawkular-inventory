@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
@@ -72,7 +71,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -88,10 +86,6 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Consumes(APPLICATION_JSON)
 @Api(value = "/bulk", description = "Endpoint for bulk operations on inventory entities")
 public class RestBulk extends RestBase {
-
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    private ObjectMapper objectMapper;
 
     private static CanonicalPath canonicalize(String path, CanonicalPath rootPath) {
         Path p;
@@ -381,8 +375,8 @@ public class RestBulk extends RestBase {
     private List<Blueprint> deserializeBlueprints(ElementType elementType, List<Object> rawBlueprints) {
         return rawBlueprints.stream().map((o) -> {
             try {
-                String js = objectMapper.writeValueAsString(o);
-                return (Blueprint) objectMapper.reader(elementType.blueprintType).readValue(js);
+                String js = mapper.writeValueAsString(o);
+                return (Blueprint) mapper.reader(elementType.blueprintType).readValue(js);
             } catch (IOException e1) {
                 throw new IllegalArgumentException("Failed to deserialize as " + elementType
                         .blueprintType + " the following data: " + o, e1);

@@ -38,6 +38,7 @@ import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvider.WrappedTinkerGraph> {
 
     private final WeakHashMap<WrappedTinkerGraph, ReentrantReadWriteLock> transactionLocks = new WeakHashMap<>();
+
     @Override
     public WrappedTinkerGraph instantiateGraph(Configuration configuration) {
         return new WrappedTinkerGraph(new MapConfiguration(

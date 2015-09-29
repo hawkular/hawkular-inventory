@@ -1,0 +1,26 @@
+{
+  "0.5.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.parameterTypeChanged",
+          "oldType": "method parameter java.lang.RuntimeException org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::translateException(===java.lang.Exception===)",
+          "newType": "method parameter java.lang.RuntimeException org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::translateException(===java.lang.RuntimeException===)",
+          "justification": "Translate only runtime exceptions."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "oldMethod": "method java.lang.Exception org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::translateException(java.lang.RuntimeException)",
+          "newMethod": "method java.lang.RuntimeException org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::translateException(java.lang.RuntimeException)",
+          "justification": "Translate only runtime exceptions."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "oldMethod": "method java.util.function.Predicate<java.lang.Exception> org.hawkular.inventory.impl.tinkerpop.provider.TitanProvider.ExceptionMapper::getPredicate()",
+          "newMethod": "method java.util.function.Predicate<java.lang.RuntimeException> org.hawkular.inventory.impl.tinkerpop.provider.TitanProvider.ExceptionMapper::getPredicate()",
+          "justification": "Translate only runtime exceptions."
+        }
+      ]
+    }
+  }
+}

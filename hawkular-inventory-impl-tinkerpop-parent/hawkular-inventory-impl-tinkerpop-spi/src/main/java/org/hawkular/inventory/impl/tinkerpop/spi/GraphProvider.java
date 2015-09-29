@@ -24,7 +24,7 @@ import com.tinkerpop.blueprints.TransactionalGraph;
 /**
  * This is a service interface that the Tinkerpop implementation will use to get a configured and initialized instance
  * of a blueprints graph.
- *
+ * <p>
  * <p>This level of indirection is needed because many graph databases provide configuration and management features
  * that are not accessible through plain Blueprints API.
  *
@@ -43,20 +43,19 @@ public interface GraphProvider<G extends TransactionalGraph> {
 
     /**
      * Makes sure all the indexes needed for good performance.
-     *
+     * <p>
      * <p>The provided set of indexes is what the implementation thinks the indices should be. The graph provider
      * is free to make more indexes if they choose so to support the "core" set of indices.
      *
-     * @param graph the graph instance (coming from the
-     * {@link #instantiateGraph(org.hawkular.inventory.api.Configuration)} call) to index
-     *
+     * @param graph      the graph instance (coming from the
+     *                   {@link #instantiateGraph(Configuration)} call) to index
      * @param indexSpecs the core set of indices to define
      */
     void ensureIndices(G graph, IndexSpec... indexSpecs);
 
     /**
      * Starts a new transaction in the graph.
-     *
+     * <p>
      * <p>The default implementation returns a new instance of
      * {@link org.hawkular.inventory.base.spi.InventoryBackend.Transaction} with the provided mutating flag.
      *
@@ -82,7 +81,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
 
     /**
      * Rolls back the transaction in the graph.
-     *
+     * <p>
      * <p>The default implementation merely calls {@link TransactionalGraph#rollback()}.
      *
      * @param graph the graph to rollback the transaction from
@@ -100,7 +99,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param inputException an exception to convert
      * @return converted exception
      */
-    default Exception translateException(Exception inputException) {
+    default RuntimeException translateException(RuntimeException inputException) {
         return inputException;
     }
 }

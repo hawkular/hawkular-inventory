@@ -43,7 +43,7 @@ public final class Configuration {
     }
 
     public Configuration(FeedIdStrategy feedIdStrategy, ResultFilter resultFilter,
-            Map<String, String> implementationConfiguration) {
+                         Map<String, String> implementationConfiguration) {
         this.feedIdStrategy = feedIdStrategy;
         this.resultFilter = resultFilter;
         this.implementationConfiguration = implementationConfiguration;
@@ -106,9 +106,33 @@ public final class Configuration {
         return value == null ? defaultValue : value;
     }
 
+    public boolean getFlag(Property property, String defaultValue) {
+        return Boolean.valueOf(getProperty(property, defaultValue));
+    }
+
+    public boolean getFlag(String key, String defaultValue) {
+        return getFlag(Property.builder().withPropertyNameAndSystemProperty(key).build(), defaultValue);
+    }
+
+    /**
+     * Filters out all the configuration entries whose keys don't start with any of the white-listed prefixes
+     *
+     * @param prefixes
+     * @return
+     */
+    public Configuration prefixedWith(String... prefixes) {
+        if (prefixes == null || prefixes.length == 0) {
+            return this;
+        }
+        Map<String, String> filteredConfig = implementationConfiguration.entrySet().stream()
+                .filter(e -> Arrays.stream(prefixes).anyMatch(p -> e.getKey()
+                        .startsWith(p))).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new Configuration(feedIdStrategy, resultFilter, filteredConfig);
+    }
+
     /**
      * Returns the implementation configuration with the values changed to conform the provided properties.
-     *
+     * <p>
      * I.e. if a system property defined by some of the provided property objects overrides a property in the
      * implementation configuration, the value of the system property is used instead for that property (i.e. the key
      * stays the same but the value gets overridden to the value of the system property).
@@ -158,7 +182,7 @@ public final class Configuration {
 
         public Builder withConfiguration(Properties properties) {
             Map<String, String> map = new HashMap<>();
-            properties.forEach((k,v) -> map.put(k.toString(), v.toString()));
+            properties.forEach((k, v) -> map.put(k.toString(), v.toString()));
             return withConfiguration(map);
         }
 

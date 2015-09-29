@@ -20,8 +20,12 @@ import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.rest.cdi.AutoTenant;
+import org.hawkular.inventory.rest.cdi.Our;
+import org.hawkular.inventory.rest.security.RestConfiguration;
 import org.hawkular.inventory.rest.security.Security;
 import org.hawkular.inventory.rest.security.TenantIdProducer;
 import org.jboss.resteasy.annotations.GZIP;
@@ -48,11 +52,20 @@ public class RestBase {
     private TenantIdProducer tenantIdProducer;
 
     @Inject
+    Configuration config;
+
+    @Inject @Our
     protected ObjectMapper mapper;
 
     protected <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response,
                                                          UriInfo uriInfo, Page<T> page) {
-        return ResponseUtil.pagedResponse(response, uriInfo, mapper, page);
+        boolean streaming = config.getFlag(RestConfiguration.Keys.STREAMING_SERIALIZATION, RestConfiguration.Keys
+                .STREAMING_SERIALIZATION.getDefaultValue());
+        if (streaming) {
+            return ResponseUtil.pagedResponse(response, uriInfo, mapper, page);
+        } else {
+            return ResponseUtil.pagedResponse(response, uriInfo, page, page.toList());
+        }
     }
 
 

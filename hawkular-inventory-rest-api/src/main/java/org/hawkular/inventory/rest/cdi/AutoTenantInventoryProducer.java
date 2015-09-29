@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest;
+package org.hawkular.inventory.rest.cdi;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -81,6 +81,10 @@ public class AutoTenantInventoryProducer {
                 CanonicalPath startingPoint, Relationships.Direction direction, Class<T> clazz,
                 String... relationshipNames) {
             return inventory.getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        }
+
+        @Override public Configuration getConfiguration() {
+            return inventory.getConfiguration();
         }
 
         @Override

@@ -40,8 +40,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.rest.AutoTenant;
 import org.hawkular.inventory.rest.RestApiLogger;
+import org.hawkular.inventory.rest.cdi.AutoTenant;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.
@@ -66,6 +66,8 @@ public class InventorySecurity implements Security {
     @Inject
     @AutoTenant
     private Inventory inventory;
+
+    private boolean inventoryInitialized = false;
 
     @javax.annotation.Resource
     private UserTransaction transaction;
@@ -127,11 +129,12 @@ public class InventorySecurity implements Security {
 
     private boolean safePermissionCheck(Class<?> entityType, String entityId, Operation operation, String stableId) {
         try {
-            if (Tenant.class.equals(entityType)) {
+            if (!inventoryInitialized) {
                 //make sure the tenant exists prior to checking perms on it
                 if (!inventory.tenants().get(entityId).exists()) {
                     inventory.tenants().create(Tenant.Blueprint.builder().withId(entityId).build());
                 }
+                inventoryInitialized = true;
             }
             RestApiLogger.LOGGER.debugf("Permission check for operation '%s' for entity with stable ID '%s'",
                     operation.getName(), stableId);
