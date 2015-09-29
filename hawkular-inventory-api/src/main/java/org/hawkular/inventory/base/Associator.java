@@ -18,6 +18,9 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.filters.With.type;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
@@ -31,8 +34,42 @@ import org.hawkular.inventory.api.model.Relationship;
  */
 class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
-    protected Associator(TraversalContext<BE, E> context) {
+    private final Relationships.WellKnown relationship;
+    private final Class<? extends Entity<?, ?>> sourceEntityType;
+
+    protected Associator(TraversalContext<BE, E> context, Relationships.WellKnown relationship,
+                         Class<? extends Entity<?, ?>> sourceEntityType) {
         super(context);
+        this.relationship = relationship;
+        this.sourceEntityType = sourceEntityType;
+    }
+
+    public Relationship associate(Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
+        checkPathLegal(id);
+
+        BE target = Util.find(context, id);
+
+        return createAssociation(sourceEntityType, relationship, target);
+    }
+
+    public Relationship disassociate(Path id) throws EntityNotFoundException {
+        checkPathLegal(id);
+
+        BE target = Util.find(context, id);
+
+        return deleteAssociation(sourceEntityType, relationship, target);
+    }
+
+    public Relationship associationWith(Path path) throws RelationNotFoundException {
+        return getAssociation(sourceEntityType, path, relationship);
+    }
+
+    protected void checkPathLegal(Path targetPath) {
+        if (!context.entityClass.equals(targetPath.getSegment().getElementType())) {
+            throw new IllegalArgumentException("Current position in the inventory traversal expects entities of type " +
+                    context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
+                    targetPath);
+        }
     }
 
     protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,

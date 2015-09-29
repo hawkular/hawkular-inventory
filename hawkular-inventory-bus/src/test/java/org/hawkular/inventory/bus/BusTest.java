@@ -113,7 +113,7 @@ public class BusTest {
         EnvironmentEvent environmentEvent = new EnvironmentEvent(Action.Enumerated.CREATED,
                 new Environment(CanonicalPath.fromString("/t;t/e;e"), objectProperties));
         FeedEvent feedEvent = new FeedEvent(Action.Enumerated.UPDATED,
-                new Feed(CanonicalPath.fromString("/t;t/e;e/f;f"), objectProperties));
+                new Feed(CanonicalPath.fromString("/t;t/f;f"), objectProperties));
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
                 new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
         MetricTypeEvent metricTypeEvent = new MetricTypeEvent(Action.Enumerated.COPIED, metricType);

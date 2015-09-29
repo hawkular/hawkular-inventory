@@ -24,14 +24,11 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
-import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 
 /**
@@ -127,31 +124,7 @@ public final class BaseMetricTypes {
             implements MetricTypes.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, MetricType> context) {
-            super(context);
-        }
-
-        @Override
-        public Relationship associate(Path id) throws EntityNotFoundException,
-                RelationAlreadyExistsException {
-            Query getMetricType = Util.queryTo(context, id);
-
-            BE metricType = getSingle(getMetricType, MetricType.class);
-
-            return createAssociation(ResourceType.class, incorporates, metricType);
-        }
-
-        @Override
-        public Relationship disassociate(Path id) throws EntityNotFoundException {
-            Query getMetricType = Util.queryTo(context, id);
-
-            BE metricType = getSingle(getMetricType, MetricType.class);
-
-            return deleteAssociation(ResourceType.class, incorporates, metricType);
-        }
-
-        @Override
-        public Relationship associationWith(Path path) throws RelationNotFoundException {
-            return getAssociation(ResourceType.class, path, incorporates);
+            super(context, incorporates, ResourceType.class);
         }
 
         @Override

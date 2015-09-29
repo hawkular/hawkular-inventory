@@ -72,7 +72,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     @POST
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
     @ApiOperation("Creates the configuration for pre-existing resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK Created"),
@@ -80,15 +80,14 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response createConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("feedId") String feedId,
+    public Response createConfiguration(@PathParam("feedId") String feedId,
                                         @PathParam("resourceTypeId") String resourceType,
                                         @PathParam("operationTypeId") String operationTypeId,
                                         @ApiParam(required = true)
                                         DataEntity.Blueprint<OperationTypes.DataRole> configuration,
                                         @Context UriInfo uriInfo) {
 
-        return doCreateData(environmentId, feedId, resourceType, operationTypeId, configuration, uriInfo);
+        return doCreateData(null, feedId, resourceType, operationTypeId, configuration, uriInfo);
     }
 
     @PUT
@@ -110,7 +109,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     @PUT
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
     @ApiOperation("Updates the configuration of a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -118,14 +117,14 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response updateData(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response updateData(@PathParam("feedId") String feedId,
                                @PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
                                OperationTypes.DataRole dataType,
                                @ApiParam(required = true) DataEntity.Update data) {
 
-        return doUpdateData(environmentId, feedId, resourceType, operationTypeId, dataType, data);
+        return doUpdateData(null, feedId, resourceType, operationTypeId, dataType, data);
     }
 
     @DELETE
@@ -146,7 +145,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     @DELETE
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
     @ApiOperation("Updates the configuration of a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -154,13 +153,13 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response deleteData(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response deleteData(@PathParam("feedId") String feedId,
                                @PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
                                OperationTypes.DataRole dataType) {
 
-        return doDeleteData(environmentId, feedId, resourceType, operationTypeId, dataType);
+        return doDeleteData(null, feedId, resourceType, operationTypeId, dataType);
     }
 
     @GET
@@ -179,19 +178,19 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
     @ApiOperation("Retrieves a single resource type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public DataEntity get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public DataEntity get(@PathParam("feedId") String feedId,
                           @PathParam("resourceTypeId") String resourceTypeId,
                           @PathParam("operationTypeId") String operationTypeId,
                           @QueryParam("dataType") @DefaultValue("returnType")
                           OperationTypes.DataRole dataType) {
-        return doGetDataEntity(environmentId, feedId, resourceTypeId, operationTypeId, dataType);
+        return doGetDataEntity(null, feedId, resourceTypeId, operationTypeId, dataType);
     }
 
     private Response doCreateData(String environmentId, String feedId, String resourceTypeId, String operationTypeId,
@@ -248,8 +247,8 @@ public class RestResourceTypesOperationTypesData extends RestBase {
             return CanonicalPath.of().tenant(getTenantId()).resourceType(resourceTypeId)
                     .operationType(operationTypeId).get();
         } else {
-            return CanonicalPath.of().tenant(getTenantId()).environment(environmentId).feed(feedId)
-                    .resourceType(resourceTypeId).operationType(operationTypeId).get();
+            return CanonicalPath.of().tenant(getTenantId()).feed(feedId).resourceType(resourceTypeId)
+                    .operationType(operationTypeId).get();
         }
     }
 }

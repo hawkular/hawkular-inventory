@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 
@@ -35,6 +36,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -55,14 +57,14 @@ public final class BaseFeeds {
 
         @Override
         protected String getProposedId(Feed.Blueprint blueprint) {
-            BE env = context.backend.querySingle(context.sourcePath.extend().filter().with(type(Environment
-                    .class)).get());
+            BE tenant = context.backend.querySingle(context.sourcePath.extend().filter()
+                    .with(type(Tenant.class)).get());
 
-            if (env == null) {
-                throw new EntityNotFoundException(Environment.class, Query.filters(context.sourcePath));
+            if (tenant == null) {
+                throw new EntityNotFoundException(Tenant.class, Query.filters(context.sourcePath));
             }
 
-            CanonicalPath feedPath = context.backend.extractCanonicalPath(env)
+            CanonicalPath feedPath = context.backend.extractCanonicalPath(tenant)
                     .extend(Feed.class, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));
@@ -122,6 +124,23 @@ public final class BaseFeeds {
         @Override
         public Feeds.Single get(Path id) throws EntityNotFoundException {
             return new Single<>(context.proceedTo(id));
+        }
+    }
+
+    public static class ReadAssociate<BE> extends Associator<BE, Feed> implements Feeds.ReadAssociate {
+
+        public ReadAssociate(TraversalContext<BE, Feed> context) {
+            super(context, incorporates, Environment.class);
+        }
+
+        @Override
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new BaseFeeds.Multiple<>(context.proceed().whereAll(filters).get());
+        }
+
+        @Override
+        public Feeds.Single get(Path path) throws EntityNotFoundException {
+            return new BaseFeeds.Single<>(context.proceedTo(path));
         }
     }
 

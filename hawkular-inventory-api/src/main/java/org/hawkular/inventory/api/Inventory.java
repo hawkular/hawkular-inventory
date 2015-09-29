@@ -296,63 +296,64 @@ public interface Inventory extends AutoCloseable {
      */
     default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
     Single inspect(CanonicalPath path, Class<Single> accessInterface) {
+        CanonicalPath.IdExtractor ids = path.ids();
         return path.accept(new ElementTypeVisitor<Single, Void>() {
             @Override
             public Single visitTenant(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()));
+                return accessInterface.cast(tenants().get(ids.getTenantId()));
             }
 
             @Override
             public Single visitEnvironment(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
-                        .get(path.ids().getEnvironmentId()));
+                return accessInterface.cast(tenants().get(ids.getTenantId()).environments()
+                        .get(ids.getEnvironmentId()));
             }
 
             @Override
             public Single visitFeed(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).environments()
-                        .get(path.ids().getEnvironmentId()).feeds().get(path.ids().getFeedId()));
+                return accessInterface.cast(tenants().get(ids.getTenantId()).feeds()
+                        .get(ids.getFeedId()));
             }
 
             @Override
             public Single visitMetric(Void parameter) {
-                Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
-                        .get(path.ids().getEnvironmentId());
+                Tenants.Single tenant = tenants().get(ids.getTenantId());
 
-                return accessInterface.cast(path.ids().getFeedId() == null
-                        ? env.feedlessMetrics().get(path.ids().getMetricId())
-                        : env.feeds().get(path.ids().getFeedId()).metrics().get(path.ids().getMetricId()));
+                return accessInterface.cast(ids.getFeedId() == null
+                        ? tenant.environments().get(ids.getEnvironmentId()).feedlessMetrics()
+                        .get(ids.getMetricId())
+                        : tenant.feeds().get(ids.getFeedId()).metrics().get(ids.getMetricId()));
+
             }
 
             @Override
             public Single visitMetricType(Void parameter) {
-                return accessInterface.cast(tenants().get(path.ids().getTenantId()).feedlessMetricTypes()
-                        .get(path.ids().getMetricTypeId()));
+                return accessInterface.cast(tenants().get(ids.getTenantId()).feedlessMetricTypes()
+                        .get(ids.getMetricTypeId()));
             }
 
             @Override
             public Single visitResource(Void parameter) {
-                Environments.Single env = tenants().get(path.ids().getTenantId()).environments()
-                        .get(path.ids().getEnvironmentId());
+                Tenants.Single tenant = tenants().get(ids.getTenantId());
 
                 @SuppressWarnings("ConstantConditions")
-                RelativePath parentResource = path.ids().getResourcePath().up();
+                RelativePath parentResource = ids.getResourcePath().up();
 
                 Resources.Single access;
 
-                if (path.ids().getFeedId() == null) {
+                if (ids.getFeedId() == null) {
+                    Environments.Single env = tenant.environments().get(ids.getEnvironmentId());
                     if (parentResource.isDefined()) {
-                        access = env.feedlessResources().descend(
-                                path.ids().getResourcePath().getPath().get(0).getElementId(),
+                        access = env.feedlessResources().descend(ids.getResourcePath().getPath().get(0).getElementId(),
                                 allResourceSegments(path, 1, 1)).get(path);
                     } else {
                         access = env.feedlessResources().get(path.getSegment().getElementId());
                     }
                 } else {
-                    Feeds.Single feed = env.feeds().get(path.ids().getFeedId());
+                    Feeds.Single feed = tenant.feeds().get(ids.getFeedId());
 
                     if (parentResource.isDefined()) {
-                        access = feed.resources().descend(path.ids().getResourcePath().getPath().get(0).getElementId(),
+                        access = feed.resources().descend(ids.getResourcePath().getPath().get(0).getElementId(),
                                 allResourceSegments(path, 1, 1)).get(path);
                     } else {
                         access = feed.resources().get(path.getSegment().getElementId());
@@ -364,22 +365,20 @@ public interface Inventory extends AutoCloseable {
 
             @Override
             public Single visitResourceType(Void parameter) {
-                Tenants.Single ten = tenants().get(path.ids().getTenantId());
-                return accessInterface.cast(path.ids().getFeedId() == null
-                        ? ten.feedlessResourceTypes().get(path.ids().getResourceTypeId())
-                        : ten.environments().get(path.ids().getEnvironmentId())
-                                .feeds().get(path.ids().getFeedId()).resourceTypes()
-                                .get(path.ids().getResourceTypeId()));
+                Tenants.Single ten = tenants().get(ids.getTenantId());
+                return accessInterface.cast(ids.getFeedId() == null
+                        ? ten.feedlessResourceTypes().get(ids.getResourceTypeId())
+                        : ten.feeds().get(ids.getFeedId()).resourceTypes()
+                        .get(ids.getResourceTypeId()));
             }
 
             @Override
             public Single visitRelationship(Void parameter) {
-                return accessInterface.cast(relationships().get(path.ids().getRelationshipId()));
+                return accessInterface.cast(relationships().get(ids.getRelationshipId()));
             }
 
             @Override
             public Single visitData(Void parameter) {
-                CanonicalPath.IdExtractor ids = path.ids();
                 String rt = ids.getResourceTypeId();
                 String ot = ids.getOperationTypeId();
 

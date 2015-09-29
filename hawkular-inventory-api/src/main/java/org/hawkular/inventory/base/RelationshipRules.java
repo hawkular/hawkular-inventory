@@ -20,6 +20,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 
 import java.util.ArrayList;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
@@ -59,6 +62,8 @@ public final class RelationshipRules {
         CREATE_RULES.put(contains, Arrays.asList(RelationshipRules::checkDiamonds, RelationshipRules::checkLoops));
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
         CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
+        CREATE_RULES.put(incorporates, Collections.singletonList
+                (RelationshipRules::disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
@@ -172,6 +177,26 @@ public final class RelationshipRules {
                     " also a '" + contains + "' relationship between the same two entities. This would mean that a" +
                     " sub-resource would no longer be considered a child of the parent resource, which doesn't make" +
                     " sense.");
+        }
+    }
+
+    private static <E>
+    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(InventoryBackend<E> backend,
+                                                                       E origin, Relationships.Direction direction,
+                                                                       String relationship, E target) {
+        if (!incorporates.name().equals(relationship)) {
+            return;
+        }
+
+        Class<?> originType = backend.extractType(origin);
+        Class<?> targetType = backend.extractType(target);
+
+        if (Environment.class.equals(originType) && Feed.class.equals(targetType) && backend.hasRelationship(target,
+                incoming, relationship)) {
+            throw new IllegalArgumentException("Relationship '" + relationship + "' between "
+                    + originType.getSimpleName() + " and " + targetType.getSimpleName() + " is 1:N." +
+                    " The target entity - " + backend.extractCanonicalPath(target) + " - is already a target of" +
+                    " another relationship of this name. Creating another would be illegal.");
         }
     }
 
