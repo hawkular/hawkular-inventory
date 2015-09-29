@@ -20,8 +20,8 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.configuration.Configuration;
 
 /**
  * This class produces the {@link Configuration} instance.

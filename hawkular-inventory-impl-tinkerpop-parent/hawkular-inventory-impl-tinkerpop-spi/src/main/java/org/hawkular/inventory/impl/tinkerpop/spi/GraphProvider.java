@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
-import org.hawkular.inventory.api.configuration.Configuration;
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 import com.tinkerpop.blueprints.TransactionalGraph;

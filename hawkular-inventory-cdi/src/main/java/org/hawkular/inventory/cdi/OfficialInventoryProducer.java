@@ -32,8 +32,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 

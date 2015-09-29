@@ -19,13 +19,13 @@ package org.hawkular.inventory.base;
 import java.io.InputStream;
 import java.util.Iterator;
 
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
-import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -67,8 +67,8 @@ public abstract class BaseInventory<E> implements Inventory {
      * @param backend           the backend
      * @param observableContext the observable context
      */
-    protected BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext,
-                            Configuration configuration) {
+    BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext,
+                  Configuration configuration) {
         this.backend = backend;
         this.observableContext = observableContext;
         this.configuration = configuration;

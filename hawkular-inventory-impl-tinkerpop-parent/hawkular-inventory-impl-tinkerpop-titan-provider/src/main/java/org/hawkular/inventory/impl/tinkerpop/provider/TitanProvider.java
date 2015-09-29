@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.commons.configuration.MapConfiguration;
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 

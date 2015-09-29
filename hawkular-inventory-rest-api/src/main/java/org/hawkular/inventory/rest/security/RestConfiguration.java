@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.hawkular.inventory.api.configuration.Configuration;
+import org.hawkular.inventory.api.Configuration;
 
 /**
  * @author Jirka Kremser

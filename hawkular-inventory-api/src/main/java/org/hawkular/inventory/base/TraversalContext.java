@@ -21,8 +21,8 @@ import static org.hawkular.inventory.api.filters.With.type;
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.configuration.Configuration;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
