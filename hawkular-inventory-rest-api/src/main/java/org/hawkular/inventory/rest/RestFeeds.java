@@ -105,7 +105,7 @@ public class RestFeeds extends RestBase {
             @ApiResponse(code = 404, message = "Environment or feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId) {
+    public Response get(@PathParam("feedId") String feedId) {
 
         String tenantId = getTenantId();
 

@@ -73,10 +73,10 @@ public class RestEnvironmentsFeeds extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response associateMetrics(@PathParam("environmentId") String environmentId,
-                                     @ApiParam("A list of paths to feeds to be associated with the environment. They" +
-                                             " can either be canonical or relative to the environment.")
-                                     Collection<String> feedPaths) {
+    public Response associateFeeds(@PathParam("environmentId") String environmentId,
+                                   @ApiParam("A list of paths to feeds to be associated with the environment. They" +
+                                           " can either be canonical or relative to the environment.")
+                                   Collection<String> feedPaths) {
 
         String tenantId = getTenantId();
 
@@ -105,7 +105,7 @@ public class RestEnvironmentsFeeds extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId, @Context UriInfo uriInfo) {
+    public Response getAssociatedFeeds(@PathParam("environmentId") String environmentId, @Context UriInfo uriInfo) {
         Page<Feed> ms = inventory.tenants().get(getTenantId()).feeds().getAll().entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
@@ -120,11 +120,12 @@ public class RestEnvironmentsFeeds extends RestBase {
                             " environment", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
-                                        @Encoded @PathParam("feedPath") String feedPath,
-                                        @QueryParam("canonical") @DefaultValue("false")
-                                        @ApiParam("True if feed path should be considered canonical, false by default.")
-                                        boolean isCanonical) {
+    public Response getAssociatedFeed(@PathParam("environmentId") String environmentId,
+                                      @Encoded @PathParam("feedPath") String feedPath,
+                                      @QueryParam("canonical") @DefaultValue("false")
+                                      @ApiParam(
+                                              "True if feed path should be considered canonical, false by default.")
+                                      boolean isCanonical) {
 
         String tenantId = getTenantId();
 
@@ -156,12 +157,12 @@ public class RestEnvironmentsFeeds extends RestBase {
                             "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response disassociateMetric(@PathParam("environmentId") String environmentId,
-                                       @Encoded @PathParam("feedPath") String feedPath,
-                                       @QueryParam("canonical") @DefaultValue("false")
-                                       @ApiParam(
-                                               "True if metric path should be considered canonical, false by default.")
-                                       boolean isCanonical) {
+    public Response disassociateFeed(@PathParam("environmentId") String environmentId,
+                                     @Encoded @PathParam("feedPath") String feedPath,
+                                     @QueryParam("canonical") @DefaultValue("false")
+                                     @ApiParam(
+                                             "True if metric path should be considered canonical, false by default.")
+                                     boolean isCanonical) {
 
         String tenantId = getTenantId();
 
