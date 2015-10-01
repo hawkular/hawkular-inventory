@@ -39,8 +39,8 @@ public interface Log extends BasicLogger {
     void wCannotReadConfigurationFile(String fileName, @Cause Throwable cause);
 
     @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 3501, value = "Inventory backend failed to initialize in an attempt %d of %d.")
-    void wInitializationFailure(int attempt, int maxAttempts);
+    @Message(id = 3501, value = "Inventory backend failed to initialize in an attempt %d of %d with message: %s.")
+    void wInitializationFailure(int attempt, int maxAttempts, String message);
 
     @LogMessage(level = Logger.Level.INFO)
     @Message(id = 3502, value = "Using inventory implementation: %s")
