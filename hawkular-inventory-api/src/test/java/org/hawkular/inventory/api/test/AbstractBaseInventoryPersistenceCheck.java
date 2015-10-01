@@ -1548,6 +1548,25 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
+    public void testAssociateEnvironmentWithFeeds() throws Exception {
+        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get(
+                RelativePath.to().up().feed("feed1").get()).exists());
+
+        inventory.tenants().get("com.acme.tenant").environments().create(
+                Environment.Blueprint.builder().withId("staging").build());
+
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().get("staging").feeds()
+                    .associate(RelativePath.to().up().feed("feed1").get());
+            Assert.fail("It should not be possible to associate a feed with more than 1 environment.");
+        } catch (IllegalArgumentException e) {
+            //good
+        } finally {
+            inventory.tenants().get("com.acme.tenant").environments().delete("staging");
+        }
+    }
+
+    @Test
     public void testCreationUnderNonExistentParentThrowsEntityNotFoundException() throws Exception {
         try {
             inventory.tenants().get("com.acme.tenant").feeds().get("no-feed")
