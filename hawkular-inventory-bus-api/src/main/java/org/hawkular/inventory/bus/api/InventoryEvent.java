@@ -23,7 +23,7 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
 
-import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.bus.common.AbstractMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -45,7 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends BasicMessage {
+public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends AbstractMessage {
 
     private Action.Enumerated action;
     private T object;
@@ -90,7 +90,7 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ba
     public static InventoryEvent<?> decode(Message message) {
         try {
             String body = ((TextMessage) message).getText();
-            return BasicMessage.fromJSON(body, determineEventType(message));
+            return AbstractMessage.fromJSON(body, determineEventType(message));
         } catch (JMSException e) {
             throw new IllegalArgumentException("Failed to decode inventory event.", e);
         }
