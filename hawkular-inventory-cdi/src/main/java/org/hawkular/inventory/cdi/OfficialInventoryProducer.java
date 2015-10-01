@@ -105,8 +105,8 @@ public class OfficialInventoryProducer {
 
                 initialized = true;
             } catch (Exception e) {
-                LOG.debugf("Unable to initialize inventory, exception thrown: ", e);
-                LOG.wInitializationFailure(failures, maxFailures);
+                LOG.debug("Unable to initialize inventory, exception thrown: ", e);
+                LOG.wInitializationFailure(failures, maxFailures, e.getMessage());
                 Thread.sleep(1000);
             }
         }
