@@ -222,7 +222,7 @@ public class BusTest {
             assertEquals("Should have received the message",
                     tenantReceivedMsg.getObject().getProperties().get(PROP_KEY), PROP_VALUE);
             assertNotNull(tenantReceivedMsg.getHeaders());
-            assertEquals(1, tenantReceivedMsg.getHeaders().size());
+            assertEquals(2, tenantReceivedMsg.getHeaders().size()); // the other one is bus api's own classname header
             assertEquals(PROP_VALUE, tenantReceivedMsg.getHeaders().get(PROP_KEY));
         } finally {
             // close everything
@@ -275,7 +275,7 @@ public class BusTest {
             assertEquals("Should have received the message",
                     metricReceivedMsg.getObject().getProperties().get(PROP_KEY), PROP_VALUE);
             assertNotNull(metricReceivedMsg.getHeaders());
-            assertEquals(1, metricReceivedMsg.getHeaders().size());
+            assertEquals(2, metricReceivedMsg.getHeaders().size()); // the other one is bus api's own classname header
             assertEquals(metricType.getType(), metricReceivedMsg.getObject().getType().getType());
             assertEquals(PROP_VALUE, metricReceivedMsg.getHeaders().get(PROP_KEY));
         } finally {
@@ -342,7 +342,7 @@ public class BusTest {
             testHeaders(consumerContext, TenantEvent.class,
                     () -> inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build()),
                     (headers) -> {
-                        assertThat(headers.size(), is(equalTo(3)));
+                        assertThat(headers.size(), is(equalTo(4))); // the 4th is the bus API's own classname header
                         assertThat(headers.get("path"), is(equalTo(CanonicalPath.of().tenant("t").get().toString())));
                         assertThat(headers.get("action"), is(equalTo(Action.Enumerated.CREATED.name())));
                         assertThat(headers.get("entityType"), is(equalTo("tenant")));
@@ -352,7 +352,7 @@ public class BusTest {
                     () -> inventory.tenants().get("t").feedlessResourceTypes().create(ResourceType.Blueprint.builder()
                             .withId("rt").build()),
                     (headers) -> {
-                        assertThat(headers.size(), is(equalTo(3)));
+                        assertThat(headers.size(), is(equalTo(4))); // the 4th is the bus API's own classname header
                         assertThat(headers.get("path"), is(equalTo(CanonicalPath.of().tenant("t")
                                 .resourceType("rt").get().toString())));
                         assertThat(headers.get("action"), is(equalTo(Action.Enumerated.CREATED.name())));
@@ -365,7 +365,7 @@ public class BusTest {
                             .create(DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
                                     .withRole(ResourceTypes.DataRole.configurationSchema).build()),
                     (headers) -> {
-                        assertThat(headers.size(), is(equalTo(4)));
+                        assertThat(headers.size(), is(equalTo(5))); // the 5th is the bus API's own classname header
                         assertThat(headers.get("path"), is(equalTo(CanonicalPath.of().tenant("t")
                                 .resourceType("rt").data(ResourceTypes.DataRole.configurationSchema).get()
                                 .toString())));

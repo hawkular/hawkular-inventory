@@ -53,7 +53,7 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.bus>0.5.0.Final</version.org.hawkular.bus>
+    <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
     <api-check-activated>true</api-check-activated>
   </properties>
 
