@@ -204,6 +204,31 @@ public final class Query {
         return new SymmetricExtender(asBuilder());
     }
 
+    @Override
+    public String toString() {
+        StringBuilder bld = new StringBuilder();
+        addToString(bld, 0);
+        return bld.toString();
+    }
+
+    private void addToString(StringBuilder bld, int indentation) {
+        indent(bld, indentation);
+        bld.append("Query[fragments=").append(Arrays.toString(fragments));
+        if (!subTrees.isEmpty()) {
+            bld.append("\n");
+            subTrees.forEach((s) -> s.indent(bld, indentation + 1));
+        }
+        bld.append("\n");
+        indent(bld, indentation);
+        bld.append("]");
+    }
+
+    private void indent(StringBuilder bld, int indentation) {
+        for (int i = 0; i < indentation; ++i) {
+            bld.append("  ");
+        }
+    }
+
     /**
      * A low-level builder able to create new branches in the query tree.
      */

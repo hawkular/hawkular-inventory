@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static com.tinkerpop.gremlin.java.GremlinFluentUtility.optimizePipelineForQuery;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -37,6 +39,13 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.QueryFragment;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+
+import com.tinkerpop.pipes.Pipe;
+import com.tinkerpop.pipes.filter.IntervalFilterPipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import com.tinkerpop.pipes.filter.RangeFilterPipe;
+import com.tinkerpop.pipes.transform.VertexQueryPipe;
+import com.tinkerpop.pipes.transform.VerticesEdgesPipe;
 
 /**
  * A filter applicator applies a filter to a Gremlin query.
@@ -143,24 +152,45 @@ abstract class FilterApplicator<T extends Filter> {
     @SuppressWarnings("unchecked")
     private static <S, E> boolean applyAll(Query query, HawkularPipeline<S, E> pipeline, boolean isFilter) {
 
+        HawkularPipeline<S, E> workingPipeline = new HawkularPipeline<>();
+
         for (QueryFragment qf : query.getFragments()) {
             boolean thisIsFilter = qf instanceof FilterFragment;
 
             if (thisIsFilter != isFilter) {
                 isFilter = thisIsFilter;
                 if (thisIsFilter) {
-                    pipeline.remember();
+                    //add the path progressions we had
+                    workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
                 } else {
-                    pipeline.recall();
+                    if (needsRememberingPosition(workingPipeline)) {
+                        pipeline.remember();
+
+                        //add the path progressions we had
+                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+
+                        pipeline.recall();
+                    } else {
+                        //add the path progressions we had
+                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+                    }
                 }
+                workingPipeline = new HawkularPipeline<>();
             }
 
-            FilterApplicator.of(qf.getFilter()).applyTo(pipeline);
+            FilterApplicator.of(qf.getFilter()).applyTo(workingPipeline);
         }
 
+        boolean remember = isFilter && needsRememberingPosition(workingPipeline);
+        if (remember) {
+            pipeline.remember();
+        }
+
+        //empty the working pipeline into the true pipeline
+        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
 
         if (query.getSubTrees().isEmpty()) {
-            return isFilter;
+            return remember;
         }
 
         if (query.getSubTrees().size() == 1) {
@@ -200,6 +230,26 @@ abstract class FilterApplicator<T extends Filter> {
             pipeline.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge();
 
             return isFilter;
+        }
+    }
+
+    private static boolean needsRememberingPosition(HawkularPipeline<?, ?> pipeline) {
+        for (Pipe<?, ?> p : pipeline.getPipes()) {
+            if (p instanceof VertexQueryPipe || p instanceof VerticesEdgesPipe) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void addOptimized(HawkularPipeline<?, ?> pipeline, Pipe<?, ?> pipe) {
+        if (pipe instanceof PropertyFilterPipe
+                || pipe instanceof IntervalFilterPipe
+                || pipe instanceof RangeFilterPipe) {
+            optimizePipelineForQuery(pipeline, pipe);
+        } else {
+            pipeline.add(pipe);
         }
     }
 

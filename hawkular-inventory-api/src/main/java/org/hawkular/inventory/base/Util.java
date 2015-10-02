@@ -72,6 +72,7 @@ final class Util {
     public static <R> R runInTransaction(TraversalContext<?, ?> context, boolean readOnly,
                                          PotentiallyCommittingPayload<R> payload) {
         InventoryBackend.Transaction transaction = context.backend.startTransaction(!readOnly);
+        Log.LOGGER.trace("Starting transaction: " + transaction);
         int maxFailures = context.getTransactionRetriesCount();
         return commitOrRetry(transaction, context.backend, payload, payload, maxFailures, true);
     }

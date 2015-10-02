@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
@@ -30,8 +31,7 @@ import org.jboss.logging.annotations.ValidIdRange;
  * @author Heiko W. Rupp
  */
 @MessageLogger(projectCode = "HAWKINV")
-@ValidIdRange(min = 1000, max = 1999)
-interface Log {
+@ValidIdRange(min = 1000, max = 1999) interface Log extends BasicLogger {
 
     Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.impl.tinkerpop");
 

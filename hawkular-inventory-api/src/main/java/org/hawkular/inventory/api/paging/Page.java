@@ -24,6 +24,8 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.hawkular.inventory.api.Log;
+
 /**
  * A read-only list representing a single page of some results.
  *
@@ -83,6 +85,7 @@ public class Page<T> implements Iterator<T>, AutoCloseable, Iterable<T> {
         if (wrapped == null) {
             throw new IllegalStateException("the iterator has been already closed");
         }
+        Log.LOGGER.trace("Page: Obtaining next element from the wrapped iterator.");
         return wrapped.next();
     }
 
