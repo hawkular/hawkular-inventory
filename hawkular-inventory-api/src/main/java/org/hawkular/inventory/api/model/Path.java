@@ -690,7 +690,9 @@ public abstract class Path {
          * @return true if the path can be extended with the provided segment, false otherwise.
          */
         public boolean canExtendTo(Segment segment) {
-            switch (checkCanProgress(segment.elementType, Objects.equals(segment, segments.get(checkIndex)))) {
+            boolean idMatches = checkIndex >= 0 && checkIndex < segments.size() &&
+                    Objects.equals(segment, segments.get(checkIndex));
+            switch (checkCanProgress(segment.elementType, idMatches)) {
                 case PROCEED:
                 case CLEAR_SEGMENTS_AND_JUMP_TO_END:
                 case JUMP_TO_END:

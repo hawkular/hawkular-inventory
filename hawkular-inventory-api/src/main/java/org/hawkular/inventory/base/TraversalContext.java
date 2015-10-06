@@ -83,18 +83,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
                      InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                      ObservableContext observableContext) {
-        this.inventory = inventory;
-        this.sourcePath = sourcePath;
-        this.selectCandidates = selectCandidates;
-        this.backend = backend;
-        this.entityClass = entityClass;
-        this.configuration = configuration;
-        this.observableContext = observableContext;
-        this.previous = null;
-
-        String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "5");
-
-        transactionRetries = Integer.parseInt(retries);
+        this(inventory, sourcePath, selectCandidates, backend, entityClass, configuration, observableContext,
+                getTransactionRetries(configuration), null);
     }
 
     private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
@@ -111,6 +101,11 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.observableContext = observableContext;
         this.transactionRetries = transactionRetries;
         this.previous = previous;
+    }
+
+    private static int getTransactionRetries(Configuration configuration) {
+        String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "5");
+        return Integer.parseInt(retries);
     }
 
     /**
