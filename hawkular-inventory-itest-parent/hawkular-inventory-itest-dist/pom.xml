@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.hawkular.inventory</groupId>
+    <artifactId>hawkular-inventory-itest-parent</artifactId>
+    <version>0.6.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hawkular-inventory-itest-dist</artifactId>
+
+  <properties>
+    <kettle.build.type>production</kettle.build.type>
+    <assembly.dir>${project.build.directory}/assembly</assembly.dir>
+    <wildfly.dist.zip.root.dir>wildfly-${version.org.wildfly}</wildfly.dist.zip.root.dir>
+    <hawkular.dist.zip.root.dir>${project.artifactId}-${project.version}</hawkular.dist.zip.root.dir>
+  </properties>
+
+  <build>
+    <plugins>
+      <!-- skip tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-itest</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- test dist dependencies -->
+    <dependency>
+      <groupId>org.hawkular.bus</groupId>
+      <artifactId>hawkular-bus-broker-wf-extension</artifactId>
+      <version>${test-dist-version.org.hawkular.bus}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.bus</groupId>
+      <artifactId>hawkular-bus-ra-wf-module</artifactId>
+      <version>${test-dist-version.org.hawkular.bus}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.nest</groupId>
+      <artifactId>hawkular-nest-wf-extension</artifactId>
+      <version>${test-dist-version.org.hawkular.bus}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-dist</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-commons-embedded-cassandra-ear</artifactId>
+      <version>${test-dist-version.org.hawkular.commons}</version>
+      <type>ear</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.accounts</groupId>
+      <artifactId>hawkular-accounts</artifactId>
+      <version>${test-dist-version.org.hawkular.accounts}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-dist</artifactId>
+      <version>${version.org.wildfly}</version>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>jaxen</groupId>
+          <artifactId>jaxen</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.transaction</groupId>
+          <artifactId>jta</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Keycloak-related dependencies -->
+    <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-wf9-modules</artifactId>
+      <version>${test-dist-version.org.keycloak}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.accounts</groupId>
+      <artifactId>hawkular-accounts-keycloak-theme</artifactId>
+      <version>${test-dist-version.org.hawkular.accounts}</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.accounts</groupId>
+      <artifactId>hawkular-accounts-keycloak-event-listener-jms</artifactId>
+      <version>${test-dist-version.org.hawkular.accounts}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.accounts</groupId>
+      <artifactId>hawkular-accounts-keycloak-event-listener-rest</artifactId>
+      <version>${test-dist-version.org.hawkular.accounts}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>itest</id>
+
+      <properties>
+        <kettle.build.type>dev</kettle.build.type>
+
+        <!-- hawkular dist properties -->
+        <hawkular.agent.itest.run.dir>${project.build.directory}/hawkular-agent-itest-dist</hawkular.agent.itest.run.dir>
+        <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
+        <hawkular.agent.itest.mgmt.password>JGM4-74rK</hawkular.agent.itest.mgmt.password>
+        <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
+        <hawkular.port.offset>0</hawkular.port.offset>
+        <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
+        <hawkular.management.port>9990</hawkular.management.port>
+        <hawkular.agent.enabled>false</hawkular.agent.enabled>
+        <hawkular.log>INFO</hawkular.log>
+        <hawkular.log.accounts>INFO</hawkular.log.accounts>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.alerts>INFO</hawkular.log.alerts>
+        <hawkular.log.bus>INFO</hawkular.log.bus>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
+        <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
+        <hawkular.log.pinger>INFO</hawkular.log.pinger>
+        <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <hawkular.log.metrics>INFO</hawkular.log.metrics>
+        <hawkular.log.nest>INFO</hawkular.log.nest>
+        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
+        <hawkular.log.liquibase>WARN</hawkular.log.liquibase>
+        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
+        <hawkular.log.ejb3>WARN</hawkular.log.ejb3>
+        <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
+        <http.log>ERROR</http.log>
+        <http.log.wire>WARN</http.log.wire>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.keycloak</groupId>
+                      <artifactId>keycloak-server-overlay</artifactId>
+                      <type>zip</type>
+                      <version>${test-dist-version.org.keycloak}</version>
+                      <outputDirectory>${project.build.directory}/keycloak</outputDirectory>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.keycloak</groupId>
+                      <artifactId>keycloak-wf9-modules</artifactId>
+                      <type>zip</type>
+                      <outputDirectory>${project.build.directory}/keycloak/modules/system/layers/base</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+              <execution>
+                <id>unpack-wildfly</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/wildfly</outputDirectory>
+                  <includeArtifactIds>wildfly-dist</includeArtifactIds>
+                  <!-- In */domain, we remove everything except for /configuration/*.properties that are need because of
+                    HAWKULAR-430 -->
+                  <excludes>*/appclient/**,*/docs/**,*/domain/data/**,*/domain/tmp/**,*/domain/configuration/*.xml</excludes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-hawkular-modules</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/hawkular-modules</outputDirectory>
+                  <includeArtifactIds>
+                    hawkular-nest-wf-extension,
+                    hawkular-bus-broker-wf-extension,
+                  </includeArtifactIds>
+                  <stripVersion>true</stripVersion>
+                  <stripClassifier>true</stripClassifier>
+                  <overWriteIfNew>true</overWriteIfNew>
+                  <excludeTransitive>true</excludeTransitive>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>unpack-tests</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.inventory</groupId>
+                      <artifactId>hawkular-inventory-itest</artifactId>
+                      <version>${project.version}</version>
+                      <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- install our hawkular extension modules and customize standalone.xml -->
+          <plugin>
+            <groupId>org.wildfly.plugins</groupId>
+            <artifactId>wildfly-extension-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>install-bus-broker-module</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>deploy</goal>
+                </goals>
+                <configuration>
+                  <jbossHome>${project.build.directory}/wildfly/${wildfly.dist.zip.root.dir}</jbossHome>
+                  <serverConfig>standalone/configuration/standalone.xml</serverConfig>
+                  <!-- we do not care about this backup, so put it somewhere so it won't overwrite first backup -->
+                  <serverConfigBackup>${project.build.directory}/standalone.xml.out</serverConfigBackup>
+                  <modulesHome>modules</modulesHome>
+                  <moduleZip>${project.build.directory}/hawkular-modules/hawkular-bus-broker-wf-extension.zip</moduleZip>
+                  <subsystem>${basedir}/src/main/resources/wildfly/snippets/subsystem-hawkular-bus-broker-wf-extension.xml</subsystem>
+                  <socketBinding>${basedir}/src/main/resources/wildfly/snippets/socketbinding-hawkular-bus-broker-wf-extension.xml</socketBinding>
+                  <edit>
+                    <insert>
+                      <select>/server/socket-binding-group[@name='standard-sockets']</select>
+                      <xml><![CDATA[<socket-binding name="org.hawkular.bus.broker.discovery" port="0" multicast-address="224.0.0.4" multicast-port="63636" />]]></xml>
+                      <attribute>name</attribute>
+                    </insert>
+                  </edit>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-nest-module</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>deploy</goal>
+                </goals>
+                <configuration>
+                  <jbossHome>${project.build.directory}/wildfly/${wildfly.dist.zip.root.dir}</jbossHome>
+                  <serverConfig>standalone/configuration/standalone.xml</serverConfig>
+                  <!-- we do not care about this backup, so put it somewhere so it won't overwrite first backup -->
+                  <serverConfigBackup>${project.build.directory}/standalone.xml.out</serverConfigBackup>
+                  <modulesHome>modules</modulesHome>
+                  <moduleZip>${project.build.directory}/hawkular-modules/hawkular-nest-wf-extension.zip</moduleZip>
+                  <subsystem>${basedir}/src/main/resources/wildfly/snippets/subsystem-hawkular-nest-wf-extension.xml</subsystem>
+                  <socketBinding>${basedir}/src/main/resources/wildfly/snippets/socketbinding-hawkular-bus-broker-wf-extension.xml</socketBinding>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- further customize standalone.xml -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>xml-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>transform-standalone-xml</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>transform</goal>
+                </goals>
+                <configuration>
+                  <transformationSets>
+                    <!-- standalone.xml -->
+                    <transformationSet>
+                      <dir>${project.build.directory}/wildfly/${wildfly.dist.zip.root.dir}/standalone/configuration</dir>
+                      <stylesheet>src/main/resources/wildfly/patches/standalone.xsl</stylesheet>
+                      <includes>
+                        <include>standalone.xml</include>
+                      </includes>
+                      <outputDir>${assembly.dir}/${hawkular.dist.zip.root.dir}/standalone/configuration</outputDir>
+                      <parameters>
+                        <parameter>
+                          <name>kettle.build.type</name>
+                          <value>${kettle.build.type}</value>
+                        </parameter>
+                        <parameter>
+                          <name>uuid.hawkular.accounts.backend</name>
+                          <value>${uuid.hawkular.accounts.backend}</value>
+                        </parameter>
+                      </parameters>
+                    </transformationSet>
+                    <!-- standalone-itest.xml -->
+                    <transformationSet>
+                      <dir>${project.build.directory}/wildfly/${wildfly.dist.zip.root.dir}/standalone/configuration</dir>
+                      <stylesheet>src/main/resources/wildfly/patches/standalone.xsl</stylesheet>
+                      <fileMappers>
+                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                          <pattern>\.xml$</pattern>
+                          <replacement>-itest.xml</replacement>
+                        </fileMapper>
+                      </fileMappers>
+                      <includes>
+                        <include>standalone.xml</include>
+                      </includes>
+                      <outputDir>${assembly.dir}/${hawkular.dist.zip.root.dir}/standalone/configuration</outputDir>
+                      <parameters>
+                        <parameter>
+                          <name>kettle.build.type</name>
+                          <value>dev</value>
+                        </parameter>
+                        <parameter>
+                          <name>uuid.hawkular.accounts.backend</name>
+                          <value>${uuid.hawkular.accounts.backend}</value>
+                        </parameter>
+                      </parameters>
+                    </transformationSet>
+                  </transformationSets>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <executions>
+              <execution>
+                <id>distro-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Generate some keys for Keycloak integration, so that we don't ship with default credentials -->
+          <plugin>
+            <groupId>org.codehaus.gmaven</groupId>
+            <artifactId>gmaven-plugin</artifactId>
+            <version>1.5</version>
+            <configuration>
+              <providerSelection>1.8</providerSelection>
+            </configuration>
+            <executions>
+              <execution>
+                <id>set-custom-property</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+                <configuration>
+                  <source>
+                    import java.util.UUID
+                    def uuidBackend = UUID.randomUUID().toString()
+                    def uuidUi = UUID.randomUUID().toString()
+                    project.properties.setProperty('uuid.hawkular.accounts.backend', uuidBackend.toString())
+                    project.properties.setProperty('uuid.hawkular.ui', uuidUi.toString())
+                  </source>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+
+          <!-- Start WildFly and run integration tests -->
+          <plugin>
+            <groupId>org.wildfly.plugins</groupId>
+            <artifactId>wildfly-maven-plugin</artifactId>
+            <configuration>
+              <jboss-home>${project.build.directory}/${hawkular.dist.zip.root.dir}/${hawkular.dist.zip.root.dir}</jboss-home>
+              <skip>${skipTests}</skip>
+              <startupTimeout>240</startupTimeout>
+              <port>${hawkular.management.port}</port>
+              <javaOpts>
+                <javaOpt>-server</javaOpt>
+                <javaOpt>-Xms64m</javaOpt>
+                <javaOpt>-Xmx512m</javaOpt>
+                <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
+                <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
+                <javaOpt>-Djava.awt.headless=true</javaOpt>
+                <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
+                <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
+                <javaOpt>-Dhawkular.agent.enabled=${hawkular.agent.enabled}</javaOpt>
+                <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
+                <javaOpt>-Dhawkular.log.accounts=${hawkular.log.accounts}</javaOpt>
+                <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
+                <javaOpt>-Dhawkular.log.alerts=${hawkular.log.alerts}</javaOpt>
+                <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
+                <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
+                <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
+                <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
+                <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
+                <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
+                <javaOpt>-Dhawkular.log.liquibase=${hawkular.log.liquibase}</javaOpt>
+                <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
+                <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <!--<javaOpt>-Xdebug</javaOpt>-->
+                <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
+              </javaOpts>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start-wildfly</id>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <server-config>standalone-itest.xml</server-config>
+                </configuration>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-wildfly</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>shutdown</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- if this is used maven reports always SUCCESS even if tests failed -->
+              <!-- see https://stackoverflow.com/questions/16797601/maven-failsafe-plugin-errors-and-build-success -->
+              <!--<dependenciesToScan>-->
+              <!--<dependency>org.hawkular.inventory:hawkular-inventory-itest</dependency>-->
+              <!--</dependenciesToScan>-->
+              <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
+
+              <includes>
+                <include>**/*ITest*</include>
+              </includes>
+
+              <systemPropertyVariables>
+                <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
+                <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
+
+                <!--output over-the-wire traffic-->
+                <org.apache.commons.logging.Log>
+                  org.apache.commons.logging.impl.SimpleLog
+                </org.apache.commons.logging.Log>
+                <org.apache.commons.logging.simplelog.log.org.apache.http>
+                  ${http.log}
+                </org.apache.commons.logging.simplelog.log.org.apache.http>
+                <org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                  ${http.log.wire}
+                </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+              </systemPropertyVariables>
+              <!--<argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y</argLine>-->
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
