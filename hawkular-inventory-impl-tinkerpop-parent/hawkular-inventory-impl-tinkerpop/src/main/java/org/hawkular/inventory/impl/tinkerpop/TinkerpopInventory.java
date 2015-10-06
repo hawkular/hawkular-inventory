@@ -24,6 +24,7 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
@@ -74,7 +75,7 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withProperty(IndexSpec.Property.builder()
                                 .withName(Constants.Property.__eid.name())
                                 .withType(String.class)
-                                .withUnique(true)
+//                                .withUnique(true)
                                 .build())
                         .build(),
                 IndexSpec.builder()
@@ -106,6 +107,14 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                                 .withName(Constants.Property.__metric_data_type.name())
                                 .withType(String.class)
 //                                .withUnique(true)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__eid.name())
+                                .withType(String.class)
+                                .withUnique(true)
                                 .build())
                         .build());
         return graph;
