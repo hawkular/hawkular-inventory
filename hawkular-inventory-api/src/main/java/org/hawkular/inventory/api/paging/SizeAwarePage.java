@@ -50,7 +50,7 @@ public class SizeAwarePage<T> extends Page<T> {
     @Override
     public long getTotalSize() {
         if (totalSize == HasTotalSize.NOT_DEPLETED && !hasNext()) {
-            totalSize = hasTotalSize.getTotalSize();
+            totalSize = hasTotalSize == null ? HasTotalSize.NOT_DEPLETED : hasTotalSize.getTotalSize();
         }
         return totalSize;
     }
