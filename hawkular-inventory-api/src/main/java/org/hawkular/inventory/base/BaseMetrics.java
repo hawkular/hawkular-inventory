@@ -75,7 +75,10 @@ public final class BaseMetrics {
                         "' not found in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
             }
 
-            BE r = relate(metricTypeObject, entity, defines.name());
+            //specifically do NOT check relationship rules, here because defines cannot be created "manually".
+            //here we "know what we are doing" and need to create the defines relationship to capture the
+            //contract of the metric.
+            BE r = context.backend.relate(metricTypeObject, entity, defines.name(), null);
 
             CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
 

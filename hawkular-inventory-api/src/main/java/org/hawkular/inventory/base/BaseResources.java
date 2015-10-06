@@ -83,7 +83,10 @@ public final class BaseResources {
                         " when resolved to '" + resourceTypePath + "'.");
             }
 
-            BE r = relate(resourceTypeObject, entity, defines.name());
+            //specifically do NOT check relationship rules, here because defines cannot be created "manually".
+            //here we "know what we are doing" and need to create the defines relationship to capture the
+            //contract of the resource.
+            BE r = context.backend.relate(resourceTypeObject, entity, defines.name(), null);
 
             CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
             resourceTypePath = context.backend.extractCanonicalPath(resourceTypeObject);
@@ -101,6 +104,8 @@ public final class BaseResources {
 
             if (context.backend.extractType(parent).equals(Resource.class)) {
                 //we're creating a child resource... need to also create the implicit isParentOf
+                //in here, we do use the relationship rules to check if the hierarchy we're introducing by this call
+                //conforms to the rules.
                 r = relate(parent, entity, isParentOf.name());
 
                 Relationship parentRel = new Relationship(context.backend.extractId(r), isParentOf.name(),
