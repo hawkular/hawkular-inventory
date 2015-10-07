@@ -119,12 +119,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         q.counter("total").page(pager);
 
-        Log.LOG.trace("Converted query: " + query + " to pipeline: " + q);
+        Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
+
         return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
     }
 
     @Override public Element traverseToSingle(Element startingPoint, Query query) {
         HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
+        Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
         if (q.hasNext()) {
             return q.cast(Element.class).next();
         }
@@ -211,6 +213,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                         }
                     });
         }
+
+        Log.LOG.debugf("Query execution:\nquery:\n%s\n\npipeline:\n%s", query, q2);
 
         return new SizeAwarePage<>(q2.iterator(), pager, () -> q.getCount("total"));
     }
