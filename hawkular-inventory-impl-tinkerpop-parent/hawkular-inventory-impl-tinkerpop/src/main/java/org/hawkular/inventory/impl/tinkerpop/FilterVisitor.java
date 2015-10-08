@@ -18,6 +18,15 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__cp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__eid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__type;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -34,6 +43,7 @@ import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.PropertyFilterPipe;
@@ -46,27 +56,57 @@ import com.tinkerpop.pipes.util.Pipeline;
  */
 class FilterVisitor {
 
-    public void visit(HawkularPipeline<?, ?> query, Related related) {
+    public void visit(HawkularPipeline<?, ?> query, Related related, QueryTranslationState state) {
+        if (state.isInEdges()) {
+            //jump to vertices
+            switch (state.getComingFrom()) {
+                case OUT:
+                    query.inV();
+                    break;
+                case IN:
+                    query.outV();
+                    break;
+                case BOTH:
+                    query.bothV();
+            }
+        }
+
+        boolean applied = false;
         switch (related.getEntityRole()) {
             case TARGET:
                 if (null != related.getRelationshipName()) {
-                    query.in(related.getRelationshipName());
+                    state.setInEdges(true);
+                    state.setComingFrom(Direction.IN);
+                    query.inE(related.getRelationshipName());
+                    applied = true;
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.inE().hasEid(related.getRelationshipId()).inV();
+                    if (applied) {
+                        query.hasEid(related.getRelationshipId());
+                    } else {
+                        query.inE().hasEid(related.getRelationshipId());
+                    }
                 }
                 break;
             case SOURCE:
                 if (null != related.getRelationshipName()) {
-                    query.out(related.getRelationshipName());
+                    state.setInEdges(true);
+                    state.setComingFrom(Direction.OUT);
+                    query.outE(related.getRelationshipName());
+                    applied = true;
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.outE().hasEid(related.getRelationshipId()).outV();
+                    if (applied) {
+                        query.hasEid(related.getRelationshipId());
+                    } else {
+                        query.outE().hasEid(related.getRelationshipId());
+                    }
                 }
                 break;
             case ANY:
+                // TODO properties-on-edges optimization not implemented for direction "both"
                 if (null != related.getRelationshipName()) {
                     query.both(related.getRelationshipName());
                 }
@@ -77,31 +117,38 @@ class FilterVisitor {
         }
 
         if (related.getEntityPath() != null) {
-            query.hasCanonicalPath(related.getEntityPath());
+            String prop = chooseBasedOnDirection(Constants.Property.__cp, Constants.Property.__targetCp, Constants
+                    .Property.__sourceCp, TinkerpopBackend.asDirection(related.getEntityRole())).name();
+            query.has(prop, related.getEntityPath().toString());
         }
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.Ids ids) {
+    public void visit(HawkularPipeline<?, ?> query, With.Ids ids, QueryTranslationState state) {
+        String prop = propertyNameBasedOnState(__eid, state);
+
         if (ids.getIds().length == 1) {
-            query.has(Constants.Property.__eid.name(), ids.getIds()[0]);
+            query.has(prop, ids.getIds()[0]);
             return;
         }
 
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
-                        ids.getIds()[i]));
+                new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, ids.getIds()[i]));
 
         query.or(idChecks);
+
+        goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.Types types) {
+    public void visit(HawkularPipeline<?, ?> query, With.Types types, QueryTranslationState state) {
+        String prop = propertyNameBasedOnState(__type, state);
+
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            query.has(Constants.Property.__type.name(), type.name());
+            query.has(prop, type.name());
             return;
         }
 
@@ -109,15 +156,16 @@ class FilterVisitor {
 
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
-                    type.name());
+            return new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, type.name());
         });
 
         query.or(typeChecks);
+
+        goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids, QueryTranslationState state) {
         if (ids.getIds().length == 1) {
             query.hasEid(ids.getIds()[0]);
             return;
@@ -126,57 +174,65 @@ class FilterVisitor {
         Pipe[] idChecks = new Pipe[ids.getIds().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.__eid.name(), Compare.EQUAL,
+                new PropertyFilterPipe<Element, String>(__eid.name(), Compare.EQUAL,
                         ids.getIds()[i]));
 
         query.or(idChecks);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.PropertyValues properties) {
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.PropertyValues properties,
+                      QueryTranslationState state) {
         applyPropertyFilter(query, properties.getProperty(), properties.getValues());
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types) {
-        visit(query, types, true);
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types, QueryTranslationState state) {
+        visit(query, types, true, state);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types) {
-        visit(query, types, false);
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types, QueryTranslationState state) {
+        visit(query, types, false, state);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types) {
-        visit(query, types, null);
+    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types,
+                      QueryTranslationState state) {
+        visit(query, types, null, state);
     }
 
     @SuppressWarnings("unchecked")
-    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source) {
-        // look ahead if the type of the incidence vertex is of the desired type(s)
-        HawkularPipeline<?, ?> q1 = query.remember();
-        HawkularPipeline<?, ?> q2;
+    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source,
+                       QueryTranslationState state) {
+
+        String prop;
         if (source == null) {
-            q2 = q1.bothV();
+            query.remember().bothV();
+            prop = __type.name();
         } else if (source) {
-            q2 = q1.outV();
+            prop = __sourceType.name();
         } else {
-            q2 = q1.inV();
+            prop = __targetType.name();
         }
+
+        // look ahead if the type of the incidence vertex is of the desired type(s)
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            q2.has(Constants.Property.__type.name(), type.name()).recall();
-            return;
+            query.has(prop, type.name());
+        } else {
+            Pipe[] typeChecks = new Pipe[types.getTypes().length];
+            Arrays.setAll(typeChecks, i -> {
+                Constants.Type type = Constants.Type.of(types.getTypes()[i]);
+                return new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL,
+                        type.name());
+            });
+
+            query.or(typeChecks);
         }
 
-        Pipe[] typeChecks = new Pipe[types.getTypes().length];
-        Arrays.setAll(typeChecks, i -> {
-            Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(Constants.Property.__type.name(), Compare.EQUAL,
-                    type.name());
-        });
-
-        q2.or(typeChecks).recall();
+        if (source == null) {
+            query.recall();
+        }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, SwitchElementType filter) {
+    public void visit(HawkularPipeline<?, ?> query, SwitchElementType filter, QueryTranslationState state) {
         final boolean jumpFromEdge = filter.isFromEdge();
         switch (filter.getDirection()) {
             case incoming:
@@ -203,12 +259,23 @@ class FilterVisitor {
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, NoopFilter filter) {
+    public void visit(HawkularPipeline<?, ?> query, NoopFilter filter, QueryTranslationState state) {
         //nothing to do
     }
 
-    public void visit(HawkularPipeline<?, ?> query, With.PropertyValues filter) {
+    public void visit(HawkularPipeline<?, ?> query, With.PropertyValues filter, QueryTranslationState state) {
+        //if the property is mirrored, we check for its value directly at the edge and only move to the target
+        //vertex afterwards. If it is not mirrored, we first move to the target vertex and then filter by the property
+        boolean propertyMirrored = Constants.Property.isMirroredInEdges(filter.getName());
+        if (!propertyMirrored) {
+            goBackFromEdges(query, state);
+        }
+
         applyPropertyFilter(query, filter.getName(), filter.getValues());
+
+        if (propertyMirrored) {
+            goBackFromEdges(query, state);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -227,23 +294,29 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter) {
+    public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter, QueryTranslationState state) {
+        String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
+
         if (filter.getPaths().length == 1) {
-            query.has(Constants.Property.__cp.name(), filter.getPaths()[0].toString());
+            query.has(prop, filter.getPaths()[0].toString());
             return;
         }
 
         Pipe[] idChecks = new Pipe[filter.getPaths().length];
 
         Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(Constants.Property.__cp.name(), Compare.EQUAL,
+                new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL,
                         filter.getPaths()[i].toString()));
 
         query.or(idChecks);
+
+        goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public <E> void visit(HawkularPipeline<?, E> query, With.RelativePaths filter) {
+    public <E> void visit(HawkularPipeline<?, E> query, With.RelativePaths filter, QueryTranslationState state) {
+        goBackFromEdges(query, state);
+
         String label = filter.getMarkerLabel();
 
         Set<E> seen = new HashSet<>();
@@ -287,12 +360,14 @@ class FilterVisitor {
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, Marker filter) {
+    public void visit(HawkularPipeline<?, ?> query, Marker filter, QueryTranslationState state) {
+        goBackFromEdges(query, state);
         query._().as(filter.getLabel());
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.DataAt dataPos) {
+    public void visit(HawkularPipeline<?, ?> query, With.DataAt dataPos, QueryTranslationState state) {
+        goBackFromEdges(query, state);
         query.out(hasData);
         for (Path.Segment seg : dataPos.getDataPath().getPath()) {
             if (RelativePath.Up.class.equals(seg.getElementType())) {
@@ -323,12 +398,14 @@ class FilterVisitor {
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, With.DataValued dataValue) {
+    public void visit(HawkularPipeline<?, ?> query, With.DataValued dataValue, QueryTranslationState state) {
+        goBackFromEdges(query, state);
         query.has(Constants.Property.__structuredDataValue.name(), dataValue.getValue());
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.DataOfTypes dataTypes) {
+    public void visit(HawkularPipeline<?, ?> query, With.DataOfTypes dataTypes, QueryTranslationState state) {
+        goBackFromEdges(query, state);
         if (dataTypes.getTypes().length == 1) {
             query.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[0].name());
             return;
@@ -383,5 +460,51 @@ class FilterVisitor {
         }
 
         return result;
+    }
+
+    private static String propertyNameBasedOnState(Constants.Property prop, QueryTranslationState state) {
+        if (!state.isInEdges()) {
+            return prop.name();
+        }
+        switch (prop) {
+            case __cp:
+                return chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
+            case __eid:
+                return chooseBasedOnDirection(__eid, __targetEid, __sourceEid, state.getComingFrom()).name();
+            case __type:
+                return chooseBasedOnDirection(__type, __targetType, __sourceType, state.getComingFrom()).name();
+            default:
+                return prop.name();
+        }
+    }
+
+    private static <T> T chooseBasedOnDirection(T defaultvalue, T inValue, T outValue, Direction direction) {
+        if (direction == null) {
+            return defaultvalue;
+        }
+
+        switch (direction) {
+            case IN:
+                return outValue;
+            case OUT:
+                return inValue;
+            default:
+                throw new IllegalStateException("Properties-on-edges optimization cannot be applied when " +
+                        "following both directions. This is probably a bug in the query translation.");
+        }
+    }
+
+    private static void goBackFromEdges(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        if (state.isInEdges()) {
+            switch (state.getComingFrom()) {
+                case IN:
+                    query.outV();
+                    break;
+                case OUT:
+                    query.inV();
+            }
+            state.setInEdges(false);
+            state.setComingFrom(null);
+        }
     }
 }

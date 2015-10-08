@@ -106,7 +106,6 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withProperty(IndexSpec.Property.builder()
                                 .withName(Constants.Property.__metric_data_type.name())
                                 .withType(String.class)
-//                                .withUnique(true)
                                 .build())
                         .build(),
                 IndexSpec.builder()
@@ -115,6 +114,48 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                                 .withName(Constants.Property.__eid.name())
                                 .withType(String.class)
                                 .withUnique(true)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceCp.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceEid.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceType.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetCp.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetEid.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetType.name())
+                                .withType(String.class)
                                 .build())
                         .build());
         return graph;
