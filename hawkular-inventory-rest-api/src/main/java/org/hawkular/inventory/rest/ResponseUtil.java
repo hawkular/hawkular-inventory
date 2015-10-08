@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -77,16 +78,19 @@ final class ResponseUtil {
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
                                                              ObjectMapper mapper, Page<T> page) {
-        //extract the data out of the page
         InputStream data = null;
         try {
-            data = pageToStream(page, mapper);
+            //extract the data out of the page
+            data = pageToStream(page, mapper, () -> {
+                // the page iterator should be depleted by this time so the total size should be correctly set
+                response.type(MediaType.APPLICATION_OCTET_STREAM_TYPE);
+                createPagingHeader(response, uriInfo, page);
+            });
         } catch (IOException e) {
             Log.LOG.error(e);
         }
-
-        // the page iterator should be depleted by this time so the total size should be correctly set
-        return pagedResponse(response, uriInfo, page, data);
+        response.entity(data);
+        return response;
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
@@ -96,7 +100,8 @@ final class ResponseUtil {
         return response;
     }
 
-    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper) throws IOException {
+    private static <T> InputStream pageToStream(Page<T> page, ObjectMapper mapper, Runnable callback) throws
+            IOException {
         final PipedOutputStream outs = new PipedOutputStream();
         final PipedInputStream ins = new PipedInputStream() {
             @Override public void close() throws IOException {
@@ -117,6 +122,8 @@ final class ResponseUtil {
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to convert page to input stream.", e);
+            } finally {
+                callback.run();
             }
         });
         return ins;
