@@ -16,25 +16,15 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.filters.With.id;
-import static org.hawkular.inventory.api.filters.With.type;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.NoopFilter;
 
 /**
@@ -120,28 +110,7 @@ public final class Query {
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     public static Query to(CanonicalPath entity) {
-        SymmetricExtender bld = Query.path();
-
-        Iterator<CanonicalPath.Segment> it = entity.getPath().iterator();
-
-        if (it.hasNext()) {
-            CanonicalPath.Segment s = it.next();
-            if (Relationship.class.equals(s.getElementType())) {
-                bld.with(RelationWith.id(s.getElementId()));
-                //early return - no further querying needed for relationships
-                return bld.get();
-            } else {
-                bld.with(type((Class<? extends Entity<?, ?>>) s.getElementType()), id(s.getElementId()));
-            }
-        }
-
-        while (it.hasNext()) {
-            CanonicalPath.Segment s = it.next();
-            bld.with(Related.by(contains), type((Class<? extends Entity<?, ?>>) s.getElementType()),
-                    id(s.getElementId()));
-        }
-
-        return bld.get();
+        return Query.path().with(With.path(entity)).get();
     }
 
     /**
@@ -204,6 +173,31 @@ public final class Query {
         return new SymmetricExtender(asBuilder());
     }
 
+    @Override
+    public String toString() {
+        StringBuilder bld = new StringBuilder();
+        addToString(bld, 0);
+        return bld.toString();
+    }
+
+    private void addToString(StringBuilder bld, int indentation) {
+        indent(bld, indentation);
+        bld.append("Query[fragments=").append(Arrays.toString(fragments));
+        if (!subTrees.isEmpty()) {
+            bld.append("\n");
+            subTrees.forEach((s) -> s.indent(bld, indentation + 1));
+        }
+        bld.append("\n");
+        indent(bld, indentation);
+        bld.append("]");
+    }
+
+    private void indent(StringBuilder bld, int indentation) {
+        for (int i = 0; i < indentation; ++i) {
+            bld.append("  ");
+        }
+    }
+
     /**
      * A low-level builder able to create new branches in the query tree.
      */
@@ -252,18 +246,24 @@ public final class Query {
 
         /**
          * Sets the filters to be used on the current node in the tree.
+         * <p>
+         * This method tries to optimize the query by checking if the provided fragments (appended to the current query)
+         * form a canonical traversal and if so, replaces the query so far with a simple filter on the canonical path
+         * instead of a traversal with more steps.
          *
          * @param filters the list of filters to apply to the query at this position in the tree.
          * @return this builder
          */
         public Builder with(QueryFragment... filters) {
-            Collections.addAll(this.fragments, filters);
+            QueryOptimizer.appendOptimized(fragments, filters);
             return this;
         }
 
         public Builder with(Function<Filter, QueryFragment> converter, QueryFragment... filters) {
-            this.fragments.addAll(Arrays.asList(filters).stream().map(QueryFragment::getFilter).map(converter)
-                    .collect(Collectors.toList()));
+            QueryFragment[] converted = Arrays.asList(filters).stream().map(QueryFragment::getFilter).map(converter)
+                    .toArray(QueryFragment[]::new);
+
+            QueryOptimizer.appendOptimized(fragments, converted);
             return this;
         }
 

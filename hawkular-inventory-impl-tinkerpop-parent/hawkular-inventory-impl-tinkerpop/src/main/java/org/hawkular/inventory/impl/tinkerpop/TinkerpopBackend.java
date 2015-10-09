@@ -119,11 +119,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         q.counter("total").page(pager);
 
+        Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
+
         return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
     }
 
     @Override public Element traverseToSingle(Element startingPoint, Query query) {
         HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
+        Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
         if (q.hasNext()) {
             return q.cast(Element.class).next();
         }
@@ -142,12 +145,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     private HawkularPipeline<?, ? extends Element> translate(Element startingPoint, Query query) {
         HawkularPipeline<?, ? extends Element> q;
 
-        if (startingPoint != null) {
-            q = new HawkularPipeline<>(startingPoint);
-        } else if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
-            q = new HawkularPipeline<>(context.getGraph()).E();
-        } else {
-            q = new HawkularPipeline<>(context.getGraph()).V();
+        Object start = startingPoint == null ? context.getGraph() : startingPoint;
+
+        q = new HawkularPipeline<Object, Element>(start);
+
+        if (startingPoint == null) {
+            if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+                q = q.E();
+            } else {
+                q = q.V();
+            }
         }
 
         FilterApplicator.applyAll(query, q);
@@ -159,15 +166,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public <T> Page<T> query(Query query, Pager pager,
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
-        HawkularPipeline<?, ? extends Element> q;
-
-        if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
-            q = new HawkularPipeline<>(context.getGraph()).E();
-        } else {
-            q = new HawkularPipeline<>(context.getGraph()).V();
-        }
-
-        FilterApplicator.applyAll(query, q);
+        HawkularPipeline<?, ? extends Element> q = translate(null, query);
 
         HawkularPipeline<?, T> q2;
         if (filter == null) {
@@ -196,7 +195,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     });
         }
 
-        return new SizeAwarePage<>(q2, pager, () -> q.getCount("total"));
+        Log.LOG.debugf("Query execution:\nquery:\n%s\n\npipeline:\n%s", query, q2);
+
+        return new SizeAwarePage<>(q2.iterator(), pager, () -> q.getCount("total"));
     }
 
     @Override
@@ -833,6 +834,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public void commit(Transaction t) throws CommitFailureException {
         try {
             context.commit(t);
+            Log.LOG.trace("Transaction committed: " + t);
         } catch (Exception e) {
             throw new CommitFailureException(e);
         }

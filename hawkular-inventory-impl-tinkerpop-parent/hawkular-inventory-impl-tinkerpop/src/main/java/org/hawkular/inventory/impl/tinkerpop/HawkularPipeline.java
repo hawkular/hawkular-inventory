@@ -55,7 +55,7 @@ import com.tinkerpop.pipes.util.structures.Tree;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable {
+class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable {
 
     private int asLabelCount;
     private final Deque<String> labelStack = new ArrayDeque<>(2);
