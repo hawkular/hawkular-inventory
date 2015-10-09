@@ -147,26 +147,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Object start = startingPoint == null ? context.getGraph() : startingPoint;
 
-        q = new HawkularPipeline<Object, Element>(start) {
-            @Override
-            public Iterator<Element> iterator() {
-                boolean tracing = Log.LOG.isTraceEnabled();
-
-                long now = 0;
-
-                if (tracing) {
-                    now = System.currentTimeMillis();
-                }
-
-                List<Element> res = toList();
-
-                if (tracing) {
-                    now = System.currentTimeMillis() - now;
-                    Log.LOG.trace("Eager query evaluation to measure effective time querying: " + now + "ms.");
-                }
-                return res.iterator();
-            }
-        };
+        q = new HawkularPipeline<Object, Element>(start);
 
         if (startingPoint == null) {
             if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
