@@ -2,4 +2,4 @@
 
 == Running
  run in hawkular-inventory root directory
- mvn clean verify -Ditest
+ mvn clean verify -Pitest
