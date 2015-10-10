@@ -22,6 +22,15 @@ import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__cp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__eid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__type;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
 
 import java.io.IOException;
@@ -42,6 +51,7 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -102,7 +112,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Element find(CanonicalPath path) throws ElementNotFoundException {
-        GraphQuery query = context.getGraph().query().has(Constants.Property.__cp.name(), path.toString());
+        GraphQuery query = context.getGraph().query().has(__cp.name(), path.toString());
         Iterator<? extends Element> it = query.vertices().iterator();
         if (!it.hasNext()) {
             it = query.edges().iterator();
@@ -345,7 +355,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public String extractId(Element entityRepresentation) {
-        return entityRepresentation.getProperty(Constants.Property.__eid.name());
+        return entityRepresentation.getProperty(__eid.name());
     }
 
     @Override
@@ -359,7 +369,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public CanonicalPath extractCanonicalPath(Element entityRepresentation) {
-        String cp = entityRepresentation.getProperty(Constants.Property.__cp.name());
+        String cp = entityRepresentation.getProperty(__cp.name());
         if (cp == null) {
             throw new IllegalArgumentException("Element is not representable using a canonical path. Element type is "
                     + extractType(entityRepresentation).getSimpleName() + ", element id is '"
@@ -542,10 +552,22 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         if (properties != null) {
             ElementHelper.setProperties(e, properties);
         }
-        e.setProperty(Constants.Property.__eid.name(), e.getId().toString());
-        e.setProperty(Constants.Property.__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get()
-                .toString());
+        e.setProperty(__eid.name(), e.getId().toString());
+        e.setProperty(__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get().toString());
+        e.setProperty(__sourceType.name(), sourceEntity.getProperty(__type.name()));
+        setNonNullProperty(e, __targetType.name(), targetEntity.getProperty(__type.name()));
+        setNonNullProperty(e, __sourceCp.name(), sourceEntity.getProperty(__cp.name()));
+        setNonNullProperty(e, __targetCp.name(), targetEntity.getProperty(__cp.name()));
+        setNonNullProperty(e, __sourceEid.name(), sourceEntity.getProperty(__eid.name()));
+        setNonNullProperty(e, __targetEid.name(), targetEntity.getProperty(__eid.name()));
+
         return e;
+    }
+
+    private void setNonNullProperty(Element el, String propertyName, Object propertyValue) {
+        if (propertyValue != null) {
+            el.setProperty(propertyName, propertyValue);
+        }
     }
 
     @Override
@@ -616,9 +638,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
                     Vertex v = context.getGraph().addVertex(null);
-                    v.setProperty(Constants.Property.__type.name(), Constants.Type.of(cls).name());
-                    v.setProperty(Constants.Property.__eid.name(), path.getSegment().getElementId());
-                    v.setProperty(Constants.Property.__cp.name(), path.toString());
+                    v.setProperty(__type.name(), Constants.Type.of(cls).name());
+                    v.setProperty(__eid.name(), path.getSegment().getElementId());
+                    v.setProperty(__cp.name(), path.toString());
 
                     if (properties != null) {
                         ElementHelper.setProperties(v, properties);
@@ -641,7 +663,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             protected Void defaultAction(Serializable value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                parentAndCurrent.second.setProperty(__type.name(),
                         Constants.Type.structuredData.name());
                 parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
                         data.getType().name());
@@ -654,7 +676,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitList(List<StructuredData> value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                parentAndCurrent.second.setProperty(__type.name(),
                         Constants.Type.structuredData.name());
                 parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
                         StructuredData.Type.list.name());
@@ -680,7 +702,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitMap(Map<String, StructuredData> value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(Constants.Property.__type.name(),
+                parentAndCurrent.second.setProperty(__type.name(),
                         Constants.Type.structuredData.name());
                 parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
                         StructuredData.Type.map.name());
@@ -1106,15 +1128,20 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
      * Gets the type of the entity that the provided vertex represents.
      */
     static Constants.Type getType(Vertex v) {
-        return Constants.Type.valueOf(v.getProperty(Constants.Property.__type.name()));
+        return Constants.Type.valueOf(v.getProperty(__type.name()));
     }
 
     static String getEid(Element e) {
-        return e.getProperty(Constants.Property.__eid.name());
+        return e.getProperty(__eid.name());
     }
 
     static Direction toNative(Relationships.Direction direction) {
         return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
+    }
+
+    static Direction asDirection(Related.EntityRole role) {
+        return role == Related.EntityRole.SOURCE ? Direction.OUT : (role == Related.EntityRole.TARGET ? Direction.IN
+                : Direction.BOTH);
     }
 
     public InputStream getGraphSON(String tenantId) {
