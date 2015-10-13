@@ -176,6 +176,9 @@ public final class TokenReplacingReader extends Reader {
                             cont = false;
                             break;
                         default:
+                            if (skipUntilExpressionEnd) {
+                                break;
+                            }
                             this.tokenNameBuffer.append((char) data);
                     }
                     break;
