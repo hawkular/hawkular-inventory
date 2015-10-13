@@ -54,8 +54,9 @@ public final class BaseOperationTypes {
         protected EntityAndPendingNotifications<OperationType> wireUpNewEntity(BE entity,
                                                                                OperationType.Blueprint blueprint,
                                                                                CanonicalPath parentPath, BE parent) {
-            return new EntityAndPendingNotifications<>(new OperationType(parentPath.extend(OperationType.class,
-                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new OperationType(blueprint.getName(),
+                    parentPath.extend(OperationType.class, context.backend.extractId(entity)).get(),
+                    blueprint.getProperties()));
         }
 
         @Override public OperationTypes.Multiple getAll(Filter[][] filters) {

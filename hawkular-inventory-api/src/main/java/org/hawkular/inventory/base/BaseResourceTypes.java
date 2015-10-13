@@ -66,8 +66,9 @@ public final class BaseResourceTypes {
 
             context.backend.update(entity, ResourceType.Update.builder().build());
 
-            return new EntityAndPendingNotifications<>(new ResourceType(parentPath.extend(ResourceType.class,
-                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new ResourceType(blueprint.getName(),
+                    parentPath.extend(ResourceType.class, context.backend.extractId(entity)).get(),
+                    blueprint.getProperties()));
         }
 
         @Override

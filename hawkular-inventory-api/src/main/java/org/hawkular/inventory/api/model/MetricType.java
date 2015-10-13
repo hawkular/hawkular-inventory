@@ -58,10 +58,21 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         this(path, unit, type, null);
     }
 
+    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type) {
+        this(name, path, unit, type, null);
+    }
+
     public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
         super(path, properties);
         this.unit = unit;
         this.type = type;
+    }
+
+    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type,
+                      Map<String, Object> properties) {
+        super(name, path, properties);
+        this.type = type;
+        this.unit = unit;
     }
 
     public MetricUnit getUnit() {
@@ -74,8 +85,8 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(getPath(), valueOrDefault(u.unit, this.unit),
-               type, u.getProperties()));
+        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), valueOrDefault(u.unit, this.unit), type,
+                u.getProperties()));
     }
 
     @Override
@@ -133,6 +144,14 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
             this.unit = unit;
         }
 
+        public Blueprint(String id, String name, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+            this.type = type;
+            this.unit = unit;
+        }
+
         public MetricUnit getUnit() {
             return unit;
         }
@@ -167,12 +186,12 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, unit, type, properties, outgoing, incoming);
+                return new Blueprint(id, name, unit, type, properties, outgoing, incoming);
             }
         }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
         private final MetricUnit unit;
 
         public static Builder builder() {
@@ -186,7 +205,12 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         }
 
         public Update(Map<String, Object> properties, MetricUnit unit) {
-            super(properties);
+            super(null, properties);
+            this.unit = unit;
+        }
+
+        public Update(String name, Map<String, Object> properties, MetricUnit unit) {
+            super(name, properties);
             this.unit = unit;
         }
 
@@ -199,7 +223,7 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
             return visitor.visitMetricType(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             private MetricUnit unit;
 
             public Builder withUnit(MetricUnit unit) {
@@ -209,7 +233,7 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
             @Override
             public Update build() {
-                return new Update(properties, unit);
+                return new Update(name, properties, unit);
             }
         }
     }

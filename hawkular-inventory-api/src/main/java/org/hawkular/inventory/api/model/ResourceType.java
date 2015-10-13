@@ -42,13 +42,21 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
         this(path, null);
     }
 
+    public ResourceType(String name, CanonicalPath path) {
+        super(name, path);
+    }
+
     public ResourceType(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 
+    public ResourceType(String name, CanonicalPath path, Map<String, Object> properties) {
+        super(name, path, properties);
+    }
+
     @Override
     public Updater<Update, ResourceType> update() {
-        return new Updater<>((u) -> new ResourceType(getPath(), u.getProperties()));
+        return new Updater<>((u) -> new ResourceType(u.getName(), getPath(), u.getProperties()));
     }
 
     @Override
@@ -90,6 +98,12 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
             super(id, properties, outgoing, incoming);
         }
 
+        public Blueprint(String id, String name, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitResourceType(this, parameter);
@@ -99,12 +113,12 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties, outgoing, incoming);
+                return new Blueprint(id, name, properties, outgoing, incoming);
             }
         }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
 
         public static Builder builder() {
             return new Builder();
@@ -117,7 +131,11 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
         }
 
         public Update(Map<String, Object> properties) {
-            super(properties);
+            super(null, properties);
+        }
+
+        public Update(String name, Map<String, Object> properties) {
+            super(name, properties);
         }
 
         @Override
@@ -125,11 +143,11 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
             return visitor.visitResourceType(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
 
             @Override
             public Update build() {
-                return new Update(properties);
+                return new Update(name, properties);
             }
         }
     }

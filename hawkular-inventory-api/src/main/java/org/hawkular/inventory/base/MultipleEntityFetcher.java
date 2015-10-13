@@ -19,7 +19,6 @@ package org.hawkular.inventory.base;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 
 /**
@@ -28,7 +27,7 @@ import org.hawkular.inventory.api.model.Entity;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-class MultipleEntityFetcher<BE, E extends Entity<?, U>, U extends AbstractElement.Update> extends Fetcher<BE, E, U> {
+class MultipleEntityFetcher<BE, E extends Entity<?, U>, U extends Entity.Update> extends Fetcher<BE, E, U> {
     public MultipleEntityFetcher(TraversalContext<BE, E> context) {
         super(context);
     }
