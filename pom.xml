@@ -84,6 +84,8 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
+          <preparationGoals>clean verify</preparationGoals>
+          <arguments>-Pitest</arguments>
         </configuration>
       </plugin>
     </plugins>
