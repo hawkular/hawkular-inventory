@@ -28,9 +28,12 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class Entity<B extends Blueprint, U extends AbstractElement.Update> extends AbstractElement<B, U> {
+public abstract class Entity<B extends Blueprint, U extends Entity.Update> extends AbstractElement<B, U> {
+
+    private final String name;
 
     Entity() {
+        this.name = null;
     }
 
     Entity(CanonicalPath path) {
@@ -38,12 +41,35 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
     }
 
     Entity(CanonicalPath path, Map<String, Object> properties) {
+        this(null, path, properties);
+    }
+
+    public Entity(String name, CanonicalPath path) {
+        this(name, path, null);
+    }
+
+    /**
+     * Constructs a new entity
+     *
+     * @param name       the human readable name of the entity, can be null
+     * @param path       the path of the entity, must not be null
+     * @param properties the additional user-defined properties, can be null
+     */
+    Entity(String name, CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
+        this.name = name;
         if (!this.getClass().equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
                     this.getClass().getSimpleName() + " but the path points to " +
                     path.getSegment().getElementType().getSimpleName());
         }
+    }
+
+    /**
+     * @return The human readable name of the entity, can be null
+     */
+    public String getName() {
+        return name;
     }
 
     /**
@@ -75,6 +101,7 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
      */
     public abstract static class Blueprint extends AbstractElement.Blueprint {
         private final String id;
+        private final String name;
         private final Map<String, Set<CanonicalPath>> outgoing;
         private final Map<String, Set<CanonicalPath>> incoming;
 
@@ -85,14 +112,29 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
         protected Blueprint(String id, Map<String, Object> properties, Map<String, Set<CanonicalPath>> outgoing,
                             Map<String, Set<CanonicalPath>> incoming) {
 
+            this(id, null, properties, outgoing, incoming);
+        }
+
+        protected Blueprint(String id, String name, Map<String, Object> properties) {
+            this(id, name, properties, null, null);
+        }
+
+        protected Blueprint(String id, String name, Map<String, Object> properties, Map<String,
+                Set<CanonicalPath>> outgoing, Map<String, Set<CanonicalPath>> incoming) {
+
             super(properties);
             this.id = id;
+            this.name = name;
             this.outgoing = outgoing == null ? Collections.emptyMap() : copyAsUnmodifiable(outgoing);
             this.incoming = incoming == null ? Collections.emptyMap() : copyAsUnmodifiable(incoming);
         }
 
         public String getId() {
             return id;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public Map<String, Set<CanonicalPath>> getOutgoingRelationships() {
@@ -107,11 +149,17 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
                 extends AbstractElement.Blueprint.Builder<Blueprint, This> {
 
             protected String id;
+            protected String name;
             protected Map<String, Set<CanonicalPath>> outgoing;
             protected Map<String, Set<CanonicalPath>> incoming;
 
             public This withId(String id) {
                 this.id = id;
+                return castThis();
+            }
+
+            public This withName(String name) {
+                this.name = name;
                 return castThis();
             }
 
@@ -157,6 +205,31 @@ public abstract class Entity<B extends Blueprint, U extends AbstractElement.Upda
             Map<String, Set<CanonicalPath>> ret = new HashMap<>(map.size());
             map.forEach((k, v) -> ret.put(k, Collections.unmodifiableSet(v)));
             return Collections.unmodifiableMap(ret);
+        }
+    }
+
+    public abstract static class Update extends AbstractElement.Update {
+
+        protected final String name;
+
+        protected Update(String name, Map<String, Object> properties) {
+            super(properties);
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public abstract static class Builder<U extends Update, This extends Builder<U, This>>
+                extends AbstractElement.Update.Builder<U, This> {
+
+            protected String name;
+
+            public This withName(String name) {
+                this.name = name;
+                return castThis();
+            }
         }
     }
 }

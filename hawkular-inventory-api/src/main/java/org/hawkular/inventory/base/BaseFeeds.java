@@ -71,7 +71,7 @@ public final class BaseFeeds {
         @Override
         protected EntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
-            return new EntityAndPendingNotifications<>(new Feed(parentPath.extend(Feed.class,
+            return new EntityAndPendingNotifications<>(new Feed(blueprint.getName(), parentPath.extend(Feed.class,
                     context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 

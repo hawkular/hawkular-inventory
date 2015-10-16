@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
@@ -43,7 +44,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
     }
 
     public DataEntity(CanonicalPath owner, Role role, StructuredData value) {
-        super(owner.extend(DataEntity.class, role.name()).get());
+        super(null, owner.extend(DataEntity.class, role.name()).get(), null);
         this.value = value;
     }
 
@@ -54,6 +55,11 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
 
     public DataEntity(CanonicalPath path, StructuredData value, Map<String, Object> properties) {
         this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, properties);
+    }
+
+    @Override
+    public String getName() {
+        return getRole().name();
     }
 
     public StructuredData getValue() {
@@ -132,7 +138,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         boolean isSchema();
     }
 
-    public static final class Blueprint<DataRole extends Role> extends AbstractElement.Blueprint {
+    public static final class Blueprint<DataRole extends Role> extends Entity.Blueprint {
         private final StructuredData value;
         private final DataRole role;
 
@@ -141,10 +147,18 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         }
 
         public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
-            super(properties);
+            super(role.name(), properties);
             if (value == null) {
                 value = StructuredData.get().undefined();
             }
+            this.role = role;
+            this.value = value;
+        }
+
+        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(role.name(), properties, outgoing, incoming);
             this.role = role;
             this.value = value;
         }
@@ -201,7 +215,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         }
 
         public Update(StructuredData value, Map<String, Object> properties) {
-            super(properties);
+            super(null, properties);
             this.value = value;
         }
 

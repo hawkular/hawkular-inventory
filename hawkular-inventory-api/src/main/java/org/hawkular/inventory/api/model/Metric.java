@@ -48,15 +48,25 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
         this(path, type, null);
     }
 
+    public Metric(String name, CanonicalPath path, MetricType type) {
+        super(name, path);
+        this.type = type;
+    }
+
     public Metric(CanonicalPath path, MetricType type, Map<String, Object> properties) {
 
         super(path, properties);
         this.type = type;
     }
 
+    public Metric(String name, CanonicalPath path, MetricType type, Map<String, Object> properties) {
+        super(name, path, properties);
+        this.type = type;
+    }
+
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(getPath(), getType(), u.getProperties()));
+        return new Updater<>((u) -> new Metric(u.getName(), getPath(), getType(), u.getProperties()));
     }
 
     public MetricType getType() {
@@ -114,6 +124,13 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
             this.metricTypePath = metricTypePath;
         }
 
+        public Blueprint(String metricTypePath, String id, String name, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+            this.metricTypePath = metricTypePath;
+        }
+
         public String getMetricTypePath() {
             return metricTypePath;
         }
@@ -133,12 +150,12 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
 
             @Override
             public Blueprint build() {
-                return new Blueprint(metricTypeId, id, properties, outgoing, incoming);
+                return new Blueprint(metricTypeId, id, name, properties, outgoing, incoming);
             }
         }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
         public static Builder builder() {
             return new Builder();
         }
@@ -150,7 +167,11 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
         }
 
         public Update(Map<String, Object> properties) {
-            super(properties);
+            super(null, properties);
+        }
+
+        public Update(String name, Map<String, Object> properties) {
+            super(name, properties);
         }
 
         @Override
@@ -158,10 +179,10 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
             return visitor.visitMetric(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
-                return new Update(properties);
+                return new Update(name, properties);
             }
         }
     }

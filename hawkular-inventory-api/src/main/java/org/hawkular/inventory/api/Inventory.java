@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -30,6 +31,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
@@ -210,6 +212,14 @@ public interface Inventory extends AutoCloseable {
         return inspect(resourceType.getPath(), ResourceTypes.Single.class);
     }
 
+    default Data.Single inspect(DataEntity data) throws EntityNotFoundException {
+        return inspect(data.getPath(), Data.Single.class);
+    }
+
+    default OperationTypes.Single inspect(OperationType operationType) throws EntityNotFoundException {
+        return inspect(operationType.getPath(), OperationTypes.Single.class);
+    }
+
     default Relationships.Single inspect(Relationship relationship) {
         return relationships().get(relationship.getId());
     }
@@ -265,6 +275,16 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitResourceType(ResourceType type, Void ignored) {
                 return accessInterface.cast(inspect(type));
+            }
+
+            @Override
+            public Single visitData(DataEntity data, Void parameter) {
+                return accessInterface.cast(inspect(data));
+            }
+
+            @Override
+            public Single visitOperationType(OperationType operationType, Void parameter) {
+                return accessInterface.cast(inspect(operationType));
             }
 
             @Override

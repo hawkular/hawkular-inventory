@@ -62,7 +62,7 @@ public final class BaseTenants {
         protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
 
-            return new EntityAndPendingNotifications<>(new Tenant(CanonicalPath.of()
+            return new EntityAndPendingNotifications<>(new Tenant(blueprint.getName(), CanonicalPath.of()
                     .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 

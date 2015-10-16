@@ -28,6 +28,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetC
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.name;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -57,6 +58,12 @@ final class Constants {
      * The vertices in the graph have certain well-known properties.
      */
     enum Property {
+        /**
+         * The user-defined human-readable name of the entity. We don't use the "__" prefix here as with the rest of
+         * the properties, because this is not really hidden.
+         */
+        name,
+
         /**
          * This is the name of the property that we use to store the type of the entity represented by the vertex
          */
@@ -139,11 +146,12 @@ final class Constants {
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
-        resourceType(ResourceType.class), metricType(MetricType.class, __unit, __metric_data_type),
-        operationType(OperationType.class), resource(Resource.class), metric(Metric.class),
-        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
-        dataEntity(DataEntity.class), structuredData(StructuredData.class, __structuredDataType,
+        tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
+        resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type),
+        operationType(OperationType.class, name), resource(Resource.class, name), metric(Metric.class, name),
+        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid,
+                __targetEid),
+        dataEntity(DataEntity.class, name), structuredData(StructuredData.class, __structuredDataType,
                 __structuredDataValue, __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;

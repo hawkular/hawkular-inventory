@@ -46,13 +46,21 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
         this(path, null);
     }
 
+    public Feed(String name, CanonicalPath path) {
+        super(name, path);
+    }
+
     public Feed(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
     }
 
+    public Feed(String name, CanonicalPath path, Map<String, Object> properties) {
+        super(name, path, properties);
+    }
+
     @Override
     public Updater<Update, Feed> update() {
-        return new Updater<>((u) -> new Feed(getPath(), u.getProperties()));
+        return new Updater<>((u) -> new Feed(u.getName(), getPath(), u.getProperties()));
     }
 
     @Override
@@ -83,6 +91,16 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
             super(id, properties, outgoing, incoming);
         }
 
+        public Blueprint(String id, String name, Map<String, Object> properties) {
+            super(id, name, properties);
+        }
+
+        public Blueprint(String id, String name, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitFeed(this, parameter);
@@ -92,7 +110,7 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties, outgoing, incoming);
+                return new Blueprint(id, name, properties, outgoing, incoming);
             }
         }
 
@@ -101,7 +119,7 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
         }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
 
         public static Builder builder() {
             return new Builder();
@@ -114,7 +132,11 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
         }
 
         public Update(Map<String, Object> properties) {
-            super(properties);
+            super(null, properties);
+        }
+
+        public Update(String name, Map<String, Object> properties) {
+            super(name, properties);
         }
 
         @Override
@@ -122,10 +144,10 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
             return visitor.visitFeed(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
-                return new Update(properties);
+                return new Update(name, properties);
             }
         }
     }

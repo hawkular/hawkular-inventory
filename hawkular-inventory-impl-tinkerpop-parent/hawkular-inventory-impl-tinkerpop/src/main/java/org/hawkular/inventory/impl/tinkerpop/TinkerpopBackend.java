@@ -383,6 +383,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Constants.Type type = Constants.Type.of(extractType(entityRepresentation));
 
         Object e;
+        String name = null;
 
         if (type == relationship) {
             Edge edge = (Edge) entityRepresentation;
@@ -392,6 +393,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             e = new Relationship(extractId(edge), edge.getLabel(), source, target);
         } else {
             Vertex v = (Vertex) entityRepresentation;
+            name = v.getProperty(Constants.Property.name.name());
 
             switch (type) {
                 case environment:
@@ -456,7 +458,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         } else {
             @SuppressWarnings("ConstantConditions")
             AbstractElement<?, ?> el = (AbstractElement<?, ?>) e;
-
+            String entityName = name;
             return el.accept(new ElementVisitor<T, Void>() {
                 @Override
                 public T visitTenant(Tenant tenant, Void ignored) {
@@ -508,12 +510,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 @Override
                 public T visitRelationship(Relationship relationship, Void parameter) {
-                    return common(relationship, Relationship.Update.builder());
+                    return entityType.cast(relationship.update().with(Relationship.Update.builder()
+                            .withProperties(filteredProperties).build()));
                 }
 
-                private <U extends AbstractElement.Update> T common(AbstractElement<?, U> entity,
-                        AbstractElement.Update.Builder<U, ?> bld) {
-                    return entityType.cast(entity.update().with(bld.withProperties(filteredProperties).build()));
+                @SuppressWarnings("unchecked")
+                private <U extends Entity.Update> T common(Entity<?, U> entity, Entity.Update.Builder<U, ?> bld) {
+                    return entityType.cast(entity.update().with(bld.withName(entityName)
+                            .withProperties(filteredProperties).build()));
                 }
             }, null);
         }
@@ -576,40 +580,40 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             @Override
             public Element visitTenant(Tenant.Blueprint tenant, Void parameter) {
-                return common(path, tenant.getProperties(), Tenant.class);
+                return common(path, tenant.getName(), tenant.getProperties(), Tenant.class);
             }
 
             @Override
-            public Element visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return common(path, environment.getProperties(), Environment.class);
+            public Element visitEnvironment(Environment.Blueprint env, Void parameter) {
+                return common(path, env.getName(), env.getProperties(), Environment.class);
             }
 
             @Override
             public Element visitFeed(Feed.Blueprint feed, Void parameter) {
-                return common(path, feed.getProperties(), Feed.class);
+                return common(path, feed.getName(), feed.getProperties(), Feed.class);
             }
 
             @Override
             public Element visitMetric(Metric.Blueprint metric, Void parameter) {
-                return common(path, metric.getProperties(), Metric.class);
+                return common(path, metric.getName(), metric.getProperties(), Metric.class);
             }
 
             @Override
-            public Element visitMetricType(MetricType.Blueprint definition, Void parameter) {
-                Element entity = common(path, definition.getProperties(), MetricType.class);
+            public Element visitMetricType(MetricType.Blueprint type, Void parameter) {
+                Element entity = common(path, type.getName(), type.getProperties(), MetricType.class);
 
-                entity.setProperty(Constants.Property.__metric_data_type.name(), definition.getType().getDisplayName());
+                entity.setProperty(Constants.Property.__metric_data_type.name(), type.getType().getDisplayName());
                 return entity;
             }
 
             @Override
             public Element visitResource(Resource.Blueprint resource, Void parameter) {
-                return common(path, resource.getProperties(), Resource.class);
+                return common(path, resource.getName(), resource.getProperties(), Resource.class);
             }
 
             @Override
             public Element visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return common(path, type.getProperties(), ResourceType.class);
+                return common(path, type.getName(), type.getProperties(), ResourceType.class);
             }
 
             @Override
@@ -619,12 +623,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             @Override
             public Element visitData(DataEntity.Blueprint data, Void parameter) {
-                return common(path, data.getProperties(), DataEntity.class);
+                return common(path, data.getName(), data.getProperties(), DataEntity.class);
             }
 
             @Override
             public Element visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                return common(path, operationType.getProperties(), OperationType.class);
+                return common(path, operationType.getName(), operationType.getProperties(), OperationType.class);
             }
 
             @Override
@@ -632,8 +636,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new IllegalArgumentException("Unknown type of entity blueprint: " + blueprint.getClass());
             }
 
-            private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, Map<String, Object> properties,
-                                  Class<? extends AbstractElement<?, ?>> cls) {
+            private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, String name,
+                                  Map<String, Object> properties, Class<? extends Entity<?, ?>> cls) {
                 try {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
@@ -641,6 +645,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     v.setProperty(__type.name(), Constants.Type.of(cls).name());
                     v.setProperty(__eid.name(), path.getSegment().getElementId());
                     v.setProperty(__cp.name(), path.toString());
+                    setNonNullProperty(v, Constants.Property.name.name(), name);
 
                     if (properties != null) {
                         ElementHelper.setProperties(v, properties);
@@ -744,58 +749,58 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         update.accept(new ElementUpdateVisitor.Simple<Void, Void>() {
             @Override
             public Void visitTenant(Tenant.Update tenant, Void parameter) {
-                common(tenant.getProperties(), Tenant.class);
+                common(tenant.getName(), tenant.getProperties(), Tenant.class);
                 return null;
             }
 
             @Override
             public Void visitEnvironment(Environment.Update environment, Void parameter) {
-                common(environment.getProperties(), Environment.class);
+                common(environment.getName(), environment.getProperties(), Environment.class);
                 return null;
             }
 
             @Override
             public Void visitFeed(Feed.Update feed, Void parameter) {
-                common(feed.getProperties(), Feed.class);
+                common(feed.getName(), feed.getProperties(), Feed.class);
                 return null;
             }
 
             @Override
             public Void visitMetric(Metric.Update metric, Void parameter) {
-                common(metric.getProperties(), Metric.class);
+                common(metric.getName(), metric.getProperties(), Metric.class);
                 return null;
             }
 
             @Override
-            public Void visitMetricType(MetricType.Update definition, Void parameter) {
-                common(definition.getProperties(), MetricType.class);
-                if (definition.getUnit() != null) {
-                    entity.setProperty(Constants.Property.__unit.name(), definition.getUnit().getDisplayName());
+            public Void visitMetricType(MetricType.Update type, Void parameter) {
+                common(type.getName(), type.getProperties(), MetricType.class);
+                if (type.getUnit() != null) {
+                    entity.setProperty(Constants.Property.__unit.name(), type.getUnit().getDisplayName());
                 }
                 return null;
             }
 
             @Override
             public Void visitResource(Resource.Update resource, Void parameter) {
-                common(resource.getProperties(), Resource.class);
+                common(resource.getName(), resource.getProperties(), Resource.class);
                 return null;
             }
 
             @Override
             public Void visitResourceType(ResourceType.Update type, Void parameter) {
-                common(type.getProperties(), ResourceType.class);
+                common(type.getName(), type.getProperties(), ResourceType.class);
                 return null;
             }
 
             @Override
             public Void visitRelationship(Relationship.Update relationship, Void parameter) {
-                common(relationship.getProperties(), Relationship.class);
+                common(null, relationship.getProperties(), Relationship.class);
                 return null;
             }
 
             @Override
             public Void visitData(DataEntity.Update data, Void parameter) {
-                common(data.getProperties(), DataEntity.class);
+                common(data.getName(), data.getProperties(), DataEntity.class);
 
                 Vertex v = (Vertex) entity;
                 Vertex dataVertex = v.getVertices(Direction.OUT, Relationships.WellKnown.hasData.name()).iterator()
@@ -820,7 +825,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 return null;
             }
 
-            private void common(Map<String, Object> properties, Class<? extends AbstractElement<?, ?>> entityType) {
+            @Override
+            public Void visitOperationType(OperationType.Update operationType, Void parameter) {
+                common(operationType.getName(), operationType.getProperties(), OperationType.class);
+                return null;
+            }
+
+            private void common(String name, Map<String, Object> properties,
+                                Class<? extends AbstractElement<?, ?>> entityType) {
                 Class<?> actualType = extractType(entity);
                 if (!actualType.equals(entityType)) {
                     throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the" +
@@ -828,6 +840,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 }
                 String[] disallowedProperties = Constants.Type.of(entityType).getMappedProperties();
                 checkProperties(properties, disallowedProperties);
+                setNonNullProperty(entity, Constants.Property.name.name(), name);
                 updateProperties(entity, properties, disallowedProperties);
             }
         }, null);

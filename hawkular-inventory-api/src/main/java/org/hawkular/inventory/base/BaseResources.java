@@ -93,8 +93,8 @@ public final class BaseResources {
 
             ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
 
-            Resource ret = new Resource(parentPath.extend(Resource.class, context.backend.extractId(entity)).get(),
-                    resourceType, blueprint.getProperties());
+            Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.class,
+                    context.backend.extractId(entity)).get(), resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
                     entityPath);
