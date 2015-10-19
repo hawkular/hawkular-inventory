@@ -101,11 +101,11 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
         }
 
         /**
-         * JAXB support
+         * Jackson support
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null);
+            metricTypePath = null;
         }
 
         public Blueprint(String metricTypePath, String id) {

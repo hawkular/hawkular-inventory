@@ -105,6 +105,25 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
         private final Map<String, Set<CanonicalPath>> outgoing;
         private final Map<String, Set<CanonicalPath>> incoming;
 
+        /**
+         * This no-arg constructor is provided for the needs of Jackson deserialization. The instance constructed using
+         * it is semantically invalid and needs further processing (by reflection) to be correct. This is what Jackson
+         * does but should not be relied upon in other circumstances.
+         * <p>
+         * Do <b>NOT</b> make this public in subclasses, rather make the no-arg constructor actually private in
+         * final subclasses to stress this point even further.
+         * <p>
+         * Any constructor with arguments should <b>NOT</b> call this, because it will leave mandatory properties
+         * uninitialized. Use one of the other provided constructors for initializing instances with arguments.
+         */
+        protected Blueprint() {
+            super(null);
+            this.id = null;
+            this.name = null;
+            this.outgoing = null;
+            this.incoming = null;
+        }
+
         protected Blueprint(String id, Map<String, Object> properties) {
             this(id, properties, null, null);
         }
@@ -123,6 +142,9 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
                 Set<CanonicalPath>> outgoing, Map<String, Set<CanonicalPath>> incoming) {
 
             super(properties);
+            if (id == null) {
+                throw new IllegalArgumentException("id == null");
+            }
             this.id = id;
             this.name = name;
             this.outgoing = outgoing == null ? Collections.emptyMap() : copyAsUnmodifiable(outgoing);

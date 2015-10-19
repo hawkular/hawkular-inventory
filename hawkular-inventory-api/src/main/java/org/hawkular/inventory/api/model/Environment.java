@@ -75,7 +75,6 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
         }
 
         public Blueprint(String id) {

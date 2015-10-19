@@ -122,7 +122,8 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null, null);
+            unit = null;
+            type = null;
         }
 
         public Blueprint(String id, MetricUnit unit, MetricDataType type) {
