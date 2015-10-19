@@ -74,7 +74,6 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
         }
 
         public Blueprint(String id) {

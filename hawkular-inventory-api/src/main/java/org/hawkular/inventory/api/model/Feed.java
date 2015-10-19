@@ -78,7 +78,6 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
         }
 
         public Blueprint(String id, Map<String, Object> properties) {

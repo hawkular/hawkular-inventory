@@ -101,7 +101,7 @@ public final class Resource extends Entity<Resource.Blueprint, Resource.Update> 
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
+            resourceTypePath = null;
         }
 
         public Blueprint(String id, String resourceTypePath) {

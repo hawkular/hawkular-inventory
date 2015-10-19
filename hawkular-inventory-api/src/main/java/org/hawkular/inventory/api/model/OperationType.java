@@ -66,7 +66,6 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            super(null, null);
         }
 
         public Blueprint(String id, Map<String, Object> properties) {

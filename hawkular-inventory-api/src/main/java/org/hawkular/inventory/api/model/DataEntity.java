@@ -139,6 +139,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
     }
 
     public static final class Blueprint<DataRole extends Role> extends Entity.Blueprint {
+        private static final StructuredData UNDEFINED = StructuredData.get().undefined();
         private final StructuredData value;
         private final DataRole role;
 
@@ -147,7 +148,13 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         }
 
         public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
-            super(role.name(), properties);
+            this(role, value, properties, null, null);
+        }
+
+        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(role.name(), properties, outgoing, incoming);
             if (value == null) {
                 value = StructuredData.get().undefined();
             }
@@ -155,21 +162,16 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             this.value = value;
         }
 
-        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties,
-                         Map<String, Set<CanonicalPath>> outgoing,
-                         Map<String, Set<CanonicalPath>> incoming) {
-            super(role.name(), properties, outgoing, incoming);
-            this.role = role;
-            this.value = value;
-        }
-
         // this is needed for Jackson deserialization
+        @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null, null);
+            value = null;
+            role = null;
         }
 
         public StructuredData getValue() {
-            return value;
+            //value can be null if constructed using the no-arg constructor through Jackson
+            return value == null ? UNDEFINED : value;
         }
 
         public Role getRole() {

@@ -81,7 +81,6 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
         }
 
         public Blueprint(String id) {
