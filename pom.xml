@@ -56,7 +56,6 @@
   <properties>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
     <version.org.hawkular.accounts>1.0.14.Final</version.org.hawkular.accounts>
-    <api-check-activated>true</api-check-activated>
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.bus>${version.org.hawkular.bus}</test-dist-version.org.hawkular.bus>
@@ -95,7 +94,7 @@
     <profile>
       <id>api-check</id>
       <activation>
-        <activeByDefault>${api-check-activated}</activeByDefault>
+        <activeByDefault>true</activeByDefault>
       </activation>
 
       <build>

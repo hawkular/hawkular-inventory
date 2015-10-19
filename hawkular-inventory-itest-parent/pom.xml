@@ -37,4 +37,17 @@
   <properties>
     <version.org.hawkular.dist>1.0.0.Alpha6-SNAPSHOT</version.org.hawkular.dist>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
+
