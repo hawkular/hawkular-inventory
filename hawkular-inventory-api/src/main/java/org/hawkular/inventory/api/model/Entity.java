@@ -160,11 +160,11 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
         }
 
         public Map<String, Set<CanonicalPath>> getOutgoingRelationships() {
-            return outgoing;
+            return outgoing == null ? Collections.emptyMap() : outgoing;
         }
 
         public Map<String, Set<CanonicalPath>> getIncomingRelationships() {
-            return incoming;
+            return incoming == null ? Collections.emptyMap() : incoming;
         }
 
         public abstract static class Builder<Blueprint, This extends Builder<Blueprint, This>>
