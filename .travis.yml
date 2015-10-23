@@ -14,7 +14,7 @@ cache:
 install:
 - mvn -s .travis.maven.settings.xml -version -B
 script:
-- mvn -fae -s .travis.maven.settings.xml clean install
+- mvn -fae -s .travis.maven.settings.xml clean install -Pitest
 env:
   global:
   - secure: g/PGmXBWEd9PgmP9xfuUj60yGdvGR9x9cRzE3EDkX0ALkAdZZxHpI3qWdNpUl9mNrtjrxM/4/yi7oKDOpkwl+iCw2KAvlfjnn8sWTEwDIfK9+zyFAU0C6QEJnkToLFvkumO4NbbBBGxQ2KR4rxaIDRI6umf3F8roZybTD+SLXfg=

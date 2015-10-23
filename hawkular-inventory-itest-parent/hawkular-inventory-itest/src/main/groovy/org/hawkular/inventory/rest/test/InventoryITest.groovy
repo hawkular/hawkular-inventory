@@ -296,6 +296,10 @@ class InventoryITest extends AbstractTestBase {
                 body: [id: "start"])
         assertEquals(201, response.status)
 
+        response = postDeletable(path: "resourceTypes/$pingableHostRTypeId/operationTypes",
+                body: [id: "stop"])
+        assertEquals(201, response.status)
+
         // add some parameters to it
         def startOpParamTypes = [role: "parameterTypes", value: [title     : "blah", type: "object",
                                                                  properties: [quick: [type: "boolean"]]]]
@@ -508,6 +512,9 @@ class InventoryITest extends AbstractTestBase {
 
     @Test
     void testOperationTypesCreated() {
+        def response = client.get(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes")
+        assertEquals(2, response.data.size())
+
         assertEntityExists("resourceTypes/$pingableHostRTypeId/operationTypes/start", "/rt;" + pingableHostRTypeId +
                 "/ot;start")
         assertEntityExists("resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
