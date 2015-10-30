@@ -108,6 +108,7 @@ final class QueryOptimizer {
                 if (third != null && (!isOutgoingContains(third.getFilter()) || second.getClass() != third
                         .getClass())) {
                     reAddNonNull(true, applicableNewFilters, third);
+                    third = null;
                 }
             } else {
                 //there is a prior canonical path filter, so we're trying to continue it.
