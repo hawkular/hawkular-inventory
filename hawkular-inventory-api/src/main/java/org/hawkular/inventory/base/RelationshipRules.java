@@ -16,11 +16,13 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
@@ -61,12 +64,14 @@ public final class RelationshipRules {
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
         CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
         CREATE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowCreate));
+        CREATE_RULES.put(incorporates, Collections.singletonList(RelationshipRules::disallowWhenMetadataPackIsSource));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
                 RelationshipRules::disallowDeleteOfIsParentOfWhenTheresContainsToo));
         DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));
+        DELETE_RULES.put(incorporates, Collections.singletonList(RelationshipRules::disallowWhenMetadataPackIsSource));
     }
 
     private RelationshipRules() {
@@ -166,6 +171,23 @@ public final class RelationshipRules {
     private static <E> void disallowCreate(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
             String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly created.");
+    }
+
+    private static <E> void disallowWhenMetadataPackIsSource(InventoryBackend<E> backend, E origin,
+                                                             Relationships.Direction direction, String relationship,
+                                                             E target) {
+        String message = "Manual manipulation of the 'incorporates' relationships where the" +
+                " MetadataPack is the source is disallowed.";
+
+        if (direction == both) {
+            throw new IllegalArgumentException(message);
+        }
+
+        Class<?> type = backend.extractType(direction == outgoing ? origin : target);
+
+        if (MetadataPack.class.equals(type)) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
     private static <E> void disallowDeleteOfIsParentOfWhenTheresContainsToo(InventoryBackend<E> backend, E origin,

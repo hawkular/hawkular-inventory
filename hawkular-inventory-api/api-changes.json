@@ -169,5 +169,87 @@
         }
       ]
     }
+  },
+  "0.8.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.addedToInterface",
+          "regex": true,
+          "new": "method R org\\.hawkular\\.inventory\\.api\\.model\\.Element\\w*Visitor<R, P>::visitMetadataPack\\(.*",
+          "justification": "Metadata packs, as a new model entity type need to be added to the visitors."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "new": "method DataRole org.hawkular.inventory.api.model.DataEntity.Blueprint<DataRole extends org.hawkular.inventory.api.model.DataEntity.Role>::getRole()",
+          "justification": "This is a correction of a unnecessarily generic return type."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "new": "class org.hawkular.inventory.api.EmptyInventory.TenantsMultiple",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.EmptyInventory.TenantsSingle",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.api.EntityNotFoundException::<init>(===java.lang.Class<?>===, org.hawkular.inventory.api.filters.Filter[][])",
+          "justification": "The parameter was relaxed to accept any class, not just subclass of Entity. This comes in handy at times and was seen as low risk change."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "new": "method java.lang.Class<?> org.hawkular.inventory.api.EntityNotFoundException::getEntityType()",
+          "justification": "EntityNotFoundException now accepts any class instead of just Entity subclasses, so this had to be reflected in this getter, too."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method MetadataPacks org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, Envs, MetadataPacks>::metadataPacks()",
+          "justification": "Metadata packs are the new feature in 0.8.0"
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.Tenants.Multiple",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.Tenants.Single",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "new": "class org.hawkular.inventory.base.BaseTenants.Multiple<BE>",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "new": "class org.hawkular.inventory.base.BaseTenants.Single<BE>",
+          "justification": "The type parameters of Tenants.BrowserBase have changed due to addition of metadata packs."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.EmptyInventory.TenantsReadContained",
+          "justification": "This class is not used."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.base.BaseData.Read<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::<init>(org.hawkular.inventory.base.TraversalContext<BE, org.hawkular.inventory.api.model.DataEntity>, org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>)",
+          "justification": "This is required for properly checking for disallowed modifications in presence of metadata packs."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::<init>(org.hawkular.inventory.base.TraversalContext<BE, org.hawkular.inventory.api.model.DataEntity>, org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>)",
+          "justification": "This is required for properly checking for disallowed modifications in presence of metadata packs."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.base.BaseData.Single<BE>::<init>(org.hawkular.inventory.base.TraversalContext<BE, org.hawkular.inventory.api.model.DataEntity>, org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>)",
+          "justification": "This is required for properly checking for disallowed modifications in presence of metadata packs."
+        }
+      ]
+    }
   }
 }

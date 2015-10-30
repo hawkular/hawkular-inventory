@@ -41,6 +41,8 @@ public interface ElementUpdateVisitor<R, P> {
 
     R visitOperationType(OperationType.Update operationType, P parameter);
 
+    R visitMetadataPack(MetadataPack.Update metadataPack, P parameter);
+
     R visitUnknown(Object update, P parameter);
 
     class Simple<R, P> implements ElementUpdateVisitor<R, P> {
@@ -105,6 +107,11 @@ public interface ElementUpdateVisitor<R, P> {
 
         @Override
         public R visitOperationType(OperationType.Update operationType, P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitMetadataPack(MetadataPack.Update metadataPack, P parameter) {
             return defaultAction();
         }
 

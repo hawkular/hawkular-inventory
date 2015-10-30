@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -149,19 +150,6 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class TenantsReadContained implements Tenants.ReadContained {
-
-        @Override
-        public Tenants.Multiple getAll(Filter[][] filters) {
-            return new TenantsMultiple();
-        }
-
-        @Override
-        public Tenants.Single get(String id) throws EntityNotFoundException {
-            return new TenantsSingle();
-        }
-    }
-
     public static class TenantsRead implements Tenants.Read {
 
         @Override
@@ -231,6 +219,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public MetadataPacks.ReadContained metadataPacks() {
+            return new MetadataPacksReadContained();
+        }
+
+        @Override
         public Relationships.Read relationships() {
             return new RelationshipsRead();
         }
@@ -275,6 +268,10 @@ public class EmptyInventory implements Inventory {
         @Override
         public ResourceTypes.Read allResourceTypes() {
             return new ResourceTypesRead();
+        }
+
+        @Override public MetadataPacks.ReadWrite metadataPacks() {
+            return new MetadataPacksReadWrite();
         }
 
         @Override
@@ -1408,4 +1405,94 @@ public class EmptyInventory implements Inventory {
             return emptyPage(pager);
         }
     }
+
+    public static class MetadataPacksReadContained implements MetadataPacks.ReadContained {
+
+        @Override public MetadataPacks.Multiple getAll(Filter[][] filters) {
+            return new MetadataPacksMultiple();
+        }
+
+        @Override public MetadataPacks.Single get(String s) throws EntityNotFoundException {
+            return new MetadataPacksSingle();
+        }
+    }
+
+    public static class MetadataPacksReadWrite implements MetadataPacks.ReadWrite {
+        @Override public MetadataPacks.Multiple getAll(Filter[][] filters) {
+            return new MetadataPacksMultiple();
+        }
+
+        @Override public MetadataPacks.Single get(String s) throws EntityNotFoundException {
+            return new MetadataPacksSingle();
+        }
+
+        @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint)
+                throws EntityAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void update(String s, MetadataPack.Update update) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void delete(String s) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class MetadataPacksSingle implements MetadataPacks.Single {
+
+        @Override public ResourceTypes.Read resourceTypes() {
+            return new ResourceTypesRead();
+        }
+
+        @Override public MetricTypes.Read metricTypes() {
+            return new MetricTypesRead();
+        }
+
+        @Override public Relationships.ReadWrite relationships() {
+            return new RelationshipsReadWrite();
+        }
+
+        @Override public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+            return new RelationshipsReadWrite();
+        }
+
+        @Override public MetadataPack entity() throws EntityNotFoundException, RelationNotFoundException {
+            throw entityNotFound(MetadataPack.class);
+        }
+
+        @Override public void update(MetadataPack.Update update)
+                throws EntityNotFoundException, RelationNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void delete() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class MetadataPacksMultiple implements MetadataPacks.Multiple {
+
+        @Override public ResourceTypes.Read resourceTypes() {
+            return new ResourceTypesRead();
+        }
+
+        @Override public MetricTypes.Read metricTypes() {
+            return new MetricTypesRead();
+        }
+
+        @Override public Relationships.Read relationships() {
+            return new RelationshipsRead();
+        }
+
+        @Override public Relationships.Read relationships(Relationships.Direction direction) {
+            return new RelationshipsRead();
+        }
+
+        @Override public Page<MetadataPack> entities(Pager pager) {
+            return emptyPage(pager);
+        }
+    }
 }
+

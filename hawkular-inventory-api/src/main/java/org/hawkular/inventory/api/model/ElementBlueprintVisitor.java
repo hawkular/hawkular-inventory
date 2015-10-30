@@ -41,6 +41,8 @@ public interface ElementBlueprintVisitor<R, P> {
 
     R visitOperationType(OperationType.Blueprint operationType, P parameter);
 
+    R visitMetadataPack(MetadataPack.Blueprint metadataPack, P parameter);
+
     R visitUnknown(Object blueprint, P parameter);
 
     class Simple<R, P> implements ElementBlueprintVisitor<R, P> {
@@ -106,6 +108,11 @@ public interface ElementBlueprintVisitor<R, P> {
         @Override
         public R visitOperationType(OperationType.Blueprint operationType, P parameter) {
             return defaultAction(operationType, parameter);
+        }
+
+        @Override
+        public R visitMetadataPack(MetadataPack.Blueprint metadataPack, P parameter) {
+            return defaultAction(metadataPack, parameter);
         }
 
         @Override

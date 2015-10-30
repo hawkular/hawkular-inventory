@@ -158,7 +158,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     }
 
-    private BE getParent() {
+    protected BE getParent() {
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
             @SuppressWarnings("unchecked")
             @Override

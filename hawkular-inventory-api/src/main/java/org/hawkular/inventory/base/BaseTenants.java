@@ -24,6 +24,7 @@ import static org.hawkular.inventory.api.filters.With.type;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
@@ -31,6 +32,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -155,6 +157,11 @@ public final class BaseTenants {
                             by(contains), type(ResourceType.class)}
             }).getting(ResourceType.class));
         }
+
+        @Override
+        public MetadataPacks.ReadContained metadataPacks() {
+            return new BaseMetadataPacks.ReadContained<>(context.proceedTo(contains, MetadataPack.class).get());
+        }
     }
 
     public static class Single<BE> extends SingleEntityFetcher<BE, Tenant, Tenant.Update> implements Tenants.Single {
@@ -194,6 +201,11 @@ public final class BaseTenants {
                     {by(contains), type(Environment.class), by(contains), type(Feed.class),
                             by(contains), type(ResourceType.class)}
             }).getting(ResourceType.class));
+        }
+
+        @Override
+        public MetadataPacks.ReadWrite metadataPacks() {
+            return new BaseMetadataPacks.ReadWrite<>(context.proceedTo(contains, MetadataPack.class).get());
         }
     }
 }

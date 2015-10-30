@@ -20,7 +20,6 @@ package org.hawkular.inventory.api;
 import java.util.Arrays;
 
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.Entity;
 
 /**
  * @author Lukas Krejci
@@ -28,11 +27,11 @@ import org.hawkular.inventory.api.model.Entity;
  */
 public final class EntityNotFoundException extends InventoryException {
 
-    private final Class<? extends Entity<?, ?>> entityType;
+    private final Class<?> entityType;
     private final Filter[][] filters;
     private final String msg;
 
-    public EntityNotFoundException(Class<? extends Entity<?, ?>> entityClass, Filter[][] filters) {
+    public EntityNotFoundException(Class<?> entityClass, Filter[][] filters) {
         this.entityType = entityClass;
         this.filters = filters;
         this.msg = null;
@@ -51,7 +50,7 @@ public final class EntityNotFoundException extends InventoryException {
     /**
      * @return the type of the entity that was not found.
      */
-    public Class<? extends Entity<?, ?>> getEntityType() {
+    public Class<?> getEntityType() {
         return entityType;
     }
 

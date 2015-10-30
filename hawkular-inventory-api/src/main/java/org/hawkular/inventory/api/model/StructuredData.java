@@ -16,13 +16,18 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -228,6 +233,137 @@ public final class StructuredData {
         }
     }
 
+    public String toJSON() {
+        StringWriter wrt = new StringWriter();
+        try {
+            writeJSON(wrt);
+            return wrt.toString();
+        } catch (IOException e) {
+            throw new AssertionError("IOException while writing to a StringWriter. This should never happen.", e);
+        }
+    }
+
+    private static final class TransferIOException extends RuntimeException {
+        public TransferIOException(IOException cause) {
+            super(cause);
+        }
+
+        @Override
+        public synchronized IOException getCause() {
+            return (IOException) super.getCause();
+        }
+    }
+
+    public void writeJSON(Appendable wrt) throws IOException {
+        try {
+            accept(new Visitor<Void, Void>() {
+                @Override
+                public Void visitBool(boolean value, Void parameter) {
+                    try {
+                        wrt.append(value ? "true" : "false");
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitIntegral(long value, Void parameter) {
+                    try {
+                        wrt.append(Long.toString(value));
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitFloatingPoint(double value, Void parameter) {
+                    try {
+                        wrt.append(Double.toString(value));
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitString(String value, Void parameter) {
+                    try {
+                        wrt.append('"').append(value).append('"');
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitUndefined(Void parameter) {
+                    try {
+                        wrt.append("null");
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitList(List<StructuredData> value, Void parameter) {
+                    try {
+                        wrt.append("[");
+                        value.forEach((d) -> d.accept(this, parameter));
+                        wrt.append("]");
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitMap(Map<String, StructuredData> value, Void parameter) {
+                    try {
+                        BiFunction<String, Map.Entry<String, StructuredData>, Void> appender = (prefix, entry) -> {
+                            String key = entry.getKey();
+                            StructuredData d = entry.getValue();
+
+                            try {
+                                wrt.append(prefix).append('"').append(key).append("\":");
+                            } catch (IOException e) {
+                                throw new TransferIOException(e);
+                            }
+                            d.accept(this, parameter);
+
+                            return null;
+                        };
+
+                        SortedMap<String, StructuredData> sorted = new TreeMap<>(value);
+
+                        wrt.append("{");
+                        Iterator<Map.Entry<String, StructuredData>> it = sorted.entrySet().iterator();
+                        if (it.hasNext()) {
+                            appender.apply("", it.next());
+                        }
+
+                        while (it.hasNext()) {
+                            appender.apply(",", it.next());
+                        }
+
+                        wrt.append("}");
+                        return null;
+                    } catch (IOException e) {
+                        throw new TransferIOException(e);
+                    }
+                }
+
+                @Override
+                public Void visitUnknown(Serializable value, Void parameter) {
+                    return null;
+                }
+            }, null);
+        } catch (TransferIOException e) {
+            throw e.getCause();
+        }
+    }
 
     public enum Type {
         bool, integral, floatingPoint, string, undefined, list, map

@@ -23,6 +23,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
+import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
@@ -31,6 +32,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
+import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
 import static org.hawkular.inventory.api.Resources.DataRole.configuration;
 import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
@@ -58,6 +60,7 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.ContentHash;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
@@ -88,6 +91,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
@@ -360,7 +364,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         OperationTypes.Single startOp = personType.operationTypes().create(OperationType.Blueprint.builder().withId
                 ("start").build());
         startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.returnType).withValue(StructuredData.get().map()
+                .withRole(returnType).withValue(StructuredData.get().map()
                         .putString("title", "start_returnType")
                         .putString("description", "start operation result")
                         .putString("type", "boolean")
@@ -392,6 +396,29 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
                 .withValue(StructuredData.get().map().putString("firstName", "Hynek").putString("lastName", "Macha")
                         .build()).build());
+
+        //create a metadata pack
+        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+                .withId("mpRt").withName("Resource Type in a metadata pack").build());
+        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").data().create(
+                DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+                        .withRole(ResourceTypes.DataRole.configurationSchema)
+                        .withValue(StructuredData.get().map().putString("title", "mpRtCs").putString("type",
+                                "string").build()).build());
+        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").operationTypes().create(
+                OperationType.Blueprint.builder().withId("mpRtOt").build());
+
+        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").operationTypes().get("mpRtOt")
+                .data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder().withRole(returnType)
+                .withValue(StructuredData.get().map().putString("title", "mpRtOtRet")
+                        .putString("type", "string").build()).build());
+
+        inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().create(
+                MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("mpMt").withUnit(MetricUnit.NONE).build());
+
+        inventory.tenants().get("com.acme.tenant").metadataPacks().create(MetadataPack.Blueprint.builder()
+                .withMembers(CanonicalPath.fromString("/t;com.acme.tenant/rt;mpRt"),
+                        CanonicalPath.fromString("/t;com.acme.tenant/mt;mpMt")).build());
     }
 
     private void teardownData() throws Exception {
@@ -572,11 +599,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .accept(kids);
 
         kids = inventory.tenants().getAll().feedlessResourceTypes().getAll(asTargetBy("contains"));
-        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(4).apply(ResourceType.class).apply(parents)
+        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(5).apply(ResourceType.class).apply(parents)
                 .accept(kids);
 
         kids = inventory.tenants().getAll().feedlessMetricTypes().getAll(asTargetBy("contains"));
-        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(MetricType.class).apply(parents)
+        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(3).apply(MetricType.class).apply(parents)
                 .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(by("contains"));
@@ -590,10 +617,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         testHelper.apply(2).apply(Environment.class).apply("contains").apply(4).apply(Resource.class).apply(parents)
                 .accept(kids);
 
-        parents = inventory.tenants().getAll().environments().getAll(by("contains"));
+        parents = inventory.tenants().getAll().feedlessMetricTypes().getAll();
         kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(
                 asTargetBy("defines"));
-        testHelper.apply(2).apply(MetricType.class).apply("defines").apply(4).apply(Metric.class).apply(parents)
+        testHelper.apply(3).apply(MetricType.class).apply("defines").apply(4).apply(Metric.class).apply(parents)
                 .accept(kids);
     }
 
@@ -839,7 +866,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Playroom");
 
         Query query = Query.path().with(type(ResourceType.class)).get();
-        assert 4 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList().size();
+        Assert.assertEquals(5, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
+                .size());
     }
 
     @Test
@@ -861,7 +889,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Size");
 
         Query query = Query.path().with(type(MetricType.class)).get();
-        assert 2 == inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList().size();
+        Assert.assertEquals(3, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
+                .size());
     }
 
     @Test
@@ -995,7 +1024,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         Assert.assertEquals("start", ots.entity().getId());
 
-        StructuredData returnTypeSchema = ots.data().get(OperationTypes.DataRole.returnType).entity().getValue();
+        StructuredData returnTypeSchema = ots.data().get(returnType).entity().getValue();
         StructuredData parametersSchema = ots.data().get(OperationTypes.DataRole.parameterTypes).entity().getValue();
 
         Assert.assertEquals("start_returnType", returnTypeSchema.map().get("title").string());
@@ -1021,13 +1050,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void queryMultipleResourceTypes() throws Exception {
         Set<ResourceType> types = inventory.tenants().getAll().feedlessResourceTypes().getAll().entities();
-        assert types.size() == 4;
+        Assert.assertEquals(5, types.size());
     }
 
     @Test
     public void queryMultipleMetricDefs() throws Exception {
         Set<MetricType> types = inventory.tenants().getAll().feedlessMetricTypes().getAll().entities();
-        assert types.size() == 2;
+        Assert.assertEquals(3, types.size());
     }
 
     @Test
@@ -1657,6 +1686,146 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
     }
 
+    @Test
+    public void testMetadataPackMembershipNonUpdatable() throws Exception {
+        CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
+        CanonicalPath rtPath = tenantPath.extend(ResourceType.class, "Person").get();
+
+        MetadataPack pack = inventory.inspect(tenantPath, Tenants.Single.class).metadataPacks().getAll().entities()
+                .iterator().next();
+
+        try {
+            inventory.inspect(pack).relationships().linkWith(incorporates, rtPath, null);
+            Assert.fail("Adding a resource type to a metadatapack should not be possible after the pack has been " +
+                    "created.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rtPath, ResourceTypes.Single.class).relationships(incoming).linkWith(incorporates,
+                    pack.getPath(), null);
+            Assert.fail("Adding a resource type to a metadatapack should not be possible after the pack has been " +
+                    "created.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+    }
+
+    @Test
+    public void testModificationsOfEntitiesInMetadataPacksImpossible() throws Exception {
+        Tenant t = inventory.tenants().get("com.acme.tenant").entity();
+        MetricType mt = inventory.inspect(t).feedlessMetricTypes().get("mpMt").entity();
+        ResourceType rt = inventory.inspect(t).feedlessResourceTypes().get("mpRt").entity();
+
+        try {
+            inventory.inspect(mt).update(MetricType.Update.builder().withUnit(MetricUnit.PER_DAY).build());
+            Assert.fail("Updating a metric type that is a part of metadata pack should not be possible.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder().withId("asfd").build());
+            Assert.fail("It should not be possible to add an operation type to a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().delete("mpRtOt");
+            Assert.fail("It should not be possible to delete an operation type from a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().get("mpRtOt").delete();
+            Assert.fail("It should not be possible to delete an operation type from a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().get("mpRtOt").data().create(DataEntity.Blueprint.<OperationTypes
+                    .DataRole>builder().withRole(OperationTypes.DataRole.parameterTypes).withValue(StructuredData.get()
+                    .undefined()).build());
+            Assert.fail("It should not be possible to add data to operation type from a resource type in metadata " +
+                    "pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().get("mpRtOt").data().update(returnType, DataEntity.Update.builder
+                    ().withValue(StructuredData.get().bool(true)).build());
+            Assert.fail("It should not be possible to modify data of operation type from a resource type in metadata " +
+                    "pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).operationTypes().get("mpRtOt").data().delete(returnType);
+            Assert.fail("It should not be possible to delete data of operation type from a resource type in metadata " +
+                    "pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).data().create(
+                    DataEntity.Blueprint.<ResourceTypes.DataRole>builder().withRole(connectionConfigurationSchema)
+                            .withValue(StructuredData.get().bool(true)).build());
+
+            Assert.fail("It should not be possible to add an data to a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).data().get(configurationSchema).delete();
+            Assert.fail("It should not be possible to remove data from a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+
+        try {
+            inventory.inspect(rt).data().get(configurationSchema).update(DataEntity.Update.builder().withValue
+                    (StructuredData.get().undefined()).build());
+            Assert.fail("It should not be possible to modify data of a resource type in metadata pack.");
+        } catch (IllegalArgumentException e) {
+            //good
+        }
+    }
+
+    @Test
+    public void testMetadataPackIdEqualToContentHash() throws Exception {
+        MetricType mt = inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().get("mpMt").entity();
+        ResourceType rt = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").entity();
+        OperationType ot = inventory.inspect(rt).operationTypes().get("mpRtOt").entity();
+
+        StructuredData configSchema = inventory.inspect(rt).data().get(configurationSchema).entity().getValue();
+        StructuredData retType = inventory.inspect(ot).data().get(returnType).entity().getValue();
+
+        String expectedContentHash = ContentHash.of(MetadataPack.Structure.builder()
+                .with(MetricType.Blueprint
+                        .builder(mt.getType())
+                        .withUnit(mt.getUnit())
+                        .withId(mt.getId()).build())
+                .with(ResourceType.Blueprint.builder().withId(rt.getId()).build())
+                .with(DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+                        .withRole(configurationSchema).withValue(configSchema).build())
+                .with(OperationType.Blueprint.builder().withId(ot.getId()).build())
+                .with(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                        .withRole(returnType).withValue(retType).build())
+                .done()
+                .done()
+                .build());
+
+        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).exists());
+    }
+
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
     void testUpdate(T entity, Entity.Update.Builder<U, ?> update) {
         @SuppressWarnings("unchecked")
@@ -1882,7 +2051,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
         Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
         Set<E> rels = backend.getRelationships(entity, both);
-        Assert.assertEquals(4, rels.size());
+        Assert.assertEquals(7, rels.size());
 
         Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
                 Relationship.class));

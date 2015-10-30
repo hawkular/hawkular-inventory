@@ -24,15 +24,14 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
-import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.ResourceType;
 
 /**
  * @author Lukas Krejci
@@ -86,6 +85,40 @@ public final class BaseMetricTypes {
 
             return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
+
+        @Override
+        protected void cleanup(String s, BE entityRepresentation) {
+            cleanup(context, entityRepresentation);
+        }
+
+        @Override
+        protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update) {
+            preUpdate(context, entityRepresentation, update);
+        }
+
+        private static <BE> void cleanup(TraversalContext<BE, ?> context, BE deletedEntity) {
+            if (isInMetadataPack(context, deletedEntity)) {
+                throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
+            }
+        }
+
+        private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update) {
+            MetricType mt = context.backend.convert(entity, MetricType.class);
+            if (mt.getUnit() == update.getUnit()) {
+                //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
+                return;
+            }
+
+            if (isInMetadataPack(context, entity)) {
+                throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
+            }
+        }
+
+        private static <BE> boolean isInMetadataPack(TraversalContext<BE, ?> context, BE metricType) {
+            return context.backend.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
+                    With.type(MetadataPack.class)).get()) != null;
+
+        }
     }
 
     public static class ReadContained<BE> extends Fetcher<BE, MetricType, MetricType.Update>
@@ -131,30 +164,6 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public Relationship associate(Path id) throws EntityNotFoundException,
-                RelationAlreadyExistsException {
-            Query getMetricType = Util.queryTo(context, id);
-
-            BE metricType = getSingle(getMetricType, MetricType.class);
-
-            return createAssociation(ResourceType.class, incorporates, metricType);
-        }
-
-        @Override
-        public Relationship disassociate(Path id) throws EntityNotFoundException {
-            Query getMetricType = Util.queryTo(context, id);
-
-            BE metricType = getSingle(getMetricType, MetricType.class);
-
-            return deleteAssociation(ResourceType.class, incorporates, metricType);
-        }
-
-        @Override
-        public Relationship associationWith(Path path) throws RelationNotFoundException {
-            return getAssociation(ResourceType.class, path, incorporates);
-        }
-
-        @Override
         public MetricTypes.Multiple getAll(Filter[][] filters) {
             return new BaseMetricTypes.Multiple<>(context.proceed().whereAll(filters).get());
         }
@@ -175,6 +184,16 @@ public final class BaseMetricTypes {
         @Override
         public Metrics.Read metrics() {
             return new BaseMetrics.Read<>(context.proceedTo(defines, Metric.class).get());
+        }
+
+        @Override
+        protected void cleanup(BE deletedEntity) {
+            ReadWrite.cleanup(context, deletedEntity);
+        }
+
+        @Override
+        protected void preUpdate(BE updatedEntity, MetricType.Update update) {
+            ReadWrite.preUpdate(context, updatedEntity, update);
         }
     }
 

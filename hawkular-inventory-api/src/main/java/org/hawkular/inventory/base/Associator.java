@@ -16,8 +16,12 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.type;
 
+import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
+import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
@@ -70,5 +74,34 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
                 .getElementType();
 
         return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
+    }
+
+    /**
+     * @return the type of the source entity of the association on this position in the inventory traversal
+     */
+    @SuppressWarnings("unchecked")
+    protected Class<? extends Entity<?, ?>> getSourceType() {
+        return (Class<? extends Entity<?, ?>>) context.previous.entityClass;
+    }
+
+    public Relationship associate(Path id) throws EntityNotFoundException,
+            RelationAlreadyExistsException {
+        Query getTarget = Util.queryTo(context, id);
+
+        BE target = getSingle(getTarget, context.entityClass);
+
+        return createAssociation(getSourceType(), incorporates, target);
+    }
+
+    public Relationship disassociate(Path id) throws EntityNotFoundException {
+        Query getTarget = Util.queryTo(context, id);
+
+        BE target = getSingle(getTarget, context.entityClass);
+
+        return deleteAssociation(getSourceType(), incorporates, target);
+    }
+
+    public Relationship associationWith(Path path) throws RelationNotFoundException {
+        return getAssociation(getSourceType(), path, incorporates);
     }
 }

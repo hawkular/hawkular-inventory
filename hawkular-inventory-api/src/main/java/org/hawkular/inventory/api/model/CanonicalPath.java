@@ -54,6 +54,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_NAME_TYPES.put("rl", Relationship.class);
         SHORT_NAME_TYPES.put("d", DataEntity.class);
         SHORT_NAME_TYPES.put("ot", OperationType.class);
+        SHORT_NAME_TYPES.put("mp", MetadataPack.class);
 
         SHORT_TYPE_NAMES.put(Tenant.class, "t");
         SHORT_TYPE_NAMES.put(Environment.class, "e");
@@ -65,8 +66,10 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_TYPE_NAMES.put(Relationship.class, "rl");
         SHORT_TYPE_NAMES.put(DataEntity.class, "d");
         SHORT_TYPE_NAMES.put(OperationType.class, "ot");
+        SHORT_TYPE_NAMES.put(MetadataPack.class, "mp");
 
-        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class));
+        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class,
+                MetadataPack.class));
         VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
@@ -227,6 +230,27 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      */
     public CanonicalPath getLeaf() {
         return new CanonicalPath(path.size(), path);
+    }
+
+    public boolean isParentOf(CanonicalPath other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other == null");
+        }
+
+        if (other.path.size() <= path.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < path.size(); ++i) {
+            Segment mySeg = path.get(i);
+            Segment otherSeg = other.path.get(i);
+
+            if (!mySeg.equals(otherSeg)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -246,9 +246,9 @@ public final class BaseResources {
 
         @Override
         public Data.ReadWrite<Resources.DataRole> data() {
-            return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get());
+            return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
+                    BaseData.DataModificationChecks.<BE>none());
         }
-
     }
 
     public static class Multiple<BE> extends MultipleEntityFetcher<BE, Resource, Resource.Update>
@@ -280,7 +280,8 @@ public final class BaseResources {
 
         @Override
         public Data.Read<Resources.DataRole> data() {
-            return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get());
+            return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
+                    BaseData.DataModificationChecks.<BE>none());
         }
 
     }

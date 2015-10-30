@@ -17,6 +17,11 @@
 
 package org.hawkular.inventory.api;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.List;
+import java.util.stream.StreamSupport;
+
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 
@@ -63,6 +68,19 @@ interface AssociationInterface {
     Relationship associate(Path path) throws EntityNotFoundException, RelationAlreadyExistsException;
 
     /**
+     * Associates a number of paths with the entity on the current position in the traversal.
+     * <p>
+     * The default implementation merely calls {@link #associate(Path)} for each of the paths.
+     *
+     * @param paths the paths to the entities to associate
+     * @return the list of the relationships in the iteration order of the supplied paths
+     * @see #associate(Path)
+     */
+    default List<Relationship> associate(Iterable<Path> paths) {
+        return StreamSupport.stream(paths.spliterator(), false).map(this::associate).collect(toList());
+    }
+
+    /**
      * Removes an entity from the relation with the current entity.
      *
      * The current entity and the type of the entity to remove from the relation is determined by the current position
@@ -75,6 +93,19 @@ interface AssociationInterface {
      * @return the relationship that was deleted as a result of the disassociation
      */
     Relationship disassociate(Path path) throws EntityNotFoundException;
+
+    /**
+     * Similar to {@link #associate(Iterable)}, this method disassociates the provided paths.
+     * <p>
+     * The default implementation merely calls {@link #disassociate(Path)} for each of the provided paths.
+     *
+     * @param paths the paths to disassociate
+     * @return the list of the removed relationships in the iteration order of the paths
+     * @see #disassociate(Path)
+     */
+    default List<Relationship> disassociate(Iterable<Path> paths) {
+        return StreamSupport.stream(paths.spliterator(), false).map(this::disassociate).collect(toList());
+    }
 
     /**
      * Finds the relationship with the entity with the provided id.

@@ -17,6 +17,8 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.With.id;
 
 import org.hawkular.inventory.api.Data;
@@ -24,9 +26,12 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
  * @author Lukas Krejci
@@ -69,7 +74,26 @@ public final class BaseOperationTypes {
 
         @Override public OperationTypes.Single create(OperationType.Blueprint blueprint) throws
                 EntityAlreadyExistsException {
+            //disallow this if the parent resource type is a part of a metadata pack
+            if (context.backend.traverseToSingle(getParent(), Query.path().with(asTargetBy(incorporates),
+                    With.type(MetadataPack.class)).get()) != null) {
+                throw new IllegalArgumentException("Cannot create an operation type of resource type included in " +
+                        "a meta data pack. This would invalidate the metadata pack's identity.");
+            }
             return new BaseOperationTypes.Single<>(context.replacePath(doCreate(blueprint)));
+        }
+
+        @Override
+        protected void cleanup(String s, BE entityRepresentation) {
+            if (isResourceTypeInMetadataPack(context, entityRepresentation)) {
+                throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
+                        "a meta data pack. This would invalidate the metadata pack's identity.");
+            }
+        }
+
+        private static <BE> boolean isResourceTypeInMetadataPack(TraversalContext<BE, ?> context, BE operationType) {
+            return context.backend.traverseToSingle(operationType, Query.path().with(asTargetBy(contains),
+                    asTargetBy(incorporates), With.type(MetadataPack.class)).get()) != null;
         }
     }
 
@@ -99,7 +123,15 @@ public final class BaseOperationTypes {
         }
 
         @Override public Data.ReadWrite<OperationTypes.DataRole> data() {
-            return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get());
+            return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
+                    new OperationTypeDataModificationChecks<>(context));
+        }
+
+        @Override protected void cleanup(BE deletedEntity) {
+            if (ReadWrite.isResourceTypeInMetadataPack(context, deletedEntity)) {
+                throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
+                        "a meta data pack. This would invalidate the metadata pack's identity.");
+            }
         }
     }
 
@@ -112,7 +144,73 @@ public final class BaseOperationTypes {
 
 
         @Override public Data.Read<OperationTypes.DataRole> data() {
-            return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get());
+            return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
+                    new OperationTypeDataModificationChecks<>(context));
+        }
+    }
+
+
+    private static class OperationTypeDataModificationChecks<BE> implements BaseData.DataModificationChecks<BE> {
+        private final TraversalContext<BE, ?> context;
+
+        private OperationTypeDataModificationChecks(TraversalContext<BE, ?> context) {
+            this.context = context;
+        }
+
+        @Override
+        public void preCreate(DataEntity.Blueprint blueprint) {
+            BE mp = context.backend.querySingle(context.select().path().with(asTargetBy(contains),
+                    asTargetBy(incorporates), With.type(MetadataPack.class)).get());
+
+            if (mp != null) {
+                BE ot = context.backend.querySingle(context.select().get());
+                throw new IllegalArgumentException(
+                        "Data '" + blueprint.getId() + "' cannot be created" +
+                                " under operation type " + context.backend.extractCanonicalPath(ot) +
+                                ", because the owning resource type is part of a meta data pack." +
+                                " Doing this would invalidate meta data pack's identity.");
+            }
+        }
+
+        @Override
+        public void preUpdate(BE dataEntity, DataEntity.Update update) {
+            if (update.getValue() == null) {
+                return;
+            }
+
+            BE mp = context.backend.traverseToSingle(dataEntity, Query.path().with(
+                    asTargetBy(contains), //up to operation type
+                    asTargetBy(contains), //up to resource type
+                    asTargetBy(incorporates), With.type(MetadataPack.class) // up to the pack
+            ).get());
+
+            if (mp != null) {
+                CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
+                throw new IllegalArgumentException(
+                        "Data '" + dataPath.getSegment().getElementId() + "' cannot be updated" +
+                                " under operation type " + dataPath.up() +
+                                ", because the owning resource type is part of a meta data pack." +
+                                " Doing this would invalidate meta data pack's identity.");
+            }
+        }
+
+        @Override
+        public void preDelete(BE dataEntity) {
+            CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
+            BE rt = null;
+            try {
+                rt = context.backend.find(dataPath.up(2));
+            } catch (ElementNotFoundException e) {
+                Fetcher.throwNotFoundException(context);
+            }
+
+            if (!ReadWrite.isResourceTypeInMetadataPack(context, rt)) {
+                throw new IllegalArgumentException(
+                        "Data '" + dataPath.getSegment().getElementId() + "' cannot be deleted" +
+                                " under operation type " + dataPath.up() +
+                                ", because the owning resource type is part of a meta data pack." +
+                                " Doing this would invalidate meta data pack's identity.");
+            }
         }
     }
 }
