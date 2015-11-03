@@ -24,8 +24,6 @@ import static org.hawkular.inventory.api.filters.With.id;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
-import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
@@ -145,27 +143,7 @@ public final class BaseMetrics {
     public static class ReadAssociate<BE> extends Associator<BE, Metric> implements Metrics.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, Metric> context) {
-            super(context);
-        }
-
-        @Override
-        public Relationship associate(
-                Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
-            BE metric = Util.find(context, id);
-
-            return createAssociation(Resource.class, incorporates, metric);
-        }
-
-        @Override
-        public Relationship disassociate(Path id) throws EntityNotFoundException {
-            BE metric = Util.find(context, id);
-
-            return deleteAssociation(Resource.class, incorporates, metric);
-        }
-
-        @Override
-        public Relationship associationWith(Path path) throws RelationNotFoundException {
-            return getAssociation(Resource.class, path, incorporates);
+            super(context, incorporates, Resource.class);
         }
 
         @Override

@@ -193,7 +193,7 @@ public class SerializationTest {
 
     @Test
     public void testFeed() throws Exception {
-        Feed f = new Feed(CanonicalPath.fromString("/t;t/e;e/f;c"),
+        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"),
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
@@ -205,14 +205,14 @@ public class SerializationTest {
     public void testDetypedFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Feed f = new Feed(CanonicalPath.fromString("/t;t/e;e/f;c"),
+        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"),
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
 
-        testDetyped(f, "{\"path\":\"/t;t/e;e/f;c\",\"properties\":{\"a\":\"b\"}}");
-        testDetyped(f, "{\"path\":\"/t;t/e/c\",\"properties\":{\"a\":\"b\"}}");
-        testDetyped(f, "{\"path\":\"/e/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(f, "{\"path\":\"/t;t/f;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(f, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(f, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
@@ -263,7 +263,7 @@ public class SerializationTest {
 
     @Test
     public void testResourceInFeed() throws Exception {
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/f;f/r;c"), new ResourceType(
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -275,18 +275,18 @@ public class SerializationTest {
     public void testDetypedResourceInFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/f;f/r;c"), new ResourceType(
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
-        testDetyped(r, "{\"path\":\"/t;t/e;e/f;f/r;c\",\"properties\":{\"a\":\"b\"}}");
-        testDetyped(r, "{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(r, "{\"path\":\"/t;t/f;f/r;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(r, "{\"path\":\"/f/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test
     public void testMetricInFeed() throws Exception {
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/f;f/m;c"), new MetricType(
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), new MetricType(
                 CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -298,13 +298,13 @@ public class SerializationTest {
     public void testDetypedMetricInFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/f;f/m;c"), new MetricType(
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), new MetricType(
                 CanonicalPath.fromString("/t;t/mt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
-        testDetyped(m, "{\"path\":\"/t;t/e;e/f;f/m;c\",\"properties\":{\"a\":\"b\"}}");
-        testDetyped(m, "{\"path\":\"/e/f/c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(m, "{\"path\":\"/t;t/f;f/m;c\",\"properties\":{\"a\":\"b\"}}");
+        testDetyped(m, "{\"path\":\"/f/c\",\"properties\":{\"a\":\"b\"}}");
     }
 
     @Test

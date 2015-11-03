@@ -50,6 +50,13 @@ public final class Feeds {
 
     public interface Read extends ReadInterface<Single, Multiple, Path> {}
 
+    /**
+     * Provides readonly access to feeds associated with environments, with the ability to modify the associations
+     * between the two.
+     */
+    public interface ReadAssociate extends Read, AssociationInterface {
+    }
+
     public interface ReadWrite extends ReadWriteInterface<Feed.Update, Feed.Blueprint, Single, Multiple, String> {
 
         /**
