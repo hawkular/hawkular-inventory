@@ -56,8 +56,18 @@ public class TokenReplacingReaderTest {
     }
 
     @Test
+    public void testMultipleChoice2() throws Exception {
+        testExpression("Hello, ${who,blah}!").with("who", "world").matches("Hello, world!");
+    }
+
+    @Test
+    public void testMultipleChoice3() throws Exception {
+        testExpression("Hello, ${splat,who,blah}!").with("who", "world").matches("Hello, world!");
+    }
+
+    @Test
     public void testMultipleChoiceWithDefaultValue() throws Exception {
-        testExpression("Hello, ${blah,who:world}!").matches("Hello, world!");
+        testExpression("Hello, ${splat,blah,who:world}!").matches("Hello, world!");
     }
 
     @Test

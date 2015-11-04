@@ -59,9 +59,9 @@ public final class BaseMetricTypes {
                 CanonicalPath parentPath, BE parent) {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
-            return new EntityAndPendingNotifications<>(new MetricType(parentPath.extend(MetricType.class,
-                    context.backend.extractId(entity)).get(), blueprint.getUnit(), blueprint.getType(), blueprint
-                    .getProperties()));
+            return new EntityAndPendingNotifications<>(new MetricType(blueprint.getName(),
+                    parentPath.extend(MetricType.class, context.backend.extractId(entity)).get(),
+                    blueprint.getUnit(), blueprint.getType(), blueprint.getProperties()));
         }
 
         @Override

@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>24</version>
+    <version>25</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>hawkular-inventory-parent</artifactId>
-  <version>0.5.1-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
@@ -43,6 +43,7 @@
     <module>hawkular-inventory-bus-api</module>
     <module>hawkular-inventory-dist</module>
     <module>hawkular-inventory-load-tests</module>
+    <module>hawkular-inventory-itest-parent</module>
   </modules>
 
   <scm>
@@ -53,8 +54,14 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.bus>0.5.0.Final</version.org.hawkular.bus>
-    <api-check-activated>true</api-check-activated>
+    <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
+    <version.org.hawkular.accounts>1.0.16.Final</version.org.hawkular.accounts>
+
+    <!-- integration tests distribution properties -->
+    <test-dist-version.org.hawkular.bus>${version.org.hawkular.bus}</test-dist-version.org.hawkular.bus>
+    <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
+    <test-dist-version.org.hawkular.commons>0.2.1.Final</test-dist-version.org.hawkular.commons> <!-- C* -->
+    <test-dist-version.org.keycloak>1.3.1.Final</test-dist-version.org.keycloak>
   </properties>
 
 
@@ -76,6 +83,8 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
+          <preparationGoals>clean verify</preparationGoals>
+          <arguments>-Pitest</arguments>
         </configuration>
       </plugin>
     </plugins>
@@ -85,7 +94,7 @@
     <profile>
       <id>api-check</id>
       <activation>
-        <activeByDefault>${api-check-activated}</activeByDefault>
+        <activeByDefault>true</activeByDefault>
       </activation>
 
       <build>

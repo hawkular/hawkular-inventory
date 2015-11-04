@@ -62,8 +62,9 @@ public final class BaseEnvironments {
         @Override
         protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
                 CanonicalPath parentPath, BE parent) {
-            return new EntityAndPendingNotifications<>(new Environment(parentPath.extend(Environment.class,
-                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
+                    parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
+                    blueprint.getProperties()));
         }
 
         @Override

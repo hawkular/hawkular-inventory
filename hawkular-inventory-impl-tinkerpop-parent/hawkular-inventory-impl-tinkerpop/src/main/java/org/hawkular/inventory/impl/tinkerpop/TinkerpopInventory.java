@@ -24,6 +24,7 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
@@ -74,7 +75,7 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withProperty(IndexSpec.Property.builder()
                                 .withName(Constants.Property.__eid.name())
                                 .withType(String.class)
-                                .withUnique(true)
+//                                .withUnique(true)
                                 .build())
                         .build(),
                 IndexSpec.builder()
@@ -105,7 +106,56 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withProperty(IndexSpec.Property.builder()
                                 .withName(Constants.Property.__metric_data_type.name())
                                 .withType(String.class)
-//                                .withUnique(true)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__eid.name())
+                                .withType(String.class)
+                                .withUnique(true)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceCp.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceEid.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__sourceType.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetCp.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetEid.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetType.name())
+                                .withType(String.class)
                                 .build())
                         .build());
         return graph;

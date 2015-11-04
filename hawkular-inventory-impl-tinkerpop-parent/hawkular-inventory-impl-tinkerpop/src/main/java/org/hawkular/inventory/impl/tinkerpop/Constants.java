@@ -17,13 +17,21 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataIndex;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataKey;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.name;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -50,6 +58,12 @@ final class Constants {
      * The vertices in the graph have certain well-known properties.
      */
     enum Property {
+        /**
+         * The user-defined human-readable name of the entity. We don't use the "__" prefix here as with the rest of
+         * the properties, because this is not really hidden.
+         */
+        name,
+
         /**
          * This is the name of the property that we use to store the type of the entity represented by the vertex
          */
@@ -97,8 +111,23 @@ final class Constants {
          * The name of the property on the structured data vertex that holds the primitive value of that vertex.
          * List and maps don't hold the value directly but instead have edges going out to the child vertices.
          */
-        __structuredDataValue;
+        __structuredDataValue,
 
+        __sourceType,
+
+        __targetType,
+
+        __sourceCp,
+
+        __targetCp,
+
+        __sourceEid,
+
+        __targetEid;
+
+
+        private static final HashSet<String> MIRRORED_PROPERTIES = new HashSet<>(Arrays.asList(__type.name(),
+                __eid.name(), __cp.name()));
 
         public static String mapUserDefined(String property) {
             if (AbstractElement.ID_PROPERTY.equals(property)) {
@@ -107,18 +136,23 @@ final class Constants {
                 return property;
             }
         }
+
+        public static boolean isMirroredInEdges(String property) {
+            return MIRRORED_PROPERTIES.contains(property);
+        }
     }
 
     /**
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant(Tenant.class), environment(Environment.class), feed(Feed.class),
-        resourceType(ResourceType.class), metricType(MetricType.class, __unit, __metric_data_type),
-        operationType(OperationType.class), resource(Resource.class), metric(Metric.class),
-        relationship(Relationship.class), dataEntity(DataEntity.class),
-        structuredData(StructuredData.class, __structuredDataType, __structuredDataValue, __structuredDataIndex,
-                __structuredDataKey);
+        tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
+        resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type),
+        operationType(OperationType.class, name), resource(Resource.class, name), metric(Metric.class, name),
+        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid,
+                __targetEid),
+        dataEntity(DataEntity.class, name), structuredData(StructuredData.class, __structuredDataType,
+                __structuredDataValue, __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;

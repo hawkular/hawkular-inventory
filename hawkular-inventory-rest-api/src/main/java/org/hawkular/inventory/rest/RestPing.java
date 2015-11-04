@@ -75,12 +75,16 @@ public class RestPing {
 
             JaxRsResource jaxRsResource = new JaxRsResource(uri);
             for (ResourceInvoker invoker : entry.getValue()) {
-                ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
-                if(method.getMethod().getDeclaringClass() == getClass()){
+                if (invoker instanceof ResourceMethodInvoker) {
+                    ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
+                    if (method.getMethod().getDeclaringClass() == getClass()) {
+                        continue;
+                    }
+
+                    method.getHttpMethods().forEach(jaxRsResource::addMethod);
+                } else {
                     continue;
                 }
-
-                method.getHttpMethods().forEach(jaxRsResource::addMethod);
             }
 
             if (jaxRsResource.getMethods().size() > 0) {

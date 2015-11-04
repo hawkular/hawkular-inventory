@@ -318,7 +318,7 @@ public class RestBulk extends RestBase {
     })
     public Response addEntities(@ApiParam("This is a map where keys are paths to the parents under which entities " +
             "should be created. The values are again maps where keys are one of [environment, resourceType, " +
-            "metricType, operationType, feed, resource, metric, data, relationship] and values are arrays of " +
+            "metricType, operationType, feed, resource, metric, dataEntity, relationship] and values are arrays of " +
             "blueprints of entities of the corresponding types.") Map<String, Map<ElementType, List<Object>>> entities,
                                 @Context UriInfo uriInfo) {
 
@@ -454,7 +454,7 @@ public class RestBulk extends RestBase {
 
     private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath) {
         switch (elementType) {
-            case data:
+            case dataEntity:
                 return security.canUpdate(parentPath);
             case relationship:
                 throw new IllegalArgumentException("Cannot create anything under a relationship.");
@@ -471,7 +471,7 @@ public class RestBulk extends RestBase {
         feed(Feed.class, Feed.Blueprint.class),
         metric(Metric.class, Metric.Blueprint.class),
         resource(Resource.class, Resource.Blueprint.class),
-        data(DataEntity.class, DataEntity.Blueprint.class),
+        dataEntity(DataEntity.class, DataEntity.Blueprint.class),
         relationship(Relationship.class, Relationship.Blueprint.class);
 
         final Class<? extends AbstractElement<?, ?>> elementType;

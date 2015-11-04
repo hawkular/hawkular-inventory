@@ -1,0 +1,5 @@
+= Hawkular Inventory Integration tests
+
+== Running
+ run in hawkular-inventory root directory
+ mvn clean verify -Pitest

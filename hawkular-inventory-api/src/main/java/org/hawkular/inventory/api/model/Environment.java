@@ -44,13 +44,21 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         this(path, null);
     }
 
+    public Environment(String name, CanonicalPath path) {
+        super(name, path);
+    }
+
     public Environment(CanonicalPath path, Map<String, Object> properties) {
-        super(path, properties);
+        this(null, path, properties);
+    }
+
+    public Environment(String name, CanonicalPath path, Map<String, Object> properties) {
+        super(name, path, properties);
     }
 
     @Override
     public Updater<Update, Environment> update() {
-        return new Updater<>((u) -> new Environment(getPath(), u.getProperties()));
+        return new Updater<>((u) -> new Environment(u.getName(), getPath(), u.getProperties()));
     }
 
     @Override
@@ -67,7 +75,6 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         //JAXB support
         @SuppressWarnings("unused")
         private Blueprint() {
-            this(null, null);
         }
 
         public Blueprint(String id) {
@@ -84,6 +91,12 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
             super(id, properties, outgoing, incoming);
         }
 
+        public Blueprint(String id, String name, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitEnvironment(this, parameter);
@@ -93,12 +106,12 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties, outgoing, incoming);
+                return new Blueprint(id, name, properties, outgoing, incoming);
             }
         }
     }
 
-    public static final class Update extends AbstractElement.Update {
+    public static final class Update extends Entity.Update {
         public static Builder builder() {
             return new Builder();
         }
@@ -110,7 +123,11 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         }
 
         public Update(Map<String, Object> properties) {
-            super(properties);
+            this(null, properties);
+        }
+
+        public Update(String name, Map<String, Object> properties) {
+            super(name, properties);
         }
 
         @Override
@@ -118,10 +135,10 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
             return visitor.visitEnvironment(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
-                return new Update(properties);
+                return new Update(name, properties);
             }
         }
     }

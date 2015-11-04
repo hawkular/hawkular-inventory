@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
@@ -43,7 +42,7 @@ import org.hawkular.inventory.base.spi.ElementNotFoundException;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extends AbstractElement.Update, Id>
+abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extends Entity.Update, Id>
         extends Traversal<BE, E> {
 
     protected Mutator(TraversalContext<BE, E> context) {

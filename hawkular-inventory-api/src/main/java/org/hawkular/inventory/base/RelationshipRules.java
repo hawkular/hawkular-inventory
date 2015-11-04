@@ -19,6 +19,7 @@ package org.hawkular.inventory.base;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
@@ -62,10 +63,12 @@ public final class RelationshipRules {
         CREATE_RULES.put(contains, Arrays.asList(RelationshipRules::checkDiamonds, RelationshipRules::checkLoops));
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
         CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
+        CREATE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowCreate));
         CREATE_RULES.put(incorporates, Collections.singletonList
                 (RelationshipRules::disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
+        DELETE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
                 RelationshipRules::disallowDeleteOfIsParentOfWhenTheresContainsToo));
         DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));

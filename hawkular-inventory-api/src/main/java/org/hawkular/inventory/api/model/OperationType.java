@@ -33,8 +33,16 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
         super(path);
     }
 
+    public OperationType(String name, CanonicalPath path) {
+        super(name, path);
+    }
+
     public OperationType(CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
+    }
+
+    public OperationType(String name, CanonicalPath path, Map<String, Object> properties) {
+        super(name, path, properties);
     }
 
     @Override
@@ -44,7 +52,7 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
 
     @Override
     public Updater<Update, OperationType> update() {
-        return new Updater<>((u) -> new OperationType(getPath(), u.getProperties()));
+        return new Updater<>((u) -> new OperationType(u.getName(), getPath(), u.getProperties()));
     }
 
     public static final class Blueprint extends Entity.Blueprint {
@@ -58,7 +66,6 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
          */
         @SuppressWarnings("unused")
         private Blueprint() {
-            super(null, null);
         }
 
         public Blueprint(String id, Map<String, Object> properties) {
@@ -71,6 +78,12 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
             super(id, properties, outgoing, incoming);
         }
 
+        public Blueprint(String id, String name, Map<String, Object> properties,
+                         Map<String, Set<CanonicalPath>> outgoing,
+                         Map<String, Set<CanonicalPath>> incoming) {
+            super(id, name, properties, outgoing, incoming);
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitOperationType(this, parameter);
@@ -79,7 +92,7 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             @Override
             public Blueprint build() {
-                return new Blueprint(id, properties, outgoing, incoming);
+                return new Blueprint(id, name, properties, outgoing, incoming);
             }
         }
     }
@@ -99,7 +112,11 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
         }
 
         public Update(Map<String, Object> properties) {
-            super(properties);
+            super(null, properties);
+        }
+
+        public Update(String name, Map<String, Object> properties) {
+            super(name, properties);
         }
 
         @Override
@@ -110,7 +127,7 @@ public final class OperationType extends Entity<OperationType.Blueprint, Operati
         public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             @Override
             public Update build() {
-                return new Update(properties);
+                return new Update(name, properties);
             }
         }
     }

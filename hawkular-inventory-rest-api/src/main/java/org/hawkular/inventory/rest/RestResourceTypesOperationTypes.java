@@ -19,6 +19,8 @@ package org.hawkular.inventory.rest;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
+import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -35,6 +37,7 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;
@@ -120,7 +123,7 @@ public class RestResourceTypesOperationTypes extends RestBase {
 
     @DELETE
     @javax.ws.rs.Path("/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}")
-    @ApiOperation("Updates the configuration of a resource type")
+    @ApiOperation("Deletes the operation type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant, or resource type doesn't exist",
@@ -150,8 +153,26 @@ public class RestResourceTypesOperationTypes extends RestBase {
     }
 
     @GET
+    @Path("resourceTypes/{resourceTypeId}/operationTypes")
+    @ApiOperation("Retrieves operation types")
+    @ApiResponses({
+                          @ApiResponse(code = 200, message = "the resource type"),
+                          @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response getAll(@PathParam("resourceTypeId") String resourceTypeId,
+                           @Context UriInfo uriInfo) {
+
+        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId()).feedlessResourceTypes()
+                .get(resourceTypeId).operationTypes().getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, operationTypes).build();
+    }
+
+    @GET
     @Path("/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}")
-    @ApiOperation("Retrieves a single resource type")
+    @ApiOperation("Retrieves the operation type")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
@@ -163,6 +184,25 @@ public class RestResourceTypesOperationTypes extends RestBase {
     }
 
     @GET
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes")
+    @ApiOperation("Retrieves operation types")
+    @ApiResponses({
+                          @ApiResponse(code = 200, message = "the resource type"),
+                          @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
+                                       response = ApiError.class),
+                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+                  })
+    public Response getAll(@PathParam("feedId") String feedId,
+                           @PathParam("resourceTypeId") String resourceTypeId,
+                           @Context UriInfo uriInfo) {
+
+        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId())
+                .feeds().get(feedId).resourceTypes().get(resourceTypeId).operationTypes()
+                .getAll().entities(extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, operationTypes).build();
+    }
+
     @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}")
     @ApiOperation("Retrieves a single resource type")
     @ApiResponses({

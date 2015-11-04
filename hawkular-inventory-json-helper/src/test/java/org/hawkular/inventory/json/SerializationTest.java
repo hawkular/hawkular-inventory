@@ -16,14 +16,17 @@
  */
 package org.hawkular.inventory.json;
 
+import static org.hawkular.inventory.api.model.MetricDataType.GAUGE;
+
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -31,7 +34,6 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
@@ -167,7 +169,7 @@ public class SerializationTest {
 
     @Test
     public void testMetricType() throws Exception {
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, MetricDataType.GAUGE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
@@ -179,7 +181,7 @@ public class SerializationTest {
     public void testDetypedMetricType() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, MetricDataType.GAUGE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }});
@@ -334,22 +336,80 @@ public class SerializationTest {
 
     @Test
     public void testEntityBlueprint() throws Exception {
-        String ser = serialize(new Environment.Blueprint("env",
-                new HashMap<String, Object>() {{
-                    put("key", "value");
-                }},
-                new HashMap<String, Set<CanonicalPath>>() {{
-                    put("kachna", new HashSet<>(Arrays.asList(CanonicalPath.of().tenant("t").get())));
-                }},
-                null));
+        Map<String, Object> properties = new HashMap<String, Object>() {{
+            put("key", "value");
+        }};
 
-        Environment.Blueprint b = deserialize(ser, Environment.Blueprint.class);
+        Map<String, Set<CanonicalPath>> incoming = new HashMap<String, Set<CanonicalPath>>() {{
+            put("duck", Collections.singleton(CanonicalPath.of().tenant("t").get()));
+        }};
+        Map<String, Set<CanonicalPath>> outgoing = new HashMap<String, Set<CanonicalPath>>() {{
+            put("kachna", Collections.singleton(CanonicalPath.of().tenant("t").get()));
+        }};
 
-        Assert.assertEquals("env", b.getId());
-        Assert.assertEquals(Collections.<String, Set<CanonicalPath>>emptyMap(), b.getIncomingRelationships());
-        Assert.assertEquals(Collections.singleton(CanonicalPath.of().tenant("t").get()),
-                b.getOutgoingRelationships().get("kachna"));
-        Assert.assertEquals("value", b.getProperties().get("key"));
+        testBlueprint(DataEntity.Blueprint.builder().withRole(ResourceTypes.DataRole.configurationSchema).withName("nd")
+                .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
+                .build(), (bl, dbl) -> {
+            Assert.assertEquals(bl.getRole(), dbl.getRole());
+            Assert.assertEquals(bl.getValue(), dbl.getValue());
+        });
+
+        testBlueprint(Environment.Blueprint.builder().withId("e").withName("ne").withIncomingRelationships(incoming)
+                .withOutgoingRelationships(outgoing).withProperties(properties).build(), null);
+
+        testBlueprint(Feed.Blueprint.builder().withId("f").withName("nf").withIncomingRelationships(incoming)
+                .withOutgoingRelationships(outgoing).withProperties(properties).build(), null);
+
+        testBlueprint(Metric.Blueprint.builder().withId("m").withName("nm").withIncomingRelationships(incoming)
+                .withOutgoingRelationships(outgoing).withProperties(properties).withMetricTypePath("kachna")
+                .build(), null);
+
+        testBlueprint(MetricType.Blueprint.builder(GAUGE).withId("mt").withName("nmt")
+                .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
+                .build(), null);
+
+        testBlueprint(OperationType.Blueprint.builder().withId("ot").withName("not")
+                .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
+                .build(), null);
+
+        testBlueprint(Resource.Blueprint.builder().withId("r").withName("nr")
+                .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
+                .withResourceTypePath("kachna").build(), null);
+
+        testBlueprint(ResourceType.Blueprint.builder().withId("rt").withName("nrt")
+                .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
+                .build(), null);
+
+        testBlueprint(Tenant.Blueprint.builder().withId("t").withName("nt").withIncomingRelationships(incoming)
+                .withOutgoingRelationships(outgoing).withProperties(properties).build(), null);
+    }
+
+    @Test
+    public void testEntityUpdate() throws Exception {
+        Map<String, Object> properties = new HashMap<String, Object>() {{
+            put("key", "value");
+        }};
+
+        testUpdate(DataEntity.Update.builder().withName("nd").withProperties(properties)
+                .withValue(null).build(), (bl, dbl) -> {
+            Assert.assertEquals(bl.getValue(), dbl.getValue());
+        });
+
+        testUpdate(Environment.Update.builder().withName("ne").withProperties(properties).build(), null);
+
+        testUpdate(Feed.Update.builder().withName("nf").withProperties(properties).build(), null);
+
+        testUpdate(Metric.Update.builder().withName("nm").withProperties(properties).build(), null);
+
+        testUpdate(MetricType.Update.builder().withName("nmt").withProperties(properties).build(), null);
+
+        testUpdate(OperationType.Update.builder().withName("not").withProperties(properties).build(), null);
+
+        testUpdate(Resource.Update.builder().withName("nr").withProperties(properties).build(), null);
+
+        testUpdate(ResourceType.Update.builder().withName("nrt").withProperties(properties).build(), null);
+
+        testUpdate(Tenant.Update.builder().withName("nt").withProperties(properties).build(), null);
     }
 
     private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
@@ -357,6 +417,37 @@ public class SerializationTest {
         mapper.addMixIn(CanonicalPath.class, TenantlessCanonicalPathMixin.class);
 
         Assert.assertEquals(orig, deserialize(serialized, orig.getClass()));
+    }
+
+    private <T extends Entity.Blueprint> void testBlueprint(T bl, BiConsumer<T, T> additionalTests) throws Exception {
+        String ser = serialize(bl);
+
+        @SuppressWarnings("unchecked")
+        T dbl = (T) deserialize(ser, bl.getClass());
+
+        Assert.assertEquals(bl.getId(), dbl.getId());
+        Assert.assertEquals(bl.getIncomingRelationships(), dbl.getIncomingRelationships());
+        Assert.assertEquals(bl.getOutgoingRelationships(), dbl.getOutgoingRelationships());
+        Assert.assertEquals(bl.getName(), dbl.getName());
+        Assert.assertEquals(bl.getProperties(), dbl.getProperties());
+
+        if (additionalTests != null) {
+            additionalTests.accept(bl, dbl);
+        }
+    }
+
+    private <T extends Entity.Update> void testUpdate(T bl, BiConsumer<T, T> additionalTests) throws Exception {
+        String ser = serialize(bl);
+
+        @SuppressWarnings("unchecked")
+        T dbl = (T) deserialize(ser, bl.getClass());
+
+        Assert.assertEquals(bl.getName(), dbl.getName());
+        Assert.assertEquals(bl.getProperties(), dbl.getProperties());
+
+        if (additionalTests != null) {
+            additionalTests.accept(bl, dbl);
+        }
     }
 
     private void test(Object o) throws Exception {

@@ -65,9 +65,107 @@
         },
         {
           "code" : "java.method.numberOfParametersChanged",
-          "oldMethod" : "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext)",
-          "newMethod" : "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext, org.hawkular.inventory.api.Configuration)",
+          "old": "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext)",
+          "new": "method void org.hawkular.inventory.base.BaseInventory<E>::<init>(org.hawkular.inventory.base.spi.InventoryBackend<E>, org.hawkular.inventory.base.ObservableContext, org.hawkular.inventory.api.Configuration)",
           "justification" : "Passing the configuration as a parameter in constructor."
+        }
+      ]
+    }
+  },
+  "0.7.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "new": "class org.hawkular.inventory.api.model.Entity<B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update>",
+          "justification": "Support for entity names."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "regex": true,
+          "old": "method void org\\.hawkular\\.inventory\\.api\\.model\\.Entity<[^>]+>::<init>\\(.*",
+          "justification": "Support for entity names."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "regex": true,
+          "old": "method void org\\.hawkular\\.inventory\\.api\\.model\\.(DataEntity|Environment|Feed|Metric|MetricType|OperationType|Resource|ResourceType|Tenant)::<init>\\(.*",
+          "justification": "Support for entity names."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "regex": true,
+          "old": "method parameter void org\\.hawkular\\.inventory\\.api\\.model\\.(DataEntity|Environment|Feed|Metric|MetricType|OperationType|Resource|ResourceType|Tenant)::<init>\\(.*",
+          "justification": "Support for entity names."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "regex": true,
+          "old": "method void org\\.hawkular\\.inventory\\.api\\.model\\..*\\.Update::<init>\\(.*",
+          "justification": "Support for entity names."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "regex": true,
+          "old": "method parameter void org\\.hawkular\\.inventory\\.api\\.model\\..*\\.Update::<init>\\(.*",
+          "justification": "Support for entity names"
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "new": "class org.hawkular.inventory.base.MultipleEntityFetcher<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, U extends org.hawkular.inventory.api.model.Entity.Update>",
+          "justification": "Support for entity names required changing the type param of Entity to change."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<E> org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::wireUpNewEntity(BE, B, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "justification": "Support for entity names required changing the type param of Entity to change."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "new": "class org.hawkular.inventory.base.SingleEntityFetcher<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, U extends org.hawkular.inventory.api.model.Entity.Update>",
+          "justification": "Support for entity names required changing the type param of Entity to change."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "regex": true,
+          "old": "method parameter .* org\\.hawkular\\.inventory\\.api\\.Inventory::inspect\\(.*",
+          "justification": "Revapi got confused by the large number of overloads. There is really no breakage here."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.Inventory::inspect\\(.*",
+          "justification": "Revapi got confused by the large number of overloads. There is really no breakage here."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.Inventory::inspect\\(.*",
+          "justification": "Revapi got confused by the large number of overloads. There is really no breakage here."
+        },
+        {
+          "code": "java.generics.formalTypeParameterRemoved",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.Inventory::inspect\\(.*",
+          "justification": "Revapi got confused by the large number of overloads. There is really no breakage here."
+        },
+        {
+          "code": "java.generics.formalTypeParameterAdded",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.Inventory::inspect\\(.*",
+          "justification": "Revapi got confused by the large number of overloads. There is really no breakage here."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.model\\..*\\.Blueprint::<init>\\(.*",
+          "justification": "Revapi got confused by the overloaded methods. There is really no breakage here."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "regex": true,
+          "old": "method .* org\\.hawkular\\.inventory\\.api\\.model\\..*\\.Blueprint::<init>\\(.*",
+          "justification": "Revapi got confused by the overloaded methods. There is really no breakage here."
         }
       ]
     }

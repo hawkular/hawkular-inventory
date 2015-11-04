@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static com.tinkerpop.gremlin.java.GremlinFluentUtility.optimizePipelineForQuery;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -37,6 +39,13 @@ import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.QueryFragment;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+
+import com.tinkerpop.pipes.Pipe;
+import com.tinkerpop.pipes.filter.IntervalFilterPipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import com.tinkerpop.pipes.filter.RangeFilterPipe;
+import com.tinkerpop.pipes.transform.VertexQueryPipe;
+import com.tinkerpop.pipes.transform.VerticesEdgesPipe;
 
 /**
  * A filter applicator applies a filter to a Gremlin query.
@@ -121,7 +130,9 @@ abstract class FilterApplicator<T extends Filter> {
             return;
         }
 
-        if (applyAll(filterTree, q, false)) {
+        QueryTranslationState state = new QueryTranslationState();
+
+        if (applyAll(filterTree, q, false, state)) {
             q.recall();
         }
     }
@@ -141,7 +152,12 @@ abstract class FilterApplicator<T extends Filter> {
      * state.
      */
     @SuppressWarnings("unchecked")
-    private static <S, E> boolean applyAll(Query query, HawkularPipeline<S, E> pipeline, boolean isFilter) {
+    private static <S, E> boolean applyAll(Query query, HawkularPipeline<S, E> pipeline, boolean isFilter,
+                                           QueryTranslationState state) {
+
+        QueryTranslationState origState = state.clone();
+
+        HawkularPipeline<S, E> workingPipeline = new HawkularPipeline<>();
 
         for (QueryFragment qf : query.getFragments()) {
             boolean thisIsFilter = qf instanceof FilterFragment;
@@ -149,22 +165,45 @@ abstract class FilterApplicator<T extends Filter> {
             if (thisIsFilter != isFilter) {
                 isFilter = thisIsFilter;
                 if (thisIsFilter) {
-                    pipeline.remember();
+                    //add the path progressions we had
+                    finishPipeline(workingPipeline, state, origState);
+                    workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
                 } else {
-                    pipeline.recall();
+                    if (needsRememberingPosition(workingPipeline)) {
+                        finishPipeline(workingPipeline, state, origState);
+                        pipeline.remember();
+
+                        //add the path progressions we had
+                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+
+                        pipeline.recall();
+                    } else {
+                        //add the path progressions we had
+                        //finishPipeline(workingPipeline, state, origState);
+                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+                    }
                 }
+                workingPipeline = new HawkularPipeline<>();
             }
 
-            FilterApplicator.of(qf.getFilter()).applyTo(pipeline);
+            FilterApplicator.of(qf.getFilter()).applyTo(workingPipeline, state);
         }
 
+        boolean remember = isFilter && needsRememberingPosition(workingPipeline);
+        if (remember) {
+            pipeline.remember();
+        }
+
+        //empty the working pipeline into the true pipeline
+        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+        finishPipeline(pipeline, state, origState);
 
         if (query.getSubTrees().isEmpty()) {
-            return isFilter;
+            return remember;
         }
 
         if (query.getSubTrees().size() == 1) {
-            return applyAll(query.getSubTrees().get(0), pipeline, isFilter);
+            return applyAll(query.getSubTrees().get(0), pipeline, isFilter, state);
         } else {
             List<HawkularPipeline<E, ?>> branches = new ArrayList<>();
             Iterator<Query> it = query.getSubTrees().iterator();
@@ -174,7 +213,7 @@ abstract class FilterApplicator<T extends Filter> {
 
             // the branch is a brand new pipeline, so it doesn't make sense for it to inherit
             // our current filter state.
-            boolean newIsFilter = applyAll(it.next(), branch, false);
+            boolean newIsFilter = applyAll(it.next(), branch, false, state.clone());
             // close the filter in the branch, if needed
             if (newIsFilter) {
                 branch.recall();
@@ -183,7 +222,7 @@ abstract class FilterApplicator<T extends Filter> {
 
             while (it.hasNext()) {
                 branch = new HawkularPipeline<>();
-                boolean nextIsFilter = applyAll(it.next(), branch, false);
+                boolean nextIsFilter = applyAll(it.next(), branch, false, state.clone());
                 // close the filter in the branch, if needed
                 if (nextIsFilter) {
                     branch.recall();
@@ -199,7 +238,61 @@ abstract class FilterApplicator<T extends Filter> {
 
             pipeline.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge();
 
+            finishPipeline(pipeline, state, origState);
+
             return isFilter;
+        }
+    }
+
+    private static <S, E> void finishPipeline(HawkularPipeline<S, E> pipeline, QueryTranslationState state,
+                                              QueryTranslationState originalState) {
+        if (originalState.isInEdges() != state.isInEdges()) {
+            if (originalState.isInEdges()) {
+                switch (originalState.getComingFrom()) {
+                    case IN:
+                        pipeline.outE();
+                        break;
+                    case OUT:
+                        pipeline.inE();
+                        break;
+                    case BOTH:
+                        pipeline.bothE();
+                }
+            } else {
+                switch (state.getComingFrom()) {
+                    case IN:
+                        pipeline.outV();
+                        break;
+                    case OUT:
+                        pipeline.inV();
+                        break;
+                    case BOTH:
+                        pipeline.bothV();
+                }
+            }
+        }
+        //we've moved back to the state as it was originally. reflect that.
+        state.setInEdges(originalState.isInEdges());
+        state.setComingFrom(originalState.getComingFrom());
+    }
+
+    private static boolean needsRememberingPosition(HawkularPipeline<?, ?> pipeline) {
+        for (Pipe<?, ?> p : pipeline.getPipes()) {
+            if (p instanceof VertexQueryPipe || p instanceof VerticesEdgesPipe) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void addOptimized(HawkularPipeline<?, ?> pipeline, Pipe<?, ?> pipe) {
+        if (pipe instanceof PropertyFilterPipe
+                || pipe instanceof IntervalFilterPipe
+                || pipe instanceof RangeFilterPipe) {
+            optimizePipelineForQuery(pipeline, pipe);
+        } else {
+            pipeline.add(pipe);
         }
     }
 
@@ -209,7 +302,7 @@ abstract class FilterApplicator<T extends Filter> {
      *
      * @param query the query to update with filter
      */
-    public abstract void applyTo(HawkularPipeline<?, ?> query);
+    public abstract void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state);
 
     public Filter filter() {
         return filter;
@@ -226,8 +319,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -236,8 +329,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -246,8 +339,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -256,8 +349,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -267,8 +360,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -279,8 +372,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -291,8 +384,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
 
     }
@@ -303,8 +396,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -313,8 +406,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -323,8 +416,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -335,8 +428,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -347,8 +440,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -359,8 +452,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -371,8 +464,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -383,8 +476,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -395,8 +488,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 
@@ -407,8 +500,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query) {
-            visitor.visit(query, filter);
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
         }
     }
 }

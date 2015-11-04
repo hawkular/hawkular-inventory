@@ -99,20 +99,24 @@ public class OfficialInventoryProducer {
         int failures = 0;
         int maxFailures = 5;
         boolean initialized = false;
+        Throwable lastError = null;
         while (!initialized && failures++ < maxFailures) {
             try {
                 inventory.initialize(cfg);
 
                 initialized = true;
-            } catch (Exception e) {
-                LOG.debugf("Unable to initialize inventory, exception thrown: ", e);
-                LOG.wInitializationFailure(failures, maxFailures);
+            } catch (Throwable e) {
+                LOG.debug("Unable to initialize inventory, exception thrown: ", e);
+                LOG.wInitializationFailure(failures, maxFailures, e.getMessage());
+                lastError = e;
                 Thread.sleep(1000);
             }
         }
 
         if (!initialized) {
-            throw new IllegalStateException("Could not initialize inventory.");
+            //noinspection ConstantConditions
+            throw new IllegalStateException("Could not initialize inventory. Last error message was: "
+                    + lastError.getMessage(), lastError);
         }
 
         LOG.iInitialized();

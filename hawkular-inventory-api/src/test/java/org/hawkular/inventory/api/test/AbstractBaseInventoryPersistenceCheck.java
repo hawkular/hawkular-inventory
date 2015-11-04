@@ -82,6 +82,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
@@ -1575,6 +1576,117 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         } catch (EntityNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void testNamePersisted() throws Exception {
+        Tenant t = null;
+        try {
+            t = inventory.tenants().create(Tenant.Blueprint.builder().withId("named-tenant").withName("tenant")
+                    .build()).entity();
+            Assert.assertEquals("tenant", t.getName());
+
+            Environment e =
+                    inventory.inspect(t).environments().create(Environment.Blueprint.builder().withId("named-env")
+                            .withName("env").build()).entity();
+            Assert.assertEquals("env", e.getName());
+
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+                    .build()).entity();
+            Assert.assertEquals("feed", f.getName());
+
+            ResourceType rt = inventory.inspect(t).feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+                    .withId("named-resourceType").withName("resourceType").build()).entity();
+            Assert.assertEquals("resourceType", rt.getName());
+
+            MetricType mt = inventory.inspect(t).feedlessMetricTypes().create(MetricType.Blueprint
+                    .builder(MetricDataType.GAUGE).withId("named-metricType").withUnit(MetricUnit.BITS)
+                    .withName("metricType").build()).entity();
+            Assert.assertEquals("metricType", mt.getName());
+
+            OperationType ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
+                    .withId("named-operationType").withName("operationType").build()).entity();
+            Assert.assertEquals("operationType", ot.getName());
+
+            Resource r = inventory.inspect(f).resources().create(Resource.Blueprint.builder().withId("named-resource")
+                    .withName("resource").withResourceTypePath(rt.getPath().toString()).build()).entity();
+            Assert.assertEquals("resource", r.getName());
+
+            Metric m = inventory.inspect(f).metrics().create(Metric.Blueprint.builder().withId("named-metric")
+                    .withName("metric").withMetricTypePath(mt.getPath().toString()).build()).entity();
+            Assert.assertEquals("metric", m.getName());
+
+            try {
+                inventory.inspect(t).environments().create(Environment.Blueprint.builder().withId("failing-env")
+                        .withProperty("name", "invalid-property").build());
+                Assert.fail("Should not be possible to create an entity with a property called \"name\".");
+            } catch (IllegalArgumentException ex) {
+                //ok
+            }
+        } finally {
+            if (t != null) {
+                inventory.inspect(t).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testNameUpdatable() throws Exception {
+        Tenant t = null;
+        try {
+            t = inventory.tenants().create(Tenant.Blueprint.builder().withId("named-tenant").withName("tenant")
+                    .build()).entity();
+            testUpdate(t, Tenant.Update.builder());
+
+            Environment e = inventory.inspect(t).environments().create(Environment.Blueprint.builder()
+                    .withId("named-env").withName("env").build()).entity();
+            testUpdate(e, Environment.Update.builder());
+
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+                    .build()).entity();
+            testUpdate(f, Feed.Update.builder());
+
+            ResourceType rt = inventory.inspect(t).feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+                    .withId("named-resourceType").withName("resourceType").build()).entity();
+            testUpdate(rt, ResourceType.Update.builder());
+
+            MetricType mt = inventory.inspect(t).feedlessMetricTypes().create(MetricType.Blueprint
+                    .builder(MetricDataType.GAUGE).withId("named-metricType").withUnit(MetricUnit.BITS)
+                    .withName("metricType").build()).entity();
+            testUpdate(mt, MetricType.Update.builder());
+
+            OperationType ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
+                    .withId("named-operationType").withName("operationType").build()).entity();
+            testUpdate(ot, OperationType.Update.builder());
+
+            Resource r = inventory.inspect(f).resources().create(Resource.Blueprint.builder().withId("named-resource")
+                    .withName("resource").withResourceTypePath(rt.getPath().toString()).build()).entity();
+            testUpdate(r, Resource.Update.builder());
+
+            Metric m = inventory.inspect(f).metrics().create(Metric.Blueprint.builder().withId("named-metric")
+                    .withName("metric").withMetricTypePath(mt.getPath().toString()).build()).entity();
+            testUpdate(m, Metric.Update.builder());
+
+            try {
+                inventory.inspect(m).update(Metric.Update.builder().withProperty("name", "disallowed").build());
+                Assert.fail("A property called \"name\" should not be allowed in updates.");
+            } catch (IllegalArgumentException ex) {
+                //ok
+            }
+        } finally {
+            if (t != null) {
+                inventory.inspect(t).delete();
+            }
+        }
+    }
+
+    private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
+    void testUpdate(T entity, Entity.Update.Builder<U, ?> update) {
+        @SuppressWarnings("unchecked")
+        Class<ResolvableToSingle<T, U>> cls = (Class<ResolvableToSingle<T, U>>) (Class) ResolvableToSingle.class;
+        inventory.inspect(entity, cls).update(update.withName("updated").build());
+        entity = inventory.inspect(entity, cls).entity();
+        Assert.assertEquals("updated", entity.getName());
     }
 
     @Test
