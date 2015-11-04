@@ -45,32 +45,6 @@ public class EntityIdUtils {
         return getStableId(element.getPath());
     }
 
-    public static boolean isValidRestPath(String restPath) {
-        if (restPath == null || restPath.trim().isEmpty()) {
-            return false;
-        }
-        String[] chunks = restPath.split("(?<=[^\\\\])/");
-        if (chunks == null || chunks.length < 2) {
-            return false;
-        }
-        if (chunks.length == 2 && ("tenants".equals(chunks[0]) || "relationships".equals(chunks[0]))
-                && chunks[1].length() > 0) {
-            return true;
-        }
-        if (chunks.length == 3 && chunks[0].length() > 0 && chunks[2].length() > 0) {
-            return "environments".equals(chunks[1]) || "resourceTypes".equals(chunks[1])
-                    || "metricTypes".equals(chunks[1]);
-        }
-        if (chunks.length == 4 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[3].length() > 0) {
-            return "resources".equals(chunks[2]) || "metrics".equals(chunks[2]);
-        }
-        if (chunks.length == 5 && chunks[0].length() > 0 && chunks[1].length() > 0 && chunks[2].length() > 0
-                && chunks[4].length() > 0) {
-            return "resources".equals(chunks[3]) || "metrics".equals(chunks[3]);
-        }
-        return false;
-    }
-
     public static CanonicalPath toCanonicalPath(String restPath) {
         String[] chunks = restPath.split("(?<=[^\\\\])/");
         CanonicalPath.Extender path = CanonicalPath.empty();
@@ -87,6 +61,8 @@ public class EntityIdUtils {
                 path.extend(Tenant.class, chunks[0]).extend(ResourceType.class, chunks[2]);
             } else if ("metricTypes".equals(chunks[1])) {
                 path.extend(Tenant.class, chunks[0]).extend(MetricType.class, chunks[2]);
+            } else if ("feeds".equals(chunks[1])) {
+                path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]);
             }
         } else if (chunks.length == 4 && "resources".equals(chunks[2])) {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Resource.class,
@@ -95,11 +71,9 @@ public class EntityIdUtils {
             path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Metric.class,
                     chunks[3]);
         } else if (chunks.length == 5 && "resources".equals(chunks[3])) {
-            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
-                    .extend(Resource.class, chunks[4]);
+            path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]).extend(Resource.class, chunks[4]);
         } else if (chunks.length == 5 && "metrics".equals(chunks[3])) {
-            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Feed.class, chunks[2])
-                    .extend(Metric.class, chunks[4]);
+            path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]).extend(Metric.class, chunks[4]);
         }
         return path.get();
     }

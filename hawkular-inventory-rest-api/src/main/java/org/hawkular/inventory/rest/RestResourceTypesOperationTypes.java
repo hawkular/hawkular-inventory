@@ -192,11 +192,11 @@ public class RestResourceTypesOperationTypes extends RestBase {
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response getAll(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response getAll(@PathParam("feedId") String feedId,
                            @PathParam("resourceTypeId") String resourceTypeId,
                            @Context UriInfo uriInfo) {
 
-        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId()).environments().get(environmentId)
+        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId())
                 .feeds().get(feedId).resourceTypes().get(resourceTypeId).operationTypes()
                 .getAll().entities(extractPaging(uriInfo));
 

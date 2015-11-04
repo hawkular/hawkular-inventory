@@ -1591,7 +1591,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                             .withName("env").build()).entity();
             Assert.assertEquals("env", e.getName());
 
-            Feed f = inventory.inspect(e).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
                     .build()).entity();
             Assert.assertEquals("feed", f.getName());
 
@@ -1642,7 +1642,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     .withId("named-env").withName("env").build()).entity();
             testUpdate(e, Environment.Update.builder());
 
-            Feed f = inventory.inspect(e).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
                     .build()).entity();
             testUpdate(f, Feed.Update.builder());
 
