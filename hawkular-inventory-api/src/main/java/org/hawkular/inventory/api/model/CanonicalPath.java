@@ -305,7 +305,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
     public static final class Builder extends Path.Builder<CanonicalPath, TenantBuilder, EnvironmentBuilder,
             ResourceTypeBuilder, MetricTypeBuilder, RelationshipBuilder, OperationTypeBuilder, StructuredDataBuilder,
-            FeedBuilder, ResourceBuilder, MetricBuilder> {
+            MetadataPackBuilder, FeedBuilder, ResourceBuilder, MetricBuilder> {
 
         private Builder(List<Segment> list) {
             super(list, CanonicalPath::new);
@@ -323,8 +323,8 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     }
 
     public static final class TenantBuilder extends Path.TenantBuilder<CanonicalPath, EnvironmentBuilder,
-            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder, FeedBuilder,
-            ResourceBuilder, MetricBuilder> {
+            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder,
+            MetadataPackBuilder, FeedBuilder, ResourceBuilder, MetricBuilder> {
 
         private TenantBuilder(List<Segment> list) {
             super(list, CanonicalPath::new);
@@ -343,6 +343,17 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         @Override
         protected MetricTypeBuilder metricTypeBuilder(List<Segment> list) {
             return new MetricTypeBuilder(list);
+        }
+
+        @Override
+        protected MetadataPackBuilder metadataPackBuilder(List<Segment> segments) {
+            return new MetadataPackBuilder(segments);
+        }
+    }
+
+    public static final class MetadataPackBuilder extends Path.MetadataPackBuilder<CanonicalPath> {
+        private MetadataPackBuilder(List<Segment> segments) {
+            super(segments, CanonicalPath::new);
         }
     }
 
@@ -382,7 +393,8 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             return new OperationTypeBuilder(segments);
         }
 
-        @Override protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
+        @Override
+        protected StructuredDataBuilder structuredDataBuilder(List<Segment> segments) {
             return new StructuredDataBuilder(segments);
         }
     }
