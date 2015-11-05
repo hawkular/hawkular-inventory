@@ -202,31 +202,7 @@
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
         <configuration>
-          <analysisConfiguration>
-            <![CDATA[
-              {
-                "revapi": {
-                  "java" : {
-                    "missing-classes" : {
-                      "behavior" : "report"
-                    }
-                  },
-                  "filter": {
-                    "archives": {
-                      //We're ignoring all API incompatibilities and errors in Jackson
-                      //
-                      //we're also excluding anything found in the inventory API. This is because most
-                      //of the other modules depend on it and we don't want to analyze the inventory API again
-                      //as part of the check of those modules.
-                      "exclude": ["com.fasterxml.jackson.core.*",
-                                  "org.hawkular.inventory:hawkular-inventory-api:.*",
-                                  "org.jboss.resteasy:resteasy-jaxrs:jar:.*"]
-                    }
-                  }
-                }
-              }
-            ]]>
-          </analysisConfiguration>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
