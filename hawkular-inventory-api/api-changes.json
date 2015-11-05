@@ -248,6 +248,29 @@
           "code": "java.method.numberOfParametersChanged",
           "new": "method void org.hawkular.inventory.base.BaseData.Single<BE>::<init>(org.hawkular.inventory.base.TraversalContext<BE, org.hawkular.inventory.api.model.DataEntity>, org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>)",
           "justification": "This is required for properly checking for disallowed modifications in presence of metadata packs."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "regex": true,
+          "new": "method TB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Builder<.*>::tenant\\(java\\.lang\\.String\\)",
+          "justification": "The path builders now support metadata packs"
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "regex": true,
+          "new": "method TB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Builder<.*>::tenantBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
+          "justification": "The path builders now support metadata packs"
+        },
+        {
+          "code": "java.method.abstractMethodAdded",
+          "regex": true,
+          "new": "method MPB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.TenantBuilder<.*>::metadataPackBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
+          "justification": "The path builders now support metadata packs"          
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "new": "method E org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::doCreate(B)",
+          "justification": "This is in support of created entity caching to speed up its retrieval right after creation."
         }
       ]
     }
