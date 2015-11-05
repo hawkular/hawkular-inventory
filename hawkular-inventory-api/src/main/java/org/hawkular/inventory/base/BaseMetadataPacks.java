@@ -105,7 +105,15 @@ public final class BaseMetadataPacks {
 
         @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint)
                 throws EntityAlreadyExistsException {
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+
+            blueprint.getMembers().forEach(p -> {
+                if (p.ids().getFeedId() != null) {
+                    throw new IllegalArgumentException("Only global types can be part of a metadata pack. No " +
+                            "feed-local types are allowed but '" + p + "' encountered.");
+                }
+            });
+
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

@@ -80,7 +80,7 @@ public final class BaseTenants {
 
         @Override
         public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

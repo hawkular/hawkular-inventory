@@ -83,7 +83,7 @@ public final class BaseMetricTypes {
                 throw new IllegalArgumentException(msg);
             }
 
-            return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
 
         @Override

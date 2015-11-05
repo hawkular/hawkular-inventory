@@ -80,7 +80,7 @@ public final class BaseOperationTypes {
                 throw new IllegalArgumentException("Cannot create an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
             }
-            return new BaseOperationTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseOperationTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
 
         @Override

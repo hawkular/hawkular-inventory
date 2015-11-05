@@ -133,7 +133,7 @@ public final class BaseResources {
                 throw new IllegalArgumentException("ResourceType path is null");
             }
 
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

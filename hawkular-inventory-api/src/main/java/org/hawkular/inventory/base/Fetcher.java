@@ -38,6 +38,8 @@ import org.hawkular.inventory.api.paging.TransformingPage;
 abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update>
         extends Traversal<BE, E> implements ResolvableToSingle<E, U>, ResolvableToMany<E> {
 
+    private boolean useCachedEntity = true;
+
     public Fetcher(TraversalContext<BE, E> context) {
         super(context);
     }
@@ -45,6 +47,10 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     @SuppressWarnings("unchecked")
     @Override
     public E entity() throws EntityNotFoundException, RelationNotFoundException {
+        if (useCachedEntity && context.getCreatedEntity() != null) {
+            useCachedEntity = false;
+            return context.getCreatedEntity();
+        }
         return loadEntity((b, e) -> e);
     }
 
