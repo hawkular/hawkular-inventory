@@ -90,6 +90,13 @@
       <type>ear</type>
     </dependency>
     <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>cassandra-driver-wf-module</artifactId>
+      <version>${test-dist-version.org.hawkular.commons}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.hawkular.accounts</groupId>
       <artifactId>hawkular-accounts</artifactId>
       <version>${test-dist-version.org.hawkular.accounts}</version>
