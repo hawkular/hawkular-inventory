@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -200,6 +201,10 @@ public class InventorySecurity implements Security {
                 operations.setup("update-metric").add("Maintainer").persist();
                 operations.setup("delete-metric").add("Maintainer").persist();
 
+                operations.setup("create-metadataPack").add("Maintainer").persist();
+                operations.setup("update-metadataPack").add("Maintainer").persist();
+                operations.setup("delete-metadataPack").add("Maintainer").persist();
+
                 operations.setup("associate").add("Operator").persist();
 
                 transaction.commit();
@@ -243,6 +248,10 @@ public class InventorySecurity implements Security {
             Operation createMetricOperation = operations.getByName("create-metric");
             Operation updateMetricOperation = operations.getByName("update-metric");
             Operation deleteMetricOperation = operations.getByName("delete-metric");
+
+            Operation createMetadataPackOperation = operations.getByName("create-metadataPack");
+            Operation updateMetadataPackOperation = operations.getByName("update-metadataPack");
+            Operation deleteMetadataPackOperation = operations.getByName("delete-metadataPack");
 
             Operation associate = operations.getByName("associate");
 
@@ -297,6 +306,12 @@ public class InventorySecurity implements Security {
                 put(OperationType.CREATE, createOperationTypeOperation);
                 put(OperationType.UPDATE, updateOperationTypeOperation);
                 put(OperationType.DELETE, deleteOperationTypeOperation);
+            }});
+
+            operationsByType.put(MetadataPack.class, new EnumMap<OperationType, Operation>(OperationType.class) {{
+                put(OperationType.CREATE, createMetadataPackOperation);
+                put(OperationType.UPDATE, updateMetadataPackOperation);
+                put(OperationType.DELETE, deleteMetadataPackOperation);
             }});
         }
     }

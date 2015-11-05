@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -109,6 +110,7 @@ public class SecurityIntegration {
             install(inventory, Resource.class);
             install(inventory, Metric.class);
             install(inventory, OperationType.class);
+            install(inventory, MetadataPack.class);
             //install(inventory, Relationship.class);
         }
     }
