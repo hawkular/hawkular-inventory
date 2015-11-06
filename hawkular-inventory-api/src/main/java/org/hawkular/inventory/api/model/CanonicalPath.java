@@ -66,8 +66,9 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         SHORT_TYPE_NAMES.put(DataEntity.class, "d");
         SHORT_TYPE_NAMES.put(OperationType.class, "ot");
 
-        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class));
-        VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class, Feed.class));
+        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class,
+                Feed.class));
+        VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class));
         VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
                 ResourceType.class));
         VALID_PROGRESSIONS.put(ResourceType.class, Arrays.asList(DataEntity.class, OperationType.class));
@@ -311,6 +312,10 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             return new EnvironmentBuilder(list);
         }
 
+        @Override protected FeedBuilder feedBuilder(List<Segment> segments) {
+            return new FeedBuilder(segments);
+        }
+
         @Override
         protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> list) {
             return new ResourceTypeBuilder(list);
@@ -322,17 +327,12 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
     }
 
-    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<CanonicalPath, FeedBuilder,
+    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<CanonicalPath,
             ResourceBuilder, MetricBuilder, ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder,
             StructuredDataBuilder> {
 
         private EnvironmentBuilder(List<Segment> list) {
             super(list, CanonicalPath::new);
-        }
-
-        @Override
-        protected FeedBuilder feedBuilder(List<Segment> segments) {
-            return new FeedBuilder(segments);
         }
 
         @Override
@@ -454,7 +454,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public String getMetricTypeId() {
             if (getFeedId() != null) {
-                return idIfTypeCorrect(getRoot().down(3), MetricType.class);
+                return idIfTypeCorrect(getRoot().down(2), MetricType.class);
             } else {
                 return idIfTypeCorrect(getRoot().down(), MetricType.class);
             }
@@ -462,14 +462,14 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public String getResourceTypeId() {
             if (getFeedId() != null) {
-                return idIfTypeCorrect(getRoot().down(3), ResourceType.class);
+                return idIfTypeCorrect(getRoot().down(2), ResourceType.class);
             } else {
                 return idIfTypeCorrect(getRoot().down(), ResourceType.class);
             }
         }
 
         public String getFeedId() {
-            return idIfTypeCorrect(getRoot().down(2), Feed.class);
+            return idIfTypeCorrect(getRoot().down(), Feed.class);
         }
 
         /**

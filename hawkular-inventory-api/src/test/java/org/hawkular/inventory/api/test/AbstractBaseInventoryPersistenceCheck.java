@@ -184,22 +184,24 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
                 .get("host1").metrics().associate(RelativePath.fromString("../m;host1_ping_response"));
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
+        assert inventory.tenants().get("com.acme.tenant").feeds()
                 .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
+        inventory.tenants().get("com.acme.tenant").environments().get("production").feeds()
+                .associate(RelativePath.fromString("../f;feed1"));
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
                 .resources().create(new Resource.Blueprint("feedResource1", "/URL")).entity().getId()
                 .equals("feedResource1");
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
                 .resources().create(new Resource.Blueprint("feedResource2", "/URL")).entity().getId()
                 .equals("feedResource2");
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
                 .resources().create(new Resource.Blueprint("feedResource3", "/URL")).entity().getId()
                 .equals("feedResource3");
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("feed1")
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
                 .metrics().create(new Metric.Blueprint("/ResponseTime", "feedMetric1")).entity().getId()
                 .equals("feedMetric1");
 
@@ -1044,8 +1046,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testNoTwoFeedsWithSameID() throws Exception {
-        Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").environments().get("production")
-                .feeds();
+        Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").feeds();
 
         Feed f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
         Feed f2 = null;
@@ -1060,6 +1061,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     // the uniqueness is ensured by __cp index that has the unique property (in titan)
+    // the tests are by default run on the TinkerGraph and so this test is ignored
     @Ignore
     @Test
     public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
@@ -1447,8 +1449,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testRelativePathHandlingDuringDisassociationWhenThereAreMultipleRels() throws Exception {
-        Environments.Single env = inventory.inspect(CanonicalPath.fromString("/t;com.example.tenant/e;test"),
-                Environments.Single.class);
+        CanonicalPath envPath = CanonicalPath.fromString("/t;com.example.tenant/e;test");
+
+        Environments.Single env = inventory.inspect(envPath, Environments.Single.class);
+        Tenants.Single tenant = inventory.inspect(envPath.up(), Tenants.Single.class);
 
         Feed f = null;
         Resource r = null;
@@ -1464,9 +1468,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             m1 = env.feedlessMetrics().create(Metric.Blueprint.builder().withId("assocMetric")
                     .withMetricTypePath("/mt;Size").build()).entity();
 
-            f = env.feeds().create(Feed.Blueprint.builder().withId("assocF").build()).entity();
+            f = tenant.feeds().create(Feed.Blueprint.builder().withId("assocF").build()).entity();
 
-            m2 = env.feeds().get("assocF").metrics().create(Metric.Blueprint.builder().withId("assocMetric")
+            m2 = tenant.feeds().get("assocF").metrics().create(Metric.Blueprint.builder().withId("assocMetric")
                     .withMetricTypePath("/mt;Size").build()).entity();
 
             inventory.inspect(r).metrics().associate(m1.getPath());
@@ -1545,9 +1549,28 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     }
 
     @Test
+    public void testAssociateEnvironmentWithFeeds() throws Exception {
+        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get(
+                RelativePath.to().up().feed("feed1").get()).exists());
+
+        inventory.tenants().get("com.acme.tenant").environments().create(
+                Environment.Blueprint.builder().withId("staging").build());
+
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().get("staging").feeds()
+                    .associate(RelativePath.to().up().feed("feed1").get());
+            Assert.fail("It should not be possible to associate a feed with more than 1 environment.");
+        } catch (IllegalArgumentException e) {
+            //good
+        } finally {
+            inventory.tenants().get("com.acme.tenant").environments().delete("staging");
+        }
+    }
+
+    @Test
     public void testCreationUnderNonExistentParentThrowsEntityNotFoundException() throws Exception {
         try {
-            inventory.tenants().get("com.acme.tenant").environments().get("production").feeds().get("no-feed")
+            inventory.tenants().get("com.acme.tenant").feeds().get("no-feed")
                     .resources().create(Resource.Blueprint.builder().withId("blah").withResourceTypePath("../../URL")
                     .build());
         } catch (EntityNotFoundException e) {
@@ -1568,7 +1591,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                             .withName("env").build()).entity();
             Assert.assertEquals("env", e.getName());
 
-            Feed f = inventory.inspect(e).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
                     .build()).entity();
             Assert.assertEquals("feed", f.getName());
 
@@ -1619,7 +1642,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     .withId("named-env").withName("env").build()).entity();
             testUpdate(e, Environment.Update.builder());
 
-            Feed f = inventory.inspect(e).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
+            Feed f = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("named-feed").withName("feed")
                     .build()).entity();
             testUpdate(f, Feed.Update.builder());
 
@@ -1828,24 +1851,21 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertNull(m.getPath().ids().getFeedId());
         Assert.assertEquals("host1_ping_response", m.getId());
 
-        CanonicalPath feedPath = envPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
         entity = backend.find(feedPath);
         Feed f = backend.convert(entity, Feed.class);
         Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
-        Assert.assertEquals("production", f.getPath().ids().getEnvironmentId());
         Assert.assertEquals("feed1", f.getId());
 
         entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
         r = backend.convert(entity, Resource.class);
         Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
-        Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
         Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
         Assert.assertEquals("feedResource1", r.getId());
 
         entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
         m = backend.convert(entity, Metric.class);
         Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
-        Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
         Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
         Assert.assertEquals("feedMetric1", m.getId());
 
@@ -1882,7 +1902,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
         Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
         Set<E> rels = backend.getRelationships(entity, both);
-        Assert.assertEquals(4, rels.size());
+        Assert.assertEquals(5, rels.size());
 
         Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
                 Relationship.class));
@@ -1895,7 +1915,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 "URL".equals(r.getTarget().getSegment().getElementId())));
         Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
                 "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                "Person".equals(r.getTarget().getSegment().getElementId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                 "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
+        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                "feed1".equals(r.getTarget().getSegment().getElementId())));
 
         rels = backend.getRelationships(entity, incoming);
         Assert.assertTrue(rels.isEmpty());
@@ -1932,31 +1958,31 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testBackendGetTransitiveClosure() throws Exception {
         InventoryBackend<E> backend = inventory.getBackend();
 
-        TriFunction<E, String, Relationships.Direction, Stream<? extends Entity<?, ?>>> test =
-                (start, name, direction) -> {
+        TriFunction<E, Relationships.Direction, String[], Stream<? extends Entity<?, ?>>> test =
+                (start, direction, name) -> {
                     Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
                     return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
                             false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
                 };
 
         E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-        E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").feed("feed1")
+        E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
                 .get());
 
-        Assert.assertEquals(4, test.apply(feed, "contains", outgoing).count());
-        Assert.assertFalse(test.apply(feed, "contains", outgoing).anyMatch((e) -> e instanceof Feed &&
+        Assert.assertEquals(4, test.apply(feed, outgoing, new String[]{"contains"}).count());
+        Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
                 "feed1".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
-                "feedResource1".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
-                "feedResource2".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Resource &&
-                "feedResource3".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, "contains", outgoing).anyMatch((e) -> e instanceof Metric &&
-                "feedMetric1".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                instanceof Resource && "feedResource1".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                instanceof Resource && "feedResource2".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                instanceof Resource && "feedResource3".equals(e.getId())));
+        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                instanceof Metric && "feedMetric1".equals(e.getId())));
 
-        Assert.assertEquals(1, test.apply(env, "contains", incoming).count());
-        Assert.assertTrue(test.apply(env, "contains", incoming).anyMatch((e) -> e instanceof Tenant &&
+        Assert.assertEquals(1, test.apply(env, incoming, new String[]{"contains"}).count());
+        Assert.assertTrue(test.apply(env, incoming, new String[]{"contains"}).anyMatch((e) -> e instanceof Tenant &&
                 "com.acme.tenant".equals(e.getId())));
     }
 
@@ -2004,7 +2030,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
         Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-        CanonicalPath feedPath = envPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
         entity = backend.find(feedPath);
         Assert.assertEquals(Feed.class, backend.extractType(entity));
 
