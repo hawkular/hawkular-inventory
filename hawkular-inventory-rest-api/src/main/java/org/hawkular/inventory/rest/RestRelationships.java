@@ -281,7 +281,7 @@ public class RestRelationships extends RestBase {
 
     private String fixUpRestPath(String urlPath) {
         if (urlPath == null) return null;
-        return urlPath.startsWith("tenants") ? "tenants/" + getTenantId() : getTenantId() + "/" + urlPath;
+        return urlPath.startsWith("tenant") ? "tenants/" + getTenantId() : getTenantId() + "/" + urlPath;
     }
 
     @SuppressWarnings("unchecked")

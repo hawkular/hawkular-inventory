@@ -634,12 +634,12 @@ class InventoryITest extends AbstractTestBase {
 
     @Test
     void testTenantsContainEnvironments() {
-        assertRelationshipExists("tenants/$tenantId/relationships",
+        assertRelationshipExists("tenant/relationships",
                 "/t;$tenantId",
                 contains.name(),
                 "/t;$tenantId/e;$environmentId")
 
-        assertRelationshipJsonldExists("tenants/$tenantId/relationships",
+        assertRelationshipJsonldExists("tenant/relationships",
                 tenantId,
                 contains.name(),
                 environmentId)
@@ -652,7 +652,7 @@ class InventoryITest extends AbstractTestBase {
                 contains.name(),
                 "/t;$tenantId/rt;$urlTypeId")
 
-        assertRelationshipExists("tenants/$tenantId/relationships",
+        assertRelationshipExists("tenant/relationships",
                 "/t;$tenantId",
                 contains.name(),
                 "/t;$tenantId/rt;$pingableHostRTypeId")
@@ -665,7 +665,7 @@ class InventoryITest extends AbstractTestBase {
                 contains.name(),
                 "/t;$tenantId/mt;$responseTimeMTypeId")
 
-        assertRelationshipExists("tenants/$tenantId/relationships",
+        assertRelationshipExists("tenant/relationships",
                 "/t;$tenantId",
                 contains.name(),
                 "/t;$tenantId/mt;$statusCodeMTypeId")
