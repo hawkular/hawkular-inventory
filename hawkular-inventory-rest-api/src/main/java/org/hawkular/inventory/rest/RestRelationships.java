@@ -125,10 +125,10 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
-        if (!EntityIdUtils.isValidRestPath(securityId)) {
+        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
-        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
         ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
                 getResolvableFromCanonicalPath(cPath);
         Pager pager = extractPaging(uriInfo);
@@ -139,7 +139,7 @@ public class RestRelationships extends RestBase {
 
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
         if (jsonLdBool) {
-            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
+            return pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
         } else {
             return pagedResponse(Response.ok(), uriInfo, relations).build();
         }
@@ -176,11 +176,11 @@ public class RestRelationships extends RestBase {
                            @ApiParam(required = true) Relationship relation,
                            @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
-        if (!EntityIdUtils.isValidRestPath(securityId)) {
-            return Response.status(NOT_FOUND).build();
-        }
         checkForWellKnownLabels(relation.getName(), "delete");
         CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        if (!cPath.isDefined()) {
+            return Response.status(NOT_FOUND).build();
+        }
         ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 
@@ -210,11 +210,11 @@ public class RestRelationships extends RestBase {
                            @Context UriInfo uriInfo) {
 
         String restPath = fixUpRestPath(path);
-        if (!EntityIdUtils.isValidRestPath(restPath)) {
-            return Response.status(NOT_FOUND).build();
-        }
         checkForWellKnownLabels(relation.getName(), "create");
         CanonicalPath cPath = EntityIdUtils.toCanonicalPath(restPath);
+        if (!cPath.isDefined()) {
+            return Response.status(NOT_FOUND).build();
+        }
         ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 
@@ -258,13 +258,13 @@ public class RestRelationships extends RestBase {
             @ApiParam(required = true) Relationship relation,
             @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
-        if (!EntityIdUtils.isValidRestPath(securityId)) {
-            return Response.status(NOT_FOUND).build();
-        }
 
         // perhaps we could have allowed updating the properties of well-known rels
         checkForWellKnownLabels(relation.getName(), "update");
         CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        if (!cPath.isDefined()) {
+            return Response.status(NOT_FOUND).build();
+        }
         ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 

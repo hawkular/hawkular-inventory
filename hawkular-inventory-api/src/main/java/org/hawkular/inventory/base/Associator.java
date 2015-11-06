@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -35,8 +34,42 @@ import org.hawkular.inventory.api.model.Relationship;
  */
 class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
-    protected Associator(TraversalContext<BE, E> context) {
+    private final Relationships.WellKnown relationship;
+    private final Class<? extends Entity<?, ?>> sourceEntityType;
+
+    protected Associator(TraversalContext<BE, E> context, Relationships.WellKnown relationship,
+                         Class<? extends Entity<?, ?>> sourceEntityType) {
         super(context);
+        this.relationship = relationship;
+        this.sourceEntityType = sourceEntityType;
+    }
+
+    public Relationship associate(Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
+        checkPathLegal(id);
+
+        BE target = Util.find(context, id);
+
+        return createAssociation(sourceEntityType, relationship, target);
+    }
+
+    public Relationship disassociate(Path id) throws EntityNotFoundException {
+        checkPathLegal(id);
+
+        BE target = Util.find(context, id);
+
+        return deleteAssociation(sourceEntityType, relationship, target);
+    }
+
+    public Relationship associationWith(Path path) throws RelationNotFoundException {
+        return getAssociation(sourceEntityType, path, relationship);
+    }
+
+    protected void checkPathLegal(Path targetPath) {
+        if (!context.entityClass.equals(targetPath.getSegment().getElementType())) {
+            throw new IllegalArgumentException("Current position in the inventory traversal expects entities of type " +
+                    context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
+                    targetPath);
+        }
     }
 
     protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,
@@ -82,26 +115,5 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     @SuppressWarnings("unchecked")
     protected Class<? extends Entity<?, ?>> getSourceType() {
         return (Class<? extends Entity<?, ?>>) context.previous.entityClass;
-    }
-
-    public Relationship associate(Path id) throws EntityNotFoundException,
-            RelationAlreadyExistsException {
-        Query getTarget = Util.queryTo(context, id);
-
-        BE target = getSingle(getTarget, context.entityClass);
-
-        return createAssociation(getSourceType(), incorporates, target);
-    }
-
-    public Relationship disassociate(Path id) throws EntityNotFoundException {
-        Query getTarget = Util.queryTo(context, id);
-
-        BE target = getSingle(getTarget, context.entityClass);
-
-        return deleteAssociation(getSourceType(), incorporates, target);
-    }
-
-    public Relationship associationWith(Path path) throws RelationNotFoundException {
-        return getAssociation(getSourceType(), path, incorporates);
     }
 }

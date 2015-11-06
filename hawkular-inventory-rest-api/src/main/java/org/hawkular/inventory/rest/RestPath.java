@@ -128,7 +128,7 @@ public class RestPath extends RestBase {
 
         boolean jsonLdBool = Boolean.parseBoolean(jsonLd);
         if (jsonLdBool) {
-            return ResponseUtil.pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
+            return pagedResponse(Response.ok(), uriInfo, jsonLdMapper, relations).build();
         } else {
             return pagedResponse(Response.ok(), uriInfo, relations).build();
         }

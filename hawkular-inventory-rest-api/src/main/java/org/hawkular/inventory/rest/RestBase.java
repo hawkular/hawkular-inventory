@@ -30,6 +30,7 @@ import org.hawkular.inventory.rest.security.Security;
 import org.hawkular.inventory.rest.security.TenantIdProducer;
 import org.jboss.resteasy.annotations.GZIP;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -59,12 +60,23 @@ public class RestBase {
 
     protected <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response,
                                                          UriInfo uriInfo, Page<T> page) {
+        return pagedResponse(response, uriInfo, mapper, page);
+    }
+
+    protected <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,
+                                                         ObjectMapper mapper, Page<T> page) {
         boolean streaming = config.getFlag(RestConfiguration.Keys.STREAMING_SERIALIZATION, RestConfiguration.Keys
                 .STREAMING_SERIALIZATION.getDefaultValue());
         if (streaming) {
             return ResponseUtil.pagedResponse(response, uriInfo, mapper, page);
         } else {
-            return ResponseUtil.pagedResponse(response, uriInfo, page, page.toList());
+            try {
+                return ResponseUtil.pagedResponse(response, uriInfo, page, mapper.writeValueAsString(page.toList()));
+            } catch (JsonProcessingException e) {
+                RestApiLogger.LOGGER.warn(e);
+                // fallback to the default object mapper
+                return ResponseUtil.pagedResponse(response, uriInfo, page, page.toList());
+            }
         }
     }
 

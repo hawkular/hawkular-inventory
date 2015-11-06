@@ -49,4 +49,8 @@ public interface Log {
 
     @LogMessage(level = Logger.Level.INFO)
     @Message(id = 3003, value = "Bus integration succeeded.") void busInitializationSuccess();
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 3004, value = "HACK ALERT: Automatically associated feed '%s' with the test environment.")
+    void autoAssociatedFeed(String feedId);
 }

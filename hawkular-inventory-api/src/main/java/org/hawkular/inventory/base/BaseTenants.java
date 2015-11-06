@@ -24,6 +24,7 @@ import static org.hawkular.inventory.api.filters.With.type;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
+import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
@@ -126,6 +127,11 @@ public final class BaseTenants {
         }
 
         @Override
+        public Feeds.ReadContained feeds() {
+            return new BaseFeeds.ReadContained<>(context.proceedTo(contains, Feed.class).get());
+        }
+
+        @Override
         public ResourceTypes.ReadContained feedlessResourceTypes() {
             return new BaseResourceTypes.ReadContained<>(context.proceedTo(contains, ResourceType.class).get());
         }
@@ -168,6 +174,11 @@ public final class BaseTenants {
 
         public Single(TraversalContext<BE, Tenant> context) {
             super(context);
+        }
+
+        @Override
+        public Feeds.ReadWrite feeds() {
+            return new BaseFeeds.ReadWrite<>(context.proceedTo(contains, Feed.class).get());
         }
 
         @Override

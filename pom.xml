@@ -55,12 +55,12 @@
 
   <properties>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.accounts>1.0.14.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>1.1.0.Final-SRC-revision-554664f3c92c9b2e9eba2f36ec6fcf4131ae7437</version.org.hawkular.accounts>
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.bus>${version.org.hawkular.bus}</test-dist-version.org.hawkular.bus>
     <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
-    <test-dist-version.org.hawkular.commons>0.2.1.Final</test-dist-version.org.hawkular.commons> <!-- C* -->
+    <test-dist-version.org.hawkular.commons>0.2.3.Final-SRC-revision-dc2c2fc6cd725df4b120458590208fcc52dd6080</test-dist-version.org.hawkular.commons> <!-- C* -->
     <test-dist-version.org.keycloak>1.3.1.Final</test-dist-version.org.keycloak>
   </properties>
 

@@ -68,19 +68,18 @@ public class RestResourceTypesResources extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}/resources")
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}/resources")
     @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getResources(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response getResources(@PathParam("feedId") String feedId,
                                  @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
 
-        Page<Resource> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .feeds().get(feedId).resourceTypes().get(resourceTypeId)
-                .resources().getAll().entities(extractPaging(uriInfo));
+        Page<Resource> ret = inventory.tenants().get(getTenantId()).feeds().get(feedId).resourceTypes()
+                .get(resourceTypeId).resources().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }

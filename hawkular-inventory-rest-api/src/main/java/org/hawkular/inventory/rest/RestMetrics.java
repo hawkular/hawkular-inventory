@@ -84,7 +84,7 @@ public class RestMetrics extends RestBase {
     }
 
     @POST
-    @Path("/{environmentId}/{feedId}/metrics")
+    @Path("/feeds/{feedId}/metrics")
     @ApiOperation("Creates a new metric in given feed")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Metric created"),
@@ -93,12 +93,12 @@ public class RestMetrics extends RestBase {
             @ApiResponse(code = 409, message = "Metric already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response createMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response createMetricInFeed(@PathParam("feedId") String feedId,
             @ApiParam(required = true) Metric.Blueprint metric, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
-        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
         if (!security.canCreate(Metric.class).under(feed)) {
             return Response.status(FORBIDDEN).build();
@@ -143,7 +143,7 @@ public class RestMetrics extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/feeds/{feedId}/metrics/{metricId}")
     @ApiOperation("Retrieves a single metric")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -152,11 +152,10 @@ public class RestMetrics extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Metric getMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Metric getMetricInFeed(@PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId) {
 
-        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().get(feedId).metrics()
-                .get(metricId).entity();
+        return inventory.tenants().get(getTenantId()).feeds().get(feedId).metrics().get(metricId).entity();
     }
 
     @GET
@@ -183,7 +182,7 @@ public class RestMetrics extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/metrics")
+    @Path("/feeds/{feedId}/metrics")
     @ApiOperation("Retrieves all metrics in a feed")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -192,11 +191,10 @@ public class RestMetrics extends RestBase {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getMetrics(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @Context UriInfo uriInfo) {
+    public Response getMetrics(@PathParam("feedId") String feedId, @Context UriInfo uriInfo) {
 
-        Page<Metric> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds()
-                .get(feedId).metrics().getAll().entities(RequestUtil.extractPaging(uriInfo));
+        Page<Metric> ret = inventory.tenants().get(getTenantId()).feeds().get(feedId).metrics().getAll()
+                .entities(RequestUtil.extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
@@ -228,22 +226,22 @@ public class RestMetrics extends RestBase {
 
 
     @PUT
-    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/feeds/{feedId}/metrics/{metricId}")
     @ApiOperation("Updates a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Tenant, environment, feed or the metric doesn't exist",
+            @ApiResponse(code = 404, message = "Tenant, feed or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The update failed because of invalid data"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response updateMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-            @PathParam("metricId") String metricId, Metric.Update update) {
+    public Response updateMetricInFeed(@PathParam("feedId") String feedId, @PathParam("metricId") String metricId,
+                                       Metric.Update update) {
 
         String tenantId = getTenantId();
 
-        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
         if (!security.canUpdate(feed.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();
@@ -280,21 +278,21 @@ public class RestMetrics extends RestBase {
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/metrics/{metricId}")
+    @Path("/feeds/{feedId}/metrics/{metricId}")
     @ApiOperation("Deletes a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment, feed or the metric doesn't exist",
+            @ApiResponse(code = 404, message = "Tenant, feed or the metric doesn't exist",
                     response = ApiError.class),
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response deleteMetric(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response deleteMetricInFeed(@PathParam("feedId") String feedId,
             @PathParam("metricId") String metricId) {
 
         String tenantId = getTenantId();
 
-        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId).get();
+        CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
         if (!security.canDelete(feed.extend(Metric.class, metricId).get())) {
             return Response.status(FORBIDDEN).build();

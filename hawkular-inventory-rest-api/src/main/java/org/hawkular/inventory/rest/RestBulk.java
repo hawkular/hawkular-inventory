@@ -143,11 +143,6 @@ public class RestBulk extends RestBase {
                     public WriteInterface<?, ?, ?, ?> visitEnvironment(Void parameter) {
                         return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
                             @Override
-                            public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
-                                return ((Environments.Single) single).feeds();
-                            }
-
-                            @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
                                 return ((Environments.Single) single).feedlessMetrics();
                             }
@@ -237,6 +232,10 @@ public class RestBulk extends RestBase {
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitTenant(Void parameter) {
                         return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                            @Override public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
+                                return ((Tenants.Single) single).feeds();
+                            }
+
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitEnvironment(Void parameter) {
                                 return ((Tenants.Single) single).environments();

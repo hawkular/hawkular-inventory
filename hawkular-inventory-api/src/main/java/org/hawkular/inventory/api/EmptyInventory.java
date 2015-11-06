@@ -219,6 +219,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public Feeds.ReadContained feeds() {
+            return new FeedsReadContained();
+        }
+
+        @Override
         public MetadataPacks.ReadContained metadataPacks() {
             return new MetadataPacksReadContained();
         }
@@ -272,6 +277,11 @@ public class EmptyInventory implements Inventory {
 
         @Override public MetadataPacks.ReadWrite metadataPacks() {
             return new MetadataPacksReadWrite();
+        }
+
+        @Override
+        public Feeds.ReadWrite feeds() {
+            return new FeedsReadWrite();
         }
 
         @Override
@@ -610,8 +620,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Feeds.ReadWrite feeds() {
-            return new FeedsReadWrite();
+        public Feeds.ReadAssociate feeds() {
+            return new FeedsReadAssociate();
         }
 
         @Override
@@ -653,8 +663,8 @@ public class EmptyInventory implements Inventory {
     public static class EnvironmentsMultiple implements Environments.Multiple {
 
         @Override
-        public Feeds.ReadContained feeds() {
-            return new FeedsReadContained();
+        public Feeds.Read feeds() {
+            return new FeedsRead();
         }
 
         @Override
@@ -838,6 +848,35 @@ public class EmptyInventory implements Inventory {
 
         @Override
         public Feeds.Single get(Path id) throws EntityNotFoundException {
+            return new FeedsSingle();
+        }
+    }
+
+    public static class FeedsReadAssociate implements Feeds.ReadAssociate {
+
+        @Override
+        public Relationship associate(Path path)
+                throws EntityNotFoundException, RelationAlreadyExistsException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship disassociate(Path path) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Relationship associationWith(Path path) throws RelationNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Feeds.Multiple getAll(Filter[][] filters) {
+            return new FeedsMultiple();
+        }
+
+        @Override
+        public Feeds.Single get(Path path) throws EntityNotFoundException {
             return new FeedsSingle();
         }
     }

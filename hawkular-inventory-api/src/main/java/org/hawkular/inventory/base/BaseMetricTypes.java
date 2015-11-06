@@ -32,6 +32,7 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.ResourceType;
 
 /**
  * @author Lukas Krejci
@@ -160,7 +161,7 @@ public final class BaseMetricTypes {
             implements MetricTypes.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, MetricType> context) {
-            super(context);
+            super(context, incorporates, ResourceType.class);
         }
 
         @Override

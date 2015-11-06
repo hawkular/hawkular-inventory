@@ -270,15 +270,16 @@ class InventoryITest extends AbstractTestBase {
         /* link the metric to resource */
         path = "$basePath/$environmentId/resources/$host1ResourceId/metrics"
         response = client.post(path: path,
-                body: ["../$responseTimeMetricId".toString(), "/$environmentId/$responseStatusCodeMetricId".toString()]);
+                body: ["/e;$environmentId/m;$responseTimeMetricId".toString(),
+                       "/e;$environmentId/m;$responseStatusCodeMetricId".toString()]);
         assertEquals(204, response.status)
         pathsToDelete.put("$path/../$responseTimeMetricId", "$path/../$responseTimeMetricId")
         pathsToDelete.put("$path/../$responseStatusCodeMetricId", "$path/../$responseStatusCodeMetricId")
 
         /* add a feed */
-        response = postDeletable(path: "$environmentId/feeds", body: [id: feedId])
+        response = postDeletable(path: "feeds", body: [id: feedId])
         assertEquals(201, response.status)
-        assertEquals(baseURI + "$basePath/$environmentId/feeds/$feedId", response.headers.Location)
+        assertEquals(baseURI + "$basePath/feeds/$feedId", response.headers.Location)
 
         /* add a custom relationship, no need to clean up, it'll be deleted together with the resources */
         def relation = [id        : 42, // it's ignored anyway
@@ -296,6 +297,10 @@ class InventoryITest extends AbstractTestBase {
         // add operation type to the resource type
         response = postDeletable(path: "resourceTypes/$pingableHostRTypeId/operationTypes",
                 body: [id: "start"])
+        assertEquals(201, response.status)
+
+        response = postDeletable(path: "resourceTypes/$pingableHostRTypeId/operationTypes",
+                body: [id: "stop"])
         assertEquals(201, response.status)
 
         // add some parameters to it
@@ -510,6 +515,9 @@ class InventoryITest extends AbstractTestBase {
 
     @Test
     void testOperationTypesCreated() {
+        def response = client.get(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes")
+        assertEquals(2, response.data.size())
+
         assertEntityExists("resourceTypes/$pingableHostRTypeId/operationTypes/start", "/rt;" + pingableHostRTypeId +
                 "/ot;start")
         assertEntityExists("resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
@@ -690,14 +698,14 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
-    void testEnvironmentsContainFeeds() {
-        assertRelationshipExists("environments/$environmentId/relationships",
-                "/t;$tenantId/e;$environmentId",
+    void testTenantsContainFeeds() {
+        assertRelationshipExists("feeds/$feedId/relationships",
+                "/t;$tenantId",
                 contains.name(),
-                "/t;$tenantId/e;$environmentId/f;$feedId")
+                "/t;$tenantId/f;$feedId")
 
-        assertRelationshipJsonldExists("environments/$environmentId/relationships",
-                environmentId,
+        assertRelationshipJsonldExists("feeds/$feedId/relationships",
+                tenantId,
                 contains.name(),
                 feedId)
     }

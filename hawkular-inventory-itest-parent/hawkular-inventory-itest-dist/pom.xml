@@ -90,6 +90,13 @@
       <type>ear</type>
     </dependency>
     <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>cassandra-driver-wf-module</artifactId>
+      <version>${test-dist-version.org.hawkular.commons}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.hawkular.accounts</groupId>
       <artifactId>hawkular-accounts</artifactId>
       <version>${test-dist-version.org.hawkular.accounts}</version>
@@ -166,6 +173,7 @@
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
         <hawkular.log.pinger>INFO</hawkular.log.pinger>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
         <hawkular.log.metrics>INFO</hawkular.log.metrics>
         <hawkular.log.nest>INFO</hawkular.log.nest>
         <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
@@ -449,6 +457,7 @@
                 <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
                 <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
                 <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
                 <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
                 <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                 <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>

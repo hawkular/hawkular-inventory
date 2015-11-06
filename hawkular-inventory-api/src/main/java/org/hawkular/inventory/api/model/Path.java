@@ -978,7 +978,7 @@ public abstract class Path {
 
     abstract static class Builder<Impl extends Path,
             TB extends TenantBuilder<Impl, EB, RTB, MTB, OTB, SDB, MPB, FB, RB, MB>,
-            EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
+            EB extends EnvironmentBuilder<Impl, RB, MB, RTB, MTB, OTB, SDB>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
             RLB extends RelationshipBuilder<Impl>,
@@ -1021,7 +1021,7 @@ public abstract class Path {
     }
 
     abstract static class TenantBuilder<Impl extends Path,
-            EB extends EnvironmentBuilder<Impl, FB, RB, MB, RTB, MTB, OTB, SDB>,
+            EB extends EnvironmentBuilder<Impl, RB, MB, RTB, MTB, OTB, SDB>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
             OTB extends OperationTypeBuilder<Impl, SDB>,
@@ -1034,6 +1034,11 @@ public abstract class Path {
 
         TenantBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
+        }
+
+        public FB feed(String id) {
+            segments.add(new Segment(Feed.class, id));
+            return feedBuilder(segments);
         }
 
         public EB environment(String id) {
@@ -1062,6 +1067,8 @@ public abstract class Path {
         }
 
         protected abstract EB environmentBuilder(List<Segment> segments);
+
+        protected abstract FB feedBuilder(List<Segment> segments);
 
         protected abstract RTB resourceTypeBuilder(List<Segment> segment);
 
@@ -1111,7 +1118,6 @@ public abstract class Path {
     }
 
     abstract static class EnvironmentBuilder<Impl extends Path,
-            FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
             RB extends ResourceBuilder<Impl, RB, SDB>,
             MB extends MetricBuilder<Impl>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
@@ -1122,11 +1128,6 @@ public abstract class Path {
 
         EnvironmentBuilder(List<Segment> segments, Constructor<Impl> constructor) {
             super(segments, constructor);
-        }
-
-        public FB feed(String id) {
-            segments.add(new Segment(Feed.class, id));
-            return feedBuilder(segments);
         }
 
         public RB resource(String id) {
@@ -1143,8 +1144,6 @@ public abstract class Path {
         public Impl get() {
             return super.get();
         }
-
-        protected abstract FB feedBuilder(List<Segment> segments);
 
         protected abstract RB resourceBuilder(List<Segment> segments);
 

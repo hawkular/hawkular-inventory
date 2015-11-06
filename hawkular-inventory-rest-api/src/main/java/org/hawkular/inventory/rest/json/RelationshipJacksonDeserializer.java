@@ -33,7 +33,6 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -90,12 +89,5 @@ public class RelationshipJacksonDeserializer extends JsonDeserializer<Relationsh
         }
 
         return new Relationship(id, name, source, target, relProperties);
-    }
-
-    private void validatePath(String path){
-        if (!EntityIdUtils.isValidRestPath(path)) {
-            throw new IllegalArgumentException("Error during relationship deserialization," +
-                    " unable to recognize following path: " + path);
-        }
     }
 }

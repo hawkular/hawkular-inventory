@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -64,7 +66,9 @@ public final class RelationshipRules {
         CREATE_RULES.put(isParentOf, Collections.singletonList(RelationshipRules::checkLoops));
         CREATE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowCreate));
         CREATE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowCreate));
-        CREATE_RULES.put(incorporates, Collections.singletonList(RelationshipRules::disallowWhenMetadataPackIsSource));
+        CREATE_RULES.put(incorporates,
+                Arrays.asList(RelationshipRules::disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment,
+                        RelationshipRules::disallowWhenMetadataPackIsSource));
 
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowDelete));
@@ -197,6 +201,26 @@ public final class RelationshipRules {
                     " also a '" + contains + "' relationship between the same two entities. This would mean that a" +
                     " sub-resource would no longer be considered a child of the parent resource, which doesn't make" +
                     " sense.");
+        }
+    }
+
+    private static <E>
+    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(InventoryBackend<E> backend,
+                                                                       E origin, Relationships.Direction direction,
+                                                                       String relationship, E target) {
+        if (!incorporates.name().equals(relationship)) {
+            return;
+        }
+
+        Class<?> originType = backend.extractType(origin);
+        Class<?> targetType = backend.extractType(target);
+
+        if (Environment.class.equals(originType) && Feed.class.equals(targetType) && backend.hasRelationship(target,
+                incoming, relationship)) {
+            throw new IllegalArgumentException("Relationship '" + relationship + "' between "
+                    + originType.getSimpleName() + " and " + targetType.getSimpleName() + " is 1:N." +
+                    " The target entity - " + backend.extractCanonicalPath(target) + " - is already a target of" +
+                    " another relationship of this name. Creating another would be illegal.");
         }
     }
 

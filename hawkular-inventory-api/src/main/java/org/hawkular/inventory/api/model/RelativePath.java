@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,8 +50,8 @@ public final class RelativePath extends Path implements Serializable {
     private static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
 
     private static final List<Class<?>> ALL_VALID_TYPES = Arrays.asList(Tenant.class, ResourceType.class,
-            MetricType.class, Environment.class, Feed.class, Metric.class, Resource.class, StructuredData.class,
-            Up.class);
+            MetricType.class, OperationType.class, Environment.class, Feed.class, Metric.class, Resource.class,
+            StructuredData.class, Up.class);
 
     static {
 
@@ -60,12 +61,17 @@ public final class RelativePath extends Path implements Serializable {
         SHORT_TYPE_NAMES.putAll(CanonicalPath.SHORT_TYPE_NAMES);
         SHORT_TYPE_NAMES.put(Up.class, "..");
 
-        for (Map.Entry<Class<?>, List<Class<?>>> e : CanonicalPath.VALID_PROGRESSIONS.entrySet()) {
-            ArrayList<Class<?>> andUp = new ArrayList<>(e.getValue());
-            andUp.add(Up.class);
-            andUp.trimToSize();
+        for (Class<?> c : ALL_VALID_TYPES) {
+            List<Class<?>> progressions = CanonicalPath.VALID_PROGRESSIONS.get(c);
+            if (progressions == null) {
+                progressions = Collections.singletonList(Up.class);
+            } else {
+                progressions = new ArrayList<>(progressions);
+                progressions.add(Up.class);
+                ((ArrayList<?>) progressions).trimToSize();
+            }
 
-            VALID_PROGRESSIONS.put(e.getKey(), andUp);
+            VALID_PROGRESSIONS.put(c, progressions);
         }
     }
 
@@ -316,6 +322,11 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         @Override
+        protected FeedBuilder feedBuilder(List<Segment> segments) {
+            return new FeedBuilder(segments);
+        }
+
+        @Override
         protected ResourceTypeBuilder resourceTypeBuilder(List<Segment> list) {
             return new ResourceTypeBuilder(list);
         }
@@ -336,17 +347,12 @@ public final class RelativePath extends Path implements Serializable {
         }
     }
 
-    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<RelativePath, FeedBuilder,
+    public static final class EnvironmentBuilder extends Path.EnvironmentBuilder<RelativePath,
             ResourceBuilder, MetricBuilder, ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder,
             StructuredDataBuilder> {
 
         private EnvironmentBuilder(List<Segment> list) {
             super(list, RelativePath::new);
-        }
-
-        @Override
-        protected FeedBuilder feedBuilder(List<Segment> segments) {
-            return new FeedBuilder(segments);
         }
 
         @Override

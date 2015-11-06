@@ -151,39 +151,38 @@ public class RestResourceTypes extends RestBase {
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resourceTypes")
+    @Path("feeds/{feedId}/resourceTypes")
     @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAll(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-                            @Context UriInfo uriInfo) {
+    public Response getAll(@PathParam("feedId") String feedId,
+                           @Context UriInfo uriInfo) {
 
-        Page<ResourceType> ret = inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .feeds().get(feedId).resourceTypes().getAll().entities(extractPaging(uriInfo));
+        Page<ResourceType> ret = inventory.tenants().get(getTenantId()).feeds().get(feedId).resourceTypes().getAll()
+                .entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
     @GET
-    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}")
     @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public ResourceType get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-                        @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
+    public ResourceType get(@PathParam("feedId") String feedId,
+                            @PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
 
-        return inventory.tenants().get(getTenantId()).environments().get(environmentId)
-                .feeds().get(feedId).resourceTypes().get(resourceTypeId).entity();
+        return inventory.tenants().get(getTenantId()).feeds().get(feedId).resourceTypes().get(resourceTypeId).entity();
     }
 
     @POST
-    @Path("/{environmentId}/{feedId}/resourceTypes")
+    @Path("/feeds/{feedId}/resourceTypes")
     @ApiOperation("Creates a new resource type")
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK"),
@@ -196,19 +195,17 @@ public class RestResourceTypes extends RestBase {
                            ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
 
-        if (!security.canCreate(ResourceType.class).under(CanonicalPath.of().tenant(tenantId)
-                .environment(environmentId).feed(feedId).get())) {
+        if (!security.canCreate(ResourceType.class).under(CanonicalPath.of().tenant(tenantId).feed(feedId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
-                .resourceTypes().create(resourceType);
+        inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
     }
 
     @PUT
-    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}")
     @ApiOperation("Update a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -216,40 +213,36 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 404, message = "Resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response update(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response update(@PathParam("feedId") String feedId,
                            @PathParam("resourceTypeId") String resourceTypeId,
                            @ApiParam(required = true) ResourceType.Update update) {
         String tenantId = getTenantId();
 
-        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
-                                        .resourceType(resourceTypeId).get())) {
+        if (!security.canUpdate(CanonicalPath.of().tenant(tenantId).feed(feedId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
-                .resourceTypes().update(resourceTypeId, update);
+        inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes().update(resourceTypeId, update);
         return Response.noContent().build();
     }
 
     @DELETE
-    @Path("/{environmentId}/{feedId}/resourceTypes/{resourceTypeId}")
+    @Path("feeds/{feedId}/resourceTypes/{resourceTypeId}")
     @ApiOperation("Deletes a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response delete(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response delete(@PathParam("feedId") String feedId,
                            @PathParam("resourceTypeId") String resourceTypeId) {
         String tenantId = getTenantId();
 
-        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId)
-                                        .resourceType(resourceTypeId).get())) {
+        if (!security.canDelete(CanonicalPath.of().tenant(tenantId).feed(feedId).resourceType(resourceTypeId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().get(environmentId).feeds().get(feedId)
-                .resourceTypes().delete(resourceTypeId);
+        inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes().delete(resourceTypeId);
         return Response.noContent().build();
     }
 }

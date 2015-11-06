@@ -18,6 +18,7 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.id;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
@@ -29,6 +30,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
@@ -141,7 +143,7 @@ public final class BaseMetrics {
     public static class ReadAssociate<BE> extends Associator<BE, Metric> implements Metrics.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, Metric> context) {
-            super(context);
+            super(context, incorporates, Resource.class);
         }
 
         @Override

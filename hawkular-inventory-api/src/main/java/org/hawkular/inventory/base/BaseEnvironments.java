@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
@@ -130,8 +131,8 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Feeds.ReadWrite feeds() {
-            return new BaseFeeds.ReadWrite<>(context.proceedTo(contains, Feed.class).get());
+        public Feeds.ReadAssociate feeds() {
+            return new BaseFeeds.ReadAssociate<>(context.proceedTo(incorporates, Feed.class).get());
         }
 
         @Override
@@ -148,7 +149,7 @@ public final class BaseEnvironments {
         public Resources.Read allResources() {
             return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
-                    {by(contains), type(Feed.class), by(contains), type(Resource.class)}
+                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
         }
 
@@ -156,7 +157,7 @@ public final class BaseEnvironments {
         public Metrics.Read allMetrics() {
             return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
-                    {by(contains), type(Feed.class), by(contains), type(Metric.class)}
+                    {by(incorporates), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
         }
     }
@@ -169,8 +170,8 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Feeds.ReadContained feeds() {
-            return new BaseFeeds.ReadContained<>(context.proceedTo(contains, Feed.class).get());
+        public Feeds.Read feeds() {
+            return new BaseFeeds.Read<>(context.proceedTo(incorporates, Feed.class).get());
         }
 
         @Override
@@ -187,7 +188,7 @@ public final class BaseEnvironments {
         public Resources.Read allResources() {
             return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Resource.class)},
-                    {by(contains), type(Feed.class), by(contains), type(Resource.class)}
+                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}
             }).getting(Resource.class));
         }
 
@@ -195,7 +196,7 @@ public final class BaseEnvironments {
         public Metrics.Read allMetrics() {
             return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(Metric.class)},
-                    {by(contains), type(Feed.class), by(contains), type(Metric.class)}
+                    {by(incorporates), type(Feed.class), by(contains), type(Metric.class)}
             }).getting(Metric.class));
         }
     }
