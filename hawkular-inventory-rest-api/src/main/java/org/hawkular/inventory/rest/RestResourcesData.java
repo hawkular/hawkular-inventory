@@ -55,7 +55,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 public class RestResourcesData extends RestResources {
 
     @POST
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Creates the configuration for pre-existing resource")
     @ApiResponses({
                           @ApiResponse(code = 204, message = "OK Created"),
@@ -63,12 +63,13 @@ public class RestResourcesData extends RestResources {
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response createConfiguration(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @ApiParam(required = true) DataEntity.Blueprint<Resources.DataRole> configuration,
-            @Context UriInfo uriInfo) {
+    public Response createConfigurationF(@PathParam("feedId") String feedId, @PathParam
+            ("resourcePath") String resourcePath,
+                                         @ApiParam(required = true)
+                                         DataEntity.Blueprint<Resources.DataRole> configuration,
+                                         @Context UriInfo uriInfo) {
 
-        return createConfigurationHelper(environmentId, feedId, resourcePath, configuration, uriInfo);
+        return createConfigurationHelper(null, feedId, resourcePath, configuration, uriInfo);
     }
 
     @POST
@@ -102,7 +103,7 @@ public class RestResourcesData extends RestResources {
     }
 
     @GET
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Retrieves the configuration of a resource")
     @ApiResponses({
                           @ApiResponse(code = 204, message = "OK"),
@@ -110,12 +111,12 @@ public class RestResourcesData extends RestResources {
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response getConfiguration(@PathParam("environmentId") String environmentId,
-                                     @PathParam("feedId") String feedId,
-                                     @PathParam("resourcePath") String resourcePath,
-            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType) {
+    public Response getConfigurationF(@PathParam("feedId") String feedId,
+                                      @PathParam("resourcePath") String resourcePath,
+                                      @DefaultValue("configuration") @QueryParam("dataType")
+                                      Resources.DataRole dataType) {
 
-        return getConfigurationHelper(environmentId, feedId, resourcePath, dataType);
+        return getConfigurationHelper(null, feedId, resourcePath, dataType);
     }
 
     @GET
@@ -145,7 +146,7 @@ public class RestResourcesData extends RestResources {
     }
 
     @PUT
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Updates the configuration of a resource")
     @ApiResponses({
                           @ApiResponse(code = 204, message = "OK"),
@@ -153,12 +154,13 @@ public class RestResourcesData extends RestResources {
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response updateConfiguration(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @PathParam("resourcePath") String resourcePath,
-            @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType,
-            @ApiParam(required = true) DataEntity.Update configuration) {
+    public Response updateConfigurationF(@PathParam("feedId") String feedId,
+                                         @PathParam("resourcePath") String resourcePath,
+                                         @DefaultValue("configuration") @QueryParam("dataType")
+                                         Resources.DataRole dataType,
+                                         @ApiParam(required = true) DataEntity.Update configuration) {
 
-        return updateConfigurationHelper(environmentId, feedId, resourcePath, dataType, configuration);
+        return updateConfigurationHelper(null, feedId, resourcePath, dataType, configuration);
     }
 
     @PUT
@@ -189,7 +191,7 @@ public class RestResourcesData extends RestResources {
     }
 
     @DELETE
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/data")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcrcePath:.+}/data")
     @ApiOperation("Deletes the configuration of a resource")
     @ApiResponses({
                           @ApiResponse(code = 204, message = "OK"),
@@ -197,13 +199,12 @@ public class RestResourcesData extends RestResources {
                                        response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response deleteConfiguration(@PathParam("environmentId") String environmentId,
-                                        @PathParam("feedId") String feedId,
-                                        @PathParam("resourcePath") String resourcePath,
-                                        @DefaultValue("configuration") @QueryParam("dataType")
-                                        Resources.DataRole dataType) {
+    public Response deleteConfigurationF(@PathParam("feedId") String feedId,
+                                         @PathParam("resourcePath") String resourcePath,
+                                         @DefaultValue("configuration") @QueryParam("dataType")
+                                         Resources.DataRole dataType) {
 
-        return deleteConfigurationHelper(environmentId, feedId, resourcePath, dataType);
+        return deleteConfigurationHelper(null, feedId, resourcePath, dataType);
     }
 
     @DELETE
