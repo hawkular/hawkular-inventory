@@ -95,7 +95,7 @@ public class RestResourcesMetrics extends RestResources {
     }
 
     @POST
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics")
     @ApiOperation("Associates a pre-existing metric with a resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -103,15 +103,15 @@ public class RestResourcesMetrics extends RestResources {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
-            Collection<String> metricPaths) {
+    public Response associateMetricsF(@PathParam("feedId") String feedId,
+                                      @Encoded @PathParam("resourcePath") String resourcePath,
+                                      Collection<String> metricPaths) {
 
         String tenantId = getTenantId();
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
-        CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+        CanonicalPath resource = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
         if (!security.canAssociateFrom(resource)) {
             return Response.status(FORBIDDEN).build();
@@ -144,7 +144,7 @@ public class RestResourcesMetrics extends RestResources {
     }
 
     @GET
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics")
     @ApiOperation("Retrieves all metrics associated with a resource. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of metrics"),
@@ -152,10 +152,10 @@ public class RestResourcesMetrics extends RestResources {
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAssociatedMetrics(@PathParam("environmentId") String environmentId,
-            @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
-            @Context UriInfo uriInfo) {
-        CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentId, feedId, resourcePath);
+    public Response getAssociatedMetricsF(@PathParam("feedId") String feedId,
+                                          @Encoded @PathParam("resourcePath") String resourcePath,
+                                          @Context UriInfo uriInfo) {
+        CanonicalPath resource = composeCanonicalPath(getTenantId(), null, feedId, resourcePath);
         Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
                 extractPaging(uriInfo));
 
@@ -198,7 +198,7 @@ public class RestResourcesMetrics extends RestResources {
     }
 
     @GET
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Retrieves a single resource")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The resource"),
@@ -207,7 +207,7 @@ public class RestResourcesMetrics extends RestResources {
                             "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAssociatedMetric(@PathParam("environmentId") String environmentId,
+    public Response getAssociatedMetricF(
             @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
             @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
     @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
@@ -215,7 +215,7 @@ public class RestResourcesMetrics extends RestResources {
         String tenantId = getTenantId();
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
-        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+        CanonicalPath rp = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
         if (isCanonical) {
             metricPath = "/" + metricPath;
@@ -271,7 +271,7 @@ public class RestResourcesMetrics extends RestResources {
     }
 
     @DELETE
-    @javax.ws.rs.Path("/{environmentId}/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
+    @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
     @ApiOperation("Disassociates the given resource from the given metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -280,7 +280,7 @@ public class RestResourcesMetrics extends RestResources {
                             "associated with the resource", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response disassociateMetric(@PathParam("environmentId") String environmentId,
+    public Response disassociateMetricF(
             @PathParam("feedId") String feedId, @Encoded @PathParam("resourcePath") String resourcePath,
             @Encoded @PathParam("metricPath") String metricPath, @QueryParam("canonical") @DefaultValue("false")
     @ApiParam("True if metric path should be considered canonical, false by default.") boolean isCanonical) {
@@ -288,7 +288,7 @@ public class RestResourcesMetrics extends RestResources {
         String tenantId = getTenantId();
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
-        CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
+        CanonicalPath rp = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
         if (!security.canAssociateFrom(rp)) {
             return Response.status(FORBIDDEN).build();
