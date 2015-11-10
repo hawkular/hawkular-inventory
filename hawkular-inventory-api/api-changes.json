@@ -220,7 +220,7 @@
         },
         {
           "code": "java.method.addedToInterface",
-          "new": "method AccessFeeds org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::feeds()",
+          "new": "method AccessFeeds org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::feeds()",
           "justification": "Interface changed because of the move of the feeds."    
         },
         {
@@ -319,6 +319,17 @@
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.base.BaseTenants.Single<BE>",
           "justification": "Interface changed because of the move of the feeds."                                        
+        }
+      ]
+    }
+  },
+  "0.9.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method AccessFeeds org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::feeds()",
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.addedToInterface",
@@ -412,7 +423,7 @@
           "code": "java.method.abstractMethodAdded",
           "regex": true,
           "new": "method MPB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.TenantBuilder<.*>::metadataPackBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
-          "justification": "The path builders now support metadata packs"          
+          "justification": "The path builders now support metadata packs"
         },
         {
           "code": "java.method.returnTypeChanged",
