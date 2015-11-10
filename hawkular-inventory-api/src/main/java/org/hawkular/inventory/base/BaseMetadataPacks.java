@@ -24,9 +24,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.hawkular.inventory.api.ContentHash;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
@@ -69,7 +69,7 @@ public final class BaseMetadataPacks {
                 }
             }).iterator();
 
-            return ContentHash.of(members, context.inventory);
+            return IdentityHash.of(members, context.inventory);
         }
 
         @Override

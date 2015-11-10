@@ -43,19 +43,21 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 
 /**
- * Produces a content hash of entities.
+ * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
+ * and is produced using its user-defined id and structure. This hash is used to match a client-side state of an
+ * entity (MetadataPack, ResourceType, MetricType) with the severside state of it.
  * <p>
- * The content hash is defined only for the following types of entities:
+ * The identity hash is defined only for the following types of entities:
  * {@link org.hawkular.inventory.api.model.ResourceType}, {@link org.hawkular.inventory.api.model.MetricType} and
  * {@link org.hawkular.inventory.api.model.OperationType}.
  * <p>
- * The content hash is an SHA1 hash of a string representation of the entity (in UTF-8 encoding). The string
+ * The identity hash is an SHA1 hash of a string representation of the entity (in UTF-8 encoding). The string
  * representation is produced as follows:
  * <ol>
  * <li>MetricType: id + type + unit
  * <li>OperationType: id + minimized(returnTypeJSON) + minimized(parameterTypesJSON)
- * <li>ResourceType: id + minimized(configurationSchemaJSON) + minimized
- * (connectionConfigurationSchemaJSON) + operationTypeString*<br/>
+ * <li>ResourceType: id + minimized(configurationSchemaJSON) + minimized(connectionConfigurationSchemaJSON)
+ * + operationTypeString*<br/>
  * the operation types are sorted alphabetically by their ids
  * </ol>
  * where {@code minimized()} means that the JSON is stripped of any superfluous whitespace and {@code *} means
@@ -64,13 +66,13 @@ import org.hawkular.inventory.api.model.StructuredData;
  * @author Lukas Krejci
  * @since 0.7.0
  */
-public final class ContentHash {
+public final class IdentityHash {
 
-    private ContentHash() {
+    private IdentityHash() {
 
     }
 
-    public static String of(MetadataPack.Structure metadata) {
+    public static String of(MetadataPack.Members metadata) {
         StringBuilder bld = new StringBuilder();
 
         for (MetricType.Blueprint mt : metadata.getMetricTypes()) {
@@ -180,7 +182,7 @@ public final class ContentHash {
         }, null);
     }
 
-    private static void appendStringRepresentation(Entity.Blueprint entity, MetadataPack.Structure structure,
+    private static void appendStringRepresentation(Entity.Blueprint entity, MetadataPack.Members members,
                                                    StringBuilder bld) {
 
         entity.accept(new ElementBlueprintVisitor.Simple<Void, Void>() {
@@ -203,8 +205,8 @@ public final class ContentHash {
 
             @Override
             public Void visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                DataEntity.Blueprint<?> returnType = structure.getReturnType(operationType);
-                DataEntity.Blueprint<?> parameterTypes = structure.getParameterTypes(operationType);
+                DataEntity.Blueprint<?> returnType = members.getReturnType(operationType);
+                DataEntity.Blueprint<?> parameterTypes = members.getParameterTypes(operationType);
 
                 bld.append(operationType.getId());
                 returnType.accept(this, null);
@@ -214,9 +216,9 @@ public final class ContentHash {
 
             @Override
             public Void visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                DataEntity.Blueprint<?> configSchema = structure.getConfigurationSchema(type);
-                DataEntity.Blueprint<?> connSchema = structure.getConnectionConfigurationSchema(type);
-                List<OperationType.Blueprint> ots = structure.getOperationTypes(type);
+                DataEntity.Blueprint<?> configSchema = members.getConfigurationSchema(type);
+                DataEntity.Blueprint<?> connSchema = members.getConnectionConfigurationSchema(type);
+                List<OperationType.Blueprint> ots = members.getOperationTypes(type);
 
                 bld.append(type.getId());
                 configSchema.accept(this, null);

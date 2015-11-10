@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 
@@ -79,13 +80,13 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
     /**
      * This class can be used to completely describe the structure of the metadata pack offline, without needing
      * to "touch" inventory. This is particularly useful with
-     * {@link org.hawkular.inventory.api.ContentHash#of(Structure)} method that can be used to compute a hash of
+     * {@link IdentityHash#of(Members)} method that can be used to compute a hash of
      * a metadata pack that might not yet exist without needing to consult inventory.
      * <p>
      * Note that this structure uses entities but the content hash computation only needs the ID of the entities
      * from the paths. As such, the IDs of parent entities of resource types and metric types are irrelevant.
      */
-    public static final class Structure {
+    public static final class Members {
         private final List<ResourceType.Blueprint> resourceTypes;
         private final List<MetricType.Blueprint> metricTypes;
         private final IdentityHashMap<ResourceType.Blueprint, List<OperationType.Blueprint>> operations;
@@ -98,12 +99,12 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
             return new Builder();
         }
 
-        private Structure(Set<ResourceType.Blueprint> resourceTypes, Set<MetricType.Blueprint> metricTypes,
-                          IdentityHashMap<ResourceType.Blueprint, Set<OperationType.Blueprint>> operations,
-                          IdentityHashMap<OperationType.Blueprint, DataEntity.Blueprint<?>> returnTypes,
-                          IdentityHashMap<OperationType.Blueprint, DataEntity.Blueprint<?>> parameterTypes,
-                          IdentityHashMap<ResourceType.Blueprint, DataEntity.Blueprint<?>> configurationSchemas,
-                          IdentityHashMap<ResourceType.Blueprint, DataEntity.Blueprint<?>>
+        private Members(Set<ResourceType.Blueprint> resourceTypes, Set<MetricType.Blueprint> metricTypes,
+                        IdentityHashMap<ResourceType.Blueprint, Set<OperationType.Blueprint>> operations,
+                        IdentityHashMap<OperationType.Blueprint, DataEntity.Blueprint<?>> returnTypes,
+                        IdentityHashMap<OperationType.Blueprint, DataEntity.Blueprint<?>> parameterTypes,
+                        IdentityHashMap<ResourceType.Blueprint, DataEntity.Blueprint<?>> configurationSchemas,
+                        IdentityHashMap<ResourceType.Blueprint, DataEntity.Blueprint<?>>
                                   connectionConfigurationSchemas) {
             this.resourceTypes = new ArrayList<>(resourceTypes);
 
@@ -188,8 +189,8 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
                 return this;
             }
 
-            public Structure build() {
-                return new Structure(resourceTypes, metricTypes, resourceTypeOperationTypes, operationTypeReturnType,
+            public Members build() {
+                return new Members(resourceTypes, metricTypes, resourceTypeOperationTypes, operationTypeReturnType,
                         operationTypeParameterTypes, resourceTypeConfigurationSchemas,
                         resourceTypeConnectionConfigurationSchemas);
             }

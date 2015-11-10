@@ -111,7 +111,7 @@ public final class BaseMetricTypes {
             }
 
             if (isInMetadataPack(context, entity)) {
-                throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
+                throw new IllegalArgumentException("Cannot update a metric type that is a part of metadata pack.");
             }
         }
 

@@ -23,7 +23,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.hawkular.inventory.api.ContentHash;
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -48,9 +48,9 @@ public class ContentHashTest {
         MetricType.Blueprint mtb =
                 MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("mt").withUnit(MetricUnit.NONE).build();
 
-        MetadataPack.Structure structure = MetadataPack.Structure.builder().with(mtb).build();
+        MetadataPack.Members members = MetadataPack.Members.builder().with(mtb).build();
 
-        String blueprintHash = ContentHash.of(structure);
+        String blueprintHash = IdentityHash.of(members);
 
         String expectedHash = digest(mtb.getId() + mtb.getType() + mtb.getUnit());
 
@@ -61,9 +61,9 @@ public class ContentHashTest {
     public void testResourceTypeHashWithNoAppendages() throws Exception {
         ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();
 
-        MetadataPack.Structure structure = MetadataPack.Structure.builder().with(rtb).done().build();
+        MetadataPack.Members members = MetadataPack.Members.builder().with(rtb).done().build();
 
-        String blueprintHash = ContentHash.of(structure);
+        String blueprintHash = IdentityHash.of(members);
 
         String expectedHash = digest(rtb.getId() + "nullnull"); //nullnull is for the undefined config and conn schemas
 
@@ -92,13 +92,13 @@ public class ContentHashTest {
 
         ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();
 
-        MetadataPack.Structure structure = MetadataPack.Structure.builder().with(rtb).with(configSchema)
+        MetadataPack.Members members = MetadataPack.Members.builder().with(rtb).with(configSchema)
                 .with(connSchema).with(otb).with(returnType).with(parameterTypes).done().done().build();
 
         String expectedHash = digest(rtb.getId() + configSchema.getValue().toJSON() + connSchema.getValue().toJSON()
                 + otb.getId() + returnType.getValue().toJSON() + parameterTypes.getValue().toJSON());
 
-        String blueprintHash = ContentHash.of(structure);
+        String blueprintHash = IdentityHash.of(members);
 
         Assert.assertEquals(expectedHash, blueprintHash);
     }

@@ -60,12 +60,12 @@ import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.api.ContentHash;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
@@ -1831,7 +1831,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         StructuredData configSchema = inventory.inspect(rt).data().get(configurationSchema).entity().getValue();
         StructuredData retType = inventory.inspect(ot).data().get(returnType).entity().getValue();
 
-        String expectedContentHash = ContentHash.of(MetadataPack.Structure.builder()
+        String expectedContentHash = IdentityHash.of(MetadataPack.Members.builder()
                 .with(MetricType.Blueprint
                         .builder(mt.getType())
                         .withUnit(mt.getUnit())
