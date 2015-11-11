@@ -39,6 +39,7 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -149,10 +150,10 @@ final class Constants {
         tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
         resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type),
         operationType(OperationType.class, name), resource(Resource.class, name), metric(Metric.class, name),
-        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid,
-                __targetEid),
-        dataEntity(DataEntity.class, name), structuredData(StructuredData.class, __structuredDataType,
-                __structuredDataValue, __structuredDataIndex, __structuredDataKey);
+        metadatapack(MetadataPack.class, name), relationship(Relationship.class, __sourceType, __targetType,
+                __sourceCp, __targetCp, __sourceEid, __targetEid), dataEntity(DataEntity.class, name),
+        structuredData(StructuredData.class, __structuredDataType, __structuredDataValue, __structuredDataIndex,
+                __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;
@@ -227,6 +228,11 @@ final class Constants {
                 }
 
                 @Override
+                public Type visitMetadataPack(MetadataPack metadataPack, Void parameter) {
+                    return Type.metadatapack;
+                }
+
+                @Override
                 public Type visitUnknown(Object entity, Void parameter) {
                     return null;
                 }
@@ -283,6 +289,10 @@ final class Constants {
                 @Override
                 public Type visitOperationType(Void parameter) {
                     return operationType;
+                }
+
+                @Override public Type visitMetadataPack(Void parameter) {
+                    return Type.metadatapack;
                 }
 
                 @Override

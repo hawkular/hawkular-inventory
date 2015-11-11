@@ -44,6 +44,8 @@ public interface ElementVisitor<R, P> {
 
     R visitOperationType(OperationType operationType, P parameter);
 
+    R visitMetadataPack(MetadataPack metadataPack, P parameter);
+
     R visitUnknown(Object entity, P parameter);
 
     /**
@@ -126,6 +128,10 @@ public interface ElementVisitor<R, P> {
 
         @Override
         public R visitOperationType(OperationType operationType, P parameter) {
+            return defaultAction();
+        }
+
+        @Override public R visitMetadataPack(MetadataPack metadataPack, P parameter) {
             return defaultAction();
         }
 

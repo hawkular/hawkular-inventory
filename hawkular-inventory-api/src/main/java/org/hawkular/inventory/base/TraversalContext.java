@@ -80,17 +80,24 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     private final int transactionRetries;
 
+    /**
+     * Optimization for quickly retrieving the entity that has been just created. We have all the data ready at the
+     * creation time so it seems silly to load it from backend as soon as the caller requires to see the results of the
+     * creation.
+     */
+    private final E createdEntity;
+
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
                      InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                      ObservableContext observableContext) {
         this(inventory, sourcePath, selectCandidates, backend, entityClass, configuration, observableContext,
-                getTransactionRetries(configuration), null);
+                getTransactionRetries(configuration), null, null);
     }
 
     private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
                              InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                              ObservableContext observableContext, int transactionRetries,
-                             TraversalContext<BE, ?> previous) {
+                             TraversalContext<BE, ?> previous, E createdEntity) {
 
         this.inventory = inventory;
         this.sourcePath = sourcePath;
@@ -101,11 +108,19 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.observableContext = observableContext;
         this.transactionRetries = transactionRetries;
         this.previous = previous;
+        this.createdEntity = createdEntity;
     }
 
     private static int getTransactionRetries(Configuration configuration) {
         String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "5");
         return Integer.parseInt(retries);
+    }
+
+    /**
+     * @return the entity previously created on this traversal position or null if no such thing happened.
+     */
+    public E getCreatedEntity() {
+        return createdEntity;
     }
 
     /**
@@ -200,7 +215,12 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
-                observableContext, transactionRetries, this);
+                observableContext, transactionRetries, this, null);
+    }
+
+    TraversalContext<BE, E> toCreatedEntity(E entity) {
+        return new TraversalContext<>(inventory, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
+                configuration, observableContext, transactionRetries, this, entity);
     }
 
     TraversalContext<BE, E> proceedTo(Path path) {
@@ -354,7 +374,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
                     sourceContext.backend, entityClass, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext);
+                    sourceContext.transactionRetries, sourceContext, null);
         }
 
         /**
@@ -367,7 +387,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
             return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
                     sourceContext.backend, entityType, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext);
+                    sourceContext.transactionRetries, sourceContext, null);
         }
     }
 }

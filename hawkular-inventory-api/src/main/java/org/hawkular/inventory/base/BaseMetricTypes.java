@@ -25,7 +25,10 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
@@ -81,7 +84,41 @@ public final class BaseMetricTypes {
                 throw new IllegalArgumentException(msg);
             }
 
-            return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+        }
+
+        @Override
+        protected void cleanup(String s, BE entityRepresentation) {
+            cleanup(context, entityRepresentation);
+        }
+
+        @Override
+        protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update) {
+            preUpdate(context, entityRepresentation, update);
+        }
+
+        private static <BE> void cleanup(TraversalContext<BE, ?> context, BE deletedEntity) {
+            if (isInMetadataPack(context, deletedEntity)) {
+                throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
+            }
+        }
+
+        private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update) {
+            MetricType mt = context.backend.convert(entity, MetricType.class);
+            if (mt.getUnit() == update.getUnit()) {
+                //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
+                return;
+            }
+
+            if (isInMetadataPack(context, entity)) {
+                throw new IllegalArgumentException("Cannot update a metric type that is a part of metadata pack.");
+            }
+        }
+
+        private static <BE> boolean isInMetadataPack(TraversalContext<BE, ?> context, BE metricType) {
+            return context.backend.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
+                    With.type(MetadataPack.class)).get()) != null;
+
         }
     }
 
@@ -148,6 +185,16 @@ public final class BaseMetricTypes {
         @Override
         public Metrics.Read metrics() {
             return new BaseMetrics.Read<>(context.proceedTo(defines, Metric.class).get());
+        }
+
+        @Override
+        protected void cleanup(BE deletedEntity) {
+            ReadWrite.cleanup(context, deletedEntity);
+        }
+
+        @Override
+        protected void preUpdate(BE updatedEntity, MetricType.Update update) {
+            ReadWrite.preUpdate(context, updatedEntity, update);
         }
     }
 

@@ -110,4 +110,7 @@ public final class ResourceTypes {
      */
     public interface ReadWrite
             extends ReadWriteInterface<ResourceType.Update, ResourceType.Blueprint, Single, Multiple, String> {}
+
+    public interface ReadAssociate extends Read, AssociationInterface {
+    }
 }

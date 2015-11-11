@@ -45,6 +45,8 @@ public interface ElementTypeVisitor<R, P> {
             return visitor.visitData(parameter);
         } else if (OperationType.class.equals(entityType)) {
             return visitor.visitOperationType(parameter);
+        } else if (MetadataPack.class.equals(entityType)) {
+            return visitor.visitMetadataPack(parameter);
         } else {
             return visitor.visitUnknown(parameter);
         }
@@ -69,6 +71,8 @@ public interface ElementTypeVisitor<R, P> {
     R visitData(P parameter);
 
     R visitOperationType(P parameter);
+
+    R visitMetadataPack(P parameter);
 
     R visitUnknown(P parameter);
 
@@ -152,6 +156,11 @@ public interface ElementTypeVisitor<R, P> {
 
         @Override
         public R visitOperationType(P parameter) {
+            return defaultAction();
+        }
+
+        @Override
+        public R visitMetadataPack(P parameter) {
             return defaultAction();
         }
 

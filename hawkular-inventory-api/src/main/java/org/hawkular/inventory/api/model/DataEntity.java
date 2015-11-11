@@ -174,7 +174,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             return value == null ? UNDEFINED : value;
         }
 
-        public Role getRole() {
+        public DataRole getRole() {
             return role;
         }
 

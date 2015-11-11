@@ -102,7 +102,7 @@ public final class BaseMetrics {
 
         @Override
         public Metrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

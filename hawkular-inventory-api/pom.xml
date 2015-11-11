@@ -108,6 +108,9 @@
                   "filter": {
                     //leaving this empty to include everything - this is to reconfigure the default provided in the
                     //parent pom.
+                    "elements": {
+                      "exclude": [".*_\\$logger.*"]
+                    }
                   }
                 }
               }

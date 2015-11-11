@@ -68,8 +68,12 @@ public final class BaseData {
 
     public static final class Read<BE, R extends DataEntity.Role> extends Traversal<BE, DataEntity>
             implements Data.Read<R> {
-        public Read(TraversalContext<BE, DataEntity> context) {
+
+        private final DataModificationChecks<BE> checks;
+
+        public Read(TraversalContext<BE, DataEntity> context, DataModificationChecks<BE> checks) {
             super(context);
+            this.checks = checks;
         }
 
         @Override
@@ -79,7 +83,7 @@ public final class BaseData {
 
         @Override
         public Data.Single get(R role) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(role.name())).get());
+            return new Single<>(context.proceed().where(id(role.name())).get(), checks);
         }
     }
 
@@ -87,8 +91,11 @@ public final class BaseData {
             extends Mutator<BE, DataEntity, DataEntity.Blueprint<R>, DataEntity.Update, R>
             implements Data.ReadWrite<R> {
 
-        public ReadWrite(TraversalContext<BE, DataEntity> context) {
+        private final DataModificationChecks<BE> checks;
+
+        public ReadWrite(TraversalContext<BE, DataEntity> context, DataModificationChecks<BE> checks) {
             super(context);
+            this.checks = checks;
         }
 
         @Override
@@ -116,17 +123,18 @@ public final class BaseData {
 
         @Override
         public Data.Single create(DataEntity.Blueprint<R> data) {
-            return new Single<>(context.replacePath(doCreate(data)));
+            checks.preCreate(data);
+            return new Single<>(context.toCreatedEntity(doCreate(data)), checks);
         }
 
         @Override
         protected void cleanup(R role, BE entityRepresentation) {
-            cleanup(context, entityRepresentation);
+            cleanup(context, checks, entityRepresentation);
         }
 
         @Override
-        protected void preUpdate(R r, BE entityRepresentation, DataEntity.Update update) {
-            preUpdate(context, entityRepresentation, update);
+        protected void preUpdate(R role, BE entityRepresentation, DataEntity.Update update) {
+            preUpdate(context, checks, entityRepresentation, update);
         }
 
         @Override
@@ -136,10 +144,13 @@ public final class BaseData {
 
         @Override
         public Data.Single get(R role) throws EntityNotFoundException {
-            return new Single<>(context.proceed().where(id(role.name())).get());
+            return new Single<>(context.proceed().where(id(role.name())).get(), checks);
         }
 
-        private static <BE> void cleanup(TraversalContext<BE, DataEntity> context, BE entityRepresentation) {
+        private static <BE> void cleanup(TraversalContext<BE, DataEntity> context,
+                                         DataModificationChecks<BE> checks, BE entityRepresentation) {
+            checks.preDelete(entityRepresentation);
+
             Set<BE> rels = context.backend.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
                     hasData.name());
 
@@ -156,18 +167,22 @@ public final class BaseData {
             context.backend.delete(dataRel);
         }
 
-        private static <BE> void preUpdate(TraversalContext<BE, DataEntity> context, BE entityRepresentation,
-                DataEntity.Update update) {
+        private static <BE> void preUpdate(TraversalContext<BE, DataEntity> context,
+                                           DataModificationChecks<BE> checks, BE entityRepresentation,
+                                           DataEntity.Update update) {
+            checks.preUpdate(entityRepresentation, update);
             Validator.validate(context, update.getValue(), entityRepresentation);
         }
     }
 
-    public static final class Single<BE>
-            extends SingleEntityFetcher<BE, DataEntity, DataEntity.Update>
+    public static final class Single<BE> extends SingleEntityFetcher<BE, DataEntity, DataEntity.Update>
             implements Data.Single {
 
-        public Single(TraversalContext<BE, DataEntity> context) {
+        private final DataModificationChecks<BE> checks;
+
+        public Single(TraversalContext<BE, DataEntity> context, DataModificationChecks<BE> checks) {
             super(context);
+            this.checks = checks;
         }
 
         @Override
@@ -191,12 +206,12 @@ public final class BaseData {
 
         @Override
         protected void cleanup(BE deletedEntity) {
-            ReadWrite.cleanup(context, deletedEntity);
+            ReadWrite.cleanup(context, checks, deletedEntity);
         }
 
         @Override
         protected void preUpdate(BE updatedEntity, DataEntity.Update update) {
-            ReadWrite.preUpdate(context, updatedEntity, update);
+            ReadWrite.preUpdate(context, checks, updatedEntity, update);
         }
     }
 
@@ -329,5 +344,29 @@ public final class BaseData {
                 }
             }, null);
         }
+    }
+
+    public interface DataModificationChecks<BE> {
+        static <BE> DataModificationChecks<BE> none() {
+            return new DataModificationChecks<BE>() {
+                @Override
+                public void preCreate(DataEntity.Blueprint blueprint) {
+                }
+
+                @Override
+                public void preUpdate(BE dataEntity, DataEntity.Update update) {
+                }
+
+                @Override
+                public void preDelete(BE dataEntity) {
+                }
+            };
+        }
+
+        void preCreate(DataEntity.Blueprint blueprint);
+
+        void preUpdate(BE dataEntity, DataEntity.Update update);
+
+        void preDelete(BE dataEntity);
     }
 }

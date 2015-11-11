@@ -16,11 +16,13 @@
  */
 package org.hawkular.inventory.rest.test
 
+import groovyx.net.http.HttpResponseException
 import org.hawkular.inventory.api.model.CanonicalPath
 import org.junit.*
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.*
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.fail
 
 /**
  * Test the basic inventory functionality via REST.
@@ -905,6 +907,7 @@ class InventoryITest extends AbstractTestBase {
         def env1 = "bulk-env-" + UUID.randomUUID().toString()
         def env2 = "bulk-env-" + UUID.randomUUID().toString()
         def rt1 = "bulk-URL" + UUID.randomUUID().toString()
+        def rt2 = "bulk-URL2" + UUID.randomUUID().toString()
         def mt1 = "bulk-ResponseTime" + UUID.randomUUID().toString()
 
         def payload = """
@@ -926,6 +929,9 @@ class InventoryITest extends AbstractTestBase {
             "resourceType": [
                {
                  "id": "$rt1"
+               },
+               {
+                 "id": "$rt2"
                }
             ],
             "metricType": [
@@ -950,6 +956,23 @@ class InventoryITest extends AbstractTestBase {
             "operationType": [
               {
                 "id": "ping"
+              }
+            ]
+          },
+          "/t;$tenantId/rt;$rt2": {
+            "dataEntity": [
+              {
+                "role": "connectionConfigurationSchema",
+                "value": {
+                  "title": "URL2 connection config schema",
+                  "description": "A json schema describing connection to an URL",
+                  "type": "string"
+                }
+              }
+            ],
+            "operationType": [
+              {
+                "id": "ping-pong"
               }
             ]
           },
@@ -986,8 +1009,8 @@ class InventoryITest extends AbstractTestBase {
         """
 
         def response = client.post(path: "$basePath/bulk", body: payload)
-
         assertEquals(201, response.status)
+
         def environmentCodes = response.data.environment as Map<String, Integer>
         def resourceTypeCodes = response.data.resourceType as Map<String, Integer>
         def metricTypeCodes = response.data.metricType as Map<String, Integer>
@@ -997,22 +1020,44 @@ class InventoryITest extends AbstractTestBase {
         def metricCodes = response.data.metric as Map<String, Integer>
         def relationshipCodes = response.data.relationship as Map<String, Integer>
 
+        //now make a second call, this time only create a metadata pack.
+        //this has to be done in two requests, because the resource types need to be fully populated before they can
+        //be put into the pack because afterwards they're frozen
+        payload = """
+          {
+            "/t;$tenantId": {
+              "metadataPack": [
+                {
+                  "members": ["/t;$tenantId/rt;$rt1", "/t;$tenantId/rt;$rt2", "/t;$tenantId/mt;$mt1"]
+                }
+              ]
+            }
+          }
+        """
+        response = client.post(path: "$basePath/bulk", body: payload)
+        assertEquals(201, response.status)
+
+        def metadataPackCodes = response.data.metadataPack as Map<String, Integer>
+
         assertEquals(2, environmentCodes.size())
         assertEquals(201, environmentCodes.get("/t;$tenantId/e;$env1".toString()))
         assertEquals(201, environmentCodes.get("/t;$tenantId/e;$env2".toString()))
 
-        assertEquals(1, resourceTypeCodes.size())
+        assertEquals(2, resourceTypeCodes.size())
         assertEquals(201, resourceTypeCodes.get("/t;$tenantId/rt;$rt1".toString()))
+        assertEquals(201, resourceTypeCodes.get("/t;$tenantId/rt;$rt2".toString()))
 
         assertEquals(1, metricTypeCodes.size())
         assertEquals(201, metricTypeCodes.get("/t;$tenantId/mt;$mt1".toString()))
 
-        assertEquals(2, dataCodes.size())
+        assertEquals(3, dataCodes.size())
         assertEquals(201, dataCodes.get("/t;$tenantId/rt;$rt1/d;configurationSchema".toString()))
+        assertEquals(201, dataCodes.get("/t;$tenantId/rt;$rt2/d;connectionConfigurationSchema".toString()))
         assertEquals(201, dataCodes.get("/t;$tenantId/e;$env1/r;url1/d;configuration".toString()))
 
-        assertEquals(1, operationTypeCodes.size())
+        assertEquals(2, operationTypeCodes.size())
         assertEquals(201, operationTypeCodes.get("/t;$tenantId/rt;$rt1/ot;ping".toString()))
+        assertEquals(201, operationTypeCodes.get("/t;$tenantId/rt;$rt2/ot;ping-pong".toString()))
 
         assertEquals(1, resourceCodes.size())
         assertEquals(201, resourceCodes.get("/t;$tenantId/e;$env1/r;url1".toString()))
@@ -1023,13 +1068,40 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(1, relationshipCodes.size())
         assertEquals(201, relationshipCodes.entrySet().getAt(0).getValue())
 
+        assertEquals(1, metadataPackCodes.size())
+        assertEquals(201, metadataPackCodes.entrySet().getAt(0).value)
+
         response = client.get(path: "$basePath/$env1/resources/url1/metrics")
         assertEquals("/t;$tenantId/e;$env1/m;url1_responseTime".toString(), response.data.get(0).path)
 
+        def mpPath = metadataPackCodes.entrySet().getAt(0).key
+        def mpId = mpPath.substring(mpPath.lastIndexOf(";") + 1)
+        client.delete(path: "$basePath/metadatapacks/" + mpId)
         client.delete(path: "$basePath/environments/$env1")
         client.delete(path: "$basePath/environments/$env2")
         client.delete(path: "$basePath/resourceTypes/$rt1")
         client.delete(path: "$basePath/metricTypes/$mt1")
+    }
+
+    @Test
+    void testMetadataPacks() {
+        def response = client.post(path: "$basePath/metadatapacks", body: """
+            {
+              "members": ["/t;$tenantId/rt;$urlTypeId"]
+            }
+        """)
+
+        def mpId = response.data.id
+
+        try {
+            //try to delete url - should be impossible now
+            client.delete(path: "$basePath/resourceTypes/$urlTypeId")
+            fail("Deleting a resource type that is part of metadatapack should not be possible.")
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode)
+        } finally {
+            client.delete(path: "$basePath/metadatapacks/$mpId")
+        }
     }
 
     private static void assertEntityExists(path, cp) {

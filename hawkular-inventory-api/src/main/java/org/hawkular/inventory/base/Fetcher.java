@@ -38,6 +38,8 @@ import org.hawkular.inventory.api.paging.TransformingPage;
 abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update>
         extends Traversal<BE, E> implements ResolvableToSingle<E, U>, ResolvableToMany<E> {
 
+    private boolean useCachedEntity = true;
+
     public Fetcher(TraversalContext<BE, E> context) {
         super(context);
     }
@@ -45,6 +47,10 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     @SuppressWarnings("unchecked")
     @Override
     public E entity() throws EntityNotFoundException, RelationNotFoundException {
+        if (useCachedEntity && context.getCreatedEntity() != null) {
+            useCachedEntity = false;
+            return context.getCreatedEntity();
+        }
         return loadEntity((b, e) -> e);
     }
 
@@ -101,7 +107,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     /**
      * Hook to be run prior to update. Serves the same purpose as
-     * {@link Mutator#preUpdate(Object, Object, AbstractElement.Update)} but is not supplied the id object that can be
+     * {@link Mutator#preUpdate(Object, Object, Entity.Update)} but is not supplied the id object that can be
      * determined from the updated entity.
      *
      * <p>By default, this does nothing.
@@ -145,10 +151,13 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     }
 
     @SuppressWarnings("unchecked")
-    private void throwNotFoundException() {
+    protected void throwNotFoundException() {
+        throwNotFoundException(context);
+    }
+
+    static void throwNotFoundException(TraversalContext<?, ?> context) {
         if (Entity.class.isAssignableFrom(context.entityClass)) {
-            throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
-                    Query.filters(context.select().get()));
+            throw new EntityNotFoundException(context.entityClass, Query.filters(context.select().get()));
         } else {
             //TODO this is not correct?
             throw new RelationNotFoundException((String) null, Query.filters(context.sourcePath));

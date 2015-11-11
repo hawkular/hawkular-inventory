@@ -31,7 +31,8 @@ public final class Tenants {
 
     }
 
-    private interface BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds> {
+    private interface BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds,
+            AccessMetadataPacks> {
         /**
          * @return resources types in the tenant(s)
          */
@@ -51,6 +52,8 @@ public final class Tenants {
 
         ResourceTypes.Read allResourceTypes();
 
+        AccessMetadataPacks metadataPacks();
+
         AccessFeeds feeds();
     }
 
@@ -58,7 +61,8 @@ public final class Tenants {
      * Interface for accessing a single tenant in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Tenant, Tenant.Update>,
-            BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite, Feeds.ReadWrite> {
+            BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite, Feeds.ReadWrite,
+                    MetadataPacks.ReadWrite> {
     }
 
     /**
@@ -70,7 +74,7 @@ public final class Tenants {
      */
     public interface Multiple extends ResolvableToManyWithRelationships<Tenant>,
             BrowserBase<ResourceTypes.ReadContained, MetricTypes.ReadContained, Environments.ReadContained,
-                    Feeds.ReadContained> {
+                    Feeds.ReadContained, MetadataPacks.ReadContained> {
     }
 
     /**

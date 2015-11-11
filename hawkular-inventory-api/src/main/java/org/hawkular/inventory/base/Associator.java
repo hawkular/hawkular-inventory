@@ -108,4 +108,12 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
         return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }
+
+    /**
+     * @return the type of the source entity of the association on this position in the inventory traversal
+     */
+    @SuppressWarnings("unchecked")
+    protected Class<? extends Entity<?, ?>> getSourceType() {
+        return (Class<? extends Entity<?, ?>>) context.previous.entityClass;
+    }
 }

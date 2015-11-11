@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -220,6 +221,10 @@ public interface Inventory extends AutoCloseable {
         return inspect(operationType.getPath(), OperationTypes.Single.class);
     }
 
+    default MetadataPacks.Single inspect(MetadataPack metadataPack) throws EntityNotFoundException {
+        return inspect(metadataPack.getPath(), MetadataPacks.Single.class);
+    }
+
     default Relationships.Single inspect(Relationship relationship) {
         return relationships().get(relationship.getId());
     }
@@ -241,7 +246,7 @@ public interface Inventory extends AutoCloseable {
      */
     default <E extends AbstractElement<?, U>, U extends AbstractElement.Update, Single extends ResolvableToSingle<E, U>>
     Single inspect(E entity, Class<Single> accessInterface) {
-        return entity.accept(new ElementVisitor.Simple<Single, Void>() {
+        return entity.accept(new ElementVisitor<Single, Void>() {
             @Override
             public Single visitTenant(Tenant tenant, Void ignored) {
                 return accessInterface.cast(inspect(tenant));
@@ -290,6 +295,14 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitRelationship(Relationship relationship, Void parameter) {
                 return accessInterface.cast(relationships().get(relationship.getId()));
+            }
+
+            @Override public Single visitMetadataPack(MetadataPack metadataPack, Void parameter) {
+                return accessInterface.cast(inspect(metadataPack));
+            }
+
+            @Override public Single visitUnknown(Object entity, Void parameter) {
+                return null;
             }
         }, null);
     }
@@ -419,6 +432,12 @@ public interface Inventory extends AutoCloseable {
             public Single visitOperationType(Void parameter) {
                 ResourceTypes.Single rt = inspect(path.up(), ResourceTypes.Single.class);
                 return accessInterface.cast(rt.operationTypes().get(path.getSegment().getElementId()));
+            }
+
+            @Override
+            public Single visitMetadataPack(Void parameter) {
+                return accessInterface.cast(tenants().get(path.up().getSegment().getElementId())
+                        .metadataPacks().get(path.getSegment().getElementId()));
             }
 
             @Override

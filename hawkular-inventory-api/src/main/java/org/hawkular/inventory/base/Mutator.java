@@ -66,7 +66,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param blueprint the blueprint of the new entity
      * @return the query to the newly created entity.
      */
-    protected final Query doCreate(B blueprint) {
+    protected final E doCreate(B blueprint) {
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
 
@@ -116,7 +116,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             context.notifyAll(newEntity);
             customRelsNotifications.forEach(context::notify);
 
-            return Query.to(entityPath);
+            return newEntity.getEntity();
         });
     }
 
@@ -158,7 +158,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     }
 
-    private BE getParent() {
+    protected BE getParent() {
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
             @SuppressWarnings("unchecked")
             @Override

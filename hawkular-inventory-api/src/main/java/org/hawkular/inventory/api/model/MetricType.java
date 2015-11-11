@@ -51,7 +51,7 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
     }
 
     public MetricType(CanonicalPath path) {
-        this(path, MetricUnit.NONE, null, null);
+        this(path, MetricUnit.NONE, MetricDataType.GAUGE, null);
     }
 
     public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type) {
@@ -64,6 +64,9 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
     public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
         super(path, properties);
+        if (type == null) {
+            throw new IllegalArgumentException("metricDataType == null");
+        }
         this.unit = unit;
         this.type = type;
     }

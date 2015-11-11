@@ -64,6 +64,7 @@ import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
@@ -438,6 +439,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 case operationType:
                     e = new OperationType(extractCanonicalPath(v));
                     break;
+                case metadatapack:
+                    e = new MetadataPack(extractCanonicalPath(v));
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown type of vertex");
             }
@@ -502,6 +506,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 @Override public T visitOperationType(OperationType operationType, Void parameter) {
                     return common(operationType, OperationType.Update.builder());
+                }
+
+                @Override public T visitMetadataPack(MetadataPack metadataPack, Void parameter) {
+                    return common(metadataPack, MetadataPack.Update.builder());
                 }
 
                 @Override public T visitUnknown(Object entity, Void parameter) {
@@ -629,6 +637,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Element visitOperationType(OperationType.Blueprint operationType, Void parameter) {
                 return common(path, operationType.getName(), operationType.getProperties(), OperationType.class);
+            }
+
+            @Override public Element visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+                return common(path, metadataPack.getName(), metadataPack.getProperties(), MetadataPack.class);
             }
 
             @Override

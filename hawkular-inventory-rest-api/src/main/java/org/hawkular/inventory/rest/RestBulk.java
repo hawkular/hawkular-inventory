@@ -43,6 +43,7 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
@@ -63,6 +64,7 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -248,6 +250,11 @@ public class RestBulk extends RestBase {
                             public WriteInterface<?, ?, ?, ?> visitResourceType(Void parameter) {
                                 return ((Tenants.Single) single).feedlessResourceTypes();
                             }
+
+                            @Override
+                            public WriteInterface<?, ?, ?, ?> visitMetadataPack(Void parameter) {
+                                return ((Tenants.Single) single).metadataPacks();
+                            }
                         }, null);
                     }
 
@@ -263,45 +270,61 @@ public class RestBulk extends RestBase {
                 }, null);
     }
 
-    private static ResolvableToSingle<?, ?> create(Blueprint b, WriteInterface<?, ?, ?, ?> wrt) {
-        return b.accept(new ElementBlueprintVisitor.Simple<ResolvableToSingle<?, ?>, Void>() {
+    private static <E extends AbstractElement<?, ?>> ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+    create (Blueprint b, WriteInterface<?, ?, ?, ?> wrt) {
+        return b.accept(
+                new ElementBlueprintVisitor.Simple<ResolvableToSingle<? extends AbstractElement<?, ?>, ?>, Void>() {
             @SuppressWarnings("unchecked")
             @Override
-            public ResolvableToSingle<?, ?> visitData(DataEntity.Blueprint<?> data, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitData(DataEntity.Blueprint<?> data, Void parameter) {
                 return ((Data.ReadWrite) wrt).create(data);
             }
 
             @Override
-            public ResolvableToSingle<?, ?> visitEnvironment(Environment.Blueprint environment, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitEnvironment(Environment.Blueprint environment, Void parameter) {
                 return ((Environments.ReadWrite) wrt).create(environment);
             }
 
             @Override
-            public ResolvableToSingle<?, ?> visitFeed(Feed.Blueprint feed, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitFeed(Feed.Blueprint feed, Void parameter) {
                 return ((Feeds.ReadWrite) wrt).create(feed);
             }
 
-            @Override public ResolvableToSingle<?, ?> visitMetric(Metric.Blueprint metric, Void parameter) {
+            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitMetric(Metric.Blueprint metric, Void parameter) {
                 return ((Metrics.ReadWrite) wrt).create(metric);
             }
 
-            @Override public ResolvableToSingle<?, ?> visitMetricType(MetricType.Blueprint metricType, Void parameter) {
+            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitMetricType(MetricType.Blueprint metricType, Void parameter) {
                 return ((MetricTypes.ReadWrite) wrt).create(metricType);
             }
 
             @Override
-            public ResolvableToSingle<?, ?> visitOperationType(OperationType.Blueprint operationType, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitOperationType(OperationType.Blueprint operationType, Void parameter) {
                 return ((OperationTypes.ReadWrite) wrt).create(operationType);
             }
 
             @Override
-            public ResolvableToSingle<?, ?> visitResource(Resource.Blueprint resource, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitResource(Resource.Blueprint resource, Void parameter) {
                 return ((Resources.ReadWrite) wrt).create(resource);
             }
 
             @Override
-            public ResolvableToSingle<?, ?> visitResourceType(ResourceType.Blueprint type, Void parameter) {
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitResourceType(ResourceType.Blueprint type, Void parameter) {
                 return ((ResourceTypes.ReadWrite) wrt).create(type);
+            }
+
+            @Override
+            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+            visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+                return ((MetadataPacks.ReadWrite) wrt).create(metadataPack);
             }
         }, null);
     }
@@ -329,8 +352,8 @@ public class RestBulk extends RestBase {
         return Response.status(CREATED).entity(statuses).build();
     }
 
-    private Map<ElementType, Map<CanonicalPath, Integer>> bulkCreate(
-            Map<String, Map<ElementType, List<Object>>> entities, CanonicalPath rootPath) {
+    private Map<ElementType, Map<CanonicalPath, Integer>> bulkCreate(Map<String, Map<ElementType,
+            List<Object>>> entities, CanonicalPath rootPath) {
 
         Map<ElementType, Map<CanonicalPath, Integer>> statuses = new HashMap<>();
 
@@ -345,7 +368,9 @@ public class RestBulk extends RestBase {
 
                 CanonicalPath parentPath = canonicalize(e.getKey(), rootPath);
 
-                ResolvableToSingle<?, ?> single = binv.inspect(parentPath, ResolvableToSingle.class);
+                @SuppressWarnings("unchecked")
+                ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single = binv.inspect(parentPath,
+                        ResolvableToSingle.class);
 
                 for (Map.Entry<ElementType, List<Object>> ee : allBlueprints.entrySet()) {
                     ElementType elementType = ee.getKey();
@@ -385,8 +410,8 @@ public class RestBulk extends RestBase {
 
     private void bulkCreateEntity(Map<ElementType, Map<CanonicalPath, Integer>> statuses,
                                   IdExtractor idExtractor, CanonicalPath parentPath,
-                                  ResolvableToSingle<?, ?> single, ElementType elementType,
-                                  List<Blueprint> blueprints) {
+                                  ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single,
+                                  ElementType elementType, List<Blueprint> blueprints) {
         if (!parentPath.modified().canExtendTo(elementType.elementType)) {
             putStatus(statuses, elementType, parentPath, BAD_REQUEST.getStatusCode());
             return;
@@ -402,22 +427,24 @@ public class RestBulk extends RestBase {
         }
 
         for (Blueprint b : blueprints) {
-            String id = b.accept(idExtractor, null);
-
-            CanonicalPath childPath = parentPath.extend(elementType.elementType, id).get();
-
             WriteInterface<?, ?, ?, ?> wrt =
                     step(parentPath.getSegment().getElementType(), elementType
                             .elementType, single);
 
+            CanonicalPath provisionalChildPath = parentPath.extend(elementType.elementType, b.accept(idExtractor, null))
+                    .get();
             try {
-                create(b, wrt);
+                //this is cheap - the call to entity() right after create() doesn't fetch from the backend
+                String childId = create(b, wrt).entity().getId();
+
+                CanonicalPath childPath = parentPath.extend(elementType.elementType, childId).get();
+
                 putStatus(statuses, elementType, childPath, CREATED.getStatusCode());
             } catch (EntityAlreadyExistsException ex) {
-                putStatus(statuses, elementType, childPath, CONFLICT.getStatusCode());
+                putStatus(statuses, elementType, provisionalChildPath, CONFLICT.getStatusCode());
             } catch (Exception ex) {
-                RestApiLogger.LOGGER.failedToCreateBulkEntity(childPath, ex);
-                putStatus(statuses, elementType, childPath, INTERNAL_SERVER_ERROR.getStatusCode());
+                RestApiLogger.LOGGER.failedToCreateBulkEntity(provisionalChildPath, ex);
+                putStatus(statuses, elementType, provisionalChildPath, INTERNAL_SERVER_ERROR.getStatusCode());
             }
         }
     }
@@ -472,6 +499,7 @@ public class RestBulk extends RestBase {
         metric(Metric.class, Metric.Blueprint.class),
         resource(Resource.class, Resource.Blueprint.class),
         dataEntity(DataEntity.class, DataEntity.Blueprint.class),
+        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class),
         relationship(Relationship.class, Relationship.Blueprint.class);
 
         final Class<? extends AbstractElement<?, ?>> elementType;
@@ -492,6 +520,10 @@ public class RestBulk extends RestBase {
         @Override
         public String visitData(DataEntity.Blueprint<?> data, Void parameter) {
             return data.getRole().name();
+        }
+
+        @Override public String visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+            return "<metadata-pack>";
         }
 
         @Override

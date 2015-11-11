@@ -79,7 +79,7 @@ public final class BaseFeeds {
 
         @Override
         public Feeds.Single create(Feed.Blueprint blueprint) {
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
 
         @Override

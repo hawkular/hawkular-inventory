@@ -977,13 +977,14 @@ public abstract class Path {
     }
 
     abstract static class Builder<Impl extends Path,
-            TB extends TenantBuilder<Impl, EB, RTB, MTB, OTB, SDB, FB, RB, MB>,
+            TB extends TenantBuilder<Impl, EB, RTB, MTB, OTB, SDB, MPB, FB, RB, MB>,
             EB extends EnvironmentBuilder<Impl, RB, MB, RTB, MTB, OTB, SDB>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
             RLB extends RelationshipBuilder<Impl>,
             OTB extends OperationTypeBuilder<Impl, SDB>,
             SDB extends StructuredDataBuilder<Impl, SDB>,
+            MPB extends MetadataPackBuilder<Impl>,
             FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
             RB extends ResourceBuilder<Impl, RB, SDB>,
             MB extends MetricBuilder<Impl>> extends AbstractBuilder<Impl> {
@@ -1025,6 +1026,7 @@ public abstract class Path {
             MTB extends MetricTypeBuilder<Impl>,
             OTB extends OperationTypeBuilder<Impl, SDB>,
             SDB extends StructuredDataBuilder<Impl, SDB>,
+            MPB extends MetadataPackBuilder<Impl>,
             FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
             RB extends ResourceBuilder<Impl, RB, SDB>,
             MB extends MetricBuilder<Impl>>
@@ -1054,6 +1056,11 @@ public abstract class Path {
             return metricTypeBuilder(segments);
         }
 
+        public MPB metadataPack(String id) {
+            segments.add(new Segment(MetadataPack.class, id));
+            return metadataPackBuilder(segments);
+        }
+
         @Override
         public Impl get() {
             return super.get();
@@ -1066,6 +1073,8 @@ public abstract class Path {
         protected abstract RTB resourceTypeBuilder(List<Segment> segment);
 
         protected abstract MTB metricTypeBuilder(List<Segment> segments);
+
+        protected abstract MPB metadataPackBuilder(List<Segment> segments);
     }
 
     abstract static class ResourceTypeBuilder<Impl extends Path,
@@ -1269,5 +1278,16 @@ public abstract class Path {
         }
 
         protected abstract SDB structuredDataBuilder(List<Segment> segments);
+    }
+
+    abstract static class MetadataPackBuilder<Impl extends Path> extends AbstractBuilder<Impl> {
+        MetadataPackBuilder(List<Segment> segments, Constructor<Impl> constructor) {
+            super(segments, constructor);
+        }
+
+        @Override
+        public Impl get() {
+            return super.get();
+        }
     }
 }

@@ -237,7 +237,7 @@ public final class RelativePath extends Path implements Serializable {
 
     public static final class Builder extends Path.Builder<RelativePath, TenantBuilder, EnvironmentBuilder,
             ResourceTypeBuilder, MetricTypeBuilder, RelationshipBuilder, OperationTypeBuilder, StructuredDataBuilder,
-            FeedBuilder, ResourceBuilder, MetricBuilder> {
+            MetadataPackBuilder, FeedBuilder, ResourceBuilder, MetricBuilder> {
 
         private Builder(List<Segment> list) {
             super(list, RelativePath::new);
@@ -297,6 +297,10 @@ public final class RelativePath extends Path implements Serializable {
             return new StructuredDataBuilder(segments);
         }
 
+        public MetadataPackBuilder metadataPack() {
+            return new MetadataPackBuilder(segments);
+        }
+
         public UpBuilder up() {
             segments.add(new Segment(Up.class, null));
             return new UpBuilder(segments);
@@ -304,7 +308,8 @@ public final class RelativePath extends Path implements Serializable {
     }
 
     public static final class TenantBuilder extends Path.TenantBuilder<RelativePath, EnvironmentBuilder,
-            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder, FeedBuilder,
+            ResourceTypeBuilder, MetricTypeBuilder, OperationTypeBuilder, StructuredDataBuilder,
+            MetadataPackBuilder, FeedBuilder,
             ResourceBuilder, MetricBuilder> {
 
         private TenantBuilder(List<Segment> list) {
@@ -329,6 +334,11 @@ public final class RelativePath extends Path implements Serializable {
         @Override
         protected MetricTypeBuilder metricTypeBuilder(List<Segment> list) {
             return new MetricTypeBuilder(list);
+        }
+
+        @Override
+        protected MetadataPackBuilder metadataPackBuilder(List<Segment> segments) {
+            return new MetadataPackBuilder(segments);
         }
 
         public UpBuilder up() {
@@ -489,6 +499,12 @@ public final class RelativePath extends Path implements Serializable {
         public UpBuilder up() {
             segments.add(new Segment(Up.class, null));
             return new UpBuilder(segments);
+        }
+    }
+
+    public static final class MetadataPackBuilder extends Path.MetadataPackBuilder<RelativePath> {
+        private MetadataPackBuilder(List<Segment> segments) {
+            super(segments, RelativePath::new);
         }
     }
 
