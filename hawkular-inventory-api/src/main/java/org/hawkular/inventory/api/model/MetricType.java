@@ -41,6 +41,9 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
     @XmlAttribute
     private final MetricDataType type;
 
+    @XmlAttribute
+    private final Long collectionInterval;
+
     /**
      * JAXB support
      */
@@ -48,34 +51,42 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
     private MetricType() {
         unit = null;
         type = null;
+        collectionInterval = null;
     }
 
     public MetricType(CanonicalPath path) {
-        this(path, MetricUnit.NONE, MetricDataType.GAUGE, null);
+        this(path, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
     }
 
     public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(path, unit, type, null);
+        this(path, unit, type, null, null);
+    }
+
+    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Long collectionInterval) {
+        this(path, unit, type, null, collectionInterval);
     }
 
     public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(name, path, unit, type, null);
+        this(name, path, unit, type, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
+    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+                      Long collectionInterval) {
         super(path, properties);
         if (type == null) {
             throw new IllegalArgumentException("metricDataType == null");
         }
         this.unit = unit;
         this.type = type;
+        this.collectionInterval = collectionInterval;
     }
 
     public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type,
-                      Map<String, Object> properties) {
+                      Map<String, Object> properties, Long collectionInterval) {
         super(name, path, properties);
         this.type = type;
         this.unit = unit;
+        this.collectionInterval = collectionInterval;
     }
 
     public MetricUnit getUnit() {
@@ -86,10 +97,14 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         return type;
     }
 
+    public Long getCollectionInterval() {
+        return collectionInterval;
+    }
+
     @Override
     public Updater<Update, MetricType> update() {
         return new Updater<>((u) -> new MetricType(u.getName(), getPath(), valueOrDefault(u.unit, this.unit), type,
-                u.getProperties()));
+                u.getProperties(), collectionInterval));
     }
 
     @Override
@@ -115,6 +130,7 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         @XmlAttribute
         private final MetricUnit unit;
         private final MetricDataType type;
+        private final Long collectionInterval;
 
         public static Builder builder(MetricDataType type) {
             return new Builder(type);
@@ -127,33 +143,39 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         private Blueprint() {
             unit = null;
             type = null;
+            collectionInterval = null;
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type) {
-            this(id, unit, type, Collections.emptyMap());
+        public Blueprint(String id, MetricUnit unit, MetricDataType type, Long collectionInterval) {
+            this(id, unit, type, Collections.emptyMap(), collectionInterval);
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type, Map<String, Object> properties) {
+        public Blueprint(String id, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+                         Long collectionInterval) {
             super(id, properties);
             this.unit = unit == null ? MetricUnit.NONE : unit;
             this.type = type;
+            this.collectionInterval = collectionInterval;
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type,
+        public Blueprint(String id, MetricUnit unit, MetricDataType type, Long collectionInterval,
                          Map<String, Object> properties,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(id, properties, outgoing, incoming);
             this.type = type;
             this.unit = unit;
+            this.collectionInterval = collectionInterval;
         }
 
         public Blueprint(String id, String name, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+                         Long collectionInterval,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(id, name, properties, outgoing, incoming);
             this.type = type;
             this.unit = unit;
+            this.collectionInterval = collectionInterval;
         }
 
         public MetricUnit getUnit() {
@@ -164,6 +186,10 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
             return type;
         }
 
+        public Long getCollectionInterval() {
+            return collectionInterval;
+        }
+
         @Override
         public <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter) {
             return visitor.visitMetricType(this, parameter);
@@ -172,7 +198,7 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private MetricUnit unit;
             private MetricDataType type;
-
+            private Long collectionInterval;
 
             public Builder(MetricDataType type) {
                 this.type = type;
@@ -188,15 +214,22 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
                 return this;
             }
 
+            public Builder withInterval(Long interval) {
+                this.collectionInterval = interval;
+                return this;
+            }
+
             @Override
             public Blueprint build() {
-                return new Blueprint(id, name, unit, type, properties, outgoing, incoming);
+                return new Blueprint(id, name, unit, type, properties, collectionInterval, outgoing, incoming);
             }
         }
     }
 
     public static final class Update extends Entity.Update {
         private final MetricUnit unit;
+        private final Long collectionInterval;
+
 
         public static Builder builder() {
             return new Builder();
@@ -205,21 +238,27 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         //JAXB support
         @SuppressWarnings("unused")
         private Update() {
-            this(null, null);
+            this(null, null, null);
         }
 
-        public Update(Map<String, Object> properties, MetricUnit unit) {
+        public Update(Map<String, Object> properties, MetricUnit unit, Long collectionInterval) {
             super(null, properties);
             this.unit = unit;
+            this.collectionInterval = collectionInterval;
         }
 
-        public Update(String name, Map<String, Object> properties, MetricUnit unit) {
+        public Update(String name, Map<String, Object> properties, MetricUnit unit, Long collectionInterval) {
             super(name, properties);
             this.unit = unit;
+            this.collectionInterval = collectionInterval;
         }
 
         public MetricUnit getUnit() {
             return unit;
+        }
+
+        public Long getCollectionInterval() {
+            return collectionInterval;
         }
 
         @Override
@@ -229,15 +268,21 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
         public static final class Builder extends Entity.Update.Builder<Update, Builder> {
             private MetricUnit unit;
+            private Long collectionInterval;
 
             public Builder withUnit(MetricUnit unit) {
                 this.unit = unit;
                 return this;
             }
 
+            public Builder withInterval(Long interval) {
+                this.collectionInterval = interval;
+                return this;
+            }
+
             @Override
             public Update build() {
-                return new Update(name, properties, unit);
+                return new Update(name, properties, unit, collectionInterval);
             }
         }
     }

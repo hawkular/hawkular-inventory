@@ -155,13 +155,13 @@ class InventoryITest extends AbstractTestBase {
 
         /* Create a metric type */
         response = postDeletable(path: "metricTypes", body: [id : responseTimeMTypeId, unit : "MILLISECONDS",
-                type: "COUNTER"])
+                type: "COUNTER", collectionInterval: "1"])
         assertEquals(201, response.status)
         assertEquals(baseURI + "$basePath/metricTypes/$responseTimeMTypeId", response.headers.Location)
 
         /* Create another metric type */
         response = postDeletable(path: "metricTypes", body: [id : responseStatusCodeMTypeId, unit : "NONE",
-                type: "GAUGE"])
+                type: "GAUGE", collectionInterval: "1"])
         assertEquals(201, response.status)
         assertEquals(baseURI + "$basePath/metricTypes/$responseStatusCodeMTypeId", response.headers.Location)
 
@@ -938,7 +938,8 @@ class InventoryITest extends AbstractTestBase {
               {
                 "id": "$mt1",
                 "type": "GAUGE",
-                "unit": "MILLISECONDS"
+                "unit": "MILLISECONDS",
+                "collectionInterval": "1"
               }
             ]
           },
