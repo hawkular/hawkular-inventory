@@ -55,7 +55,7 @@
 
   <properties>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.accounts>1.1.0.Final-SRC-revision-554664f3c92c9b2e9eba2f36ec6fcf4131ae7437</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>1.1.1.Final</version.org.hawkular.accounts>
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.bus>${version.org.hawkular.bus}</test-dist-version.org.hawkular.bus>
