@@ -22,7 +22,7 @@ env:
   # for pushing the swagger adoc documentation to the website repository
   - secure: fRgTtGRZRh1DhRIXlOnuWV6cROHhVvtNL3DzVay1zDnX0y0SVH3Aau/kbsytIkG4DaKvRi1XnI4sRC4HtUReXCMQjvwO9sdmj+9F3y04vbhH8qNR8IUBFADKjLCjjnq7Qo8PBbuk6b8Sj1bFpYSgd2sJXcvvA9cP/xlTMu6XZSM=
 after_success:
-- PROJECT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
+- PROJECT_VERSION=`mvn --batch-mode org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
 - if [[ "$PROJECT_VERSION" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]];
   then
     mvn -s .travis.maven.settings.xml deploy -DskipTests ;
