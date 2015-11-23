@@ -19,7 +19,7 @@
 set -x
 
 # generate the docs
-mvn clean compile -Pdocgen -DskipTests -Dcheckstyle.skip -Dlicense.skip
+mvn clean compile -Pdocgen -P-api-check -DskipTests -Dcheckstyle.skip -Dlicense.skip
 
 FILE_NAME="rest-inventory.adoc"
 FILE_PATH="hawkular-inventory-rest-api/target/generated/$FILE_NAME"
@@ -34,5 +34,19 @@ BRANCH="swagger"
 SHA=`curl -Ls https://api.github.com/repos/$REPO/contents/$FILE_NAME?ref=$BRANCH | grep '"sha"' | cut -d '"' -f4`
 CONTENT=`openssl enc -base64 -in $FILE_PATH | sed ':a;N;$!ba;s/\n//g'`
 
+cat >/tmp/restDocs << EOF
+{
+  "path": "$FILE_NAME",
+  "message": "Travis CI (inventory): updating swagger documentation",
+  "commiter": {
+    "name": "Travis CI",
+    "email": "foo@bar.com"
+  },
+  "sha": "$SHA",
+  "content": "$CONTENT",
+  "branch": "$BRANCH"
+}
+EOF
+
 # update the adoc file using GitHub api
-curl -Lis -X PUT -H "Authorization: token $DEPLOY_TOKEN" -d "{\"path\": \"$FILE_NAME\", \"message\": \"Travis CI (inventory): updating swagger documentation\", \"commiter\": {\"name\": \"Travis CI\", \"email\": \"foo@bar.com\"}, \"sha\": \"$SHA\", \"content\": \"$CONTENT\", \"branch\": \"$BRANCH\"}" https://api.github.com/repos/$REPO/contents/$FILE_NAME
+curl -Lis -X PUT -H "Authorization: token $DEPLOY_TOKEN" --data-binary "@/tmp/restDocs" https://api.github.com/repos/$REPO/contents/$FILE_NAME
