@@ -502,7 +502,7 @@ public class RestResources extends RestBase {
 
     @PUT
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}")
-    @ApiOperation("Update a resource type")
+    @ApiOperation("Update a resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
@@ -528,7 +528,7 @@ public class RestResources extends RestBase {
 
     @PUT
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}")
-    @ApiOperation("Update a resource type")
+    @ApiOperation("Update a resource")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
