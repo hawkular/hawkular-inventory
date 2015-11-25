@@ -279,8 +279,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             @ApiResponse(code = 404, message = "Tenant or resource type does not exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response getAssociatedMetricTypes(@PathParam("environmentId") String environmentId,
-                                             @PathParam("feedId") String feedId,
+    public Response getAssociatedMetricTypes(@PathParam("feedId") String feedId,
                                              @PathParam("resourceTypeId") String resourceTypeId,
                                              @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
