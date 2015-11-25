@@ -23,6 +23,7 @@ mvn clean compile -Pdocgen -P-api-check -DskipTests -Dcheckstyle.skip -Dlicense.
 
 FILE_NAME="rest-inventory.adoc"
 FILE_PATH="hawkular-inventory-rest-api/target/generated/$FILE_NAME"
+COMPONENT="inventory"
 
 # don't push the empty docs
 [[ -s $FILE_PATH ]] || {
@@ -31,13 +32,13 @@ FILE_PATH="hawkular-inventory-rest-api/target/generated/$FILE_NAME"
 
 REPO="hawkular/hawkular.github.io"
 BRANCH="swagger"
-SHA=`curl -Ls https://api.github.com/repos/$REPO/contents/$FILE_NAME?ref=$BRANCH | grep '"sha"' | cut -d '"' -f4`
+SHA=`curl -Ls -H "Authorization: token $DEPLOY_TOKEN" https://api.github.com/repos/$REPO/contents/$FILE_NAME?ref=$BRANCH | grep '"sha"' | cut -d '"' -f4`
 CONTENT=`openssl enc -base64 -in $FILE_PATH | sed ':a;N;$!ba;s/\n//g'`
 
 cat >/tmp/restDocs << EOF
 {
   "path": "$FILE_NAME",
-  "message": "Travis CI (inventory): updating swagger documentation",
+  "message": "Travis CI ($COMPONENT): updating swagger documentation",
   "commiter": {
     "name": "Travis CI",
     "email": "foo@bar.com"
