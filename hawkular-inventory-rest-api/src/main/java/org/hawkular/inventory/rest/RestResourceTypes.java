@@ -151,7 +151,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @GET
-    @Path("feeds/{feedId}/resourceTypes")
+    @Path("/feeds/{feedId}/resourceTypes")
     @ApiOperation("Retrieves all metric types associated with the resource type. Accepts paging query params.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "the list of metric types associated with the resource type"),
@@ -191,7 +191,7 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 409, message = "Resource type already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response create(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
+    public Response create(@PathParam("feedId") String feedId,
                            ResourceType.Blueprint resourceType, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
 
@@ -227,7 +227,7 @@ public class RestResourceTypes extends RestBase {
     }
 
     @DELETE
-    @Path("feeds/{feedId}/resourceTypes/{resourceTypeId}")
+    @Path("/feeds/{feedId}/resourceTypes/{resourceTypeId}")
     @ApiOperation("Deletes a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),

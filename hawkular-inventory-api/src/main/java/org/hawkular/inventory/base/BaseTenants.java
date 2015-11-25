@@ -150,8 +150,7 @@ public final class BaseTenants {
         public MetricTypes.Read allMetricTypes() {
             return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(MetricType.class)},
-                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
-                            by(contains), type(MetricType.class)}
+                    {by(contains), type(Feed.class), by(contains), type(MetricType.class)}
             }).getting(MetricType.class));
         }
 
@@ -159,8 +158,7 @@ public final class BaseTenants {
         public ResourceTypes.Read allResourceTypes() {
             return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(ResourceType.class)},
-                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
-                            by(contains), type(ResourceType.class)}
+                    {by(contains), type(Feed.class), by(contains), type(ResourceType.class)}
             }).getting(ResourceType.class));
         }
 
@@ -200,8 +198,7 @@ public final class BaseTenants {
         public MetricTypes.Read allMetricTypes() {
             return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(MetricType.class)},
-                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
-                            by(contains), type(MetricType.class)}
+                    {by(contains), type(Feed.class), by(contains), type(MetricType.class)}
             }).getting(MetricType.class));
         }
 
@@ -209,8 +206,7 @@ public final class BaseTenants {
         public ResourceTypes.Read allResourceTypes() {
             return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
                     {by(contains), type(ResourceType.class)},
-                    {by(contains), type(Environment.class), by(contains), type(Feed.class),
-                            by(contains), type(ResourceType.class)}
+                    {by(contains), type(Feed.class), by(contains), type(ResourceType.class)}
             }).getting(ResourceType.class));
         }
 

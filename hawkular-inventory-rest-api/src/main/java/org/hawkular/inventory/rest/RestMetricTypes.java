@@ -90,7 +90,7 @@ public class RestMetricTypes extends RestBase {
     }
 
     @GET
-    @Path("feeds/{feedId}/metricTypes")
+    @Path("/feeds/{feedId}/metricTypes")
     @ApiOperation("Retrieves all metric types under feed. Accepts paging query parameters.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
@@ -105,15 +105,14 @@ public class RestMetricTypes extends RestBase {
     }
 
     @GET
-    @Path("feeds/{feedId}/metricTypes/{metricTypeId}")
+    @Path("/feeds/{feedId}/metricTypes/{metricTypeId}")
     @ApiOperation("Retrieves a single metric type under feed")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 404, message = "Metric type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public MetricType get(@PathParam("environmentId") String environmentId, @PathParam("feedId") String feedId,
-                          @PathParam("metricTypeId") String metricTypeId) {
+    public MetricType get(@PathParam("feedId") String feedId, @PathParam("metricTypeId") String metricTypeId) {
 
         return inventory.tenants().get(getTenantId()).feeds().get(feedId).metricTypes().get(metricTypeId).entity();
     }
@@ -202,7 +201,7 @@ public class RestMetricTypes extends RestBase {
     }
 
     @PUT
-    @Path("feeds/{feedId}/metricTypes/{metricTypeId}")
+    @Path("/feeds/{feedId}/metricTypes/{metricTypeId}")
     @ApiOperation("Updates a metric type under feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "Metric type successfully updated"),
@@ -247,7 +246,7 @@ public class RestMetricTypes extends RestBase {
     }
 
     @DELETE
-    @Path("feeds/{feedId}/metricTypes/{metricTypeId}")
+    @Path("/feeds/{feedId}/metricTypes/{metricTypeId}")
     @ApiOperation("Deletes a metric type under feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "Metric type successfully deleted"),
