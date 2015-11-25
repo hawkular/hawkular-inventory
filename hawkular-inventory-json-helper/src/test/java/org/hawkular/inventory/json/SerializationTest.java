@@ -172,7 +172,7 @@ public class SerializationTest {
         MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
-                }});
+                }}, 0L);
 
         test(mt);
     }
@@ -184,11 +184,14 @@ public class SerializationTest {
         MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
-                }});
+                }}, 0L);
 
-        testDetyped(mt, "{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
-        testDetyped(mt, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
-        testDetyped(mt, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"}");
+        testDetyped(mt, "{\"path\":\"/t;t/mt;c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\", " +
+                "\"collectionInterval\":\"0\"}");
+        testDetyped(mt, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\", " +
+                "\"collectionInterval\":\"0\"}");
+        testDetyped(mt, "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"},\"unit\":\"BYTES\"," +
+                " \"collectionInterval\":\"0\"}");
     }
 
     @Test

@@ -407,13 +407,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
                             .next();
                     MetricType md = convert(mdv, MetricType.class);
-                    e = new Metric(extractCanonicalPath(v), md);
+                    e = new Metric(extractCanonicalPath(v), md,
+                            v.<Long>getProperty(Constants.Property.__metric_interval.name()));
                     break;
                 case metricType:
                     e = new MetricType(extractCanonicalPath(v),
                             MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
-                            MetricDataType.fromDisplayName(v.getProperty(
-                                    Constants.Property.__metric_data_type.name())));
+                            MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())),
+                            v.getProperty(Constants.Property.__metric_interval.name()));
                     break;
                 case resource:
                     Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
@@ -603,7 +604,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             @Override
             public Element visitMetric(Metric.Blueprint metric, Void parameter) {
-                return common(path, metric.getName(), metric.getProperties(), Metric.class);
+                Element entity = common(path, metric.getName(), metric.getProperties(), Metric.class);
+
+                if (metric.getCollectionInterval() != null) {
+                    entity.setProperty(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
+                }
+
+                return entity;
             }
 
             @Override
@@ -611,6 +618,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Element entity = common(path, type.getName(), type.getProperties(), MetricType.class);
 
                 entity.setProperty(Constants.Property.__metric_data_type.name(), type.getType().getDisplayName());
+                entity.setProperty(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
+
                 return entity;
             }
 
@@ -639,7 +648,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 return common(path, operationType.getName(), operationType.getProperties(), OperationType.class);
             }
 
-            @Override public Element visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+            @Override
+            public Element visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
                 return common(path, metadataPack.getName(), metadataPack.getProperties(), MetadataPack.class);
             }
 
@@ -780,6 +790,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitMetric(Metric.Update metric, Void parameter) {
                 common(metric.getName(), metric.getProperties(), Metric.class);
+                if (metric.getCollectionInterval() != null) {
+                    entity.setProperty(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
+                } else {
+                    entity.removeProperty(Constants.Property.__metric_interval.name());
+                }
                 return null;
             }
 
@@ -788,6 +803,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 common(type.getName(), type.getProperties(), MetricType.class);
                 if (type.getUnit() != null) {
                     entity.setProperty(Constants.Property.__unit.name(), type.getUnit().getDisplayName());
+                }
+                if (type.getCollectionInterval() != null) {
+                    entity.setProperty(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
                 }
                 return null;
             }

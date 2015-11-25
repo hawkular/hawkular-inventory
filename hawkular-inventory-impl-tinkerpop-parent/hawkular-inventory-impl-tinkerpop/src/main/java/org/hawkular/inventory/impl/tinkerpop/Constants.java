@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_interval;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
@@ -89,6 +90,11 @@ final class Constants {
         __metric_data_type,
 
         /**
+         * Property used to store interval in seconds at which metrics are collected
+         */
+        __metric_interval,
+
+        /**
          * Property used to store the canonical path of an element.
          */
         __cp,
@@ -148,12 +154,13 @@ final class Constants {
      */
     enum Type {
         tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
-        resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type),
-        operationType(OperationType.class, name), resource(Resource.class, name), metric(Metric.class, name),
-        metadatapack(MetadataPack.class, name), relationship(Relationship.class, __sourceType, __targetType,
-                __sourceCp, __targetCp, __sourceEid, __targetEid), dataEntity(DataEntity.class, name),
-        structuredData(StructuredData.class, __structuredDataType, __structuredDataValue, __structuredDataIndex,
-                __structuredDataKey);
+        resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type,
+                __metric_interval),
+        operationType(OperationType.class, name), resource(Resource.class, name),
+        metric(Metric.class, name, __metric_interval), metadatapack(MetadataPack.class, name),
+        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
+        dataEntity(DataEntity.class, name), structuredData(StructuredData.class, __structuredDataType,
+                __structuredDataValue, __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;

@@ -64,7 +64,8 @@ public final class BaseMetricTypes {
 
             return new EntityAndPendingNotifications<>(new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.class, context.backend.extractId(entity)).get(),
-                    blueprint.getUnit(), blueprint.getType(), blueprint.getProperties()));
+                    blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
+                    blueprint.getCollectionInterval()));
         }
 
         @Override
@@ -79,8 +80,11 @@ public final class BaseMetricTypes {
 
         @Override
         public MetricTypes.Single create(MetricType.Blueprint blueprint) throws EntityAlreadyExistsException {
-            if (blueprint.getType() == null || blueprint.getUnit() == null) {
-                String msg = (blueprint.getType() == null ? "Data type" : "Metric unit") + " is null";
+            if (blueprint.getType() == null ||
+                blueprint.getUnit() == null ||
+                blueprint.getCollectionInterval() == null) {
+
+                String msg = getErrorMessage(blueprint);
                 throw new IllegalArgumentException(msg);
             }
 
@@ -119,6 +123,19 @@ public final class BaseMetricTypes {
             return context.backend.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
                     With.type(MetadataPack.class)).get()) != null;
 
+        }
+
+        private String getErrorMessage(MetricType.Blueprint blueprint) {
+            String msg;
+            if (blueprint.getCollectionInterval() == null) {
+                msg = "Interval";
+            } else if (blueprint.getType() == null) {
+                msg = "Data type";
+            } else {
+                msg = "Metric unit";
+            }
+
+            return msg + " is null";
         }
     }
 

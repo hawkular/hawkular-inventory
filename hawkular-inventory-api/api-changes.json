@@ -429,6 +429,66 @@
           "code": "java.method.returnTypeChanged",
           "new": "method E org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::doCreate(B)",
           "justification": "This is in support of created entity caching to speed up its retrieval right after creation."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new:":"method parameter void org.hawkular.inventory.api.model.MetricType.Blueprint::<init>(java.lang.String, java.lang.String, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.util.Map<java.lang.String, ===java.lang.Object>===, java.lang.Long, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Blueprint::<init>(java.lang.String, java.lang.String, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Blueprint::<init>(java.lang.String, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Blueprint::<init>(java.lang.String, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Blueprint::<init>(java.lang.String, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.lang.Long, java.util.Map<java.lang.String, java.lang.Object>, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>, java.util.Map<java.lang.String, java.util.Set<org.hawkular.inventory.api.model.CanonicalPath>>)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Update::<init>(java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, org.hawkular.inventory.api.model.MetricUnit, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType.Update::<init>(java.util.Map<java.lang.String, java.lang.Object>, org.hawkular.inventory.api.model.MetricUnit, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType::<init>(java.lang.String, org.hawkular.inventory.api.model.CanonicalPath, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.MetricType::<init>(org.hawkular.inventory.api.model.CanonicalPath, org.hawkular.inventory.api.model.MetricUnit, org.hawkular.inventory.api.model.MetricDataType, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.Metric.Update::<init>(java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.Metric.Update::<init>(java.util.Map<java.lang.String, java.lang.Object>, java.lang.Long)",
+          "justification": "Added field interval which represents period at which metrics are collected."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method void org.hawkular.inventory.api.model.Metric::<init>(java.lang.String, org.hawkular.inventory.api.model.CanonicalPath, org.hawkular.inventory.api.model.MetricType, java.lang.Long, java.util.Map<java.lang.String, java.lang.Object>)",
+          "justification": "Added field interval which represents period at which metrics are collected."
         }
       ]
     }
