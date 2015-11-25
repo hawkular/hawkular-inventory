@@ -75,7 +75,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
                 ResourceType.class));
         VALID_PROGRESSIONS.put(ResourceType.class, Arrays.asList(DataEntity.class, OperationType.class));
         VALID_PROGRESSIONS.put(OperationType.class, Collections.singletonList(DataEntity.class));
-        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class));
+        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class, Metric.class));
         VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
         VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class));
@@ -419,9 +419,13 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     }
 
     public static final class ResourceBuilder extends Path.ResourceBuilder<CanonicalPath, ResourceBuilder,
-            StructuredDataBuilder> {
+            MetricBuilder, StructuredDataBuilder> {
         private ResourceBuilder(List<Segment> segments) {
             super(segments, CanonicalPath::new);
+        }
+
+        @Override protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
         }
 
         @Override

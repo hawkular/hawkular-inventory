@@ -349,7 +349,7 @@ public class BusTest {
                     });
 
             testHeaders(consumerContext, ResourceTypeEvent.class,
-                    () -> inventory.tenants().get("t").feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+                    () -> inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder()
                             .withId("rt").build()),
                     (headers) -> {
                         assertThat(headers.size(), is(equalTo(4))); // the 4th is the bus API's own classname header
@@ -361,7 +361,7 @@ public class BusTest {
 
             //data entity events declare one more header, so we need to check for that, too
             testHeaders(consumerContext, DataEntityEvent.class,
-                    () -> inventory.tenants().get("t").feedlessResourceTypes().get("rt").data()
+                    () -> inventory.tenants().get("t").resourceTypes().get("rt").data()
                             .create(DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
                                     .withRole(ResourceTypes.DataRole.configurationSchema).build()),
                     (headers) -> {

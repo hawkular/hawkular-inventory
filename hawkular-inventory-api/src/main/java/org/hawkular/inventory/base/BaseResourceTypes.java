@@ -199,8 +199,8 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public MetricTypes.ReadContained metricTypes() {
-            return new BaseMetricTypes.ReadContained<>(context.proceedTo(incorporates, MetricType.class).get());
+        public MetricTypes.Read metricTypes() {
+            return new BaseMetricTypes.Read<>(context.proceedTo(incorporates, MetricType.class).get());
         }
 
         @Override public OperationTypes.ReadContained operationTypes() {

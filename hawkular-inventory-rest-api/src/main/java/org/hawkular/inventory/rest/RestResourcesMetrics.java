@@ -86,7 +86,7 @@ public class RestResourcesMetrics extends RestResources {
             return Response.status(FORBIDDEN).build();
         }
 
-        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
+        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).allMetrics();
 
         metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
                 .forEach(metricDao::associate);
@@ -117,7 +117,7 @@ public class RestResourcesMetrics extends RestResources {
             return Response.status(FORBIDDEN).build();
         }
 
-        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
+        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).allMetrics();
 
         metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
                 .forEach(metricDao::associate);
@@ -137,7 +137,7 @@ public class RestResourcesMetrics extends RestResources {
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
             @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentID, null, resourcePath);
-        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).allMetrics().getAll().entities(
                 extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
@@ -156,7 +156,7 @@ public class RestResourcesMetrics extends RestResources {
                                           @Encoded @PathParam("resourcePath") String resourcePath,
                                           @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), null, feedId, resourcePath);
-        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).allMetrics().getAll().entities(
                 extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
@@ -192,7 +192,7 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).allMetrics().get(mp).entity();
 
         return Response.ok(m).build();
     }
@@ -227,7 +227,7 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).allMetrics().get(mp).entity();
         return Response.ok(m).build();
     }
 
@@ -265,7 +265,7 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
+        inventory.inspect(rp, Resources.Single.class).allMetrics().disassociate(mp);
 
         return Response.noContent().build();
     }
@@ -304,7 +304,7 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
+        inventory.inspect(rp, Resources.Single.class).allMetrics().disassociate(mp);
 
         return Response.noContent().build();
     }

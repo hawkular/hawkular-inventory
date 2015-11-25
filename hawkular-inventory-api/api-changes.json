@@ -492,5 +492,474 @@
         }
       ]
     }
+  },
+  "0.10.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.api.EmptyInventory.EnvironmentsMultiple::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.EmptyInventory.EnvironmentsMultiple::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadContained org.hawkular.inventory.api.EmptyInventory.EnvironmentsMultiple::feedlessMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadContained org.hawkular.inventory.api.EmptyInventory.EnvironmentsMultiple::feedlessResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.api.EmptyInventory.EnvironmentsSingle::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.EmptyInventory.EnvironmentsSingle::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadWrite org.hawkular.inventory.api.EmptyInventory.EnvironmentsSingle::feedlessMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.api.EmptyInventory.EnvironmentsSingle::feedlessResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadContained org.hawkular.inventory.api.EmptyInventory.ResourceTypesMultiple::metricTypes()",
+          "new": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.EmptyInventory.ResourceTypesMultiple::metricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.EmptyInventory.ResourceTypesMultiple",
+          "new": "class org.hawkular.inventory.api.EmptyInventory.ResourceTypesMultiple",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadAssociate org.hawkular.inventory.api.EmptyInventory.ResourcesMultiple::allChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.api.EmptyInventory.ResourcesMultiple::containedChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.EmptyInventory.ResourcesMultiple",
+          "new": "class org.hawkular.inventory.api.EmptyInventory.ResourcesMultiple",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadAssociate org.hawkular.inventory.api.EmptyInventory.ResourcesSingle::allChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.api.EmptyInventory.ResourcesSingle::containedChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadAssociate org.hawkular.inventory.api.EmptyInventory.ResourcesSingle::metrics()",
+          "new": "method org.hawkular.inventory.api.Metrics.ReadWrite org.hawkular.inventory.api.EmptyInventory.ResourcesSingle::metrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.EmptyInventory.ResourcesSingle",
+          "new": "class org.hawkular.inventory.api.EmptyInventory.ResourcesSingle",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.EmptyInventory.TenantsMultiple::allMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.EmptyInventory.TenantsMultiple::allResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadContained org.hawkular.inventory.api.EmptyInventory.TenantsMultiple::feedlessMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.ReadContained org.hawkular.inventory.api.EmptyInventory.TenantsMultiple::feedlessResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.EmptyInventory.TenantsSingle::allMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.EmptyInventory.TenantsSingle::allResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadWrite org.hawkular.inventory.api.EmptyInventory.TenantsSingle::feedlessMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.ReadWrite org.hawkular.inventory.api.EmptyInventory.TenantsSingle::feedlessResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method MetricsAccess org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::feedlessMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method ResourcesAccess org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::feedlessResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method MetricsAccess org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::metrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::metricsUnder(org.hawkular.inventory.api.Environments.MetricParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method ResourcesAccess org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::resources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.Environments.BrowserBase<Feeds, ResourcesAccess, MetricsAccess>::resourcesUnder(org.hawkular.inventory.api.Environments.ResourceParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.api.Feeds.BrowserBase<AccessResources, AccessMetrics, MetricTypes, ResourceTypes>::metricsUnder(org.hawkular.inventory.api.Feeds.MetricParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.Feeds.BrowserBase<AccessResources, AccessMetrics, MetricTypes, ResourceTypes>::resourcesUnder(org.hawkular.inventory.api.Feeds.ResourceParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.ResourceTypes.Multiple",
+          "new": "class org.hawkular.inventory.api.ResourceTypes.Multiple",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method AllAccess org.hawkular.inventory.api.Resources.BrowserBase<Metrics, Data, ContainedAccess, AllAccess>::allChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method AllMetrics org.hawkular.inventory.api.Resources.BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess>::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method AllAccess org.hawkular.inventory.api.Resources.BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess>::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method ContainedAccess org.hawkular.inventory.api.Resources.BrowserBase<Metrics, Data, ContainedAccess, AllAccess>::containedChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.Resources.BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess>::recursiveResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method ContainedAccess org.hawkular.inventory.api.Resources.BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess>::resources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.Resources.Multiple",
+          "new": "class org.hawkular.inventory.api.Resources.Multiple",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.api.Resources.ReadBase<Address>::descend(Address, org.hawkular.inventory.api.model.Path[])",
+          "new": "method org.hawkular.inventory.api.Resources.Single org.hawkular.inventory.api.Resources.ReadBase<Address>::descend(Address, org.hawkular.inventory.api.model.Path[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.api.Resources.Single",
+          "new": "class org.hawkular.inventory.api.Resources.Single",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::allMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::allResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method AccessMetricTypes org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::feedlessMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method AccessResourceTypes org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::feedlessResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method AccessMetricTypes org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::metricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::metricTypesUnder(org.hawkular.inventory.api.Tenants.MetricTypeParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method AccessResourceTypes org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::resourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds, AccessMetadataPacks>::resourceTypesUnder(org.hawkular.inventory.api.Tenants.ResourceTypeParents[])",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method RB org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "new": "method RB org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method RB org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resourceBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "new": "method RB org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resourceBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method RB org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "new": "method RB org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method RB org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resourceBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "new": "method RB org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resourceBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.abstractMethodAdded",
+          "new": "method MB org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, This, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::metricBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method This org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, This, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "new": "method This org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, This extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, This, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>>::resource(java.lang.String)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method EB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::environment(java.lang.String)",
+          "new": "method EB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB>, MB, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::environment(java.lang.String)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method EB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::environmentBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "new": "method EB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB>, MB, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::environmentBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feed(java.lang.String)",
+          "new": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB>, MB, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feed(java.lang.String)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "new": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB>, MB, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadContained org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>::feedlessMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadContained org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>::feedlessResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.Read org.hawkular.inventory.base.BaseEnvironments.Single<BE>::allMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.Read org.hawkular.inventory.base.BaseEnvironments.Single<BE>::allResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadWrite org.hawkular.inventory.base.BaseEnvironments.Single<BE>::feedlessMetrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.base.BaseEnvironments.Single<BE>::feedlessResources()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadContained org.hawkular.inventory.base.BaseResourceTypes.Multiple<BE>::metricTypes()",
+          "new": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.base.BaseResourceTypes.Multiple<BE>::metricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.base.BaseResourceTypes.Multiple<BE>",
+          "new": "class org.hawkular.inventory.base.BaseResourceTypes.Multiple<BE>",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadAssociate org.hawkular.inventory.base.BaseResources.Multiple<BE>::allChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.base.BaseResources.Multiple<BE>::containedChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.base.BaseResources.Multiple<BE>",
+          "new": "class org.hawkular.inventory.base.BaseResources.Multiple<BE>",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadAssociate org.hawkular.inventory.base.BaseResources.Single<BE>::allChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.Resources.ReadWrite org.hawkular.inventory.base.BaseResources.Single<BE>::containedChildren()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.Metrics.ReadAssociate org.hawkular.inventory.base.BaseResources.Single<BE>::metrics()",
+          "new": "method org.hawkular.inventory.api.Metrics.ReadWrite org.hawkular.inventory.base.BaseResources.Single<BE>::metrics()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.hawkular.inventory.base.BaseResources.Single<BE>",
+          "new": "class org.hawkular.inventory.base.BaseResources.Single<BE>",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.base.BaseTenants.Multiple<BE>::allMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.base.BaseTenants.Multiple<BE>::allResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadContained org.hawkular.inventory.base.BaseTenants.Multiple<BE>::feedlessMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.ReadContained org.hawkular.inventory.base.BaseTenants.Multiple<BE>::feedlessResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.base.BaseTenants.Single<BE>::allMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.base.BaseTenants.Single<BE>::allResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.MetricTypes.ReadWrite org.hawkular.inventory.base.BaseTenants.Single<BE>::feedlessMetricTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method org.hawkular.inventory.api.ResourceTypes.ReadWrite org.hawkular.inventory.base.BaseTenants.Single<BE>::feedlessResourceTypes()",
+          "justification": "Renaming to better deal with the explosion of possibilities to query recursive children."
+        }
+      ]
+    }
   }
 }

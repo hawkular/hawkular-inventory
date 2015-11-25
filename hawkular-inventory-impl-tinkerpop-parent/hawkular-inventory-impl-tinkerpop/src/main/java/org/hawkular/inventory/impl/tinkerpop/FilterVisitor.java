@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
@@ -40,6 +41,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import com.tinkerpop.blueprints.Compare;
@@ -144,7 +146,7 @@ class FilterVisitor {
 
     @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, With.Types types, QueryTranslationState state) {
-        String prop = propertyNameBasedOnState(__type, state);
+            String prop = propertyNameBasedOnState(__type, state);
 
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
@@ -362,7 +364,7 @@ class FilterVisitor {
 
     public void visit(HawkularPipeline<?, ?> query, Marker filter, QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query._().as(filter.getLabel());
+        query.__().as(filter.getLabel());
     }
 
     @SuppressWarnings("unchecked")
@@ -418,6 +420,37 @@ class FilterVisitor {
         }
 
         query.or(pipes);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, RecurseFilter recurseFilter, QueryTranslationState state) {
+        goBackFromEdges(query, state);
+
+        String label = query.nextRandomLabel();
+        query.__().as(label);
+
+        if (recurseFilter.getLoopChains().length == 1) {
+            for (Filter f : recurseFilter.getLoopChains()[0]) {
+                FilterApplicator<?> applicator = FilterApplicator.of(f);
+                applicator.applyTo(query, state);
+            }
+        } else {
+            HawkularPipeline[] pipes = new HawkularPipeline[recurseFilter.getLoopChains().length];
+            for (int i = 0; i < recurseFilter.getLoopChains().length; ++i) {
+                pipes[i] = new HawkularPipeline<>();
+                QueryTranslationState innerState = state.clone();
+                for (Filter f : recurseFilter.getLoopChains()[i]) {
+                    FilterApplicator<?> applicator = FilterApplicator.of(f);
+                    applicator.applyTo(pipes[i], innerState);
+                }
+                FilterApplicator.finishPipeline(pipes[i], innerState, state);
+            }
+            query.copySplit(pipes).fairMerge().dedup();
+        }
+
+        goBackFromEdges(query, state);
+
+        query.loop(label, (x) -> true, (x) -> true);
     }
 
     private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {

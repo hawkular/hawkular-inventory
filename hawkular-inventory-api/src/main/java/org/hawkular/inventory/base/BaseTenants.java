@@ -132,12 +132,12 @@ public final class BaseTenants {
         }
 
         @Override
-        public ResourceTypes.ReadContained feedlessResourceTypes() {
+        public ResourceTypes.ReadContained resourceTypes() {
             return new BaseResourceTypes.ReadContained<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.ReadContained feedlessMetricTypes() {
+        public MetricTypes.ReadContained metricTypes() {
             return new BaseMetricTypes.ReadContained<>(context.proceedTo(contains, MetricType.class).get());
         }
 
@@ -147,19 +147,13 @@ public final class BaseTenants {
         }
 
         @Override
-        public MetricTypes.Read allMetricTypes() {
-            return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(MetricType.class)},
-                    {by(contains), type(Feed.class), by(contains), type(MetricType.class)}
-            }).getting(MetricType.class));
+        public MetricTypes.Read metricTypesUnder(Tenants.MetricTypeParents... parents) {
+            return proceedToMetricTypes(context, parents);
         }
 
         @Override
-        public ResourceTypes.Read allResourceTypes() {
-            return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(ResourceType.class)},
-                    {by(contains), type(Feed.class), by(contains), type(ResourceType.class)}
-            }).getting(ResourceType.class));
+        public ResourceTypes.Read resourceTypesUnder(Tenants.ResourceTypeParents... parents) {
+            return proceedToResourceTypes(context, parents);
         }
 
         @Override
@@ -180,12 +174,12 @@ public final class BaseTenants {
         }
 
         @Override
-        public ResourceTypes.ReadWrite feedlessResourceTypes() {
+        public ResourceTypes.ReadWrite resourceTypes() {
             return new BaseResourceTypes.ReadWrite<>(context.proceedTo(contains, ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.ReadWrite feedlessMetricTypes() {
+        public MetricTypes.ReadWrite metricTypes() {
             return new BaseMetricTypes.ReadWrite<>(context.proceedTo(contains, MetricType.class).get());
         }
 
@@ -195,24 +189,55 @@ public final class BaseTenants {
         }
 
         @Override
-        public MetricTypes.Read allMetricTypes() {
-            return new BaseMetricTypes.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(MetricType.class)},
-                    {by(contains), type(Feed.class), by(contains), type(MetricType.class)}
-            }).getting(MetricType.class));
+        public ResourceTypes.Read resourceTypesUnder(Tenants.ResourceTypeParents... parents) {
+            return proceedToResourceTypes(context, parents);
         }
 
         @Override
-        public ResourceTypes.Read allResourceTypes() {
-            return new BaseResourceTypes.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(ResourceType.class)},
-                    {by(contains), type(Feed.class), by(contains), type(ResourceType.class)}
-            }).getting(ResourceType.class));
+        public MetricTypes.Read metricTypesUnder(Tenants.MetricTypeParents... parents) {
+            return proceedToMetricTypes(context, parents);
         }
 
         @Override
         public MetadataPacks.ReadWrite metadataPacks() {
             return new BaseMetadataPacks.ReadWrite<>(context.proceedTo(contains, MetadataPack.class).get());
         }
+    }
+
+    private static <BE>
+    BaseResourceTypes.Read<BE> proceedToResourceTypes(TraversalContext<BE, Tenant> context,
+                                                      Tenants.ResourceTypeParents... parents) {
+        return new BaseResourceTypes.Read<>(context.proceedWithParents(ResourceType.class,
+                Tenants.ResourceTypeParents.class, Tenants.ResourceTypeParents.TENANT, parents, (p, extender) -> {
+                    switch (p) {
+                        case FEED:
+                            extender.path()
+                                    .with(by(contains), type(Feed.class), by(contains), type(ResourceType.class));
+                            break;
+                        case TENANT:
+                            extender.path().with(by(contains), type(ResourceType.class));
+                            break;
+                        default:
+                            throw new AssertionError("Unhandled parent type " + p);
+                    }
+                }));
+    }
+
+    private static <BE>
+    BaseMetricTypes.Read<BE> proceedToMetricTypes(TraversalContext<BE, Tenant> context,
+                                                  Tenants.MetricTypeParents... parents) {
+        return new BaseMetricTypes.Read<>(context.proceedWithParents(MetricType.class,
+                Tenants.MetricTypeParents.class, Tenants.MetricTypeParents.TENANT, parents, (p, extender) -> {
+                    switch (p) {
+                        case FEED:
+                            extender.path().with(by(contains), type(Feed.class), by(contains), type(MetricType.class));
+                            break;
+                        case TENANT:
+                            extender.path().with(by(contains), type(MetricType.class));
+                            break;
+                        default:
+                            throw new AssertionError("Unhandled parent type " + p);
+                    }
+                }));
     }
 }

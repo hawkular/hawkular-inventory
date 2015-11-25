@@ -986,7 +986,7 @@ public abstract class Path {
             SDB extends StructuredDataBuilder<Impl, SDB>,
             MPB extends MetadataPackBuilder<Impl>,
             FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
-            RB extends ResourceBuilder<Impl, RB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, MB, SDB>,
             MB extends MetricBuilder<Impl>> extends AbstractBuilder<Impl> {
 
         Builder(List<Segment> segments, Constructor<Impl> constructor) {
@@ -1028,7 +1028,7 @@ public abstract class Path {
             SDB extends StructuredDataBuilder<Impl, SDB>,
             MPB extends MetadataPackBuilder<Impl>,
             FB extends FeedBuilder<Impl, RTB, MTB, RB, MB, OTB, SDB>,
-            RB extends ResourceBuilder<Impl, RB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, MB, SDB>,
             MB extends MetricBuilder<Impl>>
             extends AbstractBuilder<Impl> {
 
@@ -1118,7 +1118,7 @@ public abstract class Path {
     }
 
     abstract static class EnvironmentBuilder<Impl extends Path,
-            RB extends ResourceBuilder<Impl, RB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, MB, SDB>,
             MB extends MetricBuilder<Impl>,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
@@ -1153,7 +1153,7 @@ public abstract class Path {
     abstract static class FeedBuilder<Impl extends Path,
             RTB extends ResourceTypeBuilder<Impl, OTB, SDB>,
             MTB extends MetricTypeBuilder<Impl>,
-            RB extends ResourceBuilder<Impl, RB, SDB>,
+            RB extends ResourceBuilder<Impl, RB, MB, SDB>,
             MB extends MetricBuilder<Impl>,
             OTB extends OperationTypeBuilder<Impl, SDB>,
             SDB extends StructuredDataBuilder<Impl, SDB>> extends AbstractBuilder<Impl> {
@@ -1197,7 +1197,8 @@ public abstract class Path {
     }
 
     abstract static class ResourceBuilder<Impl extends Path,
-            This extends ResourceBuilder<Impl, This, SDB>,
+            This extends ResourceBuilder<Impl, This, MB, SDB>,
+            MB extends MetricBuilder<Impl>,
             SDB extends StructuredDataBuilder<Impl, SDB>>
             extends AbstractBuilder<Impl> {
 
@@ -1216,10 +1217,17 @@ public abstract class Path {
             return structuredDataBuilder(segments);
         }
 
+        public MB metric(String id) {
+            segments.add(new Segment(Metric.class, id));
+            return metricBuilder(segments);
+        }
+
         @Override
         public Impl get() {
             return super.get();
         }
+
+        protected abstract MB metricBuilder(List<Segment> segments);
 
         protected abstract SDB structuredDataBuilder(List<Segment> segments);
     }

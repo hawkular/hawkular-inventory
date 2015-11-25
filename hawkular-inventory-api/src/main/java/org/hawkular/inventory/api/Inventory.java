@@ -351,17 +351,34 @@ public interface Inventory extends AutoCloseable {
             @Override
             public Single visitMetric(Void parameter) {
                 Tenants.Single tenant = tenants().get(ids.getTenantId());
+                RelativePath resourcePath = ids.getResourcePath();
+                String feedId = ids.getFeedId();
+                String environmentId = ids.getEnvironmentId();
+                String metricId = ids.getMetricId();
 
-                return accessInterface.cast(ids.getFeedId() == null
-                        ? tenant.environments().get(ids.getEnvironmentId()).feedlessMetrics()
-                        .get(ids.getMetricId())
-                        : tenant.feeds().get(ids.getFeedId()).metrics().get(ids.getMetricId()));
+                ResolvableToSingle<?, ?> iface;
+                if (resourcePath == null) {
+                    if (feedId == null) {
+                        iface = tenant.environments().get(environmentId).metrics().get(metricId);
+                    } else {
+                        iface = tenant.feeds().get(feedId).metrics().get(metricId);
+                    }
+                } else {
+                    if (feedId == null) {
+                        iface = tenant.environments().get(environmentId).resources()
+                                .descendContained(ids.getResourcePath()).metrics().get(metricId);
+                    } else {
+                        iface = tenant.feeds().get(feedId).resources().descendContained(ids.getResourcePath())
+                                .metrics().get(metricId);
+                    }
+                }
+                return accessInterface.cast(iface);
 
             }
 
             @Override
             public Single visitMetricType(Void parameter) {
-                return accessInterface.cast(tenants().get(ids.getTenantId()).feedlessMetricTypes()
+                return accessInterface.cast(tenants().get(ids.getTenantId()).metricTypes()
                         .get(ids.getMetricTypeId()));
             }
 
@@ -369,28 +386,13 @@ public interface Inventory extends AutoCloseable {
             public Single visitResource(Void parameter) {
                 Tenants.Single tenant = tenants().get(ids.getTenantId());
 
-                @SuppressWarnings("ConstantConditions")
-                RelativePath parentResource = ids.getResourcePath().up();
-
                 Resources.Single access;
 
                 if (ids.getFeedId() == null) {
-                    Environments.Single env = tenant.environments().get(ids.getEnvironmentId());
-                    if (parentResource.isDefined()) {
-                        access = env.feedlessResources().descend(ids.getResourcePath().getPath().get(0).getElementId(),
-                                allResourceSegments(path, 1, 1)).get(path);
-                    } else {
-                        access = env.feedlessResources().get(path.getSegment().getElementId());
-                    }
+                    access = tenant.environments().get(ids.getEnvironmentId()).resources()
+                            .descendContained(ids.getResourcePath());
                 } else {
-                    Feeds.Single feed = tenant.feeds().get(ids.getFeedId());
-
-                    if (parentResource.isDefined()) {
-                        access = feed.resources().descend(ids.getResourcePath().getPath().get(0).getElementId(),
-                                allResourceSegments(path, 1, 1)).get(path);
-                    } else {
-                        access = feed.resources().get(path.getSegment().getElementId());
-                    }
+                    access = tenant.feeds().get(ids.getFeedId()).resources().descendContained(ids.getResourcePath());
                 }
 
                 return accessInterface.cast(access);
@@ -400,7 +402,7 @@ public interface Inventory extends AutoCloseable {
             public Single visitResourceType(Void parameter) {
                 Tenants.Single ten = tenants().get(ids.getTenantId());
                 return accessInterface.cast(ids.getFeedId() == null
-                        ? ten.feedlessResourceTypes().get(ids.getResourceTypeId())
+                        ? ten.resourceTypes().get(ids.getResourceTypeId())
                         : ten.feeds().get(ids.getFeedId()).resourceTypes()
                         .get(ids.getResourceTypeId()));
             }

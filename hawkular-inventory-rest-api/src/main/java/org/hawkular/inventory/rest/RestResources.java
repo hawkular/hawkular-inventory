@@ -96,7 +96,7 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(env, Environments.Single.class).feedlessResources().create(resource);
+        inventory.inspect(env, Environments.Single.class).resources().create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }
@@ -123,7 +123,7 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).containedChildren().create(resource);
+        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }
@@ -176,7 +176,7 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).containedChildren().create(resource);
+        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
 
         return ResponseUtil.created(uriInfo, resource.getId()).build();
     }
@@ -201,7 +201,7 @@ public class RestResources extends RestBase {
 
         Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
 
-        ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.feedlessResources() : envs.allResources();
+        ResolvingToMultiple<Resources.Multiple> rr = feedless ? envs.resources() : envs.resources();
         Pager pager = extractPaging(uriInfo);
         ResourceFilters filters = new ResourceFilters(tenantId, uriInfo.getQueryParameters());
         Page<Resource> rs = rr.getAll(filters.get()).entities(pager);
@@ -274,7 +274,7 @@ public class RestResources extends RestBase {
 
         Pager pager = extractPaging(uriInfo);
 
-        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allResources().getAll().entities(pager);
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
@@ -297,7 +297,7 @@ public class RestResources extends RestBase {
 
         Pager pager = extractPaging(uriInfo);
 
-        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allChildren().getAll().entities(pager);
+        Page<Resource> ret = inventory.inspect(parent, Resources.Single.class).allResources().getAll().entities(pager);
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
@@ -402,7 +402,7 @@ public class RestResources extends RestBase {
 
         CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
-        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
+        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
         resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
                 .forEach(access::associate);
@@ -428,7 +428,7 @@ public class RestResources extends RestBase {
 
         CanonicalPath parent = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
-        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allChildren();
+        Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
         resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
                 .forEach(access::associate);
@@ -462,7 +462,7 @@ public class RestResources extends RestBase {
 
         Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
 
-        inventory.inspect(parent, Resources.Single.class).allChildren().disassociate(child);
+        inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
         return Response.noContent().build();
     }
@@ -494,7 +494,7 @@ public class RestResources extends RestBase {
 
         Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
 
-        inventory.inspect(parent, Resources.Single.class).allChildren().disassociate(child);
+        inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
         return Response.noContent().build();
     }

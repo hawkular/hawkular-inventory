@@ -61,7 +61,7 @@ public class RestResourceTypesResources extends RestBase {
 
         String tenantId = getTenantId();
 
-        ResourceTypes.Single single = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId);
+        ResourceTypes.Single single = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId);
         single.entity(); // check whether it exists
         Page<Resource> ret = single.resources().getAll().entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ret).build();

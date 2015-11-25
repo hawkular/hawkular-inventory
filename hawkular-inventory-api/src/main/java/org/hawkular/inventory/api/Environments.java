@@ -31,6 +31,14 @@ public final class Environments {
 
     }
 
+    public enum ResourceParents implements Parents {
+        ENVIRONMENT, FEED, RESOURCE
+    }
+
+    public enum MetricParents implements Parents {
+        ENVIRONMENT, FEED, RESOURCE
+    }
+
     private interface BrowserBase<Feeds, ResourcesAccess, MetricsAccess> {
         /**
          * @return feeds in the environment(s)
@@ -40,12 +48,7 @@ public final class Environments {
         /**
          * @return resources in the environment(s) that do not come from any feed
          */
-        ResourcesAccess feedlessResources();
-
-        /**
-         * @return metrics in the environment(s) that do not come from any feed
-         */
-        MetricsAccess feedlessMetrics();
+        ResourcesAccess resources();
 
         /**
          * Returns access to all resources in this environment regardless of whether they are under some feed or
@@ -53,7 +56,12 @@ public final class Environments {
          *
          * @return the access interface to all resources in this environment
          */
-        Resources.Read allResources();
+        Resources.Read resourcesUnder(ResourceParents... parents);
+
+        /**
+         * @return metrics in the environment(s) that do not come from any feed
+         */
+        MetricsAccess metrics();
 
         /**
          * Returns access to all metrics in this environment regardless of whether they are under some feed or
@@ -64,7 +72,7 @@ public final class Environments {
          *
          * @return the access interface to all metrics in this environment
          */
-        Metrics.Read allMetrics();
+        Metrics.Read metricsUnder(MetricParents... parents);
     }
 
     /**

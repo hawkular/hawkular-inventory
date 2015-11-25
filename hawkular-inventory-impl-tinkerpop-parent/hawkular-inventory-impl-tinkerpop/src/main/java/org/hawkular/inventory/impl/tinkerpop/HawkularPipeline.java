@@ -17,11 +17,13 @@
 
 package org.hawkular.inventory.impl.tinkerpop;
 
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -31,6 +33,7 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Pager;
 
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
@@ -38,11 +41,76 @@ import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.Tokens;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.FunctionPipe;
+import com.tinkerpop.pipes.IdentityPipe;
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.PipeFunction;
+import com.tinkerpop.pipes.branch.CopySplitPipe;
+import com.tinkerpop.pipes.branch.ExhaustMergePipe;
+import com.tinkerpop.pipes.branch.FairMergePipe;
+import com.tinkerpop.pipes.branch.IfThenElsePipe;
 import com.tinkerpop.pipes.branch.LoopPipe;
+import com.tinkerpop.pipes.filter.AndFilterPipe;
+import com.tinkerpop.pipes.filter.BackFilterPipe;
+import com.tinkerpop.pipes.filter.CyclicPathFilterPipe;
+import com.tinkerpop.pipes.filter.DuplicateFilterPipe;
+import com.tinkerpop.pipes.filter.ExceptFilterPipe;
+import com.tinkerpop.pipes.filter.FilterFunctionPipe;
+import com.tinkerpop.pipes.filter.FutureFilterPipe;
+import com.tinkerpop.pipes.filter.IdFilterPipe;
+import com.tinkerpop.pipes.filter.IntervalFilterPipe;
+import com.tinkerpop.pipes.filter.LabelFilterPipe;
+import com.tinkerpop.pipes.filter.ObjectFilterPipe;
+import com.tinkerpop.pipes.filter.OrFilterPipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import com.tinkerpop.pipes.filter.RandomFilterPipe;
+import com.tinkerpop.pipes.filter.RangeFilterPipe;
+import com.tinkerpop.pipes.filter.RetainFilterPipe;
+import com.tinkerpop.pipes.sideeffect.AggregatePipe;
+import com.tinkerpop.pipes.sideeffect.CountPipe;
+import com.tinkerpop.pipes.sideeffect.GroupByPipe;
+import com.tinkerpop.pipes.sideeffect.GroupCountFunctionPipe;
+import com.tinkerpop.pipes.sideeffect.GroupCountPipe;
+import com.tinkerpop.pipes.sideeffect.LinkPipe;
+import com.tinkerpop.pipes.sideeffect.OptionalPipe;
+import com.tinkerpop.pipes.sideeffect.StorePipe;
+import com.tinkerpop.pipes.sideeffect.TablePipe;
+import com.tinkerpop.pipes.sideeffect.TreePipe;
+import com.tinkerpop.pipes.transform.BothEdgesPipe;
+import com.tinkerpop.pipes.transform.BothPipe;
+import com.tinkerpop.pipes.transform.BothVerticesPipe;
+import com.tinkerpop.pipes.transform.GatherFunctionPipe;
+import com.tinkerpop.pipes.transform.GatherPipe;
+import com.tinkerpop.pipes.transform.GraphQueryPipe;
+import com.tinkerpop.pipes.transform.HasCountPipe;
+import com.tinkerpop.pipes.transform.HasNextPipe;
+import com.tinkerpop.pipes.transform.IdEdgePipe;
+import com.tinkerpop.pipes.transform.IdPipe;
+import com.tinkerpop.pipes.transform.InEdgesPipe;
+import com.tinkerpop.pipes.transform.InPipe;
+import com.tinkerpop.pipes.transform.InVertexPipe;
+import com.tinkerpop.pipes.transform.LabelPipe;
+import com.tinkerpop.pipes.transform.MemoizePipe;
+import com.tinkerpop.pipes.transform.OrderMapPipe;
+import com.tinkerpop.pipes.transform.OrderPipe;
+import com.tinkerpop.pipes.transform.OutEdgesPipe;
+import com.tinkerpop.pipes.transform.OutPipe;
+import com.tinkerpop.pipes.transform.OutVertexPipe;
+import com.tinkerpop.pipes.transform.PathPipe;
+import com.tinkerpop.pipes.transform.PropertyMapPipe;
+import com.tinkerpop.pipes.transform.PropertyPipe;
+import com.tinkerpop.pipes.transform.QueryPipe;
+import com.tinkerpop.pipes.transform.ScatterPipe;
+import com.tinkerpop.pipes.transform.SelectPipe;
+import com.tinkerpop.pipes.transform.ShufflePipe;
+import com.tinkerpop.pipes.transform.SideEffectCapPipe;
+import com.tinkerpop.pipes.transform.TransformFunctionPipe;
 import com.tinkerpop.pipes.transform.TransformPipe;
+import com.tinkerpop.pipes.transform.VertexQueryPipe;
+import com.tinkerpop.pipes.util.AsPipe;
 import com.tinkerpop.pipes.util.FluentUtility;
+import com.tinkerpop.pipes.util.Pipeline;
+import com.tinkerpop.pipes.util.StartPipe;
 import com.tinkerpop.pipes.util.structures.Pair;
 import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
@@ -237,8 +305,17 @@ class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable 
         return counters.getOrDefault(counterName, -1L);
     }
 
+    /**
+     * @deprecated don't use this, use {@link #__()} to not cause java8 warnings
+     * @return this pipeline
+     */
     @Override
+    @Deprecated
     public HawkularPipeline<S, E> _() {
+        return cast(super._());
+    }
+
+    public HawkularPipeline<S, E> __() {
         return cast(super._());
     }
 
@@ -855,7 +932,579 @@ class HawkularPipeline<S, E> extends GremlinPipeline<S, E> implements Cloneable 
         return cast(super.V(key, value));
     }
 
+    @Override
+    public String toString() {
+        StringBuilder bld = new StringBuilder();
+        pipes.forEach(p -> PipeVisitor.visit(p, new PipeVisitor<StringBuilder>() {
+            @Override public void defaultAction(Pipe<?, ?> pipe, StringBuilder p) {
+                if (!pipe.getClass().getName().endsWith("CopyExpandablePipe")) {
+                    p.append(".").append("<<").append(pipe).append(">>");
+                }
+            }
+
+            @Override public void visitStart(StartPipe<?> pipe, StringBuilder p) {
+                p.append(".start(").append((Object) getFieldValue("starts", pipe)).append(")");
+            }
+
+            @Override public void visitGraphQuery(GraphQueryPipe<?> pipe, StringBuilder p) {
+                Class<?> elementClass = getFieldValue("elementClass", pipe);
+                if (Vertex.class.equals(elementClass)) {
+                    p.append(".V()");
+                } else {
+                    p.append(".E()");
+                }
+
+                append(this.<List<QueryPipe.HasContainer>>getFieldValue("hasContainers", pipe), bld);
+            }
+
+            @Override public void visitVertexQuery(VertexQueryPipe<?> pipe, StringBuilder p) {
+                Direction direction = getFieldValue("direction", pipe);
+                String[] labels = getFieldValue("labels", pipe);
+                List<QueryPipe.HasContainer> hasContainers = getFieldValue("hasContainers", pipe);
+                Class<?> elementClass = getFieldValue("elementClass", pipe);
+
+                switch (direction) {
+                    case OUT:
+                        p.append(".out");
+                        break;
+                    case IN:
+                        p.append(".in");
+                        break;
+                    case BOTH:
+                        p.append(".both");
+                }
+
+                if (Edge.class.equals(elementClass)) {
+                    p.append("E");
+                }
+
+                p.append("(");
+                p.append("\"").append(labels.length > 0 ? labels[0] : "<none>").append("\"");
+                for (int i = 1; i < labels.length; ++i) {
+                    p.append(", \"").append(labels[i]).append("\"");
+                }
+
+                p.append(")");
+
+                append(hasContainers, p);
+            }
+
+            @Override public void visitInVertex(InVertexPipe pipe, StringBuilder p) {
+                p.append(".inV()");
+            }
+
+            @Override public void visitOutVertex(OutVertexPipe pipe, StringBuilder p) {
+                p.append(".outV()");
+            }
+
+            @Override public void visitIdentity(IdentityPipe pipe, StringBuilder p) {
+                p.append("._()");
+            }
+
+            @Override public void visitCopySplit(CopySplitPipe<?> pipe, StringBuilder p) {
+                p.append(".copySplit(");
+                List<Pipeline<?, ?>> pipes = getFieldValue("pipes", pipe);
+                Iterator<Pipeline<?, ?>> it = pipes.iterator();
+                if (it.hasNext()) {
+                    PipeVisitor.visit(it.next(), this, p);
+                }
+
+                while (it.hasNext()) {
+                    p.append(", ");
+                    PipeVisitor.visit(it.next(), this, p);
+                }
+
+                p.append(")");
+            }
+
+            @Override public void visitExhaustMerge(ExhaustMergePipe<?> pipe, StringBuilder p) {
+                p.append(".exhaustMerge()");
+            }
+
+            @Override public void visitFairMerge(FairMergePipe<?> pipe, StringBuilder p) {
+                p.append(".fairMerge()");
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override public void visitPipeline(Pipeline pipeline, StringBuilder p) {
+                p.append(pipeline.getClass().getSimpleName());
+                pipeline.getPipes().forEach(pipe -> PipeVisitor.visit((Pipe<?, ?>) pipe, this, p));
+            }
+
+            @Override public void visitAs(AsPipe<?, ?> pipe, StringBuilder p) {
+                p.append(".as(\"").append(pipe.getName()).append("\")");
+                pipe.getPipes().forEach(cp -> PipeVisitor.visit(cp, this, p));
+            }
+
+            @Override public void visitLoop(LoopPipe<?> pipe, StringBuilder p) {
+                p.append(".loop(");
+                PipeVisitor.visit(pipe.getPipes().get(0), this, p);
+                p.append(")");
+            }
+
+            @Override public void visitBackFilter(BackFilterPipe<?> pipe, StringBuilder p) {
+                p.append("???BACK???");
+            }
+
+            private void append(List<QueryPipe.HasContainer> containers, StringBuilder bld) {
+                if (containers == null) {
+                    return;
+                }
+
+                containers.forEach(c -> append(c, bld));
+            }
+
+            private void append(QueryPipe.HasContainer container, StringBuilder bld) {
+                bld.append(".has(").append(container.key).append(", ").append(container.predicate)
+                        .append(", ").append(container.value).append(")");
+            }
+
+            private <T> T getFieldValue(String fieldName, Object object) {
+                return getFieldValue(fieldName, object, object.getClass());
+            }
+
+            @SuppressWarnings("unchecked")
+            private <T> T getFieldValue(String fieldName, Object object, Class<?> declaringClass) {
+                try {
+                    Field f = declaringClass.getDeclaredField(fieldName);
+                    f.setAccessible(true);
+                    try {
+                        return (T) f.get(object);
+                    } catch (IllegalAccessException e) {
+                        //doesn't happen
+                        throw new AssertionError();
+                    }
+                } catch (NoSuchFieldException e) {
+                    return getFieldValue(fieldName, object, declaringClass.getSuperclass());
+                }
+            }
+        }, bld));
+
+        return bld.toString();
+    }
+
     private <I, O> HawkularPipeline<I, O> cast(GremlinPipeline<I, O> thiz) {
         return (HawkularPipeline<I, O>) thiz;
+    }
+
+    private interface PipeVisitor<Param> {
+
+        static <Param> void visit(Pipe<?, ?> pipe, PipeVisitor<Param> visitor, Param p) {
+            if (pipe instanceof RangeFilterPipe) {
+                visitor.visitRangeFilter((RangeFilterPipe<?>) pipe, p);
+            } else if (pipe instanceof TakeNPipe) {
+                visitor.visitTakeN((TakeNPipe) pipe, p);
+            } else if (pipe instanceof OutPipe) {
+                visitor.visitOut((OutPipe) pipe, p);
+            } else if (pipe instanceof InPipe) {
+                visitor.visitIn((InPipe) pipe, p);
+            } else if (pipe instanceof BothPipe) {
+                visitor.visitBoth((BothPipe) pipe, p);
+            } else if (pipe instanceof AggregatePipe) {
+                visitor.visitAggregate((AggregatePipe) pipe, p);
+            } else if (pipe instanceof DrainedRangeFilterPipe) {
+                visitor.visitDrainedRangeFilter((DrainedRangeFilterPipe) pipe, p);
+            } else if (pipe instanceof PropertyPipe) {
+                visitor.visitProperty((PropertyPipe) pipe, p);
+            } else if (pipe instanceof ScatterPipe) {
+                visitor.visitScatter((ScatterPipe) pipe, p);
+            } else if (pipe instanceof TransformFunctionPipe) {
+                visitor.visitTransformFunction((TransformFunctionPipe) pipe, p);
+            } else if (pipe instanceof OrderMapPipe) {
+                visitor.visitOrderMap((OrderMapPipe) pipe, p);
+            } else if (pipe instanceof TablePipe) {
+                visitor.visitTable((TablePipe) pipe, p);
+            } else if (pipe instanceof RandomFilterPipe) {
+                visitor.visitRandomFilter((RandomFilterPipe) pipe, p);
+            } else if (pipe instanceof IdFilterPipe) {
+                visitor.visitIdFilter((IdFilterPipe) pipe, p);
+            } else if (pipe instanceof GroupCountFunctionPipe) {
+                visitor.visitGroupCountFunction((GroupCountFunctionPipe) pipe, p);
+            } else if (pipe instanceof ExceptFilterPipe) {
+                visitor.visitExceptFilter((ExceptFilterPipe) pipe, p);
+            } else if (pipe instanceof RetainFilterPipe) {
+                visitor.visitRetainFilter((RetainFilterPipe) pipe, p);
+            } else if (pipe instanceof IntervalFilterPipe) {
+                visitor.visitIntervalFilter((IntervalFilterPipe) pipe, p);
+            } else if (pipe instanceof OutVertexPipe) {
+                visitor.visitOutVertex((OutVertexPipe) pipe, p);
+            } else if (pipe instanceof InVertexPipe) {
+                visitor.visitInVertex((InVertexPipe) pipe, p);
+            } else if (pipe instanceof BothVerticesPipe) {
+                visitor.visitBothVertices((BothVerticesPipe) pipe, p);
+            } else if (pipe instanceof FilterFunctionPipe) {
+                visitor.visitFilterFunction((FilterFunctionPipe) pipe, p);
+            } else if (pipe instanceof PathPipe) {
+                visitor.visitPath((PathPipe) pipe, p);
+            } else if (pipe instanceof OrderPipe) {
+                visitor.visitOrder((OrderPipe) pipe, p);
+            } else if (pipe instanceof OutEdgesPipe) {
+                visitor.visitOutEdges((OutEdgesPipe) pipe, p);
+            } else if (pipe instanceof InEdgesPipe) {
+                visitor.visitInEdges((InEdgesPipe) pipe, p);
+            } else if (pipe instanceof BothEdgesPipe) {
+                visitor.visitBothEdges((BothEdgesPipe) pipe, p);
+            } else if (pipe instanceof StorePipe) {
+                visitor.visitStore((StorePipe) pipe, p);
+            } else if (pipe instanceof GatherPipe) {
+                visitor.visitGather((GatherPipe) pipe, p);
+            } else if (pipe instanceof StartPipe) {
+                visitor.visitStart((StartPipe) pipe, p);
+            } else if (pipe instanceof CyclicPathFilterPipe) {
+                visitor.visitCyclicPathFilter((CyclicPathFilterPipe) pipe, p);
+            } else if (pipe instanceof GroupCountPipe) {
+                visitor.visitGroupCount((GroupCountPipe) pipe, p);
+            } else if (pipe instanceof FunctionPipe) {
+                visitor.visitFunction((FunctionPipe) pipe, p);
+            } else if (pipe instanceof SelectPipe) {
+                visitor.visitSelect((SelectPipe) pipe, p);
+            } else if (pipe instanceof PropertyMapPipe) {
+                visitor.visitPropertyMap((PropertyMapPipe) pipe, p);
+            } else if (pipe instanceof ObjectFilterPipe) {
+                visitor.visitObjectFilter((ObjectFilterPipe) pipe, p);
+            } else if (pipe instanceof TreePipe) {
+                visitor.visitTree((TreePipe) pipe, p);
+            } else if (pipe instanceof GraphQueryPipe) {
+                visitor.visitGraphQuery((GraphQueryPipe) pipe, p);
+            } else if (pipe instanceof VertexQueryPipe) {
+                visitor.visitVertexQuery((VertexQueryPipe) pipe, p);
+            } else if (pipe instanceof ShufflePipe) {
+                visitor.visitShuffle((ShufflePipe) pipe, p);
+            } else if (pipe instanceof CountPipe) {
+                visitor.visitCount((CountPipe) pipe, p);
+            } else if (pipe instanceof MemoizePipe) {
+                visitor.visitMemoize((MemoizePipe) pipe, p);
+            } else if (pipe instanceof ExhaustMergePipe) {
+                visitor.visitExhaustMerge((ExhaustMergePipe) pipe, p);
+            } else if (pipe instanceof LoopPipe) {
+                visitor.visitLoop((LoopPipe) pipe, p);
+            } else if (pipe instanceof AndFilterPipe) {
+                visitor.visitAndFilter((AndFilterPipe) pipe, p);
+            } else if (pipe instanceof BackFilterPipe) {
+                visitor.visitBackFilter((BackFilterPipe) pipe, p);
+            } else if (pipe instanceof FutureFilterPipe) {
+                visitor.visitFutureFilter((FutureFilterPipe) pipe, p);
+            } else if (pipe instanceof OptionalPipe) {
+                visitor.visitOptional((OptionalPipe) pipe, p);
+            } else if (pipe instanceof FairMergePipe) {
+                visitor.visitFairMerge((FairMergePipe) pipe, p);
+            } else if (pipe instanceof CopySplitPipe) {
+                visitor.visitCopySplit((CopySplitPipe) pipe, p);
+            } else if (pipe instanceof OrFilterPipe) {
+                visitor.visitOrFilter((OrFilterPipe) pipe, p);
+            } else if (pipe instanceof AsPipe) {
+                visitor.visitAs((AsPipe) pipe, p);
+            } else if (pipe instanceof SideEffectCapPipe) {
+                visitor.visitSideEffectCap((SideEffectCapPipe) pipe, p);
+            } else if (pipe instanceof HasNextPipe) {
+                visitor.visitHasNext((HasNextPipe) pipe, p);
+            } else if (pipe instanceof DuplicateFilterPipe) {
+                visitor.visitDuplicateFilter((DuplicateFilterPipe) pipe, p);
+            } else if (pipe instanceof IdEdgePipe) {
+                visitor.visitIdEdge((IdEdgePipe) pipe, p);
+            } else if (pipe instanceof LabelFilterPipe) {
+                visitor.visitLabelFilter((LabelFilterPipe) pipe, p);
+            } else if (pipe instanceof IfThenElsePipe) {
+                visitor.visitIfTheElse((IfThenElsePipe) pipe, p);
+            } else if (pipe instanceof PropertyFilterPipe) {
+                visitor.visitPropertyFilter((PropertyFilterPipe) pipe, p);
+            } else if (pipe instanceof GroupByPipe) {
+                visitor.visitGroupBy((GroupByPipe) pipe, p);
+            } else if (pipe instanceof GatherFunctionPipe) {
+                visitor.visitGatherFunction((GatherFunctionPipe) pipe, p);
+            } else if (pipe instanceof LinkPipe) {
+                visitor.visitLink((LinkPipe) pipe, p);
+            } else if (pipe instanceof DropNPipe) {
+                visitor.visitDropN((DropNPipe) pipe, p);
+            } else if (pipe instanceof IdPipe) {
+                visitor.visitId((IdPipe) pipe, p);
+            } else if (pipe instanceof LabelPipe) {
+                visitor.visitLabel((LabelPipe) pipe, p);
+            } else if (pipe instanceof HasCountPipe) {
+                visitor.visitHasCount((HasCountPipe) pipe, p);
+            } else if (pipe instanceof IdentityPipe) {
+                visitor.visitIdentity((IdentityPipe) pipe, p);
+            } else if (pipe instanceof Pipeline) {
+                visitor.visitPipeline((Pipeline) pipe, p);
+            } else {
+                visitor.defaultAction(pipe, p);
+            }
+        }
+
+        default void defaultAction(Pipe<?, ?> pipe, Param p) {
+
+        }
+
+        default void visitRangeFilter(RangeFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitTakeN(TakeNPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOut(OutPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIn(InPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitBoth(BothPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitAggregate(AggregatePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitDrainedRangeFilter(DrainedRangeFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitProperty(PropertyPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitScatter(ScatterPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitTransformFunction(TransformFunctionPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOrderMap(OrderMapPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitTable(TablePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitRandomFilter(RandomFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIdFilter(IdFilterPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGroupCountFunction(GroupCountFunctionPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitExceptFilter(ExceptFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitRetainFilter(RetainFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIntervalFilter(IntervalFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOutVertex(OutVertexPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitInVertex(InVertexPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitBothVertices(BothVerticesPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitFilterFunction(FilterFunctionPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitPath(PathPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOrder(OrderPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOutEdges(OutEdgesPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitInEdges(InEdgesPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitBothEdges(BothEdgesPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitStore(StorePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGather(GatherPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitStart(StartPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitCyclicPathFilter(CyclicPathFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGroupCount(GroupCountPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitFunction(FunctionPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitSelect(SelectPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitPropertyMap(PropertyMapPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitObjectFilter(ObjectFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitTree(TreePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGraphQuery(GraphQueryPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitVertexQuery(VertexQueryPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitShuffle(ShufflePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitCount(CountPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitMemoize(MemoizePipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitExhaustMerge(ExhaustMergePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitLoop(LoopPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitAndFilter(AndFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitBackFilter(BackFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitFutureFilter(FutureFilterPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOptional(OptionalPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitFairMerge(FairMergePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitCopySplit(CopySplitPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitOrFilter(OrFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitAs(AsPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitSideEffectCap(SideEffectCapPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitHasNext(HasNextPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitDuplicateFilter(DuplicateFilterPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIdEdge(IdEdgePipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitLabelFilter(LabelFilterPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIfTheElse(IfThenElsePipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitPropertyFilter(PropertyFilterPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGroupBy(GroupByPipe<?, ?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitGatherFunction(GatherFunctionPipe<?, ?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitLink(LinkPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitDropN(DropNPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitId(IdPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitLabel(LabelPipe pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitHasCount(HasCountPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitIdentity(IdentityPipe<?> pipe, Param p) {
+            defaultAction(pipe, p);
+        }
+
+        default void visitPipeline(Pipeline pipeline, Param p) {
+            defaultAction(pipeline, p);
+        }
     }
 }

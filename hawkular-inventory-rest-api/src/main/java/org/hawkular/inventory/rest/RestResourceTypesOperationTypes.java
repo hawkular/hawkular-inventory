@@ -164,7 +164,7 @@ public class RestResourceTypesOperationTypes extends RestBase {
     public Response getAll(@PathParam("resourceTypeId") String resourceTypeId,
                            @Context UriInfo uriInfo) {
 
-        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId()).feedlessResourceTypes()
+        Page<OperationType> operationTypes = inventory.tenants().get(getTenantId()).resourceTypes()
                 .get(resourceTypeId).operationTypes().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, operationTypes).build();

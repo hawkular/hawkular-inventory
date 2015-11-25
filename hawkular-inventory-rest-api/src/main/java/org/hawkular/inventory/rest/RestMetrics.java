@@ -37,6 +37,7 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
@@ -79,7 +80,7 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.inspect(env, Environments.Single.class).feedlessMetrics(), metric);
+        createMetric(inventory.inspect(env, Environments.Single.class).metrics(), metric);
         return ResponseUtil.created(uriInfo, metric.getId()).build();
     }
 
@@ -138,7 +139,7 @@ public class RestMetrics extends RestBase {
     public Metric getMetric(@PathParam("environmentId") String environmentId,
             @PathParam("metricId") String metricId) {
 
-        return inventory.tenants().get(getTenantId()).environments().get(environmentId).feedlessMetrics().get(metricId)
+        return inventory.tenants().get(getTenantId()).environments().get(environmentId).metrics().get(metricId)
                 .entity();
     }
 
@@ -175,8 +176,8 @@ public class RestMetrics extends RestBase {
 
         Environments.Single envs = inventory.tenants().get(tenantId).environments().get(environmentId);
 
-        Page<Metric> ret = (feedless ? envs.feedlessMetrics() : envs.allMetrics())
-                .getAll().entities(RequestUtil.extractPaging(uriInfo));
+        Page<Metric> ret = (feedless ? envs.metrics() : envs.metricsUnder(Parents.any())).getAll()
+                .entities(RequestUtil.extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
@@ -193,8 +194,8 @@ public class RestMetrics extends RestBase {
     })
     public Response getMetrics(@PathParam("feedId") String feedId, @Context UriInfo uriInfo) {
 
-        Page<Metric> ret = inventory.tenants().get(getTenantId()).feeds().get(feedId).metrics().getAll()
-                .entities(RequestUtil.extractPaging(uriInfo));
+        Page<Metric> ret = inventory.tenants().get(getTenantId()).feeds().get(feedId).metricsUnder(Parents.any())
+                .getAll().entities(RequestUtil.extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ret).build();
     }
 
@@ -220,7 +221,7 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(env, Environments.Single.class).feedlessMetrics().update(metricId, update);
+        inventory.inspect(env, Environments.Single.class).metrics().update(metricId, update);
         return Response.noContent().build();
     }
 
@@ -273,7 +274,7 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(env, Environments.Single.class).feedlessMetrics().delete(metricId);
+        inventory.inspect(env, Environments.Single.class).metrics().delete(metricId);
         return Response.noContent().build();
     }
 
