@@ -20,12 +20,10 @@ package org.hawkular.inventory.rest;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -43,16 +41,16 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -628,8 +626,10 @@ public class RestResources extends RestBase {
                                 @Encoded @QueryParam("typeId") String resourceTypeId,
                                          @Context UriInfo uriInfo) {
 
-        List<Resource> ret = getRecursiveChildren(environmentId, null, resourcePath, resourceTypeId, true);
-        return Response.ok(ret).build();
+        Page<Resource> rs = getRecursiveChildren(environmentId, null, resourcePath, resourceTypeId, true,
+                extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
 
@@ -644,43 +644,32 @@ public class RestResources extends RestBase {
     public Response getRecursiveChildren(@PathParam("feedId") String feedId,
                                          @Encoded @PathParam("resourcePath") String resourcePath,
                                          @Encoded @QueryParam("typeId") String resourceTypeId,
-                                         @QueryParam("feedlessType") @DefaultValue("false") boolean feedlesType,
+                                         @QueryParam("feedlessType") @DefaultValue("false") boolean feedlessType,
                                          @Context UriInfo uriInfo) {
 
-        List<Resource> ret = getRecursiveChildren(null, feedId, resourcePath, resourceTypeId, feedlesType);
-        return Response.ok(ret).build();
+        Page<Resource> rs = getRecursiveChildren(null, feedId, resourcePath, resourceTypeId, feedlessType,
+                extractPaging(uriInfo));
+
+        return pagedResponse(Response.ok(), uriInfo, rs).build();
     }
 
-    private List<Resource> getRecursiveChildren(String environmentId, String feedId, String resourcePath,
-                                                String resourceTypeId, boolean feedlessType) {
+    private Page<Resource> getRecursiveChildren(String environmentId, String feedId, String
+            resourcePath, String resourceTypeId, boolean feedlessResourceType, Pager pager) {
+
         String tenantId = getTenantId();
         CanonicalPath parent = composeCanonicalPath(tenantId, environmentId, feedId, resourcePath);
 
-        ResourceType resourceType = null;
-        if (null != resourceTypeId) {
-            CanonicalPath resourceTypeCanPath = feedlessType
+        Filter[][] resourceFilter = new Filter[0][];
+
+        if (resourceTypeId != null) {
+            CanonicalPath resourceTypePath = feedlessResourceType
                     ? CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get()
                     : CanonicalPath.of().tenant(tenantId).feed(feedId).resourceType(resourceTypeId).get();
-            resourceType =  inventory.inspect(resourceTypeCanPath, ResourceTypes.Single.class).entity();
+
+            resourceFilter = new Filter[][]{{Related.asTargetBy(defines), With.path(resourceTypePath)}};
         }
 
-        Iterator<Resource> itResources = inventory.getTransitiveClosureOver(parent,
-                Relationships.Direction.outgoing, Resource.class, Relationships.WellKnown.isParentOf.name());
-
-        return filterResources(itResources, resourceType);
-    }
-
-
-    private List<Resource> filterResources(Iterator<Resource> itResources, ResourceType resourceType) {
-        List<Resource> ret = new ArrayList<>();
-
-        while (itResources.hasNext()) {
-            Resource resource = itResources.next();
-            if (null != resourceType && !resource.getType().getPath().equals(resourceType.getPath())) {
-                continue;
-            }
-            ret.add(resource);
-        }
-        return ret;
+        return inventory.inspect(parent, Resources.Single.class).recursiveResources().getAll(resourceFilter)
+                .entities(pager);
     }
 }
