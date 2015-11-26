@@ -98,9 +98,9 @@ public final class BaseEnvironments {
 
                             //out to direct metrics and also metrics of child resources
                             extender.path().with(new Filter[][]{
-                                    {by(incorporates), type(Metric.class)},
-                                    {RecurseFilter.builder().addChain(by(isParentOf), type(Resource.class)).build(),
-                                        by(incorporates), type(Metric.class)}});
+                                    {by(contains), type(Metric.class)},
+                                    {RecurseFilter.builder().addChain(by(contains), type(Resource.class)).build(),
+                                        by(contains), type(Metric.class)}});
                             break;
                         default:
                             throw new AssertionError("Unhandled type of metric parent under environment.");

@@ -18,7 +18,6 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
@@ -229,7 +228,7 @@ public final class BaseFeeds {
                             break;
                         case RESOURCE:
                             extender.path().with(by(contains), type(Resource.class), RecurseFilter.builder()
-                                    .addChain(by(isParentOf), type(Resource.class)).build());
+                                    .addChain(by(contains), type(Resource.class)).build());
                             break;
                         default:
                             throw new AssertionError("Unhandled type of resource parent under feed.");
@@ -250,10 +249,10 @@ public final class BaseFeeds {
                             extender.path().with(new Filter[][]{
                                     {by(contains), type(Resource.class)},
                                     {by(contains), type(Resource.class), RecurseFilter.builder().addChain(
-                                            by(isParentOf), type(Resource.class)).build()}});
+                                            by(contains), type(Resource.class)).build()}});
 
                             //and from the resources, go to the metrics
-                            extender.path().with(by(incorporates), type(Metric.class));
+                            extender.path().with(by(contains), type(Metric.class));
                             break;
                         default:
                             throw new AssertionError("Unhandled type of resource parent under feed.");

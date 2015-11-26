@@ -242,7 +242,7 @@ public final class BaseResources {
 
         @Override
         public Resources.Read recursiveResources() {
-            return new Read<>(context.proceed().hop(RecurseFilter.builder().addChain(Related.by(isParentOf), With
+            return new Read<>(context.proceed().hop(RecurseFilter.builder().addChain(Related.by(contains), With
                     .type(Resource.class)).build()).get());
         }
 

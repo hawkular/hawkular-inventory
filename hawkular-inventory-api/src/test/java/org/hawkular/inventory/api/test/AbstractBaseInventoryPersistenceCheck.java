@@ -2653,8 +2653,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
                 .metricsUnder(Environments.MetricParents.RESOURCE).getAll().entities();
-        Assert.assertEquals(2, ms.size());
-        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("host1_ping_response")));
+        Assert.assertEquals(1, ms.size());
         Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
 
         ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
