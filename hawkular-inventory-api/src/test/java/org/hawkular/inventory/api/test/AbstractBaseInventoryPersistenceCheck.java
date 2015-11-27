@@ -441,7 +441,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricTypes().create(
                 MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("feed1-metricType").withUnit(MetricUnit.NONE)
-                .build()).entity().getId().equals("feed1-metricType");
+                .withInterval(0L).build()).entity().getId().equals("feed1-metricType");
 
         assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resources().get("feedResource1")
                 .resources().create(Resource.Blueprint.builder().withId("feedChildResource").withResourceTypePath
