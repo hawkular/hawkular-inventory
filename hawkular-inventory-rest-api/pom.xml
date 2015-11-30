@@ -31,6 +31,10 @@
 
   <name>Hawkular Inventory REST API Web Application</name>
 
+  <properties>
+    <version.org.hawkular.commons>0.2.4.Final</version.org.hawkular.commons>
+  </properties>
+
   <scm>
     <url>https://github.com/hawkular/hawkular-inventory</url>
     <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
@@ -105,6 +109,12 @@
       <groupId>org.hawkular.accounts</groupId>
       <artifactId>hawkular-accounts-api</artifactId>
       <version>${version.org.hawkular.accounts}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-rest-status</artifactId>
+      <version>${version.org.hawkular.commons}</version>
     </dependency>
 
     <dependency>
