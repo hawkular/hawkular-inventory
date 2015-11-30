@@ -73,7 +73,13 @@ public final class RelationshipRules {
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
-                RelationshipRules::disallowDeleteOfIsParentOfWhenTheresContainsToo));
+                (b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(b, o, d, r, t, "This would mean that a" +
+                        " sub-resource would no longer be considered a child of the parent resource, which doesn't " +
+                        " make  sense.")));
+        DELETE_RULES.put(incorporates, Collections.singletonList(
+                (b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(b, o, d, r, t, "When an entity is contained" +
+                        " within another, it implies it is also incorporated. It would be illegal to delete only the" +
+                        " 'incorporates' relationship.")));
         DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(incorporates, Collections.singletonList(RelationshipRules::disallowWhenMetadataPackIsSource));
     }
@@ -194,13 +200,12 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowDeleteOfIsParentOfWhenTheresContainsToo(InventoryBackend<E> backend, E origin,
-            Relationships.Direction direction, String relationship, E target) {
+    private static <E> void disallowDeleteWhenTheresContainsToo(InventoryBackend<E> backend, E origin,
+                                                                Relationships.Direction direction, String relationship,
+                                                                E target, String errorDetails) {
         if (backend.hasRelationship(origin, target, contains.name())) {
             throw new IllegalArgumentException("'" + relationship + "' relationship cannot be deleted if there is" +
-                    " also a '" + contains + "' relationship between the same two entities. This would mean that a" +
-                    " sub-resource would no longer be considered a child of the parent resource, which doesn't make" +
-                    " sense.");
+                    " also a '" + contains + "' relationship between the same two entities. " + errorDetails);
         }
     }
 

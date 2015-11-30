@@ -432,18 +432,12 @@ class InventoryITest extends AbstractTestBase {
                 body: data)
         assertEquals(201, response.status)
 
-        /* add a config data to a child resource, no need to clean up, it'll be deleted together with the resources */
-//        def simpleData = [
-//            value: [
-//                a: 1,
-//                b: "abc",
-//                c: true
-//            ],
-//            role : "connectionConfiguration"
-//        ]
-//        response = client.post(path: "$basePath/$environmentId/resources/$room1ResourceId%2Ftable/data",
-//            body: simpleData)
-//        assertEquals(201, response.status)
+        //add resource-owner metric
+        response = postDeletable(path: "$environmentId/resources/$host2ResourceId/metrics",
+                body: [id: "resource-owned-metric", metricTypePath: "/" + responseTimeMTypeId])
+        assertEquals(201, response.status)
+        assertEquals(baseURI + "$basePath/$environmentId/resources/$host2ResourceId/metrics/resource-owned-metric",
+                response.headers.Location)
     }
 
     @AfterClass
@@ -589,7 +583,9 @@ class InventoryITest extends AbstractTestBase {
         assertEntityExists("$environmentId/metrics/$responseStatusCodeMetricId",
                 "/e;$environmentId/m;$responseStatusCodeMetricId".toString())
         assertEntitiesExist("$environmentId/metrics", ["/e;$environmentId/m;$responseTimeMetricId".toString(),
-                                                       "/e;$environmentId/m;$responseStatusCodeMetricId".toString()])
+                                                       "/e;$environmentId/m;$responseStatusCodeMetricId".toString(),
+                                                       "/e;$environmentId/r;$host2ResourceId/m;resource-owned-metric"
+                                                               .toString()])
     }
 
     @Test
