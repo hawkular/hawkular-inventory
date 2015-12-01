@@ -80,5 +80,11 @@ public final class Feeds {
          * @return the access interface to the newly created feed
          */
         Single create(Feed.Blueprint blueprint);
+
+        /**
+         * Synchronizes the inventory of the feed to conform to the provided sync object.
+         * @param sync
+         */
+        void sync(Feed.Sync sync);
     }
 }

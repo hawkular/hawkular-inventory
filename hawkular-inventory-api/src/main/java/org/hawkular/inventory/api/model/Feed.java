@@ -16,10 +16,15 @@
  */
 package org.hawkular.inventory.api.model;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.jboss.logging.processor.util.Objects;
 
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
@@ -30,7 +35,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * by a {@code String}.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.1.0
  */
 @XmlRootElement
 public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
@@ -147,6 +152,161 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
             @Override
             public Update build() {
                 return new Update(name, properties);
+            }
+        }
+    }
+
+    public static final class Sync {
+        private final RelativePath root;
+        private final Node tree;
+
+        public static Sync of(RelativePath metricPath, Metric.Blueprint metric) {
+            Objects.checkNonNull(metricPath, "metricPath == null");
+            Objects.checkNonNull(metric, "metric == null");
+            checkRootEquivalence(metric, metricPath);
+
+            return new Sync(metricPath, new Node(Collections.emptySet(), metric));
+        }
+
+        public static Builder of(RelativePath resourcePath, Resource.Blueprint resource) {
+            Objects.checkNonNull(resourcePath, "resourcePath == null");
+            Objects.checkNonNull(resource, "resource == null");
+            checkRootEquivalence(resource, resourcePath);
+
+            return new Builder(resourcePath, resource);
+        }
+
+        /**
+         * Required for jackson (de)ser.
+         */
+        @SuppressWarnings("unused")
+        private Sync() {
+            root = null;
+            tree = null;
+        }
+
+        private Sync(RelativePath root, Node tree) {
+            this.root = root;
+            this.tree = tree;
+        }
+
+        public RelativePath getRoot() {
+            return root;
+        }
+
+        public Node getTree() {
+            return tree;
+        }
+
+
+        private static void checkRootEquivalence(Entity.Blueprint data, RelativePath root) {
+            if (root.isDefined()) {
+                Class<?> expectedRootType = data instanceof Resource.Blueprint ? Resource.class : Metric.class;
+                if (!(root.getSegment().getElementId().equals(data.getId()) && root.getSegment().getElementType()
+                        .equals(expectedRootType))) {
+                    throw new IllegalArgumentException("Provided root blueprint tries to define an entity with " +
+                            "different ID than specified by the root path.");
+                }
+            }
+        }
+
+        public static final class Node {
+            private final Entity.Blueprint data;
+            private final Set<Node> children;
+
+            /**
+             * Required for jackson (de)ser.
+             */
+            @SuppressWarnings("unused")
+            private Node() {
+                data = null;
+                children = null;
+            }
+
+            private Node(Set<Node> children, Entity.Blueprint data) {
+                this.children = children;
+                this.data = data;
+            }
+
+            public Set<Node> getChildren() {
+                return children;
+            }
+
+            public Entity.Blueprint getData() {
+                return data;
+            }
+
+            public static final class Builder<Parent extends ResourceNodeBuilder> extends ResourceNodeBuilder {
+                private final Entity.Blueprint data;
+                private Set<Node> children = new LinkedHashSet<>();
+                private final Parent parentBuilder;
+
+                public Builder(Entity.Blueprint data, Parent parentBuilder) {
+                    this.data = data;
+                    this.parentBuilder = parentBuilder;
+                }
+
+
+                public Builder<Parent> addChild(Resource.Blueprint childResource) {
+                    addNode(new Node(Collections.emptySet(), childResource));
+                    return this;
+                }
+
+                public Builder<Parent> addChild(Metric.Blueprint childMetric) {
+                    addNode(new Node(Collections.emptySet(), childMetric));
+                    return this;
+                }
+
+                public Builder<Builder<Parent>> startChildResource(Resource.Blueprint childResource) {
+                    return new Builder<>(childResource, this);
+                }
+
+                public Parent end() {
+                    parentBuilder.addNode(new Node(children, data));
+                    return parentBuilder;
+                }
+
+                @Override
+                protected void addNode(Node node) {
+                    children.add(node);
+                }
+            }
+        }
+
+        private static abstract class ResourceNodeBuilder {
+            protected abstract void addNode(Node node);
+        }
+
+        public static final class Builder extends ResourceNodeBuilder {
+            private final RelativePath root;
+            private final Node.Builder<Builder> rootBuilder;
+
+            private Builder(RelativePath root, Entity.Blueprint data) {
+                this.root = root;
+                this.rootBuilder = new Node.Builder<>(data, this);
+            }
+
+            public Builder addChild(Resource.Blueprint childResource) {
+                rootBuilder.addChild(childResource);
+                return this;
+            }
+
+            public Builder addChild(Metric.Blueprint childMetric) {
+                rootBuilder.addChild(childMetric);
+                return this;
+            }
+
+            public Node.Builder<Node.Builder<Builder>> startResource(Resource.Blueprint childResource) {
+                return rootBuilder.startChildResource(childResource);
+            }
+
+            public Sync build() {
+                return new Sync(root, new Node(rootBuilder.children, rootBuilder.data));
+            }
+
+            @Override
+            protected void addNode(Node node) {
+                rootBuilder.children.add(node);
             }
         }
     }
