@@ -44,7 +44,7 @@ import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 @Singleton
 public class OfficialInventoryProducer {
 
-    private static final Configuration.Property IMPL_PROPERTY = Configuration.Property.builder()
+    public static final Configuration.Property IMPL_PROPERTY = Configuration.Property.builder()
             .withPropertyNameAndSystemProperty("hawkular.inventory.impl")
             .withEnvironmentVariables("HAWKULAR_INVENTORY_IMPL").build();
 
