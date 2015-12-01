@@ -23,6 +23,7 @@ import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -76,7 +77,7 @@ public class RestPath extends RestBase {
             @ApiResponse(code = 404, message = "The entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response get(@PathParam("entityPath") String entityPath, @Context UriInfo uriInfo) {
+    public Response get(@Encoded @PathParam("entityPath") String entityPath, @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
@@ -97,7 +98,7 @@ public class RestPath extends RestBase {
                           @ApiResponse(code = 404, message = "The entity doesn't exist", response = ApiError.class),
                           @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
-    public Response getRelationships(@PathParam("entityPath") String entityPath,
+    public Response getRelationships(@Encoded @PathParam("entityPath") String entityPath,
                                      @DefaultValue("both") @QueryParam("direction") String direction,
                                      @DefaultValue("") @QueryParam("property") String propertyName,
                                      @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
