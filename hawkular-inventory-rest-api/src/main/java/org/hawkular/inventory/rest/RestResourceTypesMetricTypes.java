@@ -26,6 +26,7 @@ import java.util.Collection;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -120,7 +121,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public MetricType getAssociatedMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-                                              @PathParam("metricTypePath") String metricTypePath,
+                                              @Encoded @PathParam("metricTypePath") String metricTypePath,
                                               @QueryParam("canonical") @DefaultValue("false")
                                               @ApiParam("True if metric type path should be considered canonical," +
                                                       " false by default.")
@@ -165,7 +166,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response disassociateMetricType(@PathParam("resourceTypeId") String resourceTypeId,
-                                           @PathParam("metricTypePath") String metricTypePath,
+                                           @Encoded @PathParam("metricTypePath") String metricTypePath,
                                            @QueryParam("canonical") @DefaultValue("false")
                                            @ApiParam("True if metric path should be considered canonical, false by" +
                                                    " default.")
@@ -252,7 +253,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
     })
     public MetricType getAssociatedMetricType(@PathParam("feedId") String feedId,
                                               @PathParam("resourceTypeId") String resourceTypeId,
-                                              @PathParam("metricTypePath") String metricTypePath,
+                                              @Encoded @PathParam("metricTypePath") String metricTypePath,
                                               @QueryParam("canonical") @DefaultValue("false")
                                               @ApiParam("True if metric type path should be considered canonical," +
                                                       " false by default.")
@@ -299,7 +300,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
     })
     public Response disassociateMetricType(@PathParam("feedId") String feedId,
                                            @PathParam("resourceTypeId") String resourceTypeId,
-                                           @PathParam("metricTypePath") String metricTypePath,
+                                           @Encoded @PathParam("metricTypePath") String metricTypePath,
                                            @QueryParam("canonical") @DefaultValue("false")
                                            @ApiParam("True if metric path should be considered canonical, false by" +
                                                    " default.")
