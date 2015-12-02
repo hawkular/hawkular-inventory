@@ -23,15 +23,11 @@ import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Tenant;
@@ -68,29 +64,6 @@ public class RestTenants extends RestBase {
     public Response getTenant() {
         String tenantId = getTenantId();
         return Response.ok(inventory.tenants().get(tenantId).entity()).build();
-    }
-
-    @GET
-    @Path("/relationships")
-    @ApiOperation("Retrieves tenant's relationships")
-    @ApiResponses({
-                          @ApiResponse(code = 200, message = "OK"),
-                          @ApiResponse(code = 401, message = "Unauthorized access"),
-                          @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
-    public Response getTenantRelationships(@DefaultValue("both") @QueryParam("direction") String direction,
-                                           @DefaultValue("") @QueryParam("property") String propertyName,
-                                           @DefaultValue("") @QueryParam("propertyValue") String propertyValue,
-                                           @DefaultValue("") @QueryParam("named") String named,
-                                           @DefaultValue("") @QueryParam("sourceType") String sourceType,
-                                           @DefaultValue("") @QueryParam("targetType") String targetType,
-                                           @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
-                                           @Context UriInfo uriInfo) {
-        // this needs to be handled here and delegated to the right place, because RestEasy puts higher priority in
-        // it's method matcher if there is a class annotated with a prefix of the request URL
-        return restRelationships.get("tenant", direction, propertyName, propertyValue, named, sourceType, targetType,
-                jsonLd, uriInfo);
     }
 
     @PUT

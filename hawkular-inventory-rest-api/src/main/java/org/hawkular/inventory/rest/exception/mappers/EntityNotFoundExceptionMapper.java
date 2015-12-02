@@ -37,6 +37,7 @@ public class EntityNotFoundExceptionMapper implements ExceptionMapper<EntityNotF
     @Override
     public Response toResponse(EntityNotFoundException exception) {
         return ExceptionMapperUtils.buildResponse(Logger.Level.DEBUG, new ApiError(exception.getMessage(),
-            ExceptionMapperUtils.EntityTypeAndPath.fromException(exception)), exception, NOT_FOUND);
+                exception.getFilters() == null || exception.getEntityType() == null ? "entity not found" :
+                        ExceptionMapperUtils.EntityTypeAndPath.fromException(exception)), exception, NOT_FOUND);
     }
 }
