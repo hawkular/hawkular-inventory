@@ -117,7 +117,7 @@ public final class Configuration {
     public enum Property {
         CONNECTION_FACTORY_JNDI_NAME("java:/HawkularBusConnectionFactory",
                 "hawkular.inventory.bus.connectionFactoryJndiName"),
-        INVENTORY_CHANGES_TOPIC_NAME("java:/topic/HawkularInventoryChanges",
+        INVENTORY_CHANGES_TOPIC_NAME("HawkularInventoryChanges",
                 "hawkular.inventory.bus.inventoryChangesTopicName");
 
         private final String defaultValue;
