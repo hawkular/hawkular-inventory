@@ -106,7 +106,8 @@ public class RestEnvironmentsFeeds extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getAssociatedFeeds(@PathParam("environmentId") String environmentId, @Context UriInfo uriInfo) {
-        Page<Feed> ms = inventory.tenants().get(getTenantId()).feeds().getAll().entities(extractPaging(uriInfo));
+        Page<Feed> ms = inventory.tenants().get(getTenantId()).environments().get(environmentId).feeds().getAll()
+                .entities(extractPaging(uriInfo));
         return pagedResponse(Response.ok(), uriInfo, ms).build();
     }
 
