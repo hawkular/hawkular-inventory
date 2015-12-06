@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.RecurseFilter;
 
 /**
  * @author Lukas Krejci
@@ -220,18 +221,29 @@ public final class BaseResources {
         }
 
         @Override
-        public Metrics.ReadAssociate metrics() {
+        public Metrics.ReadWrite metrics() {
+            return new BaseMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
+        }
+
+        @Override
+        public Metrics.ReadAssociate allMetrics() {
             return new BaseMetrics.ReadAssociate<>(context.proceedTo(incorporates, Metric.class).get());
         }
 
         @Override
-        public Resources.ReadAssociate allChildren() {
+        public Resources.ReadAssociate allResources() {
             return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
         }
 
         @Override
-        public Resources.ReadWrite containedChildren() {
+        public Resources.ReadWrite resources() {
             return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+        }
+
+        @Override
+        public Resources.Read recursiveResources() {
+            return new Read<>(context.proceed().hop(RecurseFilter.builder().addChain(Related.by(contains), With
+                    .type(Resource.class)).build()).get());
         }
 
         @Override
@@ -260,16 +272,27 @@ public final class BaseResources {
 
         @Override
         public Metrics.Read metrics() {
+            return new BaseMetrics.Read<>(context.proceedTo(contains, Metric.class).get());
+        }
+
+        @Override
+        public Metrics.Read allMetrics() {
             return new BaseMetrics.Read<>(context.proceedTo(incorporates, Metric.class).get());
         }
 
         @Override
-        public Resources.ReadAssociate allChildren() {
+        public Resources.Read allResources() {
             return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
         }
 
         @Override
-        public Resources.ReadWrite containedChildren() {
+        public Resources.Read recursiveResources() {
+            return new Read<>(context.proceed().hop(RecurseFilter.builder().addChain(Related.by(isParentOf), With
+                    .type(Resource.class)).build()).get());
+        }
+
+        @Override
+        public Resources.ReadWrite resources() {
             return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
         }
 

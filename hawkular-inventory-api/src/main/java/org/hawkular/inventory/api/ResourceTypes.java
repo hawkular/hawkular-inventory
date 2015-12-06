@@ -95,7 +95,7 @@ public final class ResourceTypes {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<ResourceType>,
-            BrowserBase<Resources.Read, MetricTypes.ReadContained, OperationTypes.ReadContained, Data.Read<DataRole>> {
+            BrowserBase<Resources.Read, MetricTypes.Read, OperationTypes.ReadContained, Data.Read<DataRole>> {
     }
 
     /**

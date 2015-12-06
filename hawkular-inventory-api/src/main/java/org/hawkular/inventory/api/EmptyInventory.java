@@ -194,28 +194,28 @@ public class EmptyInventory implements Inventory {
     public static class TenantsMultiple implements Tenants.Multiple {
 
         @Override
-        public ResourceTypes.ReadContained feedlessResourceTypes() {
+        public ResourceTypes.ReadContained resourceTypes() {
             return new ResourceTypesReadContained();
         }
 
         @Override
-        public MetricTypes.ReadContained feedlessMetricTypes() {
+        public ResourceTypes.Read resourceTypesUnder(Tenants.ResourceTypeParents... parents) {
+            return new ResourceTypesRead();
+        }
+
+        @Override
+        public MetricTypes.ReadContained metricTypes() {
             return new MetricTypesReadContained();
+        }
+
+        @Override
+        public MetricTypes.Read metricTypesUnder(Tenants.MetricTypeParents... parents) {
+            return new MetricTypesRead();
         }
 
         @Override
         public Environments.ReadContained environments() {
             return new EnvironmentsReadContained();
-        }
-
-        @Override
-        public MetricTypes.Read allMetricTypes() {
-            return new MetricTypesRead();
-        }
-
-        @Override
-        public ResourceTypes.Read allResourceTypes() {
-            return new ResourceTypesRead();
         }
 
         @Override
@@ -251,12 +251,12 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResourceTypes.ReadWrite feedlessResourceTypes() {
+        public ResourceTypes.ReadWrite resourceTypes() {
             return new ResourceTypesReadWrite();
         }
 
         @Override
-        public MetricTypes.ReadWrite feedlessMetricTypes() {
+        public MetricTypes.ReadWrite metricTypes() {
             return new MetricTypesReadWrite();
         }
 
@@ -266,12 +266,12 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Read allMetricTypes() {
+        public MetricTypes.Read metricTypesUnder(Tenants.MetricTypeParents... parents) {
             return new MetricTypesRead();
         }
 
         @Override
-        public ResourceTypes.Read allResourceTypes() {
+        public ResourceTypes.Read resourceTypesUnder(Tenants.ResourceTypeParents... parents) {
             return new ResourceTypesRead();
         }
 
@@ -395,8 +395,8 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.ReadContained metricTypes() {
-            return new MetricTypesReadContained();
+        public MetricTypes.Read metricTypes() {
+            return new MetricTypesRead();
         }
 
         @Override
@@ -625,22 +625,22 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.ReadWrite feedlessResources() {
+        public Resources.ReadWrite resources() {
             return new ResourcesReadWrite();
         }
 
         @Override
-        public Metrics.ReadWrite feedlessMetrics() {
-            return new MetricsReadWrite();
-        }
-
-        @Override
-        public Resources.Read allResources() {
+        public Resources.Read resourcesUnder(Environments.ResourceParents... parents) {
             return new ResourcesRead();
         }
 
         @Override
-        public Metrics.Read allMetrics() {
+        public Metrics.ReadWrite metrics() {
+            return new MetricsReadWrite();
+        }
+
+        @Override
+        public Metrics.Read metricsUnder(Environments.MetricParents... parents) {
             return new MetricsRead();
         }
 
@@ -668,22 +668,23 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.ReadContained feedlessResources() {
+        public Resources.ReadContained resources() {
             return new ResourcesReadContained();
         }
 
         @Override
-        public Metrics.ReadContained feedlessMetrics() {
+        public Metrics.ReadContained metrics() {
             return new MetricsReadContained();
         }
 
+
         @Override
-        public Resources.Read allResources() {
+        public Resources.Read resourcesUnder(Environments.ResourceParents... parents) {
             return new ResourcesRead();
         }
 
         @Override
-        public Metrics.Read allMetrics() {
+        public Metrics.Read metricsUnder(Environments.MetricParents... parents) {
             return new MetricsRead();
         }
 
@@ -921,8 +922,18 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public Resources.Read resourcesUnder(Feeds.ResourceParents... parents) {
+            return new ResourcesRead();
+        }
+
+        @Override
         public Metrics.ReadWrite metrics() {
             return new MetricsReadWrite();
+        }
+
+        @Override
+        public Metrics.Read metricsUnder(Feeds.MetricParents... parents) {
+            return new MetricsRead();
         }
 
         @Override
@@ -954,8 +965,18 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
+        public Resources.Read resourcesUnder(Feeds.ResourceParents... parents) {
+            return new ResourcesRead();
+        }
+
+        @Override
         public Metrics.ReadContained metrics() {
             return new MetricsReadContained();
+        }
+
+        @Override
+        public Metrics.Read metricsUnder(Feeds.MetricParents... parents) {
+            return new MetricsRead();
         }
 
         @Override
@@ -1163,19 +1184,28 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.ReadAssociate metrics() {
+        public Metrics.ReadWrite metrics() {
+            return new MetricsReadWrite();
+        }
+
+        @Override
+        public Metrics.ReadAssociate allMetrics() {
             return new MetricsReadAssociate();
         }
 
+        @Override
+        public Resources.ReadWrite resources() {
+            return new ResourcesReadWrite();
+        }
 
         @Override
-        public Resources.ReadAssociate allChildren() {
+        public Resources.ReadAssociate allResources() {
             return new ResourcesReadAssociate();
         }
 
         @Override
-        public Resources.ReadWrite containedChildren() {
-            return new ResourcesReadWrite();
+        public Resources.Read recursiveResources() {
+            return new ResourcesRead();
         }
 
         @Override
@@ -1213,13 +1243,23 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.ReadAssociate allChildren() {
+        public Metrics.Read allMetrics() {
+            return new MetricsRead();
+        }
+
+        @Override
+        public Resources.ReadAssociate allResources() {
             return new ResourcesReadAssociate();
         }
 
         @Override
-        public Resources.ReadWrite containedChildren() {
+        public Resources.ReadWrite resources() {
             return new ResourcesReadWrite();
+        }
+
+        @Override
+        public Resources.Read recursiveResources() {
+            return new ResourcesRead();
         }
 
         @Override

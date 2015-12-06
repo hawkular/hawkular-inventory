@@ -69,6 +69,7 @@ import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
+import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
@@ -170,23 +171,23 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .entity().getId().equals("com.acme.tenant");
         assert inventory.tenants().get("com.acme.tenant").environments().create(new Environment.Blueprint("production"))
                 .entity().getId().equals("production");
-        assert inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+        assert inventory.tenants().get("com.acme.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("URL")).entity().getId().equals("URL");
-        assert inventory.tenants().get("com.acme.tenant").feedlessMetricTypes()
-                .create(new MetricType.Blueprint("ResponseTime", MetricUnit.MILLISECONDS, MetricDataType.COUNTER, 0L))
-                .entity().getId().equals("ResponseTime");
+        assert inventory.tenants().get("com.acme.tenant").metricTypes()
+                .create(new MetricType.Blueprint("ResponseTime",
+                     MetricUnit.MILLISECONDS, MetricDataType.COUNTER, 0L)).entity().getId().equals("ResponseTime");
 
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("URL").metricTypes()
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL").metricTypes()
                 .associate(CanonicalPath.of().tenant("com.acme.tenant").metricType("ResponseTime").get());
 
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessMetrics()
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").metrics()
                 .create(new Metric.Blueprint("/ResponseTime", "host1_ping_response")).entity().getId()
                 .equals("host1_ping_response");
-        assert inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
+        assert inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                 .create(new Resource.Blueprint("host1", "/URL")).entity()
                 .getId().equals("host1");
-        inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
-                .get("host1").metrics().associate(RelativePath.fromString("../m;host1_ping_response"));
+        inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("host1").allMetrics().associate(RelativePath.fromString("../m;host1_ping_response"));
 
         assert inventory.tenants().get("com.acme.tenant").feeds()
                 .create(new Feed.Blueprint("feed1", null)).entity().getId().equals("feed1");
@@ -213,60 +214,60 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .equals("com.example.tenant");
         assert inventory.tenants().get("com.example.tenant").environments().create(new Environment.Blueprint("test"))
                 .entity().getId().equals("test");
-        assert inventory.tenants().get("com.example.tenant").feedlessResourceTypes()
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("Kachna")).entity().getId().equals("Kachna");
-        assert inventory.tenants().get("com.example.tenant").feedlessResourceTypes()
+        assert inventory.tenants().get("com.example.tenant").resourceTypes()
                 .create(new ResourceType.Blueprint("Playroom", new HashMap<String, Object>() {{
                     put("ownedByDepartment", "Facilities");
                 }})).entity().getId().equals("Playroom");
-        assert inventory.tenants().get("com.example.tenant").feedlessMetricTypes()
+        assert inventory.tenants().get("com.example.tenant").metricTypes()
                 .create(new MetricType.Blueprint("Size", MetricUnit.BYTES, MetricDataType.COUNTER, 0L))
                     .entity().getId().equals("Size");
-        inventory.tenants().get("com.example.tenant").feedlessResourceTypes().get("Playroom").metricTypes()
+        inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").metricTypes()
                 .associate(RelativePath.to().up().metricType("Size").get());
 
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint("/Size", "playroom1_size")).entity().getId().equals("playroom1_size");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .create(new Metric.Blueprint("/Size", "playroom2_size")).entity().getId().equals("playroom2_size");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .create(new Resource.Blueprint("playroom1", "/Playroom")).entity().getId()
                 .equals("playroom1");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
                 .create(new Resource.Blueprint("playroom2", "/Playroom")).entity().getId()
                 .equals("playroom2");
 
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").metrics().associate(RelativePath.to().up().metric("playroom1_size").get());
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().associate(CanonicalPath.of().tenant("com.example.tenant")
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom1").allMetrics().associate(RelativePath.to().up().metric("playroom1_size").get());
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").allMetrics().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").metric("playroom2_size").get());
 
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom1").resources()
                 .create(new Resource.Blueprint("playroom1.1", "/Playroom")).entity().getId()
                 .equals("playroom1.1");
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").containedChildren()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom1").resources()
                 .create(new Resource.Blueprint("playroom1.2", "/Playroom")).entity().getId()
                 .equals("playroom1.2");
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom1").allChildren().associate(CanonicalPath.of().tenant("com.example.tenant")
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom1").allResources().associate(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").resource("playroom2").get());
-        assert inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").containedChildren()
+        assert inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").resources()
                 .create(new Resource.Blueprint("playroom2.1", "/Playroom")).entity().getId()
                 .equals("playroom2.1");
 
         // some ad-hoc relationships
         Environment test = inventory.tenants().get("com.example.tenant").environments().get("test").entity();
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get(CanonicalPath.of().tenant("com.example.tenant")
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").allMetrics().get(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").metric("playroom2_size").get()).relationships(outgoing)
                 .linkWith("yourMom", CanonicalPath.of().tenant("com.example.tenant").environment("test").get(), null);
 
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessResources()
-                .get("playroom2").metrics().get(CanonicalPath.of().tenant("com.example.tenant")
+        inventory.tenants().get("com.example.tenant").environments().get("test").resources()
+                .get("playroom2").allMetrics().get(CanonicalPath.of().tenant("com.example.tenant")
                 .environment("test").metric("playroom2_size").get()).relationships(incoming)
                 .linkWith("IamYourFather", CanonicalPath.of().tenant("com.example.tenant").environment("test").get(),
                         new HashMap<String, Object>() {{
@@ -332,11 +333,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 .build();
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom1").data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
+                .resources().get("playroom1").data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
         //create some config definitions...
-        ResourceTypes.Single personType = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+        ResourceTypes.Single personType = inventory.tenants().get("com.acme.tenant").resourceTypes()
                 .create(ResourceType.Blueprint.builder().withId("Person").build());
 
         personType.data().create(DataEntity.Blueprint
@@ -386,42 +387,65 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         //now create some resources with configs
         Resources.Single people = inventory.tenants().get("com.acme.tenant").environments().get("production")
-                .feedlessResources()
+                .resources()
                 .create(Resource.Blueprint.builder().withId("people").withResourceTypePath("/Person").build());
 
-        people.containedChildren().create(Resource.Blueprint.builder().withId("Alois").withResourceTypePath("/Person")
+        people.resources().create(Resource.Blueprint.builder().withId("Alois").withResourceTypePath("/Person")
                 .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
                 .withValue(StructuredData.get().map().putString("firstName", "Alois").putString("lastName", "Jirasek")
                         .build()).build());
 
-        people.containedChildren().create(Resource.Blueprint.builder().withId("Hynek").withResourceTypePath("/Person")
+        people.resources().create(Resource.Blueprint.builder().withId("Hynek").withResourceTypePath("/Person")
                 .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
                 .withValue(StructuredData.get().map().putString("firstName", "Hynek").putString("lastName", "Macha")
                         .build()).build());
+        people.resources().get("Hynek").resources().create(Resource.Blueprint.builder().withResourceTypePath("/Person")
+                .withId("Vilem").build());
+        people.resources().get("Hynek").resources().create(Resource.Blueprint.builder().withResourceTypePath("/Person")
+                .withId("Jarmila").build());
 
         //create a metadata pack
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+        inventory.tenants().get("com.acme.tenant").resourceTypes().create(ResourceType.Blueprint.builder()
                 .withId("mpRt").withName("Resource Type in a metadata pack").build());
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").data().create(
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").data().create(
                 DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
                         .withRole(ResourceTypes.DataRole.configurationSchema)
                         .withValue(StructuredData.get().map().putString("title", "mpRtCs").putString("type",
                                 "string").build()).build());
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").operationTypes().create(
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").operationTypes().create(
                 OperationType.Blueprint.builder().withId("mpRtOt").build());
 
-        inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").operationTypes().get("mpRtOt")
+        inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").operationTypes().get("mpRtOt")
                 .data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder().withRole(returnType)
                 .withValue(StructuredData.get().map().putString("title", "mpRtOtRet")
                         .putString("type", "string").build()).build());
 
-        inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().create(
+        inventory.tenants().get("com.acme.tenant").metricTypes().create(
                 MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("mpMt").withUnit(MetricUnit.NONE)
                         .withInterval(0L).build());
 
         inventory.tenants().get("com.acme.tenant").metadataPacks().create(MetadataPack.Blueprint.builder()
                 .withMembers(CanonicalPath.fromString("/t;com.acme.tenant/rt;mpRt"),
                         CanonicalPath.fromString("/t;com.acme.tenant/mt;mpMt")).build());
+
+        //resource-owned metrics
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
+                .resources().get("feedResource3").metrics().create(Metric.Blueprint.builder()
+                        .withId("feedResource3-metric").withMetricTypePath("/ResponseTime").build()).entity().getId()
+                .equals("feedResource3-metric");
+
+        //feed-owned resource types and metric types
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resourceTypes().create(
+                ResourceType.Blueprint.builder().withId("feed1-resourceType").build()).entity().getId()
+                .equals("feed1-resourceType");
+
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricTypes().create(
+                MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("feed1-metricType").withUnit(MetricUnit.NONE)
+                .withInterval(0L).build()).entity().getId().equals("feed1-metricType");
+
+        assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resources().get("feedResource1")
+                .resources().create(Resource.Blueprint.builder().withId("feedChildResource").withResourceTypePath
+                        ("/URL").build()).entity().getId().equals("feedChildResource");
     }
 
     private void teardownData() throws Exception {
@@ -440,9 +464,9 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         //when an association is deleted, it should not be possible to access the target entity through the same
         //traversal again
-        inventory.inspect(playroom2).metrics().disassociate(playroom2Size.getPath());
-        Assert.assertFalse(inventory.inspect(playroom2).metrics().get(playroom2Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom2).metrics().get(
+        inventory.inspect(playroom2).allMetrics().disassociate(playroom2Size.getPath());
+        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(playroom2Size.getPath()).exists());
+        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(
                 RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
 
         inventory.inspect(playroom2Size).delete();
@@ -451,38 +475,39 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         assertExists(t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
 
         //disassociation using a relative path should work, too
-        inventory.inspect(playroom1).metrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId()).get());
-        Assert.assertFalse(inventory.inspect(playroom1).metrics().get(playroom1Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom1).metrics().get(
+        inventory.inspect(playroom1).allMetrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId())
+                .get());
+        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(playroom1Size.getPath()).exists());
+        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(
                 RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
 
-        inventory.inspect(t).feedlessResourceTypes().delete(kachnaType.getId());
+        inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
         assertDoesNotExist(kachnaType);
         assertExists(t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
 
         try {
-            inventory.inspect(t).feedlessMetricTypes().delete(sizeType.getId());
+            inventory.inspect(t).metricTypes().delete(sizeType.getId());
             Assert.fail("Deleting a metric type which references some metrics should not be possible.");
         } catch (IllegalArgumentException ignored) {
             //good
         }
 
-        inventory.inspect(e).feedlessMetrics().delete(playroom1Size.getId());
+        inventory.inspect(e).metrics().delete(playroom1Size.getId());
         assertDoesNotExist(playroom1Size);
         assertExists(t, e, sizeType, playRoomType, playroom1, playroom2);
 
-        inventory.inspect(t).feedlessMetricTypes().delete(sizeType.getId());
+        inventory.inspect(t).metricTypes().delete(sizeType.getId());
         assertDoesNotExist(sizeType);
         assertExists(t, e, playRoomType, playroom1, playroom2);
 
         try {
-            inventory.inspect(t).feedlessResourceTypes().delete(playRoomType.getId());
+            inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
             Assert.fail("Deleting a resource type which references some resources should not be possible.");
         } catch (IllegalArgumentException ignored) {
             //good
         }
 
-        inventory.inspect(e).feedlessResources().delete(playroom1.getId());
+        inventory.inspect(e).resources().delete(playroom1.getId());
         assertDoesNotExist(playroom1);
         assertExists(t, e, sizeType, playRoomType, playroom2);
 
@@ -580,20 +605,21 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified()));
                     List<E> childrenList = children.toList();
 
-                    assert parentsList.size() == numberOfParents : "There must be exactly " + numberOfParents + " " +
-                            parentType + "s " + "that have outgoing edge labeled with " + edgeLabel + ". Backend " +
-                            "query returned only " + parentsList.size();
+                    Assert.assertEquals("There must be exactly " + numberOfParents + " " + parentType + "s " + "that " +
+                            "have outgoing edge labeled with " + edgeLabel + ". Backend query returned only " +
+                            parentsList.size(), (int) numberOfParents, parentsList.size());
 
-                    assert multipleParents.entities().size() == numberOfParents : "There must be exactly " +
+                    Assert.assertEquals("There must be exactly " +
                             numberOfParents + " " + parentType + "s that have outgoing edge labeled with " + edgeLabel +
-                            ". Tested API returned only " + multipleParents.entities().size();
+                            ". Tested API returned only " + multipleParents.entities().size(), (int) numberOfParents,
+                            multipleParents.entities().size());
 
-                    assert childrenList.size() == numberOfKids :
-                            "There must be exactly " + numberOfKids + " " + childType +
+                    Assert.assertEquals("There must be exactly " + numberOfKids + " " + childType +
                             "s that are directly under " + parentType + " connected with " + edgeLabel +
-                                    ". Gremlin query returned only " + childrenList.size();
+                            ". Gremlin query returned only " + childrenList.size(), (int) numberOfKids,
+                            childrenList.size());
 
-                    assert multipleChildren.entities().size() == numberOfKids;
+                    Assert.assertEquals((int) numberOfKids, multipleChildren.entities().size());
                 });
 
         ResolvableToMany parents = inventory.tenants().getAll(by("contains"));
@@ -601,29 +627,28 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(2).apply(Environment.class).apply(parents)
                 .accept(kids);
 
-        kids = inventory.tenants().getAll().feedlessResourceTypes().getAll(asTargetBy("contains"));
+        kids = inventory.tenants().getAll().resourceTypes().getAll(asTargetBy("contains"));
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(5).apply(ResourceType.class).apply(parents)
                 .accept(kids);
 
-        kids = inventory.tenants().getAll().feedlessMetricTypes().getAll(asTargetBy("contains"));
+        kids = inventory.tenants().getAll().metricTypes().getAll(asTargetBy("contains"));
         testHelper.apply(2).apply(Tenant.class).apply("contains").apply(3).apply(MetricType.class).apply(parents)
                 .accept(kids);
 
         parents = inventory.tenants().getAll().environments().getAll(by("contains"));
-        kids = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll(
+        kids = inventory.tenants().getAll().environments().getAll().metrics().getAll(
                 asTargetBy("contains"));
         testHelper.apply(2).apply(Environment.class).apply("contains").apply(3).apply(Metric.class).apply(parents).
                 accept(kids);
 
-        kids = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll(
+        kids = inventory.tenants().getAll().environments().getAll().resources().getAll(
                 asTargetBy("contains"));
         testHelper.apply(2).apply(Environment.class).apply("contains").apply(4).apply(Resource.class).apply(parents)
                 .accept(kids);
 
-        parents = inventory.tenants().getAll().feedlessMetricTypes().getAll();
-        kids = inventory.tenants().getAll().environments().getAll().allMetrics().getAll(
-                asTargetBy("defines"));
-        testHelper.apply(3).apply(MetricType.class).apply("defines").apply(4).apply(Metric.class).apply(parents)
+        parents = inventory.tenants().getAll().metricTypesUnder(Parents.any()).getAll();
+        kids = inventory.tenants().getAll().environments().getAll().metricsUnder(Parents.any()).getAll();
+        testHelper.apply(4).apply(MetricType.class).apply("defines").apply(5).apply(Metric.class).apply(parents)
                 .accept(kids);
     }
 
@@ -668,12 +693,12 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testRelationshipServiceLinkedWith() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessMetrics().get("playroom2_size").relationships(outgoing).named("yourMom").entities();
+                .metrics().get("playroom2_size").relationships(outgoing).named("yourMom").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
         assert "test".equals(rels.iterator().next().getTarget().getSegment().getElementId())
                 : "Target of relationship 'yourMom' should be the 'test' environment";
 
-        rels = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        rels = inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .get("playroom2_size").relationships(both).named("IamYourFather").entities();
         assert rels != null && rels.size() == 1 : "There should be 1 relationship conforming the filters";
         assert "test".equals(rels.iterator().next().getSource().getSegment().getElementId())
@@ -683,7 +708,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testRelationshipServiceLinkedWithAndDelete() throws Exception {
         Relationship link = inventory.tenants().get("com.acme.tenant").environments().get("production")
-                .feedlessResources().get("host1").relationships(incoming)
+                .resources().get("host1").relationships(incoming)
                 .linkWith("crossTenantLink", CanonicalPath.of().tenant("com.example.tenant").get(), null).entity();
 
         assert inventory.tenants().get("com.example.tenant").relationships(outgoing)
@@ -706,21 +731,21 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testRelationshipServiceUpdateRelationship1() throws Exception {
         final String someKey = "k3y";
         final String someValue = "v4lu3";
-        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        Relationship rel1 = inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .get("playroom2_size").relationships(outgoing).named("yourMom").entities().iterator().next();
         assert null == rel1.getProperties().get(someKey) : "There should not be any property with key 'k3y'";
 
-        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        Relationship rel2 = inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .get("playroom2_size").relationships(outgoing).named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel2.getId()) && null == rel2.getProperties().get(someKey) : "There should not be" +
                 " any property with key 'k3y'";
 
         // persist the change
-        inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics().get("playroom2_size")
+        inventory.tenants().get("com.example.tenant").environments().get("test").metrics().get("playroom2_size")
                 .relationships(outgoing).update(rel1.getId(), Relationship.Update.builder()
                 .withProperty(someKey, someValue).build());
 
-        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").feedlessMetrics()
+        Relationship rel3 = inventory.tenants().get("com.example.tenant").environments().get("test").metrics()
                 .get("playroom2_size").relationships(outgoing).named("yourMom").entities().iterator().next();
         assert rel1.getId().equals(rel3.getId()) && someValue.equals(rel3.getProperties().get(someKey))
                 : "There should be the property with key 'k3y' and value 'v4lu3'";
@@ -788,27 +813,27 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testRelationshipServiceCallChaining() throws Exception {
-        MetricType metricType = inventory.tenants().get("com.example.tenant").feedlessResourceTypes().get("Playroom")
+        MetricType metricType = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named("incorporates").metricTypes().get(
                         CanonicalPath.of().tenant("com.example.tenant").metricType("Size").get()).entity();// not empty
         assert "Size".equals(metricType.getId()) : "ResourceType[Playroom] -incorporates-> MetricType[Size] was not " +
                 "found";
 
         try {
-            inventory.tenants().get("com.example.tenant").feedlessResourceTypes().get("Playroom").relationships()
+            inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom").relationships()
                     .named("contains").metricTypes().getAll(id("Size")).entities().iterator().next();
             assert false : "There is no such an entity satisfying the query, this code shouldn't be reachable";
         } catch (NoSuchElementException e) {
             // good
         }
 
-        Set<Resource> resources = inventory.tenants().get("com.example.tenant").feedlessResourceTypes().get("Playroom")
+        Set<Resource> resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named
                         ("defines").resources().getAll().entities();
         assert resources.stream().allMatch(res -> Arrays.asList("playroom1", "playroom2", "playroom1.1", "playroom1.2",
                 "playroom2.1").contains(res.getId())) : "ResourceType[Playroom] -defines-> resources called playroom*";
 
-        resources = inventory.tenants().get("com.example.tenant").feedlessResourceTypes().get("Playroom")
+        resources = inventory.tenants().get("com.example.tenant").resourceTypes().get("Playroom")
                 .relationships().named("incorporates").resources().getAll().entities(); // empty
         assert resources.isEmpty()
                 : "No resources should be found under the relationship called incorporates from resource type";
@@ -858,7 +883,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             Assert.assertTrue(results.hasNext());
 
-            ResourceType rt = inventory.tenants().get(tenantId).feedlessResourceTypes().get(id).entity();
+            ResourceType rt = inventory.tenants().get(tenantId).resourceTypes().get(id).entity();
             assert rt.getId().equals(id);
 
             return null;
@@ -869,7 +894,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Playroom");
 
         Query query = Query.path().with(type(ResourceType.class)).get();
-        Assert.assertEquals(5, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
+        Assert.assertEquals(6, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
                 .size());
     }
 
@@ -882,7 +907,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             assert inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).hasNext();
 
-            MetricType md = inventory.tenants().get(tenantId).feedlessMetricTypes().get(id).entity();
+            MetricType md = inventory.tenants().get(tenantId).metricTypes().get(id).entity();
             assert md.getId().equals(id);
 
             return null;
@@ -892,7 +917,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "Size");
 
         Query query = Query.path().with(type(MetricType.class)).get();
-        Assert.assertEquals(3, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
+        Assert.assertEquals(4, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
                 .size());
     }
 
@@ -906,7 +931,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             assert inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).hasNext();
 
-            MetricType md = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId)
+            MetricType md = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
                     .metricTypes().get(path).entity();
             assert md.getId().equals(id);
 
@@ -923,7 +948,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testMetrics() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, metricDefId, id) -> {
 
-            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessMetrics()
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).metrics()
                     .getAll(new Filter[][]{
                             {Defined.by(CanonicalPath.of().tenant(tenantId).metricType(metricDefId)
                                     .get())},
@@ -938,14 +963,14 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Size", "playroom1_size");
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
-        Assert.assertEquals(4, inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
+        Assert.assertEquals(5, inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
                 Pager.unlimited(Order.unspecified())).toList().size());
     }
 
     @Test
     public void testResources() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
-            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
+            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
                     .getAll(new Filter[][]{
                             {Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())},
                             {id(id)}})
@@ -960,14 +985,14 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(12, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).toList().size());
     }
 
     @Test
     public void testResourcesFilteredByTypeProperty() throws Exception {
         Set<Resource> resources = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().getAll(new Filter[][]{
+                .resources().getAll(new Filter[][]{
                         {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                                 With.propertyValue("ownedByDepartment", "Facilities")},
                 }).entities();
@@ -976,14 +1001,14 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 resources.stream().map(AbstractElement::getId).collect(toSet()));
 
         resources = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().getAll(new Filter[][]{
+                .resources().getAll(new Filter[][]{
                         {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                                 With.propertyValue("ownedByDepartment", "kachny")},
                 }).entities();
         Assert.assertTrue(resources.isEmpty());
 
         resources = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().getAll(new Filter[][]{
+                .resources().getAll(new Filter[][]{
                         {Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                                 With.propertyValue("ownedByDepartment", "Facilities")},
                         {With.id("playroom1")}
@@ -992,7 +1017,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Assert.assertEquals("playroom1", resources.iterator().next().getId());
 
         resources = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().getAll(
+                .resources().getAll(
                         Defined.by(CanonicalPath.of().tenant("com.example.tenant").resourceType("Playroom").get()),
                         With.id("playroom1")).entities();
         Assert.assertEquals(1, resources.size());
@@ -1002,8 +1027,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testAssociateMetricWithResource() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceId, metricId) -> {
-            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).feedlessResources()
-                    .get(resourceId).metrics().getAll(id(metricId)).entities().iterator().next();
+            Metric m = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+                    .get(resourceId).allMetrics().getAll(id(metricId)).entities().iterator().next();
             assert metricId.equals(m.getId());
 
             return null;
@@ -1016,7 +1041,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testOperationTypes() throws Exception {
-        OperationTypes.Single ots = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes()
+        OperationTypes.Single ots = inventory.tenants().get("com.acme.tenant").resourceTypes()
                 .get("Person").operationTypes().get("start");
 
         Assert.assertNotNull(ots.entity());
@@ -1052,25 +1077,25 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void queryMultipleResourceTypes() throws Exception {
-        Set<ResourceType> types = inventory.tenants().getAll().feedlessResourceTypes().getAll().entities();
+        Set<ResourceType> types = inventory.tenants().getAll().resourceTypes().getAll().entities();
         Assert.assertEquals(5, types.size());
     }
 
     @Test
     public void queryMultipleMetricDefs() throws Exception {
-        Set<MetricType> types = inventory.tenants().getAll().feedlessMetricTypes().getAll().entities();
+        Set<MetricType> types = inventory.tenants().getAll().metricTypes().getAll().entities();
         Assert.assertEquals(3, types.size());
     }
 
     @Test
     public void queryMultipleResources() throws Exception {
-        Set<Resource> rs = inventory.tenants().getAll().environments().getAll().feedlessResources().getAll().entities();
+        Set<Resource> rs = inventory.tenants().getAll().environments().getAll().resources().getAll().entities();
         assert rs.size() == 4;
     }
 
     @Test
     public void queryMultipleMetrics() throws Exception {
-        Set<Metric> ms = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll().entities();
+        Set<Metric> ms = inventory.tenants().getAll().environments().getAll().metrics().getAll().entities();
         assert ms.size() == 3;
     }
 
@@ -1110,7 +1135,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         try {
-            inventory.tenants().get("com.acme.tenant").environments().get("production").feedlessResources()
+            inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
                     .create(new Resource.Blueprint("host1", "URL"));
             Assert.fail("Creating resource with existing ID should fail");
         } catch (Exception e) {
@@ -1171,7 +1196,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         try {
-            inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("URL")
+            inventory.tenants().get("com.acme.tenant").resourceTypes().get("URL")
                     .relationships(incoming)
                     .linkWith("contains", CanonicalPath.of().tenant("com.example.tenant").get(), null);
 
@@ -1264,24 +1289,24 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("p1", "1");
         properties.put("p2", "2");
-        inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().create(
+        inventory.tenants().get("com.acme.tenant").metricTypes().create(
                 new MetricType.Blueprint("test", MetricUnit.BYTES, MetricDataType.COUNTER, properties, 0L));
 
-        Assert.assertThat(inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().get("test").entity()
+        Assert.assertThat(inventory.tenants().get("com.acme.tenant").metricTypes().get("test").entity()
                 .getProperties().size(), equalTo(properties.size()));
     }
 
     @Test
     public void testPaging() throws Exception {
         //the page is not modifiable but we'll need to modify this later on in the tests
-        List<Metric> allResults = inventory.tenants().getAll().environments().getAll().feedlessMetrics()
+        List<Metric> allResults = inventory.tenants().getAll().environments().getAll().metrics()
                 .getAll().entities(Pager.unlimited(Order.by("id", Order.Direction.DESCENDING))).toList();
 
         assert allResults.size() == 3;
 
         Pager firstPage = new Pager(0, 1, Order.by("id", Order.Direction.DESCENDING));
 
-        Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().feedlessMetrics().getAll();
+        Metrics.Multiple metrics = inventory.tenants().getAll().environments().getAll().metrics().getAll();
 
         Page<Metric> ms = metrics.entities(firstPage);
         List<Metric> msList = ms.toList();
@@ -1342,10 +1367,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testGettingResourcesFromFeedsUsingEnvironments() throws Exception {
-        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allResources()
-                .getAll().entities();
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .resourcesUnder(Environments.ResourceParents.FEED).getAll().entities();
 
-        Assert.assertTrue(rs.stream().anyMatch((r) -> "host1".equals(r.getId())));
+        Assert.assertEquals(3, rs.size());
         Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource1".equals(r.getId())));
         Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource2".equals(r.getId())));
         Assert.assertTrue(rs.stream().anyMatch((r) -> "feedResource3".equals(r.getId())));
@@ -1353,8 +1378,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testGettingMetricsFromFeedsUsingEnvironments() throws Exception {
-        Set<Metric> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").allMetrics()
-                .getAll().entities();
+        Set<Metric> rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Parents.any()).getAll().entities();
 
         Assert.assertTrue(rs.stream().anyMatch((r) -> "host1_ping_response".equals(r.getId())));
         Assert.assertTrue(rs.stream().anyMatch((r) -> "feedMetric1".equals(r.getId())));
@@ -1386,17 +1411,17 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testResourceHierarchy() throws Exception {
         Resources.Single res = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom1");
+                .resources().get("playroom1");
 
         Pager pager = Pager.unlimited(Order.unspecified());
 
-        Page<Resource> children = res.containedChildren().getAll().entities(pager);
+        Page<Resource> children = res.resources().getAll().entities(pager);
         Assert.assertEquals(2, children.toList().size());
 
-        children = res.allChildren().getAll().entities(pager);
+        children = res.allResources().getAll().entities(pager);
         Assert.assertEquals(3, children.toList().size());
 
-        children = res.allChildren().getAll(Related.asTargetWith(res.entity().getPath(), isParentOf)).entities(pager);
+        children = res.allResources().getAll(Related.asTargetWith(res.entity().getPath(), isParentOf)).entities(pager);
         Assert.assertEquals(3, children.toList().size());
     }
 
@@ -1413,18 +1438,18 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         //now let's try self-loop using association interface
-        Resource r = inventory.inspect(t, Tenants.Single.class).environments().get("test").feedlessResources()
+        Resource r = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
                 .get("playroom1").entity();
 
         try {
-            inventory.inspect(r).allChildren().associate(r.getPath());
+            inventory.inspect(r).allResources().associate(r.getPath());
             Assert.fail("Should not be able to create self-loop in isParentOf using resource association interface.");
         } catch (IllegalArgumentException e) {
             //good
         }
 
         //playroom1 -isParentOf> playroom2 exists. Let's try creating a loop
-        Resource r2 = inventory.inspect(t, Tenants.Single.class).environments().get("test").feedlessResources()
+        Resource r2 = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
                 .get("playroom2").entity();
 
         try {
@@ -1435,7 +1460,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         }
 
         try {
-            inventory.inspect(r2).allChildren().associate(r.getPath());
+            inventory.inspect(r2).allResources().associate(r.getPath());
             Assert.fail("Should not be possible to create loops in isParentOf using association interface.");
         } catch (IllegalArgumentException e) {
             //good
@@ -1459,13 +1484,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testImpossibleToDeleteIsParentOfWhenTheresContainsToo() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom1").relationships().named(isParentOf).entities();
+                .resources().get("playroom1").relationships().named(isParentOf).entities();
 
         for (Relationship r : rels) {
             if (r.getTarget().getSegment().getElementId().equals("playroom1.1")) {
                 try {
                     inventory.tenants().get("com.example.tenant").environments().get("test")
-                            .feedlessResources().get("playroom1").relationships().delete(r.getId());
+                            .resources().get("playroom1").relationships().delete(r.getId());
 
                     Assert.fail("Should not be possible to delete isParentOf when there's contains relationship in" +
                             " the same direction, too.");
@@ -1490,12 +1515,12 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         Metric m2 = null;
 
         try {
-            r = env.feedlessResources().create(Resource.Blueprint.builder().withId("assocR1")
+            r = env.resources().create(Resource.Blueprint.builder().withId("assocR1")
                     .withResourceTypePath("/rt;Playroom").build()).entity();
 
             //notice that m1 and m2 have the same ID, only a different path
 
-            m1 = env.feedlessMetrics().create(Metric.Blueprint.builder().withId("assocMetric")
+            m1 = env.metrics().create(Metric.Blueprint.builder().withId("assocMetric")
                     .withMetricTypePath("/mt;Size").build()).entity();
 
             f = tenant.feeds().create(Feed.Blueprint.builder().withId("assocF").build()).entity();
@@ -1503,15 +1528,15 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
             m2 = tenant.feeds().get("assocF").metrics().create(Metric.Blueprint.builder().withId("assocMetric")
                     .withMetricTypePath("/mt;Size").build()).entity();
 
-            inventory.inspect(r).metrics().associate(m1.getPath());
-            inventory.inspect(r).metrics().associate(m2.getPath());
+            inventory.inspect(r).allMetrics().associate(m1.getPath());
+            inventory.inspect(r).allMetrics().associate(m2.getPath());
 
             Assert.assertEquals(new HashSet<>(Arrays.asList(m1, m2)),
-                    inventory.inspect(r).metrics().getAll().entities());
+                    inventory.inspect(r).allMetrics().getAll().entities());
 
-            inventory.inspect(r).metrics().disassociate(Path.fromString("../m;assocMetric"));
+            inventory.inspect(r).allMetrics().disassociate(Path.fromString("../m;assocMetric"));
 
-            Assert.assertEquals(Collections.singleton(m2), inventory.inspect(r).metrics().getAll().entities());
+            Assert.assertEquals(Collections.singleton(m2), inventory.inspect(r).allMetrics().getAll().entities());
         } finally {
             if (r != null) {
                 inventory.inspect(r).delete();
@@ -1572,8 +1597,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     public void testDescendChildResource() throws Exception {
 
         Resources.Single r = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().descend("playroom1", RelativePath.fromString("../r;playroom2"))
-                .get(RelativePath.fromString("r;playroom2.1"));
+                .resources().descend("playroom1", RelativePath.fromString("../r;playroom2"))
+                .allResources().get(RelativePath.fromString("r;playroom2.1"));
 
         Assert.assertEquals("playroom2.1", r.entity().getId());
     }
@@ -1625,11 +1650,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     .build()).entity();
             Assert.assertEquals("feed", f.getName());
 
-            ResourceType rt = inventory.inspect(t).feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+            ResourceType rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
                     .withId("named-resourceType").withName("resourceType").build()).entity();
             Assert.assertEquals("resourceType", rt.getName());
 
-            MetricType mt = inventory.inspect(t).feedlessMetricTypes().create(MetricType.Blueprint
+            MetricType mt = inventory.inspect(t).metricTypes().create(MetricType.Blueprint
                     .builder(MetricDataType.GAUGE).withId("named-metricType").withUnit(MetricUnit.BITS)
                     .withName("metricType").withInterval(0L).build()).entity();
             Assert.assertEquals("metricType", mt.getName());
@@ -1676,11 +1701,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                     .build()).entity();
             testUpdate(f, Feed.Update.builder());
 
-            ResourceType rt = inventory.inspect(t).feedlessResourceTypes().create(ResourceType.Blueprint.builder()
+            ResourceType rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
                     .withId("named-resourceType").withName("resourceType").build()).entity();
             testUpdate(rt, ResourceType.Update.builder());
 
-            MetricType mt = inventory.inspect(t).feedlessMetricTypes().create(MetricType.Blueprint
+            MetricType mt = inventory.inspect(t).metricTypes().create(MetricType.Blueprint
                     .builder(MetricDataType.GAUGE).withId("named-metricType").withUnit(MetricUnit.BITS)
                     .withName("metricType").withInterval(0L).build()).entity();
             testUpdate(mt, MetricType.Update.builder());
@@ -1739,8 +1764,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testModificationsOfEntitiesInMetadataPacksImpossible() throws Exception {
         Tenant t = inventory.tenants().get("com.acme.tenant").entity();
-        MetricType mt = inventory.inspect(t).feedlessMetricTypes().get("mpMt").entity();
-        ResourceType rt = inventory.inspect(t).feedlessResourceTypes().get("mpRt").entity();
+        MetricType mt = inventory.inspect(t).metricTypes().get("mpMt").entity();
+        ResourceType rt = inventory.inspect(t).resourceTypes().get("mpRt").entity();
 
         try {
             inventory.inspect(mt).update(MetricType.Update.builder().withUnit(MetricUnit.PER_DAY).build());
@@ -1825,8 +1850,8 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testMetadataPackIdEqualToContentHash() throws Exception {
-        MetricType mt = inventory.tenants().get("com.acme.tenant").feedlessMetricTypes().get("mpMt").entity();
-        ResourceType rt = inventory.tenants().get("com.acme.tenant").feedlessResourceTypes().get("mpRt").entity();
+        MetricType mt = inventory.tenants().get("com.acme.tenant").metricTypes().get("mpMt").entity();
+        ResourceType rt = inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").entity();
         OperationType ot = inventory.inspect(rt).operationTypes().get("mpRtOt").entity();
 
         StructuredData configSchema = inventory.inspect(rt).data().get(configurationSchema).entity().getValue();
@@ -1885,10 +1910,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(ResourceType.class, 3, 3, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
 
-            inventory.tenants().get("t").feedlessResourceTypes().create(new ResourceType.Blueprint("rt"));
-            inventory.tenants().get("t").feedlessResourceTypes().update("rt", new ResourceType.Update(null));
+            inventory.tenants().get("t").resourceTypes().create(new ResourceType.Blueprint("rt"));
+            inventory.tenants().get("t").resourceTypes().update("rt", new ResourceType.Update(null));
 
-            MetricType mt = inventory.tenants().get("t").feedlessMetricTypes()
+            MetricType mt = inventory.tenants().get("t").metricTypes()
                     .create(MetricType.Blueprint.builder(MetricDataType.COUNTER)
                                     .withId("mt").withUnit(MetricUnit.BYTES).withInterval(0L).build()).entity();
 
@@ -1896,13 +1921,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
             inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
 
-            inventory.tenants().get("t").feedlessResourceTypes().get("rt").metricTypes().associate(mt.getPath());
+            inventory.tenants().get("t").resourceTypes().get("rt").metricTypes().associate(mt.getPath());
 
-            inventory.tenants().get("t").feedlessMetricTypes().delete("mt");
+            inventory.tenants().get("t").metricTypes().delete("mt");
 
             Assert.assertEquals(1, createdRelationships.size());
 
-            inventory.tenants().get("t").feedlessResourceTypes().delete("rt");
+            inventory.tenants().get("t").resourceTypes().delete("rt");
 
             inventory.tenants().delete("t");
         });
@@ -1913,11 +1938,11 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(MetricType.class, 1, 1, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
 
-            inventory.tenants().get("t").feedlessMetricTypes()
+            inventory.tenants().get("t").metricTypes()
                     .create(new MetricType.Blueprint("mt", MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
-            inventory.tenants().get("t").feedlessMetricTypes().update("mt", MetricType.Update.builder()
+            inventory.tenants().get("t").metricTypes().update("mt", MetricType.Update.builder()
                     .withUnit(MetricUnit.MILLISECONDS).build());
-            inventory.tenants().get("t").feedlessMetricTypes().delete("mt");
+            inventory.tenants().get("t").metricTypes().delete("mt");
         });
     }
 
@@ -1926,15 +1951,15 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(Metric.class, 4, 2, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
             inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
-            inventory.tenants().get("t").feedlessMetricTypes()
+            inventory.tenants().get("t").metricTypes()
                     .create(new MetricType.Blueprint("mt", MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
 
-            inventory.tenants().get("t").environments().get("e").feedlessMetrics()
+            inventory.tenants().get("t").environments().get("e").metrics()
                     .create(new Metric.Blueprint("/mt", "m"));
-            inventory.tenants().get("t").environments().get("e").feedlessMetrics().update("m",
+            inventory.tenants().get("t").environments().get("e").metrics().update("m",
                     Metric.Update.builder().build());
 
-            inventory.tenants().get("t").environments().get("e").feedlessMetrics().delete("m");
+            inventory.tenants().get("t").environments().get("e").metrics().delete("m");
         });
     }
 
@@ -1943,30 +1968,30 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(Resource.class, 8, 3, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
             inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
-            inventory.tenants().get("t").feedlessResourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
+            inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
                     .build());
-            inventory.tenants().get("t").feedlessMetricTypes()
+            inventory.tenants().get("t").metricTypes()
                     .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId("mt")
                             .withUnit(MetricUnit.BYTES).withInterval(0L).build());
 
-            inventory.tenants().get("t").environments().get("e").feedlessResources()
+            inventory.tenants().get("t").environments().get("e").resources()
                     .create(new Resource.Blueprint("r", "/rt"));
-            inventory.tenants().get("t").environments().get("e").feedlessResources().update("r",
+            inventory.tenants().get("t").environments().get("e").resources().update("r",
                     Resource.Update.builder().build());
 
-            Metric m = inventory.tenants().get("t").environments().get("e").feedlessMetrics()
+            Metric m = inventory.tenants().get("t").environments().get("e").metrics()
                     .create(Metric.Blueprint.builder().withId("m").withMetricTypePath("/mt").build()).entity();
 
             List<Relationship> createdRelationships = new ArrayList<>();
 
             inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
 
-            inventory.tenants().get("t").environments().get("e").feedlessResources().get("r").metrics().associate(
+            inventory.tenants().get("t").environments().get("e").resources().get("r").allMetrics().associate(
                     m.getPath());
 
             Assert.assertEquals(1, createdRelationships.size());
 
-            inventory.tenants().get("t").environments().get("e").feedlessResources().delete("r");
+            inventory.tenants().get("t").environments().get("e").resources().delete("r");
         });
     }
 
@@ -1975,13 +2000,13 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         runObserverTest(DataEntity.class, 5, 1, () -> {
             inventory.tenants().create(Tenant.Blueprint.builder().withId("t").build());
             inventory.tenants().get("t").environments().create(Environment.Blueprint.builder().withId("e").build());
-            inventory.tenants().get("t").feedlessResourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
+            inventory.tenants().get("t").resourceTypes().create(ResourceType.Blueprint.builder().withId("rt")
                     .build());
-            inventory.tenants().get("t").environments().get("e").feedlessResources()
+            inventory.tenants().get("t").environments().get("e").resources()
                     .create(new Resource.Blueprint("r", "/rt"));
 
             Data.ReadWrite<Resources.DataRole> dataAccess = inventory.tenants().get("t").environments().get("e")
-                    .feedlessResources().get("r").data();
+                    .resources().get("r").data();
 
             dataAccess.create(DataEntity.Blueprint.<Resources.DataRole>builder()
                     .withRole(configuration).build());
@@ -2140,7 +2165,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
                 .get());
 
-        Assert.assertEquals(4, test.apply(feed, outgoing, new String[]{"contains"}).count());
+        Assert.assertEquals(8, test.apply(feed, outgoing, new String[]{"contains"}).count());
         Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
                 "feed1".equals(e.getId())));
         Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
@@ -2151,6 +2176,10 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
                 instanceof Resource && "feedResource3".equals(e.getId())));
         Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
                 instanceof Metric && "feedMetric1".equals(e.getId())));
+        Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
+                instanceof ResourceType && "feed1-resourceType".equals(e.getId())));
+        Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
+                instanceof MetricType && "feed1-metricType".equals(e.getId())));
 
         Assert.assertEquals(1, test.apply(env, incoming, new String[]{"contains"}).count());
         Assert.assertTrue(test.apply(env, incoming, new String[]{"contains"}).anyMatch((e) -> e instanceof Tenant &&
@@ -2251,7 +2280,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
     @Test
     public void testCreateConfiguration() throws Exception {
         Resources.Single res = inventory.tenants().get("com.example.tenant").environments().get("test")
-                .feedlessResources().get("playroom2");
+                .resources().get("playroom2");
 
         StructuredData orig = StructuredData.get().map().putBool("yes", true).putBool("no", false).build();
 
@@ -2301,7 +2330,7 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
     @Test
     public void testFilteringByData() throws Exception {
-        Data.Read<Resources.DataRole> configs = inventory.tenants().getAll().environments().getAll().allResources()
+        Data.Read<Resources.DataRole> configs = inventory.tenants().getAll().environments().getAll().resources()
                 .getAll().data();
 
         Assert.assertEquals(1, configs.getAll(With.dataAt(RelativePath.to().structuredData().key("primitives").index(0)
@@ -2412,6 +2441,251 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
 
         //clean up
         inventory.tenants().get("com.acme.tenant").environments().delete("env-with-rel");
+    }
+
+    @Test
+    public void testResourceOwnedMetrics() throws Exception {
+        inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
+                .resources().get("feedResource3").metrics().get("feedResource3-metric").exists();
+
+        inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
+                .resources().get("feedResource3").allMetrics().get(RelativePath.to().metric("feedResource3-metric")
+                .get()).exists();
+    }
+
+    @Test
+    public void testGettingResourceTypesFromTenants() throws Exception {
+        Set<ResourceType> rts = inventory.tenants().get("com.acme.tenant").resourceTypes().getAll().entities();
+        Assert.assertEquals(3, rts.size());
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("URL")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("Person")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("mpRt")));
+
+        rts = inventory.tenants().get("com.acme.tenant").resourceTypesUnder(Parents.any()).getAll()
+                .entities();
+        Assert.assertEquals(4, rts.size());
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("URL")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("Person")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("mpRt")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("feed1-resourceType")));
+
+        rts = inventory.tenants().get("com.acme.tenant").resourceTypesUnder().getAll().entities();
+        Assert.assertEquals(3, rts.size());
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("URL")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("Person")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("mpRt")));
+
+        rts = inventory.tenants().get("com.acme.tenant").resourceTypesUnder(Tenants.ResourceTypeParents.TENANT).getAll()
+                .entities();
+        Assert.assertEquals(3, rts.size());
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("URL")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("Person")));
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("mpRt")));
+
+        rts = inventory.tenants().get("com.acme.tenant").resourceTypesUnder(Tenants.ResourceTypeParents.FEED).getAll()
+                .entities();
+        Assert.assertEquals(1, rts.size());
+        Assert.assertTrue(rts.stream().anyMatch(rt -> rt.getId().equals("feed1-resourceType")));
+    }
+
+    @Test
+    public void testGettingMetricTypesFromTenants() throws Exception {
+        Set<MetricType> mts = inventory.tenants().get("com.acme.tenant").metricTypes().getAll().entities();
+        Assert.assertEquals(2, mts.size());
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("ResponseTime")));
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("mpMt")));
+
+        mts = inventory.tenants().get("com.acme.tenant").metricTypesUnder().getAll().entities();
+        Assert.assertEquals(2, mts.size());
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("ResponseTime")));
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("mpMt")));
+
+        mts = inventory.tenants().get("com.acme.tenant").metricTypesUnder(Parents.any()).getAll().entities();
+        Assert.assertEquals(3, mts.size());
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("ResponseTime")));
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("mpMt")));
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("feed1-metricType")));
+
+        mts = inventory.tenants().get("com.acme.tenant").metricTypesUnder(Tenants.MetricTypeParents.TENANT).getAll()
+                .entities();
+        Assert.assertEquals(2, mts.size());
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("ResponseTime")));
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("mpMt")));
+
+        mts = inventory.tenants().get("com.acme.tenant").metricTypesUnder(Tenants.MetricTypeParents.FEED).getAll()
+                .entities();
+        Assert.assertEquals(1, mts.size());
+        Assert.assertTrue(mts.stream().anyMatch(rt -> rt.getId().equals("feed1-metricType")));
+    }
+
+    @Test
+    public void testGettingResourcesFromFeeds() throws Exception {
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resources().getAll()
+                .entities();
+        Assert.assertEquals(3, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource2")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource3")));
+
+        rs = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resourcesUnder(Parents.any()).getAll()
+                .entities();
+        Assert.assertEquals(4, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource2")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource3")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedChildResource")));
+
+        rs = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resourcesUnder(Feeds.ResourceParents.FEED)
+                .getAll().entities();
+        Assert.assertEquals(3, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource2")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource3")));
+
+        rs = inventory.tenants().get("com.acme.tenant").feeds().get("feed1")
+                .resourcesUnder(Feeds.ResourceParents.RESOURCE).getAll().entities();
+        Assert.assertEquals(1, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedChildResource")));
+    }
+
+    @Test
+    public void testGettingMetricsFromFeeds() throws Exception {
+        Set<Metric> ms = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metrics().getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+
+        ms = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricsUnder(Feeds.MetricParents.FEED)
+                .getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+
+        ms = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricsUnder(Feeds.MetricParents.FEED,
+                Feeds.MetricParents.RESOURCE).getAll().entities();
+        Assert.assertEquals(2, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
+
+        ms = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricsUnder(Parents.any()).getAll()
+                .entities();
+        Assert.assertEquals(2, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
+
+        ms = inventory.tenants().get("com.acme.tenant").feeds().get("feed1").metricsUnder(Feeds.MetricParents.RESOURCE)
+                .getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
+    }
+
+    @Test
+    public void testGettingResourcesFromEnvironments() throws Exception {
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .getAll().entities();
+        Assert.assertEquals(2, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("host1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("people")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production").resourcesUnder(Parents.any())
+                .getAll().entities();
+        Assert.assertEquals(10, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("host1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource2")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource3")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedChildResource")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("people")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Hynek")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Alois")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Vilem")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Jarmila")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .resourcesUnder(Environments.ResourceParents.ENVIRONMENT).getAll().entities();
+        Assert.assertEquals(2, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("host1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("people")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .resourcesUnder(Environments.ResourceParents.FEED).getAll().entities();
+        Assert.assertEquals(3, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource2")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedResource3")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .resourcesUnder(Environments.ResourceParents.RESOURCE).getAll().entities();
+        Assert.assertEquals(5, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Hynek")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Alois")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Vilem")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Jarmila")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedChildResource")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .resourcesUnder(Environments.ResourceParents.ENVIRONMENT, Environments.ResourceParents.RESOURCE)
+                .getAll().entities();
+        Assert.assertEquals(7, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("host1")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("people")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Hynek")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Alois")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Vilem")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Jarmila")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("feedChildResource")));
+    }
+
+    @Test
+    public void testGettingMetricsFromEnvironments() throws Exception {
+        Set<Metric> ms = inventory.tenants().get("com.acme.tenant").environments().get("production").metrics().getAll()
+                .entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("host1_ping_response")));
+
+        ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Environments.MetricParents.ENVIRONMENT).getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("host1_ping_response")));
+
+        ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Environments.MetricParents.FEED).getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+
+        ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Environments.MetricParents.RESOURCE).getAll().entities();
+        Assert.assertEquals(1, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
+
+        ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Environments.MetricParents.FEED, Environments.MetricParents.ENVIRONMENT).getAll()
+                .entities();
+        Assert.assertEquals(2, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("host1_ping_response")));
+
+        ms = inventory.tenants().get("com.acme.tenant").environments().get("production")
+                .metricsUnder(Parents.any()).getAll().entities();
+        Assert.assertEquals(3, ms.size());
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedMetric1")));
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("host1_ping_response")));
+        Assert.assertTrue(ms.stream().anyMatch(m -> m.getId().equals("feedResource3-metric")));
+    }
+
+    @Test
+    public void testGettingResourcesFromResources() throws Exception {
+        Set<Resource> rs = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("people").resources().getAll().entities();
+        Assert.assertEquals(2, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Alois")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Hynek")));
+
+        rs = inventory.tenants().get("com.acme.tenant").environments().get("production").resources()
+                .get("people").recursiveResources().getAll().entities();
+        Assert.assertEquals(4, rs.size());
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Alois")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Hynek")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Vilem")));
+        Assert.assertTrue(rs.stream().anyMatch(r -> r.getId().equals("Jarmila")));
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

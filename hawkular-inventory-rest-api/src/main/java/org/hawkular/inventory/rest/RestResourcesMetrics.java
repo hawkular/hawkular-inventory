@@ -18,11 +18,14 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -54,7 +57,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.1.0
  */
 @javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
@@ -64,17 +67,26 @@ public class RestResourcesMetrics extends RestResources {
 
     @POST
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics")
-    @ApiOperation("Associates a pre-existing metric with a resource")
+    @ApiOperation("Either creates a new metric owned by the resource or associates a pre-existing metric with the " +
+            "resource. This depends on what you pass as the the body of the request. A JSON array of strings is " +
+            "understood as a list of pre-existing metric paths that are associated with the resource. If the body is" +
+            " a JSON object or an array of JSON objects, the new metric or metrics are created \"underneath\" the " +
+            "resource.")
     @ApiResponses({
-            @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment, resource or metric doesn't exist",
+            @ApiResponse(code = 201, message = "New metric created under the resource"),
+            @ApiResponse(code = 204, message = "Existing metric successfully associated"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource doesn't exist. Also when an array of " +
+                    "strings is supplied and one of the metrics in that array doesn't exist.",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response associateMetrics(@PathParam("environmentId") String environmentId,
-            @Encoded @PathParam("resourcePath") String resourcePath,
-            @ApiParam("A list of paths to metrics to be associated with the resource. They can either be canonical or" +
-                    " relative to the resource.") Collection<String> metricPaths) {
+    public Response associateOrCreateMetrics(@PathParam("environmentId") String environmentId,
+                                             @Encoded @PathParam("resourcePath") String resourcePath,
+                                             @ApiParam("This is either a metric blueprint or a list of paths to " +
+                                                     "metrics to be associated with the resource. They can either be " +
+                                                     "canonical or relative to the resource.")
+                                                 Object metricPathsOrBlueprint,
+                                             @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -82,30 +94,30 @@ public class RestResourcesMetrics extends RestResources {
 
         CanonicalPath resource = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
-        if (!security.canAssociateFrom(resource)) {
-            return Response.status(FORBIDDEN).build();
-        }
-
-        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
-
-        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
-                .forEach(metricDao::associate);
-
-        return Response.noContent().build();
+        return createOrAssociateMetric(tenant, resource, metricPathsOrBlueprint, uriInfo);
     }
 
     @POST
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics")
-    @ApiOperation("Associates a pre-existing metric with a resource")
+    @ApiOperation("Either creates a new metric owned by the resource or associates a pre-existing metric with the " +
+            "resource. This depends on what you pass as the the body of the request. A JSON array of strings is " +
+            "understood as a list of pre-existing metric paths that are associated with the resource. If the body is" +
+            " a JSON object or an array of JSON objects, the new metric or metrics are created \"underneath\" the " +
+            "resource.")
     @ApiResponses({
-            @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, environment, resource or metric doesn't exist",
+            @ApiResponse(code = 201, message = "New metric created under the resource"),
+            @ApiResponse(code = 204, message = "Existing metric successfully associated"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource doesn't exist. Also when an array of " +
+                    "strings is supplied and one of the metrics in that array doesn't exist.",
                     response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
-    public Response associateMetricsF(@PathParam("feedId") String feedId,
+    public Response associateOrCreateMetricsUnderFeed(@PathParam("feedId") String feedId,
                                       @Encoded @PathParam("resourcePath") String resourcePath,
-                                      Collection<String> metricPaths) {
+                                      @ApiParam("This is either a metric blueprint or a list of paths to metrics to " +
+                                              "be associated with the resource. They can either be canonical or " +
+                                              "relative to the resource.")
+                                          Object metricPathsOrBlueprint, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -113,16 +125,61 @@ public class RestResourcesMetrics extends RestResources {
 
         CanonicalPath resource = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
-        if (!security.canAssociateFrom(resource)) {
-            return Response.status(FORBIDDEN).build();
+        return createOrAssociateMetric(tenant, resource, metricPathsOrBlueprint, uriInfo);
+    }
+
+    private Response createOrAssociateMetric(CanonicalPath tenant, CanonicalPath resource,
+                                             Object metricPathsOrBlueprint, UriInfo uriInfo) {
+        BiConsumer<Map<?, ?>, Metrics.ReadWrite> createMetric = (map, access) -> {
+            Metric.Blueprint blueprint = mapper.convertValue(map, Metric.Blueprint.class);
+            access.create(blueprint);
+        };
+
+        if (metricPathsOrBlueprint instanceof List) {
+            List<?> list = (List<?>) metricPathsOrBlueprint;
+            if (list.isEmpty()) {
+                return Response.noContent().build();
+            }
+
+            if (list.get(0) instanceof Map) {
+                if (!security.canCreate(Metric.class).under(resource)) {
+                    return Response.status(FORBIDDEN).build();
+                }
+
+                Metrics.ReadWrite metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
+
+                list.forEach(m -> createMetric.accept((Map<?, ?>) m, metricDao));
+
+                if (list.size() == 1) {
+                    Metric.Blueprint blueprint = mapper.convertValue(list.get(0), Metric.Blueprint.class);
+                    return ResponseUtil.created(uriInfo, blueprint.getId()).build();
+                } else {
+                    return Response.status(CREATED).build();
+                }
+            } else {
+                if (!security.canAssociateFrom(resource)) {
+                    return Response.status(FORBIDDEN).build();
+                }
+
+                Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).allMetrics();
+                list.stream().map((p) -> Path.fromPartiallyUntypedString((String) p, tenant, resource, Metric.class))
+                        .forEach(metricDao::associate);
+
+                return Response.noContent().build();
+            }
+        } else if (metricPathsOrBlueprint instanceof Map) {
+            if (!security.canCreate(Metric.class).under(resource)) {
+                return Response.status(FORBIDDEN).build();
+            }
+
+            Metrics.ReadWrite metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
+            createMetric.accept((Map<?, ?>) metricPathsOrBlueprint, metricDao);
+
+            Metric.Blueprint blueprint = mapper.convertValue(metricPathsOrBlueprint, Metric.Blueprint.class);
+            return ResponseUtil.created(uriInfo, blueprint.getId()).build();
+        } else {
+            throw new IllegalArgumentException("Unhandled type of input");
         }
-
-        Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
-
-        metricPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, resource, Metric.class))
-                .forEach(metricDao::associate);
-
-        return Response.noContent().build();
     }
 
     @GET
@@ -137,7 +194,7 @@ public class RestResourcesMetrics extends RestResources {
     public Response getAssociatedMetrics(@PathParam("environmentId") String environmentID,
             @Encoded @PathParam("resourcePath") String resourcePath, @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), environmentID, null, resourcePath);
-        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).allMetrics().getAll().entities(
                 extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
@@ -156,7 +213,7 @@ public class RestResourcesMetrics extends RestResources {
                                           @Encoded @PathParam("resourcePath") String resourcePath,
                                           @Context UriInfo uriInfo) {
         CanonicalPath resource = composeCanonicalPath(getTenantId(), null, feedId, resourcePath);
-        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).metrics().getAll().entities(
+        Page<Metric> ms = inventory.inspect(resource, Resources.Single.class).allMetrics().getAll().entities(
                 extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ms).build();
@@ -192,7 +249,7 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).allMetrics().get(mp).entity();
 
         return Response.ok(m).build();
     }
@@ -227,13 +284,14 @@ public class RestResourcesMetrics extends RestResources {
             Response.status(FORBIDDEN).build();
         }
 
-        Metric m = inventory.inspect(rp, Resources.Single.class).metrics().get(mp).entity();
+        Metric m = inventory.inspect(rp, Resources.Single.class).allMetrics().get(mp).entity();
         return Response.ok(m).build();
     }
 
     @DELETE
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
-    @ApiOperation("Disassociates the given resource from the given metric")
+    @ApiOperation("Disassociates the given resource from the given metric. If the metric is contained within the " +
+            "resource, it is also deleted.")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404,
@@ -251,28 +309,13 @@ public class RestResourcesMetrics extends RestResources {
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, environmentId, null, resourcePath);
 
-        if (!security.canAssociateFrom(rp)) {
-            return Response.status(FORBIDDEN).build();
-        }
-
-        if (isCanonical) {
-            metricPath = "/" + metricPath;
-        }
-
-        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
-
-        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
-            Response.status(FORBIDDEN).build();
-        }
-
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
-
-        return Response.noContent().build();
+        return disassociateOrDelete(tenant, rp, metricPath, isCanonical);
     }
 
     @DELETE
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/metrics/{metricPath:.+}")
-    @ApiOperation("Disassociates the given resource from the given metric")
+    @ApiOperation("Disassociates the given resource from the given metric. If the metric is contained within the " +
+            "resource, it is also deleted.")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 404,
@@ -290,7 +333,13 @@ public class RestResourcesMetrics extends RestResources {
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
         CanonicalPath rp = composeCanonicalPath(tenantId, null, feedId, resourcePath);
 
-        if (!security.canAssociateFrom(rp)) {
+        return disassociateOrDelete(tenant, rp, metricPath, isCanonical);
+    }
+
+    private Response disassociateOrDelete(CanonicalPath tenant, CanonicalPath resource, String metricPath, boolean
+            isCanonical) {
+
+        if (!security.canAssociateFrom(resource)) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -298,13 +347,21 @@ public class RestResourcesMetrics extends RestResources {
             metricPath = "/" + metricPath;
         }
 
-        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, resource, Metric.class);
 
-        if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
+        if (EntityIdUtils.isTenantEscapeAttempt(resource, mp)) {
             Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(rp, Resources.Single.class).metrics().disassociate(mp);
+        if (mp.isRelative()) {
+            mp = mp.toRelativePath().applyTo(resource);
+        }
+
+        if (mp.toCanonicalPath().up().equals(resource)) {
+            inventory.inspect(resource, Resources.Single.class).metrics().delete(mp.getSegment().getElementId());
+        } else {
+            inventory.inspect(resource, Resources.Single.class).allMetrics().disassociate(mp);
+        }
 
         return Response.noContent().build();
     }

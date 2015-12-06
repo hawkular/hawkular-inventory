@@ -144,12 +144,12 @@ public class RestBulk extends RestBase {
                         return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
-                                return ((Environments.Single) single).feedlessMetrics();
+                                return ((Environments.Single) single).metrics();
                             }
 
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitResource(Void parameter) {
-                                return ((Environments.Single) single).feedlessResources();
+                                return ((Environments.Single) single).resources();
                             }
                         }, null);
                     }
@@ -209,7 +209,7 @@ public class RestBulk extends RestBase {
 
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitResource(Void parameter) {
-                                return ((Resources.Single) single).containedChildren();
+                                return ((Resources.Single) single).resources();
                             }
                         }, null);
                     }
@@ -243,12 +243,12 @@ public class RestBulk extends RestBase {
 
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetricType(Void parameter) {
-                                return ((Tenants.Single) single).feedlessMetricTypes();
+                                return ((Tenants.Single) single).metricTypes();
                             }
 
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitResourceType(Void parameter) {
-                                return ((Tenants.Single) single).feedlessResourceTypes();
+                                return ((Tenants.Single) single).resourceTypes();
                             }
 
                             @Override

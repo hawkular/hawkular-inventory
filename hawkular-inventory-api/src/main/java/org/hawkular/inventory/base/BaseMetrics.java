@@ -21,6 +21,9 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.id;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
@@ -69,8 +72,8 @@ public final class BaseMetrics {
                 metricTypeObject = context.backend.find(metricTypePath);
 
             } catch (ElementNotFoundException e) {
-                throw new IllegalArgumentException("A metric type with id '" + blueprint.getMetricTypePath() +
-                        "' not found in tenant '" + parentPath.getRoot().getSegment().getElementId() + "'.");
+                throw new IllegalArgumentException("A metric type with path '" + blueprint.getMetricTypePath() +
+                        "' not found relative to '" + parentPath + "'.");
             }
 
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
@@ -88,7 +91,16 @@ public final class BaseMetrics {
 
             Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), parentPath, entityPath);
 
-            return new EntityAndPendingNotifications<>(ret, new Notification<>(rel, rel, created()));
+            List<Notification<?, ?>> notifs = new ArrayList<>();
+            notifs.add(new Notification<>(rel, rel, created()));
+
+            if (Resource.class.equals(context.backend.extractType(parent))) {
+                r = context.backend.relate(parent, entity, incorporates.name(), null);
+                rel = new Relationship(context.backend.extractId(r), incorporates.name(), parentPath, entityPath);
+                notifs.add(new Notification<>(rel, rel, created()));
+            }
+
+            return new EntityAndPendingNotifications<>(ret, notifs);
         }
 
         @Override

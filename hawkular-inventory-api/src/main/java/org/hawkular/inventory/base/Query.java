@@ -185,10 +185,12 @@ public final class Query {
         bld.append("Query[fragments=").append(Arrays.toString(fragments));
         if (!subTrees.isEmpty()) {
             bld.append("\n");
-            subTrees.forEach((s) -> s.indent(bld, indentation + 1));
+            subTrees.forEach((s) -> {
+                s.addToString(bld, indentation + 1);
+                bld.append("\n");
+            });
+            indent(bld, indentation);
         }
-        bld.append("\n");
-        indent(bld, indentation);
         bld.append("]");
     }
 
@@ -207,6 +209,13 @@ public final class Query {
         private Builder parent;
         private List<Builder> children = new ArrayList<>();
         private boolean done;
+
+        /**
+         * @return a new symmetric extender extending the query of this builder
+         */
+        public SymmetricExtender symmetricExtender() {
+            return new SymmetricExtender(this);
+        }
 
         /**
          * Creates a new branch in the tree and returns a builder of that branch.
@@ -322,6 +331,10 @@ public final class Query {
                     converter = isFilter ? FilterFragment::new : PathFragment::new;
                 }
             });
+        }
+
+        public Query.Builder rawQueryBuilder() {
+            return filters;
         }
 
         /**

@@ -166,12 +166,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 BE res = context.backend.querySingle(context.sourcePath);
 
                 if (res == null) {
-                    Class<? extends Entity<?, ?>> parentEntityClass = null;
-                    if (context.previous != null && Entity.class.isAssignableFrom(context.previous.entityClass)) {
-                        parentEntityClass = (Class<? extends Entity<?, ?>>) context.previous.entityClass;
-                    }
-
-                    throw new EntityNotFoundException(parentEntityClass, Query.filters(context.sourcePath));
+                    throw new EntityNotFoundException(context.previous.entityClass, Query.filters(context.sourcePath));
                 }
 
                 return res;

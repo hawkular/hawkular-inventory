@@ -424,9 +424,13 @@ public final class RelativePath extends Path implements Serializable {
     }
 
     public static final class ResourceBuilder extends Path.ResourceBuilder<RelativePath, ResourceBuilder,
-            StructuredDataBuilder> {
+            MetricBuilder, StructuredDataBuilder> {
         private ResourceBuilder(List<Segment> segments) {
             super(segments, RelativePath::new);
+        }
+
+        @Override protected MetricBuilder metricBuilder(List<Segment> segments) {
+            return new MetricBuilder(segments);
         }
 
         @Override

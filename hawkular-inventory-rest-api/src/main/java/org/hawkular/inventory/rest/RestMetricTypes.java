@@ -38,6 +38,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetricTypes;
+import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricType;
@@ -71,7 +72,7 @@ public class RestMetricTypes extends RestBase {
 
         Tenants.Single tenants = inventory.tenants().get(getTenantId());
 
-        Page<MetricType> ret = (feedless ? tenants.feedlessMetricTypes() : tenants.allMetricTypes())
+        Page<MetricType> ret = (feedless ? tenants.metricTypes() : tenants.metricTypesUnder(Parents.any()))
                 .getAll().entities(RequestUtil.extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
@@ -86,7 +87,7 @@ public class RestMetricTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public MetricType get(@PathParam("metricTypeId") String metricTypeId) {
-        return inventory.tenants().get(getTenantId()).feedlessMetricTypes().get(metricTypeId).entity();
+        return inventory.tenants().get(getTenantId()).metricTypes().get(metricTypeId).entity();
     }
 
     @GET
@@ -136,7 +137,7 @@ public class RestMetricTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetricType(inventory.inspect(tenant, Tenants.Single.class).feedlessMetricTypes(), metricType);
+        createMetricType(inventory.inspect(tenant, Tenants.Single.class).metricTypes(), metricType);
 
         return ResponseUtil.created(uriInfo, metricType.getId()).build();
     }
@@ -196,7 +197,7 @@ public class RestMetricTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feedlessMetricTypes().update(metricTypeId, update);
+        inventory.tenants().get(tenantId).metricTypes().update(metricTypeId, update);
         return Response.noContent().build();
     }
 
@@ -241,7 +242,7 @@ public class RestMetricTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feedlessMetricTypes().delete(metricTypeId);
+        inventory.tenants().get(tenantId).metricTypes().delete(metricTypeId);
         return Response.noContent().build();
     }
 

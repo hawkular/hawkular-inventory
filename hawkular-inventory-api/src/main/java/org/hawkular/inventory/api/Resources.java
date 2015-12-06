@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 
 /**
@@ -81,17 +82,27 @@ public final class Resources {
         }
     }
 
-    private interface BrowserBase<Metrics, Data, ContainedAccess, AllAccess> {
+    public enum ResourceParents implements Parents {
+        CONTAINING_RESOURCE, PARENT_RESOURCE
+    }
+
+    public enum MetricParents implements Parents {
+        CONTAINING_RESOURCE, INCORPORATING_RESOURCE
+    }
+
+    private interface BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess> {
+
+        ContainedMetrics metrics();
 
         /**
-         * @return access to metrics owned by the resource(s)
+         * @return access to metrics incorporated by the resource(s)
          */
-        Metrics metrics();
+        AllMetrics allMetrics();
 
         /**
          * @return access to children that are existentially bound to this/these resource(s)
          */
-        ContainedAccess containedChildren();
+        ContainedAccess resources();
 
         /**
          * Access to all children.
@@ -101,11 +112,13 @@ public final class Resources {
          * {@link org.hawkular.inventory.api.Relationships.WellKnown#contains} relationship) cannot be disassociated
          * using this interface.
          *
-         * @return access to all children of this/these resource(s) (superset of {@link #containedChildren()}, also
+         * @return access to all children of this/these resource(s) (superset of {@link #resources()}, also
          * includes the resources bound merely by
          * {@link org.hawkular.inventory.api.Relationships.WellKnown#isParentOf}).
          */
-        AllAccess allChildren();
+        AllAccess allResources();
+
+        Read recursiveResources();
 
         /**
          * @return the parent resource(s) of the current resource(s)
@@ -123,7 +136,7 @@ public final class Resources {
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
@@ -141,8 +154,8 @@ public final class Resources {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple
-            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Data.Read<DataRole>,
-            ReadContained, Read> {
+            extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Metrics.Read,
+            Data.Read<DataRole>, ReadContained, Read> {
     }
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {
@@ -160,23 +173,25 @@ public final class Resources {
          *
          * @param firstChild      the id of the first contained child
          * @param furtherChildren the list of paths to the grand children and on
-         * @return access to all children of the last child mentioned
+         * @return access to last child mentioned
          */
-        default Read descend(Address firstChild, Path... furtherChildren) {
+        default Single descend(Address firstChild, Path... furtherChildren) {
             if (firstChild == null) {
                 throw new IllegalArgumentException("no first child");
             }
 
-            Read last = get(firstChild).allChildren();
+            Single access = get(firstChild);
+            Read last = access.allResources();
 
             for (Path p : furtherChildren) {
                 if (!Resource.class.equals(p.getSegment().getElementType())) {
                     throw new IllegalArgumentException("Descend can only traverse child resources.");
                 }
-                last = last.get(p).allChildren();
+                access = last.get(p);
+                last = access.allResources();
             }
 
-            return last;
+            return access;
         }
     }
 
@@ -184,6 +199,22 @@ public final class Resources {
      * Provides read-only access to resources following the containment chain.
      */
     public interface ReadContained extends ReadBase<String> {
+
+
+        default Single descendContained(RelativePath resourcePath) {
+            ReadContained parent = this;
+            Single access = null;
+            for(Path.Segment s : resourcePath.getPath()) {
+                access = parent.get(s.getElementId());
+                parent = access.resources();
+            }
+
+            if (access == null) {
+                throw new IllegalArgumentException("Empty resource path");
+            }
+
+            return access;
+        }
     }
 
     /**

@@ -31,26 +31,34 @@ public final class Tenants {
 
     }
 
+    public enum ResourceTypeParents implements Parents {
+        TENANT, FEED
+    }
+
+    public enum MetricTypeParents implements Parents {
+        TENANT, FEED
+    }
+
     private interface BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds,
             AccessMetadataPacks> {
         /**
          * @return resources types in the tenant(s)
          */
-        AccessResourceTypes feedlessResourceTypes();
+        AccessResourceTypes resourceTypes();
+
+        ResourceTypes.Read resourceTypesUnder(ResourceTypeParents... parents);
 
         /**
          * @return metric types in the tenant(s)
          */
-        AccessMetricTypes feedlessMetricTypes();
+        AccessMetricTypes metricTypes();
+
+        MetricTypes.Read metricTypesUnder(MetricTypeParents... parents);
 
         /**
          * @return environments in the tenant(s)
          */
         AccessEnvs environments();
-
-        MetricTypes.Read allMetricTypes();
-
-        ResourceTypes.Read allResourceTypes();
 
         AccessMetadataPacks metadataPacks();
 

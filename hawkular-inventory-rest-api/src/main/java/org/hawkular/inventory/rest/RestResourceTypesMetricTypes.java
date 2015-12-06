@@ -72,7 +72,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetricTypes(@PathParam("resourceTypeId") String resourceTypeId, @Context UriInfo uriInfo) {
-        Page<MetricType> ret = inventory.tenants().get(getTenantId()).feedlessResourceTypes().
+        Page<MetricType> ret = inventory.tenants().get(getTenantId()).resourceTypes().
                 get(resourceTypeId).metricTypes().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
@@ -102,7 +102,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
         CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
 
         MetricTypes.ReadAssociate
-                metricTypesDao = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId)
+                metricTypesDao = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
                 .metricTypes();
 
         metricTypePaths.stream()
@@ -151,7 +151,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
     public Response getAssociatedMetricTypes(@PathParam("resourceTypeId") String resourceTypeId,
                                              @Context UriInfo uriInfo) {
         String tenantId = getTenantId();
-        Page<MetricType> mTypes = inventory.tenants().get(tenantId).feedlessResourceTypes().get(resourceTypeId)
+        Page<MetricType> mTypes = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
                 .metricTypes().getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, mTypes).build();

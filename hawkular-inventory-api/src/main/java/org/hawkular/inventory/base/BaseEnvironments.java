@@ -18,6 +18,7 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
@@ -35,6 +36,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.base.spi.RecurseFilter;
 
 /**
  * @author Lukas Krejci
@@ -44,6 +46,66 @@ public final class BaseEnvironments {
 
     private BaseEnvironments() {
 
+    }
+
+    private static <BE>
+    BaseResources.Read<BE> proceedToResources(TraversalContext<BE, Environment> context,
+                                              Environments.ResourceParents... parents) {
+        return new BaseResources.Read<>(context.proceedWithParents(Resource.class,
+                Environments.ResourceParents.class, Environments.ResourceParents.ENVIRONMENT, parents,
+                (p, extender) -> {
+                    switch (p) {
+                        case ENVIRONMENT:
+                            extender.path().with(by(contains), type(Resource.class));
+                            break;
+                        case FEED:
+                            extender.path()
+                                    .with(by(incorporates), type(Feed.class), by(contains), type(Resource.class));
+                            break;
+                        case RESOURCE:
+                            //go to root resources, wherever they are
+                            extender.path().with(new Filter[][]{
+                                    {by(contains), type(Resource.class)},
+                                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}});
+
+                            //and then go to the child resources
+                            extender.path().with(RecurseFilter.builder().addChain(by(isParentOf), type(Resource
+                                    .class)).build());
+                            break;
+                        default:
+                            throw new AssertionError("Unhandled type of resource parent under environment.");
+                    }
+                }));
+    }
+
+    private static <BE>
+    BaseMetrics.Read<BE> proceedToMetrics(TraversalContext<BE, Environment> context,
+                                          Environments.MetricParents... parents) {
+        return new BaseMetrics.Read<>(context.proceedWithParents(Metric.class,
+                Environments.MetricParents.class, Environments.MetricParents.ENVIRONMENT, parents, (p, extender) -> {
+                    switch (p) {
+                        case ENVIRONMENT:
+                            extender.path().with(by(contains), type(Metric.class));
+                            break;
+                        case FEED:
+                            extender.path().with(by(incorporates), type(Feed.class), by(contains), type(Metric.class));
+                            break;
+                        case RESOURCE:
+                            //out by all possible paths from env to a resource
+                            extender.path().with(new Filter[][]{
+                                    {by(contains), type(Resource.class)},
+                                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}});
+
+                            //out to direct metrics and also metrics of child resources
+                            extender.path().with(new Filter[][]{
+                                    {by(contains), type(Metric.class)},
+                                    {RecurseFilter.builder().addChain(by(contains), type(Resource.class)).build(),
+                                        by(contains), type(Metric.class)}});
+                            break;
+                        default:
+                            throw new AssertionError("Unhandled type of metric parent under environment.");
+                    }
+                }));
     }
 
     public static class ReadWrite<BE>
@@ -61,7 +123,7 @@ public final class BaseEnvironments {
 
         @Override
         protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
-                CanonicalPath parentPath, BE parent) {
+                                                                             CanonicalPath parentPath, BE parent) {
             return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
                     parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
                     blueprint.getProperties()));
@@ -136,29 +198,23 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Resources.ReadWrite feedlessResources() {
+        public Resources.ReadWrite resources() {
             return new BaseResources.ReadWrite<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
-        public Metrics.ReadWrite feedlessMetrics() {
+        public Metrics.ReadWrite metrics() {
             return new BaseMetrics.ReadWrite<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
-        public Resources.Read allResources() {
-            return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(Resource.class)},
-                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}
-            }).getting(Resource.class));
+        public Metrics.Read metricsUnder(Environments.MetricParents... parents) {
+            return proceedToMetrics(context, parents);
         }
 
         @Override
-        public Metrics.Read allMetrics() {
-            return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(Metric.class)},
-                    {by(incorporates), type(Feed.class), by(contains), type(Metric.class)}
-            }).getting(Metric.class));
+        public Resources.Read resourcesUnder(Environments.ResourceParents... parents) {
+            return proceedToResources(context, parents);
         }
     }
 
@@ -175,29 +231,23 @@ public final class BaseEnvironments {
         }
 
         @Override
-        public Resources.ReadContained feedlessResources() {
+        public Resources.ReadContained resources() {
             return new BaseResources.ReadContained<>(context.proceedTo(contains, Resource.class).get());
         }
 
         @Override
-        public Metrics.ReadContained feedlessMetrics() {
+        public Metrics.ReadContained metrics() {
             return new BaseMetrics.ReadContained<>(context.proceedTo(contains, Metric.class).get());
         }
 
         @Override
-        public Resources.Read allResources() {
-            return new BaseResources.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(Resource.class)},
-                    {by(incorporates), type(Feed.class), by(contains), type(Resource.class)}
-            }).getting(Resource.class));
+        public Metrics.Read metricsUnder(Environments.MetricParents... parents) {
+            return proceedToMetrics(context, parents);
         }
 
         @Override
-        public Metrics.Read allMetrics() {
-            return new BaseMetrics.Read<>(context.proceed().hop(new Filter[][]{
-                    {by(contains), type(Metric.class)},
-                    {by(incorporates), type(Feed.class), by(contains), type(Metric.class)}
-            }).getting(Metric.class));
+        public Resources.Read resourcesUnder(Environments.ResourceParents... parents) {
+            return proceedToResources(context, parents);
         }
     }
 }

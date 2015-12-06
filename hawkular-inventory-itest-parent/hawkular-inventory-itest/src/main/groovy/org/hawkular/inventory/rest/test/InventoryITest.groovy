@@ -18,10 +18,12 @@ package org.hawkular.inventory.rest.test
 
 import groovyx.net.http.HttpResponseException
 import org.hawkular.inventory.api.model.CanonicalPath
+import org.hawkular.inventory.api.model.Resource
 import org.junit.*
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.*
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 import static org.junit.Assert.fail
 
 /**
@@ -430,18 +432,12 @@ class InventoryITest extends AbstractTestBase {
                 body: data)
         assertEquals(201, response.status)
 
-        /* add a config data to a child resource, no need to clean up, it'll be deleted together with the resources */
-//        def simpleData = [
-//            value: [
-//                a: 1,
-//                b: "abc",
-//                c: true
-//            ],
-//            role : "connectionConfiguration"
-//        ]
-//        response = client.post(path: "$basePath/$environmentId/resources/$room1ResourceId%2Ftable/data",
-//            body: simpleData)
-//        assertEquals(201, response.status)
+        //add resource-owner metric
+        response = postDeletable(path: "$environmentId/resources/$host2ResourceId/metrics",
+                body: [id: "resource-owned-metric", metricTypePath: "/" + responseTimeMTypeId])
+        assertEquals(201, response.status)
+        assertEquals(baseURI + "$basePath/$environmentId/resources/$host2ResourceId/metrics/resource-owned-metric",
+                response.headers.Location)
     }
 
     @AfterClass
@@ -587,7 +583,9 @@ class InventoryITest extends AbstractTestBase {
         assertEntityExists("$environmentId/metrics/$responseStatusCodeMetricId",
                 "/e;$environmentId/m;$responseStatusCodeMetricId".toString())
         assertEntitiesExist("$environmentId/metrics", ["/e;$environmentId/m;$responseTimeMetricId".toString(),
-                                                       "/e;$environmentId/m;$responseStatusCodeMetricId".toString()])
+                                                       "/e;$environmentId/m;$responseStatusCodeMetricId".toString(),
+                                                       "/e;$environmentId/r;$host2ResourceId/m;resource-owned-metric"
+                                                               .toString()])
     }
 
     @Test
@@ -734,7 +732,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
-    void testResourceTypesOwnMetricTypes() {
+    void testResourceTypesIncorporatesMetricTypes() {
         assertRelationshipExists("resourceTypes/$pingableHostRTypeId/relationships",
                 "/t;$tenantId/rt;$pingableHostRTypeId".toString(),
                 incorporates.name(),
@@ -752,7 +750,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
-    void testResourcesOwnMetrics() {
+    void testResourcesIncorporatesMetrics() {
         assertRelationshipExists("$environmentId/resources/$host1ResourceId/relationships",
                 "/t;$tenantId/e;$environmentId/r;$host1ResourceId",
                 incorporates.name(),
@@ -1102,6 +1100,62 @@ class InventoryITest extends AbstractTestBase {
             assertEquals(400, e.statusCode)
         } finally {
             client.delete(path: "$basePath/metadatapacks/$mpId")
+        }
+    }
+
+    @Test
+    void testRecursiveChildren() {
+        try {
+            def response = client.post(path: "$basePath/$environmentId/resources", body: """
+                {
+                    "id": "rootResource",
+                    "resourceTypePath": "/$urlTypeId"
+                }
+                """)
+            assertEquals(201, response.status)
+
+            response = client.post(path: "$basePath/$environmentId/resources/rootResource", body: """
+                {
+                    "id": "childResource",
+                    "resourceTypePath": "/$urlTypeId"
+                }
+                """)
+            assertEquals(201, response.status)
+
+            response = client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
+                    body: """
+                        {
+                            "id": "grandChildResource",
+                            "resourceTypePath": "/$urlTypeId"
+                        }
+                        """)
+            assertEquals(201, response.status)
+
+            response = client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
+                    body: """
+                        {
+                            "id": "grandChildResource2",
+                            "resourceTypePath": "/$roomRTypeId"
+                        }
+                        """)
+            assertEquals(201, response.status)
+
+            response = client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
+                    query: ["typeId": "$urlTypeId"])
+
+            def ret = response.data as List<Resource>
+            assertEquals(2, ret.size())
+            assertTrue(ret.any {"childResource".equals(it.id)})
+            assertTrue(ret.any {"grandChildResource".equals(it.id)})
+
+            response = client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
+                    query: ["typeId": "$roomRTypeId"])
+
+            ret = response.data as List<Resource>
+            assertEquals(1, ret.size())
+            assertTrue(ret.any {"grandChildResource2".equals(it.id)})
+        } finally {
+            client.delete(path: "$basePath/$environmentId/resources/rootResource")
         }
     }
 

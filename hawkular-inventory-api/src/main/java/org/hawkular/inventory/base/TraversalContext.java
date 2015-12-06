@@ -18,10 +18,13 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.filters.With.type;
 
+import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
@@ -160,6 +163,37 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     <T extends Entity<?, ?>> Builder<BE, T> retreatTo(Relationships.WellKnown over, Class<T> entityType) {
         return new Builder<>(this, hop(), Query.filter(), entityType).hop(Related.asTargetBy(over), type(entityType));
+    }
+
+    /**
+     * Proceeds the traversal to the next entities taking into account what parents the next entities should have.
+     *
+     * @param nextEntityType the type of the entities the new context will target
+     * @param parentsType    the type of the enum containing the possible parent types
+     * @param currentParent  the parent type representing the current position in the traversal
+     * @param parents        the parents to proceed to target entities over
+     * @param hopBuilder the producer function that will convert the parent into a filter path to apply to the
+     *                       traversal
+     * @param <T>            the type of the next entity
+     * @param <P>            the type of the enum of the possible parents of the target entity
+     * @return a new traversal context
+     */
+    <T extends Entity<?, ?>, P extends Enum<P> & Parents>
+    TraversalContext<BE, T> proceedWithParents(Class<T> nextEntityType, Class<P> parentsType, P currentParent,
+                                               P[] parents,
+                                               BiConsumer<P, Query.SymmetricExtender> hopBuilder) {
+        EnumSet<P> ps = ParentsUtil.convert(parentsType, currentParent, parents);
+        TraversalContext.Builder<BE, E> bld = proceed();
+
+        for (P p : ps) {
+            Query.Builder qb = bld.rawQueryBuilder();
+            qb = qb.branch();
+            Query.SymmetricExtender extender = qb.symmetricExtender();
+            hopBuilder.accept(p, extender);
+            qb.done();
+        }
+
+        return bld.getting(nextEntityType);
     }
 
     /**
@@ -366,6 +400,10 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         public Builder<BE, E> hop(Filter... filters) {
             selectExtender.path().with(filters);
             return this;
+        }
+
+        public Query.Builder rawQueryBuilder() {
+            return selectExtender.rawQueryBuilder();
         }
 
         /**

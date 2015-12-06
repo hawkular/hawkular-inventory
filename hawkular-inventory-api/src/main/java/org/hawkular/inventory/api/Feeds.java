@@ -29,10 +29,22 @@ public final class Feeds {
 
     }
 
-    private interface BrowserBase<Resources, Metrics, MetricTypes, ResourceTypes> {
-        Resources resources();
+    public enum ResourceParents implements Parents {
+        FEED, RESOURCE
+    }
 
-        Metrics metrics();
+    public enum MetricParents implements Parents {
+        FEED, RESOURCE
+    }
+
+    private interface BrowserBase<AccessResources, AccessMetrics, MetricTypes, ResourceTypes> {
+        AccessResources resources();
+
+        Resources.Read resourcesUnder(ResourceParents... parents);
+
+        AccessMetrics metrics();
+
+        Metrics.Read metricsUnder(MetricParents... parents);
 
         MetricTypes metricTypes();
 

@@ -36,6 +36,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ResourceType;
@@ -70,7 +71,7 @@ public class RestResourceTypes extends RestBase {
 
         Tenants.Single tenants = inventory.tenants().get(getTenantId());
 
-        Page<ResourceType> ret = (feedless ? tenants.feedlessResourceTypes() : tenants.allResourceTypes())
+        Page<ResourceType> ret = (feedless ? tenants.resourceTypes() : tenants.resourceTypesUnder(Parents.any()))
                 .getAll().entities(extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, ret).build();
@@ -85,7 +86,7 @@ public class RestResourceTypes extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public ResourceType get(@PathParam("resourceTypeId") String resourceTypeId) {
-        return inventory.tenants().get(getTenantId()).feedlessResourceTypes().get(resourceTypeId).entity();
+        return inventory.tenants().get(getTenantId()).resourceTypes().get(resourceTypeId).entity();
     }
 
     @POST
@@ -105,7 +106,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feedlessResourceTypes().create(resourceType);
+        inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
 
         return ResponseUtil.created(uriInfo, resourceType.getId()).build();
     }
@@ -127,7 +128,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feedlessResourceTypes().update(resourceTypeId, update);
+        inventory.tenants().get(tenantId).resourceTypes().update(resourceTypeId, update);
         return Response.noContent().build();
     }
 
@@ -146,7 +147,7 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feedlessResourceTypes().delete(resourceTypeId);
+        inventory.tenants().get(tenantId).resourceTypes().delete(resourceTypeId);
         return Response.noContent().build();
     }
 

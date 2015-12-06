@@ -38,6 +38,7 @@ import org.hawkular.inventory.base.FilterFragment;
 import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.QueryFragment;
 import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import com.tinkerpop.pipes.Pipe;
@@ -80,6 +81,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(With.DataAt.class, DataAtApplicator.class);
         applicators.put(With.DataValued.class, DataValuedApplicator.class);
         applicators.put(With.DataOfTypes.class, DataOfTypesApplicator.class);
+        applicators.put(RecurseFilter.class, RecurseApplicator.class);
     }
 
     protected final T filter;
@@ -244,7 +246,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    private static <S, E> void finishPipeline(HawkularPipeline<S, E> pipeline, QueryTranslationState state,
+    static <S, E> void finishPipeline(HawkularPipeline<S, E> pipeline, QueryTranslationState state,
                                               QueryTranslationState originalState) {
         if (originalState.isInEdges() != state.isInEdges()) {
             if (originalState.isInEdges()) {
@@ -496,6 +498,18 @@ abstract class FilterApplicator<T extends Filter> {
     private static final class DataOfTypesApplicator extends FilterApplicator<With.DataOfTypes> {
 
         private DataOfTypesApplicator(With.DataOfTypes f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
+        }
+    }
+
+    private static final class RecurseApplicator extends FilterApplicator<RecurseFilter> {
+
+        private RecurseApplicator(RecurseFilter f) {
             super(f);
         }
 
