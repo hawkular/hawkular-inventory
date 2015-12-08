@@ -994,6 +994,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public void commit(Transaction t) throws CommitFailureException {
         try {
+            t.getPreCommitActions().forEach(a -> a.accept(t));
             context.commit(t);
             Log.LOG.trace("Transaction committed: " + t);
         } catch (Exception e) {

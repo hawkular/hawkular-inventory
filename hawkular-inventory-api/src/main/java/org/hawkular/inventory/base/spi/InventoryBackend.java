@@ -17,9 +17,13 @@
 package org.hawkular.inventory.base.spi;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.Relationships;
@@ -308,6 +312,10 @@ public interface InventoryBackend<E> extends AutoCloseable {
 
     /**
      * Commits the transaction.
+     *
+     * <p>It is mandatory for the implementation to run all the
+     * {@link Transaction#getPreCommitActions() pre-commit actions} prior to actually committing the transaction.
+     *
      * @param transaction the transaction to commit
      */
     void commit(Transaction transaction) throws CommitFailureException;
@@ -342,6 +350,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      */
     class Transaction {
         private final boolean mutating;
+        private List<Consumer<Transaction>> preCommitActions;
 
         public Transaction(boolean mutating) {
             this.mutating = mutating;
@@ -349,6 +358,18 @@ public interface InventoryBackend<E> extends AutoCloseable {
 
         public boolean isMutating() {
             return mutating;
+        }
+
+        public void addPreCommitAction(Consumer<Transaction> action) {
+            if (preCommitActions == null) {
+                preCommitActions = new ArrayList<>();
+            }
+
+            preCommitActions.add(action);
+        }
+
+        public List<Consumer<Transaction>> getPreCommitActions() {
+            return preCommitActions == null ? Collections.emptyList() : preCommitActions;
         }
 
         public <R> R execute(PotentiallyCommittingPayload<R> payload) throws CommitFailureException {
