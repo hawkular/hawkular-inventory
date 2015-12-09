@@ -72,5 +72,29 @@
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+
+    <plugins>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <analysisConfiguration><![CDATA[
+            {
+              "revapi": {
+                "filter": {
+                  "archives": {
+                    "exclude": [
+                      "com.fasterxml.jackson.core.*",
+                      "org.hawkular.inventory:hawkular-inventory-api:.*",
+                      "org.jboss.spec.javax.jms:.*"
+                    ]
+                  }
+                }
+              }
+            }
+          ]]></analysisConfiguration>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
