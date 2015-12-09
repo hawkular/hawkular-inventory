@@ -31,10 +31,6 @@
 
   <name>Hawkular Inventory REST API Web Application</name>
 
-  <properties>
-    <version.org.hawkular.commons>0.2.4.Final</version.org.hawkular.commons>
-  </properties>
-
   <scm>
     <url>https://github.com/hawkular/hawkular-inventory</url>
     <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
@@ -47,6 +43,7 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -64,6 +61,89 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-handler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-epoll</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId><!-- there is a WF module -->
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-pool</groupId>
+      <artifactId>commons-pool</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
+    </dependency>
+
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>javax.mail-api</artifactId>
+      <scope>provided</scope><!-- there is a WF module -->
     </dependency>
 
     <dependency>
@@ -76,6 +156,12 @@
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId><!-- provided by commons-beanutils since 1.9.x -->
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -88,21 +174,6 @@
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-json-helper</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <!-- these will be provided by our RA - the MDB itself will never need ActiveMQ specific classes -->
-    <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-all</artifactId>
-      <version>${version.org.apache.activemq}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-jaas</artifactId>
-      <version>${version.org.apache.activemq}</version>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -127,7 +198,7 @@
     <dependency>
       <groupId>org.jboss.resteasy</groupId>
       <artifactId>resteasy-jaxrs</artifactId>
-      <scope>provided</scope>
+      <scope>provided</scope><!-- there is a WF module -->
     </dependency>
 
     <dependency>
@@ -159,14 +230,7 @@
     <dependency>
       <groupId>com.wordnik</groupId>
       <artifactId>swagger-annotations</artifactId>
-      <version>1.5.3-M1</version>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.wordnik</groupId>
-      <artifactId>swagger-core</artifactId>
-      <version>1.5.3-M1</version>
     </dependency>
 
     <!-- javadoc requires all the annotations on the classpath -->

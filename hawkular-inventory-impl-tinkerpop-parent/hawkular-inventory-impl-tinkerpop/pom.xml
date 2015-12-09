@@ -74,6 +74,13 @@
     </dependency>
 
     <!-- test deps -->
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-api</artifactId>
@@ -81,6 +88,12 @@
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
+
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>javax.mail-api</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -138,21 +151,21 @@
         <dependency>
           <groupId>com.thinkaurelius.titan</groupId>
           <artifactId>titan-core</artifactId>
-          <version>0.5.4</version>
+          <version>${version.com.thinkaurelius.titan}</version>
           <scope>runtime</scope>
         </dependency>
 
         <dependency>
           <groupId>com.thinkaurelius.titan</groupId>
           <artifactId>titan-cassandra</artifactId>
-          <version>0.5.4</version>
+          <version>${version.com.thinkaurelius.titan}</version>
           <scope>runtime</scope>
         </dependency>
 
         <dependency>
           <groupId>com.thinkaurelius.titan</groupId>
           <artifactId>titan-es</artifactId>
-          <version>0.5.4</version>
+          <version>${version.com.thinkaurelius.titan}</version>
           <scope>runtime</scope>
         </dependency>
       </dependencies>

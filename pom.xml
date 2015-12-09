@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>25</version>
+    <version>27</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
@@ -54,14 +54,36 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.accounts>1.1.4.Final</version.org.hawkular.accounts>
+    <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
+    <version.com.tinkerpop>2.6.0</version.com.tinkerpop>
+    <version.com.github.fge.json-schema-validator>2.2.6</version.com.github.fge.json-schema-validator>
+    <version.com.google.code.findbugs>3.0.1</version.com.google.code.findbugs>
+
+    <!-- Overriding parent, ppalaga has no idea why -->
+    <version.com.wordnik.swagger>1.5.3-M1</version.com.wordnik.swagger>
+
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
+    <version.commons-beanutils>1.9.2</version.commons-beanutils>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/collections/main/ -->
+    <version.commons-collections>3.2.1</version.commons-collections>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/io/main/ -->
+    <version.commons-io>2.4</version.commons-io>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/lang/main/ -->
+    <version.commons-lang>2.6</version.commons-lang>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/logging/main/ -->
+    <version.commons-logging>1.1.1</version.commons-logging>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/pool/main/ -->
+    <version.commons-pool>1.6</version.commons-pool>
+    <version.joda-time>2.9.1</version.joda-time>
+    <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
+    <version.javax.mail>1.5.3</version.javax.mail>
+
+    <version.org.hawkular.accounts>2.0.7.Final-SRC-revision-d14d16bbf19882c95b69566f05232e6908bc2de4</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.2.5.Final-SRC-revision-1ca6fab987dfeb69ddab54183423217f03618472</version.org.hawkular.commons>
 
     <!-- integration tests distribution properties -->
-    <test-dist-version.org.hawkular.bus>${version.org.hawkular.bus}</test-dist-version.org.hawkular.bus>
     <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
-    <test-dist-version.org.hawkular.commons>0.2.5.Final</test-dist-version.org.hawkular.commons> <!-- C* -->
-    <test-dist-version.org.keycloak>1.6.1.Final</test-dist-version.org.keycloak>
+    <test-dist-version.org.hawkular.commons>${version.org.hawkular.commons}</test-dist-version.org.hawkular.commons> <!-- C* -->
   </properties>
 
 
@@ -69,11 +91,93 @@
     <dependencies>
       <dependency>
         <groupId>org.wildfly.bom</groupId>
-        <artifactId>jboss-javaee-7.0-wildfly</artifactId>
+        <artifactId>wildfly-javaee7</artifactId>
         <version>${version.org.wildfly}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
+
+      <dependency>
+        <groupId>com.github.fge</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>${version.com.github.fge.json-schema-validator}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.mail</groupId>
+            <artifactId>mailapi</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${version.com.google.guava}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${version.commons-beanutils}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${version.commons-collections}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${version.commons-io}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${version.commons-lang}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>${version.commons-logging}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-pool</groupId>
+        <artifactId>commons-pool</artifactId>
+        <version>${version.commons-pool}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.mail</groupId>
+        <artifactId>javax.mail-api</artifactId>
+        <version>${version.javax.mail}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${version.joda-time}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
