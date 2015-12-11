@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>27</version>
+    <version>30</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
@@ -78,8 +78,8 @@
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
 
-    <version.org.hawkular.accounts>2.0.7.Final-SRC-revision-d14d16bbf19882c95b69566f05232e6908bc2de4</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.2.5.Final-SRC-revision-1ca6fab987dfeb69ddab54183423217f03618472</version.org.hawkular.commons>
+    <version.org.hawkular.accounts>2.0.7.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.3.0.Final</version.org.hawkular.commons>
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
