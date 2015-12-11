@@ -18,10 +18,10 @@ package org.hawkular.inventory.rest.security;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
-import org.hawkular.accounts.api.CurrentUser;
 import org.hawkular.accounts.api.model.Persona;
 
 /**
@@ -33,14 +33,13 @@ import org.hawkular.accounts.api.model.Persona;
 public class InventoryTenantIdProducer implements TenantIdProducer {
 
     @Inject
-    @CurrentUser
-    private Persona currentUser;
+    private Instance<Persona> personaInstance;
 
     @Override
     @Produces
     @Default
     public TenantId getTenantId() {
-        return new TenantId(currentUser.getId());
+        return new TenantId(personaInstance.get().getIdAsUUID().toString());
     }
 }
 
