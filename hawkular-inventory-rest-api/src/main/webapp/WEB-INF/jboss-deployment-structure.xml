@@ -39,6 +39,9 @@
       <module name="org.apache.commons.beanutils"/>
       <module name="org.apache.commons.io"/>
       <module name="org.apache.commons.pool"/>
+      <module name="org.hawkular.bus" />
+      <module name="org.hawkular.commons.cassandra-driver" />
+      <module name="javaee.api" />
     </dependencies>
   </deployment>
 </jboss-deployment-structure>
