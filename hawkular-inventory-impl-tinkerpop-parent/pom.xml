@@ -45,7 +45,4 @@
     <tag>HEAD</tag>
   </scm>
 
-  <properties>
-    <version.com.tinkerpop>2.6.0</version.com.tinkerpop>
-  </properties>
 </project>

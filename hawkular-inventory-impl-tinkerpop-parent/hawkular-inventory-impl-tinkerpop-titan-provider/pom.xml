@@ -30,12 +30,6 @@
 
   <name>Hawkular Inventory Tinkerpop Titan Provider</name>
 
-  <!-- This will probably be independently versioned in the future, because it doesn't really make sense to release
-     a new version with every version of the Tinkerpop impl. -->
-  <properties>
-    <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.hawkular.inventory</groupId>

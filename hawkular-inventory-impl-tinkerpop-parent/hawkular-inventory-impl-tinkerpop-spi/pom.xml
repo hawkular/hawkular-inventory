@@ -42,6 +42,7 @@
       <artifactId>blueprints-core</artifactId>
       <version>${version.com.tinkerpop}</version>
     </dependency>
+
   </dependencies>
 
   <build>

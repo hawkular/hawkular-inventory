@@ -73,13 +73,19 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Test -->
     <dependency>
-      <groupId>org.hawkular.bus</groupId>
-      <artifactId>hawkular-bus-test-common</artifactId>
-      <version>${version.org.hawkular.bus}</version>
-      <scope>test</scope>
+      <groupId>org.jboss.spec.javax.jms</groupId>
+      <artifactId>jboss-jms-api_2.0_spec</artifactId>
+      <scope>provided</scope>
     </dependency>
+
+    <!-- Test -->
+    <!-- <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-bus-test-common</artifactId>
+      <version>${version.org.hawkular.commons}</version>
+      <scope>test</scope>
+    </dependency> -->
 
     <dependency>
       <groupId>junit</groupId>

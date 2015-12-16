@@ -42,6 +42,7 @@
   </build>
 
   <dependencies>
+
     <!-- tests are reused in another modules, so dependencies are transitively needed -->
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
