@@ -31,6 +31,11 @@
     </param-value>
   </context-param>
 
+  <context-param>
+    <param-name>org.keycloak.secretstore.enabled</param-name>
+    <param-value>true</param-value>
+  </context-param>
+
   <!-- to disable the auth, comment out the following elements -->
   <security-constraint>
     <web-resource-collection>
