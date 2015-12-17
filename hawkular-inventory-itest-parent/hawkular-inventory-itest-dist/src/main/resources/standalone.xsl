@@ -46,6 +46,13 @@
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="//*[local-name()='subsystem']/*[local-name()='server' and @name='default']">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|node()"/>
+      <jms-topic name="HawkularInventoryChanges" entries="java:/topic/HawkularInventoryChanges"/>
+    </xsl:copy>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
   <xsl:template match="node()|@*">
     <xsl:copy>
