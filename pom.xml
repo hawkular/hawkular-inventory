@@ -81,6 +81,8 @@
     <version.org.hawkular.accounts>2.0.7.Final</version.org.hawkular.accounts>
     <version.org.hawkular.commons>0.3.0.Final</version.org.hawkular.commons>
 
+    <version.org.keycloak.secretstore>1.0.4.Final</version.org.keycloak.secretstore>
+
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
     <test-dist-version.org.hawkular.commons>${version.org.hawkular.commons}</test-dist-version.org.hawkular.commons> <!-- C* -->
