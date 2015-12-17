@@ -97,7 +97,7 @@ public class OfficialInventoryProducer {
         LOG.iUsingImplementation(inventory.getClass().getName());
 
         int failures = 0;
-        int maxFailures = 5;
+        int maxFailures = 15;
         boolean initialized = false;
         Throwable lastError = null;
         while (!initialized && failures++ < maxFailures) {
@@ -109,7 +109,7 @@ public class OfficialInventoryProducer {
                 LOG.debug("Unable to initialize inventory, exception thrown: ", e);
                 LOG.wInitializationFailure(failures, maxFailures, e.getMessage());
                 lastError = e;
-                Thread.sleep(1000);
+                Thread.sleep(3000);
             }
         }
 
