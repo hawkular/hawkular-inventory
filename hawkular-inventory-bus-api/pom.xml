@@ -60,6 +60,7 @@
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-bus-common</artifactId>
       <version>${version.org.hawkular.commons}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
