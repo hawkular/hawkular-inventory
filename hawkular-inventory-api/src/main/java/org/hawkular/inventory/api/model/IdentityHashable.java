@@ -17,15 +17,16 @@
 package org.hawkular.inventory.api.model;
 
 /**
+ * Entities implementing this interface compute their identity hash. This hash is essentially a Merkle tree hash that
+ * ensures that the entity and its contained child entities are in a certain state.
+ *
+ * @see IdentityHash
+ *
  * @author Lukas Krejci
- * @since 0.3.0
+ * @since 0.10.0
  */
-public interface Blueprint {
+public interface IdentityHashable {
 
-    @SuppressWarnings("unchecked")
-    static <B extends Blueprint, E extends AbstractElement<B, ?>> Class<? extends E> getEntityTypeOf(B blueprint) {
-        return (Class<? extends E>) (Class) blueprint.getClass().getEnclosingClass();
-    }
-
-    <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);
+    //TODO this is going to be implemented, but commenting out for now so that we compile.
+    //String getIdentityHash();
 }

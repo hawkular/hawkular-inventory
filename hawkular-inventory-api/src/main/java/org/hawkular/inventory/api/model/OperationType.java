@@ -23,7 +23,8 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 0.4.0
  */
-public final class OperationType extends Entity<OperationType.Blueprint, OperationType.Update> {
+public final class OperationType extends Entity<OperationType.Blueprint, OperationType.Update>
+        implements IdentityHashable {
 
     @SuppressWarnings("unused")
     private OperationType() {

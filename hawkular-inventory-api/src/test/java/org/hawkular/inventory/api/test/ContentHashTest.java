@@ -23,10 +23,10 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;

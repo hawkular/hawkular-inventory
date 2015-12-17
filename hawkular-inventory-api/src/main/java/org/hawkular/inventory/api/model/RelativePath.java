@@ -51,7 +51,7 @@ public final class RelativePath extends Path implements Serializable {
 
     private static final List<Class<?>> ALL_VALID_TYPES = Arrays.asList(Tenant.class, ResourceType.class,
             MetricType.class, OperationType.class, Environment.class, Feed.class, Metric.class, Resource.class,
-            StructuredData.class, Up.class);
+            StructuredData.class, DataEntity.class, Up.class);
 
     static {
 
@@ -173,6 +173,11 @@ public final class RelativePath extends Path implements Serializable {
         getPath().forEach(extender::extend);
 
         return extender.get();
+    }
+
+    @Override
+    public Extender modified() {
+        return new Extender(startIdx, new ArrayList<>(path.subList(0, endIdx)));
     }
 
     @SuppressWarnings("unchecked")
@@ -629,6 +634,10 @@ public final class RelativePath extends Path implements Serializable {
         @Override
         public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
             return (Extender) super.extend(type, id);
+        }
+
+        public Extender extendUp() {
+            return (Extender) super.extend(new Segment(Up.class, null));
         }
 
         @Override

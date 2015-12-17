@@ -35,7 +35,8 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
+public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update>
+    implements IdentityHashable {
 
     private final StructuredData value;
 

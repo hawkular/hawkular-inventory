@@ -81,10 +81,11 @@ public final class Feeds {
          */
         Single create(Feed.Blueprint blueprint);
 
+        //TODO commented out for now so that we can go piecewise
         /**
          * Synchronizes the inventory of the feed to conform to the provided sync object.
          * @param sync
          */
-        void sync(Feed.Sync sync);
+        //void sync(Feed.Sync sync);
     }
 }

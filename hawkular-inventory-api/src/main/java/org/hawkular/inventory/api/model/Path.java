@@ -208,6 +208,11 @@ public abstract class Path {
     public abstract CanonicalPath toCanonicalPath();
 
     /**
+     * @return extender instance to produce an new path instance extending this one
+     */
+    public abstract Extender modified();
+
+    /**
      * @return true if this is an instance of {@link CanonicalPath}, false otherwise
      */
     public boolean isCanonical() {
@@ -577,7 +582,7 @@ public abstract class Path {
                 }
                 bld.append(PATH_DELIM);
             }
-            return bld.delete(bld.length() - 1, bld.length()).toString();
+            return bld.length() == 0 ? "" : bld.delete(bld.length() - 1, bld.length()).toString();
         }
     }
 

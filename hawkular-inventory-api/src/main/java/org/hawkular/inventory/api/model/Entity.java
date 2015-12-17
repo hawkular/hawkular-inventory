@@ -167,6 +167,19 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
             return incoming == null ? Collections.emptyMap() : incoming;
         }
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Blueprint blueprint = (Blueprint) o;
+
+            return id.equals(blueprint.id);
+        }
+
+        @Override public int hashCode() {
+            return id.hashCode();
+        }
+
         public abstract static class Builder<Blueprint, This extends Builder<Blueprint, This>>
                 extends AbstractElement.Blueprint.Builder<Blueprint, This> {
 

@@ -17,7 +17,6 @@
 package org.hawkular.inventory.api.model;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,7 @@ import org.jboss.logging.processor.util.Objects;
  * @since 0.1.0
  */
 @XmlRootElement
-public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
+public final class Feed extends Entity<Feed.Blueprint, Feed.Update> implements IdentityHashable {
 
     /**
      * JAXB support
@@ -273,7 +272,7 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
             }
         }
 
-        private static abstract class ResourceNodeBuilder {
+        private abstract static class ResourceNodeBuilder {
             protected abstract void addNode(Node node);
         }
 

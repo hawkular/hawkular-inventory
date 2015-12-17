@@ -180,16 +180,6 @@ public class RestBulk extends RestBase {
                     }
 
                     @Override
-                    public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
-                        return defaultAction();
-                    }
-
-                    @Override
-                    public WriteInterface<?, ?, ?, ?> visitMetricType(Void parameter) {
-                        return defaultAction();
-                    }
-
-                    @Override
                     public WriteInterface<?, ?, ?, ?> visitOperationType(Void parameter) {
                         return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
                             @Override

@@ -14,18 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.api;
 
 /**
+ * These interfaces are extended by accessor interfaces for {@link org.hawkular.inventory.api.model.IdentityHashable}
+ * model entities.
+ *
  * @author Lukas Krejci
- * @since 0.3.0
+ * @since 0.10.0
  */
-public interface Blueprint {
+public final class IdentityHashed {
 
-    @SuppressWarnings("unchecked")
-    static <B extends Blueprint, E extends AbstractElement<B, ?>> Class<? extends E> getEntityTypeOf(B blueprint) {
-        return (Class<? extends E>) (Class) blueprint.getClass().getEnclosingClass();
+    private IdentityHashed() {
+
     }
 
-    <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);
+    //TODO commented out for now so that we can develop this piecewise
+    public interface Single {
+//        String identityHash();
+//        IdentityHash.Tree computedTreeHash();
+    }
+
+    public interface Multiple {
+//        Map<CanonicalPath, String> identityHashes();
+//        Set<IdentityHash.Tree> computedTreeHashes();
+    }
 }

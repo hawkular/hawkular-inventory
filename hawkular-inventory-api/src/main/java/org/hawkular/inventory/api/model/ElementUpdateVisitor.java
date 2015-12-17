@@ -21,6 +21,7 @@ package org.hawkular.inventory.api.model;
  * @since 0.1.0
  */
 public interface ElementUpdateVisitor<R, P> {
+
     R visitTenant(Tenant.Update tenant, P parameter);
 
     R visitEnvironment(Environment.Update environment, P parameter);

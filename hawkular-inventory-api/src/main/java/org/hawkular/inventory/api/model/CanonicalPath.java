@@ -253,6 +253,33 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         return true;
     }
 
+    public RelativePath relativeTo(CanonicalPath root) {
+        if (root == null) {
+            throw new IllegalArgumentException("root == null");
+        }
+
+        //establish the common parts of root and this.
+        int maxCommonPrefixLength = Math.min(this.endIdx, root.endIdx);
+        int commonPrefixLength = 0;
+        for (; commonPrefixLength < maxCommonPrefixLength; ++commonPrefixLength) {
+            if (!this.path.get(commonPrefixLength).equals(root.path.get(commonPrefixLength))) {
+                break;
+            }
+        }
+
+        RelativePath.Extender ret = RelativePath.empty();
+
+        for (int ups = root.endIdx; ups > commonPrefixLength; --ups) {
+            ret = ret.extendUp();
+        }
+
+        for (int downs = commonPrefixLength; downs < this.endIdx; downs++) {
+            ret.extend(this.path.get(downs));
+        }
+
+        return ret.get();
+    }
+
     /**
      * Creates a new path by appending the provided segment to the current path. The returned path does NOT share
      * the chain with the current path anymore.
@@ -277,8 +304,9 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      *
      * @return an extender initialized with the current path
      */
+    @Override
     public Extender modified() {
-        return new Extender(startIdx, new ArrayList<>(getPath()));
+        return new Extender(startIdx, new ArrayList<>(path.subList(0, endIdx)));
     }
 
     /**

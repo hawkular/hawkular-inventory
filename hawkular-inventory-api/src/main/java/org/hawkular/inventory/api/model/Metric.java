@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 0.0.1
  */
 @XmlRootElement
-public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
+public final class Metric extends Entity<Metric.Blueprint, Metric.Update> implements IdentityHashable {
 
     private final MetricType type;
     private final Long collectionInterval;

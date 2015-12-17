@@ -29,7 +29,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update>
+        implements IdentityHashable {
 
     /**
      * JAXB support
