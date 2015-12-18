@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -29,8 +30,8 @@ public final class DataEntityEvent extends InventoryEvent<DataEntity> {
     public DataEntityEvent() {
     }
 
-    public DataEntityEvent(Action.Enumerated action, DataEntity object) {
-        super(action, object);
+    public DataEntityEvent(Action.Enumerated action, Tenant tenant, DataEntity object) {
+        super(action, tenant, object);
     }
 
     @Override
