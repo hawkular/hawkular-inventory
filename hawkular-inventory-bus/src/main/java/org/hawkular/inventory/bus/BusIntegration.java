@@ -108,12 +108,29 @@ public final class BusIntegration {
         }
     }
 
-    private static <C, T> void installAction(Inventory inventory, Set<Subscription> subscriptions,
-            Class<T> entityClass, MessageSender sender, Action<C, T> action) {
+    private static <C, T extends AbstractElement> void installAction(Inventory inventory, Set<Subscription>
+            subscriptions, Class<T> entityClass, MessageSender sender, Action<C, T> action) {
 
         Interest<C, T> interest = Interest.in(entityClass).being(action);
 
-        Subscription s = inventory.observable(interest).subscribe((c) -> sender.send(interest, c));
+        Subscription s = inventory.observable(interest).subscribe((c) -> {
+            // todo: ugly
+            Tenant t;
+            if (c instanceof AbstractElement) {
+                if (c instanceof Relationship) {
+                    t = new Tenant(((Relationship) c).getSource().getRoot());
+                } else {
+                    t = new Tenant(((AbstractElement) c).getPath().getRoot());
+                }
+            } else if (c instanceof Action.EnvironmentCopy) {
+                t = new Tenant(((Action.EnvironmentCopy) c).getSource().getPath().getRoot());
+            } else if (c instanceof Action.Update) {
+                t = new Tenant(((AbstractElement) ((Action.Update) c).getOriginalEntity()).getPath().getRoot());
+            } else {
+                throw new IllegalArgumentException("Unknown event type: " + c.getClass().getName());
+            }
+            sender.send(interest, t, c);
+        });
         subscriptions.add(s);
     }
 }

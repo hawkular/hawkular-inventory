@@ -79,6 +79,10 @@ public final class Action<C, E> {
 
             throw new AssertionError("Unknown action");
         }
+
+        public Action<?, ?> getAction() {
+            return action;
+        }
     }
 
     public static final class EnvironmentCopy {
