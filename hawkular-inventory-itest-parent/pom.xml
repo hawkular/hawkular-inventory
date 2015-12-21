@@ -34,10 +34,6 @@
     <module>hawkular-inventory-itest-dist</module>
   </modules>
 
-  <properties>
-    <version.org.hawkular.dist>1.0.0.Alpha7</version.org.hawkular.dist>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
