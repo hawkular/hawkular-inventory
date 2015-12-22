@@ -54,13 +54,17 @@
   </scm>
 
   <properties>
-    <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
-    <version.com.tinkerpop>2.6.0</version.com.tinkerpop>
-    <version.com.github.fge.json-schema-validator>2.2.6</version.com.github.fge.json-schema-validator>
-    <version.com.google.code.findbugs>3.0.1</version.com.google.code.findbugs>
+    <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
+    <version.org.hawkular.accounts>2.0.9.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.3.1.Final</version.org.hawkular.commons>
 
-    <!-- Overriding parent, ppalaga has no idea why -->
-    <version.com.wordnik.swagger>1.5.3-M1</version.com.wordnik.swagger>
+    <version.io.reactivex>1.0.8</version.io.reactivex>
+    <version.com.github.fge>2.2.6</version.com.github.fge>
+    <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
+    <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
+    <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
+    <version.org.keycloak.secretstore>1.0.4.Final</version.org.keycloak.secretstore>
+    <version.com.google.code.findbugs>3.0.1</version.com.google.code.findbugs>
 
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
     <version.commons-beanutils>1.9.2</version.commons-beanutils>
@@ -78,10 +82,9 @@
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
 
-    <version.org.hawkular.accounts>2.0.9.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.3.1.Final</version.org.hawkular.commons>
-
-    <version.org.keycloak.secretstore>1.0.4.Final</version.org.keycloak.secretstore>
+    <version.build-helper-maven-plugin>1.9.1</version.build-helper-maven-plugin>
+    <version.org.revapi.revapi-maven-plugin>0.3.10</version.org.revapi.revapi-maven-plugin>
+    <version.org.revapi.revapi-java>0.5.2</version.org.revapi.revapi-java>
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.accounts>${version.org.hawkular.accounts}</test-dist-version.org.hawkular.accounts>
@@ -99,11 +102,10 @@
         <scope>import</scope>
       </dependency>
 
-
       <dependency>
         <groupId>com.github.fge</groupId>
         <artifactId>json-schema-validator</artifactId>
-        <version>${version.com.github.fge.json-schema-validator}</version>
+        <version>${version.com.github.fge}</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
@@ -208,7 +210,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.9.1</version>
+            <version>${version.build-helper-maven-plugin}</version>
             <executions>
               <execution>
                 <id>parse-version</id>
@@ -223,12 +225,12 @@
           <plugin>
             <groupId>org.revapi</groupId>
             <artifactId>revapi-maven-plugin</artifactId>
-            <version>0.3.10</version>
+            <version>${version.org.revapi.revapi-maven-plugin}</version>
             <dependencies>
               <dependency>
                 <groupId>org.revapi</groupId>
                 <artifactId>revapi-java</artifactId>
-                <version>0.5.2</version>
+                <version>${version.org.revapi.revapi-java}</version>
               </dependency>
             </dependencies>
             <configuration>

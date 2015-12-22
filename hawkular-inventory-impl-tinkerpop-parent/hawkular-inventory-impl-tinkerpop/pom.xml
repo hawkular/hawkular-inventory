@@ -70,7 +70,7 @@
     <dependency>
       <groupId>com.tinkerpop.gremlin</groupId>
       <artifactId>gremlin-java</artifactId>
-      <version>${version.com.tinkerpop}</version>
+      <version>${version.com.tinkerpop.gremlin}</version>
     </dependency>
 
     <!-- test deps -->
