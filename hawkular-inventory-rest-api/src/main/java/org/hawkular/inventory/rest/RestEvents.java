@@ -113,7 +113,7 @@ public class RestEvents extends RestBase {
         });
     }
 
-    private Func1<Object, Boolean> getFilter(Action<?, ?> action, String tenantId) {
+    public static Func1<Object, Boolean> getFilter(Action<?, ?> action, String tenantId) {
         if (action == Action.updated()) {
             return (e) -> tenantId.equals(((AbstractElement) ((Action.Update) e).getOriginalEntity())
                     .getPath().ids().getTenantId());

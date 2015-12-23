@@ -28,7 +28,7 @@ import org.jboss.logging.annotations.MessageLogger;
 /**
  * Logger definitions for Jboss Logging for the rest api
  *
- * Code range is 2000-2999
+ * Code range is 2000-2899
  *
  * @author Heiko W. Rupp
  */

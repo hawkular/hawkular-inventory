@@ -17,7 +17,9 @@
 
 package org.hawkular.inventory.websocket;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -32,13 +34,14 @@ import javax.websocket.server.ServerEndpoint;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.rest.RestApiLogger;
+import org.hawkular.inventory.rest.RestEvents;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
 import org.hawkular.inventory.rest.security.SecurityIntegration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 
 import rx.Subscription;
 
@@ -47,8 +50,10 @@ import rx.Subscription;
  */
 
 @ApplicationScoped
-@ServerEndpoint("/ws/popelnicek")
+@ServerEndpoint("/ws/events")
 public class WebsocketEvents {
+
+    private Map<Session, Subscription> subscriptions = Maps.newHashMap();
 
     @Inject
     @AutoTenant
@@ -60,14 +65,25 @@ public class WebsocketEvents {
     @OnOpen
     public void open(Session session) {
 
-        RestApiLogger.LOGGER.error("\n\n\nWS opened..: " + session.getId() + "\n\n\n");
-        final String type = "resource";
-        final String actionString = "created";
-        session.getQueryString();
+        WebsocketApiLogger.LOGGER.sessionOpened(session.getId());
+        Map<String, String> queryParamStringMap = parseQueryParams(session);
+        final String type = queryParamStringMap.getOrDefault(QueryParam.type.name(), QueryParam.type.getDefaultValue());
+        final String actionString = queryParamStringMap.getOrDefault(QueryParam.action.name(),
+                QueryParam.action.getDefaultValue());
+        final String tenantId = queryParamStringMap.getOrDefault(QueryParam.tenantId.name(),
+                QueryParam.tenantId.getDefaultValue());
+
+        if (tenantId == null) {
+            session.getAsyncRemote().sendText("Provide the tenantId query parameter.");
+            closeSession(session);
+            return;
+        }
 
         Class cls = SecurityIntegration.getClassFromName(type);
         if (cls == null) {
             session.getAsyncRemote().sendText("Unknown type: " + type);
+            closeSession(session);
+            return;
         }
         Action.Enumerated actionEnumItem;
         try {
@@ -78,36 +94,94 @@ public class WebsocketEvents {
                     .reduce(String::concat);
             session.getAsyncRemote().sendText("Unknown action: " + actionString +
                     ", allowed values: " + allowedValues.get());
+            closeSession(session);
             return;
         }
         Action<?, ?> action = actionEnumItem.getAction();
 
-        final Subscription subscribe = inventory.observable(Interest.in(cls).being(action))
-//                .filter(getFilter(action, tenantId))
-//                .buffer(20, TimeUnit.SECONDS)
+        final Subscription subscription = inventory.observable(Interest.in(cls).being(action))
+                .filter(RestEvents.getFilter(action, tenantId))
                 .subscribe((x) -> {
                     try {
                         session.getAsyncRemote().sendText(mapper.writeValueAsString(x));
                     } catch (JsonProcessingException e) {
-                        e.printStackTrace();
+                        session.getAsyncRemote().sendText("Unable to serialize JSON.");
+                        WebsocketApiLogger.LOGGER.serializationFailed(e);
+                        closeSession(session);
                     }
                 });
-
+        subscriptions.put(session, subscription);
     }
 
     @OnClose
     public void close(Session session) {
-        RestApiLogger.LOGGER.error("\n\n\nWS closed.." + session.getId() + "\n\n\n");
+        WebsocketApiLogger.LOGGER.sessionClosed(session.getId());
+        Subscription subscription = subscriptions.get(session);
+        if (subscription != null && !subscription.isUnsubscribed()) {
+            subscription.unsubscribe();
+        }
     }
 
     @OnError
     public void onError(Throwable error) {
-        RestApiLogger.LOGGER.error("\n\n\nWS error..\n\n\n");
+        WebsocketApiLogger.LOGGER.errorHappened(error);
     }
 
     @OnMessage
     public void handleMessage(String message, Session session) {
-        RestApiLogger.LOGGER.error("\n\n\nWS message: " + message + "\n\n\n");
+        WebsocketApiLogger.LOGGER.onMessage(session.getId(), message);
     }
 
+    private void closeSession(Session session) {
+        try {
+            session.close();
+        } catch (IOException exception) {
+            WebsocketApiLogger.LOGGER.sessionCloseFailed(exception);
+        }
+    }
+
+    private Map<String, String> parseQueryParams(Session session) {
+        Map<String, String> retMap = Maps.newHashMap();
+        String query = session.getQueryString();
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                String[] nameval = param.split("=");
+                retMap.put(nameval[0], nameval[1]);
+            }
+        }
+        return retMap;
+    }
+
+    public static Map<String, String> getQueryMap(String query) {
+        Map<String, String> map = Maps.newHashMap();
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                String[] nameval = param.split("=");
+                map.put(nameval[0], nameval[1]);
+            }
+        }
+        return map;
+    }
+
+    private enum QueryParam {
+        tenantId,
+        type("resource"),
+        action("created");
+
+        private String defaultValue;
+
+        QueryParam() {
+            this(null);
+        }
+
+        QueryParam(String defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        public String getDefaultValue() {
+            return defaultValue;
+        }
+    }
 }
