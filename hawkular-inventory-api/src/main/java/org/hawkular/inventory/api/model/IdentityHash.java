@@ -52,22 +52,26 @@ import org.hawkular.inventory.api.Inventory;
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
  * and is produced using its user-defined id and structure. This hash is used to match a client-side state of an
- * entity (MetadataPack, ResourceType, MetricType) with the severside state of it.
+ * entity severside state of it.
  * <p>
  * The identity hash is defined only for the following types of entities:
- * {@link ResourceType}, {@link MetricType}, {@link OperationType}, {@link Metric} and {@link Resource}.
+ * {@link Feed}, {@link ResourceType}, {@link MetricType}, {@link OperationType}, {@link Metric}, {@link Resource} and
+ * {@link DataEntity}.
  * <p>
  * The identity hash is an SHA1 hash of a string representation of the entity (in UTF-8 encoding). The string
  * representation is produced as follows:
  * <ol>
+ * <li>DataEntity: role + minimizedDataJSON
+ * <li>Metric: id
+ * <li>Resource: hashOf(configuration) + hashOf(connectionConfiguration) + hashOf(childResource)*
+ * + hashOf(childMetric)* + id
  * <li>MetricType: id + type + unit
- * <li>OperationType: id + minimized(returnTypeJSON) + minimized(parameterTypesJSON)
- * <li>ResourceType: id + minimized(configurationSchemaJSON) + minimized(connectionConfigurationSchemaJSON)
- * + operationTypeString*<br/>
- * the operation types are sorted alphabetically by their ids
+ * <li>OperationType: hashOf(returnType) + hashOf(parameterTypes) + id
+ * <li>ResourceType: hashOf(configurationSchema) + hashOf(connectionConfigurationSchema) + hashOf(childOperationType)*
+ * + id
+ * <li>Feed: hashOf(childResourceType)* + hashOf(childMetricType)* + hashOf(childResource)* + hashOf(childMetric)* + id
  * </ol>
- * where {@code minimized()} means that the JSON is stripped of any superfluous whitespace and {@code *} means
- * repetition for necessary number of times.
+ * where {@code hashOf()} means the identity hash of the child entity
  *
  * @author Lukas Krejci
  * @since 0.7.0
@@ -143,18 +147,22 @@ public final class IdentityHash {
     }
 
     public static Tree treeOf(InventoryStructure<?> inventory) {
-        Tree.AbstractBuilder<?>[] tbld = new Tree.AbstractBuilder[] {Tree.builder()};
+        Tree.AbstractBuilder<?>[] tbld = new Tree.AbstractBuilder[1];
 
         DigestComputingWriter wrt = new DigestComputingWriter(newDigest());
 
         HashConstructor ctor = new HashConstructor(wrt) {
             @Override public void startChild(IntermediateHashContext context) {
                 super.startChild(context);
-                tbld[0] = tbld[0].startChild();
+                if (tbld[0] == null) {
+                    tbld[0] = Tree.builder();
+                } else {
+                    tbld[0] = tbld[0].startChild();
+                }
             }
 
-            @Override public void endChild(IntermediateHashResult result) {
-                super.endChild(result);
+            @Override public void endChild(IntermediateHashContext ctx, IntermediateHashResult result) {
+                super.endChild(ctx, result);
                 if (tbld[0] instanceof Tree.ChildBuilder) {
                     tbld[0].withHash(result.hash).withPath(result.path);
                     Tree.AbstractBuilder<?> parent = ((Tree.ChildBuilder) tbld[0]).parent;
@@ -164,7 +172,10 @@ public final class IdentityHash {
             }
         };
 
-        IntermediateHashResult res = computeHash(inventory.getRoot(), HashableView.of(inventory), ctor, (rp) -> rp);
+        IntermediateHashResult res = computeHash(inventory.getRoot(), HashableView.of(inventory), ctor,
+                //we don't want the root element in the relative paths of the children so that they are easily
+                //appendable to the root.
+                (rp) -> rp.slide(1, 0));
 
         tbld[0].withPath(res.path).withHash(res.hash);
 
@@ -200,13 +211,14 @@ public final class IdentityHash {
 
     private static IntermediateHashResult computeHash(Blueprint entity, HashableView structure,
                                                       HashConstructor bld,
-                                                      Function<RelativePath, Path> pathCompleter) {
+                                                      Function<RelativePath, RelativePath> pathCompleter) {
 
         return entity.accept(new ElementBlueprintVisitor.Simple<IntermediateHashResult, IntermediateHashContext>() {
             @Override
             public IntermediateHashResult visitData(DataEntity.Blueprint<?> data, IntermediateHashContext ctx) {
                 return wrap(data, ctx, (childContext) -> {
                     try {
+                        childContext.content.append(data.getId());
                         data.getValue().writeJSON(childContext.content);
                     } catch (IOException e) {
                         throw new IllegalStateException("Could not write out JSON for hash computation purposes.", e);
@@ -251,6 +263,7 @@ public final class IdentityHash {
                     structure.getMetricTypes().forEach(b -> append(b, childContext));
                     structure.getFeedResources().forEach(b -> append(b, childContext));
                     structure.getFeedMetrics().forEach(b -> append(b, childContext));
+                    append(feed.getId(), childContext);
                 });
             }
 
@@ -294,10 +307,10 @@ public final class IdentityHash {
                 if (pathCompleter == null) {
                     ret = new IntermediateHashResult(null, digestor.digest());
                 } else {
-                    ret = new IntermediateHashResult(pathCompleter.apply(context.root), digestor.digest());
+                    ret = new IntermediateHashResult(pathCompleter.apply(childCtx.root), digestor.digest());
                 }
 
-                bld.endChild(ret);
+                bld.endChild(childCtx, ret);
 
                 return ret;
             }
@@ -577,11 +590,12 @@ public final class IdentityHash {
         }
 
         public void startChild(IntermediateHashContext context) {
-            System.out.println("start: " + context.root);
+//            System.out.println("start: " + context.root);
         }
 
-        public void endChild(IntermediateHashResult result) {
-            System.out.println("Intermediate result: path: " + result.path + ", hash: " + result.hash);
+        public void endChild(IntermediateHashContext ctx, IntermediateHashResult result) {
+//            System.out.println("Intermediate result: path: " + result.path + ", hash: " + result.hash + ", content: "
+//                    + ctx.content);
         }
     }
 
@@ -599,10 +613,10 @@ public final class IdentityHash {
     }
 
     private static class IntermediateHashResult {
-        private final Path path;
+        private final RelativePath path;
         private final String hash;
 
-        private IntermediateHashResult(Path path, String hash) {
+        private IntermediateHashResult(RelativePath path, String hash) {
             this.path = path;
             this.hash = hash;
         }
@@ -615,9 +629,6 @@ public final class IdentityHash {
 
         private final ByteBuffer buffer = ByteBuffer.allocate(512);
         private String digest;
-
-        //TODO remove this once done debugging
-        private StringBuilder ________tmpView = new StringBuilder();
 
         private DigestComputingWriter(MessageDigest digester) {
             this.digester = digester;
@@ -667,7 +678,6 @@ public final class IdentityHash {
         }
 
         private void consumeBuffer(CharBuffer chars) {
-            ________tmpView.append(chars);
             CoderResult res;
             do {
                 res = enc.encode(chars, buffer, true);
@@ -679,11 +689,11 @@ public final class IdentityHash {
     }
 
     public static final class Tree {
-        private final Path path;
+        private final RelativePath path;
         private final String hash;
         private final Set<Tree> children;
 
-        private Tree(Path path, String hash, Set<Tree> children) {
+        private Tree(RelativePath path, String hash, Set<Tree> children) {
             this.path = path;
             this.hash = hash;
             this.children = children;
@@ -701,7 +711,7 @@ public final class IdentityHash {
             return hash;
         }
 
-        public Path getPath() {
+        public RelativePath getPath() {
             return path;
         }
 
@@ -729,11 +739,11 @@ public final class IdentityHash {
         }
 
         private abstract static class AbstractBuilder<This extends AbstractBuilder<?>> {
-            private Path path;
+            private RelativePath path;
             private String hash;
             private Set<Tree> children;
 
-            public This withPath(Path path) {
+            public This withPath(RelativePath path) {
                 this.path = path;
                 return castThis();
             }
@@ -744,10 +754,7 @@ public final class IdentityHash {
             }
 
             protected void addChild(Tree childTree) {
-                if (children == null) {
-                    children = new HashSet<>();
-                }
-                children.add(childTree);
+                getChildren().add(childTree);
             }
 
             public ChildBuilder<This> startChild() {
@@ -757,7 +764,15 @@ public final class IdentityHash {
             }
 
             protected Tree build() {
-                return new Tree(path, hash, Collections.unmodifiableSet(new HashSet<>(children)));
+                return new Tree(path, hash, Collections.unmodifiableSet(new HashSet<>(getChildren())));
+            }
+
+            private Set<Tree> getChildren() {
+                if (children == null) {
+                    children = new HashSet<>();
+                }
+
+                return children;
             }
 
             @SuppressWarnings("unchecked")

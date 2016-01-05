@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.test;
 
+import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
+import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
 import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
 import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
 
@@ -27,11 +29,12 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.IdentityHash;
-import org.hawkular.inventory.api.model.MetadataPack;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.junit.Assert;
@@ -48,9 +51,9 @@ public class IdentityHashTest {
         MetricType.Blueprint mtb =
                 MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("mt").withUnit(MetricUnit.NONE).build();
 
-        MetadataPack.Members members = MetadataPack.Members.builder().with(mtb).build();
+        InventoryStructure<MetricType.Blueprint> structure = InventoryStructure.of(mtb).build();
 
-        String blueprintHash = IdentityHash.of(members);
+        String blueprintHash = IdentityHash.of(structure);
 
         String expectedHash = digest(mtb.getId() + mtb.getType() + mtb.getUnit());
 
@@ -61,15 +64,20 @@ public class IdentityHashTest {
     public void testResourceTypeHashWithNoAppendages() throws Exception {
         ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();
 
-        MetadataPack.Members members = MetadataPack.Members.builder().with(rtb).done().build();
+        InventoryStructure<ResourceType.Blueprint> members = InventoryStructure.of(rtb).build();
 
         String blueprintHash = IdentityHash.of(members);
 
-        String expectedHash = digest(rtb.getId() + "nullnull"); //nullnull is for the undefined config and conn schemas
+        String configSchemaHash = digest(configurationSchema + "null");
+        String connSchemaHash = digest(connectionConfigurationSchema + "null");
+
+        //nullnull is for the undefined config and conn schemas
+        String expectedHash = digest(configSchemaHash + connSchemaHash + rtb.getId());
 
         Assert.assertEquals(expectedHash, blueprintHash);
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testResourceTypeHashWithAppendages() throws Exception {
         DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
@@ -81,26 +89,103 @@ public class IdentityHashTest {
                 .build();
 
         OperationType.Blueprint otb = OperationType.Blueprint.builder().withId("op").build();
-        DataEntity.Blueprint<OperationTypes.DataRole> returnType = DataEntity.Blueprint
+        DataEntity.Blueprint<OperationTypes.DataRole> retType = DataEntity.Blueprint
                 .<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.returnType)
+                .withRole(returnType)
                 .withValue(StructuredData.get().integral(42L)).build();
-        DataEntity.Blueprint<OperationTypes.DataRole> parameterTypes = DataEntity.Blueprint
+        DataEntity.Blueprint<OperationTypes.DataRole> paramTypes = DataEntity.Blueprint
                 .<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.parameterTypes)
+                .withRole(parameterTypes)
                 .withValue(StructuredData.get().string("answer")).build();
 
         ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();
 
-        MetadataPack.Members members = MetadataPack.Members.builder().with(rtb).with(configSchema)
-                .with(connSchema).with(otb).with(returnType).with(parameterTypes).done().done().build();
+        InventoryStructure<ResourceType.Blueprint> structure = InventoryStructure.of(rtb).addChild(configSchema)
+                .addChild(connSchema).startChild(otb).addChild(retType).addChild(paramTypes).end().build();
 
-        String expectedHash = digest(rtb.getId() + configSchema.getValue().toJSON() + connSchema.getValue().toJSON()
-                + otb.getId() + returnType.getValue().toJSON() + parameterTypes.getValue().toJSON());
+        String configSchemaHash = digest("" + configurationSchema + configSchema.getValue().toJSON());
+        String connSchemaHash = digest("" + connectionConfigurationSchema + connSchema.getValue().toJSON());
+        String returnTypeHash = digest("" + returnType + retType.getValue().toJSON());
+        String parameterTypesHash = digest("" + parameterTypes + paramTypes.getValue()
+                .toJSON());
+        String operationTypeHash = digest(returnTypeHash + parameterTypesHash + otb.getId());
 
-        String blueprintHash = IdentityHash.of(members);
+        String expectedHash = digest(configSchemaHash + connSchemaHash + operationTypeHash + rtb.getId());
+
+        String blueprintHash = IdentityHash.of(structure);
 
         Assert.assertEquals(expectedHash, blueprintHash);
+    }
+
+    @SuppressWarnings("Duplicates")
+    @Test
+    public void testIdentityHashTree() throws Exception {
+        DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
+                .<ResourceTypes.DataRole>builder()
+                .withRole(configurationSchema).withValue(StructuredData.get().integral(5L)).build();
+        DataEntity.Blueprint<ResourceTypes.DataRole> connSchema = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+                .withRole(connectionConfigurationSchema)
+                .withValue(StructuredData.get().list().addBool(true).addUndefined().build())
+                .build();
+
+        OperationType.Blueprint otb = OperationType.Blueprint.builder().withId("op").build();
+        DataEntity.Blueprint<OperationTypes.DataRole> retType = DataEntity.Blueprint
+                .<OperationTypes.DataRole>builder()
+                .withRole(returnType)
+                .withValue(StructuredData.get().integral(42L)).build();
+        DataEntity.Blueprint<OperationTypes.DataRole> paramTypes = DataEntity.Blueprint
+                .<OperationTypes.DataRole>builder()
+                .withRole(parameterTypes)
+                .withValue(StructuredData.get().string("answer")).build();
+
+        ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();
+
+        InventoryStructure<ResourceType.Blueprint> structure = InventoryStructure.of(rtb).addChild(configSchema)
+                .addChild(connSchema).startChild(otb).addChild(retType).addChild(paramTypes).end().build();
+
+        String configSchemaHash = digest("" + configurationSchema + configSchema.getValue().toJSON());
+        String connSchemaHash = digest("" + connectionConfigurationSchema + connSchema.getValue().toJSON());
+        String returnTypeHash = digest("" + returnType + retType.getValue().toJSON());
+        String parameterTypesHash = digest("" + parameterTypes + paramTypes.getValue()
+                .toJSON());
+        String operationTypeHash = digest(returnTypeHash + parameterTypesHash + otb.getId());
+
+        String resourceTypeHash = digest(configSchemaHash + connSchemaHash + operationTypeHash + rtb.getId());
+
+        IdentityHash.Tree treeHash = IdentityHash.treeOf(structure);
+
+        Assert.assertEquals(resourceTypeHash, treeHash.getHash());
+        Assert.assertEquals(RelativePath.empty().get(), treeHash.getPath());
+        Assert.assertEquals(3, treeHash.getChildren().size());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().operationType("op").get().equals(c.getPath()))
+                .filter(c -> operationTypeHash.equals(c.getHash()))
+                .findFirst().isPresent());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().dataEntity(configurationSchema).get().equals(c.getPath()))
+                .filter(c -> configSchemaHash.equals(c.getHash()))
+                .findFirst().isPresent());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().dataEntity(connectionConfigurationSchema).get().equals(c.getPath()))
+                .filter(c -> connSchemaHash.equals(c.getHash()))
+                .findFirst().isPresent());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().operationType("op").get().equals(c.getPath()))
+                .flatMap(t -> t.getChildren().stream())
+                .filter(c -> RelativePath.to().operationType("op").data(returnType).get().equals(c.getPath()))
+                .filter(c -> returnTypeHash.equals(c.getHash()))
+                .findFirst().isPresent());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().operationType("op").get().equals(c.getPath()))
+                .flatMap(t -> t.getChildren().stream())
+                .filter(c -> RelativePath.to().operationType("op").data(parameterTypes).get().equals(c.getPath()))
+                .filter(c -> parameterTypesHash.equals(c.getHash()))
+                .findFirst().isPresent());
     }
 
     private String digest(String content) throws NoSuchAlgorithmException {
