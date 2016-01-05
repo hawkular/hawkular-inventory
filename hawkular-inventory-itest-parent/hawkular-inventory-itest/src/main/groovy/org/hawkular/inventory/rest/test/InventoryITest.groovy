@@ -703,6 +703,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
+    @Ignore //This needs to wait for HWKINVENT-162
     void testTenantsContainFeeds() {
         assertRelationshipExists("feeds/$feedId/relationships",
                 "/t;$tenantId",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,8 +35,7 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update>
-    implements IdentityHashable {
+public final class DataEntity extends /*IdentityHashed*/Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     private final StructuredData value;
 

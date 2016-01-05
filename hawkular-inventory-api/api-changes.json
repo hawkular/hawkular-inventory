@@ -1010,7 +1010,7 @@
           "code": "java.method.addedToInterface",
           "new": "method java.lang.String org.hawkular.inventory.api.MetricTypes.Single::identityHash() throws org.hawkular.inventory.api.EntityNotFoundException",
           "justification": "New feature - identical metric and resource types detection across feeds"
-        },      
+        },
         {
           "code": "java.method.addedToInterface",
           "new": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.ResourceTypes.BrowserBase<Resources, MetricTypes, OperationTypes, Data>::identical()",
@@ -1254,7 +1254,33 @@
           "old": "method void org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::cleanup(R, BE)",
           "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
         }
-     ]
+      ]
+    }
+  },
+  "0.12.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.IdentityHash",
+          "justification": "Moved to org.hawkular.inventory.api.model"
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method <B extends org.hawkular.inventory.api.model.Blueprint, E extends org.hawkular.inventory.api.model.AbstractElement<B extends org.hawkular.inventory.api.model.Blueprint, ?>> java.lang.Class<? extends E> org.hawkular.inventory.api.model.Blueprint::getEntityTypeOf(B)",
+          "justification": "This is errorneously reported by Revapi to be a breaking change."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method R org.hawkular.inventory.api.model.ElementTypeVisitor.Simple<R, P>::defaultAction(java.lang.Class<? extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>, P)",
+          "justification": "This increases the usefulness of the method."
+        },
+        {
+          "code": "java.method.abstractMethodAdded",
+          "new": "method org.hawkular.inventory.api.model.Path.Extender org.hawkular.inventory.api.model.Path::modified()",
+          "justification": "The only 2 allowed subclasses - CanonicalPath and RelativePath both implement this, so this is not breaking anything."
+        }
+      ]
     }
   }
 }

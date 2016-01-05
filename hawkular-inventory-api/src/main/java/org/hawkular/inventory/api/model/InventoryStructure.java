@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -261,7 +262,8 @@ public interface InventoryStructure<Root extends Blueprint> {
                     }
 
                     @Override public BB visitMetric(Metric metric, Void parameter) {
-                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use a relative path
+                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use
+                        //a relative path
                         RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
 
                         return (BB) fillCommon(metric, Metric.Blueprint.builder())
@@ -299,7 +301,8 @@ public interface InventoryStructure<Root extends Blueprint> {
                     }
 
                     @Override public BB visitResource(Resource resource, Void parameter) {
-                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use a relative path
+                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use
+                        //a relative path
                         RelativePath resourceTypePath = resource.getType().getPath().relativeTo(resource.getPath());
 
                         return (BB) fillCommon(resource, Resource.Blueprint.builder())
@@ -325,6 +328,17 @@ public interface InventoryStructure<Root extends Blueprint> {
                 }, null);
             }
         };
+    }
+
+    /**
+     * Shortcut method, exactly identical to calling {@link Offline#of(Entity.Blueprint)}.
+     *
+     * @param root the root blueprint
+     * @param <B> the type of the blueprint
+     * @return the builder to build an offline inventory structure
+     */
+    static <B extends Entity.Blueprint> InventoryStructure.Offline.Builder<B> of(B root) {
+        return Offline.of(root);
     }
 
     /**
@@ -576,7 +590,7 @@ public interface InventoryStructure<Root extends Blueprint> {
         public <E extends Entity<B, ?>, B extends Blueprint> Stream<B>
         getChildren(RelativePath parent, Class<E> childType) {
             return (Stream<B>) children.getOrDefault(parent, Collections.emptyMap())
-                    .getOrDefault(childType, Collections.emptySet())
+                    .getOrDefault(EntityType.of(childType), Collections.emptySet())
                     .stream();
         }
 
@@ -643,10 +657,10 @@ public interface InventoryStructure<Root extends Blueprint> {
 
             RelativePath childPath = extender.extend(childType, child.getId()).get();
 
-            Map<EntityType, Set<Entity.Blueprint>> cs = children.get(childPath);
+            Map<EntityType, Set<Entity.Blueprint>> cs = children.get(myPath);
             if (cs == null) {
-                cs = new HashMap<>();
-                children.put(childPath, cs);
+                cs = new EnumMap<>(EntityType.class);
+                children.put(myPath, cs);
             }
 
             Set<Entity.Blueprint> bls = cs.get(EntityType.of(childType));
@@ -657,8 +671,7 @@ public interface InventoryStructure<Root extends Blueprint> {
 
             bls.add(child);
 
-            return new ChildBuilder<>(castThis(), extender.extend(childType, child.getId()).get(), children,
-                    relationships);
+            return new ChildBuilder<>(castThis(), childPath, children, relationships);
         }
 
         /**
@@ -706,7 +719,7 @@ public interface InventoryStructure<Root extends Blueprint> {
             this.root = root;
         }
 
-        InventoryStructure<Root> build() {
+        public InventoryStructure<Root> build() {
             return new Offline<>(root, children, relationships);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 0.0.1
  */
 @XmlRootElement
-public final class Metric extends Entity<Metric.Blueprint, Metric.Update> implements IdentityHashable {
+public final class Metric extends /*IdentityHashed*/Entity<Metric.Blueprint, Metric.Update> {
 
     private final MetricType type;
     private final Long collectionInterval;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,8 +23,7 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 0.4.0
  */
-public final class OperationType extends Entity<OperationType.Blueprint, OperationType.Update>
-        implements IdentityHashable {
+public final class OperationType extends /*IdentityHashed*/Entity<OperationType.Blueprint, OperationType.Update> {
 
     @SuppressWarnings("unused")
     private OperationType() {
