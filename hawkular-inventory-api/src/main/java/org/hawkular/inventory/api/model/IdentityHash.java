@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.api.model;
 
-import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
 import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
@@ -36,30 +35,19 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.TreeSet;
-import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
-
-import javax.swing.text.BadLocationException;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
@@ -85,8 +73,6 @@ import org.hawkular.inventory.api.Resources;
  * @since 0.7.0
  */
 public final class IdentityHash {
-
-    private static final RelativePath EMPTY_PATH = RelativePath.empty().get();
 
     private static final Comparator<Entity<?, ?>> ENTITY_COMPARATOR = (a, b) -> {
         if (a == null) return b == null ? 0 : -1;
@@ -118,7 +104,7 @@ public final class IdentityHash {
     }
 
     public static String of(MetadataPack.Members metadata) {
-        DigestComputingWriter wrt = new DigestComputingWriter(newDigest());
+        HashConstructor ctor = new HashConstructor(new DigestComputingWriter(newDigest()));
 
         HashableView metadataView = HashableView.of(metadata);
 
@@ -126,25 +112,63 @@ public final class IdentityHash {
         all.addAll(metadata.getMetricTypes());
         all.addAll(metadata.getResourceTypes());
 
+        StringBuilder result = new StringBuilder();
+
         for (Entity.Blueprint bl : all) {
-            appendStringRepresentation(bl, metadataView, wrt);
+            IntermediateHashResult res = computeHash(bl, metadataView, ctor, (rp) -> null);
+            result.append(res.hash);
         }
 
-        return computeDigest(wrt);
+        DigestComputingWriter digestor = ctor.getDigestor();
+        digestor.reset();
+        digestor.append(result);
+        digestor.close();
+        return digestor.digest();
     }
 
-    public static String of(Entity<?, ?> entity, Inventory inventory) {
+    public static String of(InventoryStructure<?> inventory) {
+        HashConstructor ctor = new HashConstructor(new DigestComputingWriter(newDigest()));
+
+        computeHash(inventory.getRoot(), HashableView.of(inventory), ctor, (rp) -> null);
+
+        return ctor.getDigestor().digest();
+    }
+
+    public static String of(MetadataPack mp, Inventory inventory) {
+        List<Entity<?, ?>> all = new ArrayList<>();
+        all.addAll(inventory.inspect(mp).resourceTypes().getAll().entities());
+        all.addAll(inventory.inspect(mp).metricTypes().getAll().entities());
+
+        return of(all, inventory);
+    }
+
+    public static Tree treeOf(InventoryStructure<?> inventory) {
+        Tree.AbstractBuilder<?>[] tbld = new Tree.AbstractBuilder[] {Tree.builder()};
+
         DigestComputingWriter wrt = new DigestComputingWriter(newDigest());
 
-        appendStringRepresentation(asBlueprint(entity), HashableView.of(entity, inventory), wrt);
+        HashConstructor ctor = new HashConstructor(wrt) {
+            @Override public void startChild(IntermediateHashContext context) {
+                super.startChild(context);
+                tbld[0] = tbld[0].startChild();
+            }
 
-        return computeDigest(wrt);
-    }
+            @Override public void endChild(IntermediateHashResult result) {
+                super.endChild(result);
+                if (tbld[0] instanceof Tree.ChildBuilder) {
+                    tbld[0].withHash(result.hash).withPath(result.path);
+                    Tree.AbstractBuilder<?> parent = ((Tree.ChildBuilder) tbld[0]).parent;
+                    parent.addChild(tbld[0].build());
+                    tbld[0] = parent;
+                }
+            }
+        };
 
-    public static Tree treeOf(Entity<?, ?> entity, Inventory inventory) {
-        HashableView view = HashableView.of(entity, inventory);
-        // TODO implement
-        return null;
+        IntermediateHashResult res = computeHash(inventory.getRoot(), HashableView.of(inventory), ctor, (rp) -> rp);
+
+        tbld[0].withPath(res.path).withHash(res.hash);
+
+        return tbld[0].build();
     }
 
     public static String of(Iterable<? extends Entity<?, ?>> entities, Inventory inventory) {
@@ -156,125 +180,128 @@ public final class IdentityHash {
 
         entities.forEachRemaining(sortedEntities::add);
 
-        DigestComputingWriter wrt = new DigestComputingWriter(newDigest());
+        HashConstructor ctor = new HashConstructor(new DigestComputingWriter(newDigest()));
+
+        StringBuilder resultHash = new StringBuilder();
 
         sortedEntities.forEach((e) -> {
-            HashableView v = HashableView.of(e, inventory);
-            appendStringRepresentation(asBlueprint(e), v, wrt);
+            InventoryStructure<?> structure = InventoryStructure.of(e, inventory);
+            HashableView v = HashableView.of(structure);
+            IntermediateHashResult res = computeHash(structure.getRoot(), v, ctor, (rp) -> null);
+            resultHash.append(res.hash);
         });
 
-        return computeDigest(wrt);
+        ctor.getDigestor().reset();
+        ctor.getDigestor().append(resultHash);
+        ctor.getDigestor().close();
+
+        return ctor.getDigestor().digest();
     }
 
-    private static void appendStringRepresentation(Blueprint entity, HashableView structure,
-                                                   Appendable bld) {
+    private static IntermediateHashResult computeHash(Blueprint entity, HashableView structure,
+                                                      HashConstructor bld,
+                                                      Function<RelativePath, Path> pathCompleter) {
 
-        ArrayDeque<Entity.Blueprint> visitedPath = new ArrayDeque<>();
-
-        Supplier<RelativePath> pathFromRoot = () -> {
-            RelativePath.Extender ret = RelativePath.empty();
-
-            Iterator<Entity.Blueprint> it = visitedPath.iterator();
-            if (it.hasNext()) {
-                //leave out the first element on the path stack - it corresponts to the root entity and we're
-                //composing a path from it downwards
-                it.next();
-            }
-
-            while (it.hasNext()) {
-                Entity.Blueprint bl = it.next();
-                ret.extend(Blueprint.getEntityTypeOf(bl), bl.getId());
-            }
-
-            return ret.get();
-        };
-
-        entity.accept(new ElementBlueprintVisitor.Simple<Void, Void>() {
+        return entity.accept(new ElementBlueprintVisitor.Simple<IntermediateHashResult, IntermediateHashContext>() {
             @Override
-            public Void visitData(DataEntity.Blueprint<?> data, Void parameter) {
-                return wrap(() -> data.getValue().writeJSON(bld));
-            }
-
-            @Override
-            public Void visitMetricType(MetricType.Blueprint mt, Void parameter) {
-                return wrap(() -> bld.append(mt.getId()).append(mt.getType().name()).append(mt.getUnit().name()));
-            }
-
-            @Override
-            public Void visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                return wrap(() -> {
-                    RelativePath rootPath = pathFromRoot.get();
-
-                    DataEntity.Blueprint<?> returnType = structure.getReturnType(rootPath, operationType);
-                    DataEntity.Blueprint<?> parameterTypes = structure.getParameterTypes(rootPath, operationType);
-
-                    bld.append(operationType.getId());
-
-                    visitedPath.push(operationType);
-
-                    returnType.accept(this, null);
-                    parameterTypes.accept(this, null);
-
-                    visitedPath.pop();
+            public IntermediateHashResult visitData(DataEntity.Blueprint<?> data, IntermediateHashContext ctx) {
+                return wrap(data, ctx, (childContext) -> {
+                    try {
+                        data.getValue().writeJSON(childContext.content);
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Could not write out JSON for hash computation purposes.", e);
+                    }
                 });
             }
 
             @Override
-            public Void visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return wrap(() -> {
-                    DataEntity.Blueprint<?> configSchema = structure.getConfigurationSchema(type);
-                    DataEntity.Blueprint<?> connSchema = structure.getConnectionConfigurationSchema(type);
-                    List<OperationType.Blueprint> ots = structure.getOperationTypes(type);
-
-                    bld.append(type.getId());
-
-                    visitedPath.push(type);
-
-                    configSchema.accept(this, null);
-                    connSchema.accept(this, null);
-
-                    ots.forEach((ot) -> ot.accept(this, null));
-
-                    visitedPath.pop();
+            public IntermediateHashResult visitMetricType(MetricType.Blueprint mt, IntermediateHashContext ctx) {
+                return wrap(mt, ctx, (childContext) -> {
+                    append(mt.getId(), childContext);
+                    append(mt.getType().name(), childContext);
+                    append(mt.getUnit().name(), childContext);
                 });
             }
 
             @Override
-            public Void visitFeed(Feed.Blueprint feed, Void parameter) {
-                //TODO implement
-                return null;
+            public IntermediateHashResult visitOperationType(OperationType.Blueprint operationType,
+                                                             IntermediateHashContext ctx) {
+                return wrap(operationType, ctx, (childContext) -> {
+                    append(structure.getReturnType(ctx.root, operationType), childContext);
+                    append(structure.getParameterTypes(ctx.root, operationType), childContext);
+                    append(operationType.getId(), childContext);
+                });
             }
 
             @Override
-            public Void visitMetric(Metric.Blueprint metric, Void parameter) {
-                //TODO implement
-                return null;
+            public IntermediateHashResult visitResourceType(ResourceType.Blueprint type,
+                                                            IntermediateHashContext ctx) {
+                return wrap(type, ctx, (childContext) -> {
+                    append(structure.getConfigurationSchema(type), childContext);
+                    append(structure.getConnectionConfigurationSchema(type), childContext);
+                    structure.getOperationTypes(type).forEach(b -> append(b, childContext));
+                    append(type.getId(), childContext);
+                });
             }
 
             @Override
-            public Void visitResource(Resource.Blueprint resource, Void parameter) {
-                //TODO implement
-                return null;
+            public IntermediateHashResult visitFeed(Feed.Blueprint feed, IntermediateHashContext ctx) {
+                return wrap(feed, ctx, (childContext) -> {
+                    structure.getResourceTypes().forEach(b -> append(b, childContext));
+                    structure.getMetricTypes().forEach(b -> append(b, childContext));
+                    structure.getFeedResources().forEach(b -> append(b, childContext));
+                    structure.getFeedMetrics().forEach(b -> append(b, childContext));
+                });
             }
-        }, null);
-    }
 
-    private static Void wrap(FailingPayload payload) {
-        try {
-            payload.run();
-            return null;
-        } catch (Exception e) {
-            throw new IllegalStateException("Identity hash computation failed.", e);
-        }
-    }
+            @Override
+            public IntermediateHashResult visitMetric(Metric.Blueprint metric, IntermediateHashContext ctx) {
+                return wrap(metric, ctx, (childContext) -> append(metric.getId(), childContext));
+            }
 
-    private static String computeDigest(DigestComputingWriter bld) {
-        try {
-            bld.close();
-            return bld.digest();
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not produce and SHA-1 hash.", e);
-        }
+            @Override
+            public IntermediateHashResult visitResource(Resource.Blueprint resource,
+                                                        IntermediateHashContext context) {
+                return wrap(resource, context, (childContext) -> {
+                    append(structure.getConfiguration(context.root, resource), childContext);
+                    append(structure.getConnectionConfiguration(context.root, resource), childContext);
+                    structure.getResources(context.root, resource).forEach(b -> append(b, childContext));
+                    structure.getResourceMetrics(context.root, resource).forEach(b -> append(b, childContext));
+                    append(resource.getId(), childContext);
+                });
+            }
+
+            private void append(String data, IntermediateHashContext ctx) {
+                ctx.content.append(data);
+            }
+
+            private void append(Entity.Blueprint child, IntermediateHashContext ctx) {
+                ctx.content.append(child.accept(this, ctx).hash);
+            }
+
+            private IntermediateHashResult wrap(Entity.Blueprint root, IntermediateHashContext context,
+                                                Consumer<IntermediateHashContext> hashComputation) {
+                IntermediateHashContext childCtx = context.progress(root);
+                bld.startChild(childCtx);
+                hashComputation.accept(childCtx);
+
+                DigestComputingWriter digestor = bld.getDigestor();
+                digestor.reset();
+                digestor.append(childCtx.content);
+                digestor.close();
+
+                IntermediateHashResult ret;
+                if (pathCompleter == null) {
+                    ret = new IntermediateHashResult(null, digestor.digest());
+                } else {
+                    ret = new IntermediateHashResult(pathCompleter.apply(context.root), digestor.digest());
+                }
+
+                bld.endChild(ret);
+
+                return ret;
+            }
+        }, new IntermediateHashContext(RelativePath.empty().get()));
     }
 
     private static MessageDigest newDigest() {
@@ -309,7 +336,7 @@ public final class IdentityHash {
                 RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
 
                 return (B) fillCommon(metric, Metric.Blueprint.builder()).withInterval(metric.getCollectionInterval())
-                    .withMetricTypePath(metricTypePath.toString()).build();
+                        .withMetricTypePath(metricTypePath.toString()).build();
             }
 
             @Override public B visitMetricType(MetricType type, Void parameter) {
@@ -339,197 +366,6 @@ public final class IdentityHash {
                 return bld.withId(entity.getId()).withName(entity.getName()).withProperties(entity.getProperties());
             }
         }, null);
-    }
-
-    interface FailingPayload {
-        void run() throws Exception;
-    }
-
-    private static final class DigestComputingWriter implements Appendable, Closeable {
-        private final MessageDigest digester;
-        private final CharsetEncoder enc = Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction
-                .REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-
-        private final ByteBuffer buffer = ByteBuffer.allocate(512);
-        private String digest;
-
-        //TODO remove this once done debugging
-        private StringBuilder ________tmpView = new StringBuilder();
-
-        private DigestComputingWriter(MessageDigest digester) {
-            this.digester = digester;
-        }
-
-        @Override
-        public DigestComputingWriter append(CharSequence csq) throws IOException {
-            consumeBuffer(CharBuffer.wrap(csq));
-            return this;
-        }
-
-        @Override
-        public DigestComputingWriter append(CharSequence csq, int start, int end) throws IOException {
-            consumeBuffer(CharBuffer.wrap(csq, start, end));
-            return this;
-        }
-
-        @Override
-        public DigestComputingWriter append(char c) throws IOException {
-            consumeBuffer(CharBuffer.wrap(new char[]{c}));
-            return this;
-        }
-
-        @Override
-        public void close() throws IOException {
-            byte[] digest = digester.digest();
-
-            StringBuilder bld = new StringBuilder();
-            for (byte b : digest) {
-                bld.append(Integer.toHexString(Byte.toUnsignedInt(b)));
-            }
-
-            this.digest = bld.toString();
-        }
-
-        public String digest() {
-            if (digest == null) {
-                throw new IllegalStateException("digest computing writer not closed.");
-            }
-
-            return digest;
-        }
-
-        private void consumeBuffer(CharBuffer chars) {
-            ________tmpView.append(chars);
-            CoderResult res;
-            do {
-                res = enc.encode(chars, buffer, true);
-                buffer.flip();
-                digester.update(buffer);
-                buffer.clear();
-            } while (res == CoderResult.OVERFLOW);
-        }
-    }
-
-    public static final class Tree {
-        private final CanonicalPath path;
-        private final String hash;
-        private final Set<Tree> children;
-
-        private Tree(CanonicalPath path, String hash, Set<Tree> children) {
-            this.path = path;
-            this.hash = hash;
-            this.children = children;
-        }
-
-        public static Builder builder() {
-            return new Builder();
-        }
-
-        public Set<Tree> getChildren() {
-            return children;
-        }
-
-        public String getHash() {
-            return hash;
-        }
-
-        public CanonicalPath getPath() {
-            return path;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Tree tree = (Tree) o;
-
-            return hash.equals(tree.hash);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return "Tree[" + "path=" + path +
-                    ", hash='" + hash + '\'' +
-                    ",children=" + children +
-                    ']';
-        }
-
-
-        private abstract static class AbstractBuilder<This extends AbstractBuilder> {
-            private CanonicalPath path;
-            private String hash;
-            private Set<Tree> children;
-
-            public This withCanonicalPath(CanonicalPath path) {
-                this.path = path;
-                return castThis();
-            }
-
-            public This withHash(String hash) {
-                this.hash = hash;
-                return castThis();
-            }
-
-            protected void addChild(Tree childTree) {
-                if (children == null) {
-                    children = new HashSet<>();
-                }
-                children.add(childTree);
-            }
-
-            protected Tree build() {
-                return new Tree(path, hash, Collections.unmodifiableSet(new HashSet<>(children)));
-            }
-
-            @SuppressWarnings("unchecked")
-            private This castThis() {
-                return (This) this;
-            }
-        }
-
-        public static final class Builder extends AbstractBuilder<Builder> {
-
-            private Builder() {
-
-            }
-
-            public ChildBuilder<Builder> startChild() {
-                ChildBuilder<Builder> childBuilder = new ChildBuilder<>();
-                childBuilder.parent = this;
-                return childBuilder;
-            }
-
-            public Tree build() {
-                return super.build();
-            }
-        }
-
-        public static final class ChildBuilder<Parent extends AbstractBuilder<?>>
-                extends AbstractBuilder<ChildBuilder<Parent>> {
-            private Parent parent;
-
-            private ChildBuilder() {
-
-            }
-
-            public ChildBuilder<ChildBuilder<Parent>> startChild() {
-                ChildBuilder<ChildBuilder<Parent>> childBuilder = new ChildBuilder<>();
-                childBuilder.parent = this;
-                return childBuilder;
-            }
-
-            public Parent endChild() {
-                Tree tree = build();
-                parent.addChild(tree);
-                return parent;
-            }
-        }
     }
 
     private interface HashableView {
@@ -570,238 +406,107 @@ public final class IdentityHash {
             };
         }
 
-        static HashableView of(Entity<?, ?> entity, Inventory inventory) {
-            Iterator<Entity<?, ?>> it = inventory.getTransitiveClosureOver(entity.getPath(),
-                    Relationships.Direction.outgoing, asGenericClass(Entity.class),
-                    Relationships.WellKnown.contains.name());
-
-            class EntityAndChildren {
-                Entity<?, ?> entity;
-                final Map<Class<?>, Map<String, Entity<?, ?>>> children = new HashMap<>();
-
-                EntityAndChildren() {
-                }
-
-                EntityAndChildren(Entity<?, ?> entity) {
-                    this.entity = entity;
-                }
-
-                void addChild(Entity<?, ?> child) {
-                    Map<String, Entity<?, ?>> byId = children.get(child.getClass());
-                    if (byId == null) {
-                        byId = new HashMap<>();
-                        children.put(child.getClass(), byId);
-                    }
-                    byId.put(child.getId(), child);
-                }
-            }
-
-            Map<RelativePath, EntityAndChildren> childrenByPath = new HashMap<>();
-            childrenByPath.put(EMPTY_PATH, new EntityAndChildren(entity));
-            StreamSupport.stream(
-                    Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT & Spliterator.IMMUTABLE
-                            & Spliterator.NONNULL), false).forEach(e -> {
-                RelativePath ep = e.getPath().relativeTo(entity.getPath());
-                RelativePath pp = ep.up();
-
-                EntityAndChildren ec = childrenByPath.get(ep);
-                if (ec == null) {
-                    ec = new EntityAndChildren(e);
-                    childrenByPath.put(ep, ec);
-                } else {
-                    if (ec.entity != null) {
-                        throw new IllegalStateException("A single entity occured twice in a transitive closure over " +
-                                "contains. This is a bug. The offending entity path is: " + e.getPath());
-                    }
-
-                    ec.entity = e;
-                }
-
-                EntityAndChildren pc = childrenByPath.get(pp);
-                if (pc == null) {
-                    pc = new EntityAndChildren();
-                    childrenByPath.put(pp, pc);
-                }
-                pc.addChild(e);
-            });
-
+        static HashableView of(InventoryStructure<?> structure) {
             return new HashableView() {
-                @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
-                                                                       OperationType.Blueprint ot) {
-                    DataEntity found = getSingle(DataEntity.class, rootResourceType.modified().extend(OperationType
-                            .class, ot.getId()).extend(DataEntity.class, returnType.name()).get());
+                @Override
+                public DataEntity.Blueprint<?> getConfiguration(RelativePath rootPath,
+                                                                Resource.Blueprint parentResource) {
+                    RelativePath resourcePath = rootPath.modified().extend(Resource.class, parentResource.getId())
+                            .get().slide(1, 0);
 
-                    return found == null ? dummyDataBlueprint(returnType) : asBlueprint(found);
+                    return structure.getChildren(resourcePath, DataEntity.class)
+                            .filter(d -> configuration.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(configuration));
                 }
 
-                @Override public List<ResourceType.Blueprint> getResourceTypes() {
-                    return diveToMany(ResourceType.class, EMPTY_PATH);
+                @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
+                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
+                            : RelativePath.to().resource(rt.getId()).get();
+
+                    return structure.getChildren(p, DataEntity.class)
+                            .filter(d -> configurationSchema.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(configurationSchema));
                 }
 
                 @Override
-                public List<Resource.Blueprint> getResources(RelativePath rootPath, Resource.Blueprint parentResource) {
-                    RelativePath parentPath = rootPath.modified().extend(Resource.class, parentResource.getId()).get();
-                    return diveToMany(Resource.class, parentPath);
+                public DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root,
+                                                                          Resource.Blueprint parentResource) {
+                    RelativePath resourcePath = root.modified().extend(Resource.class, parentResource.getId())
+                            .get().slide(1, 0);
+
+                    return structure.getChildren(resourcePath, DataEntity.class)
+                            .filter(d -> connectionConfiguration.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(connectionConfiguration));
                 }
 
-                @Override
-                public List<Metric.Blueprint> getResourceMetrics(RelativePath rootPath,
-                                                                 Resource.Blueprint parentResource) {
-                    RelativePath parentPath = rootPath.modified().extend(Resource.class, parentResource.getId()).get();
-                    return diveToMany(Metric.class, parentPath);
+                @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
+                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
+                            : RelativePath.to().resource(rt.getId()).get();
+
+                    return structure.getChildren(p, DataEntity.class)
+                            .filter(d -> connectionConfigurationSchema.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(connectionConfigurationSchema));
+                }
+
+                @Override public List<Metric.Blueprint> getFeedMetrics() {
+                    return structure.getChildren(RelativePath.empty().get(), Metric.class).collect(toList());
+                }
+
+                @Override public List<Resource.Blueprint> getFeedResources() {
+                    return structure.getChildren(RelativePath.empty().get(), Resource.class).collect(toList());
+                }
+
+                @Override public List<MetricType.Blueprint> getMetricTypes() {
+                    return structure.getChildren(RelativePath.empty().get(), MetricType.class).collect(toList());
+                }
+
+                @Override public List<OperationType.Blueprint> getOperationTypes(ResourceType.Blueprint rt) {
+                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
+                            : RelativePath.to().resource(rt.getId()).get();
+
+                    return structure.getChildren(p, OperationType.class).collect(toList());
                 }
 
                 @Override
                 public DataEntity.Blueprint<?> getParameterTypes(RelativePath rootResourceType,
                                                                  OperationType.Blueprint ot) {
-                    DataEntity found = getSingle(DataEntity.class, rootResourceType.modified().extend(OperationType
-                            .class, ot.getId()).extend(DataEntity.class, parameterTypes.name()).get());
+                    RelativePath p = rootResourceType.modified().extend(OperationType.class, ot.getId()).get()
+                            .slide(1, 0);
 
-                    return found == null ? dummyDataBlueprint(parameterTypes) : asBlueprint(found);
-                }
-
-                @Override public List<OperationType.Blueprint> getOperationTypes(ResourceType.Blueprint rt) {
-                    RelativePath p = relativeToRootEntity(rt);
-                    return diveToMany(OperationType.class, p);
-                }
-
-                @Override public List<MetricType.Blueprint> getMetricTypes() {
-                    return diveToMany(MetricType.class, EMPTY_PATH);
-                }
-
-                @Override public List<Metric.Blueprint> getFeedMetrics() {
-                    return diveToMany(Metric.class, EMPTY_PATH);
-                }
-
-                @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint bl) {
-                    RelativePath root = relativeToRootEntity(bl);
-                    if (root == null) {
-                        return dummyDataBlueprint(connectionConfigurationSchema);
-                    }
-
-                    DataEntity found = getSingle(DataEntity.class, root.modified()
-                            .extend(DataEntity.class, connectionConfigurationSchema.name()).get());
-
-                    return found == null ? dummyDataBlueprint(returnType) : asBlueprint(found);
+                    return structure.getChildren(p, DataEntity.class)
+                            .filter(d -> parameterTypes.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(parameterTypes));
                 }
 
                 @Override
-                public DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root,
-                                                                          Resource.Blueprint resource) {
-                    RelativePath path = root.modified().extend(Resource.class, resource.getId())
-                            .extend(DataEntity.class, connectionConfiguration.name()).get();
+                public List<Metric.Blueprint> getResourceMetrics(RelativePath rootPath,
+                                                                 Resource.Blueprint parentResource) {
+                    RelativePath p = rootPath.modified().extend(Resource.class, parentResource.getId()).get()
+                            .slide(1, 0);
 
-                    DataEntity found = getSingle(DataEntity.class, path);
-
-                    return found == null ? dummyDataBlueprint(connectionConfiguration) : asBlueprint(found);
-                }
-
-                @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint bl) {
-                    RelativePath root = relativeToRootEntity(bl);
-                    if (root == null) {
-                        return dummyDataBlueprint(configurationSchema);
-                    }
-
-                    DataEntity found = getSingle(DataEntity.class, root.modified()
-                            .extend(DataEntity.class, configurationSchema.name()).get());
-
-                    return found == null ? dummyDataBlueprint(returnType) : asBlueprint(found);
+                    return structure.getChildren(p, Metric.class).collect(toList());
                 }
 
                 @Override
-                public DataEntity.Blueprint<?> getConfiguration(RelativePath root,
-                                                                Resource.Blueprint resource) {
-                    RelativePath path = root.modified().extend(Resource.class, resource.getId())
-                            .extend(DataEntity.class, configuration.name()).get();
+                public List<Resource.Blueprint> getResources(RelativePath rootPath, Resource.Blueprint parentResource) {
+                    RelativePath p = rootPath.modified().extend(Resource.class, parentResource.getId()).get()
+                            .slide(1, 0);
 
-                    DataEntity found = getSingle(DataEntity.class, path);
-
-                    return found == null ? dummyDataBlueprint(connectionConfiguration) : asBlueprint(found);
+                    return structure.getChildren(p, Resource.class).collect(toList());
                 }
 
-                private RelativePath relativeToRootEntity(Entity.Blueprint bl) {
-                    return entity.accept(new ElementVisitor.Simple<RelativePath, Void>() {
-                        ElementVisitor.Simple<RelativePath, Void> me = this;
-                        @Override protected RelativePath defaultAction() {
-                            return bl.getId().equals(entity.getId()) ? EMPTY_PATH : null;
-                        }
-
-                        @Override public RelativePath visitFeed(Feed feed, Void parameter) {
-                            return bl.accept(new ElementBlueprintVisitor.Simple<RelativePath, Void>() {
-                                @Override public RelativePath visitFeed(Feed.Blueprint feed, Void parameter) {
-                                    return me.defaultAction();
-                                }
-
-                                @Override
-                                public RelativePath visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                                    return RelativePath.to().resourceType(type.getId()).get();
-                                }
-
-                                @Override
-                                public RelativePath visitMetricType(MetricType.Blueprint type, Void parameter) {
-                                    return RelativePath.to().metricType(type.getId()).get();
-                                }
-
-                                @Override
-                                public RelativePath visitResource(Resource.Blueprint resource, Void parameter) {
-                                    return RelativePath.to().resource(resource.getId()).get();
-                                }
-
-                                @Override public RelativePath visitMetric(Metric.Blueprint metric, Void parameter) {
-                                    return RelativePath.to().metric(metric.getId()).get();
-                                }
-                            }, null);
-                        }
-
-                        @Override public RelativePath visitResource(Resource resource, Void parameter) {
-                            return bl.accept(new ElementBlueprintVisitor.Simple<RelativePath, Void>() {
-                                @Override public RelativePath visitMetric(Metric.Blueprint metric, Void parameter) {
-                                    return RelativePath.to().metric(metric.getId()).get();
-                                }
-
-                                @Override
-                                public RelativePath visitResource(Resource.Blueprint resource, Void parameter) {
-                                    return me.defaultAction();
-                                }
-                            }, null);
-                        }
-
-                        @Override public RelativePath visitResourceType(ResourceType type, Void parameter) {
-                            return bl.accept(new ElementBlueprintVisitor.Simple<RelativePath, Void>() {
-                                @Override
-                                public RelativePath visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                                    return me.defaultAction();
-                                }
-
-                                @Override public RelativePath visitOperationType(OperationType.Blueprint operationType,
-                                                                                 Void parameter) {
-                                    return RelativePath.to().operationType(operationType.getId()).get();
-                                }
-                            }, null);
-                        }
-                    }, null);
+                @Override public List<ResourceType.Blueprint> getResourceTypes() {
+                    return structure.getChildren(RelativePath.empty().get(), ResourceType.class).collect(toList());
                 }
 
-                private <E extends Entity<?, ?>> E getSingle(Class<E> type, RelativePath entityPath) {
-                    EntityAndChildren ret = childrenByPath.get(entityPath);
-                    return ret == null ? null : type.cast(ret.entity);
-                }
+                @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
+                                                                       OperationType.Blueprint ot) {
+                    RelativePath p = rootResourceType.modified().extend(OperationType.class, ot.getId()).get()
+                            .slide(1, 0);
 
-                private <B extends Entity.Blueprint, E extends Entity<B, ?>>
-                List<B> diveToMany(Class<E> type, RelativePath root) {
-                    if (root == null) {
-                        return Collections.emptyList();
-                    }
-
-                    EntityAndChildren ec = childrenByPath.get(root);
-                    if (ec == null) {
-                        return Collections.emptyList();
-                    } else {
-                        return ec.children.getOrDefault(type, emptyMap())
-                                .values().stream()
-                                .map(e -> asBlueprint(type.cast(e)))
-                                .collect(toList());
-                    }
+                    return structure.getChildren(p, DataEntity.class)
+                            .filter(d -> returnType.equals(d.getRole()))
+                            .findFirst().orElse(dummyDataBlueprint(returnType));
                 }
             };
         }
@@ -819,22 +524,26 @@ public final class IdentityHash {
         }
 
         default DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType, OperationType.Blueprint ot) {
-            return dummyDataBlueprint(OperationTypes.DataRole.returnType);
+            return dummyDataBlueprint(returnType);
         }
 
         default DataEntity.Blueprint<?> getParameterTypes(RelativePath rootResourceType, OperationType.Blueprint ot) {
-            return dummyDataBlueprint(OperationTypes.DataRole.parameterTypes);
+            return dummyDataBlueprint(parameterTypes);
         }
 
         default DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
-            return dummyDataBlueprint(ResourceTypes.DataRole.configurationSchema);
+            return dummyDataBlueprint(configurationSchema);
         }
 
         default DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
-            return dummyDataBlueprint(ResourceTypes.DataRole.connectionConfigurationSchema);
+            return dummyDataBlueprint(connectionConfigurationSchema);
         }
 
         default List<Resource.Blueprint> getResources(RelativePath rootPath, Resource.Blueprint parentResource) {
+            return Collections.emptyList();
+        }
+
+        default List<Resource.Blueprint> getFeedResources() {
             return Collections.emptyList();
         }
 
@@ -852,12 +561,230 @@ public final class IdentityHash {
 
         default DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root, Resource.Blueprint
                 parentResource) {
-            return dummyDataBlueprint(Resources.DataRole.connectionConfiguration);
+            return dummyDataBlueprint(connectionConfiguration);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> Class<T> asGenericClass(Class<?> cls) {
-        return (Class<T>) (Class) cls;
+    private static class HashConstructor {
+        private final DigestComputingWriter digestor;
+
+        HashConstructor(DigestComputingWriter digestor) {
+            this.digestor = digestor;
+        }
+
+        public DigestComputingWriter getDigestor() {
+            return digestor;
+        }
+
+        public void startChild(IntermediateHashContext context) {
+            System.out.println("start: " + context.root);
+        }
+
+        public void endChild(IntermediateHashResult result) {
+            System.out.println("Intermediate result: path: " + result.path + ", hash: " + result.hash);
+        }
+    }
+
+    private static class IntermediateHashContext {
+        final RelativePath root;
+        final StringBuilder content = new StringBuilder();
+
+        public IntermediateHashContext progress(Entity.Blueprint bl) {
+            return new IntermediateHashContext(root.modified().extend(Blueprint.getEntityTypeOf(bl), bl.getId()).get());
+        }
+
+        public IntermediateHashContext(RelativePath root) {
+            this.root = root;
+        }
+    }
+
+    private static class IntermediateHashResult {
+        private final Path path;
+        private final String hash;
+
+        private IntermediateHashResult(Path path, String hash) {
+            this.path = path;
+            this.hash = hash;
+        }
+    }
+
+    private static class DigestComputingWriter implements Appendable, Closeable {
+        private final MessageDigest digester;
+        private final CharsetEncoder enc = Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction
+                .REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+
+        private final ByteBuffer buffer = ByteBuffer.allocate(512);
+        private String digest;
+
+        //TODO remove this once done debugging
+        private StringBuilder ________tmpView = new StringBuilder();
+
+        private DigestComputingWriter(MessageDigest digester) {
+            this.digester = digester;
+        }
+
+        @Override
+        public DigestComputingWriter append(CharSequence csq) {
+            consumeBuffer(CharBuffer.wrap(csq));
+            return this;
+        }
+
+        @Override
+        public DigestComputingWriter append(CharSequence csq, int start, int end) {
+            consumeBuffer(CharBuffer.wrap(csq, start, end));
+            return this;
+        }
+
+        @Override
+        public DigestComputingWriter append(char c) {
+            consumeBuffer(CharBuffer.wrap(new char[]{c}));
+            return this;
+        }
+
+        @Override
+        public void close() {
+            byte[] digest = digester.digest();
+
+            StringBuilder bld = new StringBuilder();
+            for (byte b : digest) {
+                bld.append(Integer.toHexString(Byte.toUnsignedInt(b)));
+            }
+
+            this.digest = bld.toString();
+        }
+
+        public String digest() {
+            if (digest == null) {
+                throw new IllegalStateException("digest computing writer not closed.");
+            }
+
+            return digest;
+        }
+
+        public void reset() {
+            digester.reset();
+            digest = null;
+        }
+
+        private void consumeBuffer(CharBuffer chars) {
+            ________tmpView.append(chars);
+            CoderResult res;
+            do {
+                res = enc.encode(chars, buffer, true);
+                buffer.flip();
+                digester.update(buffer);
+                buffer.clear();
+            } while (res == CoderResult.OVERFLOW);
+        }
+    }
+
+    public static final class Tree {
+        private final Path path;
+        private final String hash;
+        private final Set<Tree> children;
+
+        private Tree(Path path, String hash, Set<Tree> children) {
+            this.path = path;
+            this.hash = hash;
+            this.children = children;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public Set<Tree> getChildren() {
+            return children;
+        }
+
+        public String getHash() {
+            return hash;
+        }
+
+        public Path getPath() {
+            return path;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Tree tree = (Tree) o;
+
+            return hash.equals(tree.hash);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "Tree[" + "path=" + path +
+                    ", hash='" + hash + '\'' +
+                    ",children=" + children +
+                    ']';
+        }
+
+        private abstract static class AbstractBuilder<This extends AbstractBuilder<?>> {
+            private Path path;
+            private String hash;
+            private Set<Tree> children;
+
+            public This withPath(Path path) {
+                this.path = path;
+                return castThis();
+            }
+
+            public This withHash(String hash) {
+                this.hash = hash;
+                return castThis();
+            }
+
+            protected void addChild(Tree childTree) {
+                if (children == null) {
+                    children = new HashSet<>();
+                }
+                children.add(childTree);
+            }
+
+            public ChildBuilder<This> startChild() {
+                ChildBuilder<This> childBuilder = new ChildBuilder<>();
+                childBuilder.parent = castThis();
+                return childBuilder;
+            }
+
+            protected Tree build() {
+                return new Tree(path, hash, Collections.unmodifiableSet(new HashSet<>(children)));
+            }
+
+            @SuppressWarnings("unchecked")
+            private This castThis() {
+                return (This) this;
+            }
+        }
+
+        public static final class Builder extends AbstractBuilder<Builder> {
+            private Builder() {
+
+            }
+        }
+
+        public static final class ChildBuilder<Parent extends AbstractBuilder<?>>
+                extends AbstractBuilder<ChildBuilder<Parent>> {
+            private Parent parent;
+
+            private ChildBuilder() {
+
+            }
+
+            public Parent endChild() {
+                Tree tree = build();
+                parent.addChild(tree);
+                return parent;
+            }
+        }
     }
 }

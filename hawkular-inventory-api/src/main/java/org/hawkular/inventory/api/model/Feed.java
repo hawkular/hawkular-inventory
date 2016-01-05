@@ -37,7 +37,7 @@ import org.jboss.logging.processor.util.Objects;
  * @since 0.1.0
  */
 @XmlRootElement
-public final class Feed extends Entity<Feed.Blueprint, Feed.Update> implements IdentityHashable {
+public final class Feed extends /*IdentityHashed*/Entity<Feed.Blueprint, Feed.Update> {
 
     /**
      * JAXB support

@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ElementTypeVisitor;
@@ -183,7 +184,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
             @SuppressWarnings("unchecked")
             @Override
-            protected BE defaultAction() {
+            protected BE defaultAction(Class<? extends AbstractElement<?, ?>> elementType, Void parameter) {
                 BE res = context.backend.querySingle(context.sourcePath);
 
                 if (res == null) {

@@ -1873,7 +1873,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .done()
                 .build());
 
-        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).exists());
+        MetadataPack mp = inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).entity();
+
+        Assert.assertEquals(expectedContentHash, mp.getId());
+        Assert.assertEquals(expectedContentHash, IdentityHash.of(mp, inventory));
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>

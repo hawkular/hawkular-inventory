@@ -23,10 +23,9 @@ package org.hawkular.inventory.api.model;
  * @see IdentityHash
  *
  * @author Lukas Krejci
- * @since 0.10.0
+ * @since 0.11.0
  */
 public interface IdentityHashable {
 
-    //TODO this is going to be implemented, but commenting out for now so that we compile.
-    //String getIdentityHash();
+    String getIdentityHash();
 }

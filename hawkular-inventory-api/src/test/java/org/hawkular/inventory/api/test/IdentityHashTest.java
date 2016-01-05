@@ -41,7 +41,7 @@ import org.junit.Test;
  * @author Lukas Krejci
  * @since 0.7.0
  */
-public class ContentHashTest {
+public class IdentityHashTest {
 
     @Test
     public void testMetricTypeHash() throws Exception {
@@ -113,5 +113,4 @@ public class ContentHashTest {
 
         return bld.toString();
     }
-
 }
