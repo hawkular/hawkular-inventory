@@ -33,6 +33,15 @@ public final class Pager extends PageContext {
     /**
      * The result should not be paged.
      *
+     * @return a new pager instance with unspecified order
+     */
+    public static Pager none() {
+        return unlimited(Order.unspecified());
+    }
+
+    /**
+     * The result should not be paged.
+     *
      * @param order the ordering of the results
      * @return a new pager instance
      */
