@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -221,7 +221,7 @@ public class RestRelationships extends RestBase {
         Relationships.Direction directed;
         CanonicalPath theOtherSide;
         String[] chunks = path.split("/");
-        String currentEntityId = chunks[chunks.length - 1];
+        String currentEntityId = cPath.getSegment().getElementId();
         if (currentEntityId.equals(relation.getSource().getSegment().getElementId())) {
             directed = Relationships.Direction.outgoing;
             theOtherSide = relation.getTarget();

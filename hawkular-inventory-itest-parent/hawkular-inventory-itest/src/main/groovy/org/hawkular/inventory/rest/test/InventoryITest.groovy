@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -294,6 +294,13 @@ class InventoryITest extends AbstractTestBase {
                         ]]
         response = client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/relationships",
                 body: relation)
+        assertEquals(201, response.status)
+
+        // relationship with tenant
+        response = client.post(path: "$basePath/tenants/relationships", body: [
+                name: "sampleRelationship",
+                source: "/t;" + tenantId,
+                target: "/t;" + tenantId])
         assertEquals(201, response.status)
 
         // add operation type to the resource type
