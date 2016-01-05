@@ -810,6 +810,8 @@ public abstract class Path {
             List<Class<?>> progress = validProgressions.apply(currentSegs);
 
             if (progress == null || !progress.contains(nextSegmentType)) {
+                //update the checkIndex so that the error reporting is correct in the calling method
+                checkIndex = indexToCheck;
                 return ProgressCheck.INVALID;
             }
 
