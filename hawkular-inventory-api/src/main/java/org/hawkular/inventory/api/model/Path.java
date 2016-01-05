@@ -356,7 +356,7 @@ public abstract class Path {
 
     @Override
     public int hashCode() {
-        int ret = startIdx;
+        int ret = 0;
         for (int i = startIdx; i < endIdx; ++i) {
             ret = 31 * ret + (path.get(i).hashCode());
         }
@@ -376,17 +376,10 @@ public abstract class Path {
 
         Path other = (Path) o;
 
-        if (endIdx != other.endIdx || startIdx != other.startIdx) {
-            return false;
-        }
+        List<Segment> thisSegs = getPath();
+        List<Segment> thatSegs = other.getPath();
 
-        for (int i = endIdx - 1; i >= startIdx; --i) {
-            if (!path.get(i).equals(other.path.get(i))) {
-                return false;
-            }
-        }
-
-        return true;
+        return thisSegs.equals(thatSegs);
     }
 
     @Override
