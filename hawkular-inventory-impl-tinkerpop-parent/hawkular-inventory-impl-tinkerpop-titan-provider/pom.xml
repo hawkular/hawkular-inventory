@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,10 @@
   <artifactId>hawkular-inventory-impl-tinkerpop-titan-provider</artifactId>
 
   <name>Hawkular Inventory Tinkerpop Titan Provider</name>
+
+  <properties>
+    <checkstyle.suppressions.file>checkstyle-suppressions.xml</checkstyle.suppressions.file>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -65,9 +69,111 @@
       <artifactId>jboss-logging-processor</artifactId>
       <scope>provided</scope>
     </dependency>
+
+    <!--
+    technically, this is incorrect, because titan itself doesn't depend on
+    cassandra, but because we use Titan with Cassandra in Hawkular, let's just
+    do this. If we ever decide to use Titan without C*, we'll worry about it then.
+    -->
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra-all</artifactId>
+    </dependency>
+
+    <!-- Test deps -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-api</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-cassandra</artifactId>
+      <version>${version.com.thinkaurelius.titan}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>javax.mail-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.codahale.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+      <version>3.0.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
+
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <graph.config>${project.build.testOutputDirectory}/testsuite-graph.properties</graph.config>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <analysisConfiguration><![CDATA[
+            {
+              "revapi": {
+                "filter": {
+                  "archives": {
+                    "include": ["org\\.revapi.*"]
+                  },
+                  "elements": {
+                    "include": ["org\\.revapi.*"]
+                  }
+                },
+                "java": {
+                  "missing-classes": {
+                    "behavior": "report"
+                  }
+                }
+              }
+            }
+          ]]></analysisConfiguration>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,12 +45,6 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
     </dependency>
@@ -76,6 +70,12 @@
     <!-- test deps -->
 
     <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>test</scope>
@@ -92,97 +92,12 @@
     <dependency>
       <groupId>javax.mail</groupId>
       <artifactId>javax.mail-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
 
   <build>
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
-    <testResources>
-      <testResource>
-        <directory>${project.basedir}/src/test/resources</directory>
-        <filtering>true</filtering>
-      </testResource>
-    </testResources>
   </build>
-
-  <profiles>
-    <profile>
-      <id>test-with-tinkergraph</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.hawkular.inventory</groupId>
-          <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <graph.config>${project.build.testOutputDirectory}/test-tinkergraph.properties</graph.config>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>test-with-titan</id>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.hawkular.inventory</groupId>
-          <artifactId>hawkular-inventory-impl-tinkerpop-titan-provider</artifactId>
-          <version>${project.version}</version>
-          <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-          <groupId>com.thinkaurelius.titan</groupId>
-          <artifactId>titan-core</artifactId>
-          <version>${version.com.thinkaurelius.titan}</version>
-          <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-          <groupId>com.thinkaurelius.titan</groupId>
-          <artifactId>titan-cassandra</artifactId>
-          <version>${version.com.thinkaurelius.titan}</version>
-          <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-          <groupId>com.thinkaurelius.titan</groupId>
-          <artifactId>titan-es</artifactId>
-          <version>${version.com.thinkaurelius.titan}</version>
-          <scope>runtime</scope>
-        </dependency>
-      </dependencies>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <graph.config>${project.build.testOutputDirectory}/test-titan.properties</graph.config>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

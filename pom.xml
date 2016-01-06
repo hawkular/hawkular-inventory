@@ -180,7 +180,6 @@
         <artifactId>joda-time</artifactId>
         <version>${version.joda-time}</version>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
 
