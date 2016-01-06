@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,6 +82,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(With.DataValued.class, DataValuedApplicator.class);
         applicators.put(With.DataOfTypes.class, DataOfTypesApplicator.class);
         applicators.put(RecurseFilter.class, RecurseApplicator.class);
+        applicators.put(With.SameIdentityHash.class, SameIdentityHashApplicator.class);
     }
 
     protected final T filter;
@@ -510,6 +511,18 @@ abstract class FilterApplicator<T extends Filter> {
     private static final class RecurseApplicator extends FilterApplicator<RecurseFilter> {
 
         private RecurseApplicator(RecurseFilter f) {
+            super(f);
+        }
+
+        @Override
+        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
+        }
+    }
+
+    private static final class SameIdentityHashApplicator extends FilterApplicator<With.SameIdentityHash> {
+
+        private SameIdentityHashApplicator(With.SameIdentityHash f) {
             super(f);
         }
 

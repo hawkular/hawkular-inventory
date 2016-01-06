@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,6 +78,11 @@ public final class ResourceTypes {
          * @return access to the data associated with the resource type.
          */
         Data data();
+
+        /**
+         * @return resource types that are equivalent to this resource type based on the {@link IdentityHash} rules.
+         */
+        Read identical();
     }
 
     /**
@@ -85,6 +90,8 @@ public final class ResourceTypes {
      */
     public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
             BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite, Data.ReadWrite<DataRole>> {
+
+        String identityHash() throws EntityNotFoundException;
     }
 
     /**

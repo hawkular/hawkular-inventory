@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -153,6 +153,16 @@ public final class With {
      */
     public static DataOfTypes dataOfTypes(StructuredData.Type... types) {
         return new DataOfTypes(types);
+    }
+
+    /**
+     * Looks for resource or metric types that have the same identity hash as the entity/ies on the current position
+     * in the filter chain.
+     *
+     * @return the filter
+     */
+    public static SameIdentityHash sameIdentityHash() {
+        return SameIdentityHash.INSTANCE;
     }
 
     public static final class Ids extends Filter {
@@ -435,6 +445,28 @@ public final class With {
         @Override
         public int hashCode() {
             return Arrays.hashCode(types);
+        }
+    }
+
+    public static final class SameIdentityHash extends Filter {
+        public static final SameIdentityHash INSTANCE = new SameIdentityHash();
+
+        public SameIdentityHash() {
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || (obj instanceof SameIdentityHash);
+        }
+
+        @Override
+        public int hashCode() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return "SameIdentityHash";
         }
     }
 }

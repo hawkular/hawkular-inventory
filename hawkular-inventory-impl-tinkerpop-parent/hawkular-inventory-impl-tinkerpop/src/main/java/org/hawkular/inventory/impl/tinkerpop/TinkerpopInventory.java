@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -155,6 +155,20 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                         .withElementType(Edge.class)
                         .withProperty(IndexSpec.Property.builder()
                                 .withName(Constants.Property.__targetType.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Vertex.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__identityHash.name())
+                                .withType(String.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__targetIdentityHash.name())
                                 .withType(String.class)
                                 .build())
                         .build());

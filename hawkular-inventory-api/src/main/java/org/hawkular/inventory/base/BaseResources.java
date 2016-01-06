@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 
 /**
@@ -70,7 +71,9 @@ public final class BaseResources {
 
         @Override
         protected EntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
-                Resource.Blueprint blueprint, CanonicalPath parentPath, BE parent) {
+                                                                          Resource.Blueprint blueprint,
+                                                                          CanonicalPath parentPath, BE parent,
+                                                                          InventoryBackend.Transaction transaction) {
 
             BE resourceTypeObject;
             CanonicalPath resourceTypePath = null;

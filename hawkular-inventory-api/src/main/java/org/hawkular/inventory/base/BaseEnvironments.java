@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 
 /**
@@ -123,7 +124,8 @@ public final class BaseEnvironments {
 
         @Override
         protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
-                                                                             CanonicalPath parentPath, BE parent) {
+                                                                             CanonicalPath parentPath, BE parent,
+                                                                             InventoryBackend.Transaction transaction) {
             return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
                     parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
                     blueprint.getProperties()));

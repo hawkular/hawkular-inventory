@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__identityHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_interval;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
@@ -130,7 +131,11 @@ final class Constants {
 
         __sourceEid,
 
-        __targetEid;
+        __targetEid,
+
+        __identityHash,
+
+        __targetIdentityHash;
 
 
         private static final HashSet<String> MIRRORED_PROPERTIES = new HashSet<>(Arrays.asList(__type.name(),
@@ -154,8 +159,8 @@ final class Constants {
      */
     enum Type {
         tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
-        resourceType(ResourceType.class, name), metricType(MetricType.class, name, __unit, __metric_data_type,
-                __metric_interval),
+        resourceType(ResourceType.class, name, __identityHash),
+        metricType(MetricType.class, name, __unit, __metric_data_type, __metric_interval, __identityHash),
         operationType(OperationType.class, name), resource(Resource.class, name),
         metric(Metric.class, name, __metric_interval), metadatapack(MetadataPack.class, name),
         relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
@@ -324,6 +329,13 @@ final class Constants {
         }
     }
 
+    enum InternalEdge {
+        __withIdentityHash, __containsIdentityHash
+    }
+
+    enum InternalType {
+        __identityHash
+    }
     private Constants() {
         //no instances, thank you
     }

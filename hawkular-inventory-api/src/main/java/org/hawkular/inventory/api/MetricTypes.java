@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,12 +37,19 @@ public final class MetricTypes {
          * @return metrics defined by the metric type(s)
          */
         Metrics.Read metrics();
+
+        /**
+         * @return metric types that are identical to this metric type
+         */
+        MetricTypes.Read identical();
     }
 
     /**
      * Interface for accessing a single metric type in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<MetricType, MetricType.Update>, BrowserBase {
+
+        String identityHash() throws EntityNotFoundException;
     }
 
     /**
@@ -59,8 +66,7 @@ public final class MetricTypes {
      * Provides read-write access to metric types.
      */
     public interface ReadWrite
-            extends ReadWriteInterface<MetricType.Update, MetricType.Blueprint, Single, Multiple, String
-            > {}
+            extends ReadWriteInterface<MetricType.Update, MetricType.Blueprint, Single, Multiple, String> {}
 
     /**
      * Provides read-only access to metric types.

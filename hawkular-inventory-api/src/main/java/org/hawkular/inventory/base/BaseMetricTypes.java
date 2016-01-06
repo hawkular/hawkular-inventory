@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@ import static org.hawkular.inventory.api.filters.With.id;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.filters.Filter;
@@ -33,6 +34,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -59,13 +61,19 @@ public final class BaseMetricTypes {
 
         @Override
         protected EntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity, MetricType.Blueprint blueprint,
-                CanonicalPath parentPath, BE parent) {
+                                                                            CanonicalPath parentPath, BE parent,
+                                                                            InventoryBackend.Transaction transaction) {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
-            return new EntityAndPendingNotifications<>(new MetricType(blueprint.getName(),
+            MetricType metricType = new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.class, context.backend.extractId(entity)).get(),
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
-                    blueprint.getCollectionInterval()));
+                    blueprint.getCollectionInterval());
+
+            context.backend.updateIdentityHash(entity,
+                    IdentityHash.of(metricType, context.inventory.keepTransaction(transaction)));
+
+            return new EntityAndPendingNotifications<>(metricType);
         }
 
         @Override
@@ -92,22 +100,28 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected void cleanup(String s, BE entityRepresentation) {
-            cleanup(context, entityRepresentation);
+        protected void preDelete(String s, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+            preDelete(context, entityRepresentation);
         }
 
         @Override
-        protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update) {
-            preUpdate(context, entityRepresentation, update);
+        protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update,
+                                 InventoryBackend.Transaction transaction) {
+            preUpdate(context, entityRepresentation, update, transaction);
         }
 
-        private static <BE> void cleanup(TraversalContext<BE, ?> context, BE deletedEntity) {
+        @Override protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+            postUpdate(context, entityRepresentation, transaction);
+        }
+
+        private static <BE> void preDelete(TraversalContext<BE, ?> context, BE deletedEntity) {
             if (isInMetadataPack(context, deletedEntity)) {
                 throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
             }
         }
 
-        private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update) {
+        private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update,
+                                           InventoryBackend.Transaction transaction) {
             MetricType mt = context.backend.convert(entity, MetricType.class);
             if (mt.getUnit() == update.getUnit()) {
                 //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
@@ -117,6 +131,14 @@ public final class BaseMetricTypes {
             if (isInMetadataPack(context, entity)) {
                 throw new IllegalArgumentException("Cannot update a metric type that is a part of metadata pack.");
             }
+        }
+
+        private static <BE> void postUpdate(TraversalContext<BE, ?> context, BE entity,
+                                            InventoryBackend.Transaction transaction) {
+            context.backend.updateIdentityHash(entity,
+                    IdentityHash.of(context.backend.convert(entity, MetricType.class),
+                            context.inventory.keepTransaction(transaction)));
+
         }
 
         private static <BE> boolean isInMetadataPack(TraversalContext<BE, ?> context, BE metricType) {
@@ -205,13 +227,22 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected void cleanup(BE deletedEntity) {
-            ReadWrite.cleanup(context, deletedEntity);
+        public MetricTypes.Read identical() {
+            return new Read<>(context.proceed().hop(With.sameIdentityHash()).get());
         }
 
         @Override
-        protected void preUpdate(BE updatedEntity, MetricType.Update update) {
-            ReadWrite.preUpdate(context, updatedEntity, update);
+        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+            ReadWrite.preDelete(context, deletedEntity);
+        }
+
+        @Override
+        protected void preUpdate(BE updatedEntity, MetricType.Update update, InventoryBackend.Transaction transaction) {
+            ReadWrite.preUpdate(context, updatedEntity, update, transaction);
+        }
+
+        @Override protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+            ReadWrite.postUpdate(context, updatedEntity, transaction);
         }
     }
 
@@ -225,6 +256,10 @@ public final class BaseMetricTypes {
         @Override
         public Metrics.Read metrics() {
             return new BaseMetrics.Read<>(context.proceedTo(defines, Metric.class).get());
+        }
+
+        @Override public MetricTypes.Read identical() {
+            return new Read<>(context.proceed().hop(With.sameIdentityHash()).get());
         }
     }
 

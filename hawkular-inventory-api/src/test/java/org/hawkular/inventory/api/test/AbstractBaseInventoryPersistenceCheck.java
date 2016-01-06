@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,6 +52,7 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1883,6 +1884,95 @@ public abstract class AbstractBaseInventoryPersistenceCheck<E> {
         inventory.inspect(entity, cls).update(update.withName("updated").build());
         entity = inventory.inspect(entity, cls).entity();
         Assert.assertEquals("updated", entity.getName());
+    }
+
+    @Test
+    public void testIdenticalResourceTypesFound() throws Exception {
+        Tenant t = inventory.tenants().create(Tenant.Blueprint.builder().withId(UUID.randomUUID().toString()).build())
+                .entity();
+        try {
+            Feed f1 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f1").build()).entity();
+            Feed f2 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f2").build()).entity();
+
+            ResourceType rt1 = inventory.inspect(f1).resourceTypes().create(ResourceType.Blueprint.builder().withId
+                    ("rt").build()).entity();
+
+            ResourceType rt2 = inventory.inspect(f2).resourceTypes().create(ResourceType.Blueprint.builder().withId
+                    ("rt").build()).entity();
+
+            Set<ResourceType> identicals = inventory.inspect(rt1).identical().getAll().entities();
+
+            Assert.assertEquals(2, identicals.size());
+            Assert.assertTrue(identicals.contains(rt1));
+            Assert.assertTrue(identicals.contains(rt2));
+
+            String hash = inventory.inspect(rt1).identityHash();
+            Assert.assertEquals(hash, inventory.inspect(rt2).identityHash());
+
+            DataEntity.Blueprint<ResourceTypes.DataRole> bl = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+                    .withRole(ResourceTypes.DataRole.configurationSchema).withValue(StructuredData.get().map()
+                            .putString("title", "blah")
+                            .putString("type", "string").build()).build();
+
+            inventory.inspect(rt1).data().create(bl);
+
+            Assert.assertNotEquals(hash, inventory.inspect(rt1).identityHash());
+
+            identicals = inventory.inspect(rt1).identical().getAll().entities();
+            Assert.assertEquals(1, identicals.size());
+            Assert.assertTrue(identicals.contains(rt1));
+
+            inventory.inspect(rt2).data().create(bl);
+
+            identicals = inventory.inspect(rt1).identical().getAll().entities();
+            Assert.assertEquals(2, identicals.size());
+            Assert.assertTrue(identicals.contains(rt1));
+            Assert.assertTrue(identicals.contains(rt2));
+        } finally {
+            inventory.tenants().delete(t.getId());
+        }
+    }
+
+    @Test
+    public void testIdenticalMetricTypesFound() throws Exception {
+        Tenant t = inventory.tenants().create(Tenant.Blueprint.builder().withId(UUID.randomUUID().toString()).build())
+                .entity();
+        try {
+            Feed f1 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f1").build()).entity();
+            Feed f2 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f2").build()).entity();
+
+            MetricType mt1 = inventory.inspect(f1).metricTypes().create(MetricType.Blueprint.builder(MetricDataType
+                    .GAUGE).withId("mt").withInterval(0L).withUnit(MetricUnit.NONE).build()).entity();
+
+            MetricType mt2 = inventory.inspect(f2).metricTypes().create(MetricType.Blueprint.builder(MetricDataType
+                    .GAUGE).withId("mt").withInterval(0L).withUnit(MetricUnit.NONE).build()).entity();
+
+            Set<MetricType> identicals = inventory.inspect(mt1).identical().getAll().entities();
+
+            Assert.assertEquals(2, identicals.size());
+            Assert.assertTrue(identicals.contains(mt1));
+            Assert.assertTrue(identicals.contains(mt2));
+
+            String hash = inventory.inspect(mt1).identityHash();
+            Assert.assertEquals(hash, inventory.inspect(mt2).identityHash());
+
+            inventory.inspect(mt1).update(MetricType.Update.builder().withUnit(MetricUnit.MILLISECONDS).build());
+
+            Assert.assertNotEquals(hash, inventory.inspect(mt1).identityHash());
+
+            identicals = inventory.inspect(mt1).identical().getAll().entities();
+            Assert.assertEquals(1, identicals.size());
+            Assert.assertTrue(identicals.contains(mt1));
+
+            inventory.inspect(mt2).update(MetricType.Update.builder().withUnit(MetricUnit.MILLISECONDS).build());
+
+            identicals = inventory.inspect(mt1).identical().getAll().entities();
+            Assert.assertEquals(2, identicals.size());
+            Assert.assertTrue(identicals.contains(mt1));
+            Assert.assertTrue(identicals.contains(mt2));
+        } finally {
+            inventory.tenants().delete(t.getId());
+        }
     }
 
     @Test

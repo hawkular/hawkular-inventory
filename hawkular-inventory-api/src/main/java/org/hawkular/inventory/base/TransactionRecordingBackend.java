@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,11 +29,11 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
  * @author Lukas Krejci
  * @since 0.4.0
  */
-final class NoncommittingBackend<E> extends DelegatingInventoryBackend<E> {
+final class TransactionRecordingBackend<E> extends DelegatingInventoryBackend<E> {
 
     private final PayloadRememberingTransaction transaction;
 
-    public NoncommittingBackend(InventoryBackend<E> backend, boolean mutating) {
+    public TransactionRecordingBackend(InventoryBackend<E> backend, boolean mutating) {
         super(backend);
         this.transaction = new PayloadRememberingTransaction(mutating);
     }
