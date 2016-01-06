@@ -994,8 +994,267 @@
         "old": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
         "new": "method FB org.hawkular.inventory.api.model.Path.TenantBuilder<Impl extends org.hawkular.inventory.api.model.Path, EB extends org.hawkular.inventory.api.model.Path.EnvironmentBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, OTB, SDB>, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path>, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl extends org.hawkular.inventory.api.model.Path, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MPB extends org.hawkular.inventory.api.model.Path.MetadataPackBuilder<Impl extends org.hawkular.inventory.api.model.Path>, FB extends org.hawkular.inventory.api.model.Path.FeedBuilder<Impl extends org.hawkular.inventory.api.model.Path, RTB extends org.hawkular.inventory.api.model.Path.ResourceTypeBuilder<Impl, OTB extends org.hawkular.inventory.api.model.Path.OperationTypeBuilder<Impl, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, SDB>, MTB extends org.hawkular.inventory.api.model.Path.MetricTypeBuilder<Impl>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB>, MB, OTB, SDB>, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl extends org.hawkular.inventory.api.model.Path, RB extends org.hawkular.inventory.api.model.Path.ResourceBuilder<Impl, RB, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl>, SDB extends org.hawkular.inventory.api.model.Path.StructuredDataBuilder<Impl, SDB>>, MB, SDB>, MB extends org.hawkular.inventory.api.model.Path.MetricBuilder<Impl extends org.hawkular.inventory.api.model.Path>>::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
         "justification": "Metrics can now be owned by resources"
-        }        
+        }
       ]
+    }
+  },
+  "0.11.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.MetricTypes.Read org.hawkular.inventory.api.MetricTypes.BrowserBase::identical()",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method java.lang.String org.hawkular.inventory.api.MetricTypes.Single::identityHash() throws org.hawkular.inventory.api.EntityNotFoundException",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },      
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.ResourceTypes.BrowserBase<Resources, MetricTypes, OperationTypes, Data>::identical()",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method java.lang.String org.hawkular.inventory.api.ResourceTypes.Single::identityHash() throws org.hawkular.inventory.api.EntityNotFoundException",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint)",
+          "new": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preDelete(BE)",
+          "new": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preDelete(BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseData.DataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::preUpdate(R, BE, org.hawkular.inventory.api.model.DataEntity.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::preUpdate(R, BE, org.hawkular.inventory.api.model.DataEntity.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.DataEntity> org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.DataEntity.Blueprint<R>, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.DataEntity> org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.DataEntity.Blueprint<R>, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseData.Single<BE>::cleanup(BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseData.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseData.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Environment> org.hawkular.inventory.base.BaseEnvironments.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Environment.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Environment> org.hawkular.inventory.base.BaseEnvironments.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Environment.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Feed> org.hawkular.inventory.base.BaseFeeds.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Feed.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Feed> org.hawkular.inventory.base.BaseFeeds.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Feed.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.MetadataPack> org.hawkular.inventory.base.BaseMetadataPacks.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.MetadataPack.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.MetadataPack> org.hawkular.inventory.base.BaseMetadataPacks.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.MetadataPack.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseMetricTypes.ReadWrite<BE>::cleanup(java.lang.String, BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseMetricTypes.ReadWrite<BE>::preUpdate(java.lang.String, BE, org.hawkular.inventory.api.model.MetricType.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseMetricTypes.ReadWrite<BE>::preUpdate(java.lang.String, BE, org.hawkular.inventory.api.model.MetricType.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.MetricType> org.hawkular.inventory.base.BaseMetricTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.MetricType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.MetricType> org.hawkular.inventory.base.BaseMetricTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.MetricType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseMetricTypes.Single<BE>::cleanup(BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseMetricTypes.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.MetricType.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseMetricTypes.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.MetricType.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Metric> org.hawkular.inventory.base.BaseMetrics.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Metric.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Metric> org.hawkular.inventory.base.BaseMetrics.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Metric.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint)",
+          "new": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preDelete(BE)",
+          "new": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preDelete(BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseOperationTypes.OperationTypeDataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseOperationTypes.ReadWrite<BE>::cleanup(java.lang.String, BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.OperationType> org.hawkular.inventory.base.BaseOperationTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.OperationType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.OperationType> org.hawkular.inventory.base.BaseOperationTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.OperationType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseOperationTypes.Single<BE>::cleanup(BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.ReadWrite<BE>::cleanup(java.lang.String, BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.ReadWrite<BE>::preUpdate(java.lang.String, BE, org.hawkular.inventory.api.model.ResourceType.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseResourceTypes.ReadWrite<BE>::preUpdate(java.lang.String, BE, org.hawkular.inventory.api.model.ResourceType.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.ResourceType> org.hawkular.inventory.base.BaseResourceTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.ResourceType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.ResourceType> org.hawkular.inventory.base.BaseResourceTypes.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.ResourceType.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint)",
+          "new": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preCreate(org.hawkular.inventory.api.model.DataEntity.Blueprint, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preDelete(BE)",
+          "new": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preDelete(BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseResourceTypes.ResourceTypeDataModificationChecks<BE>::preUpdate(BE, org.hawkular.inventory.api.model.DataEntity.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.Single<BE>::cleanup(BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.BaseResourceTypes.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.ResourceType.Update)",
+          "new": "method void org.hawkular.inventory.base.BaseResourceTypes.Single<BE>::preUpdate(BE, org.hawkular.inventory.api.model.ResourceType.Update, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Resource> org.hawkular.inventory.base.BaseResources.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Resource.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Resource> org.hawkular.inventory.base.BaseResources.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Resource.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Tenant> org.hawkular.inventory.base.BaseTenants.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Tenant.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Tenant> org.hawkular.inventory.base.BaseTenants.ReadWrite<BE>::wireUpNewEntity(BE, org.hawkular.inventory.api.model.Tenant.Blueprint, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.Fetcher<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update>::cleanup(BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.Fetcher<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update>::preUpdate(BE, U)",
+          "new": "method void org.hawkular.inventory.base.Fetcher<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update>::preUpdate(BE, U, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::cleanup(Id, BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::preUpdate(Id, BE, U)",
+          "new": "method void org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::preUpdate(Id, BE, U, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method org.hawkular.inventory.base.EntityAndPendingNotifications<E> org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::wireUpNewEntity(BE, B, org.hawkular.inventory.api.model.CanonicalPath, BE)",
+          "new": "method org.hawkular.inventory.base.EntityAndPendingNotifications<E> org.hawkular.inventory.base.Mutator<BE, E extends org.hawkular.inventory.api.model.Entity<?, U extends org.hawkular.inventory.api.model.Entity.Update>, B extends org.hawkular.inventory.api.model.Blueprint, U extends org.hawkular.inventory.api.model.Entity.Update, Id>::wireUpNewEntity(BE, B, org.hawkular.inventory.api.model.CanonicalPath, BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method java.lang.String org.hawkular.inventory.base.spi.InventoryBackend<E>::extractIdentityHash(E)",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method boolean org.hawkular.inventory.base.spi.InventoryBackend<E>::isBackendInternal(E)",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method void org.hawkular.inventory.base.spi.InventoryBackend<E>::updateIdentityHash(E, java.lang.String)",
+          "justification": "New feature - identical metric and resource types detection across feeds"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void org.hawkular.inventory.base.BaseData.ReadWrite<BE, R extends org.hawkular.inventory.api.model.DataEntity.Role>::cleanup(R, BE)",
+          "justification": "More comprehensive way of adding custom preCreate, postCreate, preUpdate, postUpdate, preDelete and postDelete logic in base.Fetcher and base.Mutator subclasses."
+        }
+     ]
     }
   }
 }

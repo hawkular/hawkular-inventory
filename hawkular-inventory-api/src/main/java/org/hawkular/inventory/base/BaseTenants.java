@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -63,7 +64,8 @@ public final class BaseTenants {
 
         @Override
         protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
-                CanonicalPath parentPath, BE parent) {
+                                                                        CanonicalPath parentPath, BE parent,
+                                                                        InventoryBackend.Transaction transaction) {
 
             return new EntityAndPendingNotifications<>(new Tenant(blueprint.getName(), CanonicalPath.of()
                     .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));

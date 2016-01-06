@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.api.paging.TransformingPage;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * A base class for all interface impls that need to resolve the entities.
@@ -87,35 +88,65 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     @Override
     public void delete() {
-        Util.delete(context, context.select().get(), this::cleanup);
+        Util.delete(context, context.select().get(), this::preDelete, this::postDelete);
     }
 
     @Override
     public void update(U u) throws EntityNotFoundException, RelationNotFoundException {
-        Util.update(context, context.select().get(), u, this::preUpdate);
+        Util.update(context, context.select().get(), u, this::preUpdate, this::postUpdate);
+    }
+
+    public String identityHash() {
+        return readOnly(() -> {
+            BE result = context.backend.querySingle(context.select().get());
+
+            if (result == null) {
+                throwNotFoundException();
+            }
+
+            return context.backend.extractIdentityHash(result);
+        });
     }
 
     /**
-     * Serves the same purpose as {@link Mutator#cleanup(Object, Object)} and is called during the {@link #delete()}
-     * method inside the transaction.
+     * Serves the same purpose as {@link Mutator#preDelete(Object, Object, InventoryBackend.Transaction)} and is called
+     * during the {@link #delete()} method inside the transaction.
      *
      * @param deletedEntity the backend representation of the deleted entity
+     * @param transaction the transaction in which the delete is executing
      */
-    protected void cleanup(BE deletedEntity) {
+    protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+
+    }
+
+    protected void postDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
 
     }
 
     /**
      * Hook to be run prior to update. Serves the same purpose as
-     * {@link Mutator#preUpdate(Object, Object, Entity.Update)} but is not supplied the id object that can be
-     * determined from the updated entity.
+     * {@link Mutator#preUpdate(Object, Object, Entity.Update, InventoryBackend.Transaction)} but is not supplied the id
+     * object that can be determined from the updated entity.
      *
      * <p>By default, this does nothing.
      *
      * @param updatedEntity the backend representation of the updated entity
      * @param update        the update object
+     * @param transaction   the transaction in which the update is executing
      */
-    protected void preUpdate(BE updatedEntity, U update) {
+    protected void preUpdate(BE updatedEntity, U update, InventoryBackend.Transaction transaction) {
+
+    }
+
+    /**
+     * Hook to be run just after an update to the entity was made but before the transaction has been committed.
+     * This is for occasions where it is easier to read the already updated data from the backend rather than seeing
+     * the unmodified original data and having the update object at hand.
+     *
+     * @param updatedEntity the entity to which the update has been applied
+     * @param transaction   the transaction in which the update is executing
+     */
+    protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
 
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
@@ -292,7 +291,9 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
-            TraversalContext<BE, E> context, Query entityQuery, U update, BiConsumer<BE, U> preUpdateCheck) {
+            TraversalContext<BE, E> context, Query entityQuery, U update,
+            TransactionParticipant<BE, U> preUpdateCheck,
+            BiConsumer<BE, InventoryBackend.Transaction> postUpdateCheck) {
 
         BE updated = runInTransaction(context, false, (t) -> {
             BE entity = context.backend.querySingle(entityQuery);
@@ -300,16 +301,20 @@ final class Util {
                 if (update instanceof Relationship.Update) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
-                    throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
-                            Query.filters(entityQuery));
+                    throw new EntityNotFoundException(context.entityClass, Query.filters(entityQuery));
                 }
             }
 
             if (preUpdateCheck != null) {
-                preUpdateCheck.accept(entity, update);
+                preUpdateCheck.execute(entity, update, t);
             }
 
             context.backend.update(entity, update);
+
+            if (postUpdateCheck != null) {
+                postUpdateCheck.accept(entity, t);
+            }
+
             context.backend.commit(t);
             return entity;
         });
@@ -319,8 +324,10 @@ final class Util {
     }
 
     @SuppressWarnings("unchecked")
-    public static <BE, E extends AbstractElement<?, ?>> void delete(TraversalContext<BE, E> context,
-                                                                    Query entityQuery, Consumer<BE> cleanupFunction) {
+    public static <BE, E extends AbstractElement<?, ?>>
+    void delete(TraversalContext<BE, E> context, Query entityQuery,
+                BiConsumer<BE, InventoryBackend.Transaction> cleanupFunction,
+                BiConsumer<BE, InventoryBackend.Transaction> postDelete) {
 
         runInTransaction(context, false, (transaction) -> {
             BE entity = context.backend.querySingle(entityQuery);
@@ -328,13 +335,12 @@ final class Util {
                 if (context.entityClass.equals(Relationship.class)) {
                     throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
                 } else {
-                    throw new EntityNotFoundException((Class<? extends Entity<?, ?>>) context.entityClass,
-                            Query.filters(entityQuery));
+                    throw new EntityNotFoundException(context.entityClass, Query.filters(entityQuery));
                 }
             }
 
             if (cleanupFunction != null) {
-                cleanupFunction.accept(entity);
+                cleanupFunction.accept(entity, transaction);
             }
 
             Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
@@ -399,6 +405,10 @@ final class Util {
                 }
             }
 
+            if (postDelete != null) {
+                postDelete.accept(entity, transaction);
+            }
+
             context.backend.commit(transaction);
 
             //report the relationship deletions first - it would be strange to report deletion of a relationship after
@@ -450,6 +460,10 @@ final class Util {
      * @return true if the entity can be represented in API results, false otherwise
      */
     public static <BE> boolean isRepresentableInAPI(TraversalContext<BE, ?> context, BE entity) {
+        if (context.backend.isBackendInternal(entity)) {
+            return false;
+        }
+
         if (Relationship.class.equals(context.backend.extractType(entity))) {
             if (Relationships.WellKnown.hasData.name().equals(context.backend.extractRelationshipName(entity))) {
                 return false;
@@ -457,5 +471,9 @@ final class Util {
         }
 
         return true;
+    }
+
+    public interface TransactionParticipant<BE, E> {
+        void execute(BE entityRepresentation, E entity, InventoryBackend.Transaction transaction);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -213,6 +213,14 @@ public interface InventoryBackend<E> extends AutoCloseable {
     CanonicalPath extractCanonicalPath(E entityRepresentation);
 
     /**
+     * Extracts the identity hash from the provided entity.
+     *
+     * @param entityRepresentation the representation object
+     * @return the identity hash of the entity or null if not supported for that type of entity
+     */
+    String extractIdentityHash(E entityRepresentation);
+
+    /**
      * Converts the provided representation object to an inventory element of provided type.
      *
      * <p>This must support all the concrete subclasses of {@link AbstractElement}, {@link StructuredData} <b>and</b>
@@ -277,6 +285,14 @@ public interface InventoryBackend<E> extends AutoCloseable {
     void update(E entity, AbstractElement.Update update);
 
     /**
+     * Updates the identity hash of the entity.
+     *
+     * @param entity the entity to update
+     * @param identityHash the identity hash to set
+     */
+    void updateIdentityHash(E entity, String identityHash);
+
+    /**
      * Simply deletes the entity from the storage.
      *
      * @param entity the entity to delete
@@ -303,6 +319,14 @@ public interface InventoryBackend<E> extends AutoCloseable {
     void rollback(Transaction transaction);
 
     /**
+     * The query results might sometimes return elements that are not representable in the inventory API because they
+     * are an implementation detail of the backend. This will tell the API.
+     *
+     * @param element the element to check
+     */
+    boolean isBackendInternal(E element);
+
+    /**
      * See the javadoc in {@link org.hawkular.inventory.api.Inventory#getGraphSON(String)}
      */
     InputStream getGraphSON(String tenantId);
@@ -310,6 +334,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
     <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
                                                                   Relationships.Direction direction, Class<T> clazz,
                                                                   String... relationshipNames);
+
     /**
      * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are
      * encouraged to inherit from this class and add additional information to it. The base inventory implementation

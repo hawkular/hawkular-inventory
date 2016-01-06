@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,15 +29,15 @@ final class BaseTransactionFrame<E> implements TransactionFrame {
     private final InventoryBackend<E> origBackend;
     private InventoryBackend.Transaction transaction;
     private Inventory boundInventory;
-    private NoncommittingBackend<E> noncommittingBackend;
+    private TransactionRecordingBackend<E> recordingBackend;
     private final int maxRetries;
 
     BaseTransactionFrame(InventoryBackend<E> origBackend, ObservableContext observableContext,
                          TraversalContext<?, ?> traversalContext) {
         this.origBackend = origBackend;
         this.maxRetries = traversalContext.getTransactionRetriesCount();
-        noncommittingBackend = new NoncommittingBackend<>(origBackend, true);
-        boundInventory = new BaseInventory.Initialized<>(noncommittingBackend, observableContext,
+        recordingBackend = new TransactionRecordingBackend<>(origBackend, true);
+        boundInventory = new BaseInventory.Initialized<>(recordingBackend, observableContext,
                 traversalContext.configuration);
         reset();
     }
@@ -46,7 +46,7 @@ final class BaseTransactionFrame<E> implements TransactionFrame {
     public void commit() throws CommitException {
         try {
             Util.commitOrRetry(transaction, origBackend, null, (t) -> {
-                for (PotentiallyCommittingPayload<?> p : noncommittingBackend.getRecordedPayloads()) {
+                for (PotentiallyCommittingPayload<?> p : recordingBackend.getRecordedPayloads()) {
                     t.execute(p);
                 }
                 return null;
@@ -55,7 +55,7 @@ final class BaseTransactionFrame<E> implements TransactionFrame {
         } catch (CommitFailureException e) {
             throw new CommitException(e);
         } finally {
-            noncommittingBackend.clearRecordedPayloads();
+            recordingBackend.clearRecordedPayloads();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,6 +78,11 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     @Override
     public CanonicalPath extractCanonicalPath(E entityRepresentation) {
         return backend.extractCanonicalPath(entityRepresentation);
+    }
+
+    @Override
+    public String extractIdentityHash(E entityRepresentation) {
+        return backend.extractIdentityHash(entityRepresentation);
     }
 
     @Override
@@ -197,6 +202,11 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
+    public boolean isBackendInternal(E element) {
+        return backend.isBackendInternal(element);
+    }
+
+    @Override
     public Transaction startTransaction(boolean mutating) {
         return backend.startTransaction(mutating);
     }
@@ -210,6 +220,11 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     @Override
     public void update(E entity, AbstractElement.Update update) {
         backend.update(entity, update);
+    }
+
+    @Override
+    public void updateIdentityHash(E entity, String identityHash) {
+        backend.updateIdentityHash(entity, identityHash);
     }
 
     @Override

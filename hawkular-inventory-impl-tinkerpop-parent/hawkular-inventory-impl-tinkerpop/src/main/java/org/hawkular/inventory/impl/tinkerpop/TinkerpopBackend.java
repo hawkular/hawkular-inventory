@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
@@ -88,6 +89,7 @@ import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -178,6 +180,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
         HawkularPipeline<?, ? extends Element> q = translate(null, query);
+
+        //XXX this probably would be more efficient as a proper pipe
+        q.filter(e -> !isBackendInternal(e));
 
         HawkularPipeline<?, T> q2;
         if (filter == null) {
@@ -336,7 +341,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new AssertionError("Invalid relationship direction specified: " + direction);
         }
 
-        return StreamSupport.stream(q.spliterator(), false).collect(toSet());
+        return StreamSupport.stream(q.spliterator(), false).filter(e -> !isBackendInternal(e)).collect(toSet());
     }
 
     @Override
@@ -377,6 +382,87 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     + extractId(entityRepresentation) + "'.");
         }
         return CanonicalPath.fromString(cp);
+    }
+
+    @Override
+    public String extractIdentityHash(Element entityRepresentation) {
+        return entityRepresentation.getProperty(Constants.Property.__identityHash.name());
+    }
+
+    @Override
+    public void updateIdentityHash(Element entity, String identityHash) {
+        if (!(entity instanceof Vertex)) {
+            return;
+        }
+
+        String oldIdentityHash = extractIdentityHash(entity);
+
+        if (Objects.equals(oldIdentityHash, identityHash)) {
+            return;
+        }
+
+        entity.setProperty(Constants.Property.__identityHash.name(), identityHash);
+
+
+        Vertex vertex = (Vertex) entity;
+
+        removeHashNodeOf(vertex);
+
+        //k, now we need to associate with a new hash node corresponding to our new identity hash
+        CanonicalPath cp = extractCanonicalPath(entity);
+        String tenantId = cp.ids().getTenantId();
+
+        Vertex tenantVertex = new HawkularPipeline<Graph, Vertex>(context.getGraph()).V().hasEid(tenantId)
+                .cast(Vertex.class).next();
+
+        Iterator<Vertex> hashNodesIt = tenantVertex.query().direction(Direction.OUT)
+                .labels(Constants.InternalEdge.__containsIdentityHash.name())
+                .has(Constants.Property.__targetIdentityHash.name(), identityHash).vertices().iterator();
+
+        if (hashNodesIt.hasNext()) {
+            Vertex hashNode = hashNodesIt.next();
+            vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
+        } else {
+            Vertex hashNode = context.getGraph().addVertex(null);
+            hashNode.setProperty(Constants.Property.__identityHash.name(), identityHash);
+            hashNode.setProperty(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
+
+            Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode);
+            e.setProperty(Constants.Property.__targetIdentityHash.name(), identityHash);
+
+            vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
+        }
+    }
+
+    private void removeHashNodeOf(Vertex vertex) {
+        Iterable<Edge> hashNodeEdges = vertex.getEdges(Direction.OUT,
+                Constants.InternalEdge.__withIdentityHash.name());
+
+        Iterator<Edge> hashNodeEdgeIt = hashNodeEdges.iterator();
+
+        if (hashNodeEdgeIt.hasNext()) {
+            Edge hashNodeEdge = hashNodeEdgeIt.next();
+
+            if (hashNodeEdgeIt.hasNext()) {
+                throw new IllegalStateException(
+                        "Entity with path: " + extractCanonicalPath(vertex) + " was associated " +
+                                "with more than 1 hash node. That is a bug.");
+            }
+
+            //XXX do we need to do this check? It might be quite expensive to determine the count
+            //An alternative might be a periodical clean job.
+
+            //check if were are the last user of the hash node
+            Vertex hashNode = hashNodeEdge.getVertex(Direction.IN);
+            Iterable<Edge> entitiesWithSameHash =
+                    hashNode.getEdges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
+
+            if (StreamSupport.stream(entitiesWithSameHash.spliterator(), false).count() == 1) {
+                hashNode.remove();
+            } else {
+                hashNodeEdge.remove();
+            }
+        }
     }
 
     @Override
@@ -878,6 +964,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public void delete(Element entity) {
+        if (entity instanceof Vertex) {
+            removeHashNodeOf((Vertex) entity);
+        }
         entity.remove();
     }
 
@@ -908,6 +997,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public void rollback(Transaction t) {
         context.rollback(t);
+    }
+
+    @Override
+    public boolean isBackendInternal(Element element) {
+        return (element instanceof Vertex && element.getProperty(Constants.Property.__type.name()).equals(
+                Constants.InternalType.__identityHash.name())) || (element instanceof Edge && (
+                        ((Edge)element).getLabel().equals(Constants.InternalEdge.__withIdentityHash.name()) ||
+                        ((Edge)element).getLabel().equals(Constants.InternalEdge.__containsIdentityHash.name())
+
+                ));
     }
 
     @Override

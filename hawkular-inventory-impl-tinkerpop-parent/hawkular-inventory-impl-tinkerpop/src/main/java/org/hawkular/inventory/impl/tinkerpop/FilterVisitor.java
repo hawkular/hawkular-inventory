@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.InternalEdge.__withIdentityHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__cp;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__eid;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
@@ -451,6 +452,12 @@ class FilterVisitor {
         goBackFromEdges(query, state);
 
         query.loop(label, (x) -> true, (x) -> true);
+    }
+
+    public void visit(HawkularPipeline<?, ?> query, @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
+                      QueryTranslationState state) {
+        goBackFromEdges(query, state);
+        query.out(__withIdentityHash.name()).in(__withIdentityHash.name());
     }
 
     private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {

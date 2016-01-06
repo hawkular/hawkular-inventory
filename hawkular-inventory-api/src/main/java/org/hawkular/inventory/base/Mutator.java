@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -70,6 +71,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
 
+            preCreate(blueprint, transaction);
+
             BE parent = getParent();
             CanonicalPath parentCanonicalPath = parent == null ? null : context.backend.extractCanonicalPath(parent);
 
@@ -95,7 +98,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 containsRel = context.backend.relate(parent, entityObject, contains.name(), Collections.emptyMap());
             }
 
-            newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent);
+            newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, transaction);
 
             List<Notification<?, ?>> customRelsNotifications = new ArrayList<>();
 
@@ -106,6 +109,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(),
                         customRelsNotifications);
             }
+
+            postCreate(entityObject, newEntity.getEntity(), transaction);
 
             context.backend.commit(transaction);
 
@@ -122,12 +127,20 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     public final void update(Id id, U update) throws EntityNotFoundException {
         Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.update(context, q, update, (e, u) -> preUpdate(id, e, u));
+        Util.update(context, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate);
     }
 
     public final void delete(Id id) throws EntityNotFoundException {
         Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.delete(context, q, (e) -> cleanup(id, e));
+        Util.delete(context, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+    }
+
+    protected void preCreate(B blueprint, InventoryBackend.Transaction transaction) {
+
+    }
+
+    protected void postCreate(BE entityObject, E entity, InventoryBackend.Transaction transaction) {
+
     }
 
     /**
@@ -136,11 +149,15 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * <p>This hook is called prior to anything being deleted.
      *
      * <p>By default this does nothing.
-     *
-     * @param id                   the id of the entity being deleted
+     *  @param id                   the id of the entity being deleted
      * @param entityRepresentation the backend specific representation of the entity
+     * @param transaction          the transaction in which the delete is executing
      */
-    protected void cleanup(Id id, BE entityRepresentation) {
+    protected void preDelete(Id id, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+
+    }
+
+    protected void postDelete(BE entityRepresentation, InventoryBackend.Transaction transaction) {
 
     }
 
@@ -149,12 +166,16 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * backend database.
      *
      * <p>By default, this does nothing
-     *
-     * @param id                   the id of the entity being updated
+     *  @param id                   the id of the entity being updated
      * @param entityRepresentation the backend representation of the updated entity
      * @param update               the update object
+     * @param transaction          the transaction in which the update is executing
      */
-    protected void preUpdate(Id id, BE entityRepresentation, U update) {
+    protected void preUpdate(Id id, BE entityRepresentation, U update, InventoryBackend.Transaction transaction) {
+
+    }
+
+    protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
 
     }
 
@@ -195,11 +216,13 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param blueprint  the blueprint that it prescribes how the entity should be initialized
      * @param parentPath the path to the parent entity
      * @param parent     the actual parent entity
+     * @param transaction
      * @return an object with the initialized and converted entity together with any pending notifications to be sent
      * out
      */
     protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, B blueprint,
-            CanonicalPath parentPath, BE parent);
+                                                                        CanonicalPath parentPath, BE parent,
+                                                                        InventoryBackend.Transaction transaction);
 
     private void createCustomRelationships(BE entity, Relationships.Direction direction,
                                            Map<String, Set<CanonicalPath>> otherEnds,

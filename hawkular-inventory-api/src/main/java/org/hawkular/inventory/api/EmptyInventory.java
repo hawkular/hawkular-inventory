@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -385,6 +385,16 @@ public class EmptyInventory implements Inventory {
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
         }
+
+        @Override
+        public String identityHash() throws EntityNotFoundException {
+            return "";
+        }
+
+        @Override
+        public ResourceTypes.Read identical() {
+            return new ResourceTypesRead();
+        }
     }
 
     public static class ResourceTypesMultiple implements ResourceTypes.Multiple {
@@ -422,6 +432,11 @@ public class EmptyInventory implements Inventory {
         @Override
         public Page<ResourceType> entities(Pager pager) {
             return emptyPage(pager);
+        }
+
+        @Override
+        public ResourceTypes.Read identical() {
+            return new ResourceTypesRead();
         }
     }
 
@@ -529,6 +544,11 @@ public class EmptyInventory implements Inventory {
         public Page<MetricType> entities(Pager pager) {
             return emptyPage(pager);
         }
+
+        @Override
+        public MetricTypes.Read identical() {
+            return new MetricTypesRead();
+        }
     }
 
     public static class MetricTypesSingle extends SingleBase<MetricType, MetricType.Update>
@@ -551,6 +571,16 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
+        }
+
+        @Override
+        public String identityHash() throws EntityNotFoundException {
+            return "";
+        }
+
+        @Override
+        public MetricTypes.Read identical() {
+            return new MetricTypesRead();
         }
     }
 

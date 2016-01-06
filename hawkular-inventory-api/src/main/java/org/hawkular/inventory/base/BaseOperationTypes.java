@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import static org.hawkular.inventory.api.filters.With.id;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
@@ -31,7 +32,9 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -56,9 +59,9 @@ public final class BaseOperationTypes {
         }
 
         @Override
-        protected EntityAndPendingNotifications<OperationType> wireUpNewEntity(BE entity,
-                                                                               OperationType.Blueprint blueprint,
-                                                                               CanonicalPath parentPath, BE parent) {
+        protected EntityAndPendingNotifications<OperationType>
+        wireUpNewEntity(BE entity, OperationType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        InventoryBackend.Transaction transaction) {
             return new EntityAndPendingNotifications<>(new OperationType(blueprint.getName(),
                     parentPath.extend(OperationType.class, context.backend.extractId(entity)).get(),
                     blueprint.getProperties()));
@@ -84,7 +87,7 @@ public final class BaseOperationTypes {
         }
 
         @Override
-        protected void cleanup(String s, BE entityRepresentation) {
+        protected void preDelete(String s, BE entityRepresentation, InventoryBackend.Transaction transaction) {
             if (isResourceTypeInMetadataPack(context, entityRepresentation)) {
                 throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
@@ -127,7 +130,7 @@ public final class BaseOperationTypes {
                     new OperationTypeDataModificationChecks<>(context));
         }
 
-        @Override protected void cleanup(BE deletedEntity) {
+        @Override protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
             if (ReadWrite.isResourceTypeInMetadataPack(context, deletedEntity)) {
                 throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
@@ -158,7 +161,7 @@ public final class BaseOperationTypes {
         }
 
         @Override
-        public void preCreate(DataEntity.Blueprint blueprint) {
+        public void preCreate(DataEntity.Blueprint blueprint, InventoryBackend.Transaction transaction) {
             BE mp = context.backend.querySingle(context.select().path().with(asTargetBy(contains),
                     asTargetBy(incorporates), With.type(MetadataPack.class)).get());
 
@@ -173,7 +176,7 @@ public final class BaseOperationTypes {
         }
 
         @Override
-        public void preUpdate(BE dataEntity, DataEntity.Update update) {
+        public void preUpdate(BE dataEntity, DataEntity.Update update, InventoryBackend.Transaction transaction) {
             if (update.getValue() == null) {
                 return;
             }
@@ -195,7 +198,18 @@ public final class BaseOperationTypes {
         }
 
         @Override
-        public void preDelete(BE dataEntity) {
+        public void postUpdate(BE dataEntity, InventoryBackend.Transaction transaction) {
+            BE rt = context.backend.traverseToSingle(dataEntity, Query.path().with(
+                    asTargetBy(contains), //up to operation type
+                    asTargetBy(contains) //up to resource type
+            ).get());
+
+            context.backend.updateIdentityHash(rt, IdentityHash.of(context.backend.convert(rt, ResourceType.class),
+                    context.inventory.keepTransaction(transaction)));
+        }
+
+        @Override
+        public void preDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
             CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
             BE rt = null;
             try {
@@ -210,6 +224,28 @@ public final class BaseOperationTypes {
                                 " under operation type " + dataPath.up() +
                                 ", because the owning resource type is part of a meta data pack." +
                                 " Doing this would invalidate meta data pack's identity.");
+            }
+        }
+
+        @Override
+        public void postCreate(BE dataEntity, InventoryBackend.Transaction transaction) {
+            BE rte = context.backend.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains),
+                    asTargetBy(contains)).get());
+            ResourceType rt = context.backend.convert(rte, ResourceType.class);
+            context.backend
+                    .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
+        }
+
+        @Override
+        public void postDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+            CanonicalPath cp = context.backend.extractCanonicalPath(dataEntity);
+            try {
+                BE rte = context.backend.find(cp.up(2));
+                ResourceType rt = context.backend.convert(rte, ResourceType.class);
+                context.backend
+                        .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
+            } catch (ElementNotFoundException e) {
+                throw new IllegalStateException("Could not find the owning resource type of the operation type " + cp);
             }
         }
     }
