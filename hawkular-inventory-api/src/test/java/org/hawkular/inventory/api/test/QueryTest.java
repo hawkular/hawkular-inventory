@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
@@ -58,7 +59,7 @@ public class QueryTest {
 
         CanonicalPath[] cps = ((With.CanonicalPaths) q.getFragments()[0].getFilter()).getPaths();
         Assert.assertEquals(1, cps.length);
-        Assert.assertEquals(Tenant.class, cps[0].getSegment().getElementType());
+        Assert.assertEquals(SegmentType.t, cps[0].getSegment().getElementType());
         Assert.assertEquals("id", cps[0].getSegment().getElementId());
     }
 

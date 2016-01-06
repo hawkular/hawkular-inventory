@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,6 +72,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SegmentType;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -127,7 +128,7 @@ public class RestBulk extends RestBase {
         }
     }
 
-    private static WriteInterface<?, ?, ?, ?> step(Class<?> elementClass, Class<?> nextType,
+    private static WriteInterface<?, ?, ?, ?> step(SegmentType elementClass, Class<?> nextType,
                                                    ResolvableToSingle<?, ?> single) {
 
         return ElementTypeVisitor.accept(elementClass,
@@ -412,7 +413,7 @@ public class RestBulk extends RestBase {
                                   IdExtractor idExtractor, CanonicalPath parentPath,
                                   ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single,
                                   ElementType elementType, List<Blueprint> blueprints) {
-        if (!parentPath.modified().canExtendTo(elementType.elementType)) {
+        if (!parentPath.modified().canExtendTo(elementType.segmentType)) {
             putStatus(statuses, elementType, parentPath, BAD_REQUEST.getStatusCode());
             return;
         }
@@ -491,23 +492,26 @@ public class RestBulk extends RestBase {
     }
 
     private enum ElementType {
-        environment(Environment.class, Environment.Blueprint.class),
-        resourceType(ResourceType.class, ResourceType.Blueprint.class),
-        metricType(MetricType.class, MetricType.Blueprint.class),
-        operationType(OperationType.class, OperationType.Blueprint.class),
-        feed(Feed.class, Feed.Blueprint.class),
-        metric(Metric.class, Metric.Blueprint.class),
-        resource(Resource.class, Resource.Blueprint.class),
-        dataEntity(DataEntity.class, DataEntity.Blueprint.class),
-        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class),
-        relationship(Relationship.class, Relationship.Blueprint.class);
+        environment(Environment.class, Environment.Blueprint.class, SegmentType.e),
+        resourceType(ResourceType.class, ResourceType.Blueprint.class, SegmentType.rt),
+        metricType(MetricType.class, MetricType.Blueprint.class, SegmentType.mt),
+        operationType(OperationType.class, OperationType.Blueprint.class, SegmentType.ot),
+        feed(Feed.class, Feed.Blueprint.class, SegmentType.f),
+        metric(Metric.class, Metric.Blueprint.class, SegmentType.m),
+        resource(Resource.class, Resource.Blueprint.class, SegmentType.r),
+        dataEntity(DataEntity.class, DataEntity.Blueprint.class, SegmentType.d),
+        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class, SegmentType.mp),
+        relationship(Relationship.class, Relationship.Blueprint.class, SegmentType.r);
 
         final Class<? extends AbstractElement<?, ?>> elementType;
         final Class<? extends Blueprint> blueprintType;
+        final SegmentType segmentType;
 
-        ElementType(Class<? extends AbstractElement<?, ?>> elementType, Class<? extends Blueprint> blueprintType) {
+        ElementType(Class<? extends AbstractElement<?, ?>> elementType, Class<? extends Blueprint> blueprintType,
+                SegmentType segmentType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
+            this.segmentType = segmentType;
         }
     }
 

@@ -76,6 +76,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
@@ -116,7 +117,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public Element find(CanonicalPath path) throws ElementNotFoundException {
         Iterator<? extends Element> it;
-        if (Relationship.class.equals(path.getSegment().getElementType())) {
+        if (SegmentType.rl.equals(path.getSegment().getElementType())) {
             //__eid is globally unique for relationships
             GraphQuery query = context.getGraph().query().has(__eid.name(), path.getSegment().getElementId());
             it = query.edges().iterator();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.SegmentType;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on resources.
@@ -184,7 +185,7 @@ public final class Resources {
             Read last = access.allResources();
 
             for (Path p : furtherChildren) {
-                if (!Resource.class.equals(p.getSegment().getElementType())) {
+                if (!SegmentType.r.equals(p.getSegment().getElementType())) {
                     throw new IllegalArgumentException("Descend can only traverse child resources.");
                 }
                 access = last.get(p);

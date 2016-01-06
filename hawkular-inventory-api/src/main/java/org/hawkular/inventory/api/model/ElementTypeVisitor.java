@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,30 +25,34 @@ package org.hawkular.inventory.api.model;
 public interface ElementTypeVisitor<R, P> {
 
     static <R, P> R accept(Class<?> entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
-        if (Tenant.class.equals(entityType)) {
-            return visitor.visitTenant(parameter);
-        } else if (Environment.class.equals(entityType)) {
-            return visitor.visitEnvironment(parameter);
-        } else if (Feed.class.equals(entityType)) {
-            return visitor.visitFeed(parameter);
-        } else if (Metric.class.equals(entityType)) {
-            return visitor.visitMetric(parameter);
-        } else if (MetricType.class.equals(entityType)) {
-            return visitor.visitMetricType(parameter);
-        } else if (Resource.class.equals(entityType)) {
-            return visitor.visitResource(parameter);
-        } else if (ResourceType.class.equals(entityType)) {
-            return visitor.visitResourceType(parameter);
-        } else if (Relationship.class.equals(entityType)) {
-            return visitor.visitRelationship(parameter);
-        } else if (DataEntity.class.equals(entityType)) {
-            return visitor.visitData(parameter);
-        } else if (OperationType.class.equals(entityType)) {
-            return visitor.visitOperationType(parameter);
-        } else if (MetadataPack.class.equals(entityType)) {
-            return visitor.visitMetadataPack(parameter);
-        } else {
-            return visitor.visitUnknown(parameter);
+        return accept(SegmentType.fromElementType(entityType), visitor, parameter);
+    }
+    static <R, P> R accept(SegmentType entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
+        switch (entityType) {
+            case t:
+                return visitor.visitTenant(parameter);
+            case e:
+                return visitor.visitEnvironment(parameter);
+            case f:
+                return visitor.visitFeed(parameter);
+            case m:
+                return visitor.visitMetric(parameter);
+            case mt:
+                return visitor.visitMetricType(parameter);
+            case r:
+                return visitor.visitResource(parameter);
+            case rt:
+                return visitor.visitResourceType(parameter);
+            case rl:
+                return visitor.visitRelationship(parameter);
+            case d:
+                return visitor.visitData(parameter);
+            case ot:
+                return visitor.visitOperationType(parameter);
+            case mp:
+                return visitor.visitMetadataPack(parameter);
+            default:
+                return visitor.visitUnknown(parameter);
         }
     }
 

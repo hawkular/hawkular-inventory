@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,11 +41,11 @@ import org.hawkular.inventory.api.ResourceTypes;
 public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataPack.Update> {
 
     public static boolean canIncorporate(CanonicalPath entityPath) {
-        Class<?> entityType = entityPath.getSegment().getElementType();
-        Class<?> parentType = entityPath.up().getSegment().getElementType();
+        SegmentType entityType = entityPath.getSegment().getElementType();
+        SegmentType parentType = entityPath.up().getSegment().getElementType();
 
-        return Tenant.class.equals(parentType)
-                && (ResourceType.class.equals(entityType) || MetricType.class.equals(entityType));
+        return SegmentType.t.equals(parentType)
+                && (SegmentType.rt.equals(entityType) || SegmentType.mt.equals(entityType));
     }
 
     private MetadataPack() {

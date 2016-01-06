@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@ package org.hawkular.inventory.api.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,32 +45,21 @@ import java.util.function.Function;
 public final class RelativePath extends Path implements Serializable {
 
     static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
-    private static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
-
-    private static final List<Class<?>> ALL_VALID_TYPES = Arrays.asList(Tenant.class, ResourceType.class,
-            MetricType.class, OperationType.class, Environment.class, Feed.class, Metric.class, Resource.class,
-            StructuredData.class, Up.class);
+    private static final Map<SegmentType, List<SegmentType>> VALID_PROGRESSIONS = new HashMap<>();
 
     static {
 
-        SHORT_NAME_TYPES.putAll(CanonicalPath.SHORT_NAME_TYPES);
-        SHORT_NAME_TYPES.put("..", Up.class);
-
-        SHORT_TYPE_NAMES.putAll(CanonicalPath.SHORT_TYPE_NAMES);
-        SHORT_TYPE_NAMES.put(Up.class, "..");
-
-        for (Class<?> c : ALL_VALID_TYPES) {
-            List<Class<?>> progressions = CanonicalPath.VALID_PROGRESSIONS.get(c);
+        for (SegmentType c : SegmentType.values()) {
+            List<SegmentType> progressions = CanonicalPath.VALID_PROGRESSIONS.get(c);
             if (progressions == null) {
-                progressions = Collections.singletonList(Up.class);
+                progressions = Collections.singletonList(SegmentType.up);
             } else {
                 progressions = new ArrayList<>(progressions);
-                progressions.add(Up.class);
+                progressions.add(SegmentType.up);
                 ((ArrayList<?>) progressions).trimToSize();
             }
 
-            VALID_PROGRESSIONS.put(c, progressions);
+            VALID_PROGRESSIONS.put(c, Collections.unmodifiableList(progressions));
         }
     }
 
@@ -107,6 +95,10 @@ public final class RelativePath extends Path implements Serializable {
      */
     public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             Class<?> intendedFinalType) {
+        return fromPartiallyUntypedString(path, initialPosition, SegmentType.fromElementType(intendedFinalType));
+    }
+    public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
+            SegmentType intendedFinalType) {
 
         return (RelativePath) Path.fromString(path, false, Extender::new,
                 new RelativeTypeProvider(new HintedTypeProvider(intendedFinalType,
@@ -160,7 +152,7 @@ public final class RelativePath extends Path implements Serializable {
         CanonicalPath.Extender extender = new CanonicalPath.Extender(0, startSegments) {
             @Override
             public CanonicalPath.Extender extend(Segment segment) {
-                if (Up.class.equals(segment.getElementType())) {
+                if (SegmentType.up.equals(segment.getElementType())) {
                     removeLastSegment();
                 } else {
                     super.extend(segment);
@@ -227,7 +219,7 @@ public final class RelativePath extends Path implements Serializable {
 
     @Override
     public String toString() {
-        return new Encoder(SHORT_TYPE_NAMES, (s) -> !Up.class.equals(s.getElementType())).encode("", this);
+        return new Encoder((s) -> !SegmentType.up.equals(s.getElementType())).encode("", this);
     }
 
     public static final class Up {
@@ -254,42 +246,42 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public EnvironmentBuilder environment(String id) {
-            segments.add(new Segment(Environment.class, id));
+            segments.add(new Segment(SegmentType.e, id));
             return new EnvironmentBuilder(segments);
         }
 
         public ResourceTypeBuilder resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
+            segments.add(new Segment(SegmentType.rt, id));
             return new ResourceTypeBuilder(segments);
         }
 
         public MetricTypeBuilder metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
+            segments.add(new Segment(SegmentType.mt, id));
             return new MetricTypeBuilder(segments);
         }
 
         public FeedBuilder feed(String id) {
-            segments.add(new Segment(Feed.class, id));
+            segments.add(new Segment(SegmentType.f, id));
             return new FeedBuilder(segments);
         }
 
         public ResourceBuilder resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+            segments.add(new Segment(SegmentType.r, id));
             return new ResourceBuilder(segments);
         }
 
         public MetricBuilder metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+            segments.add(new Segment(SegmentType.m, id));
             return new MetricBuilder(segments);
         }
 
-        public StructuredDataBuilder dataEntity(DataEntity.Role role) {
-            segments.add(new Segment(DataEntity.class, role.name()));
+        public StructuredDataBuilder dataEntity(String role) {
+            segments.add(new Segment(SegmentType.d, role));
             return new StructuredDataBuilder(segments);
         }
 
         public OperationTypeBuilder operationType(String id) {
-            segments.add(new Segment(OperationType.class, id));
+            segments.add(new Segment(SegmentType.ot, id));
             return new OperationTypeBuilder(segments);
         }
 
@@ -302,7 +294,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -342,7 +334,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -366,7 +358,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -388,7 +380,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -400,7 +392,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -418,7 +410,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -439,7 +431,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -450,7 +442,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -482,7 +474,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -501,7 +493,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return new UpBuilder(segments);
         }
     }
@@ -518,47 +510,47 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public TenantBuilder tenant(String id) {
-            segments.add(new Segment(Tenant.class, id));
+            segments.add(new Segment(SegmentType.t, id));
             return new TenantBuilder(segments);
         }
 
         public EnvironmentBuilder environment(String id) {
-            segments.add(new Segment(Environment.class, id));
+            segments.add(new Segment(SegmentType.e, id));
             return new EnvironmentBuilder(segments);
         }
 
         public ResourceTypeBuilder resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
+            segments.add(new Segment(SegmentType.rt, id));
             return new ResourceTypeBuilder(segments);
         }
 
         public MetricTypeBuilder metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
+            segments.add(new Segment(SegmentType.mt, id));
             return new MetricTypeBuilder(segments);
         }
 
         public FeedBuilder feed(String id) {
-            segments.add(new Segment(Feed.class, id));
+            segments.add(new Segment(SegmentType.f, id));
             return new FeedBuilder(segments);
         }
 
         public ResourceBuilder resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+            segments.add(new Segment(SegmentType.r, id));
             return new ResourceBuilder(segments);
         }
 
         public MetricBuilder metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+            segments.add(new Segment(SegmentType.m, id));
             return new MetricBuilder(segments);
         }
 
-        public StructuredDataBuilder dataEntity(DataEntity.Role role) {
-            segments.add(new Segment(DataEntity.class, role.name()));
+        public StructuredDataBuilder dataEntity(String role) {
+            segments.add(new Segment(SegmentType.d, role));
             return new StructuredDataBuilder(segments);
         }
 
         public OperationTypeBuilder operationType(String id) {
-            segments.add(new Segment(OperationType.class, id));
+            segments.add(new Segment(SegmentType.ot, id));
             return new OperationTypeBuilder(segments);
         }
 
@@ -567,7 +559,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         public UpBuilder up() {
-            segments.add(new Segment(Up.class, null));
+            segments.add(new Segment(SegmentType.up, null));
             return this;
         }
 
@@ -582,15 +574,15 @@ public final class RelativePath extends Path implements Serializable {
         Extender(int from, List<Segment> segments) {
             this(from, segments, (segs) -> {
                 if (segs.isEmpty()) {
-                    return ALL_VALID_TYPES;
+                    return SegmentType.getRelativeShortNames();
                 }
 
-                Class<?> lastType = segs.get(segs.size() - 1).getElementType();
+                SegmentType lastType = segs.get(segs.size() - 1).getElementType();
 
                 int idx = segs.size() - 2;
                 int jump = 1;
-                while (Up.class.equals(lastType)) {
-                    while (idx >= 0 && Up.class.equals(segs.get(idx).getElementType())) {
+                while (SegmentType.up.equals(lastType)) {
+                    while (idx >= 0 && SegmentType.up.equals(segs.get(idx).getElementType())) {
                         idx--;
                         jump++;
                     }
@@ -598,7 +590,7 @@ public final class RelativePath extends Path implements Serializable {
                     idx -= jump;
 
                     if (idx < 0) {
-                        return ALL_VALID_TYPES;
+                        return SegmentType.getRelativeShortNames();
                     } else if (idx >= 0) {
                         lastType = segs.get(idx).getElementType();
                     }
@@ -608,7 +600,7 @@ public final class RelativePath extends Path implements Serializable {
             });
         }
 
-        Extender(int from, List<Segment> segments, Function<List<Segment>, List<Class<?>>> validProgressions) {
+        Extender(int from, List<Segment> segments, Function<List<Segment>, List<SegmentType>> validProgressions) {
             super(from, segments, false, validProgressions);
         }
 
@@ -627,7 +619,7 @@ public final class RelativePath extends Path implements Serializable {
         }
 
         @Override
-        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+        public Extender extend(SegmentType type, String id) {
             return (Extender) super.extend(type, id);
         }
 
@@ -654,12 +646,12 @@ public final class RelativePath extends Path implements Serializable {
         @Override
         public Segment deduceSegment(String type, String id, boolean isLast) {
             if (type != null && !type.isEmpty()) {
-                Class<?> cls = SHORT_NAME_TYPES.get(type);
-                if (!Up.class.equals(cls) && (id == null || id.isEmpty())) {
+                SegmentType cls = SegmentType.fastValueOf(type);
+                if (!SegmentType.up.equals(cls) && (id == null || id.isEmpty())) {
                     return null;
                 } else if (id == null || id.isEmpty()) {
                     return new Segment(cls, null); //cls == up
-                } else if (Up.class.equals(cls)) {
+                } else if (SegmentType.up.equals(cls)) {
                     throw new IllegalArgumentException("The \"up\" path segment cannot have an id.");
                 } else {
                     return new Segment(cls, id);
@@ -670,10 +662,10 @@ public final class RelativePath extends Path implements Serializable {
                 return null;
             }
 
-            Class<?> cls = SHORT_NAME_TYPES.get(id);
+            SegmentType cls = SegmentType.fastValueOf(id);
             if (cls == null && wrapped != null) {
                 return wrapped.deduceSegment(type, id, isLast);
-            } else if (Up.class.equals(cls)) {
+            } else if (SegmentType.up.equals(cls)) {
                 return new Segment(cls, null);
             } else {
                 return null;

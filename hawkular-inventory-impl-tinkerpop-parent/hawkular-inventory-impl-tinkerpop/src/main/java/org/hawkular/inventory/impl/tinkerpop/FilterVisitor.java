@@ -39,8 +39,10 @@ import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
@@ -373,7 +375,7 @@ class FilterVisitor {
         goBackFromEdges(query, state);
         query.out(hasData);
         for (Path.Segment seg : dataPos.getDataPath().getPath()) {
-            if (RelativePath.Up.class.equals(seg.getElementType())) {
+            if (SegmentType.up.equals(seg.getElementType())) {
                 query.in(contains);
             } else {
                 query.out(contains);
@@ -462,7 +464,7 @@ class FilterVisitor {
 
     private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {
         for (Path.Segment s : path.getPath()) {
-            if (RelativePath.Up.class.equals(s.getElementType())) {
+            if (SegmentType.up.equals(s.getElementType())) {
                 pipeline.in(Relationships.WellKnown.contains.name());
             } else {
                 pipeline.out(Relationships.WellKnown.contains.name());
@@ -472,7 +474,7 @@ class FilterVisitor {
     }
 
     private void apply(Path.Segment segment, HawkularPipeline<?, ?> pipeline) {
-        pipeline.hasType(Constants.Type.of(segment.getElementType()));
+        pipeline.hasType(Constants.Type.of(Entity.typeFromSegmentType(segment.getElementType())));
         pipeline.hasEid(segment.getElementId());
     }
 

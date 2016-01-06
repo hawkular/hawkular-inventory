@@ -107,6 +107,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
@@ -761,7 +762,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                         .targetOfType(Metric.class)).entities();
         assert rels != null && rels.size() == 2 : "There should be 2 relationships conforming the filters";
         assert rels.stream().allMatch(rel ->
-                Metric.class.equals(rel.getTarget().getSegment().getElementType())) : "The type of all the " +
+                SegmentType.m.equals(rel.getTarget().getSegment().getElementType())) : "The type of all the " +
                 "targets should be the 'Metric'";
 
 
@@ -781,8 +782,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getSegment().getElementId())
                 || "production".equals(rel.getSource().getSegment().getElementId()))
                 : "Source should be either 'test' or 'production'";
-        assert rels.stream().allMatch(rel -> Resource.class.equals(rel.getTarget().getSegment().getElementType()) ||
-                Metric.class.equals(rel.getTarget().getSegment().getElementType()))
+        assert rels.stream().allMatch(rel -> SegmentType.r.equals(rel.getTarget().getSegment().getElementType()) ||
+                SegmentType.m.equals(rel.getTarget().getSegment().getElementType()))
                 : "Target should be either a metric or a resource";
     }
 

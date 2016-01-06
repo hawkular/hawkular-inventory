@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,18 +22,13 @@ import static org.hawkular.inventory.api.Resources.DataRole.connectionConfigurat
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,7 +41,7 @@ public class CanonicalPathTest {
     @Test
     public void testParse() throws Exception {
         CanonicalPath p = CanonicalPath.fromString("/t;t/f;f/r;r");
-        checkPath(p, Tenant.class, "t", Feed.class, "f", Resource.class, "r");
+        checkPath(p, SegmentType.t, "t", SegmentType.f, "f", SegmentType.r, "r");
 
         try {
             CanonicalPath.fromString("/t;t/e;e/f;f/t;t");
@@ -70,7 +65,7 @@ public class CanonicalPathTest {
         }
 
         p = CanonicalPath.fromString("/rl;r");
-        checkPath(p, Relationship.class, "r");
+        checkPath(p, SegmentType.rl, "r");
 
         try {
             CanonicalPath.fromString("/rl;r/t/t");
@@ -97,13 +92,13 @@ public class CanonicalPathTest {
     @Test
     public void testParseWithEscapedChars() throws Exception {
         CanonicalPath p = CanonicalPath.fromString("/t;te%2Fn;a%2fnt/f;f%2f%25eed/r;r;;%2fes");
-        checkPath(p, Tenant.class, "te/n;a/nt", Feed.class, "f/%eed", Resource.class, "r;;/es");
+        checkPath(p, SegmentType.t, "te/n;a/nt", SegmentType.f, "f/%eed", SegmentType.r, "r;;/es");
 
         p = CanonicalPath
                 .fromString("/t;te%2Fn;a%2Fnt/f;f%2F%25eed/r;r;;%2Fes1/r;r;;%2Fes2/r;r;;%2Fes3");
         // not sure if this should pass
-        checkPath(p, Tenant.class, "te/n;a/nt", Feed.class, "f/%eed", Resource.class, "r;;/es1",
-                Resource.class, "r;;/es2", Resource.class, "r;;/es3");
+        checkPath(p, SegmentType.t, "te/n;a/nt", SegmentType.f, "f/%eed", SegmentType.r, "r;;/es1",
+                SegmentType.r, "r;;/es2", SegmentType.r, "r;;/es3");
     }
 
     @Test
@@ -115,10 +110,10 @@ public class CanonicalPathTest {
         Assert.assertEquals("/rl;r", CanonicalPath.of().relationship("r").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;configuration/blah/1/key", CanonicalPath.of().tenant("t").environment("e")
-                .resource("r").data(configuration).key("blah").index(1).key("key").get().toString());
+                .resource("r").data(configuration.name()).key("blah").index(1).key("key").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl%2Fah", CanonicalPath.of().tenant("t")
-                .environment("e").resource("r").data(connectionConfiguration).key("bl/ah").get().toString());
+                .environment("e").resource("r").data(connectionConfiguration.name()).key("bl/ah").get().toString());
 
         // escaped chars scenario
         Assert.assertEquals("/t;te%2Fnant/e;e;nv/r;r%25%2Fes;;", CanonicalPath.of().tenant("te/nant")
@@ -158,7 +153,7 @@ public class CanonicalPathTest {
     public void testExtending() throws Exception {
         CanonicalPath p = CanonicalPath.of().tenant("t").feed("f").get();
 
-        CanonicalPath p2 = p.extend(Metric.class, "m").get();
+        CanonicalPath p2 = p.extend(SegmentType.m, "m").get();
         Assert.assertEquals("/t;t/f;f/m;m", p2.toString());
 
         p2 = p.getRoot().extend(MetricType.class, "mt").get();
@@ -169,13 +164,13 @@ public class CanonicalPathTest {
     public void testExtendingWithEscapedChars() throws Exception {
         CanonicalPath p = CanonicalPath.of().tenant("t").feed("f").get();
 
-        CanonicalPath p2 = p.extend(Metric.class, "m%et%/ric").get();
+        CanonicalPath p2 = p.extend(SegmentType.m, "m%et%/ric").get();
         Assert.assertEquals("/t;t/f;f/m;m%25et%25%2Fric", p2.toString());
 
         p2 = p.getRoot().extend(MetricType.class, "m%et%/ric;type").get();
         Assert.assertEquals("/t;t/mt;m%25et%25%2Fric;type", p2.toString());
 
-        CanonicalPath p3 = p.extend(Metric.class, "/;/%").get();
+        CanonicalPath p3 = p.extend(SegmentType.m, "/;/%").get();
         Assert.assertEquals("/t;t/f;f/m;%2F;%2F%25", p3.toString());
     }
 
@@ -194,7 +189,7 @@ public class CanonicalPathTest {
         Assert.assertEquals("t/e;n/%", p.ids().getTenantId());
         Assert.assertEquals("/;env/", p.ids().getEnvironmentId());
         Assert.assertEquals("/res/", p.ids().getResourcePath().getSegment().getElementId());
-        Assert.assertEquals("f/;e", p.up().up().extend(Feed.class, "f/;e").get().ids().getFeedId());
+        Assert.assertEquals("f/;e", p.up().up().extend(SegmentType.f, "f/;e").get().ids().getFeedId());
     }
 
     @Test
@@ -309,50 +304,50 @@ public class CanonicalPathTest {
     public void testUntypedRelativePath() throws Exception {
         CanonicalPath cp = CanonicalPath.of().tenant("t").feed("f").get();
 
-        Path mp = Path.fromPartiallyUntypedString("g", cp, cp, Resource.class);
+        Path mp = Path.fromPartiallyUntypedString("g", cp, cp, SegmentType.r);
         Assert.assertEquals("r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../g", cp, cp.extend(Metric.class, "m").get(), Resource.class);
+        mp = Path.fromPartiallyUntypedString("../g", cp, cp.extend(SegmentType.m, "m").get(), SegmentType.r);
         Assert.assertEquals("../r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../f;x/g", cp, cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("../f;x/g", cp, cp, SegmentType.r);
         Assert.assertEquals("../f;x/r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../r;g/h/i", cp, cp.extend(Metric.class, "m").get(), Resource.class);
+        mp = Path.fromPartiallyUntypedString("../r;g/h/i", cp, cp.extend(SegmentType.m, "m").get(), SegmentType.r);
         Assert.assertEquals("../r;g/r;h/r;i", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("../e;env/me", cp, cp, Metric.class);
+        mp = Path.fromPartiallyUntypedString("../e;env/me", cp, cp, SegmentType.m);
         Assert.assertEquals("../e;env/m;me", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g", cp, cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("/g", cp, cp, SegmentType.r);
         Assert.assertEquals("/t;t/f;f/r;g", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g/h", cp, cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("/g/h", cp, cp, SegmentType.r);
         Assert.assertEquals("/t;t/f;f/r;g/r;h", mp.toString());
 
-        mp = Path.fromPartiallyUntypedString("/g", cp, cp, Metric.class);
+        mp = Path.fromPartiallyUntypedString("/g", cp, cp, SegmentType.m);
         Assert.assertEquals("/t;t/f;f/m;g", mp.toString());
 
         // escaped chars scenario
-        mp = Path.fromPartiallyUntypedString("/res%2F1/res%2F2", cp, cp, Resource.class);
+        mp = Path.fromPartiallyUntypedString("/res%2F1/res%2F2", cp, cp, SegmentType.r);
         Assert.assertEquals("/t;t/f;f/r;res%2F1/r;res%2F2", mp.toString());
 
         //testing robustness against letter case in escape sequences and trailing type delimiter, too
-        mp = Path.fromPartiallyUntypedString("/%2fg;", cp, cp, Metric.class);
+        mp = Path.fromPartiallyUntypedString("/%2fg;", cp, cp, SegmentType.m);
         Assert.assertEquals("/t;t/f;f/m;%2Fg;", mp.toString());
     }
 
     @Test
     public void testExtensionChecks() throws Exception {
-        Assert.assertTrue(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Environment.class));
-        Assert.assertNull(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Tenant.class));
-        Assert.assertFalse(CanonicalPath.of().tenant("a").get().modified().canExtendTo(Metric.class));
+        Assert.assertTrue(CanonicalPath.of().tenant("a").get().modified().canExtendTo(SegmentType.e));
+        Assert.assertNull(CanonicalPath.of().tenant("a").get().modified().canExtendTo(SegmentType.t));
+        Assert.assertFalse(CanonicalPath.of().tenant("a").get().modified().canExtendTo(SegmentType.m));
     }
 
     @Test
     public void testResourceIdsBackedByCanonicalPath() throws Exception {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("1").resource("2").resource("3")
-                .data(Resources.DataRole.configuration).get();
+                .data(Resources.DataRole.configuration.name()).get();
 
         RelativePath rs = p.ids().getResourcePath();
 
@@ -361,12 +356,13 @@ public class CanonicalPathTest {
         Assert.assertEquals("3", rs.getSegment().getElementId());
         Assert.assertEquals("1", rs.getTop().getElementId());
         Assert.assertEquals("2", rs.up().getSegment().getElementId());
-        Assert.assertEquals(new Path.Segment(Environment.class, "e"), rs.slide(-1, 0).getTop());
+        Assert.assertEquals(new Path.Segment(SegmentType.e, "e"), rs.slide(-1, 0).getTop());
     }
 
     @Test
     public void testRelativePathSliding() throws Exception {
-        RelativePath p = RelativePath.to().environment("e").resource("r").data(configuration).index(1).key("a").get();
+        RelativePath p =
+                RelativePath.to().environment("e").resource("r").data(configuration.name()).index(1).key("a").get();
 
         Assert.assertEquals(p.up(), p.slide(0, -1));
         Assert.assertEquals(p.up().down(), p.slide(0, -1).slide(0, 1));
@@ -376,7 +372,7 @@ public class CanonicalPathTest {
 
         Assert.assertTrue(p.slide(-1, 0).getPath().isEmpty());
 
-        Assert.assertEquals(new Path.Segment(Resource.class, "r"), p.slide(1, 0).getTop());
+        Assert.assertEquals(new Path.Segment(SegmentType.r, "r"), p.slide(1, 0).getTop());
         Assert.assertEquals(new Path.Segment(DataEntity.class, "configuration"), p.slide(2, 0).getTop());
     }
 
@@ -384,7 +380,7 @@ public class CanonicalPathTest {
     private void checkPath(CanonicalPath path, Object... pathSpec) {
         Assert.assertEquals(pathSpec.length / 2, path.getPath().size());
         for (int i = 0; i < pathSpec.length; i += 2) {
-            Class<? extends AbstractElement<?, ?>> t = (Class<? extends AbstractElement<?, ?>>) pathSpec[i];
+            SegmentType t = (SegmentType) pathSpec[i];
             String id = (String) pathSpec[i + 1];
 
             CanonicalPath.Segment s = path.getPath().get(i / 2);

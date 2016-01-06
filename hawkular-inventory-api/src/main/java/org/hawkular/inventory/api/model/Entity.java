@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,44 @@ import java.util.Set;
  */
 public abstract class Entity<B extends Blueprint, U extends Entity.Update> extends AbstractElement<B, U> {
 
+    public static Class<?> typeFromSegmentType(SegmentType segmentType) {
+        switch (segmentType) {
+            case up:
+                return RelativePath.Up.class;
+            default:
+                return entityTypeFromSegmentType(segmentType);
+        }
+    }
+    public static Class<? extends Entity<?, ?>> entityTypeFromSegmentType(SegmentType segmentType) {
+        switch (segmentType) {
+            case t:
+                return Tenant.class;
+            case e:
+                return Environment.class;
+            case f:
+                return Feed.class;
+            case m:
+                return Metric.class;
+            case mt:
+                return MetricType.class;
+            case r:
+                return Resource.class;
+            case rt:
+                return ResourceType.class;
+            // case rl:
+            //    return Relationship.class;
+            case d:
+                return DataEntity.class;
+            case ot:
+                return OperationType.class;
+            case mp:
+                return MetadataPack.class;
+            default:
+                throw new IllegalStateException("There is no " + Entity.class.getName() + " type for " +
+                        segmentType.getClass().getName() + " '" + segmentType.name() + "'");
+        }
+    }
+
     private final String name;
 
     Entity() {
@@ -58,7 +96,7 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
     Entity(String name, CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
         this.name = name;
-        if (!this.getClass().equals(path.getSegment().getElementType())) {
+        if (!this.getClass().getSimpleName().equals(path.getSegment().getElementType().getSimpleName())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
                     this.getClass().getSimpleName() + " but the path points to " +
                     path.getSegment().getElementType().getSimpleName());
