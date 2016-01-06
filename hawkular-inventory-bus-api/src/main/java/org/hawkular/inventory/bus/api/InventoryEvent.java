@@ -48,6 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends AbstractMessage {
 
     private Action.Enumerated action;
+    private Tenant tenant;
     private T object;
 
     public static Class<? extends InventoryEvent<?>> determineEventType(Message message) {
@@ -96,7 +97,7 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
         }
     }
 
-    public static InventoryEvent<?> from(Action<?, ?> action, Object object) {
+    public static InventoryEvent<?> from(Action<?, ?> action, Tenant tenant, Object object) {
         if (object == null) {
             throw new IllegalArgumentException("object == null");
         }
@@ -108,21 +109,21 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
         if (object instanceof Tenant) {
             return new TenantEvent(action.asEnum(), (Tenant) object);
         } else if (object instanceof Environment) {
-            return new EnvironmentEvent(action.asEnum(), (Environment) object);
+            return new EnvironmentEvent(action.asEnum(), tenant, (Environment) object);
         } else if (object instanceof Feed) {
-            return new FeedEvent(action.asEnum(), (Feed) object);
+            return new FeedEvent(action.asEnum(), tenant, (Feed) object);
         } else if (object instanceof Metric) {
-            return new MetricEvent(action.asEnum(), (Metric) object);
+            return new MetricEvent(action.asEnum(), tenant, (Metric) object);
         } else if (object instanceof MetricType) {
-            return new MetricTypeEvent(action.asEnum(), (MetricType) object);
+            return new MetricTypeEvent(action.asEnum(), tenant, (MetricType) object);
         } else if (object instanceof Resource) {
-            return new ResourceEvent(action.asEnum(), (Resource) object);
+            return new ResourceEvent(action.asEnum(), tenant, (Resource) object);
         } else if (object instanceof ResourceType) {
-            return new ResourceTypeEvent(action.asEnum(), (ResourceType) object);
+            return new ResourceTypeEvent(action.asEnum(), tenant, (ResourceType) object);
         } else if (object instanceof Relationship) {
-            return new RelationshipEvent(action.asEnum(), (Relationship) object);
+            return new RelationshipEvent(action.asEnum(), tenant, (Relationship) object);
         } else if (object instanceof DataEntity) {
-            return new DataEntityEvent(action.asEnum(), (DataEntity) object);
+            return new DataEntityEvent(action.asEnum(), tenant, (DataEntity) object);
         } else if (object instanceof Action.Update) {
             @SuppressWarnings("unchecked")
             AbstractElement<?, AbstractElement.Update> updated =
@@ -131,7 +132,7 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
             updated.update().with((AbstractElement.Update) ((Action.Update) object).getUpdate());
 
             //TODO should we instead send the whole update object? No time for that now, but it'd be preferable I think
-            return from(action, updated);
+            return from(action, tenant, updated);
         } else {
             throw new IllegalArgumentException("Unsupported entity type: " + object.getClass());
         }
@@ -141,8 +142,9 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
 
     }
 
-    protected InventoryEvent(Action.Enumerated action, T object) {
+    protected InventoryEvent(Action.Enumerated action, Tenant tenant, T object) {
         this.action = action;
+        this.tenant = tenant;
         this.object = object;
     }
 
@@ -152,6 +154,14 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
 
     public void setAction(Action.Enumerated action) {
         this.action = action;
+    }
+
+    public Tenant getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(Tenant tenant) {
+        this.tenant = tenant;
     }
 
     public T getObject() {

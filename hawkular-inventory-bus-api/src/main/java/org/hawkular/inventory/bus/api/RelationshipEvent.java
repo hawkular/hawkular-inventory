@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,7 +29,7 @@ public final class RelationshipEvent extends InventoryEvent<Relationship> {
     public RelationshipEvent() {
     }
 
-    public RelationshipEvent(Action.Enumerated action, Relationship object) {
-        super(action, object);
+    public RelationshipEvent(Action.Enumerated action, Tenant tenant, Relationship object) {
+        super(action, tenant, object);
     }
 }

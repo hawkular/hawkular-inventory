@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,7 +29,7 @@ public final class MetricEvent extends InventoryEvent<Metric> {
     public MetricEvent() {
     }
 
-    public MetricEvent(Action.Enumerated action, Metric object) {
-        super(action, object);
+    public MetricEvent(Action.Enumerated action, Tenant tenant, Metric object) {
+        super(action, tenant, object);
     }
 }

@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,7 +29,7 @@ public final class FeedEvent extends InventoryEvent<Feed> {
     public FeedEvent() {
     }
 
-    public FeedEvent(Action.Enumerated action, Feed object) {
-        super(action, object);
+    public FeedEvent(Action.Enumerated action, Tenant tenant, Feed object) {
+        super(action, tenant, object);
     }
 }

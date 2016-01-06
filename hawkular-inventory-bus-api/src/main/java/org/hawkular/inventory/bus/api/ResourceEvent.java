@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,7 +29,7 @@ public final class ResourceEvent extends InventoryEvent<Resource> {
     public ResourceEvent() {
     }
 
-    public ResourceEvent(Action.Enumerated action, Resource object) {
-        super(action, object);
+    public ResourceEvent(Action.Enumerated action, Tenant tenant, Resource object) {
+        super(action, tenant, object);
     }
 }

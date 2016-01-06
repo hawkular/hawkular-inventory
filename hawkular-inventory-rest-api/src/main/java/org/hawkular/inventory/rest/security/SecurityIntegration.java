@@ -20,7 +20,9 @@ import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.rest.RestApiLogger.LOGGER;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -98,6 +100,7 @@ public class SecurityIntegration {
     private static final boolean DUMMY = false;
 
     private final Set<Subscription> subscriptions = new HashSet<>();
+    private static final Map<String, Class> nameToclass = new HashMap<>();
 
     public void start(@Observes InventoryInitialized event) {
         if (!isDummy()) {
@@ -128,6 +131,12 @@ public class SecurityIntegration {
 
         subscriptions.add(inventory.observable(Interest.in(cls).being(deleted()))
                 .subscribe((e) -> react(e, deleted())));
+
+        nameToclass.put(cls.getSimpleName().toLowerCase(), cls);
+    }
+
+    public static <E extends AbstractElement<?, ?>> Class<E> getClassFromName(String name) {
+        return nameToclass.get(name);
     }
 
     @Transactional

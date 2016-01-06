@@ -47,6 +47,14 @@
     </auth-constraint>
   </security-constraint>
 
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>WebSocket endpoints</web-resource-name>
+      <url-pattern>/ws/*</url-pattern>
+    </web-resource-collection>
+    <!-- no auth-constraint tag here -->
+  </security-constraint>
+
   <login-config>
     <auth-method>KEYCLOAK</auth-method>
     <realm-name>hawkular</realm-name>

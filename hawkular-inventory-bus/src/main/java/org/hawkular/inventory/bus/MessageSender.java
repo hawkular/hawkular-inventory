@@ -28,6 +28,7 @@ import org.hawkular.bus.common.Endpoint;
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.bus.api.InventoryEvent;
 
 /**
@@ -46,8 +47,8 @@ final class MessageSender {
         this.messageProcessor = new MessageProcessor();
     }
 
-    public void send(Interest<?, ?> interest, Object inventoryEvent) {
-        InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), inventoryEvent);
+    public void send(Interest<?, ?> interest, Tenant tenant, Object entity) {
+        InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), tenant, entity);
         Map<String, String> headers = message.createMessageHeaders();
 
         try (ConnectionContextFactory ccf = new ConnectionContextFactory(topicConnectionFactory)) {

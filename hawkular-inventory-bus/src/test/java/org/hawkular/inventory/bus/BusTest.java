@@ -39,8 +39,6 @@ import javax.naming.spi.InitialContextFactory;
 
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.consumer.ConsumerConnectionContext;
-//import org.hawkular.bus.common.test.SimpleTestListener;
-//import org.hawkular.bus.common.test.VMEmbeddedBrokerWrapper;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -71,6 +69,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+//import org.hawkular.bus.common.test.SimpleTestListener;
+//import org.hawkular.bus.common.test.VMEmbeddedBrokerWrapper;
+
 /**
  * @author Pavol Loffay
  * @since 0.2.0
@@ -95,21 +96,28 @@ public class BusTest {
                 MetricDataType.GAUGE);
         ResourceType resourceType = new ResourceType(CanonicalPath.fromString("/t;t/rt;rt"), objectProperties);
 
+        Tenant tenant2 = new Tenant(CanonicalPath.fromString("/t;t"));
         TenantEvent tenantEvent = new TenantEvent(Action.Enumerated.CREATED, tenant);
         EnvironmentEvent environmentEvent = new EnvironmentEvent(Action.Enumerated.CREATED,
+                tenant2,
                 new Environment(CanonicalPath.fromString("/t;t/e;e"), objectProperties));
         FeedEvent feedEvent = new FeedEvent(Action.Enumerated.UPDATED,
+                tenant2,
                 new Feed(CanonicalPath.fromString("/t;t/f;f"), objectProperties));
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
+                tenant2,
                 new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
-        MetricTypeEvent metricTypeEvent = new MetricTypeEvent(Action.Enumerated.COPIED, metricType);
+        MetricTypeEvent metricTypeEvent = new MetricTypeEvent(Action.Enumerated.COPIED, tenant2, metricType);
         RelationshipEvent relationshipEvent = new RelationshipEvent(Action.Enumerated.REGISTERED,
+                tenant2,
                 new Relationship("id", "rel1", CanonicalPath.fromString("/t;t"), CanonicalPath.fromString("/t;t/e;e")
                         , objectProperties));
         ResourceEvent resourceEvent = new ResourceEvent(Action.Enumerated.UPDATED,
+                tenant2,
                 new Resource(CanonicalPath.fromString("/t;t/e;e/r;r"), resourceType));
-        ResourceTypeEvent resourceTypeEvent = new ResourceTypeEvent(Action.Enumerated.COPIED, resourceType);
+        ResourceTypeEvent resourceTypeEvent = new ResourceTypeEvent(Action.Enumerated.COPIED, tenant2, resourceType);
         DataEntityEvent dataEntityEvent = new DataEntityEvent(Action.Enumerated.DELETED,
+                tenant2,
                 new DataEntity(resourceType.getPath(), ResourceTypes.DataRole.configurationSchema,
                         StructuredData.get().undefined()));
 
@@ -156,9 +164,11 @@ public class BusTest {
 
     @Test
     public void createMetricEventFromJSON() {
+        Tenant tenant = new Tenant(CanonicalPath.fromString("/t;t"));
         MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
+                tenant,
                 new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
 
         String metricJSON = "{\"action\":\"DELETED\",\"object\":{\"path\":\"/t;t/e;e/m;m\",\"type\"" +
@@ -228,9 +238,11 @@ public class BusTest {
 //        broker.start();
 //
 //        // set up message to send
+//        Tenant tenant = new Tenant(CanonicalPath.fromString("/t;t"));
 //        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
 //                MetricDataType.GAUGE);
 //        MetricEvent metricEventToSend = new MetricEvent(Action.Enumerated.DELETED,
+//                tenant,
 //                new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
 //        metricEventToSend.setHeaders(messageHeaders);
 //

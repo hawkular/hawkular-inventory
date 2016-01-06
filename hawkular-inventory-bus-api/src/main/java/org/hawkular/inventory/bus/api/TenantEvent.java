@@ -29,6 +29,6 @@ public final class TenantEvent extends InventoryEvent<Tenant> {
     }
 
     public TenantEvent(Action.Enumerated action, Tenant object) {
-        super(action, object);
+        super(action, object, object);
     }
 }

@@ -18,6 +18,7 @@ package org.hawkular.inventory.bus.api;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,7 +29,7 @@ public final class EnvironmentEvent extends InventoryEvent<Environment> {
     public EnvironmentEvent() {
     }
 
-    public EnvironmentEvent(Action.Enumerated action, Environment object) {
-        super(action, object);
+    public EnvironmentEvent(Action.Enumerated action, Tenant tenant, Environment object) {
+        super(action, tenant, object);
     }
 }

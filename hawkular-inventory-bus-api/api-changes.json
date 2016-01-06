@@ -1,0 +1,33 @@
+{
+  "0.11.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.parameterTypeChanged",
+          "oldType": "method parameter void org.hawkular.inventory.bus.api.DataEntityEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, ===org.hawkular.inventory.api.model.Tenant===, org.hawkular.inventory.api.model.DataEntity)",
+          "newType": "method parameter void org.hawkular.inventory.bus.api.DataEntityEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, ===org.hawkular.inventory.api.model.Tenant===, org.hawkular.inventory.api.model.DataEntity)",
+          "justification": "Adding tenant to the inventory events."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "oldMethod": "method void org.hawkular.inventory.bus.api.DataEntityEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, org.hawkular.inventory.api.model.DataEntity)",
+          "newMethod": "method parameter void org.hawkular.inventory.bus.api.DataEntityEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, ===org.hawkular.inventory.api.model.Tenant===, org.hawkular.inventory.api.model.DataEntity)",
+          "justification": "Adding tenant to the inventory events."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "oldType": "method parameter void org.hawkular.inventory.bus.api.EnvironmentEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, org.hawkular.inventory.api.model.Environment)",
+          "newType": "method parameter void org.hawkular.inventory.bus.api.EnvironmentEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, ===org.hawkular.inventory.api.model.Tenant===, org.hawkular.inventory.api.model.Environment)",
+          "justification": "Adding tenant to the inventory events."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "oldMethod": "method void org.hawkular.inventory.bus.api.EnvironmentEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, org.hawkular.inventory.api.model.Environment)",
+          "newMethod": "method parameter void org.hawkular.inventory.bus.api.EnvironmentEvent::<init>(org.hawkular.inventory.api.Action.Enumerated, ===org.hawkular.inventory.api.model.Tenant===, org.hawkular.inventory.api.model.Environment)",
+          "justification": "Adding tenant to the inventory events."
+        }
+      ]
+    }
+  }
+}
+
