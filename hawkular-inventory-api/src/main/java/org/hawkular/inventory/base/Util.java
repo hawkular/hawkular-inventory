@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Log;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;

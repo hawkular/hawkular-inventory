@@ -1,0 +1,93 @@
+{
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.AbstractElementMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.CanonicalPathMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.DataEntityMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.EntityBlueprintMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.EnvironmentMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.FeedMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.MetricMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.MetricTypeMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.OperationTypeMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.RelationshipMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.RelativePathMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.ResourceMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.ResourceTypeMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.StructuredDataMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.TenantMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.TenantlessCanonicalPathMixin",
+          "justification": "Moved to subpackage model."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.json.mixins.TenantlessRelativePathMixin",
+          "justification": "Moved to subpackage model."
+        }
+      ]
+    }
+  }
+}

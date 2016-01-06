@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,15 +21,15 @@ import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 
+import org.hawkular.inventory.api.FilterFragment;
+import org.hawkular.inventory.api.PathFragment;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.FilterFragment;
-import org.hawkular.inventory.base.PathFragment;
-import org.hawkular.inventory.base.Query;
 import org.junit.Assert;
 import org.junit.Test;
 

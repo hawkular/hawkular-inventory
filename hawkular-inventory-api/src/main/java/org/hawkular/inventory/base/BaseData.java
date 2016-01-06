@@ -29,6 +29,7 @@ import java.util.Set;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Log;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.ValidationException.ValidationMessage;
