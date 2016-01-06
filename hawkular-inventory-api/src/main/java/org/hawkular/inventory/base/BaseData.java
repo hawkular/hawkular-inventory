@@ -301,7 +301,7 @@ public final class BaseData {
         public static <BE> void validate(TraversalContext<BE, DataEntity> context, StructuredData data, BE dataEntity) {
             CanonicalPath path = context.backend.extractCanonicalPath(dataEntity);
 
-            DataEntity.Role role = path.ids().getDataRole();
+            DataEntity.Role role = DataEntity.Role.valueOf(path.ids().getDataRole());
 
             if (role.isSchema()) {
                 try {

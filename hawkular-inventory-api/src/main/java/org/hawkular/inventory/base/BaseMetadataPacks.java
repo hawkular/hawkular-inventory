@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -61,12 +62,13 @@ public final class BaseMetadataPacks {
         @Override
         protected String getProposedId(MetadataPack.Blueprint blueprint) {
             Iterator<? extends Entity<?, ?>> members = blueprint.getMembers().stream().map((p) -> {
-                Class<?> cls = p.getSegment().getElementType();
+                SegmentType type = p.getSegment().getElementType();
+                Class<? extends Entity<?, ?>> cls = Entity.entityTypeFromSegmentType(type);
                 try {
                     BE e = context.backend.find(p);
-                    return (Entity<?, ?>) context.backend.convert(e, cls);
+                    return context.backend.convert(e, cls);
                 } catch (ElementNotFoundException ex) {
-                    throw new EntityNotFoundException(cls, Query.filters(Query.to(p)));
+                    throw new EntityNotFoundException(type.getSimpleName(), Query.filters(Query.to(p)));
                 }
             }).iterator();
 
@@ -88,7 +90,8 @@ public final class BaseMetadataPacks {
                     Relationship r = context.backend.convert(rel, Relationship.class);
                     newRels.add(new Notification<>(r, r, created()));
                 } catch (ElementNotFoundException e) {
-                    throw new EntityNotFoundException(p.getSegment().getElementType(), Query.filters(Query.to(p)));
+                    throw new EntityNotFoundException(p.getSegment().getElementType().getSimpleName(),
+                            Query.filters(Query.to(p)));
                 }
             });
 

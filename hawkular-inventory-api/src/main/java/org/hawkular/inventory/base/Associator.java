@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,7 +65,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     }
 
     protected void checkPathLegal(Path targetPath) {
-        if (!context.entityClass.equals(targetPath.getSegment().getElementType())) {
+        if (!context.entityClass.getSimpleName().equals(targetPath.getSegment().getElementType().getSimpleName())) {
             throw new IllegalArgumentException("Current position in the inventory traversal expects entities of type " +
                     context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
                     targetPath);
@@ -103,8 +103,8 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         Query targetQuery = Util.queryTo(context, targetPath);
 
         @SuppressWarnings("unchecked")
-        Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) targetPath.getSegment()
-                .getElementType();
+        Class<? extends Entity<?, ?>> targetType = Entity.entityTypeFromSegmentType(targetPath.getSegment()
+                .getElementType());
 
         return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }

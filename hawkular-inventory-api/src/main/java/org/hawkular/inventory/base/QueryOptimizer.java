@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Path;
 
 /**
@@ -269,7 +270,7 @@ final class QueryOptimizer {
 
             //remove anything from newFilters that is also matched by the canonical path filter
             Set<Class<?>> expectedClasses = Arrays.asList(sources).stream()
-                    .map((s) -> s.getSegment().getElementType()).collect(toSet());
+                    .map((s) -> Entity.typeFromSegmentType(s.getSegment().getElementType())).collect(toSet());
             Set<String> expectedIds = Arrays.asList(sources).stream().map((s) -> s.getSegment().getElementId())
                     .collect(toSet());
 

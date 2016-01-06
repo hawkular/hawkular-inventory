@@ -266,8 +266,10 @@ class InventoryITest extends AbstractTestBase {
                 body: ["/e;" + environmentId + "/r;" + room1ResourceId + "/r;table/r;leg%2F1", "../" + room1ResourceId
                         + "/table/leg-4"])
         assertEquals(204, response.status)
-        pathsToDelete.put("$path/../table/leg%2F1", "$path/../table/leg%2F1")
-        pathsToDelete.put("$path/../table/leg-4", "$path/../table/leg-4")
+        pathsToDelete.put("$basePath/$environmentId/resources/weapons/" + room1ResourceId + "/table/leg%2F1",
+            "$basePath/$environmentId/resources/weapons/" + room1ResourceId + "/table/leg%2F1")
+        pathsToDelete.put("$basePath/$environmentId/resources/weapons/" + room1ResourceId + "/table/leg-4",
+            "$basePath/$environmentId/resources/weapons/" + room1ResourceId + "/table/leg-4")
 
         /* link the metric to resource */
         path = "$basePath/$environmentId/resources/$host1ResourceId/metrics"

@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.Tenant;
 
 /**
@@ -423,13 +424,16 @@ public interface Inventory extends AutoCloseable {
                 if (rt != null) {
                     ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
 
-                    return accessInterface.cast(rts.data().get(ids.getDataRole()));
+                    ResourceTypes.DataRole role = ResourceTypes.DataRole.valueOf(ids.getDataRole());
+                    return accessInterface.cast(rts.data().get(role));
                 } else if (ot != null) {
                     OperationTypes.Single ots = inspect(path.up(), OperationTypes.Single.class);
-                    return accessInterface.cast(ots.data().get(ids.getDataRole()));
+                    OperationTypes.DataRole role = OperationTypes.DataRole.valueOf(ids.getDataRole());
+                    return accessInterface.cast(ots.data().get(role));
                 } else {
                     Resources.Single res = inspect(path.up(), Resources.Single.class);
-                    return accessInterface.cast(res.data().get(ids.getDataRole()));
+                    Resources.DataRole role = Resources.DataRole.valueOf(ids.getDataRole());
+                    return accessInterface.cast(res.data().get(role));
                 }
             }
 
@@ -457,7 +461,7 @@ public interface Inventory extends AutoCloseable {
                 int leftOutTop = 0;
                 while (it.hasNext()) {
                     CanonicalPath p = it.next();
-                    if (Resource.class.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
+                    if (SegmentType.r.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
                         ret.add(p);
                     }
                 }

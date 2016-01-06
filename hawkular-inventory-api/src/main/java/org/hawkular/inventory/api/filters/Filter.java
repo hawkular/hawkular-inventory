@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,7 +68,7 @@ public abstract class Filter {
 
         for (Path.Segment s : path.getPath()) {
             fs.add(Related.by(Relationships.WellKnown.contains));
-            fs.add(With.type((Class<? extends Entity<?, ?>>) s.getElementType()));
+            fs.add(With.type(Entity.entityTypeFromSegmentType(s.getElementType())));
             fs.add(With.id(s.getElementId()));
         }
 
