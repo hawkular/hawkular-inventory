@@ -166,6 +166,10 @@ public final class Query {
         return b;
     }
 
+    public static Builder builder() {
+        return new Query.Builder();
+    }
+
     /**
      * @return a new symmetric builder initialized with this query
      */
@@ -228,6 +232,10 @@ public final class Query {
         private List<Builder> children = new ArrayList<>();
         private boolean done;
 
+        private Function<Filter[], QueryFragment[]> queryFragmentSupplier = PathFragment::from;
+        private Function<Filter, QueryFragment> converter = PathFragment::new;
+        private Boolean isFilter = false;
+
         /**
          * @return a new symmetric extender extending the query of this builder
          */
@@ -240,6 +248,10 @@ public final class Query {
          * @return a new builder instance for building the child
          */
         public Builder branch() {
+            if (fragments.isEmpty()) {
+                fragments.add(new PathFragment(new NoopFilter()));
+            }
+
             Builder child = new Builder();
             child.parent = this;
             children.add(child);
@@ -309,6 +321,33 @@ public final class Query {
                 branch().with(sub, converter).done();
             }
 
+            return this;
+        }
+
+        public Builder path() {
+            queryFragmentSupplier = PathFragment::from;
+            converter = PathFragment::new;
+
+            if (isFilter != null && isFilter && !this.fragments.isEmpty()) {
+                with(NoopFilter.INSTANCE);
+            }
+            isFilter = false;
+            return this;
+        }
+
+        public Builder filter() {
+            queryFragmentSupplier = FilterFragment::from;
+            converter = FilterFragment::new;
+            if (isFilter != null && !isFilter && this.fragments.isEmpty()) {
+                with(NoopFilter.INSTANCE);
+            }
+            isFilter = true;
+
+            return this;
+        }
+
+        public Builder with(Filter... filters) {
+            with(converter, queryFragmentSupplier.apply(filters));
             return this;
         }
 
