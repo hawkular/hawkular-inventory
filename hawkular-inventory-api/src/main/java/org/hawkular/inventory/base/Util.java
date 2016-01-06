@@ -24,11 +24,13 @@ import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
@@ -344,13 +346,14 @@ final class Util {
             }
 
             Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+            Set<BE> dataToBeDeleted = new HashSet<>();
 
             Set<BE> deleted = new HashSet<>();
             Set<BE> deletedRels = new HashSet<>();
             Set<?> deletedEntities;
             Set<Relationship> deletedRelationships;
 
-            context.backend.getTransitiveClosureOver(entity, outgoing, contains.name()).forEachRemaining((e) -> {
+            Consumer<BE> categorizer = (e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
                     verticesToDeleteThatDefineSomething.add(e);
                 } else {
@@ -358,14 +361,15 @@ final class Util {
                 }
                 //not only the entity, but also its relationships are going to disappear
                 deletedRels.addAll(context.backend.getRelationships(e, both));
-            });
 
-            if (context.backend.hasRelationship(entity, outgoing, defines.name())) {
-                verticesToDeleteThatDefineSomething.add(entity);
-            } else {
-                deleted.add(entity);
-            }
-            deletedRels.addAll(context.backend.getRelationships(entity, both));
+                context.backend.getRelationships(e, outgoing, hasData.name()).forEach(rel -> {
+                    dataToBeDeleted.add(context.backend.getRelationshipTarget(rel));
+                });
+            };
+
+            categorizer.accept(entity);
+            context.backend.getTransitiveClosureOver(entity, outgoing, contains.name())
+                    .forEachRemaining(categorizer::accept);
 
             //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
             //We have to do it prior to actually deleting the objects in the backend so that all information and
@@ -404,6 +408,8 @@ final class Util {
                     context.backend.delete(e);
                 }
             }
+
+            dataToBeDeleted.forEach(context.backend::deleteStructuredData);
 
             if (postDelete != null) {
                 postDelete.accept(entity, transaction);

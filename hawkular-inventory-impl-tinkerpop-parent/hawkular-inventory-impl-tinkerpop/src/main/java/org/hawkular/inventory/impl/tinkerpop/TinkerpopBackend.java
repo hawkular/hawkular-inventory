@@ -115,13 +115,17 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Element find(CanonicalPath path) throws ElementNotFoundException {
-        GraphQuery query = context.getGraph().query().has(__cp.name(), path.toString());
-        Iterator<? extends Element> it = query.vertices().iterator();
-        if (!it.hasNext()) {
+        Iterator<? extends Element> it;
+        if (Relationship.class.equals(path.getSegment().getElementType())) {
+            //__eid is globally unique for relationships
+            GraphQuery query = context.getGraph().query().has(__eid.name(), path.getSegment().getElementId());
             it = query.edges().iterator();
-            if (!it.hasNext()) {
-                throw new ElementNotFoundException();
-            }
+        } else {
+            GraphQuery query = context.getGraph().query().has(__cp.name(), path.toString());
+            it = query.vertices().iterator();
+        }
+        if (!it.hasNext()) {
+            throw new ElementNotFoundException();
         }
         return it.next();
     }
@@ -307,8 +311,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Vertex t = (Vertex) target;
 
-        Iterator<Edge> it = new HawkularPipeline<>(source).outE(relationshipName).remember().inV().hasType(getType(t))
-                .hasEid(getEid(t)).recall().cast(Edge.class);
+
+        Iterator<Edge> it = new HawkularPipeline<>(source).outE(relationshipName)
+                .has(__targetCp.name(), t.getProperty(__cp.name())).cast(Edge.class);
 
         if (!it.hasNext()) {
             throw new ElementNotFoundException();
@@ -412,8 +417,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         CanonicalPath cp = extractCanonicalPath(entity);
         String tenantId = cp.ids().getTenantId();
 
-        Vertex tenantVertex = new HawkularPipeline<Graph, Vertex>(context.getGraph()).V().hasEid(tenantId)
-                .cast(Vertex.class).next();
+        Vertex tenantVertex = new HawkularPipeline<Graph, Vertex>(context.getGraph()).V()
+                .hasCanonicalPath(CanonicalPath.of().tenant(tenantId).get()).cast(Vertex.class).next();
 
         Iterator<Vertex> hashNodesIt = tenantVertex.query().direction(Direction.OUT)
                 .labels(Constants.InternalEdge.__containsIdentityHash.name())
@@ -982,6 +987,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         while (dataElements.hasNext()) {
             delete(dataElements.next());
         }
+
+        delete(dataRepresentation);
     }
 
     @Override
