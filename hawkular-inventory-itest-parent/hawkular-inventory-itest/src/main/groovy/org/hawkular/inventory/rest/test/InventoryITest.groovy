@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.fail
 
-import org.hawkular.inventory.api.model.CanonicalPath
+import org.hawkular.inventory.paths.CanonicalPath
 import org.hawkular.inventory.api.model.Resource
 import org.junit.AfterClass
 import org.junit.Assert

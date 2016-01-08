@@ -37,7 +37,6 @@ import java.util.HashSet;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -50,6 +49,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
 
 /**
  * @author Lukas Krejci

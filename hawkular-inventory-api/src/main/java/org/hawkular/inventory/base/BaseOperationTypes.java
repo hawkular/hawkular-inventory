@@ -29,13 +29,13 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * @author Lukas Krejci

@@ -22,6 +22,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 
 /**

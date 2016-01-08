@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.rest.security;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * CDI bean that provides inventory-focused abstractions over Hawkular accounts.

@@ -23,11 +23,11 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.SegmentType;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on resources.

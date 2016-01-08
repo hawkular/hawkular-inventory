@@ -23,6 +23,8 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by

@@ -38,9 +38,9 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Parents;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;

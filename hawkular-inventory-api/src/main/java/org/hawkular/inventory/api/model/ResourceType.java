@@ -22,6 +22,8 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
  * present in the resources of this type.

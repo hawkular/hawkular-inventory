@@ -22,6 +22,8 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
  * "testing", "staging", "production", etc.

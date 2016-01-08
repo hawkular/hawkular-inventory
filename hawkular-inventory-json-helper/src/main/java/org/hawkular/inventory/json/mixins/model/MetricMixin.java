@@ -18,8 +18,8 @@ package org.hawkular.inventory.json.mixins.model;
 
 import java.util.Map;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

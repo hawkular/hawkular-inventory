@@ -32,13 +32,13 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
 
 /**
  * @author Lukas Krejci

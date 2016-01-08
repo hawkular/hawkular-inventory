@@ -38,9 +38,9 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Parents;
 import org.hawkular.inventory.api.Tenants;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;

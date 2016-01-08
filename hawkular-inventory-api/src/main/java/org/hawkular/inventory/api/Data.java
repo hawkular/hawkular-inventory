@@ -17,10 +17,10 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * @author Lukas Krejci

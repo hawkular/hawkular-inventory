@@ -17,7 +17,7 @@
 package org.hawkular.inventory.api.filters;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * A helper class to create filters on the "defines" relationship. This can also be achieved by using the

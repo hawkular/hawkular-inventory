@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.base.spi;
 
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * This is essentially a marker class to distinguish a fully loaded structured data from the "bare" shallow variant that

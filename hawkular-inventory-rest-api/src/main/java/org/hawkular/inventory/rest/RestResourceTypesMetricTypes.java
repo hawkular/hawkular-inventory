@@ -39,11 +39,11 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;
@@ -106,7 +106,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
                 .metricTypes();
 
         metricTypePaths.stream()
-                .map((p) -> org.hawkular.inventory.api.model.Path.fromPartiallyUntypedString(p, tenant, rt,
+                .map((p) -> org.hawkular.inventory.paths.Path.fromPartiallyUntypedString(p, tenant, rt,
                         MetricType.class)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
@@ -134,7 +134,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             metricTypePath = "/" + metricTypePath;
         }
 
-        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+        org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
                 .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
 
         return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
@@ -183,7 +183,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             metricTypePath = "/" + metricTypePath;
         }
 
-        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+        org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
                 .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
 
         inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);
@@ -237,7 +237,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
                 .get(resourceTypeId).metricTypes();
 
         metricTypePaths.stream()
-                .map((p) -> org.hawkular.inventory.api.model.Path.fromPartiallyUntypedString(p, tenant, rt,
+                .map((p) -> org.hawkular.inventory.paths.Path.fromPartiallyUntypedString(p, tenant, rt,
                         MetricType.class)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
@@ -266,7 +266,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             metricTypePath = "/" + metricTypePath;
         }
 
-        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+        org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
                 .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
 
         return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
@@ -317,7 +317,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
             metricTypePath = "/" + metricTypePath;
         }
 
-        org.hawkular.inventory.api.model.Path mtPath = org.hawkular.inventory.api.model.Path
+        org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
                 .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
 
         inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);

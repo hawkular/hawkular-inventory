@@ -18,8 +18,8 @@ package org.hawkular.inventory.json;
 
 import java.io.IOException;
 
-import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

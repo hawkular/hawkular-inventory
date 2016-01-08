@@ -27,13 +27,13 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.junit.Assert;
 import org.junit.Test;
 

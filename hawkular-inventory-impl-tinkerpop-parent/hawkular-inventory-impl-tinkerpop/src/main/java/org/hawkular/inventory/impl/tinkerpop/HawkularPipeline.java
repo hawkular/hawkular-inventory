@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;

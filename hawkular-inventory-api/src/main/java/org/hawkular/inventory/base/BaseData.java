@@ -34,14 +34,14 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.ValidationException.ValidationMessage;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

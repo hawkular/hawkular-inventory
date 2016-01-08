@@ -22,6 +22,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * Base class for all Hawkular entities.
  *

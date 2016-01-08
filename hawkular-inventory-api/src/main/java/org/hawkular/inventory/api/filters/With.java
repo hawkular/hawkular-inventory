@@ -20,10 +20,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * @author Lukas Krejci

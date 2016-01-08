@@ -31,7 +31,6 @@ import org.hawkular.accounts.api.OperationService;
 import org.hawkular.accounts.api.PermissionChecker;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -42,6 +41,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 

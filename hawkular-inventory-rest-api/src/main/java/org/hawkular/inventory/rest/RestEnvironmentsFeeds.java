@@ -38,11 +38,11 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 

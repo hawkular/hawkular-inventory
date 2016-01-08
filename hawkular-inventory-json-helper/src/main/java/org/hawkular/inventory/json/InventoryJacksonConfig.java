@@ -26,7 +26,6 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -35,7 +34,6 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -78,6 +76,8 @@ import org.hawkular.inventory.json.mixins.paging.PagerMixin;
 import org.hawkular.inventory.json.mixins.query.FilterFragmentMixin;
 import org.hawkular.inventory.json.mixins.query.PathFragmentMixin;
 import org.hawkular.inventory.json.mixins.query.QueryFragmentMixin;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

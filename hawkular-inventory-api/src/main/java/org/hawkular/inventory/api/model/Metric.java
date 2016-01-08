@@ -23,6 +23,8 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
  * in an environment and can be "incorporated" by {@link Resource resources} (surprisingly, many resources can

@@ -21,6 +21,8 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
  * other Hawkular components like metrics).

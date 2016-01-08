@@ -17,7 +17,7 @@
 package org.hawkular.inventory.json.mixins.filters;
 
 import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

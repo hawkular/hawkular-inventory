@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
@@ -41,6 +40,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
