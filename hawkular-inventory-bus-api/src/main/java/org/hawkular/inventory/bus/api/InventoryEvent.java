@@ -26,7 +26,6 @@ import javax.jms.TextMessage;
 import org.hawkular.bus.common.AbstractMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -38,6 +37,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.json.mixins.CanonicalPathMixin;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

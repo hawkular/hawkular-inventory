@@ -23,7 +23,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.RestApiLogger;
 
 /**

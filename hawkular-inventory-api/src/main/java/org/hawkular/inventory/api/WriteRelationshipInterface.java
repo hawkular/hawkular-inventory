@@ -18,8 +18,8 @@ package org.hawkular.inventory.api;
 
 import java.util.Map;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * Generic methods to write access to relationships.

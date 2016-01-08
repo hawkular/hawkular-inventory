@@ -19,8 +19,8 @@ package org.hawkular.inventory.rest.json;
 import java.io.IOException;
 import java.util.Map;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonGenerator;

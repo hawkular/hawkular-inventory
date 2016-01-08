@@ -18,8 +18,8 @@ package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on resource types.

@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.

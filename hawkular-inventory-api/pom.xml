@@ -61,6 +61,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-paths</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Logging -->
     <dependency>
       <groupId>org.jboss.logging</groupId>

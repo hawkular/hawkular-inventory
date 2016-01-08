@@ -38,11 +38,11 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.JsonLd;
 

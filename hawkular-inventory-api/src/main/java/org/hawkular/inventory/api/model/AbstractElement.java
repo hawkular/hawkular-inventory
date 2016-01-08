@@ -24,6 +24,8 @@ import java.util.function.Function;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * A common super class of both entities and relationships.
  *

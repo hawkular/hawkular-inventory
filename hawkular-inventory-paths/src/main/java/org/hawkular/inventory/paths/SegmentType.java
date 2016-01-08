@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.inventory.api.model.Path.Segment;
+import org.hawkular.inventory.paths.Path.Segment;
 
 public enum SegmentType {
     /** Tenant */

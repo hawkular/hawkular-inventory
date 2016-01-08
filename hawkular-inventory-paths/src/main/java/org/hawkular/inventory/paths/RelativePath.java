@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import java.util.function.Function;
  * used to refer to the metric.
  *
  * <p>The relative path contains one special segment type - encoded as ".." and represented using the
- * {@link org.hawkular.inventory.api.model.RelativePath.Up} class that can be used to go up in the relative path.
+ * {@link org.hawkular.inventory.paths.RelativePath.Up} class that can be used to go up in the relative path.
  *
  * @author Lukas Krejci
  * @since 0.2.0

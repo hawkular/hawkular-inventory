@@ -17,7 +17,6 @@
 package org.hawkular.inventory.json;
 
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -26,7 +25,6 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -47,6 +45,8 @@ import org.hawkular.inventory.json.mixins.ResourceTypeMixin;
 import org.hawkular.inventory.json.mixins.StructuredDataMixin;
 import org.hawkular.inventory.json.mixins.TenantMixin;
 import org.hawkular.inventory.json.mixins.TenantlessCanonicalPathMixin;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

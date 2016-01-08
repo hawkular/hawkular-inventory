@@ -25,15 +25,15 @@ import java.util.function.Function;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * Simple delegating inventory backend impl. Useful as a base class for implementations that need to override behavior

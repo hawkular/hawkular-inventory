@@ -22,6 +22,8 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how

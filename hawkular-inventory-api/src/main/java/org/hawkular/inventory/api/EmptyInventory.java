@@ -24,7 +24,6 @@ import java.util.Map;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -33,15 +32,16 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 import rx.Observable;
 

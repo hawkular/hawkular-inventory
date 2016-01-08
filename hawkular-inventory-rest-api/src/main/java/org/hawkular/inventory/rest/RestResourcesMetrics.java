@@ -42,10 +42,10 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 

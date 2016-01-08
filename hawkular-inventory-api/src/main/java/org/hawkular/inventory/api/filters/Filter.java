@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * A base class for filters. Defines no filtering logic in and of itself.

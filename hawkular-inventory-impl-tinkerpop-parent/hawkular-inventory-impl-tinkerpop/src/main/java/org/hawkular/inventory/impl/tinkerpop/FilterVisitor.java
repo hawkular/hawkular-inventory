@@ -40,12 +40,12 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;

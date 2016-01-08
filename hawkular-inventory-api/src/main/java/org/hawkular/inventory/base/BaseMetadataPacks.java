@@ -31,16 +31,16 @@ import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci

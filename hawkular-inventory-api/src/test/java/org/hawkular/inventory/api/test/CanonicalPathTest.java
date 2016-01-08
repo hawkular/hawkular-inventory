@@ -22,13 +22,13 @@ import static org.hawkular.inventory.api.Resources.DataRole.connectionConfigurat
 import java.util.Iterator;
 
 import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.RelativePath;
-import org.hawkular.inventory.api.model.SegmentType;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.junit.Assert;
 import org.junit.Test;
 

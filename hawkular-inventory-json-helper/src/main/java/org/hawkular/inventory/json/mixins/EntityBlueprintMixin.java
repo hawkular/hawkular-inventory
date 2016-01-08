@@ -19,7 +19,7 @@ package org.hawkular.inventory.json.mixins;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

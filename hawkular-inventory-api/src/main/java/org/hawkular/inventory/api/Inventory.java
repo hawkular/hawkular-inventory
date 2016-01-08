@@ -22,9 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -34,11 +32,13 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.SegmentType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Inventory stores "resources" which are groupings of measurements and other data. Inventory also stores metadata about

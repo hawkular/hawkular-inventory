@@ -23,8 +23,8 @@ import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * A base class for implementations of {@code *ReadAssociate} implementations.

@@ -17,7 +17,7 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.MetadataPack;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * @author Lukas Krejci

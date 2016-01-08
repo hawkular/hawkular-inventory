@@ -42,14 +42,14 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * @author Lukas Krejci

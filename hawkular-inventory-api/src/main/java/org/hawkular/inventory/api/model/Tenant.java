@@ -22,6 +22,8 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
  * each other.

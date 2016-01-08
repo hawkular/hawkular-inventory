@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 /**
  * A visitor interface to accept different kinds of entities available in Hawkular.

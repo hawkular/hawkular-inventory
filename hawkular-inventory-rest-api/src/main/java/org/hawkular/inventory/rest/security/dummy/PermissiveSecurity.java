@@ -18,7 +18,7 @@ package org.hawkular.inventory.rest.security.dummy;
 
 import javax.inject.Singleton;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.security.Security;
 
 /**

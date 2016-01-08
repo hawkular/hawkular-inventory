@@ -29,6 +29,8 @@ import java.util.Set;
 import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A metadata pack defines a bunch of resource types and metric types. It computes a hash of its "contents" so that
