@@ -19,6 +19,11 @@ package org.hawkular.inventory.rest.test
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates
+import groovyx.net.http.HttpResponseException
+import org.hawkular.inventory.paths.CanonicalPath
+import org.hawkular.inventory.api.model.Resource
+import org.junit.*
+
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.fail

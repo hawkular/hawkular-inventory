@@ -34,6 +34,7 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
+    <module>hawkular-inventory-paths</module>
     <module>hawkular-inventory-api</module>
     <module>hawkular-inventory-json-helper</module>
     <module>hawkular-inventory-impl-tinkerpop-parent</module>
