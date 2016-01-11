@@ -196,129 +196,129 @@
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.EmptyInventory.TenantsMultiple",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.EmptyInventory.TenantsSingle",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.Environments.Multiple",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.Environments.Multiple",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.Environments.Single",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.addedToInterface",
           "new": "method AccessFeeds org.hawkular.inventory.api.Tenants.BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds>::feeds()",
-          "justification": "Interface changed because of the move of the feeds."    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.Tenants.Multiple",
-          "justification": "Interface changed because of the move of the feeds."           
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.api.Tenants.Single",
-          "justification": "Interface changed because of the move of the feeds."           
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.removed",
           "old": "method org.hawkular.inventory.api.model.CanonicalPath.FeedBuilder org.hawkular.inventory.api.model.CanonicalPath.EnvironmentBuilder::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeTypeParametersChanged",
           "regex": true,
           "new": "method TB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Builder<.*>::tenant\\(java\\.lang\\.String\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeTypeParametersChanged",
           "regex": true,
           "new": "method TB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Builder<.*>::tenantBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.removed",
           "regex": true,
           "old": "method FB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.EnvironmentBuilder<.*>::feed\\(java\\.lang\\.String\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.removed",
           "regex": true,
           "old": "method FB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.EnvironmentBuilder<.*>::feedBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeTypeParametersChanged",
           "regex": true,
           "new": "method EB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.TenantBuilder<.*>::environment\\(java\\.lang\\.String\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeTypeParametersChanged",
           "regex": true,
           "new": "method EB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.TenantBuilder<.*>::environmentBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.abstractMethodAdded",
           "regex": true,
           "new": "method FB org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.TenantBuilder<.*>::feedBuilder\\(java\\.util\\.List<org\\.hawkular\\.inventory\\.api\\.model\\.Path\\.Segment>\\)",
-          "justification": "Interface changed because of the move of the feeds."                    
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.removed",
           "old": "method org.hawkular.inventory.api.model.RelativePath.FeedBuilder org.hawkular.inventory.api.model.RelativePath.EnvironmentBuilder::feedBuilder(java.util.List<org.hawkular.inventory.api.model.Path.Segment>)",
-          "justification": "Interface changed because of the move of the feeds."                              
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.numberOfParametersChanged",
           "new": "method void org.hawkular.inventory.base.Associator<BE, E extends org.hawkular.inventory.api.model.Entity<?, ?>>::<init>(org.hawkular.inventory.base.TraversalContext<BE, E>, org.hawkular.inventory.api.Relationships.WellKnown, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>)",
-          "justification": "Interface changed because of the move of the feeds."                              
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeChanged",
           "new": "method org.hawkular.inventory.api.Feeds.Read org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>::feeds()",
-          "justification": "Interface changed because of the move of the feeds."                                       
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.base.BaseEnvironments.Multiple<BE>",
-          "justification": "Interface changed because of the move of the feeds."                                        
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.method.returnTypeChanged",
           "new": "method org.hawkular.inventory.api.Feeds.ReadAssociate org.hawkular.inventory.base.BaseEnvironments.Single<BE>::feeds()",
-          "justification": "Interface changed because of the move of the feeds."                                        
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.base.BaseEnvironments.Single<BE>",
-          "justification": "Interface changed because of the move of the feeds."                                        
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.base.BaseTenants.Multiple<BE>",
-          "justification": "Interface changed because of the move of the feeds."                                        
+          "justification": "Interface changed because of the move of the feeds."
         },
         {
           "code": "java.class.noLongerImplementsInterface",
           "new": "class org.hawkular.inventory.base.BaseTenants.Single<BE>",
-          "justification": "Interface changed because of the move of the feeds."                                        
+          "justification": "Interface changed because of the move of the feeds."
         }
       ]
     }
@@ -1010,7 +1010,7 @@
           "code": "java.method.addedToInterface",
           "new": "method java.lang.String org.hawkular.inventory.api.MetricTypes.Single::identityHash() throws org.hawkular.inventory.api.EntityNotFoundException",
           "justification": "New feature - identical metric and resource types detection across feeds"
-        },      
+        },
         {
           "code": "java.method.addedToInterface",
           "new": "method org.hawkular.inventory.api.ResourceTypes.Read org.hawkular.inventory.api.ResourceTypes.BrowserBase<Resources, MetricTypes, OperationTypes, Data>::identical()",
@@ -1404,6 +1404,45 @@
           "code": "java.method.parameterTypeChanged",
           "new": "method parameter <BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update> void org.hawkular.inventory.base.Util::update(org.hawkular.inventory.base.TraversalContext<BE, ===E>===, org.hawkular.inventory.api.Query, U, org.hawkular.inventory.base.Util.TransactionParticipant<BE, U>, java.util.function.BiConsumer<BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction>)",
           "justification": "Package change, Query moved to API."
+          "regex": true,
+          "code": "(java.method.parameterTypeChanged)|(java.method.returnTypeChanged)|(java.method.returnTypeTypeParametersChanged)",
+          "old": ".*org\\.hawkular\\.inventory\\.api\\.model.*",
+          "new": ".*org\\.hawkular\\.inventory\\.paths.*",
+          "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
+        },
+        {
+          "regex": true,
+          "code": "(java.class.removed)",
+          "old": "class org\\.hawkular\\.inventory\\.api\\.model\\.[a-zA-Z]*Path.*",
+          "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.(base|api)\\.[a-zA-Z]+\\.Read(Associate)?(<[A-Z]+>)?",
+          "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.api\\.EmptyInventory\\.[a-zA-Z]+Read(Associate)?(<[A-Z]+>)?",
+          "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
+        },
+        {
+          "code": "java.field.typeChanged",
+          "regex": true,
+          "old": "field org\\.hawkular\\.inventory\\.api\\.model\\.Entity\\.Blueprint\\.Builder.*\\.(incoming|outgoing)",
+          "justification": "These two fields had canonical path in their types' type parameters."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.model.ElementTypeVisitor<R, P>",
+          "justification": "This got moved to org.hawkular.inventory.paths"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method java.lang.Class<?> org.hawkular.inventory.api.EntityNotFoundException::getEntityType()",
+          "justification": "Replaced by getEntityTypeSimpleName()"
         }
       ]
     }
