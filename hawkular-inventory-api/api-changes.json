@@ -1256,5 +1256,52 @@
         }
      ]
     }
+  },
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "regex": true,
+          "code": "(java.method.parameterTypeChanged)|(java.method.returnTypeChanged)|(java.method.returnTypeTypeParametersChanged)",
+          "old": ".*org\\.hawkular\\.inventory\\.api\\.model.*",
+          "new": ".*org\\.hawkular\\.inventory\\.paths.*",
+          "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
+        },
+        {
+          "regex": true,
+          "code": "(java.class.removed)",
+          "old": "class org\\.hawkular\\.inventory\\.api\\.model\\.[a-zA-Z]*Path.*",
+          "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.(base|api)\\.[a-zA-Z]+\\.Read(Associate)?(<[A-Z]+>)?",
+          "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.api\\.EmptyInventory\\.[a-zA-Z]+Read(Associate)?(<[A-Z]+>)?",
+          "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
+        },
+        {
+          "code": "java.field.typeChanged",
+          "regex": true,
+          "old": "field org\\.hawkular\\.inventory\\.api\\.model\\.Entity\\.Blueprint\\.Builder.*\\.(incoming|outgoing)",
+          "justification": "These two fields had canonical path in their types' type parameters."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.model.ElementTypeVisitor<R, P>",
+          "justification": "This got moved to org.hawkular.inventory.paths"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method java.lang.Class<?> org.hawkular.inventory.api.EntityNotFoundException::getEntityType()",
+          "justification": "Replaced by getEntityTypeSimpleName()"
+        }
+      ]
+    }
   }
 }
