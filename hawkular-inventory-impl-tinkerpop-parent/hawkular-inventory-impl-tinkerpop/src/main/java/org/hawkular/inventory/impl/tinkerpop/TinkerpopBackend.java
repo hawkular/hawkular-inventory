@@ -493,17 +493,17 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     e = new Environment(extractCanonicalPath(v));
                     break;
                 case feed:
-                    e = new Feed(extractCanonicalPath(v));
+                    e = new Feed(extractCanonicalPath(v), extractIdentityHash(v));
                     break;
                 case metric:
                     Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
                             .next();
                     MetricType md = convert(mdv, MetricType.class);
-                    e = new Metric(extractCanonicalPath(v), md,
+                    e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), md,
                             v.<Long>getProperty(Constants.Property.__metric_interval.name()));
                     break;
                 case metricType:
-                    e = new MetricType(extractCanonicalPath(v),
+                    e = new MetricType(extractCanonicalPath(v), extractIdentityHash(v),
                             MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
                             MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())),
                             v.getProperty(Constants.Property.__metric_interval.name()));
@@ -511,11 +511,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 case resource:
                     Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
                     ResourceType rt = convert(rtv, ResourceType.class);
-                    e = new Resource(extractCanonicalPath(v), rt
-                    );
+                    e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractCanonicalPath(v));
+                    e = new ResourceType(extractCanonicalPath(v), extractIdentityHash(v));
                     break;
                 case tenant:
                     e = new Tenant(extractCanonicalPath(v));
@@ -530,7 +529,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             loadStructuredData(v, hasData), identityHash);
                     break;
                 case operationType:
-                    e = new OperationType(extractCanonicalPath(v));
+                    e = new OperationType(extractCanonicalPath(v), extractIdentityHash(v));
                     break;
                 case metadatapack:
                     e = new MetadataPack(extractCanonicalPath(v));

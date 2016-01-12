@@ -70,7 +70,7 @@ public final class BaseFeeds {
             CanonicalPath feedPath = context.backend.extractCanonicalPath(tenant)
                     .extend(Feed.class, blueprint.getId()).get();
 
-            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));
+            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath, null));
         }
 
         @Override
@@ -78,7 +78,8 @@ public final class BaseFeeds {
         wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
-                    parentPath.extend(Feed.class, context.backend.extractId(entity)).get(), blueprint.getProperties()));
+                    parentPath.extend(Feed.class, context.backend.extractId(entity)).get(), null,
+                    blueprint.getProperties()));
         }
 
         @Override

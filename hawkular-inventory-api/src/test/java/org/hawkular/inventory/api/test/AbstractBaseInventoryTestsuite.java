@@ -461,13 +461,17 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         Tenant t = new Tenant(tenantPath);
         Environment e = new Environment(environmentPath);
-        MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get());
-        ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get());
-        ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get());
-        Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(), playRoomType);
-        Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(), playRoomType);
-        Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(), sizeType);
-        Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(), sizeType);
+        MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get(), null);
+        ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
+        ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
+        Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(), null,
+                playRoomType);
+        Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(), null,
+                playRoomType);
+        Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
+                null, sizeType);
+        Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
+                null, sizeType);
 
         //when an association is deleted, it should not be possible to access the target entity through the same
         //traversal again
@@ -536,12 +540,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
-    private static void assertExists(BaseInventory<?> inventory, Entity e) {
-        try {
-            inventory.inspect(e, ResolvableToSingle.class);
-        } catch (EntityNotFoundException ignored) {
-            Assert.fail(e + " should have been present in the inventory.");
-        }
+    private static void assertExists(BaseInventory<?> inventory, Entity<?, ?> e) {
+        Assert.assertTrue(inventory.inspect(e, ResolvableToSingle.class).exists());
     }
 
     private static void assertExists(BaseInventory<?> inventory, Entity... es) {

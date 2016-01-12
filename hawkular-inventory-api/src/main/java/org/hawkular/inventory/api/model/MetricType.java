@@ -33,7 +33,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class MetricType extends /*IdentityHashed*/Entity<MetricType.Blueprint, MetricType.Update> {
+public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
 
     @XmlAttribute
     private final MetricUnit unit;
@@ -54,25 +54,26 @@ public final class MetricType extends /*IdentityHashed*/Entity<MetricType.Bluepr
         collectionInterval = null;
     }
 
-    public MetricType(CanonicalPath path) {
-        this(path, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
+    public MetricType(CanonicalPath path, String identityHash) {
+        this(path, identityHash, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(path, unit, type, null, null);
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
+        this(path, identityHash, unit, type, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Long collectionInterval) {
-        this(path, unit, type, null, collectionInterval);
-    }
-
-    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(name, path, unit, type, null, null);
-    }
-
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
                       Long collectionInterval) {
-        super(path, properties);
+        this(path, identityHash, unit, type, null, collectionInterval);
+    }
+
+    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
+        this(name, path, identityHash, unit, type, null, null);
+    }
+
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
+                      Map<String, Object> properties, Long collectionInterval) {
+        super(path, identityHash, properties);
         if (type == null) {
             throw new IllegalArgumentException("metricDataType == null");
         }
@@ -81,9 +82,9 @@ public final class MetricType extends /*IdentityHashed*/Entity<MetricType.Bluepr
         this.collectionInterval = collectionInterval;
     }
 
-    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type,
+    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
                       Map<String, Object> properties, Long collectionInterval) {
-        super(name, path, properties);
+        super(name, path, identityHash, properties);
         this.type = type;
         this.unit = unit;
         this.collectionInterval = collectionInterval;
@@ -103,8 +104,9 @@ public final class MetricType extends /*IdentityHashed*/Entity<MetricType.Bluepr
 
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), valueOrDefault(u.unit, this.unit), type,
-                u.getProperties(), collectionInterval));
+        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(),
+                valueOrDefault(u.unit, this.unit), type, u.getProperties(),
+                valueOrDefault(u.getCollectionInterval(), collectionInterval)));
     }
 
     @Override

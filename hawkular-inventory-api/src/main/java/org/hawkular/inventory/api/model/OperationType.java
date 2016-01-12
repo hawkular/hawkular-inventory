@@ -23,26 +23,26 @@ import java.util.Set;
  * @author Lukas Krejci
  * @since 0.4.0
  */
-public final class OperationType extends /*IdentityHashed*/Entity<OperationType.Blueprint, OperationType.Update> {
+public final class OperationType extends IdentityHashedEntity<OperationType.Blueprint, OperationType.Update> {
 
     @SuppressWarnings("unused")
     private OperationType() {
     }
 
-    public OperationType(CanonicalPath path) {
-        super(path);
+    public OperationType(CanonicalPath path, String identityHash) {
+        super(path, identityHash);
     }
 
-    public OperationType(String name, CanonicalPath path) {
-        super(name, path);
+    public OperationType(String name, CanonicalPath path, String identityHash) {
+        super(name, path, identityHash);
     }
 
-    public OperationType(CanonicalPath path, Map<String, Object> properties) {
-        super(path, properties);
+    public OperationType(CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(path, identityHash, properties);
     }
 
-    public OperationType(String name, CanonicalPath path, Map<String, Object> properties) {
-        super(name, path, properties);
+    public OperationType(String name, CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(name, path, identityHash, properties);
     }
 
     @Override
@@ -52,7 +52,7 @@ public final class OperationType extends /*IdentityHashed*/Entity<OperationType.
 
     @Override
     public Updater<Update, OperationType> update() {
-        return new Updater<>((u) -> new OperationType(u.getName(), getPath(), u.getProperties()));
+        return new Updater<>((u) -> new OperationType(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
     }
 
     public static final class Blueprint extends Entity.Blueprint {

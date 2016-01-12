@@ -88,7 +88,7 @@ public final class BaseMetrics {
             MetricType metricType = context.backend.convert(metricTypeObject, MetricType.class);
 
             Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.class,
-                    context.backend.extractId(entity)).get(), metricType, blueprint.getCollectionInterval(),
+                    context.backend.extractId(entity)).get(), null, metricType, blueprint.getCollectionInterval(),
                     blueprint.getProperties());
 
             Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), parentPath, entityPath);

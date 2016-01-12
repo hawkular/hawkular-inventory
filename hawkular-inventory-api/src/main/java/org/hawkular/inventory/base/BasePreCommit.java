@@ -238,33 +238,31 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             }
 
             @Override public Entity<?, ?> visitFeed(Feed feed, Void parameter) {
-                //TODO implement
-                return feed;
+                return new Feed(feed.getName(), feed.getPath(), identityHash, feed.getProperties());
             }
 
             @Override public Entity<?, ?> visitMetric(Metric metric, Void parameter) {
-                //TODO implement
-                return metric;
+                return new Metric(metric.getName(), metric.getPath(), identityHash, metric.getType(),
+                        metric.getCollectionInterval(), metric.getProperties());
             }
 
             @Override public Entity<?, ?> visitMetricType(MetricType type, Void parameter) {
-                //TODO implement
-                return type;
+                return new MetricType(type.getName(), type.getPath(), identityHash, type.getUnit(),
+                        type.getType(), type.getProperties(), type.getCollectionInterval());
             }
 
             @Override public Entity<?, ?> visitOperationType(OperationType operationType, Void parameter) {
-                //TODO implement
-                return operationType;
+                return new OperationType(operationType.getName(), operationType.getPath(), identityHash,
+                        operationType.getProperties());
             }
 
             @Override public Entity<?, ?> visitResource(Resource resource, Void parameter) {
-                //TODO implement
-                return resource;
+                return new Resource(resource.getName(), resource.getPath(), identityHash, resource.getType(),
+                        resource.getProperties());
             }
 
             @Override public Entity<?, ?> visitResourceType(ResourceType type, Void parameter) {
-                //TODO implement
-                return type;
+                return new ResourceType(type.getName(), type.getPath(), identityHash, type.getProperties());
             }
         }, null);
     }
