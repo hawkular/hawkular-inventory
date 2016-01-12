@@ -332,7 +332,9 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     Transaction<BE> startTransaction(boolean mutating, Transaction.PreCommit<BE> actionsManager) {
-        return transactionConstructor.construct(this, mutating, actionsManager);
+        Transaction<BE> tx = transactionConstructor.construct(this, mutating, actionsManager);
+        tx.getPreCommit().initialize(inventory.keepTransaction(), new TransactionIgnoringBackend<>(backend));
+        return tx;
     }
 
     /**

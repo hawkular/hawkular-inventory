@@ -16,32 +16,40 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import static java.util.stream.Collectors.toList;
 
-import org.hawkular.inventory.api.Relationships;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.IdentityHashable;
-import org.hawkular.inventory.api.model.MetadataPack;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * Takes care of defining the pre-commit actions based on the set of entities modified within a single transaction.
- *
+ * <p>
  * <p>Most importantly it takes care of minimizing the number of computations needed to compute identity hashes of
  * entities. To compute identity hash of a parent resource, one needs to compute the hashes of all its children so if
  * also the child is modified, it only is necessary to compute the tree of the identity hashes of the parent and pick
@@ -52,21 +60,47 @@ import org.hawkular.inventory.base.spi.Transaction;
  */
 public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
+    /**
+     * Notifications about entities that are not hashable and therefore need no processing
+     */
     private final List<EntityAndPendingNotifications<BE, ?>> nonHashedChanges = new ArrayList<>();
+    /**
+     * Pre-commit actions explicitly requested by callers
+     */
     private final List<Consumer<Transaction<BE>>> explicitActions = new ArrayList<>();
+    /**
+     * The notifications of the processed changes
+     */
+    private final List<EntityAndPendingNotifications<BE, ?>> correctedChanges = new ArrayList<>();
+    /**
+     * Keeps track of the work needed to be done.
+     */
+    private final ProcessingTree<BE> processingTree = new ProcessingTree<BE>();
+
+    private Inventory inventory;
+    private InventoryBackend<BE> backend;
+
+    /**
+     * Pre-commit actions that reset the identity hash
+     */
+    private Consumer<Transaction<BE>> correctiveAction;
+
+    @Override public void initialize(Inventory inventory, InventoryBackend<BE> backend) {
+        this.inventory = inventory;
+        this.backend = backend;
+    }
 
     @Override public void reset() {
         nonHashedChanges.clear();
         explicitActions.clear();
-        //TODO implement
+        correctiveAction = null;
+        correctedChanges.clear();
+        processingTree.clear();
     }
 
     @Override public List<EntityAndPendingNotifications<BE, ?>> getFinalNotifications() {
-        List<EntityAndPendingNotifications<BE, ?>> ret = new ArrayList<>();
-
-        //TODO implement
-
-        ret.addAll(nonHashedChanges);
+        List<EntityAndPendingNotifications<BE, ?>> ret = new ArrayList<>(nonHashedChanges);
+        ret.addAll(correctedChanges);
 
         return ret;
     }
@@ -76,15 +110,23 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
     }
 
     @Override public List<Consumer<Transaction<BE>>> getActions() {
-        //TODO implement
-        return explicitActions;
+        process();
+
+        List<Consumer<Transaction<BE>>> ret;
+
+        if (correctiveAction != null) {
+            ret = new ArrayList<>(explicitActions);
+            ret.add(correctiveAction);
+        } else {
+            ret = explicitActions;
+        }
+
+        return ret;
     }
 
     @Override public void addNotifications(EntityAndPendingNotifications<BE, ?> element) {
         if (needsProcessing(element)) {
-            //TODO implement
-            //this is just to not break tests atm - the proper implementation will remove this line
-            nonHashedChanges.add(element);
+            processingTree.add(element);
         } else {
             nonHashedChanges.add(element);
         }
@@ -94,72 +136,252 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         return element.getEntity() instanceof IdentityHashable;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Blueprint asBlueprint(AbstractElement<?, ?> element) {
-        if (element == null) {
-            return null;
+    private void process() {
+        //walk the processing tree and process the top most
+        List<ProcessingTree<BE>> identityHashRoots = new ArrayList<>();
+
+        processingTree.dfsTraversal(t -> {
+            if (t.needsResolution()) {
+                identityHashRoots.add(t);
+                return false;
+            } else {
+                //look for resolution-needing children
+                return true;
+            }
+        });
+
+        if (identityHashRoots.isEmpty()) {
+            correctiveAction = null;
+            return;
         }
-        return element.accept(new ElementVisitor<Blueprint, Void>() {
-            @Override public Blueprint visitData(DataEntity data, Void parameter) {
-                return fillBasicEntity(data, DataEntity.Blueprint.builder()).withRole(data.getRole())
-                        .withValue(data.getValue()).build();
+
+        correctiveAction = t -> {
+            for (ProcessingTree<BE> root : identityHashRoots) {
+                Entity<?, ?> e = (Entity<?, ?>) root.element;
+                IdentityHash.Tree treeHash = IdentityHash.treeOf(InventoryStructure.of(e, inventory));
+
+                correctChanges(treeHash, root);
+            }
+        };
+    }
+
+    private void correctChanges(IdentityHash.Tree treeHash, ProcessingTree<BE> changesTree) {
+        if (changesTree.needsResolution()) {
+            Entity<?, ?> e = cloneWithHash((Entity<?, ?>) changesTree.element, treeHash.getHash());
+
+            List<Notification<?, ?>> ns = changesTree.notifications.stream().map(n -> cloneWithNewEntity(n, e))
+                    .collect(toList());
+
+            //set the notifications to emit
+            correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement>(changesTree.representation,
+                    changesTree.element, ns));
+
+            //now also actually update the element in inventory with the new hash
+            backend.updateIdentityHash(changesTree.representation, treeHash.getHash());
+
+            //and traverse the children to reset their identity hashes
+            ArrayList<IdentityHash.Tree> treeChildren = new ArrayList<>(treeHash.getChildren());
+            Collections.sort(treeChildren, (a, b) ->
+                    a.getPath().getSegment().getElementId().compareTo(b.getPath().getSegment().getElementId()));
+
+            ArrayList<ProcessingTree<BE>> processedChildren = new ArrayList<>(changesTree.children);
+            Collections.sort(processedChildren, (a, b) ->
+                    a.path.getElementId().compareTo(b.path.getElementId()));
+
+            for (int i = 0, j = 0; i < processedChildren.size();) {
+                ProcessingTree<BE> p = processedChildren.get(i);
+                IdentityHash.Tree h = treeChildren.get(j);
+
+                int cmp = p.path.getElementId().compareTo(h.getPath().getSegment().getElementId());
+                if (cmp == 0) {
+                    //we found 2 equal elements, let's compare and continue
+                    correctChanges(h, p);
+                    i++;
+                    j++;
+                } else if (cmp > 0) {
+                    //the processing tree element is "greater than" the tree hash element. This means that in our
+                    //processing tree we don't have all elements that contribute to the tree hash. This is ok - not
+                    //all children of an entity need to be updated for the tree hash to change.
+                    //
+                    //We don't do any comparisons here, just increase the index in the tree hash, but NOT our
+                    //processing tree index.
+                    j++;
+                } else {
+                    //the processing tree element is "less" than the tree hash element, which means that there can be
+                    //other processing tree elements after this one that are equal to the curent tree hash element.
+                    //
+                    //Let's just increment our processing tree index to try and find such element.
+                    i++;
+
+                    if (p.needsResolution()) {
+                        throw new IllegalStateException("Entity on path " + p.element.getPath() + " requires identity" +
+                                " hash re-computation but was not found contributing to a tree hash of a parent. This" +
+                                " is inconsistency in the inventory model and a bug.");
+                    }
+                }
+            }
+        }
+    }
+
+    private Entity<?, ?> cloneWithHash(Entity<?, ?> entity, String identityHash) {
+        return entity.accept(new ElementVisitor.Simple<Entity<?, ?>, Void>() {
+            @Override protected Entity<?, ?> defaultAction() {
+                if (entity instanceof IdentityHashable) {
+                    throw new IllegalStateException("Unhandled IdentityHashable type: " + entity);
+                }
+
+                return entity;
             }
 
-            @Override public Blueprint visitTenant(Tenant tenant, Void parameter) {
-                return fillBasicEntity(tenant, Tenant.Blueprint.builder()).build();
+            @Override public Entity<?, ?> visitData(DataEntity data, Void parameter) {
+                return new DataEntity(data.getPath(), data.getValue(), identityHash, data.getProperties());
             }
 
-            @Override public Blueprint visitEnvironment(Environment environment, Void parameter) {
-                return fillBasicEntity(environment, Environment.Blueprint.builder()).build();
+            @Override public Entity<?, ?> visitFeed(Feed feed, Void parameter) {
+                //TODO implement
+                return feed;
             }
 
-            @Override public Blueprint visitFeed(Feed feed, Void parameter) {
-                return fillBasicEntity(feed, Feed.Blueprint.builder()).build();
+            @Override public Entity<?, ?> visitMetric(Metric metric, Void parameter) {
+                //TODO implement
+                return metric;
             }
 
-            @Override public Blueprint visitMetric(Metric metric, Void parameter) {
-                return fillBasicEntity(metric, Metric.Blueprint.builder()).withInterval(metric.getCollectionInterval())
-                        .withMetricTypePath(metric.getType().getPath().toString()).build();
+            @Override public Entity<?, ?> visitMetricType(MetricType type, Void parameter) {
+                //TODO implement
+                return type;
             }
 
-            @Override public Blueprint visitMetricType(MetricType type, Void parameter) {
-                return fillBasicEntity(type, MetricType.Blueprint.builder(type.getType()))
-                        .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
+            @Override public Entity<?, ?> visitOperationType(OperationType operationType, Void parameter) {
+                //TODO implement
+                return operationType;
             }
 
-            @Override public Blueprint visitOperationType(OperationType operationType, Void parameter) {
-                return fillBasicEntity(operationType, OperationType.Blueprint.builder()).build();
+            @Override public Entity<?, ?> visitResource(Resource resource, Void parameter) {
+                //TODO implement
+                return resource;
             }
 
-            @Override public Blueprint visitMetadataPack(MetadataPack metadataPack, Void parameter) {
-                return MetadataPack.Blueprint.builder().withName(metadataPack.getName()).withProperties(metadataPack
-                        .getProperties()).build();
-            }
-
-            @Override public Blueprint visitUnknown(Object entity, Void parameter) {
-                throw new IllegalArgumentException("Unknown blueprint type: " + entity);
-            }
-
-            @Override public Blueprint visitResource(Resource resource, Void parameter) {
-                return fillBasicEntity(resource, Resource.Blueprint.builder())
-                        .withResourceTypePath(resource.getType().getPath().toString()).build();
-            }
-
-            @Override public Blueprint visitResourceType(ResourceType type, Void parameter) {
-                return fillBasicEntity(type, ResourceType.Blueprint.builder()).build();
-            }
-
-            @Override public Blueprint visitRelationship(Relationship relationship, Void parameter) {
-                return new Relationship.Blueprint(Relationships.Direction.outgoing, relationship.getName(),
-                        relationship.getTarget(), relationship.getProperties());
-            }
-
-            private <E extends Entity<? extends Bl, ?>, Bl extends Entity.Blueprint,
-                    BB extends Entity.Blueprint.Builder<Bl, BB>>
-            BB fillBasicEntity(E entity, BB bld) {
-                return bld.withId(entity.getId()).withName(entity.getName()).withProperties(entity.getProperties());
+            @Override public Entity<?, ?> visitResourceType(ResourceType type, Void parameter) {
+                //TODO implement
+                return type;
             }
         }, null);
     }
 
+    @SuppressWarnings("unchecked")
+    private Notification<?, ?> cloneWithNewEntity(Notification<?, ?> notif, AbstractElement<?, ?> element) {
+        if (!(notif.getValue() instanceof AbstractElement)) {
+            return notif;
+        }
+
+        Object context = notif.getActionContext();
+        Object value = notif.getValue();
+
+        if (context instanceof AbstractElement && element.getPath().equals(((AbstractElement) context).getPath())) {
+            context = element;
+        }
+
+        if (element.getPath().equals(((AbstractElement) value).getPath())) {
+            value = element;
+        }
+
+        return new Notification(context, value, notif.getAction());
+    }
+
+    private static class ProcessingTree<BE> {
+        final Set<ProcessingTree<BE>> children = new HashSet<>(2);
+                //keep it small, we're not going to have many children
+        //usually
+        final Path.Segment path;
+        final List<Notification<?, ?>> notifications;
+        AbstractElement<?, ?> element;
+        BE representation;
+
+        ProcessingTree() {
+            this(null, null, null, null);
+        }
+
+        private ProcessingTree(BE representation, AbstractElement<?, ?> element, Path.Segment path,
+                               List<Notification<?, ?>> notifications) {
+            this.representation = representation;
+            this.element = element;
+            this.path = path;
+            this.notifications = notifications == null ? new ArrayList<>(0) : notifications;
+            clear();
+        }
+
+        void clear() {
+            children.clear();
+        }
+
+        public boolean needsResolution() {
+            return IdentityHashable.class.isAssignableFrom(path.getElementType());
+        }
+
+        void add(EntityAndPendingNotifications<BE, ?> entity) {
+            if (this.path != null) {
+                throw new IllegalStateException("Cannot add element to partial results from a non-root segment.");
+            }
+
+            Set<ProcessingTree<BE>> children = this.children;
+
+            ProcessingTree<BE> found = null;
+            for (Path.Segment seg : entity.getEntity().getPath().getPath()) {
+                found = null;
+                for (ProcessingTree<BE> child : children) {
+                    if (seg.equals(child.path)) {
+                        found = child;
+                        break;
+                    }
+                }
+
+                if (found == null) {
+                    found = new ProcessingTree<BE>(null, null, seg, null);
+                    children.add(found);
+                }
+
+                children = found.children;
+            }
+
+            if (found == null) {
+                throw new IllegalStateException("Could not figure out the processing tree element for entity.");
+            }
+
+            found.representation = entity.getEntityRepresentation();
+            found.element = entity.getEntity();
+            found.notifications.addAll(entity.getNotifications());
+        }
+
+        void dfsTraversal(Function<ProcessingTree<BE>, Boolean> visitor) {
+            Deque<Iterator<ProcessingTree<BE>>> depthStack = new ArrayDeque<>();
+
+            depthStack.push(children.iterator());
+
+            while (!depthStack.isEmpty()) {
+                if (!depthStack.peek().hasNext()) {
+                    depthStack.pop();
+                    continue;
+                }
+
+                ProcessingTree<BE> tree = depthStack.peek().next();
+                if (visitor.apply(tree)) {
+                    depthStack.push(tree.children.iterator());
+                }
+            }
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ProcessingTree<BE> that = (ProcessingTree<BE>) o;
+
+            return path.equals(that.path);
+        }
+
+        @Override public int hashCode() {
+            return path.hashCode();
+        }
+    }
 }

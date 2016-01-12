@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.base.EntityAndPendingNotifications;
 import org.hawkular.inventory.base.PotentiallyCommittingPayload;
 
@@ -52,7 +53,14 @@ public interface Transaction<BE> {
 
     interface PreCommit<BE> {
 
+        /**
+         * This is always called AFTER a transaction is committed and therefore after {@link #getActions()} is called.
+         * @return the notifications to send out - these can be different from what was originally requested by the base
+         * code
+         */
         List<EntityAndPendingNotifications<BE, ?>> getFinalNotifications();
+
+        void initialize(Inventory inventory, InventoryBackend<BE> backend);
 
         void reset();
 
@@ -65,6 +73,13 @@ public interface Transaction<BE> {
         class Simple<BE> implements PreCommit<BE> {
             private List<EntityAndPendingNotifications<BE, ?>> notifs = new ArrayList<>();
             private List<Consumer<Transaction<BE>>> actions = new ArrayList<>();
+            protected InventoryBackend<BE> backend;
+            protected Inventory inventory;
+
+            @Override public void initialize(Inventory inventory, InventoryBackend<BE> backend) {
+                this.inventory = inventory;
+                this.backend = backend;
+            }
 
             @Override public void reset() {
                 notifs.clear();

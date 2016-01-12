@@ -143,6 +143,10 @@ final class BaseTransactionFrame<BE> implements TransactionFrame {
             this.wrapped = wrapped;
         }
 
+        @Override public void initialize(Inventory inventory, InventoryBackend<BE> backend) {
+            wrapped.initialize(inventory, backend);
+        }
+
         @Override public void addNotifications(EntityAndPendingNotifications<BE, ?> element) {
             wrapped.addNotifications(element);
         }
