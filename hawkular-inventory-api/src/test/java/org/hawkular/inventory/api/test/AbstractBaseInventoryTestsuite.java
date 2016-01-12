@@ -2035,17 +2035,19 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     public void testObserveMetricTypes() throws Exception {
         String tid = "testObserveMetricTypes";
         String mtid = "mtype";
-        runObserverTest(MetricType.class, 1, 1, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+        try {
+            runObserverTest(MetricType.class, 1, 1, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
 
-            inventory.tenants().get(tid).metricTypes()
-                    .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
-            inventory.tenants().get(tid).metricTypes().update(mtid, MetricType.Update.builder()
-                    .withUnit(MetricUnit.MILLISECONDS).build());
-            inventory.tenants().get(tid).metricTypes().delete(mtid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).metricTypes()
+                        .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
+                inventory.tenants().get(tid).metricTypes().update(mtid, MetricType.Update.builder()
+                        .withUnit(MetricUnit.MILLISECONDS).build());
+                inventory.tenants().get(tid).metricTypes().delete(mtid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2054,21 +2056,23 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String eid = "env";
         String mtid = "mtype";
         String mid = "met";
-        runObserverTest(Metric.class, 4, 2, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).metricTypes()
-                    .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
+        try {
+            runObserverTest(Metric.class, 4, 2, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).metricTypes()
+                        .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
 
-            inventory.tenants().get(tid).environments().get(eid).metrics()
-                    .create(new Metric.Blueprint("/" + mtid, mid));
-            inventory.tenants().get(tid).environments().get(eid).metrics().update(mid,
-                    Metric.Update.builder().build());
+                inventory.tenants().get(tid).environments().get(eid).metrics()
+                        .create(new Metric.Blueprint("/" + mtid, mid));
+                inventory.tenants().get(tid).environments().get(eid).metrics().update(mid,
+                        Metric.Update.builder().build());
 
-            inventory.tenants().get(tid).environments().get(eid).metrics().delete(mid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).environments().get(eid).metrics().delete(mid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2079,36 +2083,39 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String mtid = "mtype";
         String mid = "met";
         String rid = "res";
-        runObserverTest(Resource.class, 8, 3, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
-                    .build());
-            inventory.tenants().get(tid).metricTypes()
-                    .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId(mtid)
-                            .withUnit(MetricUnit.BYTES).withInterval(0L).build());
+        try {
+            runObserverTest(Resource.class, 8, 3, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
+                        .build());
+                inventory.tenants().get(tid).metricTypes()
+                        .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId(mtid)
+                                .withUnit(MetricUnit.BYTES).withInterval(0L).build());
 
-            inventory.tenants().get(tid).environments().get(eid).resources()
-                    .create(new Resource.Blueprint(rid, "/" + rtid));
-            inventory.tenants().get(tid).environments().get(eid).resources().update(rid,
-                    Resource.Update.builder().build());
+                inventory.tenants().get(tid).environments().get(eid).resources()
+                        .create(new Resource.Blueprint(rid, "/" + rtid));
+                inventory.tenants().get(tid).environments().get(eid).resources().update(rid,
+                        Resource.Update.builder().build());
 
-            Metric m = inventory.tenants().get(tid).environments().get(eid).metrics()
-                    .create(Metric.Blueprint.builder().withId(mid).withMetricTypePath("/" + mtid).build()).entity();
+                Metric m = inventory.tenants().get(tid).environments().get(eid).metrics()
+                        .create(Metric.Blueprint.builder().withId(mid).withMetricTypePath("/" + mtid).build()).entity();
 
-            List<Relationship> createdRelationships = new ArrayList<>();
+                List<Relationship> createdRelationships = new ArrayList<>();
 
-            inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
+                inventory.observable(Interest.in(Relationship.class).being(created()))
+                        .subscribe(createdRelationships::add);
 
-            inventory.tenants().get(tid).environments().get(eid).resources().get(rid).allMetrics().associate(
-                    m.getPath());
+                inventory.tenants().get(tid).environments().get(eid).resources().get(rid).allMetrics().associate(
+                        m.getPath());
 
-            Assert.assertEquals(1, createdRelationships.size());
+                Assert.assertEquals(1, createdRelationships.size());
 
-            inventory.tenants().get(tid).environments().get(eid).resources().delete(rid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).environments().get(eid).resources().delete(rid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2117,26 +2124,28 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String eid = "env";
         String rtid = "rtype";
         String rid = "res";
-        runObserverTest(DataEntity.class, 5, 1, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
-                    .build());
-            inventory.tenants().get(tid).environments().get(eid).resources()
-                    .create(new Resource.Blueprint(rid, "/" + rtid));
+        try {
+            runObserverTest(DataEntity.class, 5, 1, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
+                        .build());
+                inventory.tenants().get(tid).environments().get(eid).resources()
+                        .create(new Resource.Blueprint(rid, "/" + rtid));
 
-            Data.ReadWrite<Resources.DataRole> dataAccess = inventory.tenants().get(tid).environments().get(eid)
-                    .resources().get(rid).data();
+                Data.ReadWrite<Resources.DataRole> dataAccess = inventory.tenants().get(tid).environments().get(eid)
+                        .resources().get(rid).data();
 
-            dataAccess.create(DataEntity.Blueprint.<Resources.DataRole>builder()
-                    .withRole(configuration).build());
+                dataAccess.create(DataEntity.Blueprint.<Resources.DataRole>builder()
+                        .withRole(configuration).build());
 
-            dataAccess.update(configuration, DataEntity.Update.builder().build());
+                dataAccess.update(configuration, DataEntity.Update.builder().build());
 
-            dataAccess.delete(configuration);
-        });
-
-        inventory.tenants().delete(tid);
+                dataAccess.delete(configuration);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test

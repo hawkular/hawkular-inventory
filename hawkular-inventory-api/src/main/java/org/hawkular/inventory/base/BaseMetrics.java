@@ -35,7 +35,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -61,9 +61,9 @@ public final class BaseMetrics {
         }
 
         @Override
-        protected EntityAndPendingNotifications<Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
-                                                                        CanonicalPath parentPath, BE parent,
-                                                                        InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
+                                                                            CanonicalPath parentPath, BE parent,
+                                                                            Transaction<BE> transaction) {
 
             BE metricTypeObject;
 
@@ -102,7 +102,7 @@ public final class BaseMetrics {
                 notifs.add(new Notification<>(rel, rel, created()));
             }
 
-            return new EntityAndPendingNotifications<>(ret, notifs);
+            return new EntityAndPendingNotifications<>(entity, ret, notifs);
         }
 
         @Override
@@ -117,7 +117,7 @@ public final class BaseMetrics {
 
         @Override
         public Metrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

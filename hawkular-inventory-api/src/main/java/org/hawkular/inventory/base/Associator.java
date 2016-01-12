@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,7 +77,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
 
-        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
+        EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(context, sourceQuery,
                 sourceType, relationship.name(), target);
 
         context.notifyAll(rel);
@@ -89,7 +89,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
             Relationships.WellKnown relationship, BE target) {
 
         Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
+        EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(context, sourceQuery,
                 sourceType, relationship.name(), target);
 
         context.notifyAll(rel);

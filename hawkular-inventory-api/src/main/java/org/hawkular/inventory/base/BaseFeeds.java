@@ -38,8 +38,8 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -74,16 +74,16 @@ public final class BaseFeeds {
         }
 
         @Override
-        protected EntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
-                                                                      CanonicalPath parentPath, BE parent,
-                                                                      InventoryBackend.Transaction transaction) {
-            return new EntityAndPendingNotifications<>(new Feed(blueprint.getName(), parentPath.extend(Feed.class,
-                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
+        protected EntityAndPendingNotifications<BE, Feed>
+        wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> transaction) {
+            return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
+                    parentPath.extend(Feed.class, context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
         @Override
         public Feeds.Single create(Feed.Blueprint blueprint) {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
 
         @Override

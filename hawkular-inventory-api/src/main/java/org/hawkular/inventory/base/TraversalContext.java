@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+import org.hawkular.inventory.base.spi.Transaction;
 
 import rx.subjects.Subject;
 
@@ -90,17 +91,20 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     private final E createdEntity;
 
+    private final TransactionConstructor<BE> transactionConstructor;
+
     TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
                      InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
-                     ObservableContext observableContext) {
+                     ObservableContext observableContext, TransactionConstructor<BE> transactionConstructor) {
         this(inventory, sourcePath, selectCandidates, backend, entityClass, configuration, observableContext,
-                getTransactionRetries(configuration), null, null);
+                getTransactionRetries(configuration), null, null, transactionConstructor);
     }
 
     private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
                              InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                              ObservableContext observableContext, int transactionRetries,
-                             TraversalContext<BE, ?> previous, E createdEntity) {
+                             TraversalContext<BE, ?> previous, E createdEntity,
+                             TransactionConstructor<BE> transactionConstructor) {
 
         this.inventory = inventory;
         this.sourcePath = sourcePath;
@@ -112,6 +116,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         this.transactionRetries = transactionRetries;
         this.previous = previous;
         this.createdEntity = createdEntity;
+        this.transactionConstructor = transactionConstructor == null
+                ? TransactionConstructor.startInBackend() : transactionConstructor;
     }
 
     private static int getTransactionRetries(Configuration configuration) {
@@ -120,6 +126,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     /**
+     * XXX this is currently not used, because of the impossibility to get a fully initialized entity at the time of the
+     * return from the doCreate() method in mutator.
      * @return the entity previously created on this traversal position or null if no such thing happened.
      */
     public E getCreatedEntity() {
@@ -249,12 +257,14 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
-                observableContext, transactionRetries, this, null);
+                observableContext, transactionRetries, this, null, null);
     }
 
+    //XXX not used ATM - after creating an entity, we can't be sure it is fully initialized due to the lazy way identity
+    //hashes are computed.
     TraversalContext<BE, E> toCreatedEntity(E entity) {
         return new TraversalContext<>(inventory, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
-                configuration, observableContext, transactionRetries, this, entity);
+                configuration, observableContext, transactionRetries, this, entity, null);
     }
 
     TraversalContext<BE, E> proceedTo(Path path) {
@@ -302,7 +312,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      *
      * @param entityAndNotifications the list of pending notifications
      */
-    void notifyAll(EntityAndPendingNotifications<?> entityAndNotifications) {
+    void notifyAll(EntityAndPendingNotifications<BE, ?> entityAndNotifications) {
         entityAndNotifications.getNotifications().forEach(this::notify);
     }
 
@@ -315,6 +325,14 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     <C, V> void notify(Notification<C, V> notification) {
         notify(notification.getValue(), notification.getActionContext(), notification.getAction());
+    }
+
+    Transaction<BE> startTransaction(boolean mutating) {
+        return startTransaction(mutating, new BasePreCommit<>());
+    }
+
+    Transaction<BE> startTransaction(boolean mutating, Transaction.PreCommit<BE> actionsManager) {
+        return transactionConstructor.construct(this, mutating, actionsManager);
     }
 
     /**
@@ -412,7 +430,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
                     sourceContext.backend, entityClass, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext, null);
+                    sourceContext.transactionRetries, sourceContext, null, null);
         }
 
         /**
@@ -425,7 +443,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
             return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
                     sourceContext.backend, entityType, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext, null);
+                    sourceContext.transactionRetries, sourceContext, null, null);
         }
     }
 }

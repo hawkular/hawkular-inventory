@@ -35,26 +35,28 @@ import org.hawkular.inventory.api.filters.Filter;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-public final class DataEntity extends /*IdentityHashed*/Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
+public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     private final StructuredData value;
 
+    @SuppressWarnings("unused")
     private DataEntity() {
         this.value = null;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value) {
-        super(null, owner.extend(DataEntity.class, role.name()).get(), null);
+    public DataEntity(CanonicalPath owner, Role role, StructuredData value, String identityHash) {
+        super(null, owner.extend(DataEntity.class, role.name()).get(), identityHash);
         this.value = value;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value, Map<String, Object> properties) {
-        super(owner.extend(DataEntity.class, role.name()).get(), properties);
+    public DataEntity(CanonicalPath owner, Role role, StructuredData value, String identityHash,
+                      Map<String, Object> properties) {
+        super(owner.extend(DataEntity.class, role.name()).get(), identityHash, properties);
         this.value = value;
     }
 
-    public DataEntity(CanonicalPath path, StructuredData value, Map<String, Object> properties) {
-        this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, properties);
+    public DataEntity(CanonicalPath path, StructuredData value, String identityHash, Map<String, Object> properties) {
+        this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, identityHash, properties);
     }
 
     @Override
@@ -77,8 +79,17 @@ public final class DataEntity extends /*IdentityHashed*/Entity<DataEntity.Bluepr
 
     @Override
     public Updater<Update, DataEntity> update() {
-        return new Updater<>((u) -> new DataEntity(this.getPath().up(), this.getRole(),
-                valueOrDefault(u.getValue(), getValue()), u.getProperties()));
+        return new Updater<>((u) -> {
+            StructuredData newValue = valueOrDefault(u.getValue(), getValue());
+            String identityHash = getIdentityHash();
+            if (u.getValue() != null) {
+                DataEntity.Blueprint updateBlueprint = DataEntity.Blueprint.builder().withRole(getRole())
+                        .withValue(u.getValue()).build();
+                InventoryStructure<DataEntity.Blueprint> structure = InventoryStructure.of(updateBlueprint).build();
+                identityHash = IdentityHash.of(structure);
+            }
+            return new DataEntity(this.getPath().up(), this.getRole(), newValue, identityHash, u.getProperties());
+        });
     }
 
     private static final class RoleInstanceHolder {

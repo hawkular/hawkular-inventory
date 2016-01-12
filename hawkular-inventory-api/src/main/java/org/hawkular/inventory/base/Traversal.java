@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,7 +74,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @param <R>     the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(PotentiallyCommittingPayload<R> payload) {
+    protected <R> R mutating(PotentiallyCommittingPayload<R, BE> payload) {
         return Util.runInTransaction(context, false, payload);
     }
 

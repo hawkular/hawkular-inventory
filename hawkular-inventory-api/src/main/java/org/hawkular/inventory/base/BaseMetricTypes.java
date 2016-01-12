@@ -22,19 +22,19 @@ import static org.hawkular.inventory.api.filters.With.id;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -60,9 +60,9 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected EntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity, MetricType.Blueprint blueprint,
-                                                                            CanonicalPath parentPath, BE parent,
-                                                                            InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, MetricType>
+        wireUpNewEntity(BE entity, MetricType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> transaction) {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
@@ -71,9 +71,9 @@ public final class BaseMetricTypes {
                     blueprint.getCollectionInterval());
 
             context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(metricType, context.inventory.keepTransaction(transaction)));
+                    IdentityHash.of(metricType, context.inventory.keepTransaction()));
 
-            return new EntityAndPendingNotifications<>(metricType);
+            return new EntityAndPendingNotifications<>(entity, metricType);
         }
 
         @Override
@@ -96,21 +96,21 @@ public final class BaseMetricTypes {
                 throw new IllegalArgumentException(msg);
             }
 
-            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
 
         @Override
-        protected void preDelete(String s, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        protected void preDelete(String s, BE entityRepresentation, Transaction<BE> transaction) {
             preDelete(context, entityRepresentation);
         }
 
         @Override
         protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update,
-                                 InventoryBackend.Transaction transaction) {
+                                 Transaction<BE> transaction) {
             preUpdate(context, entityRepresentation, update, transaction);
         }
 
-        @Override protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        @Override protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
             postUpdate(context, entityRepresentation, transaction);
         }
 
@@ -121,7 +121,7 @@ public final class BaseMetricTypes {
         }
 
         private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update,
-                                           InventoryBackend.Transaction transaction) {
+                                           Transaction<BE> transaction) {
             MetricType mt = context.backend.convert(entity, MetricType.class);
             if (mt.getUnit() == update.getUnit()) {
                 //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
@@ -134,10 +134,10 @@ public final class BaseMetricTypes {
         }
 
         private static <BE> void postUpdate(TraversalContext<BE, ?> context, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             context.backend.updateIdentityHash(entity,
                     IdentityHash.of(context.backend.convert(entity, MetricType.class),
-                            context.inventory.keepTransaction(transaction)));
+                            context.inventory.keepTransaction()));
 
         }
 
@@ -232,16 +232,16 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+        protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
             ReadWrite.preDelete(context, deletedEntity);
         }
 
         @Override
-        protected void preUpdate(BE updatedEntity, MetricType.Update update, InventoryBackend.Transaction transaction) {
+        protected void preUpdate(BE updatedEntity, MetricType.Update update, Transaction<BE> transaction) {
             ReadWrite.preUpdate(context, updatedEntity, update, transaction);
         }
 
-        @Override protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+        @Override protected void postUpdate(BE updatedEntity, Transaction<BE> transaction) {
             ReadWrite.postUpdate(context, updatedEntity, transaction);
         }
     }

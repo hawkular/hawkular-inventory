@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.base.spi.CommitFailureException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * Represents a payload to be run within a context of a transaction. The payload might or might not commit the
@@ -27,6 +27,6 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
  * @since 0.4.0
  */
 @FunctionalInterface
-public interface PotentiallyCommittingPayload<R> {
-    R run(InventoryBackend.Transaction t) throws CommitFailureException;
+public interface PotentiallyCommittingPayload<R, BE> {
+    R run(Transaction<BE> t) throws CommitFailureException;
 }

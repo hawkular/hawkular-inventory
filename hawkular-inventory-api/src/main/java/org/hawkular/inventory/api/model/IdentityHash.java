@@ -138,6 +138,10 @@ public final class IdentityHash {
         return ctor.getDigestor().digest();
     }
 
+    public static String of(Entity<?, ?> entity, Inventory inventory) {
+        return of(InventoryStructure.of(entity, inventory));
+    }
+
     public static String of(MetadataPack mp, Inventory inventory) {
         List<Entity<?, ?>> all = new ArrayList<>();
         all.addAll(inventory.inspect(mp).resourceTypes().getAll().entities());
@@ -327,58 +331,6 @@ public final class IdentityHash {
 
     private static <R extends DataEntity.Role> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
         return DataEntity.Blueprint.<R>builder().withRole(role).withValue(StructuredData.get().undefined()).build();
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <B extends Blueprint> B asBlueprint(Entity<B, ?> entity) {
-        if (entity == null) {
-            return null;
-        }
-        return entity.accept(new ElementVisitor.Simple<B, Void>() {
-            @Override public B visitData(DataEntity data, Void parameter) {
-                return (B) fillCommon(data, new DataEntity.Blueprint.Builder<>()).withRole(data.getRole())
-                        .withValue(data.getValue()).build();
-            }
-
-            @Override public B visitFeed(Feed feed, Void parameter) {
-                return (B) fillCommon(feed, Feed.Blueprint.builder()).build();
-            }
-
-            @Override public B visitMetric(Metric metric, Void parameter) {
-                //we don't want to have tenant ID and all that jazz influencing the hash, so always use a relative path
-                RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
-
-                return (B) fillCommon(metric, Metric.Blueprint.builder()).withInterval(metric.getCollectionInterval())
-                        .withMetricTypePath(metricTypePath.toString()).build();
-            }
-
-            @Override public B visitMetricType(MetricType type, Void parameter) {
-                return (B) fillCommon(type, MetricType.Blueprint.builder(type.getType()))
-                        .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
-            }
-
-            @Override public B visitOperationType(OperationType operationType, Void parameter) {
-                return (B) fillCommon(operationType, OperationType.Blueprint.builder()).build();
-            }
-
-            @Override public B visitResource(Resource resource, Void parameter) {
-                //we don't want to have tenant ID and all that jazz influencing the hash, so always use a relative path
-                RelativePath resourceTypePath = resource.getType().getPath().relativeTo(resource.getPath());
-
-                return (B) fillCommon(resource, Resource.Blueprint.builder())
-                        .withResourceTypePath(resourceTypePath.toString()).build();
-            }
-
-            @Override public B visitResourceType(ResourceType type, Void parameter) {
-                return (B) fillCommon(type, ResourceType.Blueprint.builder()).build();
-            }
-
-            private <E extends Entity<? extends Bl, ?>, Bl extends Entity.Blueprint,
-                    BB extends Entity.Blueprint.Builder<Bl, BB>>
-            BB fillCommon(E entity, BB bld) {
-                return bld.withId(entity.getId()).withName(entity.getName()).withProperties(entity.getProperties());
-            }
-        }, null);
     }
 
     private interface HashableView {

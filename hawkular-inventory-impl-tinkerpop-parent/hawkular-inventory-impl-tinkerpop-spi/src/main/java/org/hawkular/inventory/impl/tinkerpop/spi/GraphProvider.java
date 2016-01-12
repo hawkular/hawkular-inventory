@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +17,9 @@
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
@@ -54,17 +55,15 @@ public interface GraphProvider<G extends TransactionalGraph> {
     void ensureIndices(G graph, IndexSpec... indexSpecs);
 
     /**
-     * Starts a new transaction in the graph.
-     * <p>
-     * <p>The default implementation returns a new instance of
-     * {@link org.hawkular.inventory.base.spi.InventoryBackend.Transaction} with the provided mutating flag.
+     * Initializes new transaction for use with given graph. The transaction is not subclass-able by the providers but
+     * they can use the {@link Transaction#getAttachments()} method to attach artibtrary data to the
+     * transaction for their use.
      *
      * @param graph    the graph to start the transaction in
-     * @param mutating whether the transaction will mutate the storage or not
-     * @return a transaction handle
+     * @param transaction the transaction being started
      */
-    default InventoryBackend.Transaction startTransaction(G graph, boolean mutating) {
-        return new InventoryBackend.Transaction(mutating);
+    default void startTransaction(G graph, Transaction<Element> transaction) {
+
     }
 
     /**
@@ -75,7 +74,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param graph the graph to commit the transaction to
      * @param t     the transaction
      */
-    default void commit(G graph, InventoryBackend.Transaction t) {
+    default void commit(G graph, Transaction<Element> t) {
         graph.commit();
     }
 
@@ -87,7 +86,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param graph the graph to rollback the transaction from
      * @param t     the transaction
      */
-    default void rollback(G graph, InventoryBackend.Transaction t) {
+    default void rollback(G graph, Transaction<Element> t) {
         graph.rollback();
     }
 

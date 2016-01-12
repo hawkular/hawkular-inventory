@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * Simple delegating inventory backend impl. Useful as a base class for implementations that need to override behavior
@@ -51,7 +52,7 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public void commit(Transaction transaction) throws CommitFailureException {
+    public void commit(Transaction<E> transaction) throws CommitFailureException {
         backend.commit(transaction);
     }
 
@@ -197,7 +198,7 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public void rollback(Transaction transaction) {
+    public void rollback(Transaction<E> transaction) {
         backend.rollback(transaction);
     }
 
@@ -207,8 +208,8 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public Transaction startTransaction(boolean mutating) {
-        return backend.startTransaction(mutating);
+    public void startTransaction(Transaction<E> transaction) {
+        backend.startTransaction(transaction);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +23,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
@@ -52,7 +53,8 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
     }
 
     @Override
-    public InventoryBackend.Transaction startTransaction(WrappedTinkerGraph graph, boolean mutating) {
+    public void startTransaction(WrappedTinkerGraph graph, Transaction<Element> tx) {
+
         ReentrantReadWriteLock lock;
         synchronized (transactionLocks) {
             lock = transactionLocks.get(graph);
@@ -62,17 +64,17 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
             }
         }
 
-        if (mutating) {
+        if (tx.isMutating()) {
             lock.writeLock().lock();
         } else {
             lock.readLock().lock();
         }
 
-        return new SimulatedSerializedTransaction(mutating, lock);
+        tx.getAttachments().put(this, lock);
     }
 
     @Override
-    public void commit(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
+    public void commit(WrappedTinkerGraph graph, Transaction<Element> t) {
         try {
             graph.commit();
         } finally {
@@ -81,7 +83,7 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
     }
 
     @Override
-    public void rollback(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
+    public void rollback(WrappedTinkerGraph graph, Transaction<Element> t) {
         try {
             graph.rollback();
         } finally {
@@ -89,8 +91,8 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
         }
     }
 
-    private void unlock(InventoryBackend.Transaction t) {
-        ReentrantReadWriteLock lock = ((SimulatedSerializedTransaction) t).lock;
+    private void unlock(Transaction<Element> t) {
+        ReentrantReadWriteLock lock = (ReentrantReadWriteLock) t.getAttachments().get(this);
         if (t.isMutating() && lock.writeLock().isHeldByCurrentThread()) {
             lock.writeLock().unlock();
         } else if (lock.getReadHoldCount() > 0) {
@@ -115,15 +117,6 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
 
         @Override
         public void rollback() {
-        }
-    }
-
-    private static final class SimulatedSerializedTransaction extends InventoryBackend.Transaction {
-        private final ReentrantReadWriteLock lock;
-
-        public SimulatedSerializedTransaction(boolean mutating, ReentrantReadWriteLock lock) {
-            super(mutating);
-            this.lock = lock;
         }
     }
 

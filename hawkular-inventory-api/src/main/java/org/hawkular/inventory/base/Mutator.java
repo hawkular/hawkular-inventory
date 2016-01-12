@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -38,7 +39,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -68,7 +69,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param blueprint the blueprint of the new entity
      * @return the query to the newly created entity.
      */
-    protected final E doCreate(B blueprint) {
+    protected final Query doCreate(B blueprint) {
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
 
@@ -77,7 +78,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             BE parent = getParent();
             CanonicalPath parentCanonicalPath = parent == null ? null : context.backend.extractCanonicalPath(parent);
 
-            EntityAndPendingNotifications<E> newEntity;
+            EntityAndPendingNotifications<BE, E> newEntity;
             BE containsRel = null;
 
             CanonicalPath entityPath;
@@ -97,32 +98,40 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             if (parentCanonicalPath != null) {
                 //no need to check for contains rules - we're connecting a newly created entity
                 containsRel = context.backend.relate(parent, entityObject, contains.name(), Collections.emptyMap());
+                Relationship rel = context.backend.convert(containsRel, Relationship.class);
+                transaction.getPreCommit().addNotifications(
+                        new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
             }
 
             newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, transaction);
 
-            List<Notification<?, ?>> customRelsNotifications = new ArrayList<>();
-
             if (blueprint instanceof Entity.Blueprint) {
                 Entity.Blueprint b = (Entity.Blueprint) blueprint;
                 createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(),
-                        customRelsNotifications);
+                        transaction.getPreCommit());
                 createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(),
-                        customRelsNotifications);
+                        transaction.getPreCommit());
             }
 
             postCreate(entityObject, newEntity.getEntity(), transaction);
 
+            List<Notification<?, ?>> notifs = new ArrayList<>(newEntity.getNotifications());
+            notifs.add(new Notification<>(newEntity.getEntity(), newEntity.getEntity(), Action.created()));
+
+            EntityAndPendingNotifications<BE, E> pending =
+                    new EntityAndPendingNotifications<>(newEntity.getEntityRepresentation(), newEntity.getEntity(),
+                            notifs);
+
+            transaction.getPreCommit().addNotifications(pending);
+
+            List<EntityAndPendingNotifications<BE, ?>> finalNotifications = transaction.getPreCommit()
+                    .getFinalNotifications();
+
             context.backend.commit(transaction);
 
-            context.notify(newEntity.getEntity(), created());
-            if (containsRel != null) {
-                context.notify(context.backend.convert(containsRel, Relationship.class), created());
-            }
-            context.notifyAll(newEntity);
-            customRelsNotifications.forEach(context::notify);
+            finalNotifications.forEach(context::notifyAll);
 
-            return newEntity.getEntity();
+            return Query.to(entityPath);
         });
     }
 
@@ -136,11 +145,11 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         Util.delete(context, q, (e, t) -> preDelete(id, e, t), this::postDelete);
     }
 
-    protected void preCreate(B blueprint, InventoryBackend.Transaction transaction) {
+    protected void preCreate(B blueprint, Transaction<BE> transaction) {
 
     }
 
-    protected void postCreate(BE entityObject, E entity, InventoryBackend.Transaction transaction) {
+    protected void postCreate(BE entityObject, E entity, Transaction<BE> transaction) {
 
     }
 
@@ -154,11 +163,11 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param entityRepresentation the backend specific representation of the entity
      * @param transaction          the transaction in which the delete is executing
      */
-    protected void preDelete(Id id, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void preDelete(Id id, BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
-    protected void postDelete(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void postDelete(BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
@@ -172,11 +181,11 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param update               the update object
      * @param transaction          the transaction in which the update is executing
      */
-    protected void preUpdate(Id id, BE entityRepresentation, U update, InventoryBackend.Transaction transaction) {
+    protected void preUpdate(Id id, BE entityRepresentation, U update, Transaction<BE> transaction) {
 
     }
 
-    protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
@@ -221,13 +230,13 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @return an object with the initialized and converted entity together with any pending notifications to be sent
      * out
      */
-    protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, B blueprint,
-                                                                        CanonicalPath parentPath, BE parent,
-                                                                        InventoryBackend.Transaction transaction);
+    protected abstract EntityAndPendingNotifications<BE, E>
+    wireUpNewEntity(BE entity, B blueprint, CanonicalPath parentPath, BE parent,
+                    Transaction<BE> transaction);
 
     private void createCustomRelationships(BE entity, Relationships.Direction direction,
                                            Map<String, Set<CanonicalPath>> otherEnds,
-                                           List<Notification<?, ?>> notifications) {
+                                           Transaction.PreCommit<BE> actionsManager) {
         otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
             try {
                 BE endObject = context.backend.find(end);
@@ -235,10 +244,10 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 BE from = direction == outgoing ? entity : endObject;
                 BE to = direction == outgoing ? endObject : entity;
 
-                EntityAndPendingNotifications<Relationship> res = Util.createAssociationNoTransaction(context,
+                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociationNoTransaction(context,
                         from, name, to);
 
-                notifications.addAll(res.getNotifications());
+                actionsManager.addNotifications(res);
             } catch (ElementNotFoundException e) {
                 throw new EntityNotFoundException(Query.filters(Query.to(end)));
             }

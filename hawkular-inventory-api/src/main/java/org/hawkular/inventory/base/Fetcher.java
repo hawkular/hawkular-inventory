@@ -28,7 +28,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.api.paging.TransformingPage;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * A base class for all interface impls that need to resolve the entities.
@@ -109,24 +109,24 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     }
 
     /**
-     * Serves the same purpose as {@link Mutator#preDelete(Object, Object, InventoryBackend.Transaction)} and is called
-     * during the {@link #delete()} method inside the transaction.
+     * Serves the same purpose as {@link Mutator#preDelete(Object, Object, Transaction <BE>)} and is
+     * called during the {@link #delete()} method inside the transaction.
      *
      * @param deletedEntity the backend representation of the deleted entity
      * @param transaction the transaction in which the delete is executing
      */
-    protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+    protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
 
     }
 
-    protected void postDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+    protected void postDelete(BE deletedEntity, Transaction<BE> transaction) {
 
     }
 
     /**
      * Hook to be run prior to update. Serves the same purpose as
-     * {@link Mutator#preUpdate(Object, Object, Entity.Update, InventoryBackend.Transaction)} but is not supplied the id
-     * object that can be determined from the updated entity.
+     * {@link Mutator#preUpdate(Object, Object, Entity.Update, Transaction <BE>)} but is not supplied
+     * the id object that can be determined from the updated entity.
      *
      * <p>By default, this does nothing.
      *
@@ -134,7 +134,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
      * @param update        the update object
      * @param transaction   the transaction in which the update is executing
      */
-    protected void preUpdate(BE updatedEntity, U update, InventoryBackend.Transaction transaction) {
+    protected void preUpdate(BE updatedEntity, U update, Transaction<BE> transaction) {
 
     }
 
@@ -146,7 +146,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
      * @param updatedEntity the entity to which the update has been applied
      * @param transaction   the transaction in which the update is executing
      */
-    protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+    protected void postUpdate(BE updatedEntity, Transaction<BE> transaction) {
 
     }
 

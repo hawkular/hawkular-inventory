@@ -39,7 +39,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -74,9 +74,9 @@ public final class BaseMetadataPacks {
         }
 
         @Override
-        protected EntityAndPendingNotifications<MetadataPack>
+        protected EntityAndPendingNotifications<BE, MetadataPack>
         wireUpNewEntity(BE entity, MetadataPack.Blueprint blueprint, CanonicalPath parentPath, BE parent,
-                        InventoryBackend.Transaction transaction) {
+                        Transaction<BE> transaction) {
             Set<Notification<?, ?>> newRels = new HashSet<>();
 
             blueprint.getMembers().forEach((p) -> {
@@ -94,7 +94,7 @@ public final class BaseMetadataPacks {
 
             MetadataPack entityObject = context.backend.convert(entity, MetadataPack.class);
 
-            return new EntityAndPendingNotifications<>(entityObject, newRels);
+            return new EntityAndPendingNotifications<>(entity, entityObject, newRels);
         }
 
         @Override public MetadataPacks.Multiple getAll(Filter[][] filters) {
@@ -115,7 +115,7 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

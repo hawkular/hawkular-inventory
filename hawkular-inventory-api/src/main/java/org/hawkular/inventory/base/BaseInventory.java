@@ -60,22 +60,34 @@ public abstract class BaseInventory<E> implements Inventory {
     private Configuration configuration;
     private TraversalContext<E, Tenant> tenantContext;
     private TraversalContext<E, Relationship> relationshipContext;
+    private final TransactionConstructor<E> transactionConstructor;
 
     /**
      * This is a sort of copy constructor.
-     *
-     * @param backend           the backend
+     *  @param backend           the backend
      * @param observableContext the observable context
+     * @param transactionConstructor the transaction constructor to use
      */
     BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext,
-                  Configuration configuration) {
+                  Configuration configuration, TransactionConstructor<E> transactionConstructor) {
         this.backend = backend;
         this.observableContext = observableContext;
         this.configuration = configuration;
+        this.transactionConstructor = transactionConstructor;
     }
 
     protected BaseInventory() {
         observableContext = new ObservableContext();
+        transactionConstructor = null;
+    }
+
+    /**
+     * Mainly here for testing purposes
+     * @param txCtor transaction constructor to use - useful to supply some test-enabled impl
+     */
+    protected BaseInventory(TransactionConstructor<E> txCtor) {
+        observableContext = new ObservableContext();
+        transactionConstructor = txCtor;
     }
 
     @Override
@@ -84,10 +96,10 @@ public abstract class BaseInventory<E> implements Inventory {
 
         tenantContext = new TraversalContext<>(this, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
-                observableContext);
+                observableContext, transactionConstructor);
 
         relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
-                Relationship.class, configuration, observableContext);
+                Relationship.class, configuration, observableContext, transactionConstructor);
         this.configuration = configuration;
     }
 
@@ -96,9 +108,11 @@ public abstract class BaseInventory<E> implements Inventory {
         return new BaseTransactionFrame<>(backend, observableContext, tenantContext);
     }
 
-    Initialized<E> keepTransaction(InventoryBackend.Transaction transaction) {
-        return new Initialized<>(new TransactionFixedBackend<>(backend, transaction), observableContext, configuration);
+    Initialized<E> keepTransaction() {
+        return new Initialized<>(new TransactionIgnoringBackend<>(backend), observableContext, configuration,
+                TransactionConstructor.ignoreBackend());
     }
+
     /**
      * This method is called during {@link #initialize(Configuration)} and provides the instance of the backend
      * initialized from the configuration.
@@ -170,8 +184,8 @@ public abstract class BaseInventory<E> implements Inventory {
 
     static class Initialized<E> extends BaseInventory<E> {
         Initialized(InventoryBackend<E> backend, ObservableContext observableContext,
-                           Configuration configuration) {
-            super(backend, observableContext, configuration);
+                    Configuration configuration, TransactionConstructor<E> transactionConstructor) {
+            super(backend, observableContext, configuration, transactionConstructor);
             initialize(configuration);
         }
 

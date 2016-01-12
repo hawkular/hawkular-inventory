@@ -39,8 +39,8 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
+import org.hawkular.inventory.base.spi.Transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -105,14 +105,11 @@ public final class BaseData {
         }
 
         @Override
-        protected EntityAndPendingNotifications<DataEntity> wireUpNewEntity(BE entity,
-                                                                            DataEntity.Blueprint<R> blueprint,
-                                                                            CanonicalPath parentPath, BE parent,
-                                                                            InventoryBackend.Transaction transaction) {
-            DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue());
-
+        protected EntityAndPendingNotifications<BE, DataEntity> wireUpNewEntity(BE entity,
+                                                                                DataEntity.Blueprint<R> blueprint,
+                                                                                CanonicalPath parentPath, BE parent,
+                                                                                Transaction<BE> transaction) {
             Validator.validate(context, blueprint.getValue(), entity);
-
             BE value = context.backend.persist(blueprint.getValue());
 
             //don't report this relationship, it is implicit
@@ -120,41 +117,44 @@ public final class BaseData {
             //this
             context.backend.relate(entity, value, hasData.name(), null);
 
-            return new EntityAndPendingNotifications<>(data, Collections.emptyList());
+            DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue(), null,
+                    blueprint.getProperties());
+
+            return new EntityAndPendingNotifications<>(entity, data, Collections.emptyList());
         }
 
         @Override
         public Data.Single create(DataEntity.Blueprint<R> data) {
-            return new Single<>(context.toCreatedEntity(doCreate(data)), checks);
+            return new Single<>(context.replacePath(doCreate(data)), checks);
         }
 
         @Override
-        protected void preCreate(DataEntity.Blueprint<R> blueprint, InventoryBackend.Transaction transaction) {
+        protected void preCreate(DataEntity.Blueprint<R> blueprint, Transaction<BE> transaction) {
             preCreate(checks, blueprint, transaction);
         }
 
         @Override
-        protected void postCreate(BE entityObject, DataEntity entity, InventoryBackend.Transaction transaction) {
+        protected void postCreate(BE entityObject, DataEntity entity, Transaction<BE> transaction) {
             postCreate(checks, entityObject, transaction);
         }
 
         @Override
-        protected void preDelete(R role, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        protected void preDelete(R role, BE entityRepresentation, Transaction<BE> transaction) {
             preDelete(context, checks, entityRepresentation, transaction);
         }
 
-        @Override protected void postDelete(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        @Override protected void postDelete(BE entityRepresentation, Transaction<BE> transaction) {
             postDelete(checks, entityRepresentation, transaction);
         }
 
         @Override
         protected void preUpdate(R role, BE entityRepresentation, DataEntity.Update update,
-                                 InventoryBackend.Transaction transaction) {
+                                 Transaction<BE> transaction) {
             preUpdate(context, checks, entityRepresentation, update, transaction);
         }
 
         @Override
-        protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
             postUpdate(checks, entityRepresentation, transaction);
         }
 
@@ -170,30 +170,30 @@ public final class BaseData {
 
         private static <BE, R extends DataEntity.Role>
         void preCreate(DataModificationChecks<BE> checks, DataEntity.Blueprint<R> blueprint,
-                       InventoryBackend.Transaction transaction) {
+                       Transaction<BE> transaction) {
             checks.preCreate(blueprint, transaction);
         }
 
         private static <BE> void postCreate(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postCreate(entity, transaction);
         }
 
         private static <BE> void preUpdate(TraversalContext<BE, DataEntity> context,
                                            DataModificationChecks<BE> checks, BE entityRepresentation,
-                                           DataEntity.Update update, InventoryBackend.Transaction transaction) {
+                                           DataEntity.Update update, Transaction<BE> transaction) {
             checks.preUpdate(entityRepresentation, update, transaction);
             Validator.validate(context, update.getValue(), entityRepresentation);
         }
 
         private static <BE> void postUpdate(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postCreate(entity, transaction);
         }
 
         private static <BE> void preDelete(TraversalContext<BE, DataEntity> context,
                                            DataModificationChecks<BE> checks, BE entityRepresentation,
-                                           InventoryBackend.Transaction transaction) {
+                                           Transaction<BE> transaction) {
             checks.preDelete(entityRepresentation, transaction);
 
             Set<BE> rels = context.backend.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
@@ -213,7 +213,7 @@ public final class BaseData {
         }
 
         private static <BE> void postDelete(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postDelete(entity, transaction);
         }
     }
@@ -248,22 +248,22 @@ public final class BaseData {
         }
 
         @Override
-        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+        protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
             ReadWrite.preDelete(context, checks, deletedEntity, transaction);
         }
 
         @Override
-        protected void postDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+        protected void postDelete(BE deletedEntity, Transaction<BE> transaction) {
             ReadWrite.postDelete(checks, deletedEntity, transaction);
         }
 
         @Override
-        protected void preUpdate(BE updatedEntity, DataEntity.Update update, InventoryBackend.Transaction t) {
+        protected void preUpdate(BE updatedEntity, DataEntity.Update update, Transaction<BE> t) {
             ReadWrite.preUpdate(context, checks, updatedEntity, update, t);
         }
 
         @Override
-        protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+        protected void postUpdate(BE updatedEntity, Transaction<BE> transaction) {
             ReadWrite.postUpdate(checks, updatedEntity, transaction);
         }
     }
@@ -405,27 +405,27 @@ public final class BaseData {
             };
         }
 
-        default void preCreate(DataEntity.Blueprint blueprint, InventoryBackend.Transaction transaction) {
+        default void preCreate(DataEntity.Blueprint blueprint, Transaction<BE> transaction) {
 
         }
 
-        default void postCreate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postCreate(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void preUpdate(BE dataEntity, DataEntity.Update update, InventoryBackend.Transaction transaction) {
+        default void preUpdate(BE dataEntity, DataEntity.Update update, Transaction<BE> transaction) {
 
         }
 
-        default void postUpdate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postUpdate(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void preDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void preDelete(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void postDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postDelete(BE dataEntity, Transaction<BE> transaction) {
 
         }
     }

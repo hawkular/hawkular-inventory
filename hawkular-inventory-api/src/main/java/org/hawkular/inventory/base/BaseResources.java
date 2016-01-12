@@ -44,8 +44,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -70,10 +70,10 @@ public final class BaseResources {
         }
 
         @Override
-        protected EntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
-                                                                          Resource.Blueprint blueprint,
-                                                                          CanonicalPath parentPath, BE parent,
-                                                                          InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, Resource> wireUpNewEntity(BE entity,
+                                                                              Resource.Blueprint blueprint,
+                                                                              CanonicalPath parentPath, BE parent,
+                                                                              Transaction<BE> transaction) {
 
             BE resourceTypeObject;
             CanonicalPath resourceTypePath = null;
@@ -118,7 +118,7 @@ public final class BaseResources {
                 notifications.add(new Notification<>(parentRel, parentRel, created()));
             }
 
-            return new EntityAndPendingNotifications<>(ret, notifications);
+            return new EntityAndPendingNotifications<>(entity, ret, notifications);
         }
 
         @Override
@@ -137,7 +137,7 @@ public final class BaseResources {
                 throw new IllegalArgumentException("ResourceType path is null");
             }
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 
@@ -187,7 +187,7 @@ public final class BaseResources {
 
             BE targetEntity = Util.find(context, id);
 
-            EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);
 
             context.notifyAll(rel);
@@ -199,7 +199,7 @@ public final class BaseResources {
             Query sourceQuery = context.select().get();
             BE targetEntity = Util.find(context, id);
 
-            EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(context, sourceQuery,
                     Resource.class, isParentOf.name(), targetEntity);
 
             context.notifyAll(rel);

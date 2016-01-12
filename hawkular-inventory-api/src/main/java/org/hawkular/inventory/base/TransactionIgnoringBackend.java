@@ -18,30 +18,26 @@ package org.hawkular.inventory.base;
 
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
+ * An inventory backend where all operations on transactions are no-ops. All other methods are delegated to an
+ * underlying backend.
+ *
  * @author Lukas Krejci
- * @since 0.10.0
+ * @since 0.13.0
  */
-final class TransactionFixedBackend<E> extends DelegatingInventoryBackend<E> {
-
-    private final Transaction transaction;
-
-    public TransactionFixedBackend(InventoryBackend<E> backend, Transaction transaction) {
+public class TransactionIgnoringBackend<E> extends DelegatingInventoryBackend<E> {
+    public TransactionIgnoringBackend(InventoryBackend<E> backend) {
         super(backend);
-        this.transaction = transaction;
     }
 
-    @Override
-    public Transaction startTransaction(boolean mutating) {
-        return transaction;
+    @Override public void commit(Transaction<E> transaction) throws CommitFailureException {
     }
 
-    @Override
-    public void commit(Transaction transaction) throws CommitFailureException {
+    @Override public void rollback(Transaction<E> transaction) {
     }
 
-    @Override
-    public void rollback(Transaction transaction) {
+    @Override public void startTransaction(Transaction<E> transaction) {
     }
 }

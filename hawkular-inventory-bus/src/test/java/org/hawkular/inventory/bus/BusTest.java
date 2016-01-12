@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -119,7 +119,7 @@ public class BusTest {
         DataEntityEvent dataEntityEvent = new DataEntityEvent(Action.Enumerated.DELETED,
                 tenant2,
                 new DataEntity(resourceType.getPath(), ResourceTypes.DataRole.configurationSchema,
-                        StructuredData.get().undefined()));
+                        StructuredData.get().undefined(), "hash"));
 
         String tenantJSON = tenantEvent.toJSON();
         String envJSON = environmentEvent.toJSON();

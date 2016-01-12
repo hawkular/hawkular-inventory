@@ -85,6 +85,7 @@ import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
+import org.hawkular.inventory.base.spi.Transaction;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -109,8 +110,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Transaction startTransaction(boolean mutating) {
-        return context.startTransaction(mutating);
+    public void startTransaction(Transaction<Element> transaction) {
+        context.startTransaction(transaction);
     }
 
     @Override
@@ -524,9 +525,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     break;
                 case dataEntity:
                     CanonicalPath cp = extractCanonicalPath(v);
-
+                    String identityHash = extractIdentityHash(v);
                     e = new DataEntity(cp.up(), DataEntity.Role.valueOf(cp.getSegment().getElementId()),
-                            loadStructuredData(v, hasData));
+                            loadStructuredData(v, hasData), identityHash);
                     break;
                 case operationType:
                     e = new OperationType(extractCanonicalPath(v));
@@ -992,9 +993,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void commit(Transaction t) throws CommitFailureException {
+    public void commit(Transaction<Element> t) throws CommitFailureException {
         try {
-            t.getPreCommitActions().forEach(a -> a.accept(t));
+            t.getPreCommit().getActions().forEach(a -> a.accept(t));
             context.commit(t);
             Log.LOG.trace("Transaction committed: " + t);
         } catch (Exception e) {
@@ -1003,7 +1004,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void rollback(Transaction t) {
+    public void rollback(Transaction<Element> t) {
         context.rollback(t);
     }
 

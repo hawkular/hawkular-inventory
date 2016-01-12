@@ -38,7 +38,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -63,11 +63,12 @@ public final class BaseTenants {
         }
 
         @Override
-        protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
-                                                                        CanonicalPath parentPath, BE parent,
-                                                                        InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+                                                                            CanonicalPath parentPath, BE parent,
+                                                                            Transaction<BE> transaction) {
 
-            return new EntityAndPendingNotifications<>(new Tenant(blueprint.getName(), CanonicalPath.of()
+            return new EntityAndPendingNotifications<>(entity,
+                    new Tenant(blueprint.getName(), CanonicalPath.of()
                     .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));
         }
 
@@ -83,7 +84,7 @@ public final class BaseTenants {
 
         @Override
         public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

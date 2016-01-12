@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.impl.tinkerpop;
 
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
@@ -48,15 +48,15 @@ final class InventoryContext<G extends TransactionalGraph> {
         return graph;
     }
 
-    public InventoryBackend.Transaction startTransaction(boolean mutating) {
-        return graphProvider.startTransaction(graph, mutating);
+    public void startTransaction(Transaction<Element> tx) {
+        graphProvider.startTransaction(graph, tx);
     }
 
-    public void commit(InventoryBackend.Transaction t) {
+    public void commit(Transaction<Element> t) {
         graphProvider.commit(graph, t);
     }
 
-    public void rollback(InventoryBackend.Transaction t) {
+    public void rollback(Transaction<Element> t) {
         graphProvider.rollback(graph, t);
     }
 

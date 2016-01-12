@@ -17,13 +17,9 @@
 package org.hawkular.inventory.base.spi;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.Relationships;
@@ -35,7 +31,6 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.PotentiallyCommittingPayload;
 import org.hawkular.inventory.base.Query;
 
 /**
@@ -50,12 +45,12 @@ import org.hawkular.inventory.base.Query;
 public interface InventoryBackend<E> extends AutoCloseable {
 
     /**
-     * Starts a transaction in the backend.
+     * Starts a transaction in the backend. The transaction is not subclassable by the backends but they can attach
+     * arbitrary data using the {@link Transaction#getAttachments()} method.
      *
-     * @param mutating whether there will be calls mutating the data or not
-     * @return the newly started transaction
+     * @param transaction the transaction to start and initialize
      */
-    Transaction startTransaction(boolean mutating);
+    void startTransaction(Transaction<E> transaction);
 
     /**
      * Tries to find an element at given canonical path.
@@ -318,13 +313,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param transaction the transaction to commit
      */
-    void commit(Transaction transaction) throws CommitFailureException;
+    void commit(Transaction<E> transaction) throws CommitFailureException;
 
     /**
      * Rolls back the transaction.
      * @param transaction the transaction to roll back
      */
-    void rollback(Transaction transaction);
+    void rollback(Transaction<E> transaction);
 
     /**
      * The query results might sometimes return elements that are not representable in the inventory API because they
@@ -343,37 +338,4 @@ public interface InventoryBackend<E> extends AutoCloseable {
                                                                   Relationships.Direction direction, Class<T> clazz,
                                                                   String... relationshipNames);
 
-    /**
-     * Represents a transaction being performed. Implementations of the {@link InventoryBackend} interface are
-     * encouraged to inherit from this class and add additional information to it. The base inventory implementation
-     * only needs and provides the information stored in this class though.
-     */
-    class Transaction {
-        private final boolean mutating;
-        private List<Consumer<Transaction>> preCommitActions;
-
-        public Transaction(boolean mutating) {
-            this.mutating = mutating;
-        }
-
-        public boolean isMutating() {
-            return mutating;
-        }
-
-        public void addPreCommitAction(Consumer<Transaction> action) {
-            if (preCommitActions == null) {
-                preCommitActions = new ArrayList<>();
-            }
-
-            preCommitActions.add(action);
-        }
-
-        public List<Consumer<Transaction>> getPreCommitActions() {
-            return preCommitActions == null ? Collections.emptyList() : preCommitActions;
-        }
-
-        public <R> R execute(PotentiallyCommittingPayload<R> payload) throws CommitFailureException {
-            return payload.run(this);
-        }
-    }
 }

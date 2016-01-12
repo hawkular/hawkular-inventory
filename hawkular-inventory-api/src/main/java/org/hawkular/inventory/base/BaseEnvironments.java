@@ -36,8 +36,8 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -123,10 +123,10 @@ public final class BaseEnvironments {
         }
 
         @Override
-        protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
-                                                                             CanonicalPath parentPath, BE parent,
-                                                                             InventoryBackend.Transaction transaction) {
-            return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
+        protected EntityAndPendingNotifications<BE, Environment>
+        wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> transaction) {
+            return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
                     parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
                     blueprint.getProperties()));
         }
@@ -149,7 +149,7 @@ public final class BaseEnvironments {
 
         @Override
         public Environments.Single create(Environment.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

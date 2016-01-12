@@ -26,7 +26,6 @@ import static org.hawkular.inventory.api.filters.With.type;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResourceTypes;
@@ -36,6 +35,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -43,7 +43,7 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -69,9 +69,9 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        protected EntityAndPendingNotifications<ResourceType>
+        protected EntityAndPendingNotifications<BE, ResourceType>
         wireUpNewEntity(BE entity, ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
-                        InventoryBackend.Transaction transaction) {
+                        Transaction<BE> transaction) {
 
             context.backend.update(entity, ResourceType.Update.builder().build());
 
@@ -80,9 +80,9 @@ public final class BaseResourceTypes {
                     blueprint.getProperties());
 
             context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(resourceType, context.inventory.keepTransaction(transaction)));
+                    IdentityHash.of(resourceType, context.inventory.keepTransaction()));
 
-            return new EntityAndPendingNotifications<>(resourceType);
+            return new EntityAndPendingNotifications<>(entity, resourceType);
         }
 
         @Override
@@ -97,11 +97,11 @@ public final class BaseResourceTypes {
 
         @Override
         public ResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new BaseResourceTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new BaseResourceTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
 
         @Override
-        protected void preDelete(String s, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        protected void preDelete(String s, BE entityRepresentation, Transaction<BE> transaction) {
             if (isResourceTypeInMetadataPack(context, entityRepresentation)) {
                 throw new IllegalArgumentException("Cannot delete a resource type that is part of a metadata pack. " +
                         "This would invalidate the meta data pack's identity.");
@@ -110,7 +110,7 @@ public final class BaseResourceTypes {
 
         @Override
         protected void preUpdate(String s, BE entityRepresentation, ResourceType.Update update,
-                                 InventoryBackend.Transaction transaction) {
+                                 Transaction<BE> transaction) {
         }
 
         private static <BE> boolean isResourceTypeInMetadataPack(TraversalContext<BE, ?> context, BE resourceType) {
@@ -177,7 +177,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+        protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
             if (ReadWrite.isResourceTypeInMetadataPack(context, deletedEntity)) {
                 throw new IllegalArgumentException("Cannot delete a resource type that is part of a metadata pack. " +
                         "This would invalidate the meta data pack's identity.");
@@ -186,7 +186,7 @@ public final class BaseResourceTypes {
 
         @Override
         protected void preUpdate(BE updatedEntity, ResourceType.Update update,
-                                 InventoryBackend.Transaction transaction) {
+                                 Transaction<BE> transaction) {
         }
 
         @Override
@@ -243,7 +243,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public void preCreate(DataEntity.Blueprint blueprint, InventoryBackend.Transaction transaction) {
+        public void preCreate(DataEntity.Blueprint blueprint, Transaction<BE> transaction) {
             BE pack = context.backend.querySingle(context.select().path().with(Related
                     .asTargetBy(incorporates), With.type(MetadataPack.class)).get());
 
@@ -258,15 +258,15 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public void postCreate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        public void postCreate(BE dataEntity, Transaction<BE> transaction) {
             BE rte = context.backend.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains)).get());
             ResourceType rt = context.backend.convert(rte, ResourceType.class);
             context.backend
-                    .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
+                    .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction()));
         }
 
         @Override
-        public void preUpdate(BE dataEntity, DataEntity.Update update, InventoryBackend.Transaction transaction) {
+        public void preUpdate(BE dataEntity, DataEntity.Update update, Transaction<BE> transaction) {
             if (update.getValue() == null) {
                 return;
             }
@@ -287,17 +287,17 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public void postUpdate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        public void postUpdate(BE dataEntity, Transaction<BE> transaction) {
             BE rt = context.backend.traverseToSingle(dataEntity, Query.path().with(
                     asTargetBy(contains) //up to resource type
             ).get());
 
             context.backend.updateIdentityHash(rt, IdentityHash.of(context.backend.convert(rt, ResourceType.class),
-                    context.inventory.keepTransaction(transaction)));
+                    context.inventory.keepTransaction()));
         }
 
         @Override
-        public void preDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        public void preDelete(BE dataEntity, Transaction<BE> transaction) {
             CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
             BE rt = null;
             try {
@@ -316,13 +316,13 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public void postDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        public void postDelete(BE dataEntity, Transaction<BE> transaction) {
             CanonicalPath cp = context.backend.extractCanonicalPath(dataEntity);
             try {
                 BE rte = context.backend.find(cp.up());
                 ResourceType rt = context.backend.convert(rte, ResourceType.class);
                 context.backend
-                        .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
+                        .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction()));
             } catch (ElementNotFoundException e) {
                 throw new IllegalStateException("Could not find the owning resource type of the operation type " + cp);
             }

@@ -50,6 +50,7 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -63,25 +64,17 @@ final class Util {
 
     }
 
-    public static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
-                                      R firstCommitSuccessReturnValue,
-                                      PotentiallyCommittingPayload<R> payload, int maxRetries) {
-
-        return commitOrRetry(transaction, backend, (t) -> firstCommitSuccessReturnValue, payload, maxRetries, false);
-    }
-
-    public static <R> R runInTransaction(TraversalContext<?, ?> context, boolean readOnly,
-                                         PotentiallyCommittingPayload<R> payload) {
-        InventoryBackend.Transaction transaction = context.backend.startTransaction(!readOnly);
+    public static <R, BE> R runInTransaction(TraversalContext<BE, ?> context, boolean readOnly,
+                                         PotentiallyCommittingPayload<R, BE> payload) {
+        Transaction<BE> transaction = context.startTransaction(!readOnly);
         Log.LOGGER.trace("Starting transaction: " + transaction);
         int maxFailures = context.getTransactionRetriesCount();
-        return commitOrRetry(transaction, context.backend, payload, payload, maxFailures, true);
+        return commitOrRetry(transaction, context.backend, payload, payload, maxFailures);
     }
 
-    private static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
-                                       PotentiallyCommittingPayload<R> firstPayload,
-                                       PotentiallyCommittingPayload<R> succeedingPayload, int maxFailures,
-                                       boolean commitOnlyReadonly) {
+    public static <R, BE> R commitOrRetry(Transaction<BE> transaction, InventoryBackend<BE> backend,
+                                           PotentiallyCommittingPayload<R, BE> firstPayload,
+                                           PotentiallyCommittingPayload<R, BE> succeedingPayload, int maxFailures) {
         int failures = 0;
         Exception lastException;
 
@@ -95,11 +88,14 @@ final class Util {
                     if (failures == 0) {
                         ret = transaction.execute(firstPayload);
                     } else {
-                        transaction = backend.startTransaction(transaction.isMutating());
+                        transaction.getPreCommit().reset();
+                        transaction = new BaseTransaction<>(transaction.isMutating(), transaction.getPreCommit());
+                        backend.startTransaction(transaction);
+
                         ret = transaction.execute(succeedingPayload);
                     }
 
-                    if (!(commitOnlyReadonly && transaction.isMutating())) {
+                    if (!transaction.isMutating()) {
                         backend.commit(transaction);
                     }
 
@@ -151,7 +147,7 @@ final class Util {
         return result;
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship>
+    public static <BE> EntityAndPendingNotifications<BE, Relationship>
     createAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
                       String relationship, BE target) {
 
@@ -170,11 +166,12 @@ final class Util {
 
             Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
 
-            return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
+            return new EntityAndPendingNotifications<>(relationshipObject, ret,
+                    new Notification<>(ret, ret, created()));
         });
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship>
+    public static <BE> EntityAndPendingNotifications<BE, Relationship>
     createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target) {
         if (context.backend.hasRelationship(source, target, relationship)) {
             throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(context.backend
@@ -187,10 +184,10 @@ final class Util {
 
         Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
 
-        return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
+        return new EntityAndPendingNotifications<>(relationshipObject, ret, new Notification<>(ret, ret, created()));
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship>
+    public static <BE> EntityAndPendingNotifications<BE, Relationship>
     deleteAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
                       String relationship, BE target) {
 
@@ -216,7 +213,8 @@ final class Util {
 
             backend.commit(t);
 
-            return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, deleted()));
+            return new EntityAndPendingNotifications<>(relationshipObject, ret,
+                    new Notification<>(ret, ret, deleted()));
         });
     }
 
@@ -295,7 +293,7 @@ final class Util {
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
             TraversalContext<BE, E> context, Query entityQuery, U update,
             TransactionParticipant<BE, U> preUpdateCheck,
-            BiConsumer<BE, InventoryBackend.Transaction> postUpdateCheck) {
+            BiConsumer<BE, Transaction<BE>> postUpdateCheck) {
 
         BE updated = runInTransaction(context, false, (t) -> {
             BE entity = context.backend.querySingle(entityQuery);
@@ -328,8 +326,8 @@ final class Util {
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, ?>>
     void delete(TraversalContext<BE, E> context, Query entityQuery,
-                BiConsumer<BE, InventoryBackend.Transaction> cleanupFunction,
-                BiConsumer<BE, InventoryBackend.Transaction> postDelete) {
+                BiConsumer<BE, Transaction<BE>> cleanupFunction,
+                BiConsumer<BE, Transaction<BE>> postDelete) {
 
         runInTransaction(context, false, (transaction) -> {
             BE entity = context.backend.querySingle(entityQuery);
@@ -480,6 +478,6 @@ final class Util {
     }
 
     public interface TransactionParticipant<BE, E> {
-        void execute(BE entityRepresentation, E entity, InventoryBackend.Transaction transaction);
+        void execute(BE entityRepresentation, E entity, Transaction<BE> transaction);
     }
 }
