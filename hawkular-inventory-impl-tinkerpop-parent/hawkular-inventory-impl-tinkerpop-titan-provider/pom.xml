@@ -149,29 +149,13 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
+
+      <!-- This module is essentially an implementation detail. No need to have it API checked. -->
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
         <configuration>
-          <analysisConfiguration><![CDATA[
-            {
-              "revapi": {
-                "filter": {
-                  "archives": {
-                    "include": ["org\\.revapi.*"]
-                  },
-                  "elements": {
-                    "include": ["org\\.revapi.*"]
-                  }
-                },
-                "java": {
-                  "missing-classes": {
-                    "behavior": "report"
-                  }
-                }
-              }
-            }
-          ]]></analysisConfiguration>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
