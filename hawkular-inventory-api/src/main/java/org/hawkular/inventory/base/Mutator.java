@@ -124,10 +124,10 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
             transaction.getPreCommit().addNotifications(pending);
 
+            context.backend.commit(transaction);
+
             List<EntityAndPendingNotifications<BE, ?>> finalNotifications = transaction.getPreCommit()
                     .getFinalNotifications();
-
-            context.backend.commit(transaction);
 
             finalNotifications.forEach(context::notifyAll);
 

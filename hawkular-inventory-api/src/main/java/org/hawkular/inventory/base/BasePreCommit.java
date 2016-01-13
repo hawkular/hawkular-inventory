@@ -141,7 +141,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         List<ProcessingTree<BE>> identityHashRoots = new ArrayList<>();
 
         processingTree.dfsTraversal(t -> {
-            if (t.needsResolution()) {
+            if (t.needsResolution() && t.element != null) {
                 identityHashRoots.add(t);
                 return false;
             } else {
@@ -173,8 +173,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                     .collect(toList());
 
             //set the notifications to emit
-            correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement>(changesTree.representation,
-                    changesTree.element, ns));
+            correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
+                    changesTree.representation, e, ns));
 
             //now also actually update the element in inventory with the new hash
             backend.updateIdentityHash(changesTree.representation, treeHash.getHash());
@@ -335,7 +335,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                 }
 
                 if (found == null) {
-                    found = new ProcessingTree<BE>(null, null, seg, null);
+                    found = new ProcessingTree<>(null, null, seg, null);
                     children.add(found);
                 }
 

@@ -79,9 +79,6 @@ public final class BaseResourceTypes {
                     parentPath.extend(ResourceType.class, context.backend.extractId(entity)).get(), null,
                     blueprint.getProperties());
 
-            context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(resourceType, context.inventory.keepTransaction()));
-
             return new EntityAndPendingNotifications<>(entity, resourceType);
         }
 

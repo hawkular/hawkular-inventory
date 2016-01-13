@@ -105,6 +105,10 @@ public interface InventoryStructure<Root extends Blueprint> {
                             @Override public Stream<BB> visitFeed(Void parameter) {
                                 return fromRead(Feed.class, Feeds.Single.class, (es) -> es.metrics());
                             }
+
+                            @Override public Stream<BB> visitResource(Void parameter) {
+                                return fromRead(Resource.class, Resources.Single.class, (rs) -> rs.metrics());
+                            }
                         }, null);
                     }
 

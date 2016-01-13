@@ -459,76 +459,83 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.example.tenant").get();
         CanonicalPath environmentPath = tenantPath.extend(Environment.class, "test").get();
 
-        Tenant t = new Tenant(tenantPath);
-        Environment e = new Environment(environmentPath);
-        MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get(), null);
-        ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
-        ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
-        Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(), null,
-                playRoomType);
-        Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(), null,
-                playRoomType);
-        Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
-                null, sizeType);
-        Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
-                null, sizeType);
-
-        //when an association is deleted, it should not be possible to access the target entity through the same
-        //traversal again
-        inventory.inspect(playroom2).allMetrics().disassociate(playroom2Size.getPath());
-        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(playroom2Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(
-                RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
-
-        inventory.inspect(playroom2Size).delete();
-
-        assertDoesNotExist(inventory, playroom2Size);
-        assertExists(inventory, t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
-
-        //disassociation using a relative path should work, too
-        inventory.inspect(playroom1).allMetrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId())
-                .get());
-        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(playroom1Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(
-                RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
-
-        inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
-        assertDoesNotExist(inventory, kachnaType);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
-
         try {
+            Tenant t = new Tenant(tenantPath);
+            Environment e = new Environment(environmentPath);
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get(), null);
+            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
+            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
+            Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(), null,
+                    playRoomType);
+            Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(), null,
+                    playRoomType);
+            Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
+                    null, sizeType);
+            Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
+                    null, sizeType);
+
+            //when an association is deleted, it should not be possible to access the target entity through the same
+            //traversal again
+            inventory.inspect(playroom2).allMetrics().disassociate(playroom2Size.getPath());
+            Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(playroom2Size.getPath()).exists());
+            Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(
+                    RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
+
+            inventory.inspect(playroom2Size).delete();
+
+            assertDoesNotExist(inventory, playroom2Size);
+            assertExists(inventory, t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
+
+            //disassociation using a relative path should work, too
+            inventory.inspect(playroom1).allMetrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId())
+                    .get());
+            Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(playroom1Size.getPath()).exists());
+            Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(
+                    RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
+
+            inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
+            assertDoesNotExist(inventory, kachnaType);
+            assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
+
+            try {
+                inventory.inspect(t).metricTypes().delete(sizeType.getId());
+                Assert.fail("Deleting a metric type which references some metrics should not be possible.");
+            } catch (IllegalArgumentException ignored) {
+                //good
+            }
+
+            inventory.inspect(e).metrics().delete(playroom1Size.getId());
+            assertDoesNotExist(inventory, playroom1Size);
+            assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2);
+
             inventory.inspect(t).metricTypes().delete(sizeType.getId());
-            Assert.fail("Deleting a metric type which references some metrics should not be possible.");
-        } catch (IllegalArgumentException ignored) {
-            //good
+            assertDoesNotExist(inventory, sizeType);
+            assertExists(inventory, t, e, playRoomType, playroom1, playroom2);
+
+            try {
+                inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
+                Assert.fail("Deleting a resource type which references some resources should not be possible.");
+            } catch (IllegalArgumentException ignored) {
+                //good
+            }
+
+            inventory.inspect(e).resources().delete(playroom1.getId());
+            assertDoesNotExist(inventory, playroom1);
+            assertExists(inventory, t, e, playRoomType, playroom2);
+
+            inventory.tenants().delete(t.getId());
+            assertDoesNotExist(inventory, t);
+            assertDoesNotExist(inventory, e);
+            assertDoesNotExist(inventory, playRoomType);
+            assertDoesNotExist(inventory, playroom2);
+        } finally {
+            Tenants.Single tenant = inventory.inspect(tenantPath, Tenants.Single.class);
+            if (tenant.exists()) {
+                tenant.delete();
+            }
+
+            inventory.tenants().delete("com.acme.tenant");
         }
-
-        inventory.inspect(e).metrics().delete(playroom1Size.getId());
-        assertDoesNotExist(inventory, playroom1Size);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2);
-
-        inventory.inspect(t).metricTypes().delete(sizeType.getId());
-        assertDoesNotExist(inventory, sizeType);
-        assertExists(inventory, t, e, playRoomType, playroom1, playroom2);
-
-        try {
-            inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
-            Assert.fail("Deleting a resource type which references some resources should not be possible.");
-        } catch (IllegalArgumentException ignored) {
-            //good
-        }
-
-        inventory.inspect(e).resources().delete(playroom1.getId());
-        assertDoesNotExist(inventory, playroom1);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom2);
-
-        inventory.tenants().delete(t.getId());
-        assertDoesNotExist(inventory, t);
-        assertDoesNotExist(inventory, e);
-        assertDoesNotExist(inventory, playRoomType);
-        assertDoesNotExist(inventory, playroom2);
-
-        inventory.tenants().delete("com.acme.tenant");
     }
 
     private static void assertDoesNotExist(BaseInventory<?> inventory, Entity e) {
@@ -540,8 +547,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void assertExists(BaseInventory<?> inventory, Entity<?, ?> e) {
-        Assert.assertTrue(inventory.inspect(e, ResolvableToSingle.class).exists());
+        Assert.assertTrue("Entity should exist: " + e, inventory.inspect(e, ResolvableToSingle.class).exists());
     }
 
     private static void assertExists(BaseInventory<?> inventory, Entity... es) {
