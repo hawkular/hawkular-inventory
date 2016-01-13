@@ -86,6 +86,13 @@
           "code": "java.class.removed",
           "old": "class org.hawkular.inventory.json.mixins.TenantlessRelativePathMixin",
           "justification": "Moved to subpackage model."
+        },
+        {
+          "regex": true,
+          "code": ".*[cC]hanged",
+          "old": ".*org\\.hawkular\\.inventory\\.api\\.model\\.\\w*Path.*",
+          "new": ".*org\\.hawkular\\.inventory\\.paths\\.\\w*Path.*",
+          "justification": "Path classes moved to a new shared location."
         }
       ]
     }
