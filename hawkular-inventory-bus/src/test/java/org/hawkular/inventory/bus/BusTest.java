@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -40,7 +42,9 @@ import javax.naming.spi.InitialContextFactory;
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.consumer.ConsumerConnectionContext;
 import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
@@ -54,16 +58,22 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.PageContext;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.bus.api.DataEntityEvent;
 import org.hawkular.inventory.bus.api.EnvironmentEvent;
 import org.hawkular.inventory.bus.api.FeedEvent;
 import org.hawkular.inventory.bus.api.InventoryEvent;
 import org.hawkular.inventory.bus.api.InventoryEventMessageListener;
+import org.hawkular.inventory.bus.api.InventoryQueryRequestMessage;
+import org.hawkular.inventory.bus.api.InventoryQueryResponseMessage;
 import org.hawkular.inventory.bus.api.MetricEvent;
 import org.hawkular.inventory.bus.api.MetricTypeEvent;
 import org.hawkular.inventory.bus.api.RelationshipEvent;
 import org.hawkular.inventory.bus.api.ResourceEvent;
 import org.hawkular.inventory.bus.api.ResourceTypeEvent;
+import org.hawkular.inventory.bus.api.ResultSet;
 import org.hawkular.inventory.bus.api.TenantEvent;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -377,6 +387,34 @@ public class BusTest {
 //            namingContext.close();
 //            inventory.close();
 //        }
+    }
+
+    @Test
+    public void testQueryRequestSerialization() throws IOException {
+        Query allTenants = Query.filter().with(With.type(Tenant.class)).get();
+        InventoryQueryRequestMessage<Tenant> requestMessage = new InventoryQueryRequestMessage<>(allTenants,
+                Tenant.class, Pager.single());
+
+        String json = requestMessage.toJSON();
+        InventoryQueryRequestMessage messageFromJson = InventoryQueryRequestMessage.fromJSON(json,
+                InventoryQueryRequestMessage.class);
+
+        assertThat(requestMessage.getQuery(), is(equalTo(messageFromJson.getQuery())));
+    }
+
+    @Test
+    public void testQueryResponseSerialization() {
+        List<Tenant> tenantList = Arrays.asList(new Tenant("name", CanonicalPath.fromString("/t;tenant")));
+
+        ResultSet<Tenant> resultSet = new ResultSet<>(tenantList,  new PageContext(1, 15, Order.unspecified()), 156);
+
+        InventoryQueryResponseMessage<Tenant> response = new InventoryQueryResponseMessage<>(resultSet, Tenant.class);
+        String json = response.toJSON();
+
+        InventoryQueryResponseMessage<Tenant> responseFromJson = InventoryQueryResponseMessage.fromJSON(json,
+                InventoryQueryResponseMessage.class);
+
+        assertThat(responseFromJson.getResult().getPageContext(), is(equalTo(response.getResult().getPageContext())));
     }
 
     private void testHeaders(ConsumerConnectionContext consumerContext, Class<? extends InventoryEvent<?>> eventClass,

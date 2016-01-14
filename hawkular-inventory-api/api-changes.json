@@ -1256,5 +1256,156 @@
         }
      ]
     }
+  },
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter org.hawkular.inventory.api.paging.Page<E> org.hawkular.inventory.base.DelegatingInventoryBackend<E>::query(===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <T> org.hawkular.inventory.api.paging.Page<T> org.hawkular.inventory.base.DelegatingInventoryBackend<E>::query(===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager, java.util.function.Function<E, T>, java.util.function.Function<T, java.lang.Boolean>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter E org.hawkular.inventory.base.DelegatingInventoryBackend<E>::querySingle(===org.hawkular.inventory.api.Query===)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter org.hawkular.inventory.api.paging.Page<E> org.hawkular.inventory.base.DelegatingInventoryBackend<E>::traverse(E, ===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter E org.hawkular.inventory.base.DelegatingInventoryBackend<E>::traverseToSingle(E, ===org.hawkular.inventory.api.Query===)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.base.FilterFragment",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.base.PathFragment",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.base.Query",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.base.QueryFragment",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter BE org.hawkular.inventory.base.Traversal<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>::getSingle(===org.hawkular.inventory.api.Query===, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.base.TraversalContext.Builder<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>::<init>(org.hawkular.inventory.base.TraversalContext<BE, ===?>===, org.hawkular.inventory.api.Query.SymmetricExtender, org.hawkular.inventory.api.Query.SymmetricExtender, java.lang.Class<E>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.base.TraversalContext.Builder<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>::<init>(org.hawkular.inventory.base.TraversalContext<BE, ?>, ===org.hawkular.inventory.api.Query.SymmetricExtender===, org.hawkular.inventory.api.Query.SymmetricExtender, java.lang.Class<E>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.field.typeChanged",
+          "new": "field org.hawkular.inventory.base.TraversalContext<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>.sourcePath",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.field.typeChanged",
+          "new": "field org.hawkular.inventory.base.TraversalContext<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>.selectCandidates",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter org.hawkular.inventory.api.paging.Page<E> org.hawkular.inventory.base.spi.InventoryBackend<E>::query(===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <T> org.hawkular.inventory.api.paging.Page<T> org.hawkular.inventory.base.spi.InventoryBackend<E>::query(===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager, java.util.function.Function<E, T>, java.util.function.Function<T, java.lang.Boolean>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter E org.hawkular.inventory.base.spi.InventoryBackend<E>::querySingle(===org.hawkular.inventory.api.Query===)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter org.hawkular.inventory.api.paging.Page<E> org.hawkular.inventory.base.spi.InventoryBackend<E>::traverse(E, ===org.hawkular.inventory.api.Query===, org.hawkular.inventory.api.paging.Pager)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter E org.hawkular.inventory.base.spi.InventoryBackend<E>::traverseToSingle(E, ===org.hawkular.inventory.api.Query===)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "new": "method org.hawkular.inventory.api.Query.Builder org.hawkular.inventory.base.TraversalContext.Builder<BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>::rawQueryBuilder()",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE> org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Relationship> org.hawkular.inventory.base.Util::createAssociation(org.hawkular.inventory.base.TraversalContext<BE, ===?>===, org.hawkular.inventory.api.Query, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>, java.lang.String, BE)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, ?>> void org.hawkular.inventory.base.Util::delete(org.hawkular.inventory.base.TraversalContext<BE, ===E>===, org.hawkular.inventory.api.Query, java.util.function.BiConsumer<BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction>, java.util.function.BiConsumer<BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE> org.hawkular.inventory.base.EntityAndPendingNotifications<org.hawkular.inventory.api.model.Relationship> org.hawkular.inventory.base.Util::deleteAssociation(org.hawkular.inventory.base.TraversalContext<BE, ===?>===, org.hawkular.inventory.api.Query, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>, java.lang.String, BE)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "new": "method org.hawkular.inventory.api.Query org.hawkular.inventory.base.Util::extendTo(org.hawkular.inventory.base.TraversalContext<?, ?>, org.hawkular.inventory.api.model.Path)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE> org.hawkular.inventory.api.model.Relationship org.hawkular.inventory.base.Util::getAssociation(org.hawkular.inventory.base.TraversalContext<BE, ===?>===, org.hawkular.inventory.api.Query, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>, org.hawkular.inventory.api.Query, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>, java.lang.String)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE> org.hawkular.inventory.api.model.Relationship org.hawkular.inventory.base.Util::getAssociation(org.hawkular.inventory.base.TraversalContext<BE, ?>, org.hawkular.inventory.api.Query, ===java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?===, ?>>, org.hawkular.inventory.api.Query, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>, java.lang.String)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE> BE org.hawkular.inventory.base.Util::getSingle(org.hawkular.inventory.base.spi.InventoryBackend<BE>, ===org.hawkular.inventory.api.Query===, java.lang.Class<? extends org.hawkular.inventory.api.model.Entity<?, ?>>)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "new": "method org.hawkular.inventory.api.Query org.hawkular.inventory.base.Util::queryTo(org.hawkular.inventory.base.TraversalContext<?, ?>, org.hawkular.inventory.api.model.Path)",
+          "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter <BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update> void org.hawkular.inventory.base.Util::update(org.hawkular.inventory.base.TraversalContext<BE, ===E>===, org.hawkular.inventory.api.Query, U, org.hawkular.inventory.base.Util.TransactionParticipant<BE, U>, java.util.function.BiConsumer<BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction>)",
+          "justification": "Package change, Query moved to API."
+        }
+      ]
+    }
   }
 }
