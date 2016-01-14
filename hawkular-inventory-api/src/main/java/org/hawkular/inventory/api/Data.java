@@ -20,6 +20,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
 
 /**
@@ -32,10 +33,10 @@ public final class Data {
 
     }
 
-    public interface Read<Role extends DataEntity.Role> extends ReadInterface<Single, Multiple, Role> {
+    public interface Read<Role extends DataRole> extends ReadInterface<Single, Multiple, Role> {
     }
 
-    public interface ReadWrite<Role extends DataEntity.Role>
+    public interface ReadWrite<Role extends DataRole>
             extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint<Role>, Single, Multiple, Role> {
 
         @Override

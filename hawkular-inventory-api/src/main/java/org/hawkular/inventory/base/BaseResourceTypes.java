@@ -43,6 +43,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 
 /**
@@ -75,7 +76,8 @@ public final class BaseResourceTypes {
 
             context.backend.update(entity, ResourceType.Update.builder().build());
 
-            ResourceType resourceType = new ResourceType(blueprint.getName(),
+            ResourceType
+                    resourceType = new ResourceType(blueprint.getName(),
                     parentPath.extend(ResourceType.class, context.backend.extractId(entity)).get(),
                     blueprint.getProperties());
 
@@ -190,7 +192,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public Data.ReadWrite<ResourceTypes.DataRole> data() {
+        public Data.ReadWrite<DataRole.ResourceType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     new ResourceTypeDataModificationChecks<>(context));
         }
@@ -223,7 +225,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public Data.Read<ResourceTypes.DataRole> data() {
+        public Data.Read<DataRole.ResourceType> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     new ResourceTypeDataModificationChecks<>(context));
         }
@@ -260,7 +262,8 @@ public final class BaseResourceTypes {
         @Override
         public void postCreate(BE dataEntity, InventoryBackend.Transaction transaction) {
             BE rte = context.backend.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains)).get());
-            ResourceType rt = context.backend.convert(rte, ResourceType.class);
+            ResourceType
+                    rt = context.backend.convert(rte, ResourceType.class);
             context.backend
                     .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
         }
@@ -320,7 +323,8 @@ public final class BaseResourceTypes {
             CanonicalPath cp = context.backend.extractCanonicalPath(dataEntity);
             try {
                 BE rte = context.backend.find(cp.up());
-                ResourceType rt = context.backend.convert(rte, ResourceType.class);
+                ResourceType
+                        rt = context.backend.convert(rte, ResourceType.class);
                 context.backend
                         .updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(transaction)));
             } catch (ElementNotFoundException e) {

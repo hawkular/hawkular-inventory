@@ -36,6 +36,7 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;
@@ -65,7 +66,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     public Response createConfiguration(@PathParam("resourceTypeId") String resourceType,
                                         @PathParam("operationTypeId") String operationTypeId,
                                         @ApiParam(required = true)
-                                        DataEntity.Blueprint<OperationTypes.DataRole> configuration,
+                                        DataEntity.Blueprint<DataRole.OperationType> configuration,
                                         @Context UriInfo uriInfo) {
 
         return doCreateData(null, null, resourceType, operationTypeId, configuration, uriInfo);
@@ -84,7 +85,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                                         @PathParam("resourceTypeId") String resourceType,
                                         @PathParam("operationTypeId") String operationTypeId,
                                         @ApiParam(required = true)
-                                        DataEntity.Blueprint<OperationTypes.DataRole> configuration,
+                                        DataEntity.Blueprint<DataRole.OperationType> configuration,
                                         @Context UriInfo uriInfo) {
 
         return doCreateData(null, feedId, resourceType, operationTypeId, configuration, uriInfo);
@@ -102,7 +103,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     public Response updateData(@PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
-                               OperationTypes.DataRole dataType,
+                               DataRole.OperationType dataType,
                                @ApiParam(required = true) DataEntity.Update data) {
 
         return doUpdateData(null, null, resourceType, operationTypeId, dataType, data);
@@ -121,7 +122,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                                @PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
-                               OperationTypes.DataRole dataType,
+                               DataRole.OperationType dataType,
                                @ApiParam(required = true) DataEntity.Update data) {
 
         return doUpdateData(null, feedId, resourceType, operationTypeId, dataType, data);
@@ -139,7 +140,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     public Response deleteData(@PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
-                               OperationTypes.DataRole dataType) {
+                               DataRole.OperationType dataType) {
 
         return doDeleteData(null, null, resourceType, operationTypeId, dataType);
     }
@@ -157,7 +158,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                                @PathParam("resourceTypeId") String resourceType,
                                @PathParam("operationTypeId") String operationTypeId,
                                @QueryParam("dataType") @DefaultValue("returnType")
-                               OperationTypes.DataRole dataType) {
+                               DataRole.OperationType dataType) {
 
         return doDeleteData(null, feedId, resourceType, operationTypeId, dataType);
     }
@@ -173,7 +174,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     public DataEntity get(@PathParam("resourceTypeId") String resourceTypeId,
                           @PathParam("operationTypeId") String operationTypeId,
                           @QueryParam("dataType") @DefaultValue("returnType")
-                          OperationTypes.DataRole dataType) {
+                          DataRole.OperationType dataType) {
         return doGetDataEntity(null, null, resourceTypeId, operationTypeId, dataType);
     }
 
@@ -189,12 +190,12 @@ public class RestResourceTypesOperationTypesData extends RestBase {
                           @PathParam("resourceTypeId") String resourceTypeId,
                           @PathParam("operationTypeId") String operationTypeId,
                           @QueryParam("dataType") @DefaultValue("returnType")
-                          OperationTypes.DataRole dataType) {
+                          DataRole.OperationType dataType) {
         return doGetDataEntity(null, feedId, resourceTypeId, operationTypeId, dataType);
     }
 
     private Response doCreateData(String environmentId, String feedId, String resourceTypeId, String operationTypeId,
-                                  DataEntity.Blueprint<OperationTypes.DataRole> blueprint, UriInfo uriInfo) {
+                                  DataEntity.Blueprint<DataRole.OperationType> blueprint, UriInfo uriInfo) {
 
         CanonicalPath operationType = getOperationTypePath(environmentId, feedId, resourceTypeId, operationTypeId);
 
@@ -208,7 +209,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     private Response doUpdateData(String environmentId, String feedId, String resourceTypeId, String operationTypeId,
-                                  OperationTypes.DataRole dataType, DataEntity.Update update) {
+                                  DataRole.OperationType dataType, DataEntity.Update update) {
 
         CanonicalPath operationType = getOperationTypePath(environmentId, feedId, resourceTypeId, operationTypeId);
 
@@ -221,7 +222,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     private Response doDeleteData(String environmentId, String feedId, String resourceTypeId, String operationTypeId,
-                                  OperationTypes.DataRole dataType) {
+                                  DataRole.OperationType dataType) {
         CanonicalPath operationType = getOperationTypePath(environmentId, feedId, resourceTypeId, operationTypeId);
 
         if (!security.canUpdate(operationType)) {
@@ -233,7 +234,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     }
 
     private DataEntity doGetDataEntity(String environmentId, String feedId, String resourceTypeId,
-                                       String operationTypeId, OperationTypes.DataRole dataType) {
+                                       String operationTypeId, DataRole.OperationType dataType) {
 
         return inventory
                 .inspect(getOperationTypePath(environmentId, feedId, resourceTypeId, operationTypeId),

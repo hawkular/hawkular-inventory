@@ -1262,8 +1262,8 @@
       "ignore": [
         {
           "regex": true,
-          "code": "(java.method.parameterTypeChanged)|(java.method.returnTypeChanged)|(java.method.returnTypeTypeParametersChanged)",
-          "old": ".*org\\.hawkular\\.inventory\\.api\\.model.*",
+          "code": "java.method.parameterTypeChanged|java.method.returnType(TypeParameters)?Changed",
+          "old": ".*org\\.hawkular\\.inventory\\.api.*",
           "new": ".*org\\.hawkular\\.inventory\\.paths.*",
           "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
         },
@@ -1274,15 +1274,15 @@
           "justification": "Path classes moved to a new location: org.hawkular.inventory.paths in a new shared module."
         },
         {
-          "code": "java.class.noLongerImplementsInterface",
+          "code": "java.class.noLongerImplementsInterface|java.generics.formalTypeParameterChanged",
           "regex": true,
-          "old": "class org\\.hawkular\\.inventory\\.(base|api)\\.[a-zA-Z]+\\.Read(Associate)?(<[A-Z]+>)?",
+          "old": "class org\\.hawkular\\.inventory\\.(base|api)\\.[a-zA-Z]+\\.(Read(Associate|Write)?|Single|Multiple)(<[A-Za-z\\. ]+>)?",
           "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
         },
         {
-          "code": "java.class.noLongerImplementsInterface",
+          "code": "java.class.noLongerImplementsInterface|java.generics.formalTypeParameterChanged",
           "regex": true,
-          "old": "class org\\.hawkular\\.inventory\\.api\\.EmptyInventory\\.[a-zA-Z]+Read(Associate)?(<[A-Z]+>)?",
+          "old": "class org\\.hawkular\\.inventory\\.api\\.EmptyInventory\\.[a-zA-Z]+(Read(Associate|Write)?|Single|Multiple)(<[A-Za-z\\. ]+>)?",
           "justification": "This might match more than we'd like but that's actually a deficiency of Revapi to which we're not able to tell WHICH interface is no longer implemented."
         },
         {
@@ -1300,6 +1300,49 @@
           "code": "java.method.removed",
           "old": "method java.lang.Class<?> org.hawkular.inventory.api.EntityNotFoundException::getEntityType()",
           "justification": "Replaced by getEntityTypeSimpleName()"
+        },
+        {
+          "code": "java.class.removed",
+          "regex": true,
+          "old": "class org\\.hawkular\\.inventory\\.api\\.[a-zA-Z]+\\.DataRole",
+          "justification": "These classes got moved to org.hawkular.inventory.paths.DataRole.*"
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.model.DataEntity.Role",
+          "justification": "This moved to org.hawkular.inventory.paths.DataRole."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "new": "class org.hawkular.inventory.api.model.DataEntity.Blueprint.Builder<R extends org.hawkular.inventory.paths.DataRole>",
+          "justification": "DataEntity.Role has moved to org.hawkular.inventory.paths.DataRole."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "new": "method <R extends org.hawkular.inventory.paths.DataRole> org.hawkular.inventory.api.model.DataEntity.Blueprint.Builder<R> org.hawkular.inventory.api.model.DataEntity.Blueprint<DR extends org.hawkular.inventory.paths.DataRole>::builder()",
+          "justification": "DataEntity.Role has moved to org.hawkular.inventory.paths.DataRole."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "new": "class org.hawkular.inventory.api.model.DataEntity.Blueprint<DR extends org.hawkular.inventory.paths.DataRole>",
+          "justification": "DataEntity.Role has moved to org.hawkular.inventory.paths.DataRole."
+        },
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "regex": true,
+          "new": "class org\\.hawkular\\.inventory\\.base\\.BaseData\\..*",
+          "justification": "These are just changes caused by the move of paths to the shared location."
+        },
+        {
+          "code": "java.class.removed",
+          "old": "class org.hawkular.inventory.api.model.DataEntity.RoleInstanceHolder",
+          "justification": "This is reported due to a bug in Revapi. It was not part of the API."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "regex": true,
+          "new": "class org\\.hawkular\\.inventory\\.base\\.BaseData\\.Read(Write)?<BE, R extends org\\.hawkular\\.inventory\\.paths\\.DataRole>",
+          "justification": "DataEntity.Role -> paths.DataRole"
         }
       ]
     }

@@ -18,9 +18,9 @@ package org.hawkular.inventory.json.mixins;
 
 import java.util.Map;
 
-import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -39,6 +39,6 @@ public abstract class DataEntityMixin {
 
     @JsonIgnore abstract String getId();
 
-    @JsonIgnore abstract DataEntity.Role getRole();
+    @JsonIgnore abstract DataRole getRole();
 
 }

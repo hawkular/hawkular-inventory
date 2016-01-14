@@ -27,9 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hawkular.inventory.api.IdentityHash;
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.SegmentType;
 
 /**
@@ -143,23 +142,23 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
         }
 
         public DataEntity.Blueprint<?> getReturnType(OperationType.Blueprint operationType) {
-            return thatOrEmpty(returnTypes.get(operationType), OperationTypes.DataRole.returnType);
+            return thatOrEmpty(returnTypes.get(operationType), DataRole.OperationType.returnType);
         }
 
         public DataEntity.Blueprint<?> getParameterTypes(OperationType.Blueprint operationType) {
-            return thatOrEmpty(parameterTypes.get(operationType), OperationTypes.DataRole.parameterTypes);
+            return thatOrEmpty(parameterTypes.get(operationType), DataRole.OperationType.parameterTypes);
         }
 
         public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
-            return thatOrEmpty(configurationSchemas.get(rt), ResourceTypes.DataRole.configurationSchema);
+            return thatOrEmpty(configurationSchemas.get(rt), DataRole.ResourceType.configurationSchema);
         }
 
         public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
             return thatOrEmpty(connectionConfigurationSchemas.get(rt),
-                    ResourceTypes.DataRole.connectionConfigurationSchema);
+                    DataRole.ResourceType.connectionConfigurationSchema);
         }
 
-        private DataEntity.Blueprint<?> thatOrEmpty(DataEntity.Blueprint<?> b, DataEntity.Role role) {
+        private DataEntity.Blueprint<?> thatOrEmpty(DataEntity.Blueprint<?> b, DataRole role) {
             if (b == null) {
                 b = DataEntity.Blueprint.builder().withRole(role).build();
             }
@@ -216,7 +215,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
                     return new OperationTypeBuilder(ot);
                 }
 
-                public ResourceTypeBuilder with(DataEntity.Blueprint<ResourceTypes.DataRole> data) {
+                public ResourceTypeBuilder with(DataEntity.Blueprint<DataRole.ResourceType> data) {
                     switch (data.getRole()) {
                         case configurationSchema:
                             resourceTypeConfigurationSchemas.put(rt, data);
@@ -240,7 +239,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
                         this.ot = ot;
                     }
 
-                    public OperationTypeBuilder with(DataEntity.Blueprint<OperationTypes.DataRole> data) {
+                    public OperationTypeBuilder with(DataEntity.Blueprint<DataRole.OperationType> data) {
                         switch (data.getRole()) {
                             case returnType:
                                 operationTypeReturnType.put(ot, data);

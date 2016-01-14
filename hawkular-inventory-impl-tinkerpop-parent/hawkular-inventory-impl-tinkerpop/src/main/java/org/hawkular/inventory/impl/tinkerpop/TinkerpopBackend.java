@@ -84,6 +84,7 @@ import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
@@ -526,7 +527,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 case dataEntity:
                     CanonicalPath cp = extractCanonicalPath(v);
 
-                    e = new DataEntity(cp.up(), DataEntity.Role.valueOf(cp.getSegment().getElementId()),
+                    e = new DataEntity(cp.up(), DataRole.valueOf(cp.getSegment().getElementId()),
                             loadStructuredData(v, hasData));
                     break;
                 case operationType:

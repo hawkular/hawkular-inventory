@@ -16,10 +16,10 @@
  */
 package org.hawkular.inventory.api;
 
-import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
-import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
+import static org.hawkular.inventory.paths.DataRole.OperationType.parameterTypes;
+import static org.hawkular.inventory.paths.DataRole.OperationType.returnType;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

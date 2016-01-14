@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.filters.With.id;
 
@@ -33,6 +35,8 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.ValidationException.ValidationMessage;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
@@ -40,6 +44,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -67,7 +72,7 @@ public final class BaseData {
     }
 
 
-    public static final class Read<BE, R extends DataEntity.Role> extends Traversal<BE, DataEntity>
+    public static final class Read<BE, R extends DataRole> extends Traversal<BE, DataEntity>
             implements Data.Read<R> {
 
         private final DataModificationChecks<BE> checks;
@@ -88,7 +93,7 @@ public final class BaseData {
         }
     }
 
-    public static final class ReadWrite<BE, R extends DataEntity.Role>
+    public static final class ReadWrite<BE, R extends DataRole>
             extends Mutator<BE, DataEntity, DataEntity.Blueprint<R>, DataEntity.Update, R>
             implements Data.ReadWrite<R> {
 
@@ -168,7 +173,7 @@ public final class BaseData {
             return new Single<>(context.proceed().where(id(role.name())).get(), checks);
         }
 
-        private static <BE, R extends DataEntity.Role>
+        private static <BE, R extends DataRole>
         void preCreate(DataModificationChecks<BE> checks, DataEntity.Blueprint<R> blueprint,
                        InventoryBackend.Transaction transaction) {
             checks.preCreate(blueprint, transaction);
@@ -298,10 +303,39 @@ public final class BaseData {
         private static final JsonValidator VALIDATOR = JsonSchemaFactory.newBuilder()
                 .setReportProvider(new ListReportProvider(LogLevel.INFO, LogLevel.FATAL)).freeze().getValidator();
 
+        private static Filter[] navigateToSchema(DataRole role) {
+            if (role == DataRole.Resource.configuration) {
+                return new Filter[]{
+                        //up to the containing resource
+                        Related.asTargetBy(contains),
+                        //up to the defining resource type
+                        Related.asTargetBy(defines),
+                        //down to the contained data entity
+                        Related.by(contains), With.type(DataEntity.class),
+                        //with id of configuration schema
+                        With.id(DataRole.ResourceType.configurationSchema.name())
+                };
+            } else if (role == DataRole.Resource.connectionConfiguration) {
+                return new Filter[]{
+                        //up to the containing resource
+                        Related.asTargetBy(contains),
+                        //up to the defining resource type
+                        Related.asTargetBy(defines),
+                        //down to the contained data entity
+                        Related.by(contains), With.type(DataEntity.class),
+                        //with id of configuration schema
+                        With.id(DataRole.ResourceType.connectionConfigurationSchema.name())
+                };
+            } else {
+                throw new IllegalStateException("Incomplete mapping of navigation to data schema. Role '" + role + "'" +
+                        " is not handled.");
+            }
+        }
+
         public static <BE> void validate(TraversalContext<BE, DataEntity> context, StructuredData data, BE dataEntity) {
             CanonicalPath path = context.backend.extractCanonicalPath(dataEntity);
 
-            DataEntity.Role role = DataEntity.Role.valueOf(path.ids().getDataRole());
+            DataRole role = DataRole.valueOf(path.ids().getDataRole());
 
             if (role.isSchema()) {
                 try {
@@ -315,7 +349,7 @@ public final class BaseData {
                     throw new IllegalStateException("Could not load the embedded JSON Schema meta-schema.");
                 }
             } else {
-                validateIfSchemaFound(context, data, dataEntity, Query.path().with(role.navigateToSchema()).get());
+                validateIfSchemaFound(context, data, dataEntity, Query.path().with(navigateToSchema(role)).get());
             }
         }
 

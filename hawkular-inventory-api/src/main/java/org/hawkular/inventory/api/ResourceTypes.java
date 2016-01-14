@@ -16,9 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 
 /**
@@ -31,31 +30,6 @@ public final class ResourceTypes {
 
     private ResourceTypes() {
 
-    }
-
-    public enum DataRole implements DataEntity.Role {
-        configurationSchema {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        },
-        connectionConfigurationSchema {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        }
     }
 
     private interface BrowserBase<Resources, MetricTypes, OperationTypes, Data> {
@@ -89,7 +63,8 @@ public final class ResourceTypes {
      * Interface for accessing a single resource type in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
-            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite, Data.ReadWrite<DataRole>> {
+            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite,
+                    Data.ReadWrite<DataRole.ResourceType>> {
 
         String identityHash() throws EntityNotFoundException;
     }
@@ -102,7 +77,8 @@ public final class ResourceTypes {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<ResourceType>,
-            BrowserBase<Resources.Read, MetricTypes.Read, OperationTypes.ReadContained, Data.Read<DataRole>> {
+            BrowserBase<Resources.Read, MetricTypes.Read, OperationTypes.ReadContained,
+                    Data.Read<DataRole.ResourceType>> {
     }
 
     /**
