@@ -62,7 +62,6 @@
     <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
     <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
-    <version.org.keycloak.secretstore>1.0.4.Final</version.org.keycloak.secretstore>
     <version.com.google.code.findbugs>3.0.1</version.com.google.code.findbugs>
 
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
