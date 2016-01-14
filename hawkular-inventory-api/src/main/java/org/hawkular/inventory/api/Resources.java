@@ -16,15 +16,9 @@
  */
 package org.hawkular.inventory.api;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.filters.Related;
-import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -38,49 +32,6 @@ import org.hawkular.inventory.paths.SegmentType;
 public final class Resources {
 
     private Resources() {
-    }
-
-    public enum DataRole implements DataEntity.Role {
-        configuration {
-            @Override
-            public boolean isSchema() {
-                return false;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return new Filter[]{
-                        //up to the containing resource
-                        Related.asTargetBy(contains),
-                        //up to the defining resource type
-                        Related.asTargetBy(defines),
-                        //down to the contained data entity
-                        Related.by(contains), With.type(DataEntity.class),
-                        //with id of configuration schema
-                        With.id(ResourceTypes.DataRole.configurationSchema.name())
-                };
-            }
-        },
-        connectionConfiguration {
-            @Override
-            public boolean isSchema() {
-                return false;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return new Filter[]{
-                        //up to the containing resource
-                        Related.asTargetBy(contains),
-                        //up to the defining resource type
-                        Related.asTargetBy(defines),
-                        //down to the contained data entity
-                        Related.by(contains), With.type(DataEntity.class),
-                        //with id of configuration schema
-                        With.id(ResourceTypes.DataRole.connectionConfigurationSchema.name())
-                };
-            }
-        }
     }
 
     public enum ResourceParents implements Parents {
@@ -127,7 +78,7 @@ public final class Resources {
         Read parents();
 
         /**
-         * @return data associated with the resource. See {@link org.hawkular.inventory.api.model.DataEntity.Role} for
+         * @return data associated with the resource. See {@link org.hawkular.inventory.paths.DataRole} for
          * possible kinds of data associated with a resource.
          */
         Data data();
@@ -137,7 +88,8 @@ public final class Resources {
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole.Resource>, ReadWrite,
+                    ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
@@ -156,7 +108,7 @@ public final class Resources {
      */
     public interface Multiple
             extends ResolvableToManyWithRelationships<Resource>, BrowserBase<Metrics.Read, Metrics.Read,
-            Data.Read<DataRole>, ReadContained, Read> {
+            Data.Read<DataRole.Resource>, ReadContained, Read> {
     }
 
     public interface ReadBase<Address> extends ReadInterface<Single, Multiple, Address> {

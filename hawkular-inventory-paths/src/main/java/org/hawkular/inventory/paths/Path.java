@@ -1090,8 +1090,8 @@ public abstract class Path {
             super(segments, constructor);
         }
 
-        public SDB data(String role) {
-            segments.add(new Segment(SegmentType.d, role));
+        public SDB data(DataRole.ResourceType role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 
@@ -1216,8 +1216,8 @@ public abstract class Path {
             return (This) this;
         }
 
-        public SDB data(String role) {
-            segments.add(new Segment(SegmentType.d, role));
+        public SDB data(DataRole.Resource role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 
@@ -1279,8 +1279,8 @@ public abstract class Path {
             super(segments, constructor);
         }
 
-        public SDB data(String role) {
-            segments.add(new Segment(SegmentType.d, role));
+        public SDB data(DataRole.OperationType role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 

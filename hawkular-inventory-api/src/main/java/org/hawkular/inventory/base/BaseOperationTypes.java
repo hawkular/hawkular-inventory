@@ -36,6 +36,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 /**
  * @author Lukas Krejci
@@ -126,7 +127,7 @@ public final class BaseOperationTypes {
             super(context);
         }
 
-        @Override public Data.ReadWrite<OperationTypes.DataRole> data() {
+        @Override public Data.ReadWrite<DataRole.OperationType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     new OperationTypeDataModificationChecks<>(context));
         }
@@ -147,7 +148,7 @@ public final class BaseOperationTypes {
         }
 
 
-        @Override public Data.Read<OperationTypes.DataRole> data() {
+        @Override public Data.Read<DataRole.OperationType> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     new OperationTypeDataModificationChecks<>(context));
         }

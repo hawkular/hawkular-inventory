@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -426,15 +427,15 @@ public interface Inventory extends AutoCloseable {
                 if (rt != null) {
                     ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
 
-                    ResourceTypes.DataRole role = ResourceTypes.DataRole.valueOf(ids.getDataRole());
+                    DataRole.ResourceType role = DataRole.ResourceType.valueOf(ids.getDataRole());
                     return accessInterface.cast(rts.data().get(role));
                 } else if (ot != null) {
                     OperationTypes.Single ots = inspect(path.up(), OperationTypes.Single.class);
-                    OperationTypes.DataRole role = OperationTypes.DataRole.valueOf(ids.getDataRole());
+                    DataRole.OperationType role = DataRole.OperationType.valueOf(ids.getDataRole());
                     return accessInterface.cast(ots.data().get(role));
                 } else {
                     Resources.Single res = inspect(path.up(), Resources.Single.class);
-                    Resources.DataRole role = Resources.DataRole.valueOf(ids.getDataRole());
+                    DataRole.Resource role = DataRole.Resource.valueOf(ids.getDataRole());
                     return accessInterface.cast(res.data().get(role));
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +16,14 @@
  */
 package org.hawkular.inventory.api.test;
 
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.hawkular.inventory.api.IdentityHash;
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricDataType;
@@ -34,6 +32,7 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.DataRole;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -72,22 +71,22 @@ public class ContentHashTest {
 
     @Test
     public void testResourceTypeHashWithAppendages() throws Exception {
-        DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
-                .<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> configSchema = DataEntity.Blueprint
+                .<DataRole.ResourceType>builder()
                 .withRole(configurationSchema).withValue(StructuredData.get().integral(5L)).build();
-        DataEntity.Blueprint<ResourceTypes.DataRole> connSchema = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> connSchema = DataEntity.Blueprint.<DataRole.ResourceType>builder()
                 .withRole(connectionConfigurationSchema)
                 .withValue(StructuredData.get().list().addBool(true).addUndefined().build())
                 .build();
 
         OperationType.Blueprint otb = OperationType.Blueprint.builder().withId("op").build();
-        DataEntity.Blueprint<OperationTypes.DataRole> returnType = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.returnType)
+        DataEntity.Blueprint<DataRole.OperationType> returnType = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
+                .withRole(DataRole.OperationType.returnType)
                 .withValue(StructuredData.get().integral(42L)).build();
-        DataEntity.Blueprint<OperationTypes.DataRole> parameterTypes = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.parameterTypes)
+        DataEntity.Blueprint<DataRole.OperationType> parameterTypes = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
+                .withRole(DataRole.OperationType.parameterTypes)
                 .withValue(StructuredData.get().string("answer")).build();
 
         ResourceType.Blueprint rtb = ResourceType.Blueprint.builder().withId("rt").build();

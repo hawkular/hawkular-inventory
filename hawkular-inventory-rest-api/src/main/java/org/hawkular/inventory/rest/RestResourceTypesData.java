@@ -36,6 +36,7 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import com.wordnik.swagger.annotations.Api;
@@ -64,7 +65,7 @@ public class RestResourceTypesData extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response createConfiguration(@PathParam("resourceTypeId") String resourceType,
-            @ApiParam(required = true) DataEntity.Blueprint<ResourceTypes.DataRole> configuration,
+            @ApiParam(required = true) DataEntity.Blueprint<DataRole.ResourceType> configuration,
             @Context UriInfo uriInfo) {
 
         return doCreateData(null, null, resourceType, configuration, uriInfo);
@@ -82,7 +83,7 @@ public class RestResourceTypesData extends RestBase {
     public Response createConfiguration(@PathParam("feedId") String feedId,
                                         @PathParam("resourceTypeId") String resourceType,
                                         @ApiParam(required = true)
-                                        DataEntity.Blueprint<ResourceTypes.DataRole> configuration,
+                                        DataEntity.Blueprint<DataRole.ResourceType> configuration,
                                         @Context UriInfo uriInfo) {
 
         return doCreateData(null, feedId, resourceType, configuration, uriInfo);
@@ -98,7 +99,7 @@ public class RestResourceTypesData extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response updateData(@PathParam("resourceTypeId") String resourceType,
-            @QueryParam("dataType") @DefaultValue("configurationSchema") ResourceTypes.DataRole dataType,
+            @QueryParam("dataType") @DefaultValue("configurationSchema") DataRole.ResourceType dataType,
             @ApiParam(required = true) DataEntity.Update data) {
 
         return doUpdateData(null, null, resourceType, dataType, data);
@@ -116,7 +117,7 @@ public class RestResourceTypesData extends RestBase {
     public Response updateData(@PathParam("feedId") String feedId,
                                @PathParam("resourceTypeId") String resourceType,
                                @QueryParam("dataType") @DefaultValue("configurationSchema")
-                               ResourceTypes.DataRole dataType,
+                               DataRole.ResourceType dataType,
                                @ApiParam(required = true) DataEntity.Update data) {
 
         return doUpdateData(null, feedId, resourceType, dataType, data);
@@ -132,7 +133,7 @@ public class RestResourceTypesData extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteData(@PathParam("resourceTypeId") String resourceType,
-            @QueryParam("dataType") @DefaultValue("configurationSchema") ResourceTypes.DataRole dataType) {
+            @QueryParam("dataType") @DefaultValue("configurationSchema") DataRole.ResourceType dataType) {
 
         return doDeleteData(null, null, resourceType, dataType);
     }
@@ -149,7 +150,7 @@ public class RestResourceTypesData extends RestBase {
     public Response deleteData(@PathParam("feedId") String feedId,
                                @PathParam("resourceTypeId") String resourceType,
                                @QueryParam("dataType") @DefaultValue("configurationSchema")
-                               ResourceTypes.DataRole dataType) {
+                               DataRole.ResourceType dataType) {
 
         return doDeleteData(null, feedId, resourceType, dataType);
     }
@@ -163,7 +164,7 @@ public class RestResourceTypesData extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public DataEntity get(@PathParam("resourceTypeId") String resourceTypeId,
-            @QueryParam("dataType") @DefaultValue("configurationSchema") ResourceTypes.DataRole dataType) {
+            @QueryParam("dataType") @DefaultValue("configurationSchema") DataRole.ResourceType dataType) {
         return doGetDataEntity(null, null, resourceTypeId, dataType);
     }
 
@@ -178,12 +179,12 @@ public class RestResourceTypesData extends RestBase {
     public DataEntity get(@PathParam("feedId") String feedId,
                           @PathParam("resourceTypeId") String resourceTypeId,
                           @QueryParam("dataType") @DefaultValue("configurationSchema")
-                          ResourceTypes.DataRole dataType) {
+                          DataRole.ResourceType dataType) {
         return doGetDataEntity(null, feedId, resourceTypeId, dataType);
     }
 
     private Response doCreateData(String environmentId, String feedId, String resourceTypeId,
-            DataEntity.Blueprint<ResourceTypes.DataRole> blueprint, UriInfo uriInfo) {
+                                  DataEntity.Blueprint<DataRole.ResourceType> blueprint, UriInfo uriInfo) {
 
         CanonicalPath resourceType = getResourceTypePath(environmentId, feedId, resourceTypeId);
 
@@ -197,7 +198,7 @@ public class RestResourceTypesData extends RestBase {
     }
 
     private Response doUpdateData(String environmentId, String feedId, String resourceTypeId,
-            ResourceTypes.DataRole dataType, DataEntity.Update update) {
+                                  DataRole.ResourceType dataType, DataEntity.Update update) {
 
         CanonicalPath resourceType = getResourceTypePath(environmentId, feedId, resourceTypeId);
 
@@ -210,7 +211,7 @@ public class RestResourceTypesData extends RestBase {
     }
 
     private Response doDeleteData(String environmentId, String feedId, String resourceTypeId,
-            ResourceTypes.DataRole dataType) {
+            DataRole.ResourceType dataType) {
         CanonicalPath resourceType = getResourceTypePath(environmentId, feedId, resourceTypeId);
 
         if (!security.canUpdate(resourceType)) {
@@ -222,7 +223,7 @@ public class RestResourceTypesData extends RestBase {
     }
 
     private DataEntity doGetDataEntity(String environmentId, String feedId, String resourceTypeId,
-            ResourceTypes.DataRole dataType) {
+            DataRole.ResourceType dataType) {
 
         return inventory.inspect(getResourceTypePath(environmentId, feedId, resourceTypeId), ResourceTypes.Single.class)
                 .data().get(dataType).entity();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.paths.DataRole;
 
 /**
  * @author Lukas Krejci
@@ -26,31 +25,6 @@ import org.hawkular.inventory.api.model.OperationType;
  */
 public final class OperationTypes {
     private OperationTypes() {
-    }
-
-    public enum DataRole implements DataEntity.Role {
-        returnType {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        },
-        parameterTypes {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        }
     }
 
     public interface BrowserBase<Data> {
@@ -68,12 +42,12 @@ public final class OperationTypes {
 
     public interface Single
             extends ResolvableToSingleWithRelationships<OperationType, OperationType.Update>,
-            BrowserBase<Data.ReadWrite<DataRole>> {
+            BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
 
     }
 
     public interface Multiple extends ResolvableToManyWithRelationships<OperationType>,
-            BrowserBase<Data.Read<DataRole>> {
+            BrowserBase<Data.Read<DataRole.OperationType>> {
 
     }
 }

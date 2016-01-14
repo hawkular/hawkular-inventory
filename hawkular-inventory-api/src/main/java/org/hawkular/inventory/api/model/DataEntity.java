@@ -16,16 +16,11 @@
  */
 package org.hawkular.inventory.api.model;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
@@ -44,18 +39,18 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         this.value = null;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value) {
+    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value) {
         super(null, owner.extend(DataEntity.class, role.name()).get(), null);
         this.value = value;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value, Map<String, Object> properties) {
+    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, Map<String, Object> properties) {
         super(owner.extend(DataEntity.class, role.name()).get(), properties);
         this.value = value;
     }
 
     public DataEntity(CanonicalPath path, StructuredData value, Map<String, Object> properties) {
-        this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, properties);
+        this(path.up(), DataRole.valueOf(path.getSegment().getElementId()), value, properties);
     }
 
     @Override
@@ -67,8 +62,8 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
         return value;
     }
 
-    public Role getRole() {
-        return Role.valueOf(getId());
+    public DataRole getRole() {
+        return DataRole.valueOf(getId());
     }
 
     @Override
@@ -82,77 +77,20 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
                 valueOrDefault(u.getValue(), getValue()), u.getProperties()));
     }
 
-    private static final class RoleInstanceHolder {
-        private static final HashMap<String, Role> instances;
-
-        static {
-            instances = new HashMap<>();
-            for (Resources.DataRole r : Resources.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-
-            for (ResourceTypes.DataRole r : ResourceTypes.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-
-            for (OperationTypes.DataRole r : OperationTypes.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-        }
-    }
-
-    /**
-     * An interface a Data entity role must implement.
-     *
-     * <p>Data entity roles are supposed to be enums, but to ensure type safety, we have to have different enums for
-     * different entity types. I.e. resources can only have data of roles from the
-     * {@link org.hawkular.inventory.api.Resources.DataRole} enum and resource types only from
-     * {@link org.hawkular.inventory.api.ResourceTypes.DataRole} enum. To achieve this, the {@link DataEntity} class
-     * works with instances of this interface (which all the individual enums have to implement) and these enums have
-     * to be "registered" in the private class of data entity - {@code RoleInstanceHolder}. Because our data model is
-     * not extensible this is easily achieved.
-     */
-    public interface Role {
-        static Role valueOf(String name) {
-            return RoleInstanceHolder.instances.get(name);
-        }
-
-        static Role[] values() {
-            Collection<Role> values = RoleInstanceHolder.instances.values();
-            return values.toArray(new Role[values.size()]);
-        }
-
-        /**
-         * @return the unique name of the role
-         */
-        String name();
-
-        /**
-         * @return the filters representing a query to go from the data entity to the data entity holding the data of
-         * the schema to validate the data. Can return null if the data entity with this role represents a schema.
-         */
-        Filter[] navigateToSchema();
-
-        /**
-         * @return true if this role represents a schema, false otherwise
-         */
-        boolean isSchema();
-    }
-
-    public static final class Blueprint<DataRole extends Role> extends Entity.Blueprint {
+    public static final class Blueprint<DR extends DataRole> extends Entity.Blueprint {
         private static final StructuredData UNDEFINED = StructuredData.get().undefined();
         private final StructuredData value;
-        private final DataRole role;
+        private final DR role;
 
-        public static <R extends Role> Builder<R> builder() {
+        public static <R extends DataRole> Builder<R> builder() {
             return new Builder<>();
         }
 
-        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
+        public Blueprint(DR role, StructuredData value, Map<String, Object> properties) {
             this(role, value, properties, null, null);
         }
 
-        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties,
+        public Blueprint(DR role, StructuredData value, Map<String, Object> properties,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(role.name(), properties, outgoing, incoming);
@@ -175,7 +113,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             return value == null ? UNDEFINED : value;
         }
 
-        public DataRole getRole() {
+        public DR getRole() {
             return role;
         }
 
@@ -184,7 +122,7 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
             return visitor.visitData(this, parameter);
         }
 
-        public static final class Builder<R extends Role> extends Entity.Blueprint.Builder<Blueprint, Builder<R>> {
+        public static final class Builder<R extends DataRole> extends Entity.Blueprint.Builder<Blueprint, Builder<R>> {
 
             private R role;
             private StructuredData value;

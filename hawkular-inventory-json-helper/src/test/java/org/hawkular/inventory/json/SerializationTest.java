@@ -35,8 +35,6 @@ import java.util.function.BiConsumer;
 
 import org.hawkular.inventory.api.FilterFragment;
 import org.hawkular.inventory.api.Query;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Incorporated;
@@ -64,6 +62,7 @@ import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.hawkular.inventory.json.mixins.model.TenantlessCanonicalPathMixin;
 import org.hawkular.inventory.json.mixins.model.TenantlessRelativePathMixin;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
 import org.junit.Assert;
 import org.junit.Before;
@@ -168,7 +167,8 @@ public class SerializationTest {
 
     @Test
     public void testResourceType() throws Exception {
-        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
+        ResourceType
+                rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -179,7 +179,8 @@ public class SerializationTest {
     public void testDetypedResourceType() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
+        ResourceType
+                rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -241,7 +242,8 @@ public class SerializationTest {
 
     @Test
     public void testResourceInEnvironment() throws Exception {
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
+        Resource
+                r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -253,7 +255,8 @@ public class SerializationTest {
     public void testDetypedResourceInEvironment() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
+        Resource
+                r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -287,7 +290,8 @@ public class SerializationTest {
 
     @Test
     public void testResourceInFeed() throws Exception {
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
+        Resource
+                r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -299,7 +303,8 @@ public class SerializationTest {
     public void testDetypedResourceInFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
+        Resource
+                r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), new ResourceType(
                 CanonicalPath.fromString("/t;t/rt;k")), new HashMap<String, Object>() {{
             put("a", "b");
         }});
@@ -354,7 +359,7 @@ public class SerializationTest {
     @Test
     public void testDataEntity() throws Exception {
         test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
-                Resources.DataRole.connectionConfiguration,
+                DataRole.Resource.connectionConfiguration,
                 StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 
@@ -371,7 +376,7 @@ public class SerializationTest {
             put("kachna", Collections.singleton(CanonicalPath.of().tenant("t").get()));
         }};
 
-        testBlueprint(DataEntity.Blueprint.builder().withRole(ResourceTypes.DataRole.configurationSchema).withName("nd")
+        testBlueprint(DataEntity.Blueprint.builder().withRole(DataRole.ResourceType.configurationSchema).withName("nd")
                 .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
                 .build(), (bl, dbl) -> {
             Assert.assertEquals(bl.getRole(), dbl.getRole());

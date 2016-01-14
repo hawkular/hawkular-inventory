@@ -46,6 +46,7 @@ import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 
 /**
@@ -98,7 +99,9 @@ public final class BaseResources {
 
             ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
 
-            Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.class,
+            Resource
+                    ret = new Resource(blueprint.getName(), parentPath.extend(
+                    Resource.class,
                     context.backend.extractId(entity)).get(), resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
@@ -236,12 +239,14 @@ public final class BaseResources {
 
         @Override
         public Resources.ReadAssociate allResources() {
-            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.ReadWrite resources() {
-            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
@@ -252,16 +257,18 @@ public final class BaseResources {
 
         @Override
         public Resources.Single parent() {
-            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(Resource.class)).get());
+            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.Read parents() {
-            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
-        public Data.ReadWrite<Resources.DataRole> data() {
+        public Data.ReadWrite<DataRole.Resource> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     BaseData.DataModificationChecks.<BE>none());
         }
@@ -286,7 +293,8 @@ public final class BaseResources {
 
         @Override
         public Resources.Read allResources() {
-            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
@@ -297,16 +305,18 @@ public final class BaseResources {
 
         @Override
         public Resources.ReadWrite resources() {
-            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.Read parents() {
-            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
-        public Data.Read<Resources.DataRole> data() {
+        public Data.Read<DataRole.Resource> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     BaseData.DataModificationChecks.<BE>none());
         }

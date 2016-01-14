@@ -43,7 +43,6 @@ import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.consumer.ConsumerConnectionContext;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Query;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
@@ -75,6 +74,7 @@ import org.hawkular.inventory.bus.api.ResourceTypeEvent;
 import org.hawkular.inventory.bus.api.ResultSet;
 import org.hawkular.inventory.bus.api.TenantEvent;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -128,7 +128,7 @@ public class BusTest {
         ResourceTypeEvent resourceTypeEvent = new ResourceTypeEvent(Action.Enumerated.COPIED, tenant2, resourceType);
         DataEntityEvent dataEntityEvent = new DataEntityEvent(Action.Enumerated.DELETED,
                 tenant2,
-                new DataEntity(resourceType.getPath(), ResourceTypes.DataRole.configurationSchema,
+                new DataEntity(resourceType.getPath(), DataRole.ResourceType.configurationSchema,
                         StructuredData.get().undefined()));
 
         String tenantJSON = tenantEvent.toJSON();

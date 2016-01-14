@@ -100,10 +100,11 @@ public class CanonicalPathTest {
         Assert.assertEquals("/rl;r", CanonicalPath.of().relationship("r").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;configuration/blah/1/key", CanonicalPath.of().tenant("t").environment("e")
-                .resource("r").data("configuration").key("blah").index(1).key("key").get().toString());
+                .resource("r").data(DataRole.Resource.configuration).key("blah").index(1).key("key").get().toString());
 
         Assert.assertEquals("/t;t/e;e/r;r/d;connectionConfiguration/bl%2Fah", CanonicalPath.of().tenant("t")
-                .environment("e").resource("r").data("connectionConfiguration").key("bl/ah").get().toString());
+                .environment("e").resource("r").data(DataRole.Resource.connectionConfiguration).key("bl/ah").get()
+                .toString());
 
         // escaped chars scenario
         Assert.assertEquals("/t;te%2Fnant/e;e;nv/r;r%25%2Fes;;", CanonicalPath.of().tenant("te/nant")
@@ -327,7 +328,7 @@ public class CanonicalPathTest {
     @Test
     public void testResourceIdsBackedByCanonicalPath() throws Exception {
         CanonicalPath p = CanonicalPath.of().tenant("t").environment("e").resource("1").resource("2").resource("3")
-                .data("configuration").get();
+                .data(DataRole.Resource.configuration).get();
 
         RelativePath rs = p.ids().getResourcePath();
 
@@ -342,7 +343,8 @@ public class CanonicalPathTest {
     @Test
     public void testRelativePathSliding() throws Exception {
         RelativePath p =
-                RelativePath.to().environment("e").resource("r").data("configuration").index(1).key("a").get();
+                RelativePath.to().environment("e").resource("r").data(DataRole.Resource.configuration).index(1).key("a")
+                        .get();
 
         Assert.assertEquals(p.up(), p.slide(0, -1));
         Assert.assertEquals(p.up().down(), p.slide(0, -1).slide(0, 1));
