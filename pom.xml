@@ -62,7 +62,6 @@
     <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
     <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
-    <version.com.google.code.findbugs>3.0.1</version.com.google.code.findbugs>
 
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
     <version.commons-beanutils>1.9.2</version.commons-beanutils>
@@ -124,12 +123,6 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${version.com.google.guava}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>${version.com.google.code.findbugs}</version>
       </dependency>
 
       <dependency>
