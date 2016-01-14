@@ -79,7 +79,6 @@
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
 
-    <version.build-helper-maven-plugin>1.9.1</version.build-helper-maven-plugin>
     <version.org.revapi.revapi-maven-plugin>0.3.10</version.org.revapi.revapi-maven-plugin>
     <version.org.revapi.revapi-java>0.5.2</version.org.revapi.revapi-java>
 
@@ -201,7 +200,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>${version.build-helper-maven-plugin}</version>
             <executions>
               <execution>
                 <id>parse-version</id>
