@@ -580,7 +580,11 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getOperationTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, OperationType.class);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), OperationType.class);
+            } else {
+                return idIfTypeCorrect(getRoot().down(2), OperationType.class);
+            }
         }
 
         @SuppressWarnings("unchecked")
