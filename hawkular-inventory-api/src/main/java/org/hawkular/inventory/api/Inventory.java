@@ -422,7 +422,7 @@ public interface Inventory extends AutoCloseable {
                 String rt = ids.getResourceTypeId();
                 String ot = ids.getOperationTypeId();
 
-                if (rt != null) {
+                if (rt != null && ot == null) {
                     ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
 
                     return accessInterface.cast(rts.data().get(ids.getDataRole()));
