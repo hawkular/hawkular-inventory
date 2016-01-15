@@ -19,6 +19,7 @@ package org.hawkular.inventory.base;
 import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;

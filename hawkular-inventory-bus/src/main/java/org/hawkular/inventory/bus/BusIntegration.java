@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,8 @@ package org.hawkular.inventory.bus;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
-import javax.jms.TopicConnectionFactory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -48,6 +48,7 @@ public final class BusIntegration {
 
     private final Inventory inventory;
     private MessageSender messageSender;
+    private QueryListener queryListener;
     private final Set<Subscription> subscriptions = new HashSet<>();
     private Configuration configuration;
     private InitialContext namingContext;
@@ -66,12 +67,17 @@ public final class BusIntegration {
         }
 
         namingContext = new InitialContext();
-        TopicConnectionFactory tcf = (TopicConnectionFactory) namingContext.lookup(
+        ConnectionFactory connectionFactory = (ConnectionFactory) namingContext.lookup(
                 configuration.getConnectionFactoryJndiName());
 
-        this.messageSender = new MessageSender(tcf, configuration.getInventoryChangesTopicName());
+        this.messageSender = new MessageSender(connectionFactory, configuration.getInventoryChangesTopicName());
 
         install();
+
+        /**
+         * Query listener
+         */
+        this.queryListener = new QueryListener(inventory, connectionFactory, configuration.getQueryQueueName());
     }
 
     public void stop() throws NamingException {

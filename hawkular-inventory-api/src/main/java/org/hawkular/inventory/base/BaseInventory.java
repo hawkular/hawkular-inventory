@@ -23,6 +23,7 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
@@ -32,6 +33,8 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -195,7 +198,16 @@ public abstract class BaseInventory<E> implements Inventory {
         }
     }
 
-    @Override public Configuration getConfiguration() {
+    @Override
+    public Configuration getConfiguration() {
         return configuration;
+    }
+
+    @Override
+    public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
+
+        Page<T> page = backend.query(query, pager, e -> backend.convert(e, requestedEntity), null);
+
+        return page;
     }
 }

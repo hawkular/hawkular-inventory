@@ -38,6 +38,8 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 
 /**
  * Inventory stores "resources" which are groupings of measurements and other data. Inventory also stores metadata about
@@ -508,4 +510,8 @@ public interface Inventory extends AutoCloseable {
                                                                   String... relationshipNames);
 
     Configuration getConfiguration();
+
+    default <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
+        return null;
+    }
 }

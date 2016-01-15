@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,5 +62,22 @@ public final class SwitchElementType extends Filter {
     @Override
     public String toString() {
         return "Jump[" + (fromEdge ? "from " : "to ") + direction.name() + " edges]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SwitchElementType that = (SwitchElementType) o;
+
+        return this.fromEdge == that.fromEdge && this.direction.equals(that.direction);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = direction != null ? direction.hashCode() : 0;
+        result = 31 * result + (fromEdge ? 1 : 0);
+        return result;
     }
 }

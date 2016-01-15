@@ -19,6 +19,7 @@ package org.hawkular.inventory.base;
 import java.util.function.Supplier;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,21 @@ public final class RecurseFilter extends Filter {
         Stream.of(loopChains).forEach(fs -> sb.append(Arrays.asList(fs)));
         sb.append("]]");
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RecurseFilter)) return false;
+
+        RecurseFilter that = (RecurseFilter) o;
+
+        return Arrays.deepEquals(loopChains, that.loopChains);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(loopChains);
     }
 
     public static final class Builder {

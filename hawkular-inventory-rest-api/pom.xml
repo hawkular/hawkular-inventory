@@ -183,12 +183,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.keycloak.secretstore</groupId>
-      <artifactId>secret-store-undertow-filter</artifactId>
-      <version>${version.org.keycloak.secretstore}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-rest-status</artifactId>
       <version>${version.org.hawkular.commons}</version>
@@ -264,6 +258,7 @@
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <version>${version.maven-war-plugin}</version>
         <configuration>
@@ -346,6 +341,7 @@
         <plugins>
           <!-- download and unzip wildfly -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
@@ -364,6 +360,7 @@
           </plugin>
           <!-- deploy the war -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
             <executions>
               <execution>
@@ -388,6 +385,7 @@
           </plugin>
           <!-- echo the usage -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
               <execution>

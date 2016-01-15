@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
@@ -31,7 +32,6 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.Query;
 
 /**
  * The backend for the base inventory that does all the "low level" stuff like querying the actual inventory store,
@@ -309,7 +309,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * Commits the transaction.
      *
      * <p>It is mandatory for the implementation to run all the
-     * {@link Transaction#getPreCommitActions() pre-commit actions} prior to actually committing the transaction.
+     * {@link Transaction#getPreCommit()} pre-commit actions} prior to actually committing the transaction.
      *
      * @param transaction the transaction to commit
      */

@@ -16,6 +16,13 @@
  */
 package org.hawkular.inventory.json;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.filters.Related.by;
+import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.type;
 import static org.hawkular.inventory.api.model.MetricDataType.GAUGE;
 
 import java.io.IOException;
@@ -26,8 +33,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.hawkular.inventory.api.FilterFragment;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.filters.Contained;
+import org.hawkular.inventory.api.filters.Defined;
+import org.hawkular.inventory.api.filters.Incorporated;
+import org.hawkular.inventory.api.filters.Marker;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
@@ -42,8 +58,13 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.json.mixins.TenantlessCanonicalPathMixin;
-import org.hawkular.inventory.json.mixins.TenantlessRelativePathMixin;
+import org.hawkular.inventory.api.paging.Order;
+import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.base.spi.SwitchElementType;
+import org.hawkular.inventory.json.mixins.model.TenantlessCanonicalPathMixin;
+import org.hawkular.inventory.json.mixins.model.TenantlessRelativePathMixin;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -413,7 +434,113 @@ public class SerializationTest {
         testUpdate(Tenant.Update.builder().withName("nt").withProperties(properties).build(), null);
     }
 
-    private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
+    @Test
+    public void testQuery() throws Exception {
+        Query query = Query.to(CanonicalPath.fromString("/t;fooTenant"));
+        test(query);
+
+        query = new Query.Builder().with(new FilterFragment(new With.Ids("a"))).build();
+        test(query);
+
+        query = Query.path().with(type(Tenant.class)).with(id("t")).filter().with(by(contains)).with(type
+                (Environment.class)).with(id("e")).with(by(contains)).with(type(Tenant.class)).with(id("t2")).get();
+        test(query);
+
+        query = Query.path().with(type(Tenant.class)).with(id("t")).with(by(contains)).with(type(Environment.class))
+                .with(id("e")).with(by(contains)).with(type(Resource.class)).with(id("r")).get();
+        test(query);
+
+        query = Query.path().with(RelationWith.Ids.pathTo(CanonicalPath.fromString("/t;fooTenant"))).get();
+        test(query);
+
+        // RelationFilter
+        query = Query.filter().with(RelationWith.name("__inPrediction"), RelationWith.ids("id1", "id2"),
+                RelationWith.id("id4"), RelationWith.property("prop"), RelationWith.propertyValue("prop2", "value"))
+                .with(RelationWith.sourceOfType(Tenant.class))
+                .with(RelationWith.targetsOfTypes(Metric.class, MetricType.class))
+                .with(RelationWith.SourceOrTargetOfType.pathTo(CanonicalPath.fromString("/t;tenant")))
+                .with(RelationWith.SourceOrTargetOfType.by(RelationWith.name("name")).get()).get();
+        test(query);
+
+        // Related
+        query = Query.filter().with(Related.asTargetWith(CanonicalPath.fromString("/t;tenant"), "relation"),
+                Incorporated.by("/t;tenant"), Contained.in(CanonicalPath.fromString("/t;tenant")),
+                Defined.by("/t;tenant")).get();
+        test(query);
+
+        // With.DataAt
+        query = Query.path().with(new With.DataAt(RelativePath.fromString("../e;e/../t;t"))).get();
+        test(query);
+
+        // With.RelativePaths
+        query = Query.to(CanonicalPath.fromString("/t;tenant")).extend().with(
+                With.RelativePaths.pathTo(CanonicalPath.fromString("/t;tenant"))).get();
+        test(query);
+
+        // With.DataOfTypes
+        query = Query.path().with(With.type(Tenant.class))
+                .withExact(Query.filter().with(With.DataOfTypes.pathTo(CanonicalPath.fromString("/t;tenant"))).get())
+                .get();
+        test(query);
+
+        // With.Types
+        query = Query.filter().with(With.Types.by(With.Types.pathTo(CanonicalPath.fromString("/t;tenant"))).get())
+                .get();
+        test(query);
+
+        // With.PropertyValues
+        query = Query.path().with(RelationWith.PropertyValues.pathTo(CanonicalPath.fromString("/t;tenant"))).get();
+        test(query);
+
+        // With.CanonicalPaths
+        query = Query.filter().with(With.CanonicalPaths.pathTo(CanonicalPath.fromString("/t;tenant"))).get();
+        test(query);
+
+        // With.Ids
+        query = Query.filter().with(new With.Ids("id1", "id2")).get();
+        test(query);
+
+        // With.DataValued
+        query = Query.path().with(new With.DataValued(new Double(3))).get();
+        test(query);
+
+        // Marker
+        query = Query.filter().with(new Marker()).get();
+        test(query);
+
+        // SwitchElementType
+        query = Query.filter().with(SwitchElementType.incomingRelationships(),
+                SwitchElementType.incomingRelationships(),
+                SwitchElementType.sourceEntities(),
+                SwitchElementType.targetEntities())
+                .get();
+        test(query);
+
+        // RecurseFilter
+        query = Query.filter().with(RecurseFilter.pathTo(CanonicalPath.fromString("/t;tenant"))).get();
+        test(query);
+
+        // NoopFilter
+        query = Query.filter().with(NoopFilter.INSTANCE).get();
+        test(query);
+    }
+
+    @Test
+    public void testPager() throws Exception {
+        Pager pager = Pager.builder().orderBy(Order.by("name", Order.Direction.ASCENDING)).withPageSize(2)
+                .withStartPage(1).build();
+
+        String json = serialize(pager);
+        Pager fromJson = deserialize(json, Pager.class);
+
+        String expected = "{\"pageNumber\":1,\"pageSize\":2," +
+                "\"order\":[{\"field\":\"name\",\"direction\":\"ASCENDING\"}]}";
+
+        assertThat(json, is(equalTo(expected)));
+        assertThat(fromJson.getOrder().equals(pager.getOrder()), is(Boolean.TRUE));
+    }
+
+    private void testDetyped(Entity<?, ?> orig,  String serialized) throws Exception {
         DetypedPathDeserializer.setCurrentEntityType(orig.getClass());
         mapper.addMixIn(CanonicalPath.class, TenantlessCanonicalPathMixin.class);
 

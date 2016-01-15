@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,15 +21,18 @@ import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 
+import org.hawkular.inventory.api.FilterFragment;
+import org.hawkular.inventory.api.PathFragment;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.FilterFragment;
-import org.hawkular.inventory.base.PathFragment;
-import org.hawkular.inventory.base.Query;
+import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -112,5 +115,35 @@ public class QueryTest {
         Assert.assertTrue(q.getFragments()[0].getFilter() instanceof With.CanonicalPaths);
         Assert.assertTrue(q.getFragments()[1].getFilter() instanceof Related);
         Assert.assertTrue(q.getFragments()[2].getFilter() instanceof With.CanonicalPaths);
+    }
+
+    @Test
+    public void testQueryBuilder() {
+        CanonicalPath cp1 = CanonicalPath.fromString("/t;tenant1");
+        CanonicalPath cp2 = CanonicalPath.fromString("/t;tenant2");
+
+        // old query
+        Query qMetricsRelationships = Query.path().with(
+                With.path(cp1),
+                SwitchElementType.incomingRelationships(),
+                RelationWith.name("name")).get();
+        Query qTypesRelationships = Query.path().with(
+                With.path(cp2),
+                SwitchElementType.incomingRelationships(),
+                RelationWith.name("name")).get();
+        Query oldQuery = new Query.Builder().with(new PathFragment(new NoopFilter()))
+                .branch().with(qMetricsRelationships).done()
+                .branch().with(qTypesRelationships).done().build();
+
+        // new query
+        Query.Builder builder = new Query.Builder()
+                .branch().path().with(With.path(cp1), SwitchElementType.incomingRelationships(),
+                        RelationWith.name("name")).done()
+                .branch().path().with(With.path(cp2), SwitchElementType.incomingRelationships(),
+                        RelationWith.name("name")).done();
+
+        Query newQuery = builder.build();
+
+        Assert.assertTrue(newQuery.equals(oldQuery));
     }
 }
