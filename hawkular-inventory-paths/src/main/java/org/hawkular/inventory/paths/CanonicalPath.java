@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -40,21 +40,21 @@ import java.util.Set;
 public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 
     private static final long serialVersionUID = -333891787878559703L;
-    static final Map<SegmentType, List<SegmentType>> VALID_PROGRESSIONS = new HashMap<>();
+    static final Map<SegmentType, EnumSet<SegmentType>> VALID_PROGRESSIONS = new HashMap<>();
 
     static {
 
-        VALID_PROGRESSIONS.put(SegmentType.t, Arrays.asList(SegmentType.e, SegmentType.mt, SegmentType.rt,
+        VALID_PROGRESSIONS.put(SegmentType.t, EnumSet.of(SegmentType.e, SegmentType.mt, SegmentType.rt,
                 SegmentType.f, SegmentType.mp));
-        VALID_PROGRESSIONS.put(SegmentType.e, Arrays.asList(SegmentType.m, SegmentType.r));
-        VALID_PROGRESSIONS.put(SegmentType.f, Arrays.asList(SegmentType.m, SegmentType.r, SegmentType.mt,
+        VALID_PROGRESSIONS.put(SegmentType.e, EnumSet.of(SegmentType.m, SegmentType.r));
+        VALID_PROGRESSIONS.put(SegmentType.f, EnumSet.of(SegmentType.m, SegmentType.r, SegmentType.mt,
                 SegmentType.rt));
-        VALID_PROGRESSIONS.put(SegmentType.rt, Arrays.asList(SegmentType.d, SegmentType.ot));
-        VALID_PROGRESSIONS.put(SegmentType.ot, Collections.singletonList(SegmentType.d));
-        VALID_PROGRESSIONS.put(SegmentType.r, Arrays.asList(SegmentType.r, SegmentType.d, SegmentType.m));
-        VALID_PROGRESSIONS.put(SegmentType.d, Collections.singletonList(SegmentType.sd));
-        VALID_PROGRESSIONS.put(SegmentType.sd, Collections.singletonList(SegmentType.sd));
-        VALID_PROGRESSIONS.put(null, Arrays.asList(SegmentType.t, SegmentType.rl));
+        VALID_PROGRESSIONS.put(SegmentType.rt, EnumSet.of(SegmentType.d, SegmentType.ot));
+        VALID_PROGRESSIONS.put(SegmentType.ot, EnumSet.of(SegmentType.d));
+        VALID_PROGRESSIONS.put(SegmentType.r, EnumSet.of(SegmentType.r, SegmentType.d, SegmentType.m));
+        VALID_PROGRESSIONS.put(SegmentType.d, EnumSet.of(SegmentType.sd));
+        VALID_PROGRESSIONS.put(SegmentType.sd, EnumSet.of(SegmentType.sd));
+        VALID_PROGRESSIONS.put(null, EnumSet.of(SegmentType.t, SegmentType.rl));
     }
 
     /**

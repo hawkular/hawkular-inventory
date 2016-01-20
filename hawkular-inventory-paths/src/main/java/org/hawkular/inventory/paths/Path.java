@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -625,7 +626,7 @@ public abstract class Path {
      */
     public abstract static class Extender {
         private final List<Segment> segments;
-        private final Function<List<Segment>, List<SegmentType>> validProgressions;
+        private final Function<List<Segment>, Collection<SegmentType>> validProgressions;
         private final int from;
         private int checkIndex;
 
@@ -640,7 +641,7 @@ public abstract class Path {
          * @param validProgressions given the current path, return the valid types of the next segment
          */
         Extender(int from, List<Segment> segments, boolean mergeWithInitial,
-                Function<List<Segment>, List<SegmentType>> validProgressions) {
+                Function<List<Segment>, Collection<SegmentType>> validProgressions) {
             this.from = from;
             this.segments = segments;
             this.validProgressions = validProgressions;
@@ -712,7 +713,7 @@ public abstract class Path {
                 default:
                     List<Segment> currentSegs = checkIndex >= 0 ? segments.subList(from, checkIndex) : segments;
 
-                    List<SegmentType> progress = validProgressions.apply(currentSegs);
+                    Collection<SegmentType> progress = validProgressions.apply(currentSegs);
 
                     throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
                             " of the path: " + currentSegs +
@@ -790,7 +791,7 @@ public abstract class Path {
 
             List<Segment> currentSegs = indexToCheck >= 0 ? segments.subList(from, indexToCheck) : segments;
 
-            List<SegmentType> progress = validProgressions.apply(currentSegs);
+            Collection<SegmentType> progress = validProgressions.apply(currentSegs);
 
             if (progress == null || !progress.contains(nextSegmentType)) {
                 //update the checkIndex so that the error reporting is correct in the calling method
@@ -919,7 +920,7 @@ public abstract class Path {
                 return true;
             }
 
-            List<SegmentType> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
+            EnumSet<SegmentType> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
             if (options == null || options.isEmpty()) {
                 return false;
             }

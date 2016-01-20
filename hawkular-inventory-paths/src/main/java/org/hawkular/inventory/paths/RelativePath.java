@@ -19,7 +19,7 @@ package org.hawkular.inventory.paths;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -45,21 +45,20 @@ import java.util.function.Function;
 public final class RelativePath extends Path implements Serializable {
 
     static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    private static final Map<SegmentType, List<SegmentType>> VALID_PROGRESSIONS = new HashMap<>();
+    private static final Map<SegmentType, EnumSet<SegmentType>> VALID_PROGRESSIONS =
+            new HashMap<>();
 
     static {
 
         for (SegmentType c : SegmentType.values()) {
-            List<SegmentType> progressions = CanonicalPath.VALID_PROGRESSIONS.get(c);
+            EnumSet<SegmentType> progressions = CanonicalPath.VALID_PROGRESSIONS.get(c);
             if (progressions == null) {
-                progressions = Collections.singletonList(SegmentType.up);
+                progressions = EnumSet.of(SegmentType.up);
             } else {
-                progressions = new ArrayList<>(progressions);
-                progressions.add(SegmentType.up);
-                ((ArrayList<?>) progressions).trimToSize();
+                progressions = EnumSet.of(SegmentType.up, progressions.toArray(new SegmentType[progressions.size()]));
             }
 
-            VALID_PROGRESSIONS.put(c, Collections.unmodifiableList(progressions));
+            VALID_PROGRESSIONS.put(c, progressions);
         }
     }
 
@@ -598,7 +597,7 @@ public final class RelativePath extends Path implements Serializable {
             });
         }
 
-        Extender(int from, List<Segment> segments, Function<List<Segment>, List<SegmentType>> validProgressions) {
+        Extender(int from, List<Segment> segments, Function<List<Segment>, Collection<SegmentType>> validProgressions) {
             super(from, segments, false, validProgressions);
         }
 
