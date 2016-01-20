@@ -95,7 +95,7 @@ public class RestBulk extends RestBase {
         if (path == null || path.isEmpty()) {
             p = rootPath;
         } else {
-            p = Path.fromPartiallyUntypedString(path, rootPath, rootPath, Entity.class);
+            p = Path.fromPartiallyUntypedString(path, rootPath, rootPath, SegmentType.ANY_ENTITY);
         }
         if (p.isRelative()) {
             p = p.toRelativePath().applyTo(rootPath);
@@ -142,7 +142,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitEnvironment(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
                                 return ((Environments.Single) single).metrics();
@@ -157,7 +157,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
                                 return ((Feeds.Single) single).metrics();
@@ -192,7 +192,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitOperationType(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((OperationTypes.Single) single).data();
@@ -202,7 +202,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitResource(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((Resources.Single) single).data();
@@ -217,7 +217,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitResourceType(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((ResourceTypes.Single) single).data();
@@ -232,7 +232,7 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitTenant(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(nextType), new RejectingVisitor() {
                             @Override public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
                                 return ((Tenants.Single) single).feeds();
                             }
@@ -421,7 +421,7 @@ public class RestBulk extends RestBase {
         if (!canCreateUnderParent(elementType, parentPath)) {
             for (Blueprint b : blueprints) {
                 String id = b.accept(idExtractor, null);
-                putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                putStatus(statuses, elementType, parentPath.extend(elementType.segmentType, id).get(),
                         FORBIDDEN.getStatusCode());
             }
             return;
@@ -432,13 +432,13 @@ public class RestBulk extends RestBase {
                     step(parentPath.getSegment().getElementType(), elementType
                             .elementType, single);
 
-            CanonicalPath provisionalChildPath = parentPath.extend(elementType.elementType, b.accept(idExtractor, null))
+            CanonicalPath provisionalChildPath = parentPath.extend(elementType.segmentType, b.accept(idExtractor, null))
                     .get();
             try {
                 //this is cheap - the call to entity() right after create() doesn't fetch from the backend
                 String childId = create(b, wrt).entity().getId();
 
-                CanonicalPath childPath = parentPath.extend(elementType.elementType, childId).get();
+                CanonicalPath childPath = parentPath.extend(elementType.segmentType, childId).get();
 
                 putStatus(statuses, elementType, childPath, CREATED.getStatusCode());
             } catch (EntityAlreadyExistsException ex) {
@@ -457,7 +457,7 @@ public class RestBulk extends RestBase {
             for (Blueprint b : blueprints) {
                 Relationship.Blueprint rb = (Relationship.Blueprint) b;
                 String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
-                putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                putStatus(statuses, elementType, parentPath.extend(elementType.segmentType, id).get(),
                         FORBIDDEN.getStatusCode());
             }
             return;

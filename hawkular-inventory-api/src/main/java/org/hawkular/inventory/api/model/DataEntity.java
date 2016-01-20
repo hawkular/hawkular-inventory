@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
@@ -33,6 +34,8 @@ import org.hawkular.inventory.paths.DataRole;
  */
 public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
+    public static final SegmentType SEGMENT_TYPE = SegmentType.d;
+
     private final StructuredData value;
 
     private DataEntity() {
@@ -40,12 +43,12 @@ public final class DataEntity extends Entity<DataEntity.Blueprint<?>, DataEntity
     }
 
     public DataEntity(CanonicalPath owner, DataRole role, StructuredData value) {
-        super(null, owner.extend(DataEntity.class, role.name()).get(), null);
+        super(null, owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), null);
         this.value = value;
     }
 
     public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, Map<String, Object> properties) {
-        super(owner.extend(DataEntity.class, role.name()).get(), properties);
+        super(owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), properties);
         this.value = value;
     }
 

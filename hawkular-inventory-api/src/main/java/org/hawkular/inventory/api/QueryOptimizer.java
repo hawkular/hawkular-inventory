@@ -36,6 +36,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -150,8 +151,9 @@ final class QueryOptimizer {
             boolean checkFailed = false;
             CHECK:
             for (CanonicalPath.Extender checker : checkers) {
+                org.hawkular.inventory.paths.SegmentType[] types = typeFilter.getSegmentTypes();
                 for (int n = 0; n < typeFilter.getTypes().length; ++n) {
-                    Path.Segment seg = new Path.Segment(typeFilter.getTypes()[n], idFilter.getIds()[n]);
+                    Path.Segment seg = new Path.Segment(types[n], idFilter.getIds()[n]);
                     if (!checker.canExtendTo(seg)) {
                         if (cpFilter == null) {
                             //k we tried to start a new cp filter, but failed
@@ -277,7 +279,8 @@ final class QueryOptimizer {
             for (Iterator<QueryFragment> it = newFilters.iterator(); it.hasNext(); ) {
                 QueryFragment f = it.next();
                 if (f.getFilter() instanceof With.Types) {
-                    Set<Class<?>> filterTypes = new HashSet<>(Arrays.asList(((With.Types) f.getFilter()).getTypes()));
+                    Set<SegmentType> filterTypes =
+                            new HashSet<>(Arrays.asList(((With.Types) f.getFilter()).getSegmentTypes()));
                     if (!expectedClasses.equals(filterTypes)) {
                         break;
                     }

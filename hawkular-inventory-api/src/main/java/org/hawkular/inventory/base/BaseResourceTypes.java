@@ -79,7 +79,7 @@ public final class BaseResourceTypes {
 
             ResourceType
                     resourceType = new ResourceType(blueprint.getName(),
-                    parentPath.extend(ResourceType.class, context.backend.extractId(entity)).get(),
+                    parentPath.extend(ResourceType.SEGMENT_TYPE, context.backend.extractId(entity)).get(),
                     blueprint.getProperties());
 
             context.backend.updateIdentityHash(entity,

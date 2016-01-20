@@ -38,6 +38,7 @@ import java.util.HashSet;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementVisitor;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
@@ -252,7 +253,7 @@ final class Constants {
         }
 
         public static Type of(Class<?> ec) {
-            return ElementTypeVisitor.accept(ec, new ElementTypeVisitor<Type, Void>() {
+            return ElementTypeVisitor.accept(Entity.segmentTypeFromType(ec), new ElementTypeVisitor<Type, Void>() {
                 @Override
                 public Type visitTenant(Void parameter) {
                     return tenant;

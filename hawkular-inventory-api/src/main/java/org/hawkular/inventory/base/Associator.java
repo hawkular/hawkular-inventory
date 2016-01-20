@@ -66,7 +66,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     }
 
     protected void checkPathLegal(Path targetPath) {
-        if (!context.entityClass.getSimpleName().equals(targetPath.getSegment().getElementType().getSimpleName())) {
+        if (!Entity.segmentTypeFromType(context.entityClass).equals(targetPath.getSegment().getElementType())) {
             throw new IllegalArgumentException("Current position in the inventory traversal expects entities of type " +
                     context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
                     targetPath);

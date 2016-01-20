@@ -22,6 +22,7 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
@@ -36,6 +37,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.f;
 
     /**
      * JAXB support

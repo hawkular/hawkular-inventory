@@ -34,6 +34,46 @@ import org.hawkular.inventory.paths.SegmentType;
  */
 public abstract class Entity<B extends Blueprint, U extends Entity.Update> extends AbstractElement<B, U> {
 
+    /**
+     * Returns the same result as {@link SegmentType#fromElementType(Class)} but provides a much better performance.
+     *
+     * @param cl the type to to map to a {@link SegmentType}
+     * @return the {@link SegmentType} corresponding to the given {@code cl}
+     * @throws IllegalStateException if there is no {@link SegmentType} corresponding to the given {@code cl}
+     */
+    public static SegmentType segmentTypeFromType(Class<?> cl) {
+        if (Tenant.class.equals(cl)) {
+            return Tenant.SEGMENT_TYPE;
+        } else if (Environment.class.equals(cl)) {
+            return Environment.SEGMENT_TYPE;
+        } else if (Feed.class.equals(cl)) {
+            return Feed.SEGMENT_TYPE;
+        } else if (Metric.class.equals(cl)) {
+            return Metric.SEGMENT_TYPE;
+        } else if (MetricType.class.equals(cl)) {
+            return MetricType.SEGMENT_TYPE;
+        } else if (Resource.class.equals(cl)) {
+            return Resource.SEGMENT_TYPE;
+        } else if (ResourceType.class.equals(cl)) {
+            return ResourceType.SEGMENT_TYPE;
+        } else if (DataEntity.class.equals(cl)) {
+            return DataEntity.SEGMENT_TYPE;
+        } else if (OperationType.class.equals(cl)) {
+            return OperationType.SEGMENT_TYPE;
+        } else if (MetadataPack.class.equals(cl)) {
+            return MetadataPack.SEGMENT_TYPE;
+        } else if (Relationship.class.equals(cl)) {
+            return Relationship.SEGMENT_TYPE;
+        } else if (StructuredData.class.equals(cl)) {
+            return StructuredData.SEGMENT_TYPE;
+        } else if (RelativePath.Up.class.equals(cl)) {
+            return RelativePath.Up.SEGMENT_TYPE;
+        } else {
+            throw new IllegalStateException("There is no " + SegmentType.class.getName() + " for type " +
+                    (cl == null ? "null" : cl.getName()));
+        }
+    }
+
     public static Class<?> typeFromSegmentType(SegmentType segmentType) {
         switch (segmentType) {
             case up:
@@ -100,7 +140,7 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
     Entity(String name, CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
         this.name = name;
-        if (!this.getClass().getSimpleName().equals(path.getSegment().getElementType().getSimpleName())) {
+        if (!segmentTypeFromType(this.getClass()).equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
                     this.getClass().getSimpleName() + " but the path points to " +
                     path.getSegment().getElementType().getSimpleName());

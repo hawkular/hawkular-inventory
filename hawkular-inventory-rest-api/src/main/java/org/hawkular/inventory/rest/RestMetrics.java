@@ -216,7 +216,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
 
-        if (!security.canUpdate(env.extend(Metric.class, metricId).get())) {
+        if (!security.canUpdate(env.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -243,7 +243,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
-        if (!security.canUpdate(feed.extend(Metric.class, metricId).get())) {
+        if (!security.canUpdate(feed.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -269,7 +269,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
 
-        if (!security.canDelete(env.extend(Metric.class, metricId).get())) {
+        if (!security.canDelete(env.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -294,7 +294,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
-        if (!security.canDelete(feed.extend(Metric.class, metricId).get())) {
+        if (!security.canDelete(feed.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 

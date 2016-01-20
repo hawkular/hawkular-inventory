@@ -124,11 +124,6 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @return the parsed relative path
      */
     public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
-            Class<?> intendedFinalType) {
-        return fromPartiallyUntypedString(path, initialPosition, SegmentType.fromElementType(intendedFinalType));
-    }
-
-    public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             SegmentType intendedFinalType) {
 
         ExtenderConstructor ctor = (idx, list) -> {
@@ -249,9 +244,6 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @return a new path instance
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
-    public Extender extend(Class<?> type, String id) {
-        return modified().extend(new Segment(type, id));
-    }
     public Extender extend(SegmentType type, String id) {
         return modified().extend(new Segment(type, id));
     }
@@ -581,11 +573,6 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         public Extender extend(Collection<Segment> segments) {
             return (Extender) super.extend(segments);
-        }
-
-        @Override
-        public Extender extend(Class<?> type, String id) {
-            return (Extender) super.extend(type, id);
         }
 
         @Override

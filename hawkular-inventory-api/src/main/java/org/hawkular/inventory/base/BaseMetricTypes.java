@@ -67,7 +67,7 @@ public final class BaseMetricTypes {
             context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
-                    parentPath.extend(MetricType.class, context.backend.extractId(entity)).get(),
+                    parentPath.extend(MetricType.SEGMENT_TYPE, context.backend.extractId(entity)).get(),
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
 

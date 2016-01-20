@@ -176,11 +176,6 @@ public abstract class Path {
      * @param intendedFinalType the intended type of the final segment of the path
      */
     public static Path fromPartiallyUntypedString(String path, CanonicalPath canonicalPathsOrigin,
-            CanonicalPath relativePathsOrigin, Class<?> intendedFinalType) {
-        return fromPartiallyUntypedString(path, canonicalPathsOrigin,
-                relativePathsOrigin, SegmentType.fromElementType(intendedFinalType));
-    }
-    public static Path fromPartiallyUntypedString(String path, CanonicalPath canonicalPathsOrigin,
             CanonicalPath relativePathsOrigin, SegmentType intendedFinalType) {
         if (path.charAt(0) == PATH_DELIM) {
             return CanonicalPath.fromPartiallyUntypedString(path, canonicalPathsOrigin, intendedFinalType);
@@ -581,9 +576,6 @@ public abstract class Path {
             this((SegmentType) null, (String) null);
         }
 
-        public Segment(Class<?> elementType, String entityId) {
-            this(SegmentType.fromElementType(elementType), entityId);
-        }
         public Segment(SegmentType elementType, String entityId) {
             this.entityId = entityId;
             this.elementType = elementType;
@@ -665,9 +657,6 @@ public abstract class Path {
          * not or null if the the extension will only succeed with a correct id (which can happen when this extender is
          * set up with some origin path and has not been extended past it).
          */
-        public Boolean canExtendTo(Class<?> segmentType) {
-            return canExtendTo(SegmentType.fromElementType(segmentType));
-        }
         public Boolean canExtendTo(SegmentType segmentType) {
             switch (checkCanProgress(segmentType, false)) {
                 case PROCEED_IF_ID_MATCHES:
@@ -758,9 +747,6 @@ public abstract class Path {
             return this;
         }
 
-        public Extender extend(Class<?> type, String id) {
-            return extend(new Segment(type, id));
-        }
         public Extender extend(SegmentType type, String id) {
             return extend(new Segment(type, id));
         }

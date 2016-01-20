@@ -67,6 +67,8 @@ public enum SegmentType {
     private static final Map<String, SegmentType> entriesBySimpleName;
     private static final Set<String> canonicalShortNames;
     private static final List<SegmentType> relativeShortNames;
+    public static final SegmentType ANY_ENTITY = null;
+
     static {
         Map<String, SegmentType> tmpByShortName = new HashMap<>();
         Map<String, SegmentType> tmpBySimpleName = new HashMap<>();
@@ -90,10 +92,12 @@ public enum SegmentType {
     /** The simple class name of the related Inventory model element */
     private final String simpleName;
     private final String serialized;
+
     private SegmentType(String simpleName) {
         this.simpleName = simpleName;
         this.serialized = name();
     }
+
     private SegmentType(String simpleName, String serialized) {
         this.simpleName = simpleName;
         this.serialized = serialized;
@@ -112,8 +116,12 @@ public enum SegmentType {
     }
 
     /**
-     * @param elementType
-     * @return
+     * Returns a {@link SegmentType} corresponding to the given {@code elementType} or {@code null} if no corresponding
+     * type can be found.
+     *
+     * @param elementType the type to map to a {@link SegmentType}
+     * @return the {@link SegmentType} corresponding to the given {@code elementType} or {@code null} if no
+     *         corresponding type can be found
      */
     public static SegmentType fromElementType(Class<?> elementType) {
         return elementType == null ? null : entriesBySimpleName.get(elementType.getSimpleName());
@@ -122,6 +130,7 @@ public enum SegmentType {
     public static Set<String> getCanonicalShortNames() {
         return canonicalShortNames;
     }
+
     public static List<SegmentType> getRelativeShortNames() {
         return relativeShortNames;
     }

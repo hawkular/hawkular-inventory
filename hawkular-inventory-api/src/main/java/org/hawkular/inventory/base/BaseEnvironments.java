@@ -127,7 +127,7 @@ public final class BaseEnvironments {
                                                                              CanonicalPath parentPath, BE parent,
                                                                              InventoryBackend.Transaction transaction) {
             return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
-                    parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
+                    parentPath.extend(Environment.SEGMENT_TYPE, context.backend.extractId(entity)).get(),
                     blueprint.getProperties()));
         }
 

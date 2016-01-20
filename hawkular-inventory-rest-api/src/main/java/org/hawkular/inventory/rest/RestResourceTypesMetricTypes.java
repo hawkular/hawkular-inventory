@@ -99,7 +99,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
         }
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
-        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt = tenant.extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         MetricTypes.ReadAssociate
                 metricTypesDao = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
@@ -107,7 +107,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
 
         metricTypePaths.stream()
                 .map((p) -> org.hawkular.inventory.paths.Path.fromPartiallyUntypedString(p, tenant, rt,
-                        MetricType.class)).forEach(metricTypesDao::associate);
+                        MetricType.SEGMENT_TYPE)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
     }
@@ -128,14 +128,14 @@ public class RestResourceTypesMetricTypes extends RestBase {
                                               boolean isCanonical) {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
-        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt = tenant.extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         if (isCanonical) {
             metricTypePath = "/" + metricTypePath;
         }
 
         org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
-                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.SEGMENT_TYPE);
 
         return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
     }
@@ -173,7 +173,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
                                            boolean isCanonical) {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
-        CanonicalPath rt = tenant.extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt = tenant.extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         if (!security.canAssociateFrom(rt)) {
             return Response.status(FORBIDDEN).build();
@@ -184,7 +184,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
         }
 
         org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
-                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.SEGMENT_TYPE);
 
         inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);
 
@@ -231,14 +231,15 @@ public class RestResourceTypesMetricTypes extends RestBase {
         }
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
-        CanonicalPath rt = tenant.extend(Feed.class, feedId).extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt =
+                tenant.extend(Feed.SEGMENT_TYPE, feedId).extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         MetricTypes.ReadAssociate metricTypesDao = inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes()
                 .get(resourceTypeId).metricTypes();
 
         metricTypePaths.stream()
                 .map((p) -> org.hawkular.inventory.paths.Path.fromPartiallyUntypedString(p, tenant, rt,
-                        MetricType.class)).forEach(metricTypesDao::associate);
+                        MetricType.SEGMENT_TYPE)).forEach(metricTypesDao::associate);
 
         return Response.noContent().build();
     }
@@ -260,14 +261,15 @@ public class RestResourceTypesMetricTypes extends RestBase {
                                               boolean isCanonical) {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
-        CanonicalPath rt = tenant.extend(Feed.class, feedId).extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt =
+                tenant.extend(Feed.SEGMENT_TYPE, feedId).extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         if (isCanonical) {
             metricTypePath = "/" + metricTypePath;
         }
 
         org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
-                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.SEGMENT_TYPE);
 
         return inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().get(mtPath).entity();
     }
@@ -307,7 +309,8 @@ public class RestResourceTypesMetricTypes extends RestBase {
                                            boolean isCanonical) {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(getTenantId()).get();
-        CanonicalPath rt = tenant.extend(Feed.class, feedId).extend(ResourceType.class, resourceTypeId).get();
+        CanonicalPath rt =
+                tenant.extend(Feed.SEGMENT_TYPE, feedId).extend(ResourceType.SEGMENT_TYPE, resourceTypeId).get();
 
         if (!security.canAssociateFrom(rt)) {
             return Response.status(FORBIDDEN).build();
@@ -318,7 +321,7 @@ public class RestResourceTypesMetricTypes extends RestBase {
         }
 
         org.hawkular.inventory.paths.Path mtPath = org.hawkular.inventory.paths.Path
-                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.class);
+                .fromPartiallyUntypedString(metricTypePath, tenant, rt, MetricType.SEGMENT_TYPE);
 
         inventory.inspect(rt, ResourceTypes.Single.class).metricTypes().disassociate(mtPath);
 

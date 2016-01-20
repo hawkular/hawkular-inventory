@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -32,6 +33,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.rt;
 
     /**
      * JAXB support

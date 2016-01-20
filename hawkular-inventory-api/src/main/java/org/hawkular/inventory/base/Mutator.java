@@ -89,7 +89,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                             "yet the entity is not a tenant: " + blueprint);
                 }
             } else {
-                entityPath = parentCanonicalPath.extend(context.entityClass, id).get();
+                entityPath = parentCanonicalPath.extend(Entity.segmentTypeFromType(context.entityClass), id).get();
             }
 
             BE entityObject = context.backend.persist(entityPath, blueprint);
@@ -181,8 +181,9 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     }
 
     protected BE getParent() {
-        return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
-            @SuppressWarnings("unchecked")
+        return ElementTypeVisitor.accept(Entity.segmentTypeFromType(context.entityClass),
+                new ElementTypeVisitor.Simple<BE, Void>() {
+                    @SuppressWarnings("unchecked")
             @Override
             protected BE defaultAction() {
                 BE res = context.backend.querySingle(context.sourcePath);

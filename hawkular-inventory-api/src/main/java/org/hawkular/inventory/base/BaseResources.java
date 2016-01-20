@@ -82,7 +82,7 @@ public final class BaseResources {
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
-                        parentPath, ResourceType.class);
+                        parentPath, ResourceType.SEGMENT_TYPE);
                 resourceTypeObject = context.backend.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
@@ -101,7 +101,7 @@ public final class BaseResources {
 
             Resource
                     ret = new Resource(blueprint.getName(), parentPath.extend(
-                    Resource.class,
+                    Resource.SEGMENT_TYPE,
                     context.backend.extractId(entity)).get(), resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,

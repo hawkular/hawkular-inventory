@@ -161,7 +161,8 @@ public class RestResourcesMetrics extends RestResources {
                 }
 
                 Metrics.ReadAssociate metricDao = inventory.inspect(resource, Resources.Single.class).allMetrics();
-                list.stream().map((p) -> Path.fromPartiallyUntypedString((String) p, tenant, resource, Metric.class))
+                list.stream()
+                        .map((p) -> Path.fromPartiallyUntypedString((String) p, tenant, resource, Metric.SEGMENT_TYPE))
                         .forEach(metricDao::associate);
 
                 return Response.noContent().build();
@@ -242,7 +243,7 @@ public class RestResourcesMetrics extends RestResources {
             metricPath = "/" + metricPath;
         }
 
-        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.SEGMENT_TYPE);
 
         if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
@@ -277,7 +278,7 @@ public class RestResourcesMetrics extends RestResources {
             metricPath = "/" + metricPath;
         }
 
-        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.class);
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, rp, Metric.SEGMENT_TYPE);
 
         if (EntityIdUtils.isTenantEscapeAttempt(rp, mp)) {
             Response.status(FORBIDDEN).build();
@@ -346,7 +347,7 @@ public class RestResourcesMetrics extends RestResources {
             metricPath = "/" + metricPath;
         }
 
-        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, resource, Metric.class);
+        Path mp = Path.fromPartiallyUntypedString(metricPath, tenant, resource, Metric.SEGMENT_TYPE);
 
         if (EntityIdUtils.isTenantEscapeAttempt(resource, mp)) {
             Response.status(FORBIDDEN).build();

@@ -259,7 +259,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     TraversalContext<BE, E> proceedTo(Path path) {
-        if (!entityClass.getSimpleName().equals(path.getSegment().getElementType().getSimpleName())) {
+        if (!Entity.segmentTypeFromType(entityClass).equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
         }
         return replacePath(Util.extendTo(this, path));

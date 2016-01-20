@@ -24,6 +24,9 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author Lukas Krejci
@@ -208,6 +211,11 @@ public final class With {
 
         public Class<? extends Entity<?, ?>>[] getTypes() {
             return types;
+        }
+
+        @JsonIgnore
+        public SegmentType[] getSegmentTypes() {
+            return Arrays.stream(types).map(e -> Entity.segmentTypeFromType(e)).toArray(SegmentType[]::new);
         }
 
         @Override

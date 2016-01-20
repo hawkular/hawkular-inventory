@@ -94,10 +94,6 @@ public final class RelativePath extends Path implements Serializable {
      * @return the parsed relative path
      */
     public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
-            Class<?> intendedFinalType) {
-        return fromPartiallyUntypedString(path, initialPosition, SegmentType.fromElementType(intendedFinalType));
-    }
-    public static RelativePath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             SegmentType intendedFinalType) {
 
         return (RelativePath) Path.fromString(path, false, Extender::new,
@@ -223,6 +219,8 @@ public final class RelativePath extends Path implements Serializable {
     }
 
     public static final class Up {
+        public static final SegmentType SEGMENT_TYPE = SegmentType.up;
+
         private Up() {
         }
     }

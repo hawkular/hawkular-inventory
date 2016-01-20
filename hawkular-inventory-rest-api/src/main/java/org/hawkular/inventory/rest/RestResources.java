@@ -401,7 +401,7 @@ public class RestResources extends RestBase {
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
-        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.SEGMENT_TYPE))
                 .forEach(access::associate);
 
         return Response.noContent().build();
@@ -427,7 +427,7 @@ public class RestResources extends RestBase {
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
-        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.SEGMENT_TYPE))
                 .forEach(access::associate);
 
         return Response.noContent().build();
@@ -457,7 +457,7 @@ public class RestResources extends RestBase {
             childPath = "/" + childPath;
         }
 
-        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.SEGMENT_TYPE);
 
         inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
@@ -489,7 +489,7 @@ public class RestResources extends RestBase {
             childPath = "/" + childPath;
         }
 
-        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.SEGMENT_TYPE);
 
         inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
@@ -600,16 +600,16 @@ public class RestResources extends RestBase {
     }
 
     protected CanonicalPath composeCanonicalPath(String tenantId, String envId, String feedId, String resourcePath) {
-        CanonicalPath.Extender parent = CanonicalPath.empty().extend(Tenant.class, tenantId);
+        CanonicalPath.Extender parent = CanonicalPath.empty().extend(Tenant.SEGMENT_TYPE, tenantId);
 
         if (feedId != null) {
-            parent = parent.extend(Feed.class, feedId);
+            parent = parent.extend(Feed.SEGMENT_TYPE, feedId);
         } else {
-            parent = parent.extend(Environment.class, envId);
+            parent = parent.extend(Environment.SEGMENT_TYPE, envId);
         }
 
         return CanonicalPath.fromPartiallyUntypedString(parent.get().toString() + "/" + resourcePath, parent.get(),
-                Resource.class);
+                Resource.SEGMENT_TYPE);
     }
 
     @GET
