@@ -16,10 +16,9 @@
  */
 package org.hawkular.inventory.base;
 
-import static java.util.stream.Collectors.toSet;
-
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.updated;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -31,7 +30,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -296,7 +294,7 @@ final class Util {
             TransactionParticipant<BE, U> preUpdateCheck,
             BiConsumer<BE, Transaction<BE>> postUpdateCheck) {
 
-        BE updated = runInTransaction(context, false, (t) -> {
+        runInTransaction(context, false, (t) -> {
             BE entity = context.backend.querySingle(entityQuery);
             if (entity == null) {
                 if (update instanceof Relationship.Update) {
@@ -316,12 +314,17 @@ final class Util {
                 postUpdateCheck.accept(entity, t);
             }
 
-            context.backend.commit(t);
-            return entity;
-        });
+            E e = context.backend.convert(entity, context.entityClass);
 
-        E entity = context.backend.convert(updated, context.entityClass);
-        context.notify(entity, new Action.Update<>(entity, update), Action.updated());
+            t.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(entity, e,
+                    new Notification<>(new Action.Update<>(e, update), e, updated())));
+
+            context.backend.commit(t);
+
+            t.getPreCommit().getFinalNotifications().forEach(context::notifyAll);
+
+            return null;
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -349,8 +352,6 @@ final class Util {
 
             Set<BE> deleted = new HashSet<>();
             Set<BE> deletedRels = new HashSet<>();
-            Set<?> deletedEntities;
-            Set<Relationship> deletedRelationships;
 
             Consumer<BE> categorizer = (e) -> {
                 if (context.backend.hasRelationship(e, outgoing, defines.name())) {
@@ -370,16 +371,38 @@ final class Util {
             context.backend.getTransitiveClosureOver(entity, outgoing, contains.name())
                     .forEachRemaining(categorizer::accept);
 
-            //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
-            //We have to do it prior to actually deleting the objects in the backend so that all information and
-            //relationships is still available.
-            deletedEntities = deleted.stream().filter((o) -> isRepresentableInAPI(context, o))
-                    .map((o) -> context.backend.convert(o, context.backend.extractType(o)))
-                    .collect(Collectors.<Object>toSet());
+            //report everything to pre-commit so that it can compose the final set of notifications and execute proper
+            //pre-commit actions.
 
-            deletedRelationships = deletedRels.stream().filter((o) -> isRepresentableInAPI(context, o))
-                    .map((o) -> context.backend.convert(o, Relationship.class))
-                    .collect(toSet());
+            //report the relationships first - we can do it straight away and actually prior to deleting anything so
+            //that the pre-commit can react before the stuff is deleted.
+            deletedRels.forEach(r -> {
+                if (!isRepresentableInAPI(context, r)) {
+                    return;
+                }
+
+                Relationship rel = context.backend.convert(r, Relationship.class);
+                EntityAndPendingNotifications<BE, Relationship> notif =
+                        new EntityAndPendingNotifications<>(r, rel, new Notification<>(rel, rel, deleted()));
+
+                transaction.getPreCommit().addNotifications(notif);
+            });
+
+            //report the deletions prior to actually doing them so that the data are still available
+            Consumer<BE> report = be -> {
+                if (!isRepresentableInAPI(context, be)) {
+                    return;
+                }
+
+                Entity<?, ?> e = context.backend.convert(be, (Class<Entity<?, ?>>) context.backend.extractType(be));
+                EntityAndPendingNotifications<BE, Entity<?, ?>> notif =
+                        new EntityAndPendingNotifications<>(be, e, new Notification<>(e, e, deleted()));
+
+                transaction.getPreCommit().addNotifications(notif);
+            };
+
+            deleted.forEach(report);
+            verticesToDeleteThatDefineSomething.forEach(report);
 
             //k, now we can delete them all... the order is not important anymore
             for (BE e : deleted) {
@@ -416,15 +439,8 @@ final class Util {
 
             context.backend.commit(transaction);
 
-            //report the relationship deletions first - it would be strange to report deletion of a relationship after
-            //reporting that an entity on one end of the relationship has been deleted
-            for (Relationship r : deletedRelationships) {
-                context.notify(r, deleted());
-            }
-
-            for (Object e : deletedEntities) {
-                context.notify(e, deleted());
-            }
+            //emit the notifications that pre-commit processed
+            transaction.getPreCommit().getFinalNotifications().forEach(context::notifyAll);
 
             return null;
         });

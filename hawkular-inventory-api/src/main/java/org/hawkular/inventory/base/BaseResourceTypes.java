@@ -109,6 +109,8 @@ public final class BaseResourceTypes {
         @Override
         protected void preUpdate(String s, BE entityRepresentation, ResourceType.Update update,
                                  Transaction<BE> transaction) {
+            //we should check for violations of identity here if the resource type is a member of a metadata pack but
+            //because resource types contain no such updatable data, this is a no-op.
         }
 
         private static <BE> boolean isResourceTypeInMetadataPack(TraversalContext<BE, ?> context, BE resourceType) {

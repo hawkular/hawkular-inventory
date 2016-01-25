@@ -1446,6 +1446,12 @@
           "code": "java.method.parameterTypeChanged",
           "new": "method parameter <BE, E extends org.hawkular.inventory.api.model.AbstractElement<?, U extends org.hawkular.inventory.api.model.AbstractElement.Update>, U extends org.hawkular.inventory.api.model.AbstractElement.Update> void org.hawkular.inventory.base.Util::update(org.hawkular.inventory.base.TraversalContext<BE, ===E>===, org.hawkular.inventory.api.Query, U, org.hawkular.inventory.base.Util.TransactionParticipant<BE, U>, java.util.function.BiConsumer<BE, org.hawkular.inventory.base.spi.InventoryBackend.Transaction>)",
           "justification": "Package change, Query moved to API."
+        },
+        {
+          "code": "java\\.method\\.returnTypeTypeParametersChanged|java\\.generics\\.formalTypeParameterChanged",
+          "regex": true,
+          "new": "method <T extends org\\.hawkular\\.inventory\\.api\\.model\\.AbstractElement<\\?, \\?>> T [a-zA-Z\\.]+::getElement\\(org\\.hawkular\\.inventory\\.api\\.model\\.CanonicalPath\\)",
+          "justification": "The AbstractElement was not correctly parameterized."
         }
       ]
     }

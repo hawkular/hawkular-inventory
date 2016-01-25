@@ -103,7 +103,7 @@ public class EmptyInventory implements Inventory {
         throw entityNotFound(Tenant.class);
     }
 
-    @Override public <T extends AbstractElement> T getElement(CanonicalPath path) {
+    @Override public <T extends AbstractElement<?, ?>> T getElement(CanonicalPath path) {
         throw entityNotFound(Tenant.class);
     }
 

@@ -28,4 +28,21 @@ package org.hawkular.inventory.api.model;
 public interface IdentityHashable {
 
     String getIdentityHash();
+
+    class Update {
+        private final String newIdentityHash;
+
+        //serialization purposes
+        private Update() {
+            newIdentityHash = null;
+        }
+
+        public Update(String newIdentityHash) {
+            this.newIdentityHash = newIdentityHash;
+        }
+
+        public String getNewIdentityHash() {
+            return newIdentityHash;
+        }
+    }
 }

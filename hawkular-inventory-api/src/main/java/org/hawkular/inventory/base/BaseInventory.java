@@ -169,9 +169,12 @@ public abstract class BaseInventory<E> implements Inventory {
     }
 
     @Override
-    public AbstractElement getElement(CanonicalPath path) {
+    public AbstractElement<?, ?> getElement(CanonicalPath path) {
         try {
-            return (AbstractElement) getBackend().find(path);
+            E element = getBackend().find(path);
+            Class<?> type = getBackend().extractType(element);
+
+            return (AbstractElement<?, ?>) getBackend().convert(element, type);
         } catch (ElementNotFoundException e) {
             throw new EntityNotFoundException("No element found on path: " + path.toString());
         }

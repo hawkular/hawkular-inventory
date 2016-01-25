@@ -25,12 +25,16 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -141,7 +145,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         List<ProcessingTree<BE>> identityHashRoots = new ArrayList<>();
 
         processingTree.dfsTraversal(t -> {
-            if (t.needsResolution() && t.element != null) {
+            if (t.needsResolution()) {
                 identityHashRoots.add(t);
                 return false;
             } else {
@@ -158,6 +162,12 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         correctiveAction = t -> {
             for (ProcessingTree<BE> root : identityHashRoots) {
                 Entity<?, ?> e = (Entity<?, ?>) root.element;
+
+                if (e == null) {
+                    e = inventory.getElement(root.cp);
+                    root.element = e;
+                }
+
                 IdentityHash.Tree treeHash = IdentityHash.treeOf(InventoryStructure.of(e, inventory));
 
                 correctChanges(treeHash, root);
@@ -167,19 +177,63 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private void correctChanges(IdentityHash.Tree treeHash, ProcessingTree<BE> changesTree) {
         if (changesTree.needsResolution()) {
+            if (changesTree.element == null) {
+                changesTree.element = inventory.getElement(changesTree.cp);
+            }
+
             Entity<?, ?> e = cloneWithHash((Entity<?, ?>) changesTree.element, treeHash.getHash());
 
             List<Notification<?, ?>> ns = changesTree.notifications.stream().map(n -> cloneWithNewEntity(n, e))
                     .collect(toList());
 
+            Optional<Notification<?, ?>> deleteNotification = ns.stream()
+                    .filter(n -> n.getAction() == Action.deleted() && n.getValue().equals(changesTree.element))
+                    .findAny();
+
+
+            if (deleteNotification.isPresent()) {
+                //just emit what the caller wanted and don't bother any longer
+                correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
+                        changesTree.representation, e, ns));
+
+                IdentityHash.Tree emptyTree = IdentityHash.Tree.builder().build();
+                changesTree.dfsTraversal(pt -> {
+                    correctChanges(emptyTree, pt);
+                    return true;
+                });
+
+                return;
+            }
+
+            //check if there is a create or update notification if necessary
+            String origIdentityHash = ((IdentityHashable) changesTree.element).getIdentityHash();
+            if (!Objects.equals(origIdentityHash, treeHash.getHash())) {
+                //check if the notifications contain an update or create
+                Optional<Notification<?, ?>> updateOrCreateNotif = ns.stream()
+                        .filter(n -> (n.getAction() == Action.created() || n.getAction() == Action.updated())
+                                && n.getValue().equals(changesTree.element))
+                        .findAny();
+
+                if (!updateOrCreateNotif.isPresent()) {
+                    if (origIdentityHash == null) {
+                        ns.add(new Notification<>(changesTree.element, changesTree.element, Action.created()));
+                    } else {
+                        //noinspection unchecked
+                        ns.add(new Notification(
+                                new Action.Update(changesTree.element, new IdentityHashable.Update(treeHash.getHash())),
+                                e, Action.updated()));
+                    }
+                }
+
+                //now also actually update the element in inventory with the new hash
+                backend.updateIdentityHash(changesTree.representation, treeHash.getHash());
+            }
+
             //set the notifications to emit
             correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
                     changesTree.representation, e, ns));
 
-            //now also actually update the element in inventory with the new hash
-            backend.updateIdentityHash(changesTree.representation, treeHash.getHash());
-
-            //and traverse the children to reset their identity hashes
+            //traverse the children to reset their identity hashes
             ArrayList<IdentityHash.Tree> treeChildren = new ArrayList<>(treeHash.getChildren());
             Collections.sort(treeChildren, (a, b) ->
                     a.getPath().getSegment().getElementId().compareTo(b.getPath().getSegment().getElementId()));
@@ -188,7 +242,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             Collections.sort(processedChildren, (a, b) ->
                     a.path.getElementId().compareTo(b.path.getElementId()));
 
-            for (int i = 0, j = 0; i < processedChildren.size();) {
+
+            for (int i = 0, j = 0; i < processedChildren.size() && j < treeChildren.size();) {
                 ProcessingTree<BE> p = processedChildren.get(i);
                 IdentityHash.Tree h = treeChildren.get(j);
 
@@ -288,23 +343,24 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
     }
 
     private static class ProcessingTree<BE> {
+        //keep it small, we're not going to have many children usually
         final Set<ProcessingTree<BE>> children = new HashSet<>(2);
-                //keep it small, we're not going to have many children
-        //usually
         final Path.Segment path;
+        final CanonicalPath cp;
         final List<Notification<?, ?>> notifications;
         AbstractElement<?, ?> element;
         BE representation;
 
         ProcessingTree() {
-            this(null, null, null, null);
+            this(null, null, null, null, null);
         }
 
-        private ProcessingTree(BE representation, AbstractElement<?, ?> element, Path.Segment path,
+        private ProcessingTree(BE representation, AbstractElement<?, ?> element, Path.Segment path, CanonicalPath cp,
                                List<Notification<?, ?>> notifications) {
             this.representation = representation;
             this.element = element;
             this.path = path;
+            this.cp = cp;
             this.notifications = notifications == null ? new ArrayList<>(0) : notifications;
             clear();
         }
@@ -324,8 +380,12 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
             Set<ProcessingTree<BE>> children = this.children;
 
+            CanonicalPath.Extender cp = CanonicalPath.empty();
+
             ProcessingTree<BE> found = null;
             for (Path.Segment seg : entity.getEntity().getPath().getPath()) {
+                cp.extend(seg);
+
                 found = null;
                 for (ProcessingTree<BE> child : children) {
                     if (seg.equals(child.path)) {
@@ -335,7 +395,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                 }
 
                 if (found == null) {
-                    found = new ProcessingTree<>(null, null, seg, null);
+                    found = new ProcessingTree<>(null, null, seg, cp.get(), null);
                     children.add(found);
                 }
 

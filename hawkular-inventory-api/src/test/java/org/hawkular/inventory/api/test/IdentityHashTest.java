@@ -20,6 +20,8 @@ import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
 import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
 import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
 import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
+import static org.hawkular.inventory.api.Resources.DataRole.configuration;
+import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -35,6 +37,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.junit.Assert;
@@ -119,7 +122,7 @@ public class IdentityHashTest {
 
     @SuppressWarnings("Duplicates")
     @Test
-    public void testIdentityHashTree() throws Exception {
+    public void testIdentityHashTree_ResourceTypes() throws Exception {
         DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
                 .<ResourceTypes.DataRole>builder()
                 .withRole(configurationSchema).withValue(StructuredData.get().integral(5L)).build();
@@ -188,6 +191,44 @@ public class IdentityHashTest {
                 .findFirst().isPresent());
     }
 
+    @SuppressWarnings("Duplicates")
+    @Test
+    public void testIdentityHashTree_Resources() throws Exception {
+        Resource.Blueprint rb = Resource.Blueprint.builder().withId("res").withResourceTypePath("../rt;RT").build();
+        Resource.Blueprint crb =
+                Resource.Blueprint.builder().withId("childRes").withResourceTypePath("../../rt;RT").build();
+
+        DataEntity.Blueprint conf = DataEntity.Blueprint.builder().withRole(configuration)
+                .withValue(StructuredData.get().integral(42L)).build();
+
+        InventoryStructure<Resource.Blueprint> structure = InventoryStructure.of(rb).addChild(conf).addChild(crb)
+                .build();
+
+        String confHash = digest("" + configuration + conf.getValue().toJSON());
+        String dummyConnConfHash = digest("" + connectionConfiguration +
+                dummyDataBlueprint(connectionConfiguration).getValue().toJSON());
+        String dummyconfHash = digest("" + configuration + dummyDataBlueprint(configuration).getValue().toJSON());
+        String childHash = digest(dummyconfHash + dummyConnConfHash + crb.getId());
+        String resourceHash = digest(confHash + dummyConnConfHash + childHash + rb.getId());
+
+        IdentityHash.Tree treeHash = IdentityHash.treeOf(structure);
+
+        Assert.assertEquals(resourceHash, treeHash.getHash());
+        Assert.assertEquals(RelativePath.empty().get(), treeHash.getPath());
+        //we get a "dummy" hash for non-existant configurations
+        Assert.assertEquals(3, treeHash.getChildren().size());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().resource("childRes").get().equals(c.getPath()))
+                .filter(c -> childHash.equals(c.getHash()))
+                .findFirst().isPresent());
+
+        Assert.assertTrue(treeHash.getChildren().stream()
+                .filter(c -> RelativePath.to().dataEntity(configuration).get().equals(c.getPath()))
+                .filter(c -> confHash.equals(c.getHash()))
+                .findFirst().isPresent());
+    }
+
     private String digest(String content) throws NoSuchAlgorithmException {
         byte[] digest = MessageDigest.getInstance("SHA-1").digest(content.getBytes(Charset.forName("UTF-8")));
 
@@ -197,5 +238,9 @@ public class IdentityHashTest {
         }
 
         return bld.toString();
+    }
+
+    private static <R extends DataEntity.Role> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
+        return DataEntity.Blueprint.<R>builder().withRole(role).withValue(StructuredData.get().undefined()).build();
     }
 }

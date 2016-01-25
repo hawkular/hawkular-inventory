@@ -737,6 +737,10 @@ public final class IdentityHash {
             private Builder() {
 
             }
+
+            public Tree build() {
+                return super.build();
+            }
         }
 
         public static final class ChildBuilder<Parent extends AbstractBuilder<?>>

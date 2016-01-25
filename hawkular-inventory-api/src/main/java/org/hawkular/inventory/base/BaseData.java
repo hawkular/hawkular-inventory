@@ -189,7 +189,7 @@ public final class BaseData {
 
         private static <BE> void postUpdate(DataModificationChecks<BE> checks, BE entity,
                                             Transaction<BE> transaction) {
-            checks.postCreate(entity, transaction);
+            checks.postUpdate(entity, transaction);
         }
 
         private static <BE> void preDelete(TraversalContext<BE, DataEntity> context,

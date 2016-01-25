@@ -136,10 +136,6 @@ public final class BaseMetricTypes {
 
         private static <BE> void postUpdate(TraversalContext<BE, ?> context, BE entity,
                                             Transaction<BE> transaction) {
-            context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(context.backend.convert(entity, MetricType.class),
-                            context.inventory.keepTransaction()));
-
         }
 
         private static <BE> boolean isInMetadataPack(TraversalContext<BE, ?> context, BE metricType) {

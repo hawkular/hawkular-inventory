@@ -1544,6 +1544,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             inventory.inspect(r).allMetrics().disassociate(Path.fromString("../m;assocMetric"));
 
             Assert.assertEquals(Collections.singleton(m2), inventory.inspect(r).allMetrics().getAll().entities());
+        } catch (Exception e)  {
+            e.printStackTrace();
         } finally {
             if (r != null) {
                 inventory.inspect(r).delete();
@@ -1986,6 +1988,44 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
+    public void testParentIdentityHashUpdatedWhenChildUpdated() throws Exception {
+        //TODO implement
+        String tenantId = "testParentIdentityHashUpdatedWhenChildUpdated";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
+
+            Resources.Single r = f.resources()
+                    .create(Resource.Blueprint.builder().withId("res").withResourceTypePath("../resourceType").build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            r.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration).withValue
+                    (StructuredData.get().integral(42L)).build());
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testParentIdentityHashUpdatedWhenChildCreated() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testParentIdentityHashUpdatedWhenChildDeleted() throws Exception {
+        //TODO implement
+    }
+
+    @Test
     public void testObserveTenants() throws Exception {
         String tid = "testObserveTenants";
         runObserverTest(Tenant.class, 0, 0, () -> {
@@ -2154,6 +2194,21 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         } finally {
             inventory.tenants().delete(tid);
         }
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfChangedEntity() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfCreatedEntity() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfDeletedEntity() throws Exception {
+        //TODO implement
     }
 
     @Test
