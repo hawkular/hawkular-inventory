@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,9 @@ import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.jdbc.Predef._
 
+/**
+ * All the curl commands that are commented out in the code should pass
+ */
 class AgentSimulation extends Simulation {
 
   // --------------------------- Options
@@ -85,22 +88,23 @@ class AgentSimulation extends Simulation {
 
   val random = new util.Random
 
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "footype", "properties": {"foo-name": "jmeno"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/resourceTypes
   def resourceTypeJson(id: String): String = s"""
     {
       "id": "resType-$id",
       "properties": {
-        "name": "name-$id"
+        "foo-name": "name-$id"
       }
     }
   """
 
-//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTES", "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
+//curl -ivX POST -H "Content-Type: application/json;charset=utf-8" -d '{"id": "aaa", "unit": "BYTES", "type": "GAUGE", "collectionInterval": 30, "properties": {"a": "b"}}' http://jdoe:password@127.0.0.1:8080/hawkular/inventory/metricTypes
   def metricTypeJson(id: String): String = s"""
     {
       "id": "metricType-$id",
       "unit": "BYTES",
-      "type": "GAUGE"
+      "type": "GAUGE",
+      "collectionInterval": 30
     }
   """
 

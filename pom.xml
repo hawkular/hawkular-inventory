@@ -42,8 +42,8 @@
     <module>hawkular-inventory-bus</module>
     <module>hawkular-inventory-bus-api</module>
     <module>hawkular-inventory-dist</module>
-    <module>hawkular-inventory-load-tests</module>
     <module>hawkular-inventory-itest-parent</module>
+    <module>hawkular-inventory-load-tests</module>
   </modules>
 
   <scm>

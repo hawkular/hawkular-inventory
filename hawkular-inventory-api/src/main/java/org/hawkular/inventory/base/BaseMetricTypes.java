@@ -151,11 +151,11 @@ public final class BaseMetricTypes {
         private String getErrorMessage(MetricType.Blueprint blueprint) {
             String msg;
             if (blueprint.getCollectionInterval() == null) {
-                msg = "Interval";
+                msg = "Interval (\"collectionInterval\" in JSON)";
             } else if (blueprint.getType() == null) {
-                msg = "Data type";
+                msg = "Data type (\"type\" in JSON)";
             } else {
-                msg = "Metric unit";
+                msg = "Metric unit (\"unit\" in JSON)";
             }
 
             return msg + " is null";
