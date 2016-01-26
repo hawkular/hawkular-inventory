@@ -56,20 +56,34 @@
           <propagateSystemProperties>true</propagateSystemProperties>
         </configuration>
       </plugin>
-
-      <!-- skip tests -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
     <profile>
       <id>ltest</id>
-
       <properties>
+        <!-- ltest properties -->
+        <!-- how many resource/metric types should be created by 1 client -->
+        <ltest.resourceTypes>1</ltest.resourceTypes>
+        <ltest.metricTypes>1</ltest.metricTypes>
+        <!-- how many resources/metrics should be created by 1 client -->
+        <ltest.resources>1</ltest.resources>
+        <ltest.metrics>1</ltest.metrics>
+        <!-- how many times the read of all {(resource|metric)(Type)?s} should be performed by 1 client. It also tests
+        'getAllResourcesOfGivenTypeMultipleTimes' -->
+        <ltest.readEntity>1</ltest.readEntity>
+        <!-- how many concurrent clients will be running all the test suite -->
+        <ltest.users>1</ltest.users>
+        <!-- delay before firing up another client (in seconds) -->
+        <ltest.ramp>5</ltest.ramp>
+        <!-- Interval between requests that don't have to be synchronized (in millis) -->
+        <ltest.interval>1</ltest.interval>
+        <!-- log verbosity (0,1,2) -->
+        <ltest.logLevel>2</ltest.logLevel>
+        <ltest.baseURI>http://localhost:8080</ltest.baseURI>
+        <ltest.username>jdoe</ltest.username>
+        <ltest.password>password</ltest.password>
 
         <!-- hawkular dist properties -->
         <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
@@ -104,23 +118,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
-              <execution>
-                <id>unpack-tests</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>unpack</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.hawkular.inventory</groupId>
-                      <artifactId>hawkular-inventory-itest</artifactId>
-                      <version>${project.version}</version>
-                      <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-                    </artifactItem>
-                  </artifactItems>
-                </configuration>
-              </execution>
               <execution>
                 <id>copy-deployments</id>
                 <phase>test-compile</phase>
@@ -276,10 +273,22 @@
                 <goals>
                   <goal>execute</goal>
                 </goals>
-                <!--
-                                <configuration>
-                                  <simulationsFolder>foo</simulationsFolder>
-                                </configuration>-->
+                <configuration>
+                  <jvmArgs>
+                    <jvmArg>-Dltest.resourceTypes=${ltest.resourceTypes}</jvmArg>
+                    <jvmArg>-Dltest.metricTypes=${ltest.metricTypes}</jvmArg>
+                    <jvmArg>-Dltest.resources=${ltest.resources}</jvmArg>
+                    <jvmArg>-Dltest.metrics=${ltest.metrics}</jvmArg>
+                    <jvmArg>-Dltest.readEntity=${ltest.readEntity}</jvmArg>
+                    <jvmArg>-Dltest.users=${ltest.users}</jvmArg>
+                    <jvmArg>-Dltest.ramp=${ltest.ramp}</jvmArg>
+                    <jvmArg>-Dltest.interval=${ltest.interval}</jvmArg>
+                    <jvmArg>-Dltest.logLevel=${ltest.logLevel}</jvmArg>
+                    <jvmArg>-Dltest.baseURI=${ltest.baseURI}</jvmArg>
+                    <jvmArg>-Dltest.username=${ltest.username}</jvmArg>
+                    <jvmArg>-Dltest.password=${ltest.password}</jvmArg>
+                  </jvmArgs>
+                </configuration>
               </execution>
             </executions>
           </plugin>

@@ -29,34 +29,34 @@ class AgentSimulation extends Simulation {
 
   // --------------------------- Options
 
-  val baseURI: String = System.getProperty("baseURI", "http://localhost:8080")
-  val username: String = System.getProperty("username", "jdoe")
-  val password: String = System.getProperty("password", "password")
-  val logLevel: Int = Integer.getInteger("logLevel", 0)
+  val baseURI: String = System.getProperty("ltest.baseURI", "http://localhost:8080")
+  val username: String = System.getProperty("ltest.username", "jdoe")
+  val password: String = System.getProperty("ltest.password", "password")
+  val logLevel: Int = Integer.getInteger("ltest.logLevel", 0)
 
   // Number of concurrent clients
-  val users: Int = Integer.getInteger("users", 7)
+  val users: Int = Integer.getInteger("ltest.users", 7)
 
   // Delay before firing up another client
-  val ramp: Long = java.lang.Long.getLong("ramp", 5L)
+  val ramp: Long = java.lang.Long.getLong("ltest.ramp", 5L)
 
   // The number of resource types for each client
-  val resourceTypesNumber: Int = Integer.getInteger("resourceTypes", 2)
+  val resourceTypesNumber: Int = Integer.getInteger("ltest.resourceTypes", 2)
 
   // The number of metric types for each client
-  val metricTypesNumber: Int = Integer.getInteger("metricTypes", resourceTypesNumber * 2)
+  val metricTypesNumber: Int = Integer.getInteger("ltest.metricTypes", resourceTypesNumber * 2)
 
   // The number of resources for each client
-  val resourcesNumber: Int = Integer.getInteger("resources", 2)
+  val resourcesNumber: Int = Integer.getInteger("ltest.resources", 2)
 
   // The number of metrics for each client
-  val metricsNumber: Int = Integer.getInteger("metrics", resourcesNumber * 2)
+  val metricsNumber: Int = Integer.getInteger("ltest.metrics", resourcesNumber * 2)
 
   // The number reads fo perform for each entity for each client
-  val readEntityNumber: Int = Integer.getInteger("readEntity", 2)
+  val readEntityNumber: Int = Integer.getInteger("ltest.readEntity", 2)
 
   // Interval between requests that don't have to be synchronized (in millis)
-  val interval: Int = Integer.getInteger("interval", 1)
+  val interval: Int = Integer.getInteger("ltest.interval", 1)
 
   // ---------------------------
 
