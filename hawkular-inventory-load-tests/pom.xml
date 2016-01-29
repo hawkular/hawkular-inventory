@@ -64,11 +64,15 @@
       <id>ltest</id>
       <properties>
         <!-- ltest properties -->
-        <!-- how many resource/metric types should be created by 1 client -->
+        <!-- how many times all the entities for 1 hawkular with 1 wildfly in it should be inserted to the inventory (~real data) -->
+        <ltest.hawkularInventoryMultiple>1</ltest.hawkularInventoryMultiple>
+        <!-- how many resource types should be created by 1 client (~fake data) -->
         <ltest.resourceTypes>1</ltest.resourceTypes>
+        <!-- how many metric types should be created by 1 client on each resource type -->
         <ltest.metricTypes>1</ltest.metricTypes>
-        <!-- how many resources/metrics should be created by 1 client -->
+        <!-- how many resources should be created by 1 client -->
         <ltest.resources>1</ltest.resources>
+        <!-- how many metrics should be created by 1 client on each resource -->
         <ltest.metrics>1</ltest.metrics>
         <!-- how many times the read of all {(resource|metric)(Type)?s} should be performed by 1 client. It also tests
         'getAllResourcesOfGivenTypeMultipleTimes' -->
@@ -80,7 +84,7 @@
         <!-- Interval between requests that don't have to be synchronized (in millis) -->
         <ltest.interval>1</ltest.interval>
         <!-- log verbosity (0,1,2) -->
-        <ltest.logLevel>2</ltest.logLevel>
+        <ltest.logLevel>1</ltest.logLevel>
         <ltest.baseURI>http://localhost:8080</ltest.baseURI>
         <ltest.username>jdoe</ltest.username>
         <ltest.password>password</ltest.password>
@@ -287,6 +291,7 @@
                     <jvmArg>-Dltest.baseURI=${ltest.baseURI}</jvmArg>
                     <jvmArg>-Dltest.username=${ltest.username}</jvmArg>
                     <jvmArg>-Dltest.password=${ltest.password}</jvmArg>
+                    <jvmArg>-Dltest.hawkularInventoryMultiple=${ltest.hawkularInventoryMultiple}</jvmArg>
                   </jvmArgs>
                 </configuration>
               </execution>
