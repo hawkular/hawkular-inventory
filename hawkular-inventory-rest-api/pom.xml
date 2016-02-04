@@ -183,12 +183,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.keycloak.secretstore</groupId>
-      <artifactId>secret-store-undertow-filter</artifactId>
-      <version>${version.org.keycloak.secretstore}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-rest-status</artifactId>
       <version>${version.org.hawkular.commons}</version>
