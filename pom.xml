@@ -44,6 +44,7 @@
     <module>hawkular-inventory-dist</module>
     <module>hawkular-inventory-itest-parent</module>
     <module>hawkular-inventory-load-tests</module>
+    <module>hawkular-inventory-feature-pack</module>
   </modules>
 
   <scm>
@@ -54,7 +55,7 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.accounts>2.0.18.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>2.0.19.Final-SRC-revision-18c7daca97b997992f33070ae62b41e77888f1b0</version.org.hawkular.accounts>
     <version.org.hawkular.commons>0.3.5.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
