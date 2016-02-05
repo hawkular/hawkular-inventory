@@ -37,13 +37,6 @@
       <artifactId>gatling-charts-highcharts</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-dist</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -119,34 +112,6 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-deployments</id>
-                <phase>test-compile</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <stripVersion>true</stripVersion>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.hawkular.inventory</groupId>
-                      <artifactId>hawkular-inventory-dist</artifactId>
-                      <version>${project.version}</version>
-                      <type>war</type>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>
-                    ${project.build.directory}/${project.artifactId}-${project.version}/modules/org/hawkular/nest/main/deployments
-                  </outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
             <executions>
@@ -158,42 +123,8 @@
                 <phase>compile</phase>
                 <configuration>
                   <config-file>
-                    ../hawkular-inventory-itest-parent/hawkular-inventory-itest-dist/server-provisioning.xml
+                    ../hawkular-inventory-itest/server-provisioning.xml
                   </config-file>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- further customize standalone.xml -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>xml-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>transform-standalone-xml</id>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>transform</goal>
-                </goals>
-                <configuration>
-                  <transformationSets>
-                    <!-- standalone.xml -->
-                    <transformationSet>
-                      <dir>
-                        ${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration
-                      </dir>
-                      <stylesheet>
-                        ${project.basedir}/../hawkular-inventory-itest-parent/hawkular-inventory-itest-dist/src/main/resources/standalone.xsl
-                      </stylesheet>
-                      <includes>
-                        <include>standalone.xml</include>
-                      </includes>
-                      <outputDir>
-                        ${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration
-                      </outputDir>
-                    </transformationSet>
-                  </transformationSets>
                 </configuration>
               </execution>
             </executions>
