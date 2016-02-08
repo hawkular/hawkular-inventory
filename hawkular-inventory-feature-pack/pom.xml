@@ -29,11 +29,7 @@
 
   <artifactId>hawkular-inventory-feature-pack</artifactId>
   <version>0.13.0.Final-SNAPSHOT</version>
-
-  <properties>
-    <!-- TODO we should figure out a way of sharing this with accounts -->
-    <version.org.keycloak>1.8.0.Final</version.org.keycloak>
-  </properties>
+  <packaging>pom</packaging>
 
   <dependencies>
     <dependency>
