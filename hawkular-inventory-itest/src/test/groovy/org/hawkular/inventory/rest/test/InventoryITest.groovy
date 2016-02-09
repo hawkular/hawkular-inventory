@@ -87,7 +87,7 @@ class InventoryITest extends AbstractTestBase {
         String path = "/hawkular/accounts/personas/current"
         for (int i = 0; i < attemptCount; i++) {
             try {
-                response = client.get(path: path)
+                response = AbstractTestBase.client.get(path: path)
                 /* all is well, we can leave the loop */
                 break;
             } catch (groovyx.net.http.HttpResponseException e) {
@@ -111,7 +111,7 @@ class InventoryITest extends AbstractTestBase {
         path = "$basePath/environments/$testEnvId"
         for (int i = 0; i < attemptCount; i++) {
             try {
-                response = client.get(path: path)
+                response = AbstractTestBase.client.get(path: path)
                 /* all is well, we can leave the loop */
                 break;
             } catch (groovyx.net.http.HttpResponseException e) {
@@ -131,7 +131,7 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(baseURI + "$basePath/environments/$environmentId", response.headers.Location)
 
         /* URL resource type should have been autocreated */
-        response = client.get(path: "$basePath/resourceTypes/$urlTypeId")
+        response = AbstractTestBase.client.get(path: "$basePath/resourceTypes/$urlTypeId")
         assertEquals(200, response.status)
         assertEquals(urlTypeId, response.data.id)
 
@@ -177,7 +177,7 @@ class InventoryITest extends AbstractTestBase {
         /* link pingableHostRTypeId with responseTimeMTypeId and responseStatusCodeMTypeId */
         path = "$basePath/resourceTypes/$pingableHostRTypeId/metricTypes"
         //just testing that both relative and canonical paths work when referencing the types
-        response = client.post(path: path,
+        response = AbstractTestBase.client.post(path: path,
                 body: ["../$responseTimeMTypeId".toString(), "/$responseStatusCodeMTypeId".toString()])
 
         assertEquals(204, response.status)
@@ -269,7 +269,7 @@ class InventoryITest extends AbstractTestBase {
                 response.headers.Location)
 
         path = "$basePath/$environmentId/resources/weapons/children"
-        response = client.post(path: path,
+        response = AbstractTestBase.client.post(path: path,
                 body: ["/e;" + environmentId + "/r;" + room1ResourceId + "/r;table/r;leg%2F1", "../" + room1ResourceId
                         + "/table/leg-4"])
         assertEquals(204, response.status)
@@ -278,7 +278,7 @@ class InventoryITest extends AbstractTestBase {
 
         /* link the metric to resource */
         path = "$basePath/$environmentId/resources/$host1ResourceId/metrics"
-        response = client.post(path: path,
+        response = AbstractTestBase.client.post(path: path,
                 body: ["/e;$environmentId/m;$responseTimeMetricId".toString(),
                        "/e;$environmentId/m;$responseStatusCodeMetricId".toString()]);
         assertEquals(204, response.status)
@@ -299,12 +299,12 @@ class InventoryITest extends AbstractTestBase {
                             from      : "2000-01-01",
                             confidence: "90%"
                         ]]
-        response = client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/relationships",
+        response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/relationships",
                 body: relation)
         assertEquals(201, response.status)
 
         // relationship with tenant
-        response = client.post(path: "$basePath/tenants/relationships", body: [
+        response = AbstractTestBase.client.post(path: "$basePath/tenants/relationships", body: [
                 name: "sampleRelationship",
                 source: "/t;" + tenantId,
                 target: "/t;" + tenantId])
@@ -322,11 +322,11 @@ class InventoryITest extends AbstractTestBase {
         // add some parameters to it
         def startOpParamTypes = [role: "parameterTypes", value: [title     : "blah", type: "object",
                                                                  properties: [quick: [type: "boolean"]]]]
-        response = client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
+        response = AbstractTestBase.client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
                 body: startOpParamTypes)
         assertEquals(201, response.status)
 
-        response = client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
+        response = AbstractTestBase.client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes/start/data",
                 body: [role: "returnType", value: [title: "blah", type: "boolean"]])
         assertEquals(201, response.status)
 
@@ -390,7 +390,7 @@ class InventoryITest extends AbstractTestBase {
             ],
             role : "configurationSchema"
         ]
-        response = client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/data",
+        response = AbstractTestBase.client.post(path: "$basePath/resourceTypes/$pingableHostRTypeId/data",
                 body: schema)
         assertEquals(201, response.status)
 
@@ -405,7 +405,7 @@ class InventoryITest extends AbstractTestBase {
         ]
 
         try {
-            response = client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
+            response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
                 body: invalidData)
             Assert.fail("groovyx.net.http.HttpResponseException expected")
         } catch (groovyx.net.http.HttpResponseException e) {
@@ -442,7 +442,7 @@ class InventoryITest extends AbstractTestBase {
                 ignorance: "strength"
             ]
         ]
-        response = client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
+        response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
                 body: data)
         assertEquals(201, response.status)
 
@@ -468,7 +468,7 @@ class InventoryITest extends AbstractTestBase {
             String path = en.getKey();
             String getValidationPath = en.getValue();
             try {
-                def response = client.delete(path: path)
+                def response = AbstractTestBase.client.delete(path: path)
                 assertEquals(204, response.status)
             } catch (groovyx.net.http.HttpResponseException e) {
                 println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -479,7 +479,7 @@ class InventoryITest extends AbstractTestBase {
 
             if (getValidationPath != null) {
                 try {
-                    def response = client.get(path: getValidationPath)
+                    def response = AbstractTestBase.client.get(path: getValidationPath)
                     Assert.fail("The path '$getValidationPath' should not exist after the entity was deleted")
                 } catch (groovyx.net.http.HttpResponseException e) {
                     assertEquals("Error message for path '$path'", "Not Found", e.getMessage())
@@ -492,7 +492,7 @@ class InventoryITest extends AbstractTestBase {
 
     @Test
     void ping() {
-        def response = client.get(path: "$basePath")
+        def response = AbstractTestBase.client.get(path: "$basePath")
         assertEquals(200, response.status)
     }
 
@@ -525,7 +525,7 @@ class InventoryITest extends AbstractTestBase {
 
     @Test
     void testOperationTypesCreated() {
-        def response = client.get(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes")
+        def response = AbstractTestBase.client.get(path: "$basePath/resourceTypes/$pingableHostRTypeId/operationTypes")
         assertEquals(2, response.data.size())
 
         assertEntityExists("resourceTypes/$pingableHostRTypeId/operationTypes/start", "/rt;" + pingableHostRTypeId +
@@ -554,25 +554,25 @@ class InventoryITest extends AbstractTestBase {
     void testResourcesFilters() {
 
         /* filter by resource properties */
-        def response = client.get(path: "$basePath/$environmentId/resources",
+        def response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["properties" : "purchaseDate:$date20150626", sort: "id"])
         assertEquals(2, response.data.size())
         assertEquals(copyMachine1ResourceId, response.data.get(0).id)
         assertEquals(room1ResourceId, response.data.get(1).id)
 
-        response = client.get(path: "$basePath/$environmentId/resources",
+        response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["properties" : "nextMaintenanceDate:$date20160801"])
         assertEquals(1, response.data.size())
         assertEquals(copyMachine1ResourceId, response.data.get(0).id)
 
         /* query by two props at once */
-        response = client.get(path: "$basePath/$environmentId/resources",
+        response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["properties" : "nextMaintenanceDate:$date20160801,purchaseDate:$date20150626"])
         assertEquals(1, response.data.size())
         assertEquals(copyMachine1ResourceId, response.data.get(0).id)
 
         /* query by property existence */
-        response = client.get(path: "$basePath/$environmentId/resources",
+        response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["properties" : "purchaseDate", sort: "id"])
         assertEquals(3, response.data.size())
         assertEquals(copyMachine1ResourceId, response.data.get(0).id)
@@ -580,11 +580,11 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(room1ResourceId, response.data.get(2).id)
 
         /* filter by type */
-        response = client.get(path: "$basePath/$environmentId/resources",
+        response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["type.id": pingableHostRTypeId])
         assertEquals(2, response.data.size())
 
-        response = client.get(path: "$basePath/$environmentId/resources",
+        response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources",
             query: ["type.id": roomRTypeId, "type.version": typeVersion])
         assertEquals(2, response.data.size())
 
@@ -621,27 +621,27 @@ class InventoryITest extends AbstractTestBase {
     @Test
     void testPaging() {
         String path = "$basePath/$environmentId/resources"
-        def response = client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 0, per_page: 2, sort: "id"])
+        def response = AbstractTestBase.client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 0, per_page: 2, sort: "id"])
         assertEquals(2, response.data.size())
 
         def first = response.data.get(0)
         def second = response.data.get(1)
 
-        response = client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 0, per_page: 1, sort: "id"])
+        response = AbstractTestBase.client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 0, per_page: 1, sort: "id"])
         assertEquals(1, response.data.size())
         assertEquals(first, response.data.get(0))
 
-        response = client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 1, per_page: 1, sort: "id"])
+        response = AbstractTestBase.client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 1, per_page: 1, sort: "id"])
         assertEquals(1, response.data.size())
         assertEquals(second, response.data.get(0))
 
-        response = client.get(path: path, query: ["type.id": pingableHostRTypeId, page : 0, per_page: 1, sort: "id",
-                                                                               order: "desc"])
+        response = AbstractTestBase.client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 0, per_page: 1, sort: "id",
+                                                                   order    : "desc"])
         assertEquals(1, response.data.size())
         assertEquals(second, response.data.get(0))
 
-        response = client.get(path: path, query: ["type.id": pingableHostRTypeId, page : 1, per_page: 1, sort: "id",
-                                                                               order: "desc"])
+        response = AbstractTestBase.client.get(path: path, query: ["type.id": pingableHostRTypeId, page: 1, per_page: 1, sort: "id",
+                                                                   order    : "desc"])
         assertEquals(1, response.data.size())
         assertEquals(first, response.data.get(0))
     }
@@ -852,7 +852,7 @@ class InventoryITest extends AbstractTestBase {
                     "\"}")
         }
         payload += String.join(",", rs) + "]}}"
-        def response = client.post(path: "$basePath/bulk", body: payload)
+        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
 
         assertEquals(201, response.status)
         def codes = response.data as Map<String, Integer>
@@ -862,7 +862,7 @@ class InventoryITest extends AbstractTestBase {
             def p = CanonicalPath.fromString(it);
             def env = p.ids().getEnvironmentId()
             def rid = p.ids().getResourcePath().getSegment().getElementId()
-            client.delete(path: "$basePath/$env/resources/$rid")
+            AbstractTestBase.client.delete(path: "$basePath/$env/resources/$rid")
         })
     }
 
@@ -876,7 +876,7 @@ class InventoryITest extends AbstractTestBase {
         rs.add("{\"id\": \"" + bulkResourcePrefix + "+1\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
 
         payload += String.join(",", rs) + "]}}"
-        def response = client.post(path: "$basePath/bulk", body: payload)
+        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
 
         assertEquals(201, response.status)
         def codes = response.data.resource as Map<String, Integer>
@@ -885,7 +885,7 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(409, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + room1ResourceId))
         assertEquals(201, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "+1"))
 
-        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
     }
 
     @Test
@@ -898,7 +898,7 @@ class InventoryITest extends AbstractTestBase {
                 '"' + rpath + '": {"relationship" : [' +
                 '{"name": "incorporates", "otherEnd": "' + mpath + '", "direction": "outgoing"}]}}'
 
-        def response = client.post(path: "$basePath/bulk", body: payload)
+        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
 
         assertEquals(201, response.status)
         def resourceCodes = response.data.resource as Map<String, Integer>
@@ -910,8 +910,8 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(1, relationshipCodes.size())
         assertEquals(201, relationshipCodes.entrySet().getAt(0).getValue())
 
-        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1/metrics/../$responseTimeMetricId")
-        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1/metrics/../$responseTimeMetricId")
+        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
     }
 
     @Test
@@ -1021,7 +1021,7 @@ class InventoryITest extends AbstractTestBase {
         }
         """
 
-        def response = client.post(path: "$basePath/bulk", body: payload)
+        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
         assertEquals(201, response.status)
 
         def environmentCodes = response.data.environment as Map<String, Integer>
@@ -1047,7 +1047,7 @@ class InventoryITest extends AbstractTestBase {
             }
           }
         """
-        response = client.post(path: "$basePath/bulk", body: payload)
+        response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
         assertEquals(201, response.status)
 
         def metadataPackCodes = response.data.metadataPack as Map<String, Integer>
@@ -1084,21 +1084,21 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(1, metadataPackCodes.size())
         assertEquals(201, metadataPackCodes.entrySet().getAt(0).value)
 
-        response = client.get(path: "$basePath/$env1/resources/url1/metrics")
+        response = AbstractTestBase.client.get(path: "$basePath/$env1/resources/url1/metrics")
         assertEquals("/t;$tenantId/e;$env1/m;url1_responseTime".toString(), response.data.get(0).path)
 
         def mpPath = metadataPackCodes.entrySet().getAt(0).key
         def mpId = mpPath.substring(mpPath.lastIndexOf(";") + 1)
-        client.delete(path: "$basePath/metadatapacks/" + mpId)
-        client.delete(path: "$basePath/environments/$env1")
-        client.delete(path: "$basePath/environments/$env2")
-        client.delete(path: "$basePath/resourceTypes/$rt1")
-        client.delete(path: "$basePath/metricTypes/$mt1")
+        AbstractTestBase.client.delete(path: "$basePath/metadatapacks/" + mpId)
+        AbstractTestBase.client.delete(path: "$basePath/environments/$env1")
+        AbstractTestBase.client.delete(path: "$basePath/environments/$env2")
+        AbstractTestBase.client.delete(path: "$basePath/resourceTypes/$rt1")
+        AbstractTestBase.client.delete(path: "$basePath/metricTypes/$mt1")
     }
 
     @Test
     void testMetadataPacks() {
-        def response = client.post(path: "$basePath/metadatapacks", body: """
+        def response = AbstractTestBase.client.post(path: "$basePath/metadatapacks", body: """
             {
               "members": ["/t;$tenantId/rt;$urlTypeId"]
             }
@@ -1108,19 +1108,19 @@ class InventoryITest extends AbstractTestBase {
 
         try {
             //try to delete url - should be impossible now
-            client.delete(path: "$basePath/resourceTypes/$urlTypeId")
+            AbstractTestBase.client.delete(path: "$basePath/resourceTypes/$urlTypeId")
             fail("Deleting a resource type that is part of metadatapack should not be possible.")
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode)
         } finally {
-            client.delete(path: "$basePath/metadatapacks/$mpId")
+            AbstractTestBase.client.delete(path: "$basePath/metadatapacks/$mpId")
         }
     }
 
     @Test
     void testRecursiveChildren() {
         try {
-            def response = client.post(path: "$basePath/$environmentId/resources", body: """
+            def response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources", body: """
                 {
                     "id": "rootResource",
                     "resourceTypePath": "/$urlTypeId"
@@ -1128,7 +1128,7 @@ class InventoryITest extends AbstractTestBase {
                 """)
             assertEquals(201, response.status)
 
-            response = client.post(path: "$basePath/$environmentId/resources/rootResource", body: """
+            response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/rootResource", body: """
                 {
                     "id": "childResource",
                     "resourceTypePath": "/$urlTypeId"
@@ -1136,7 +1136,7 @@ class InventoryITest extends AbstractTestBase {
                 """)
             assertEquals(201, response.status)
 
-            response = client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
+            response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
                     body: """
                         {
                             "id": "grandChildResource",
@@ -1145,7 +1145,7 @@ class InventoryITest extends AbstractTestBase {
                         """)
             assertEquals(201, response.status)
 
-            response = client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
+            response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/rootResource/childResource",
                     body: """
                         {
                             "id": "grandChildResource2",
@@ -1154,7 +1154,7 @@ class InventoryITest extends AbstractTestBase {
                         """)
             assertEquals(201, response.status)
 
-            response = client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
+            response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
                     query: ["typeId": "$urlTypeId"])
 
             def ret = response.data as List<Resource>
@@ -1162,31 +1162,31 @@ class InventoryITest extends AbstractTestBase {
             assertTrue(ret.any {"childResource".equals(it.id)})
             assertTrue(ret.any {"grandChildResource".equals(it.id)})
 
-            response = client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
+            response = AbstractTestBase.client.get(path: "$basePath/$environmentId/resources/rootResource/recursiveChildren",
                     query: ["typeId": "$roomRTypeId"])
 
             ret = response.data as List<Resource>
             assertEquals(1, ret.size())
             assertTrue(ret.any {"grandChildResource2".equals(it.id)})
         } finally {
-            client.delete(path: "$basePath/$environmentId/resources/rootResource")
+            AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/rootResource")
         }
     }
 
     private static void assertEntityExists(path, cp) {
-        def response = client.get(path: "$basePath/$path")
+        def response = AbstractTestBase.client.get(path: "$basePath/$path")
         assertEquals(200, response.status)
         assertEquals(fullCanonicalPath(cp), response.data.path)
     }
 
     private static void assertEntityExists(path, queryParams, cp) {
-        def response = client.get(path: "$basePath/$path", query: queryParams)
+        def response = AbstractTestBase.client.get(path: "$basePath/$path", query: queryParams)
         assertEquals(200, response.status)
         assertEquals(fullCanonicalPath(cp), response.data.path)
     }
 
     private static void assertEntitiesExist(path, cps) {
-        def response = client.get(path: "$basePath/$path")
+        def response = AbstractTestBase.client.get(path: "$basePath/$path")
 
         def fullCps = cps.collect { fullCanonicalPath(it) }
 
@@ -1201,7 +1201,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     private static void assertRelationshipJsonldExists(path, source, label, target) {
-        def response = client.get(path: "$basePath/$path", query: [jsonld: true])
+        def response = AbstractTestBase.client.get(path: "$basePath/$path", query: [jsonld: true])
         def needle = new Tuple(source, label, target);
         def haystack = response.data.collect{ new Tuple(it["source"]["shortId"], it["name"],
                 it["target"]["shortId"])  }
@@ -1210,7 +1210,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     private static void assertRelationshipExists(path, source, label, target, query = [:]) {
-        def response = client.get(path: "$basePath/$path", query: query)
+        def response = AbstractTestBase.client.get(path: "$basePath/$path", query: query)
         def needle = new Tuple(source, label, target);
         def haystack = response.data.collect{ new Tuple(it["source"], it["name"],
                 it["target"])  }
@@ -1229,7 +1229,7 @@ class InventoryITest extends AbstractTestBase {
         String path = args.path + "/" + args.body.id
         pathsToDelete.put(path, basePath + "/" + getVerificationPath)
         println "posting $args"
-        return client.post(args)
+        return AbstractTestBase.client.post(args)
     }
 
     private static String fullCanonicalPath(cp) {

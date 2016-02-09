@@ -26,14 +26,7 @@
     <version>0.13.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-inventory-itest-dist</artifactId>
-
-  <properties>
-    <kettle.build.type>production</kettle.build.type>
-    <assembly.dir>${project.build.directory}/assembly</assembly.dir>
-    <wildfly.dist.zip.root.dir>wildfly-${version.org.wildfly}</wildfly.dist.zip.root.dir>
-    <hawkular.dist.zip.root.dir>${project.artifactId}-${project.version}</hawkular.dist.zip.root.dir>
-  </properties>
+  <artifactId>hawkular-inventory-itest</artifactId>
 
   <build>
     <plugins>
@@ -49,47 +42,35 @@
   </build>
 
   <dependencies>
+
+    <!-- tests are reused in another modules, so dependencies are transitively needed -->
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-itest</artifactId>
+      <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 
-
     <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-feature-pack</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-feature-pack</artifactId>
+      <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-feature-pack</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
-      <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.groovy.modules.http-builder</groupId>
+      <artifactId>http-builder</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-dist</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
-
   </dependencies>
 
   <profiles>
@@ -129,49 +110,6 @@
         <plugins>
 
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>unpack-tests</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>unpack</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.hawkular.inventory</groupId>
-                      <artifactId>hawkular-inventory-itest</artifactId>
-                      <version>${project.version}</version>
-                      <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-                    </artifactItem>
-                  </artifactItems>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-deployments</id>
-                <phase>test-compile</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <stripVersion>true</stripVersion>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.hawkular.inventory</groupId>
-                      <artifactId>hawkular-inventory-dist</artifactId>
-                      <version>${project.version}</version>
-                      <type>war</type>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/modules/org/hawkular/nest/main/deployments</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
             <executions>
@@ -183,34 +121,6 @@
                 <phase>compile</phase>
                 <configuration>
                   <config-file>server-provisioning.xml</config-file>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- further customize standalone.xml -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>xml-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>transform-standalone-xml</id>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>transform</goal>
-                </goals>
-                <configuration>
-                  <transformationSets>
-                    <!-- standalone.xml -->
-                    <transformationSet>
-                      <dir>${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration</dir>
-                      <stylesheet>src/main/resources/standalone.xsl</stylesheet>
-                      <includes>
-                        <include>standalone.xml</include>
-                      </includes>
-                      <outputDir>${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration</outputDir>
-                    </transformationSet>
-                  </transformationSets>
                 </configuration>
               </execution>
             </executions>
@@ -278,15 +188,11 @@
               </execution>
             </executions>
           </plugin>
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <!-- if this is used maven reports always SUCCESS even if tests failed -->
-              <!-- see https://stackoverflow.com/questions/16797601/maven-failsafe-plugin-errors-and-build-success -->
-              <!--<dependenciesToScan>-->
-              <!--<dependency>org.hawkular.inventory:hawkular-inventory-itest</dependency>-->
-              <!--</dependenciesToScan>-->
               <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
 
               <includes>
