@@ -13,6 +13,8 @@ cache:
 
 install:
 - mvn -s .travis.maven.settings.xml -version -B
+# unshallow is needed by license-maven-plugin
+- git fetch origin --unshallow
 script:
 - mvn -fae -s .travis.maven.settings.xml clean install -Pitest,ltest
 env:
