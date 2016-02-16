@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -201,9 +201,10 @@ public class RestResourceTypesOperationTypesData extends RestBase {
         if (!security.canUpdate(operationType)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.inspect(operationType, OperationTypes.Single.class).data().create(blueprint);
+        DataEntity entity =
+                inventory.inspect(operationType, OperationTypes.Single.class).data().create(blueprint).entity();
 
-        return ResponseUtil.created(uriInfo, blueprint.getRole().name()).build();
+        return ResponseUtil.created(entity, uriInfo, blueprint.getRole().name()).build();
 
     }
 

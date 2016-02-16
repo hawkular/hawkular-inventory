@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -137,9 +136,9 @@ public class RestMetricTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetricType(inventory.inspect(tenant, Tenants.Single.class).metricTypes(), metricType);
+        MetricType entity = createMetricType(inventory.inspect(tenant, Tenants.Single.class).metricTypes(), metricType);
 
-        return ResponseUtil.created(uriInfo, metricType.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, metricType.getId()).build();
     }
 
     @POST
@@ -162,12 +161,12 @@ public class RestMetricTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetricType(inventory.inspect(feed, Feeds.Single.class).metricTypes(), metricType);
+        MetricType entity = createMetricType(inventory.inspect(feed, Feeds.Single.class).metricTypes(), metricType);
 
-        return ResponseUtil.created(uriInfo, metricType.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, metricType.getId()).build();
     }
 
-    private void createMetricType(MetricTypes.ReadWrite accessInterface, MetricType.Blueprint metricType) {
+    private MetricType createMetricType(MetricTypes.ReadWrite accessInterface, MetricType.Blueprint metricType) {
         if (metricType == null) {
             throw new IllegalArgumentException("metricType to create not specified");
         }
@@ -176,7 +175,7 @@ public class RestMetricTypes extends RestBase {
             throw new IllegalArgumentException("metricType id not specified");
         }
 
-        accessInterface.create(metricType);
+        return accessInterface.create(metricType).entity();
     }
 
     @PUT

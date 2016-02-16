@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -94,9 +93,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(env, Environments.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(env, Environments.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -121,9 +120,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(parent, Resources.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -147,9 +146,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(feed, Feeds.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(feed, Feeds.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -174,9 +173,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(parent, Resources.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     // TODO the is one of the few bits of querying in the API. How should we go about it generally?

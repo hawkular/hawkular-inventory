@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -107,8 +106,8 @@ public class RestEnvironments extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).environments().create(environmentBlueprint);
-        return ResponseUtil.created(uriInfo, environmentBlueprint.getId()).build();
+        Environment entity = inventory.tenants().get(tenantId).environments().create(environmentBlueprint).entity();
+        return ResponseUtil.created(entity, uriInfo, environmentBlueprint.getId()).build();
     }
 
     @PUT
