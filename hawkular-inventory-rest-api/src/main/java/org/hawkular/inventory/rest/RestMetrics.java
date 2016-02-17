@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -80,8 +79,8 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.inspect(env, Environments.Single.class).metrics(), metric);
-        return ResponseUtil.created(uriInfo, metric.getId()).build();
+        Metric entity = createMetric(inventory.inspect(env, Environments.Single.class).metrics(), metric);
+        return ResponseUtil.created(entity, uriInfo, metric.getId()).build();
     }
 
     @POST
@@ -105,12 +104,12 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.inspect(feed, Feeds.Single.class).metrics(), metric);
+        Metric entity = createMetric(inventory.inspect(feed, Feeds.Single.class).metrics(), metric);
 
-        return ResponseUtil.created(uriInfo, metric.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, metric.getId()).build();
     }
 
-    private void createMetric(Metrics.ReadWrite accessInterface, Metric.Blueprint metric) {
+    private Metric createMetric(Metrics.ReadWrite accessInterface, Metric.Blueprint metric) {
         if (metric == null) {
             throw new IllegalArgumentException("metric to create not specified");
         }
@@ -123,7 +122,7 @@ public class RestMetrics extends RestBase {
             throw new IllegalArgumentException("metric type id not specified");
         }
 
-        accessInterface.create(metric);
+        return accessInterface.create(metric).entity();
     }
 
     @GET

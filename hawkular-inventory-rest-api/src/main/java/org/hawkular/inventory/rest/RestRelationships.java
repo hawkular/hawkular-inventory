@@ -234,14 +234,15 @@ public class RestRelationships extends RestBase {
         }
 
         // link the current entity with the target or the source of the relationship
-        String newId = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
-                .getProperties()).entity().getId();
+        Relationship rel = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
+                .getProperties()).entity();
+        String newId = rel.getId();
         if (RestApiLogger.LOGGER.isDebugEnabled()) {
             RestApiLogger.LOGGER.debug("creating relationship with id: " + newId + " and name: " +
                                                relation.getName());
         }
 
-        return ResponseUtil.created(uriInfo, newId).build();
+        return ResponseUtil.created(rel, uriInfo, newId).build();
     }
 
     @PUT

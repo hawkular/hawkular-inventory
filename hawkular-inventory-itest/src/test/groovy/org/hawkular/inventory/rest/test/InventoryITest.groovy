@@ -68,6 +68,7 @@ class InventoryITest extends AbstractTestBase {
     private static final String responseStatusCodeMetricId = "itest-response-status-code-" + host1ResourceId;
     private static final String feedId = "itest-feed-" + UUID.randomUUID().toString();
     private static final String bulkResourcePrefix = "bulk-resource-" + UUID.randomUUID().toString();
+    private static final String customRelationName = "inTheSameRoom";
 
     /* key is the path to delete while value is the path to GET to verify the deletion */
     private static Map<String, String> pathsToDelete = new LinkedHashMap();
@@ -128,6 +129,9 @@ class InventoryITest extends AbstractTestBase {
         /* Create an environment that will be used exclusively by this test */
         response = postDeletable(path: "environments", body: [id : environmentId])
         assertEquals(201, response.status)
+        assertEquals(environmentId, response.data.id)
+        assertEquals(CanonicalPath.of().tenant(tenantId).environment(environmentId).get().toString(),
+            response.data.path)
         assertEquals(baseURI + "$basePath/environments/$environmentId", response.headers.Location)
 
         /* URL resource type should have been autocreated */
@@ -141,6 +145,7 @@ class InventoryITest extends AbstractTestBase {
                 id : pingableHostRTypeId
             ])
         assertEquals(201, response.status)
+        assertEquals(pingableHostRTypeId, response.data.id)
         assertEquals(baseURI + "$basePath/resourceTypes/$pingableHostRTypeId", response.headers.Location)
 
         /* Create room resource type */
@@ -192,6 +197,7 @@ class InventoryITest extends AbstractTestBase {
                 body: [id: responseTimeMetricId, metricTypePath: "../" + responseTimeMTypeId]);
         //path relative to env
         assertEquals(201, response.status)
+        assertEquals(responseTimeMetricId, response.data.id)
         assertEquals(baseURI + "$basePath/$environmentId/metrics/$responseTimeMetricId", response.headers.Location)
 
         /* add another metric */
@@ -199,12 +205,18 @@ class InventoryITest extends AbstractTestBase {
                 //now try using canonical path for referencing the metric type
                 body: [id: responseStatusCodeMetricId, metricTypePath: "/$responseStatusCodeMTypeId".toString()]);
         assertEquals(201, response.status)
+        assertEquals(responseStatusCodeMetricId, response.data.id)
         assertEquals(baseURI + "$basePath/$environmentId/metrics/$responseStatusCodeMetricId", response.headers.Location)
 
         /* add a resource */
         response = postDeletable(path: "$environmentId/resources",
                 body: [id: host1ResourceId, resourceTypePath: "../$pingableHostRTypeId".toString()])
         assertEquals(201, response.status)
+        assertEquals(host1ResourceId, response.data.id)
+        assertEquals(CanonicalPath.of().tenant(tenantId).environment(environmentId).
+            resource(host1ResourceId).get().toString(), response.data.path)
+        assertEquals(CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get().toString(),
+            response.data.type.path)
         assertEquals(baseURI + "$basePath/$environmentId/resources/$host1ResourceId", response.headers.Location)
 
         /* add another resource */
@@ -293,7 +305,7 @@ class InventoryITest extends AbstractTestBase {
         /* add a custom relationship, no need to clean up, it'll be deleted together with the resources */
         def relation = [id        : 42, // it's ignored anyway
                         source    : "/t;" + tenantId + "/e;" + environmentId + "/r;" + host2ResourceId,
-                        name      : "inTheSameRoom",
+                        name      : customRelationName,
                         target    : "/t;" + tenantId + "/e;" + environmentId + "/r;" + host1ResourceId,
                         properties: [
                             from      : "2000-01-01",
@@ -302,6 +314,7 @@ class InventoryITest extends AbstractTestBase {
         response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/relationships",
                 body: relation)
         assertEquals(201, response.status)
+        assertEquals(customRelationName, response.data.name)
 
         // relationship with tenant
         response = AbstractTestBase.client.post(path: "$basePath/tenants/relationships", body: [
@@ -806,7 +819,7 @@ class InventoryITest extends AbstractTestBase {
     void testCustomRelationship() {
         assertRelationshipJsonldExists("$environmentId/resources/$host2ResourceId/relationships",
                 host2ResourceId,
-                "inTheSameRoom",
+                customRelationName,
                 host1ResourceId)
     }
 
@@ -814,18 +827,18 @@ class InventoryITest extends AbstractTestBase {
     void testRelationshipFiltering() {
         assertRelationshipExists("$environmentId/resources/$host2ResourceId/relationships",
                 "/t;$tenantId/e;$environmentId/r;$host2ResourceId",
-                "inTheSameRoom",
+                customRelationName,
                 "/t;$tenantId/e;$environmentId/r;$host1ResourceId", [property: "from", propertyValue: "2000-01-01"])
 
         assertRelationshipExists("$environmentId/resources/$host2ResourceId/relationships",
                 "/t;$tenantId/e;$environmentId/r;$host2ResourceId",
-                "inTheSameRoom",
+                customRelationName,
                 "/t;$tenantId/e;$environmentId/r;$host1ResourceId", [property: "confidence", propertyValue: "90%"])
 
         assertRelationshipExists("$environmentId/resources/$host2ResourceId/relationships",
                 "/t;$tenantId/e;$environmentId/r;$host2ResourceId",
-                "inTheSameRoom",
-                "/t;$tenantId/e;$environmentId/r;$host1ResourceId", [named: "inTheSameRoom"])
+                customRelationName,
+                "/t;$tenantId/e;$environmentId/r;$host1ResourceId", [named: customRelationName])
     }
 
     @Test
