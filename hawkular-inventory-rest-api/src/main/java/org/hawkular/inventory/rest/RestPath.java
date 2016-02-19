@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,10 +47,11 @@ import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.JsonLd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -59,7 +60,8 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/path")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-@Api(value = "/path", description = "The endpoint to obtain inventory entities by their canonical path.")
+@Api(value = "/path", description = "The endpoint to obtain inventory entities by their canonical path.",
+        tags = "CanonicalPath")
 public class RestPath extends RestBase {
 
     @Context

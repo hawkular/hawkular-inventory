@@ -59,6 +59,9 @@
     <version.org.hawkular.commons>0.3.5.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
+    <version.io.swagger>1.5.7</version.io.swagger>
+    <!-- overrides 3.1.2 from parent which produces NPE -->
+    <version.com.github.kongchen.swagger-maven-plugin>3.1.1</version.com.github.kongchen.swagger-maven-plugin>
     <version.com.github.fge>2.2.6</version.com.github.fge>
     <version.com.thinkaurelius.titan>0.5.4</version.com.thinkaurelius.titan>
     <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
