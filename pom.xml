@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>35</version>
+    <version>36</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
@@ -55,8 +55,8 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.accounts>2.0.21.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.3.5.Final</version.org.hawkular.commons>
+    <version.org.hawkular.accounts>2.0.22.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.4.0.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
     <version.io.swagger>1.5.7</version.io.swagger>
