@@ -21,7 +21,7 @@
 <config>
   <subsystems>
     <!-- taken from KC Server -->
-    <subsystem>logging.xml</subsystem>
+    <subsystem>hawkular-inventory-logging.xml</subsystem>
     <subsystem>batch.xml</subsystem>
     <subsystem>bean-validation.xml</subsystem>
     <subsystem>hawkular-inventory-datasources.xml</subsystem>
