@@ -27,16 +27,28 @@
        way of saying of xPath's 2.0 prefix-less selector //*:config/*:supplement[@name='default']  -->
   <xsl:template match="//*[local-name()='config']/*[local-name()='subsystem']/*[local-name()='datasources']">
     <xsl:copy>
-      <datasource jndi-name="java:jboss/datasources/HawkularInventoryDS" pool-name="HawkularInventoryDS" enabled="true"
-                  use-java-context="true">
-        <connection-url>jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db</connection-url>
-        <driver>h2</driver>
-        <security>
-          <user-name>sa</user-name>
-          <password>sa</password>
-        </security>
-      </datasource>
+      <!--
+          If you wish to use Hawkular Inventory with an SQL backend (which is NOT recommended for anything but toy
+          deployments) you can build and deploy the
+          hawkular-inventory/hawkular-inventory-impl-tinkerpop-parent/hawkular-inventory-impl-tinkerpop-sql
+          -provider, put it in the Hawkular inventory dist's WEB-INF/lib, uncomment and configure
+          the below datasource and start hawkular with the following system properties:
+          -Dsql.datasource.jndi='java:jboss/datasources/HawkularInventoryDS'
+          -Dhawkular.inventory.tinkerpop.graph-provider-impl=org.hawkular.inventory.impl.tinkerpop.sql.SqlGraphProvider
 
+          Note that inventory only supports H2 or Postgresql as its SQL backends (and the postgresql jdbc driver is not
+          deployed in the Hawkular server).
+
+        <datasource jndi-name="java:jboss/datasources/HawkularInventoryDS" pool-name="HawkularInventoryDS" enabled="true"
+                    use-java-context="true">
+          <connection-url>jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072</connection-url>
+          <driver>h2</driver>
+          <security>
+            <user-name>sa</user-name>
+            <password>sa</password>
+          </security>
+        </datasource>
+      -->
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
