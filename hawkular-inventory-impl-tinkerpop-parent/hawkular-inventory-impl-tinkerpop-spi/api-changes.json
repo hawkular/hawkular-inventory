@@ -16,5 +16,31 @@
         }
       ]
     }
+  },
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::commit(G, ===org.hawkular.inventory.base.spi.Transaction<com.tinkerpop.blueprints.Element>===)",
+          "justification": "Transaction is now parameterized by the backend element type because of pre-commit actions."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::rollback(G, ===org.hawkular.inventory.base.spi.Transaction<com.tinkerpop.blueprints.Element>===)",
+          "justification": "Transaction is now parameterized by the backend element type because of pre-commit actions."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "new": "method parameter void org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::startTransaction(G, ===org.hawkular.inventory.base.spi.Transaction<com.tinkerpop.blueprints.Element>===)",
+          "justification": "Transaction is now parameterized by the backend element type because of pre-commit actions."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "new": "method void org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider<G extends com.tinkerpop.blueprints.TransactionalGraph>::startTransaction(G, org.hawkular.inventory.base.spi.Transaction<com.tinkerpop.blueprints.Element>)",
+          "justification": "Transaction is no longer instantiated by the backends."
+        }
+      ]
+    }
   }
 }

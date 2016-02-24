@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -35,7 +37,6 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -56,25 +57,25 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected String getProposedId(MetricType.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, MetricType.Blueprint blueprint) {
             return blueprint.getId();
         }
 
         @Override
-        protected EntityAndPendingNotifications<MetricType> wireUpNewEntity(BE entity, MetricType.Blueprint blueprint,
-                                                                            CanonicalPath parentPath, BE parent,
-                                                                            InventoryBackend.Transaction transaction) {
-            context.backend.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
+        protected EntityAndPendingNotifications<BE, MetricType>
+        wireUpNewEntity(BE entity, MetricType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> tx) {
+            tx.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
-                    parentPath.extend(MetricType.class, context.backend.extractId(entity)).get(),
+                    parentPath.extend(MetricType.class, tx.extractId(entity)).get(),
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
 
-            context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(metricType, context.inventory.keepTransaction(transaction)));
+            tx.updateIdentityHash(entity,
+                    IdentityHash.of(metricType, context.inventory.keepTransaction(tx)));
 
-            return new EntityAndPendingNotifications<>(metricType);
+            return new EntityAndPendingNotifications<>(entity, metricType, emptyList());
         }
 
         @Override
@@ -97,53 +98,52 @@ public final class BaseMetricTypes {
                 throw new IllegalArgumentException(msg);
             }
 
-            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new BaseMetricTypes.Single<>(context.replacePath(doCreate(blueprint)));
         }
 
         @Override
-        protected void preDelete(String s, BE entityRepresentation, InventoryBackend.Transaction transaction) {
-            preDelete(context, entityRepresentation);
+        protected void preDelete(String s, BE entityRepresentation, Transaction<BE> transaction) {
+            preDelete(entityRepresentation, transaction);
         }
 
         @Override
         protected void preUpdate(String s, BE entityRepresentation, MetricType.Update update,
-                                 InventoryBackend.Transaction transaction) {
+                                 Transaction<BE> transaction) {
             preUpdate(context, entityRepresentation, update, transaction);
         }
 
-        @Override protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        @Override protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
             postUpdate(context, entityRepresentation, transaction);
         }
 
-        private static <BE> void preDelete(TraversalContext<BE, ?> context, BE deletedEntity) {
-            if (isInMetadataPack(context, deletedEntity)) {
+        private static <BE> void preDelete(BE deletedEntity, Transaction<BE> tx) {
+            if (isInMetadataPack(deletedEntity, tx)) {
                 throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
             }
         }
 
         private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update,
-                                           InventoryBackend.Transaction transaction) {
-            MetricType mt = context.backend.convert(entity, MetricType.class);
+                                           Transaction<BE> tx) {
+            MetricType mt = tx.convert(entity, MetricType.class);
             if (mt.getUnit() == update.getUnit()) {
                 //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
                 return;
             }
 
-            if (isInMetadataPack(context, entity)) {
+            if (isInMetadataPack(entity, tx)) {
                 throw new IllegalArgumentException("Cannot update a metric type that is a part of metadata pack.");
             }
         }
 
         private static <BE> void postUpdate(TraversalContext<BE, ?> context, BE entity,
-                                            InventoryBackend.Transaction transaction) {
-            context.backend.updateIdentityHash(entity,
-                    IdentityHash.of(context.backend.convert(entity, MetricType.class),
-                            context.inventory.keepTransaction(transaction)));
+                                            Transaction<BE> tx) {
+            tx.updateIdentityHash(entity,
+                    IdentityHash.of(tx.convert(entity, MetricType.class), context.inventory.keepTransaction(tx)));
 
         }
 
-        private static <BE> boolean isInMetadataPack(TraversalContext<BE, ?> context, BE metricType) {
-            return context.backend.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
+        private static <BE> boolean isInMetadataPack(BE metricType, Transaction<BE> tx) {
+            return tx.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
                     With.type(MetadataPack.class)).get()) != null;
 
         }
@@ -233,16 +233,16 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
-            ReadWrite.preDelete(context, deletedEntity);
+        protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
+            ReadWrite.preDelete(deletedEntity, transaction);
         }
 
         @Override
-        protected void preUpdate(BE updatedEntity, MetricType.Update update, InventoryBackend.Transaction transaction) {
+        protected void preUpdate(BE updatedEntity, MetricType.Update update, Transaction<BE> transaction) {
             ReadWrite.preUpdate(context, updatedEntity, update, transaction);
         }
 
-        @Override protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+        @Override protected void postUpdate(BE updatedEntity, Transaction<BE> transaction) {
             ReadWrite.postUpdate(context, updatedEntity, transaction);
         }
     }

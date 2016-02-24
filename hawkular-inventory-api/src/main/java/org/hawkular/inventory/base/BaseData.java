@@ -16,12 +16,13 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.filters.With.id;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +41,6 @@ import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -101,61 +101,61 @@ public final class BaseData {
         }
 
         @Override
-        protected String getProposedId(DataEntity.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, DataEntity.Blueprint<R> blueprint) {
             return blueprint.getRole().name();
         }
 
         @Override
-        protected EntityAndPendingNotifications<DataEntity> wireUpNewEntity(BE entity,
-                                                                            DataEntity.Blueprint<R> blueprint,
-                                                                            CanonicalPath parentPath, BE parent,
-                                                                            InventoryBackend.Transaction transaction) {
-            DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue());
-
-            Validator.validate(context, blueprint.getValue(), entity);
-
-            BE value = context.backend.persist(blueprint.getValue());
+        protected EntityAndPendingNotifications<BE, DataEntity> wireUpNewEntity(BE entity,
+                                                                                DataEntity.Blueprint<R> blueprint,
+                                                                                CanonicalPath parentPath, BE parent,
+                                                                                Transaction<BE> tx) {
+            Validator.validate(tx, blueprint.getValue(), entity);
+            BE value = tx.persist(blueprint.getValue());
 
             //don't report this relationship, it is implicit
             //also, don't run the RelationshipRules checks - we're in the "privileged code" that is allowed to do
             //this
-            context.backend.relate(entity, value, hasData.name(), null);
+            tx.relate(entity, value, hasData.name(), null);
 
-            return new EntityAndPendingNotifications<>(data, Collections.emptyList());
+            DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue(),
+                    blueprint.getProperties());
+
+            return new EntityAndPendingNotifications<>(entity, data, emptyList());
         }
 
         @Override
         public Data.Single create(DataEntity.Blueprint<R> data) {
-            return new Single<>(context.toCreatedEntity(doCreate(data)), checks);
+            return new Single<>(context.replacePath(doCreate(data)), checks);
         }
 
         @Override
-        protected void preCreate(DataEntity.Blueprint<R> blueprint, InventoryBackend.Transaction transaction) {
+        protected void preCreate(DataEntity.Blueprint<R> blueprint, Transaction<BE> transaction) {
             preCreate(checks, blueprint, transaction);
         }
 
         @Override
-        protected void postCreate(BE entityObject, DataEntity entity, InventoryBackend.Transaction transaction) {
+        protected void postCreate(BE entityObject, DataEntity entity, Transaction<BE> transaction) {
             postCreate(checks, entityObject, transaction);
         }
 
         @Override
-        protected void preDelete(R role, BE entityRepresentation, InventoryBackend.Transaction transaction) {
-            preDelete(context, checks, entityRepresentation, transaction);
+        protected void preDelete(R role, BE entityRepresentation, Transaction<BE> transaction) {
+            preDelete(checks, entityRepresentation, transaction);
         }
 
-        @Override protected void postDelete(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        @Override protected void postDelete(BE entityRepresentation, Transaction<BE> transaction) {
             postDelete(checks, entityRepresentation, transaction);
         }
 
         @Override
         protected void preUpdate(R role, BE entityRepresentation, DataEntity.Update update,
-                                 InventoryBackend.Transaction transaction) {
-            preUpdate(context, checks, entityRepresentation, update, transaction);
+                                 Transaction<BE> transaction) {
+            preUpdate(checks, entityRepresentation, update, transaction);
         }
 
         @Override
-        protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+        protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
             postUpdate(checks, entityRepresentation, transaction);
         }
 
@@ -171,50 +171,48 @@ public final class BaseData {
 
         private static <BE, R extends DataEntity.Role>
         void preCreate(DataModificationChecks<BE> checks, DataEntity.Blueprint<R> blueprint,
-                       InventoryBackend.Transaction transaction) {
+                       Transaction<BE> transaction) {
             checks.preCreate(blueprint, transaction);
         }
 
         private static <BE> void postCreate(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postCreate(entity, transaction);
         }
 
-        private static <BE> void preUpdate(TraversalContext<BE, DataEntity> context,
-                                           DataModificationChecks<BE> checks, BE entityRepresentation,
-                                           DataEntity.Update update, InventoryBackend.Transaction transaction) {
+        private static <BE> void preUpdate(DataModificationChecks<BE> checks, BE entityRepresentation,
+                                           DataEntity.Update update, Transaction<BE> transaction) {
             checks.preUpdate(entityRepresentation, update, transaction);
-            Validator.validate(context, update.getValue(), entityRepresentation);
+            Validator.validate(transaction, update.getValue(), entityRepresentation);
         }
 
         private static <BE> void postUpdate(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postCreate(entity, transaction);
         }
 
-        private static <BE> void preDelete(TraversalContext<BE, DataEntity> context,
-                                           DataModificationChecks<BE> checks, BE entityRepresentation,
-                                           InventoryBackend.Transaction transaction) {
-            checks.preDelete(entityRepresentation, transaction);
+        private static <BE> void preDelete(DataModificationChecks<BE> checks, BE entityRepresentation,
+                                           Transaction<BE> tx) {
+            checks.preDelete(entityRepresentation, tx);
 
-            Set<BE> rels = context.backend.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
+            Set<BE> rels = tx.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
                     hasData.name());
 
             if (rels.isEmpty()) {
-                Log.LOGGER.wNoDataAssociatedWithEntity(context.backend.extractCanonicalPath(entityRepresentation));
+                Log.LOGGER.wNoDataAssociatedWithEntity(tx.extractCanonicalPath(entityRepresentation));
                 return;
             }
 
             BE dataRel = rels.iterator().next();
 
-            BE structuredData = context.backend.getRelationshipTarget(dataRel);
+            BE structuredData = tx.getRelationshipTarget(dataRel);
 
-            context.backend.deleteStructuredData(structuredData);
-            context.backend.delete(dataRel);
+            tx.deleteStructuredData(structuredData);
+            tx.delete(dataRel);
         }
 
         private static <BE> void postDelete(DataModificationChecks<BE> checks, BE entity,
-                                            InventoryBackend.Transaction transaction) {
+                                            Transaction<BE> transaction) {
             checks.postDelete(entity, transaction);
         }
     }
@@ -233,38 +231,38 @@ public final class BaseData {
         public StructuredData data(RelativePath dataPath) {
             //doing this in 2 queries might seem inefficient but this I think needs to be done to be able to
             //do the filtering
-            return loadEntity((b, e) -> {
-                BE dataEntity = context.backend.descendToData(b, dataPath);
-                return dataEntity == null ? null : context.backend.convert(dataEntity, StructuredData.class);
+            return loadEntity((b, e, tx) -> {
+                BE dataEntity = tx.descendToData(b, dataPath);
+                return dataEntity == null ? null : tx.convert(dataEntity, StructuredData.class);
             });
         }
 
         @Override
         public StructuredData flatData(RelativePath dataPath) {
-            return loadEntity((b, e) -> {
-                BE dataEntity = context.backend.descendToData(b, dataPath);
-                return dataEntity == null ? null : context.backend.convert(dataEntity, ShallowStructuredData.class)
+            return loadEntity((b, e, tx) -> {
+                BE dataEntity = tx.descendToData(b, dataPath);
+                return dataEntity == null ? null : tx.convert(dataEntity, ShallowStructuredData.class)
                         .getData();
             });
         }
 
         @Override
-        protected void preDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
-            ReadWrite.preDelete(context, checks, deletedEntity, transaction);
+        protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
+            ReadWrite.preDelete(checks, deletedEntity, transaction);
         }
 
         @Override
-        protected void postDelete(BE deletedEntity, InventoryBackend.Transaction transaction) {
+        protected void postDelete(BE deletedEntity, Transaction<BE> transaction) {
             ReadWrite.postDelete(checks, deletedEntity, transaction);
         }
 
         @Override
-        protected void preUpdate(BE updatedEntity, DataEntity.Update update, InventoryBackend.Transaction t) {
-            ReadWrite.preUpdate(context, checks, updatedEntity, update, t);
+        protected void preUpdate(BE updatedEntity, DataEntity.Update update, Transaction<BE> t) {
+            ReadWrite.preUpdate(checks, updatedEntity, update, t);
         }
 
         @Override
-        protected void postUpdate(BE updatedEntity, InventoryBackend.Transaction transaction) {
+        protected void postUpdate(BE updatedEntity, Transaction<BE> transaction) {
             ReadWrite.postUpdate(checks, updatedEntity, transaction);
         }
     }
@@ -279,17 +277,17 @@ public final class BaseData {
 
         @Override
         public Page<StructuredData> data(RelativePath dataPath, Pager pager) {
-            return loadEntities(pager, (b, e) -> {
-                BE dataEntity = context.backend.descendToData(b, dataPath);
-                return context.backend.convert(dataEntity, StructuredData.class);
+            return loadEntities(pager, (b, e, tx) -> {
+                BE dataEntity = tx.descendToData(b, dataPath);
+                return tx.convert(dataEntity, StructuredData.class);
             });
         }
 
         @Override
         public Page<StructuredData> flatData(RelativePath dataPath, Pager pager) {
-            return loadEntities(pager, (b, e) -> {
-                BE dataEntity = context.backend.descendToData(b, dataPath);
-                return context.backend.convert(dataEntity, ShallowStructuredData.class).getData();
+            return loadEntities(pager, (b, e, tx) -> {
+                BE dataEntity = tx.descendToData(b, dataPath);
+                return tx.convert(dataEntity, ShallowStructuredData.class).getData();
             });
         }
     }
@@ -299,8 +297,8 @@ public final class BaseData {
         private static final JsonValidator VALIDATOR = JsonSchemaFactory.newBuilder()
                 .setReportProvider(new ListReportProvider(LogLevel.INFO, LogLevel.FATAL)).freeze().getValidator();
 
-        public static <BE> void validate(TraversalContext<BE, DataEntity> context, StructuredData data, BE dataEntity) {
-            CanonicalPath path = context.backend.extractCanonicalPath(dataEntity);
+        public static <BE> void validate(Transaction<BE> tx, StructuredData data, BE dataEntity) {
+            CanonicalPath path = tx.extractCanonicalPath(dataEntity);
 
             DataEntity.Role role = path.ids().getDataRole();
 
@@ -309,29 +307,29 @@ public final class BaseData {
                     JsonNode schema = new JsonNodeReader(new ObjectMapper())
                             .fromInputStream(BaseData.class.getResourceAsStream("/json-meta-schema.json"));
 
-                    CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
+                    CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
 
                     validate(dataPath, convert(data), schema);
                 } catch (IOException e) {
                     throw new IllegalStateException("Could not load the embedded JSON Schema meta-schema.");
                 }
             } else {
-                validateIfSchemaFound(context, data, dataEntity, Query.path().with(role.navigateToSchema()).get());
+                validateIfSchemaFound(tx, data, dataEntity, Query.path().with(role.navigateToSchema()).get());
             }
         }
 
-        private static <BE> void validateIfSchemaFound(TraversalContext<BE, DataEntity> context, StructuredData data,
+        private static <BE> void validateIfSchemaFound(Transaction<BE> tx, StructuredData data,
                 BE dataEntity, Query query) {
 
-            BE possibleSchema = context.backend.traverseToSingle(dataEntity, query);
+            BE possibleSchema = tx.traverseToSingle(dataEntity, query);
             if (possibleSchema == null) {
                 //no schema means anything is OK
                 return;
             }
 
-            DataEntity schemaEntity = context.backend.convert(possibleSchema, DataEntity.class);
+            DataEntity schemaEntity = tx.convert(possibleSchema, DataEntity.class);
 
-            CanonicalPath dataPath = context.backend.extractCanonicalPath(dataEntity);
+            CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
 
             validate(dataPath, convert(data), convert(schemaEntity.getValue()));
         }
@@ -352,7 +350,7 @@ public final class BaseData {
                     throw new ValidationException(dataPath, messages, null);
                 }
             } catch (ProcessingException e) {
-                throw new ValidationException(dataPath, Collections.emptyList(), e);
+                throw new ValidationException(dataPath, emptyList(), e);
             }
         }
 
@@ -406,27 +404,27 @@ public final class BaseData {
             };
         }
 
-        default void preCreate(DataEntity.Blueprint blueprint, InventoryBackend.Transaction transaction) {
+        default void preCreate(DataEntity.Blueprint blueprint, Transaction<BE> transaction) {
 
         }
 
-        default void postCreate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postCreate(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void preUpdate(BE dataEntity, DataEntity.Update update, InventoryBackend.Transaction transaction) {
+        default void preUpdate(BE dataEntity, DataEntity.Update update, Transaction<BE> transaction) {
 
         }
 
-        default void postUpdate(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postUpdate(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void preDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void preDelete(BE dataEntity, Transaction<BE> transaction) {
 
         }
 
-        default void postDelete(BE dataEntity, InventoryBackend.Transaction transaction) {
+        default void postDelete(BE dataEntity, Transaction<BE> transaction) {
 
         }
     }

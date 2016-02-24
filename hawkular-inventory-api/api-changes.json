@@ -1407,5 +1407,33 @@
         }
       ]
     }
+  },
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "(java.method.numberOfParametersChanged|java.method.parameterTypeChanged)",
+          "regex": true,
+          "old": "method( parameter)? void org\\.hawkular\\.inventory\\.api\\.model\\.[a-zA-Z]+::<init>.*",
+          "justification": "Identity hash added to constructor of some model entities."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "new": "method R org.hawkular.inventory.api.model.ElementTypeVisitor.Simple<R, P>::defaultAction(java.lang.Class<? extends org.hawkular.inventory.api.model.AbstractElement<?, ?>>, P)",
+          "justification": "Additional params ease the implementation of subclasses."
+        },
+        {
+          "code": "java.method.abstractMethodAdded",
+          "new": "method org.hawkular.inventory.api.model.Path.Extender org.hawkular.inventory.api.model.Path::modified()",
+          "justification": "Both concrete subclasses of this base class implement this method, no other subclasses are legal."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "regex": true,
+          "new": "method parameter org\\.hawkular\\.inventory\\.api\\.paging\\.Page<E> org\\.hawkular\\.inventory\\.base(\\.DelegatingInventoryBackend<E>|\\.spi\\.InventoryBackend<E>)::(query\\(|traverse\\(E, )===org\\.hawkular\\.inventory\\.api\\.Query===, org\\.hawkular\\.inventory\\.api\\.paging\\.Pager\\)",
+          "justification": "Somehow, these were missed when Query moved from base to api."
+        }
+      ]
+    }
   }
 }

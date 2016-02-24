@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static java.util.stream.Collectors.toSet;
-
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
@@ -31,10 +29,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.InventoryException;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
@@ -50,7 +49,6 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -64,25 +62,36 @@ final class Util {
 
     }
 
-    public static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
-                                      R firstCommitSuccessReturnValue,
-                                      PotentiallyCommittingPayload<R> payload, int maxRetries) {
-
-        return commitOrRetry(transaction, backend, (t) -> firstCommitSuccessReturnValue, payload, maxRetries, false);
-    }
-
-    public static <R> R runInTransaction(TraversalContext<?, ?> context, boolean readOnly,
-                                         PotentiallyCommittingPayload<R> payload) {
-        InventoryBackend.Transaction transaction = context.backend.startTransaction(!readOnly);
+    public static <R, BE> R inTx(TraversalContext<BE, ?> context, TransactionPayload<R, BE> payload) {
+        Transaction<BE> transaction = context.startTransaction();
         Log.LOGGER.trace("Starting transaction: " + transaction);
         int maxFailures = context.getTransactionRetriesCount();
-        return commitOrRetry(transaction, context.backend, payload, payload, maxFailures, true);
+        return onFailureRetry(context, transaction, payload, payload, maxFailures);
     }
 
-    private static <R> R commitOrRetry(InventoryBackend.Transaction transaction, InventoryBackend<?> backend,
-                                       PotentiallyCommittingPayload<R> firstPayload,
-                                       PotentiallyCommittingPayload<R> succeedingPayload, int maxFailures,
-                                       boolean commitOnlyReadonly) {
+    public static <R, BE> R inCommittableTx(TraversalContext<BE, ?> context,
+                                            TransactionPayload.Committing<R, BE> payload) {
+
+        Transaction.Committable<BE> tx = Transaction.Committable.from(context.startTransaction());
+        Log.LOGGER.trace("Starting self-committing transaction: " + tx);
+        int maxFailures = context.getTransactionRetriesCount();
+        return onFailureRetry(context::startTransaction, tx, payload, payload, maxFailures);
+    }
+
+    public static <R, BE> R onFailureRetry(TraversalContext<BE, ?> ctx, Transaction<BE> tx,
+                                           TransactionPayload<R, BE> firstPayload,
+                                           TransactionPayload<R, BE> succeedingPayload, int maxFailures) {
+
+        return onFailureRetry(ctx::startTransaction, Transaction.Committable.from(tx),
+                TransactionPayload.Committing.committing(firstPayload),
+                TransactionPayload.Committing.committing(succeedingPayload), maxFailures);
+    }
+
+    public static <R, BE> R onFailureRetry(Function<Transaction.PreCommit<BE>, Transaction<BE>> txCtor,
+                                           Transaction.Committable<BE> tx,
+                                           TransactionPayload.Committing<R, BE> firstPayload,
+                                           TransactionPayload.Committing<R, BE> succeedingPayload,
+                                           int maxFailures) {
         int failures = 0;
         Exception lastException;
 
@@ -94,20 +103,20 @@ final class Util {
                 try {
                     R ret;
                     if (failures == 0) {
-                        ret = transaction.execute(firstPayload);
+                        ret = firstPayload.run(tx);
+                        tx.registerCommittedPayload(firstPayload);
                     } else {
-                        transaction = backend.startTransaction(transaction.isMutating());
-                        ret = transaction.execute(succeedingPayload);
-                    }
+                        tx.getPreCommit().reset();
+                        tx = Transaction.Committable.from(txCtor.apply(tx.getPreCommit()));
 
-                    if (!(commitOnlyReadonly && transaction.isMutating())) {
-                        backend.commit(transaction);
+                        ret = succeedingPayload.run(tx);
+                        tx.registerCommittedPayload(succeedingPayload);
                     }
 
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    backend.rollback(transaction);
+                    tx.rollback();
                     throw t;
                 }
             } catch (CommitFailureException e) {
@@ -136,13 +145,18 @@ final class Util {
                     //don't knock each other out easily.
                     waitTime = waitTime * 2 + rand.nextInt(waitTime / 10);
                 }
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                //an exception in the payload itself, not caused by a failed commit. We don't retry those...
+                throw new InventoryException("Transaction payload failed.", e);
             }
         } while (failures < maxFailures);
 
         throw new TransactionFailureException(lastException, failures);
     }
 
-    public static <BE> BE getSingle(InventoryBackend<BE> backend, Query query,
+    public static <BE> BE getSingle(Transaction<BE> backend, Query query,
                                     Class<? extends Entity<?, ?>> entityType) {
         BE result = backend.querySingle(query);
         if (result == null) {
@@ -152,104 +166,75 @@ final class Util {
         return result;
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship>
-    createAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
-                      String relationship, BE target) {
+    public static <BE> EntityAndPendingNotifications<BE, Relationship>
+    createAssociation(Transaction<BE> tx, BE source, String relationship, BE target) {
 
-        return runInTransaction(context, false, (t) -> {
-            BE source = getSingle(context.backend, sourceQuery, sourceType);
-
-            if (context.backend.hasRelationship(source, target, relationship)) {
-                throw new RelationAlreadyExistsException(relationship, Query.filters(sourceQuery));
-            }
-
-            RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
-                    target);
-            BE relationshipObject = context.backend.relate(source, target, relationship, null);
-
-            context.backend.commit(t);
-
-            Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
-
-            return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
-        });
-    }
-
-    public static <BE> EntityAndPendingNotifications<Relationship>
-    createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target) {
-        if (context.backend.hasRelationship(source, target, relationship)) {
-            throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(context.backend
-                    .extractCanonicalPath(source))));
+        if (tx.hasRelationship(source, target, relationship)) {
+            throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(tx.extractCanonicalPath
+                    (source))));
         }
 
-        RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
+        RelationshipRules.checkCreate(tx, source, Relationships.Direction.outgoing, relationship,
                 target);
-        BE relationshipObject = context.backend.relate(source, target, relationship, null);
+        BE relationshipObject = tx.relate(source, target, relationship, null);
 
-        Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
+        Relationship ret = tx.convert(relationshipObject, Relationship.class);
 
-        return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, created()));
+        return new EntityAndPendingNotifications<>(relationshipObject, ret,
+                new Notification<>(ret, ret, created()));
     }
 
-    public static <BE> EntityAndPendingNotifications<Relationship>
-    deleteAssociation(TraversalContext<BE, ?> context, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
+    public static <BE> EntityAndPendingNotifications<BE, Relationship>
+    deleteAssociation(Transaction<BE> tx, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
                       String relationship, BE target) {
 
-        InventoryBackend<BE> backend = context.backend;
-        return runInTransaction(context, false, (t) -> {
-            BE source = getSingle(backend, sourceQuery, sourceType);
+        BE source = getSingle(tx, sourceQuery, sourceType);
 
-            BE relationshipObject;
+        BE relationshipObject;
 
-            try {
-                relationshipObject = backend.getRelationship(source, target, relationship);
-            } catch (ElementNotFoundException e) {
-                throw new RelationNotFoundException(sourceType, relationship, Query.filters(sourceQuery),
-                        null, null);
-            }
+        try {
+            relationshipObject = tx.getRelationship(source, target, relationship);
+        } catch (ElementNotFoundException e) {
+            throw new RelationNotFoundException(sourceType, relationship, Query.filters(sourceQuery),
+                    null, null);
+        }
 
-            RelationshipRules.checkDelete(backend, source, Relationships.Direction.outgoing, relationship,
-                    target);
+        RelationshipRules.checkDelete(tx, source, Relationships.Direction.outgoing, relationship,
+                target);
 
-            Relationship ret = backend.convert(relationshipObject, Relationship.class);
+        Relationship ret = tx.convert(relationshipObject, Relationship.class);
 
-            backend.delete(relationshipObject);
+        tx.delete(relationshipObject);
 
-            backend.commit(t);
-
-            return new EntityAndPendingNotifications<>(ret, new Notification<>(ret, ret, deleted()));
-        });
+        return new EntityAndPendingNotifications<>(relationshipObject, ret,
+                new Notification<>(ret, ret, deleted()));
     }
 
-    public static <BE> Relationship getAssociation(TraversalContext<BE, ?> context, Query sourceQuery,
+    public static <BE> Relationship getAssociation(Transaction<BE> tx, Query sourceQuery,
                                                    Class<? extends Entity<?, ?>> sourceType, Query targetQuery,
                                                    Class<? extends Entity<?, ?>> targetType,
                                                    String rel) {
 
-        InventoryBackend<BE> backend = context.backend;
+        BE source = getSingle(tx, sourceQuery, sourceType);
+        BE target = getSingle(tx, targetQuery, targetType);
 
-        return runInTransaction(context, true, (t) -> {
-            BE source = getSingle(backend, sourceQuery, sourceType);
-            BE target = getSingle(backend, targetQuery, targetType);
+        BE relationship;
+        try {
+            relationship = tx.getRelationship(source, target, rel);
+        } catch (ElementNotFoundException e) {
+            throw new RelationNotFoundException(sourceType, rel, Query.filters(sourceQuery),
+                    null, null);
+        }
 
-            BE relationship;
-            try {
-                relationship = backend.getRelationship(source, target, rel);
-            } catch (ElementNotFoundException e) {
-                throw new RelationNotFoundException(sourceType, rel, Query.filters(sourceQuery),
-                        null, null);
-            }
-
-            return backend.convert(relationship, Relationship.class);
-        });
+        return tx.convert(relationship, Relationship.class);
     }
 
     @SuppressWarnings("unchecked")
-    public static Query queryTo(TraversalContext<?, ?> context, Path path) {
+    public static Query queryTo(Query sourcePath, Path path) {
         if (path instanceof CanonicalPath) {
             return Query.to((CanonicalPath) path);
         } else {
-            Query.SymmetricExtender extender = context.sourcePath.extend().path();
+            Query.SymmetricExtender extender = sourcePath.extend().path();
 
             extender.with(With.relativePath(null, (RelativePath) path));
 
@@ -260,23 +245,24 @@ final class Util {
     /**
      * Tries to find an element at given path.
      *
-     * @param context current context in the traversal (if path is canonical, this is not used)
+     * @param tx current transaction in the traversal (if path is canonical, this is not used)
      * @param path    either canonical or relative path of the element to find
      * @return the element
      * @throws ElementNotFoundException if the element is not found
      */
     @SuppressWarnings("unchecked")
-    public static <BE> BE find(TraversalContext<BE, ?> context, Path path) throws EntityNotFoundException {
+    public static <BE> BE find(Transaction<BE> tx, Query sourcePath, Path path) throws
+            EntityNotFoundException {
         BE element;
         if (path.isCanonical()) {
             try {
-                element = context.backend.find(path.toCanonicalPath());
+                element = tx.find(path.toCanonicalPath());
             } catch (ElementNotFoundException e) {
                 throw new EntityNotFoundException("Entity not found on path: " + path);
             }
         } else {
-            Query query = queryTo(context, path);
-            element = getSingle(context.backend, query, null);
+            Query query = queryTo(sourcePath, path);
+            element = getSingle(tx, query, null);
         }
         return element;
     }
@@ -294,142 +280,125 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
-            TraversalContext<BE, E> context, Query entityQuery, U update,
+            Class<E> entityClass,
+            Transaction<BE> tx, Query entityQuery, U update,
             TransactionParticipant<BE, U> preUpdateCheck,
-            BiConsumer<BE, InventoryBackend.Transaction> postUpdateCheck) {
+            BiConsumer<BE, Transaction<BE>> postUpdateCheck) {
 
-        BE updated = runInTransaction(context, false, (t) -> {
-            BE entity = context.backend.querySingle(entityQuery);
-            if (entity == null) {
-                if (update instanceof Relationship.Update) {
-                    throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
-                } else {
-                    throw new EntityNotFoundException(context.entityClass, Query.filters(entityQuery));
-                }
+        BE entity = tx.querySingle(entityQuery);
+        if (entity == null) {
+            if (update instanceof Relationship.Update) {
+                throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
+            } else {
+                throw new EntityNotFoundException(entityClass, Query.filters(entityQuery));
             }
+        }
 
-            if (preUpdateCheck != null) {
-                preUpdateCheck.execute(entity, update, t);
-            }
+        if (preUpdateCheck != null) {
+            preUpdateCheck.execute(entity, update, tx);
+        }
 
-            context.backend.update(entity, update);
+        E orig = tx.convert(entity, entityClass);
 
-            if (postUpdateCheck != null) {
-                postUpdateCheck.accept(entity, t);
-            }
+        tx.update(entity, update);
 
-            context.backend.commit(t);
-            return entity;
-        });
+        if (postUpdateCheck != null) {
+            postUpdateCheck.accept(entity, tx);
+        }
 
-        E entity = context.backend.convert(updated, context.entityClass);
-        context.notify(entity, new Action.Update<>(entity, update), Action.updated());
+        E updated = tx.convert(entity, entityClass);
+
+        tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(entity, updated,
+                new Action.Update<>(orig, update), Action.updated()));
     }
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, ?>>
-    void delete(TraversalContext<BE, E> context, Query entityQuery,
-                BiConsumer<BE, InventoryBackend.Transaction> cleanupFunction,
-                BiConsumer<BE, InventoryBackend.Transaction> postDelete) {
+    void delete(Class<E> entityClass, Transaction<BE> tx, Query entityQuery,
+                BiConsumer<BE, Transaction<BE>> cleanupFunction,
+                BiConsumer<BE, Transaction<BE>> postDelete) {
 
-        runInTransaction(context, false, (transaction) -> {
-            BE entity = context.backend.querySingle(entityQuery);
-            if (entity == null) {
-                if (context.entityClass.equals(Relationship.class)) {
-                    throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
-                } else {
-                    throw new EntityNotFoundException(context.entityClass, Query.filters(entityQuery));
-                }
+        BE entity = tx.querySingle(entityQuery);
+        if (entity == null) {
+            if (entityClass.equals(Relationship.class)) {
+                throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
+            } else {
+                throw new EntityNotFoundException(entityClass, Query.filters(entityQuery));
             }
+        }
 
-            if (cleanupFunction != null) {
-                cleanupFunction.accept(entity, transaction);
+        if (cleanupFunction != null) {
+            cleanupFunction.accept(entity, tx);
+        }
+
+        Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
+        Set<BE> dataToBeDeleted = new HashSet<>();
+
+        Set<BE> deleted = new HashSet<>();
+        Set<BE> deletedRels = new HashSet<>();
+
+        Consumer<BE> categorizer = (e) -> {
+            if (tx.hasRelationship(e, outgoing, defines.name())) {
+                verticesToDeleteThatDefineSomething.add(e);
+            } else {
+                deleted.add(e);
             }
+            //not only the entity, but also its relationships are going to disappear
+            deletedRels.addAll(tx.getRelationships(e, both));
 
-            Set<BE> verticesToDeleteThatDefineSomething = new HashSet<>();
-            Set<BE> dataToBeDeleted = new HashSet<>();
+            tx.getRelationships(e, outgoing, hasData.name()).forEach(rel -> {
+                dataToBeDeleted.add(tx.getRelationshipTarget(rel));
+            });
+        };
 
-            Set<BE> deleted = new HashSet<>();
-            Set<BE> deletedRels = new HashSet<>();
-            Set<?> deletedEntities;
-            Set<Relationship> deletedRelationships;
+        categorizer.accept(entity);
+        tx.getTransitiveClosureOver(entity, outgoing, contains.name())
+                .forEachRemaining(categorizer::accept);
 
-            Consumer<BE> categorizer = (e) -> {
-                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
-                    verticesToDeleteThatDefineSomething.add(e);
-                } else {
-                    deleted.add(e);
-                }
-                //not only the entity, but also its relationships are going to disappear
-                deletedRels.addAll(context.backend.getRelationships(e, both));
-
-                context.backend.getRelationships(e, outgoing, hasData.name()).forEach(rel -> {
-                    dataToBeDeleted.add(context.backend.getRelationshipTarget(rel));
-                });
-            };
-
-            categorizer.accept(entity);
-            context.backend.getTransitiveClosureOver(entity, outgoing, contains.name())
-                    .forEachRemaining(categorizer::accept);
-
-            //we've gathered all entities to be deleted. Now convert them all to entities for reporting purposes.
-            //We have to do it prior to actually deleting the objects in the backend so that all information and
-            //relationships is still available.
-            deletedEntities = deleted.stream().filter((o) -> isRepresentableInAPI(context, o))
-                    .map((o) -> context.backend.convert(o, context.backend.extractType(o)))
-                    .collect(Collectors.<Object>toSet());
-
-            deletedRelationships = deletedRels.stream().filter((o) -> isRepresentableInAPI(context, o))
-                    .map((o) -> context.backend.convert(o, Relationship.class))
-                    .collect(toSet());
-
-            //k, now we can delete them all... the order is not important anymore
-            for (BE e : deleted) {
-                context.backend.delete(e);
-            }
-
-            for (BE e : verticesToDeleteThatDefineSomething) {
-                if (context.backend.hasRelationship(e, outgoing, defines.name())) {
-                    //we avoid the convert() function here because it assumes the containing entities of the passed in
-                    //entity exist. This might not be true during the delete because the transitive closure "walks" the
-                    //entities from the "top" down the containment chain and the entities are immediately deleted.
-                    String rootId = context.backend.extractId(entity);
-                    String definingId = context.backend.extractId(e);
-                    String rootType = context.entityClass.getSimpleName();
-                    String definingType = context.backend.extractType(e).getSimpleName();
-
-                    String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
-                    String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
-
-                    throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                            definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
-                            "entities that are not deleted along with it, which would leave them without a " +
-                            "definition. This is illegal.");
-                } else {
-                    context.backend.delete(e);
-                }
-            }
-
-            dataToBeDeleted.forEach(context.backend::deleteStructuredData);
-
-            if (postDelete != null) {
-                postDelete.accept(entity, transaction);
-            }
-
-            context.backend.commit(transaction);
-
-            //report the relationship deletions first - it would be strange to report deletion of a relationship after
-            //reporting that an entity on one end of the relationship has been deleted
-            for (Relationship r : deletedRelationships) {
-                context.notify(r, deleted());
-            }
-
-            for (Object e : deletedEntities) {
-                context.notify(e, deleted());
-            }
-
-            return null;
+        //we've gathered all entities to be deleted. Now record the notifications to be sent out when the transaction
+        //commits.
+        deleted.stream().filter((o) -> isRepresentableInAPI(tx, o)).forEach(be -> {
+            AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
+            tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(be, e, deleted()));
         });
+
+        deletedRels.stream().filter((o) -> isRepresentableInAPI(tx, o)).forEach(be -> {
+            AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
+            tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(be, e, deleted()));
+        });
+
+        //k, now we can delete them all... the order is not important anymore
+        for (BE e : deleted) {
+            tx.delete(e);
+        }
+
+        for (BE e : verticesToDeleteThatDefineSomething) {
+            if (tx.hasRelationship(e, outgoing, defines.name())) {
+                //we avoid the convert() function here because it assumes the containing entities of the passed in
+                //entity exist. This might not be true during the delete because the transitive closure "walks" the
+                //entities from the "top" down the containment chain and the entities are immediately deleted.
+                String rootId = tx.extractId(entity);
+                String definingId = tx.extractId(e);
+                String rootType = entityClass.getSimpleName();
+                String definingType = tx.extractType(e).getSimpleName();
+
+                String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
+                String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
+
+                throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
+                        definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
+                        "entities that are not deleted along with it, which would leave them without a " +
+                        "definition. This is illegal.");
+            } else {
+                tx.delete(e);
+            }
+        }
+
+        dataToBeDeleted.forEach(tx::deleteStructuredData);
+
+        if (postDelete != null) {
+            postDelete.accept(entity, tx);
+        }
     }
 
     /**
@@ -461,18 +430,18 @@ final class Util {
      * Certain constructs in backend are not representable in API - such as the
      * {@link org.hawkular.inventory.api.Relationships.WellKnown#hasData} relationship.
      *
-     * @param context the context using which to access backend
+     * @param tx the context using which to access backend
      * @param entity  the entity to decide on
      * @param <BE>    the type of the backend entity
      * @return true if the entity can be represented in API results, false otherwise
      */
-    public static <BE> boolean isRepresentableInAPI(TraversalContext<BE, ?> context, BE entity) {
-        if (context.backend.isBackendInternal(entity)) {
+    public static <BE> boolean isRepresentableInAPI(Transaction<BE> tx, BE entity) {
+        if (tx.isBackendInternal(entity)) {
             return false;
         }
 
-        if (Relationship.class.equals(context.backend.extractType(entity))) {
-            if (Relationships.WellKnown.hasData.name().equals(context.backend.extractRelationshipName(entity))) {
+        if (Relationship.class.equals(tx.extractType(entity))) {
+            if (Relationships.WellKnown.hasData.name().equals(tx.extractRelationshipName(entity))) {
                 return false;
             }
         }
@@ -481,6 +450,6 @@ final class Util {
     }
 
     public interface TransactionParticipant<BE, E> {
-        void execute(BE entityRepresentation, E entity, InventoryBackend.Transaction transaction);
+        void execute(BE entityRepresentation, E entity, Transaction<BE> transaction);
     }
 }

@@ -47,22 +47,67 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
     public Relationship associate(Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
         checkPathLegal(id);
+        return associate(context, sourceEntityType, relationship, id);
+    }
 
-        BE target = Util.find(context, id);
+    static <BE> Relationship associate(TraversalContext<BE, ?> context, Class<? extends Entity<?, ?>> sourceEntityType,
+                                       Relationships.WellKnown relationship, Path id) {
+        return inTx(context, tx -> {
+            BE target = Util.find(tx, context.sourcePath, id);
 
-        return createAssociation(sourceEntityType, relationship, target);
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+
+            BE source = tx.querySingle(sourceQuery);
+
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(tx, source,
+                    relationship.name(), target);
+
+            tx.getPreCommit().addNotifications(rel);
+
+            return rel.getEntity();
+        });
     }
 
     public Relationship disassociate(Path id) throws EntityNotFoundException {
         checkPathLegal(id);
+        return disassociate(context, sourceEntityType, relationship, id);
+    }
 
-        BE target = Util.find(context, id);
+    static <BE> Relationship disassociate(TraversalContext<BE, ?> context,
+                                          Class<? extends Entity<?, ?>> sourceEntityType,
+                                          Relationships.WellKnown relationship, Path id) {
+        return inTx(context, tx -> {
+            BE target = Util.find(tx, context.sourcePath, id);
 
-        return deleteAssociation(sourceEntityType, relationship, target);
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(tx, sourceQuery,
+                    sourceEntityType, relationship.name(), target);
+
+            tx.getPreCommit().addNotifications(rel);
+
+            return rel.getEntity();
+        });
     }
 
     public Relationship associationWith(Path path) throws RelationNotFoundException {
-        return getAssociation(sourceEntityType, path, relationship);
+        return associationWith(context, sourceEntityType, relationship, path);
+    }
+
+    static <BE> Relationship associationWith(TraversalContext<BE, ?> context,
+                                             Class<? extends Entity<?, ?>> sourceEntityType,
+                                             Relationships.WellKnown relationship, Path path)
+            throws RelationNotFoundException {
+
+        return inTx(context, tx -> {
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+            Query targetQuery = Util.queryTo(context.sourcePath, path);
+
+            @SuppressWarnings("unchecked")
+            Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) path.getSegment()
+                    .getElementType();
+
+            return Util.getAssociation(tx, sourceQuery, sourceEntityType, targetQuery, targetType, relationship.name());
+        });
     }
 
     protected void checkPathLegal(Path targetPath) {
@@ -71,43 +116,6 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
                     context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
                     targetPath);
         }
-    }
-
-    protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,
-            Relationships.WellKnown relationship, BE target) {
-
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-
-        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
-                sourceType, relationship.name(), target);
-
-        context.notifyAll(rel);
-
-        return rel.getEntity();
-    }
-
-    protected Relationship deleteAssociation(Class<? extends Entity<?, ?>> sourceType,
-            Relationships.WellKnown relationship, BE target) {
-
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
-                sourceType, relationship.name(), target);
-
-        context.notifyAll(rel);
-
-        return rel.getEntity();
-    }
-
-    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, Path targetPath,
-            Relationships.WellKnown rel) {
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        Query targetQuery = Util.queryTo(context, targetPath);
-
-        @SuppressWarnings("unchecked")
-        Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) targetPath.getSegment()
-                .getElementType();
-
-        return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }
 
     /**

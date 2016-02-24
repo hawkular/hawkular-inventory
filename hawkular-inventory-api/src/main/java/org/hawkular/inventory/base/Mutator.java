@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
@@ -37,8 +39,9 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -54,10 +57,12 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     /**
      * Extracts the proposed ID from the blueprint or identifies the ID through some other means.
      *
+     *
+     * @param tx the transaction this method is called within
      * @param blueprint the blueprint of the entity to be created
      * @return the ID to be used for the new entity
      */
-    protected abstract String getProposedId(B blueprint);
+    protected abstract String getProposedId(Transaction<BE> tx, B blueprint);
 
     /**
      * A helper method to be used in the implementation of the
@@ -68,16 +73,27 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param blueprint the blueprint of the new entity
      * @return the query to the newly created entity.
      */
-    protected final E doCreate(B blueprint) {
-        return mutating((transaction) -> {
-            String id = getProposedId(blueprint);
+    protected final Query doCreate(B blueprint) {
+        return inTx(tx -> {
+            String id = getProposedId(tx, blueprint);
 
-            preCreate(blueprint, transaction);
+            if (!tx.isUniqueIndexSupported()) {
+                //poor man's way of ensuring uniqueness of CPs
+                Query existenceCheck = context.hop().filter().with(id(id)).get();
 
-            BE parent = getParent();
-            CanonicalPath parentCanonicalPath = parent == null ? null : context.backend.extractCanonicalPath(parent);
+                Page<BE> results = tx.query(existenceCheck, Pager.single());
 
-            EntityAndPendingNotifications<E> newEntity;
+                if (results.hasNext()) {
+                    throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
+                }
+            }
+
+            preCreate(blueprint, tx);
+
+            BE parent = getParent(tx);
+            CanonicalPath parentCanonicalPath = parent == null ? null : tx.extractCanonicalPath(parent);
+
+            EntityAndPendingNotifications<BE, E> newEntity;
             BE containsRel = null;
 
             CanonicalPath entityPath;
@@ -92,55 +108,60 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 entityPath = parentCanonicalPath.extend(context.entityClass, id).get();
             }
 
-            BE entityObject = context.backend.persist(entityPath, blueprint);
+            BE entityObject = tx.persist(entityPath, blueprint);
 
             if (parentCanonicalPath != null) {
                 //no need to check for contains rules - we're connecting a newly created entity
-                containsRel = context.backend.relate(parent, entityObject, contains.name(), Collections.emptyMap());
+                containsRel = tx.relate(parent, entityObject, contains.name(), Collections.emptyMap());
+                Relationship rel = tx.convert(containsRel, Relationship.class);
+                tx.getPreCommit().addNotifications(
+                        new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
             }
 
-            newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, transaction);
-
-            List<Notification<?, ?>> customRelsNotifications = new ArrayList<>();
+            newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, tx);
 
             if (blueprint instanceof Entity.Blueprint) {
                 Entity.Blueprint b = (Entity.Blueprint) blueprint;
-                createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(),
-                        customRelsNotifications);
-                createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(),
-                        customRelsNotifications);
+                createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(), tx);
+                createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(), tx);
             }
 
-            postCreate(entityObject, newEntity.getEntity(), transaction);
+            postCreate(entityObject, newEntity.getEntity(), tx);
 
-            context.backend.commit(transaction);
+            List<Notification<?, ?>> notifs = new ArrayList<>(newEntity.getNotifications());
+            notifs.add(new Notification<>(newEntity.getEntity(), newEntity.getEntity(), Action.created()));
 
-            context.notify(newEntity.getEntity(), created());
-            if (containsRel != null) {
-                context.notify(context.backend.convert(containsRel, Relationship.class), created());
-            }
-            context.notifyAll(newEntity);
-            customRelsNotifications.forEach(context::notify);
+            EntityAndPendingNotifications<BE, E> pending =
+                    new EntityAndPendingNotifications<>(newEntity.getEntityRepresentation(), newEntity.getEntity(),
+                            notifs);
 
-            return newEntity.getEntity();
+            tx.getPreCommit().addNotifications(pending);
+
+            return Query.to(entityPath);
         });
     }
 
     public final void update(Id id, U update) throws EntityNotFoundException {
-        Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.update(context, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate);
+        inTx(tx -> {
+            Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+            Util.update(context.entityClass, tx, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate);
+            return null;
+        });
     }
 
     public final void delete(Id id) throws EntityNotFoundException {
-        Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-        Util.delete(context, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+        inTx(tx -> {
+            Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+            Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+            return null;
+        });
     }
 
-    protected void preCreate(B blueprint, InventoryBackend.Transaction transaction) {
+    protected void preCreate(B blueprint, Transaction<BE> transaction) {
 
     }
 
-    protected void postCreate(BE entityObject, E entity, InventoryBackend.Transaction transaction) {
+    protected void postCreate(BE entityObject, E entity, Transaction<BE> transaction) {
 
     }
 
@@ -154,11 +175,11 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param entityRepresentation the backend specific representation of the entity
      * @param transaction          the transaction in which the delete is executing
      */
-    protected void preDelete(Id id, BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void preDelete(Id id, BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
-    protected void postDelete(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void postDelete(BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
@@ -172,23 +193,24 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param update               the update object
      * @param transaction          the transaction in which the update is executing
      */
-    protected void preUpdate(Id id, BE entityRepresentation, U update, InventoryBackend.Transaction transaction) {
+    protected void preUpdate(Id id, BE entityRepresentation, U update, Transaction<BE> transaction) {
 
     }
 
-    protected void postUpdate(BE entityRepresentation, InventoryBackend.Transaction transaction) {
+    protected void postUpdate(BE entityRepresentation, Transaction<BE> transaction) {
 
     }
 
-    protected BE getParent() {
+    protected BE getParent(Transaction<BE> tx) {
         return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
             @SuppressWarnings("unchecked")
             @Override
             protected BE defaultAction() {
-                BE res = context.backend.querySingle(context.sourcePath);
+                BE res = tx.querySingle(context.sourcePath);
 
                 if (res == null) {
-                    throw new EntityNotFoundException(context.previous.entityClass, Query.filters(context.sourcePath));
+                    throw new EntityNotFoundException(context.previous.entityClass,
+                            Query.filters(context.sourcePath));
                 }
 
                 return res;
@@ -202,8 +224,10 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     }
 
     protected BE relate(BE source, BE target, String relationshipName) {
-        RelationshipRules.checkCreate(context.backend, source, outgoing, relationshipName, target);
-        return context.backend.relate(source, target, relationshipName, null);
+        return inTx(tx -> {
+            RelationshipRules.checkCreate(tx, source, outgoing, relationshipName, target);
+            return tx.relate(source, target, relationshipName, null);
+        });
     }
 
     /**
@@ -217,28 +241,28 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @param blueprint  the blueprint that it prescribes how the entity should be initialized
      * @param parentPath the path to the parent entity
      * @param parent     the actual parent entity
-     * @param transaction
+     * @param transaction the transaction this is being executed in
      * @return an object with the initialized and converted entity together with any pending notifications to be sent
      * out
      */
-    protected abstract EntityAndPendingNotifications<E> wireUpNewEntity(BE entity, B blueprint,
-                                                                        CanonicalPath parentPath, BE parent,
-                                                                        InventoryBackend.Transaction transaction);
+    protected abstract EntityAndPendingNotifications<BE, E>
+    wireUpNewEntity(BE entity, B blueprint, CanonicalPath parentPath, BE parent,
+                    Transaction<BE> transaction);
 
     private void createCustomRelationships(BE entity, Relationships.Direction direction,
                                            Map<String, Set<CanonicalPath>> otherEnds,
-                                           List<Notification<?, ?>> notifications) {
+                                           Transaction<BE> tx) {
         otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
             try {
-                BE endObject = context.backend.find(end);
+                BE endObject = tx.find(end);
 
                 BE from = direction == outgoing ? entity : endObject;
                 BE to = direction == outgoing ? endObject : entity;
 
-                EntityAndPendingNotifications<Relationship> res = Util.createAssociationNoTransaction(context,
-                        from, name, to);
+                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociation(tx, from,
+                        name, to);
 
-                notifications.addAll(res.getNotifications());
+                tx.getPreCommit().addNotifications(res);
             } catch (ElementNotFoundException e) {
                 throw new EntityNotFoundException(Query.filters(Query.to(end)));
             }

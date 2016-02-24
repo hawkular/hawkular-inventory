@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,15 +18,14 @@ package org.hawkular.inventory.impl.tinkerpop.provider;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
+import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
@@ -35,9 +34,23 @@ import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvider.WrappedTinkerGraph> {
+public final class TinkerGraphProvider implements GraphProvider {
 
-    private final WeakHashMap<WrappedTinkerGraph, ReentrantReadWriteLock> transactionLocks = new WeakHashMap<>();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+    @Override public boolean isUniqueIndexSupported() {
+        return false;
+    }
+
+    @Override public boolean needsDraining() {
+        return false;
+    }
+
+    @Override public boolean isPreferringBigTransactions() {
+        //just for testing purposes... Otherwise tinkergraph doesn't actually care about this because it doesn't
+        //support transactions anyway.
+        return true;
+    }
 
     @Override
     public WrappedTinkerGraph instantiateGraph(Configuration configuration) {
@@ -47,61 +60,35 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
     }
 
     @Override
-    public void ensureIndices(WrappedTinkerGraph graph, IndexSpec... indexSpecs) {
+    public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
         //don't bother with this for a demo graph
     }
 
     @Override
-    public InventoryBackend.Transaction startTransaction(WrappedTinkerGraph graph, boolean mutating) {
-        ReentrantReadWriteLock lock;
-        synchronized (transactionLocks) {
-            lock = transactionLocks.get(graph);
-            if (lock == null) {
-                lock = new ReentrantReadWriteLock();
-                transactionLocks.put(graph, lock);
-            }
-        }
-
-        if (mutating) {
-            lock.writeLock().lock();
-        } else {
-            lock.readLock().lock();
-        }
-
-        return new SimulatedSerializedTransaction(mutating, lock);
+    public TransactionalGraph startTransaction(TransactionalGraph graph) {
+        lock.writeLock().lock();
+        return graph;
     }
 
     @Override
-    public void commit(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
-        try {
-            graph.commit();
-        } finally {
-            unlock(t);
-        }
+    public void commit(TransactionalGraph graph) {
+        lock.writeLock().unlock();
     }
 
     @Override
-    public void rollback(WrappedTinkerGraph graph, InventoryBackend.Transaction t) {
-        try {
-            graph.rollback();
-        } finally {
-            unlock(t);
-        }
+    public void rollback(TransactionalGraph graph) {
+        lock.writeLock().unlock();
     }
 
-    private void unlock(InventoryBackend.Transaction t) {
-        ReentrantReadWriteLock lock = ((SimulatedSerializedTransaction) t).lock;
-        if (t.isMutating() && lock.writeLock().isHeldByCurrentThread()) {
-            lock.writeLock().unlock();
-        } else if (lock.getReadHoldCount() > 0) {
-            lock.readLock().unlock();
-        }
-    }
-
-    public static final class WrappedTinkerGraph extends WrappedGraph<TinkerGraph> implements TransactionalGraph {
+    public static final class WrappedTinkerGraph extends WrappedGraph<TinkerGraph> implements
+            ThreadedTransactionalGraph {
 
         public WrappedTinkerGraph(org.apache.commons.configuration.Configuration configuration) {
             super(new TinkerGraph(configuration));
+        }
+
+        @Override public TransactionalGraph newTransaction() {
+            return this;
         }
 
         @Override
@@ -115,15 +102,6 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
 
         @Override
         public void rollback() {
-        }
-    }
-
-    private static final class SimulatedSerializedTransaction extends InventoryBackend.Transaction {
-        private final ReentrantReadWriteLock lock;
-
-        public SimulatedSerializedTransaction(boolean mutating, ReentrantReadWriteLock lock) {
-            super(mutating);
-            this.lock = lock;
         }
     }
 

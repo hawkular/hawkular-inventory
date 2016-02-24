@@ -315,7 +315,7 @@ public class RestRelationships extends RestBase {
                 throw new IllegalArgumentException("Malformed URL param, the right format is: " +
                                                            "sourceType=type1&sourceType=type2&sourceType=typeN");
             }
-            Class<? extends Entity<?, ?>>[] types = sourceParam.stream()
+            Class<? extends Entity<?, ?>>[] types = (Class<? extends Entity<?, ?>>[]) sourceParam.stream()
                     .map(typeString -> entityMap.get(typeString))
                     .toArray(size -> new Class[size]);
             if (!sourceParam.isEmpty()) {

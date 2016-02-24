@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.api;
 
 import java.util.Arrays;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 
 /**
@@ -31,6 +31,10 @@ public class EntityAlreadyExistsException extends InventoryException {
     private final String entityId;
     private final Filter[][] paths;
     private final String msg;
+
+    public EntityAlreadyExistsException(Throwable cause, CanonicalPath entityPath) {
+        this(cause, entityPath.getSegment().getElementId(), asFilters(entityPath));
+    }
 
     public EntityAlreadyExistsException(Entity entity) {
         this(entity.getId(), asPaths(entity));
@@ -77,6 +81,12 @@ public class EntityAlreadyExistsException extends InventoryException {
     static Filter[][] asPaths(Entity entity) {
         Filter[][] ret = new Filter[1][];
         ret[0] = Filter.pathTo(entity);
+        return ret;
+    }
+
+    static Filter[][] asFilters(CanonicalPath path) {
+        Filter[][] ret = new Filter[1][];
+        ret[0] = Filter.pathTo(path);
         return ret;
     }
 }

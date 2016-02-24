@@ -106,46 +106,44 @@ public final class BaseRelationships {
                 throw new IllegalArgumentException("targetOrSource was null");
             }
 
-            return mutating((transaction) -> {
+            return inTx(tx -> {
                 BE incidenceObject;
                 try {
-                    incidenceObject = context.backend.find(targetOrSource);
+                    incidenceObject = tx.find(targetOrSource);
                 } catch (ElementNotFoundException e) {
-                    throw new EntityNotFoundException(
-                            (Class<? extends Entity<?, ?>>) targetOrSource.getSegment().getElementType(),
+                    throw new EntityNotFoundException(targetOrSource.getSegment().getElementType(),
                             Query.filters(Query.to(targetOrSource)));
                 }
 
-                BE origin = context.backend.querySingle(context.sourcePath);
+                BE origin = tx.querySingle(context.sourcePath);
                 if (origin == null) {
                     throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
                 }
 
                 // if this is a well-known relationship, there might be some semantic checks for it...
-                RelationshipRules.checkCreate(context.backend, origin, direction, name, incidenceObject);
+                RelationshipRules.checkCreate(tx, origin, direction, name, incidenceObject);
 
                 BE relationshipObject;
 
                 switch (direction) {
                     case incoming:
-                        relationshipObject = context.backend.relate(incidenceObject, origin, name, properties);
+                        relationshipObject = tx.relate(incidenceObject, origin, name, properties);
                         break;
                     case outgoing:
-                        relationshipObject = context.backend.relate(origin, incidenceObject, name, properties);
+                        relationshipObject = tx.relate(origin, incidenceObject, name, properties);
                         break;
                     case both:
-                        context.backend.relate(incidenceObject, origin, name, properties);
-                        relationshipObject = context.backend.relate(origin, incidenceObject, name, properties);
+                        tx.relate(incidenceObject, origin, name, properties);
+                        relationshipObject = tx.relate(origin, incidenceObject, name, properties);
                         break;
                     default:
                         throw new AssertionError("Unhandled direction when linking. This shouldn't have happened.");
                 }
 
-                context.backend.commit(transaction);
+                tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(relationshipObject, tx.convert
+                        (relationshipObject, Relationship.class), created()));
 
-                context.notify(context.backend.convert(relationshipObject, Relationship.class), created());
-
-                String id = context.backend.extractId(relationshipObject);
+                String id = tx.extractId(relationshipObject);
 
                 return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
             });
@@ -154,16 +152,16 @@ public final class BaseRelationships {
         @Override
         public void update(String id, Relationship.Update update) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
-            mutating((transaction) -> {
+            inTx(tx -> {
                 try {
-                    BE relationshipObject = context.backend.find(CanonicalPath.of().relationship(id)
+                    BE relationshipObject = tx.find(CanonicalPath.of().relationship(id)
                             .get());
-                    context.backend.update(relationshipObject, update);
-                    context.backend.commit(transaction);
+                    tx.update(relationshipObject, update);
 
-                    Relationship r = context.backend.convert(relationshipObject, Relationship.class);
+                    Relationship r = tx.convert(relationshipObject, Relationship.class);
 
-                    context.notify(r, new Action.Update<>(r, update), updated());
+                    tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(relationshipObject, r,
+                            new Notification<>(new Action.Update<>(r, update), r, updated())));
 
                     return null;
                 } catch (ElementNotFoundException e) {
@@ -176,23 +174,23 @@ public final class BaseRelationships {
         @Override
         public void delete(String id) throws RelationNotFoundException {
             //TODO this doesn't respect the current position in the graph
-            mutating((transaction) -> {
+            inTx((tx) -> {
                 try {
-                    BE relationshipObject = context.backend.find(CanonicalPath.of().relationship(id).get());
+                    BE relationshipObject = tx.find(CanonicalPath.of().relationship(id).get());
 
-                    BE source = context.backend.getRelationshipSource(relationshipObject);
-                    BE target = context.backend.getRelationshipTarget(relationshipObject);
-                    String relationshipName = context.backend.extractRelationshipName(relationshipObject);
+                    BE source = tx.getRelationshipSource(relationshipObject);
+                    BE target = tx.getRelationshipTarget(relationshipObject);
+                    String relationshipName = tx.extractRelationshipName(relationshipObject);
 
-                    RelationshipRules.checkDelete(context.backend, source, Relationships.Direction.outgoing,
+                    RelationshipRules.checkDelete(tx, source, Relationships.Direction.outgoing,
                             relationshipName, target);
 
-                    Relationship r = context.backend.convert(relationshipObject, Relationship.class);
+                    Relationship r = tx.convert(relationshipObject, Relationship.class);
 
-                    context.backend.delete(relationshipObject);
-                    context.backend.commit(transaction);
+                    tx.delete(relationshipObject);
 
-                    context.notify(r, deleted());
+                    tx.getPreCommit().addNotifications(
+                            new EntityAndPendingNotifications<>(relationshipObject, r, deleted()));
                     return null;
                 } catch (ElementNotFoundException e) {
                     throw new RelationNotFoundException(id,

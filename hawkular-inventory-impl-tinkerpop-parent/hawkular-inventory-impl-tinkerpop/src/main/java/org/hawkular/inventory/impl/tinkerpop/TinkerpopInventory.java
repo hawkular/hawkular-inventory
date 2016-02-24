@@ -20,6 +20,7 @@ import java.util.ServiceLoader;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
@@ -38,25 +39,37 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
             .withPropertyNameAndSystemProperty("hawkular.inventory.tinkerpop.graph-provider-impl")
             .withEnvironmentVariables("HAWKULAR_INVENTORY_TINKERPOP_GRAPH_PROVIDER_IMPL").build();
 
+
+    public TinkerpopInventory() {
+    }
+
+    private TinkerpopInventory(BaseInventory<Element> orig, InventoryBackend<Element> backend,
+                               TransactionConstructor<Element> transactionConstructor) {
+        super(orig, backend, transactionConstructor);
+    }
+
+    @Override protected TinkerpopInventory cloneWith(TransactionConstructor<Element> transactionCtor) {
+        return new TinkerpopInventory(this, null, transactionCtor);
+    }
+
     @Override
     protected InventoryBackend<Element> doInitialize(Configuration configuration) {
-        InventoryContext<?> context = loadGraph(configuration);
+        InventoryContext context = loadGraph(configuration);
         return new TinkerpopBackend(context);
     }
 
-    private <T extends TransactionalGraph> InventoryContext<T> loadGraph(Configuration configuration) {
-        @SuppressWarnings("unchecked")
-        GraphProvider<T> gp = (GraphProvider<T>) instantiateGraphProvider(configuration);
+    private InventoryContext loadGraph(Configuration configuration) {
+        GraphProvider gp = instantiateGraphProvider(configuration);
 
         Log.LOG.iUsingGraphProvider(gp.getClass().getName());
 
-        T g = ensureIndices(gp, configuration);
+        TransactionalGraph g = ensureIndices(gp, configuration);
 
-        return new InventoryContext<>(this, g, gp);
+        return new InventoryContext(this, g, gp);
     }
 
-    private <T extends TransactionalGraph> T ensureIndices(GraphProvider<T> graphProvider, Configuration config) {
-        T graph = graphProvider.instantiateGraph(config);
+    private TransactionalGraph ensureIndices(GraphProvider graphProvider, Configuration config) {
+        TransactionalGraph graph = graphProvider.instantiateGraph(config);
 
         graphProvider.ensureIndices(graph,
                 IndexSpec.builder()
@@ -175,11 +188,11 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
         return graph;
     }
 
-    private GraphProvider<?> instantiateGraphProvider(Configuration config) {
+    private GraphProvider instantiateGraphProvider(Configuration config) {
         String implClass = config.getProperty(GRAPH_PROVIDER_IMPL_CLASS, null);
         if (implClass != null) {
             try {
-                return (GraphProvider<?>) Class.forName(implClass).newInstance();
+                return (GraphProvider) Class.forName(implClass).newInstance();
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
                 throw new IllegalStateException("Could not instantiate graph provider class '" + implClass + "'.", e);
             }

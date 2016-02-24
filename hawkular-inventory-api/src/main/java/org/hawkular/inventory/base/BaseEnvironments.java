@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
@@ -36,7 +38,6 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 
 /**
@@ -118,17 +119,17 @@ public final class BaseEnvironments {
         }
 
         @Override
-        protected String getProposedId(Environment.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, Environment.Blueprint blueprint) {
             return blueprint.getId();
         }
 
         @Override
-        protected EntityAndPendingNotifications<Environment> wireUpNewEntity(BE entity, Environment.Blueprint blueprint,
-                                                                             CanonicalPath parentPath, BE parent,
-                                                                             InventoryBackend.Transaction transaction) {
-            return new EntityAndPendingNotifications<>(new Environment(blueprint.getName(),
-                    parentPath.extend(Environment.class, context.backend.extractId(entity)).get(),
-                    blueprint.getProperties()));
+        protected EntityAndPendingNotifications<BE, Environment>
+        wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> tx) {
+            return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
+                    parentPath.extend(Environment.class, tx.extractId(entity)).get(),
+                    blueprint.getProperties()), emptyList());
         }
 
         @Override
@@ -149,7 +150,7 @@ public final class BaseEnvironments {
 
         @Override
         public Environments.Single create(Environment.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

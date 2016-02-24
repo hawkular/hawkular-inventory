@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,6 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * Some well-known relationships have certain semantic rules that need to be checked for when creating/deleting them.
@@ -87,40 +86,40 @@ public final class RelationshipRules {
     private RelationshipRules() {
     }
 
-    public static <E> void checkCreate(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            Relationships.WellKnown relationship, E target) {
+    public static <E> void checkCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                       Relationships.WellKnown relationship, E target) {
 
         check(backend, origin, direction, relationship.name(), target, CheckType.CREATE);
     }
 
-    public static <E> void checkCreate(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target) {
+    public static <E> void checkCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                       String relationship, E target) {
 
         check(backend, origin, direction, relationship, target, CheckType.CREATE);
     }
 
-    public static <E> void checkDelete(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            Relationships.WellKnown relationship, E target) {
+    public static <E> void checkDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                       Relationships.WellKnown relationship, E target) {
 
         check(backend, origin, direction, relationship.name(), target, CheckType.DELETE);
     }
 
-    public static <E> void checkDelete(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target) {
+    public static <E> void checkDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                       String relationship, E target) {
 
         check(backend, origin, direction, relationship, target, CheckType.DELETE);
     }
 
     @SuppressWarnings("unchecked")
-    private static <E> void check(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target, CheckType checkType) {
+    private static <E> void check(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                  String relationship, E target, CheckType checkType) {
 
         List<RuleCheck<?>> rules = checkType.getRuleChecks(relationship);
 
         rules.forEach((r) -> ((RuleCheck<E>) r).check(backend, origin, direction, relationship, target));
     }
 
-    private static <E> void checkDiamonds(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void checkDiamonds(Transaction<E> backend, E origin, Relationships.Direction direction,
             String relationship, E target) {
         if (direction == outgoing && backend.hasRelationship(target, Relationships.Direction.incoming,
                 relationship)) {
@@ -136,7 +135,7 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void checkLoops(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void checkLoops(Transaction<E> backend, E origin, Relationships.Direction direction,
             String relationship, E target) {
         if (direction == Relationships.Direction.both) {
             throw new IllegalArgumentException("Relationship '" + relationship + "' cannot form a loop" +
@@ -173,17 +172,17 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowDelete(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target) {
+    private static <E> void disallowDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                           String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly deleted.");
     }
 
-    private static <E> void disallowCreate(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-            String relationship, E target) {
+    private static <E> void disallowCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
+                                           String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly created.");
     }
 
-    private static <E> void disallowWhenMetadataPackIsSource(InventoryBackend<E> backend, E origin,
+    private static <E> void disallowWhenMetadataPackIsSource(Transaction<E> backend, E origin,
                                                              Relationships.Direction direction, String relationship,
                                                              E target) {
         String message = "Manual manipulation of the 'incorporates' relationships where the" +
@@ -200,7 +199,7 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowDeleteWhenTheresContainsToo(InventoryBackend<E> backend, E origin,
+    private static <E> void disallowDeleteWhenTheresContainsToo(Transaction<E> backend, E origin,
                                                                 Relationships.Direction direction, String relationship,
                                                                 E target, String errorDetails) {
         if (backend.hasRelationship(origin, target, contains.name())) {
@@ -210,7 +209,7 @@ public final class RelationshipRules {
     }
 
     private static <E>
-    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(InventoryBackend<E> backend,
+    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(Transaction<E> backend,
                                                                        E origin, Relationships.Direction direction,
                                                                        String relationship, E target) {
         if (!incorporates.name().equals(relationship)) {
@@ -229,15 +228,16 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowCreateAcrossTenants(InventoryBackend<E> backend, E origin,
-            Relationships.Direction direction, String relationship, E target) {
+    private static <E> void disallowCreateAcrossTenants(Transaction<E> backend, E origin,
+                                                        Relationships.Direction direction, String relationship,
+                                                        E target) {
 
     }
 
     @FunctionalInterface
     private interface RuleCheck<E> {
-        void check(InventoryBackend<E> backend, E origin, Relationships.Direction direction,
-                String relationship, E target);
+        void check(Transaction<E> backend, E origin, Relationships.Direction direction,
+                   String relationship, E target);
     }
 
     private enum CheckType {

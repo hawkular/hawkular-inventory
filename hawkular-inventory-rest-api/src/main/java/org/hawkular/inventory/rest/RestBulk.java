@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,6 +112,12 @@ public class RestBulk extends RestBase {
         }
 
         typeStatuses.put(cp, status);
+
+        if (status >= 200 && status < 300) {
+            RestApiLogger.LOGGER.debugf("REST BULK created: %s", cp);
+        } else {
+            RestApiLogger.LOGGER.debugf("REST BULK failed (%d): %s", status, cp);
+        }
     }
 
     private static String arrow(Relationship.Blueprint b) {
@@ -389,8 +395,8 @@ public class RestBulk extends RestBase {
             transaction.commit();
             return statuses;
         } catch (Throwable t) {
-            // TODO this potentially leaves behind the security resources of the entities that have been created
-            // before the transaction failure
+            //note that the security resources are not yet created (they only get created after a successful commit)
+            //so no "leftovers" are left behind in case of transaction rollback.
             transaction.rollback();
             throw t;
         }
@@ -417,7 +423,7 @@ public class RestBulk extends RestBase {
             return;
         }
 
-        if (!canCreateUnderParent(elementType, parentPath)) {
+        if (!canCreateUnderParent(elementType, parentPath, statuses)) {
             for (Blueprint b : blueprints) {
                 String id = b.accept(idExtractor, null);
                 putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
@@ -452,14 +458,16 @@ public class RestBulk extends RestBase {
     private void bulkCreateRelationships(Map<ElementType, Map<CanonicalPath, Integer>> statuses,
                                          CanonicalPath parentPath, ResolvableToSingleWithRelationships<?, ?> single,
                                          ElementType elementType, List<Blueprint> blueprints) {
-        if (!security.canAssociateFrom(parentPath)) {
-            for (Blueprint b : blueprints) {
-                Relationship.Blueprint rb = (Relationship.Blueprint) b;
-                String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
-                putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
-                        FORBIDDEN.getStatusCode());
+        if (!hasBeenCreatedInBulk(parentPath, statuses)) {
+            if (!security.canAssociateFrom(parentPath)) {
+                for (Blueprint b : blueprints) {
+                    Relationship.Blueprint rb = (Relationship.Blueprint) b;
+                    String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
+                    putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                            FORBIDDEN.getStatusCode());
+                }
+                return;
             }
-            return;
         }
 
         for (Blueprint b : blueprints) {
@@ -479,7 +487,15 @@ public class RestBulk extends RestBase {
         }
     }
 
-    private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath) {
+    private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath,
+                                         Map<ElementType, Map<CanonicalPath, Integer>> statuses) {
+        if (hasBeenCreatedInBulk(parentPath, statuses)) {
+            //the parent has been created in the bulk request. I.e. we're still in a transaction that's creating the
+            //entities and therefore the security resources have not been created for such elements yet. We assume that
+            //if we were allowed to create the parent, we can also create its child.
+            return true;
+        }
+
         switch (elementType) {
             case dataEntity:
                 return security.canUpdate(parentPath);
@@ -488,6 +504,25 @@ public class RestBulk extends RestBase {
             default:
                 return security.canCreate(elementType.elementType).under(parentPath);
         }
+    }
+
+    private boolean hasBeenCreatedInBulk(CanonicalPath elementPath, Map<ElementType, Map<CanonicalPath, Integer>>
+            statuses) {
+
+        Map<CanonicalPath, Integer> elementsOfType = statuses.get(
+                ElementType.ofElementType(elementPath.getSegment().getElementType()));
+
+        if (elementsOfType == null) {
+            return false;
+        }
+
+        Integer status = elementsOfType.get(elementPath);
+
+        if (status == null) {
+            return false;
+        }
+
+        return status == 201 || status == 204;
     }
 
     private enum ElementType {
@@ -508,6 +543,24 @@ public class RestBulk extends RestBase {
         ElementType(Class<? extends AbstractElement<?, ?>> elementType, Class<? extends Blueprint> blueprintType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
+        }
+
+        public static ElementType ofElementType(Class<?> type) {
+            for (ElementType et : ElementType.values()) {
+                if (et.elementType.equals(type)) {
+                    return et;
+                }
+            }
+            return null;
+        }
+
+        public static ElementType ofBlueprintType(Class<?> type) {
+            for (ElementType et : ElementType.values()) {
+                if (et.blueprintType.equals(type)) {
+                    return et;
+                }
+            }
+            return null;
         }
     }
 
