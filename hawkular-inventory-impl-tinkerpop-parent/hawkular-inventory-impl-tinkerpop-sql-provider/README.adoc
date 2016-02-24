@@ -1,0 +1,7 @@
+== Hawkular's Tinkerpop SQL Backend
+
+This is a toy backend for persisting the Tinkerpop Blueprints Graph database into an RDBMS. Performance is bad but it
+is useful for checking the transactional behavior of Hawkular because it is much stricter about transaction handling
+than Titan.
+
+DO NOT USE THIS FOR ANYTHING AND DO NOT DEPLOY THIS TO HAWKULAR DIST.
