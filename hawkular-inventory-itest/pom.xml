@@ -110,6 +110,14 @@
         <plugins>
 
           <plugin>
+            <groupId>org.revapi</groupId>
+            <artifactId>revapi-maven-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+
+          <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
             <executions>
