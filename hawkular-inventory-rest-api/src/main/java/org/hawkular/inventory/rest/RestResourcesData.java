@@ -38,11 +38,12 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Jirka Kremser
@@ -51,17 +52,17 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Resource Data CRUD")
+@Api(value = "/", description = "Resource Data CRUD", tags = "Resources Data")
 public class RestResourcesData extends RestResources {
 
     @POST
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Creates the configuration for pre-existing resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK Created"),
-                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+            @ApiResponse(code = 204, message = "OK Created"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response createConfigurationF(@PathParam("feedId") String feedId,
                                          @Encoded @PathParam("resourcePath") String resourcePath,
@@ -76,10 +77,10 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Creates the configuration for pre-existing resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK Created"),
-                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+            @ApiResponse(code = 204, message = "OK Created"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response createConfiguration(@PathParam("environmentId") String environmentId,
             @Encoded @PathParam("resourcePath") String resourcePath,
@@ -106,11 +107,11 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Retrieves the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response getConfigurationF(@PathParam("feedId") String feedId,
                                       @Encoded @PathParam("resourcePath") String resourcePath,
                                       @DefaultValue("configuration") @QueryParam("dataType")
@@ -123,11 +124,11 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Retrieves the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response getConfiguration(@PathParam("environmentId") String environmentId,
                                      @Encoded @PathParam("resourcePath") String resourcePath,
                                      @DefaultValue("configuration") @QueryParam("dataType") Resources.DataRole dataType)
@@ -150,11 +151,11 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Updates the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response updateConfigurationF(@PathParam("feedId") String feedId,
                                          @Encoded @PathParam("resourcePath") String resourcePath,
                                          @DefaultValue("configuration") @QueryParam("dataType")
@@ -168,10 +169,10 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Updates the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
                   })
     public Response updateConfiguration(@PathParam("environmentId") String environmentId,
                                         @Encoded @PathParam("resourcePath") String resourcePath,
@@ -196,11 +197,11 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/feeds/{feedId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Deletes the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment, resource or feed doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response deleteConfigurationF(@PathParam("feedId") String feedId,
                                          @Encoded @PathParam("resourcePath") String resourcePath,
                                          @DefaultValue("configuration") @QueryParam("dataType")
@@ -213,11 +214,11 @@ public class RestResourcesData extends RestResources {
     @javax.ws.rs.Path("/{environmentId}/resources/{resourcePath:.+}/data")
     @ApiOperation("Deletes the configuration of a resource")
     @ApiResponses({
-                          @ApiResponse(code = 204, message = "OK"),
-                          @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
-                                       response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 204, message = "OK"),
+            @ApiResponse(code = 404, message = "Tenant, environment or resource doesn't exist",
+                    response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response deleteConfiguration(@PathParam("environmentId") String environmentId,
                                         @Encoded @PathParam("resourcePath") String resourcePath,
                                         @DefaultValue("configuration") @QueryParam("dataType")

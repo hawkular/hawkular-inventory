@@ -40,11 +40,12 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -53,7 +54,8 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Manages associations between resource types and metric types")
+@Api(value = "/", description = "Manages associations between resource types and metric types",
+        tags = "ResourceTypes OperationTypes")
 public class RestResourceTypesOperationTypes extends RestBase {
     @POST
     @javax.ws.rs.Path("/resourceTypes/{resourceTypeId}/operationTypes")

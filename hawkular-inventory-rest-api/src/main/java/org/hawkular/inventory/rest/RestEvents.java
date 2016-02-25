@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -43,11 +42,10 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.security.SecurityIntegration;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import rx.Subscription;
 import rx.functions.Func1;
 
@@ -57,7 +55,7 @@ import rx.functions.Func1;
 @Path("/events")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/events", description = "Work with the events emitted by inventory")
+@Api(value = "/events", description = "Work with the events emitted by inventory", tags = "Events")
 public class RestEvents extends RestBase {
 
     @Inject
@@ -67,11 +65,11 @@ public class RestEvents extends RestBase {
     @Path("/")
     @ApiOperation("Listen on stream of the events")
     @ApiResponses({
-                          @ApiResponse(code = 200, message = "OK"),
-                          @ApiResponse(code = 401, message = "Unauthorized access"),
-                          @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public void getEvents(@Suspended AsyncResponse asyncResponse,
                           @QueryParam("type") @DefaultValue("resource") String type,
                           @QueryParam("action") @DefaultValue("created") String actionString) {
