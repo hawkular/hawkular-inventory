@@ -83,9 +83,6 @@
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
 
-    <!-- TODO we should figure out a way of sharing this with accounts -->
-    <version.org.keycloak>1.8.1.Final</version.org.keycloak>
-
     <version.org.revapi.revapi-maven-plugin>0.3.10</version.org.revapi.revapi-maven-plugin>
     <version.org.revapi.revapi-java>0.5.2</version.org.revapi.revapi-java>
 
@@ -178,6 +175,14 @@
         <artifactId>joda-time</artifactId>
         <version>${version.joda-time}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.accounts</groupId>
+        <artifactId>hawkular-accounts-feature-pack</artifactId>
+        <version>${version.org.hawkular.accounts}</version>
+        <type>zip</type>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
