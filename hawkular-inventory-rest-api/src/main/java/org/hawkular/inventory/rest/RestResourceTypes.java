@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -43,11 +42,12 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -56,7 +56,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Resource type CRUD")
+@Api(value = "/", description = "Resource type CRUD", tags = "ResourceTypes")
 public class RestResourceTypes extends RestBase {
 
     @GET
@@ -106,9 +106,9 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).resourceTypes().create(resourceType);
+        ResourceType entity = inventory.tenants().get(tenantId).resourceTypes().create(resourceType).entity();
 
-        return ResponseUtil.created(uriInfo, resourceType.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resourceType.getId()).build();
     }
 
     @PUT
@@ -200,9 +200,10 @@ public class RestResourceTypes extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes().create(resourceType);
+        ResourceType entity =
+                inventory.tenants().get(tenantId).feeds().get(feedId).resourceTypes().create(resourceType).entity();
 
-        return ResponseUtil.created(uriInfo, resourceType.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resourceType.getId()).build();
     }
 
     @PUT

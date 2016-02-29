@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,11 +36,11 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -49,7 +49,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/metadatapacks")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/metadatapacks", description = "CRUD for the metadata packs.")
+@Api(value = "/metadatapacks", description = "CRUD for the metadata packs.", tags = "Metadata packs")
 public class RestMetadataPacks extends RestBase {
 
     @GET
@@ -79,7 +79,7 @@ public class RestMetadataPacks extends RestBase {
         }
         MetadataPack ret = inventory.tenants().get(tenantId).metadataPacks().create(blueprint).entity();
 
-        return ResponseUtil.created(ui, ret.getId()).entity(ret).build();
+        return ResponseUtil.created(ret, ui, ret.getId()).entity(ret).build();
     }
 
     @PUT

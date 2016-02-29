@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -43,11 +42,11 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -56,7 +55,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-@Api(value = "/", description = "Metrics CRUD")
+@Api(value = "/", description = "Metrics CRUD", tags = "Metrics")
 public class RestMetrics extends RestBase {
 
     @POST
@@ -80,8 +79,8 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.inspect(env, Environments.Single.class).metrics(), metric);
-        return ResponseUtil.created(uriInfo, metric.getId()).build();
+        Metric entity = createMetric(inventory.inspect(env, Environments.Single.class).metrics(), metric);
+        return ResponseUtil.created(entity, uriInfo, metric.getId()).build();
     }
 
     @POST
@@ -105,12 +104,12 @@ public class RestMetrics extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        createMetric(inventory.inspect(feed, Feeds.Single.class).metrics(), metric);
+        Metric entity = createMetric(inventory.inspect(feed, Feeds.Single.class).metrics(), metric);
 
-        return ResponseUtil.created(uriInfo, metric.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, metric.getId()).build();
     }
 
-    private void createMetric(Metrics.ReadWrite accessInterface, Metric.Blueprint metric) {
+    private Metric createMetric(Metrics.ReadWrite accessInterface, Metric.Blueprint metric) {
         if (metric == null) {
             throw new IllegalArgumentException("metric to create not specified");
         }
@@ -123,7 +122,7 @@ public class RestMetrics extends RestBase {
             throw new IllegalArgumentException("metric type id not specified");
         }
 
-        accessInterface.create(metric);
+        return accessInterface.create(metric).entity();
     }
 
     @GET
@@ -132,8 +131,7 @@ public class RestMetrics extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Rnvironment or metrics doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Rnvironment or metrics doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Metric getMetric(@PathParam("environmentId") String environmentId,
@@ -149,8 +147,7 @@ public class RestMetrics extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Environment, feed or metric doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Environment, feed or metric doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Metric getMetricInFeed(@PathParam("feedId") String feedId,
@@ -165,8 +162,7 @@ public class RestMetrics extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or environment doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetrics(@PathParam("environmentId") String environmentId,
@@ -188,8 +184,7 @@ public class RestMetrics extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, environment or feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getMetrics(@PathParam("feedId") String feedId, @Context UriInfo uriInfo) {
@@ -283,8 +278,7 @@ public class RestMetrics extends RestBase {
     @ApiOperation("Deletes a metric")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, feed or the metric doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, feed or the metric doesn't exist", response = ApiError.class),
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
