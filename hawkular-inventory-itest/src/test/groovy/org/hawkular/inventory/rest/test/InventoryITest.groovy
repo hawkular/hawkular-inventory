@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue
 import static org.junit.Assert.fail
 
 import org.hawkular.inventory.api.model.CanonicalPath
+import org.hawkular.inventory.api.model.PathSegmentCodec
 import org.hawkular.inventory.api.model.Resource
 import org.junit.AfterClass
 import org.junit.Assert
@@ -285,8 +286,8 @@ class InventoryITest extends AbstractTestBase {
                 body: ["/e;" + environmentId + "/r;" + room1ResourceId + "/r;table/r;leg%2F1", "../" + room1ResourceId
                         + "/table/leg-4"])
         assertEquals(204, response.status)
-        pathsToDelete.put("$path/../table/leg%2F1", "$path/../table/leg%2F1")
-        pathsToDelete.put("$path/../table/leg-4", "$path/../table/leg-4")
+//        pathsToDelete.put("$path/../table/leg%2F1", "$path/../table/leg%2F1")
+//        pathsToDelete.put("$path/../table/leg-4", "$path/../table/leg-4")
 
         /* link the metric to resource */
         path = "$basePath/$environmentId/resources/$host1ResourceId/metrics"
@@ -481,7 +482,7 @@ class InventoryITest extends AbstractTestBase {
             String path = en.getKey();
             String getValidationPath = en.getValue();
             try {
-                def response = AbstractTestBase.client.delete(path: path)
+                def response = AbstractTestBase.client.delete(uri: baseURI + path)
                 assertEquals(204, response.status)
             } catch (groovyx.net.http.HttpResponseException e) {
                 println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -492,7 +493,7 @@ class InventoryITest extends AbstractTestBase {
 
             if (getValidationPath != null) {
                 try {
-                    def response = AbstractTestBase.client.get(path: getValidationPath)
+                    def response = AbstractTestBase.client.get(uri: baseURI + getValidationPath)
                     Assert.fail("The path '$getValidationPath' should not exist after the entity was deleted")
                 } catch (groovyx.net.http.HttpResponseException e) {
                     assertEquals("Error message for path '$path'", "Not Found", e.getMessage())
@@ -886,7 +887,7 @@ class InventoryITest extends AbstractTestBase {
         //this should fail
         rs.add("{\"id\": \"" + room1ResourceId + "\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
         //this should succeed
-        rs.add("{\"id\": \"" + bulkResourcePrefix + "+1\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
+        rs.add("{\"id\": \"" + bulkResourcePrefix + "-1\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
 
         payload += String.join(",", rs) + "]}}"
         def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
@@ -896,18 +897,18 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(2, codes.size())
 
         assertEquals(409, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + room1ResourceId))
-        assertEquals(201, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "+1"))
+        assertEquals(201, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "-1"))
 
-        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1")
     }
 
     @Test
     void testBulkCreateAndRelate() {
         def epath = "/t;$tenantId/e;$environmentId"
-        def rpath = "$epath/r;$bulkResourcePrefix" + "+1"
+        def rpath = "$epath/r;$bulkResourcePrefix" + "-1"
         def mpath = "$epath/m;$responseTimeMetricId"
         def payload = '{"' + epath + '": {"resource": [' +
-                '{"id": "' + bulkResourcePrefix + '+1", "resourceTypePath": "/rt;' + roomRTypeId + '"}]},' +
+                '{"id": "' + bulkResourcePrefix + '-1", "resourceTypePath": "/rt;' + roomRTypeId + '"}]},' +
                 '"' + rpath + '": {"relationship" : [' +
                 '{"name": "incorporates", "otherEnd": "' + mpath + '", "direction": "outgoing"}]}}'
 
@@ -923,8 +924,8 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(1, relationshipCodes.size())
         assertEquals(201, relationshipCodes.entrySet().getAt(0).getValue())
 
-        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1/metrics/../$responseTimeMetricId")
-        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1/metrics/../$responseTimeMetricId")
+        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1")
     }
 
     @Test
@@ -1234,12 +1235,12 @@ class InventoryITest extends AbstractTestBase {
     /* Add the deletable path to {@link #pathsToDelete} and send a {@code POST} request using the given map of
      * arguments. */
     private static Object postDeletable(Map args) {
-        String getVerificationPath = args.path + "/" + args.body.id
+        String getVerificationPath = args.path + "/" + PathSegmentCodec.encode(args.body.id)
         postDeletable(args, getVerificationPath)
     }
     private static Object postDeletable(Map args, String getVerificationPath) {
         args.path = basePath + "/" + args.path
-        String path = args.path + "/" + args.body.id
+        String path = args.path + "/" + PathSegmentCodec.encode(args.body.id)
         pathsToDelete.put(path, basePath + "/" + getVerificationPath)
         println "posting $args"
         return AbstractTestBase.client.post(args)
