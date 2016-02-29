@@ -1,1 +1,0 @@
-No modules here, really, but the wildfly-feature-pack-plugin needs this directory be present.
