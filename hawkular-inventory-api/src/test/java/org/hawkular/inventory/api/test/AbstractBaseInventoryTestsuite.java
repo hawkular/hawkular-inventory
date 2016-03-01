@@ -2839,6 +2839,15 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             } catch (RelationAlreadyExistsException e) {
                 //expected
             }
+
+            //also check that the duplicates are not possible using an explicit relationship creation call
+            try {
+                Relationship rel2 = inventory.inspect(r).relationships().linkWith(incorporates, m.getPath(), null)
+                        .entity();
+                Assert.fail("Should not be possible to create an association twice.");
+            } catch (RelationAlreadyExistsException e) {
+                //expected
+            }
         } finally {
             inventory.inspect(t).delete();
         }

@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
 
@@ -124,18 +123,25 @@ public final class BaseRelationships {
                 // if this is a well-known relationship, there might be some semantic checks for it...
                 RelationshipRules.checkCreate(context.backend, origin, direction, name, incidenceObject);
 
-                BE relationshipObject;
+                EntityAndPendingNotifications<Relationship> relationshipObject;
+                EntityAndPendingNotifications<Relationship> relationshipObject2 = null;
 
                 switch (direction) {
                     case incoming:
-                        relationshipObject = context.backend.relate(incidenceObject, origin, name, properties);
+                        relationshipObject = Util.createAssociationNoTransaction(context, incidenceObject, name,
+                                origin, properties);
                         break;
                     case outgoing:
-                        relationshipObject = context.backend.relate(origin, incidenceObject, name, properties);
+                        relationshipObject = Util.createAssociationNoTransaction(context, origin, name,
+                                incidenceObject, properties);
                         break;
                     case both:
-                        context.backend.relate(incidenceObject, origin, name, properties);
-                        relationshipObject = context.backend.relate(origin, incidenceObject, name, properties);
+                        relationshipObject2 = Util.createAssociationNoTransaction(context, origin, name,
+                                incidenceObject, properties);
+
+                        relationshipObject = Util.createAssociationNoTransaction(context, incidenceObject, name,
+                                origin, properties);
+
                         break;
                     default:
                         throw new AssertionError("Unhandled direction when linking. This shouldn't have happened.");
@@ -143,11 +149,12 @@ public final class BaseRelationships {
 
                 context.backend.commit(transaction);
 
-                context.notify(context.backend.convert(relationshipObject, Relationship.class), created());
+                context.notifyAll(relationshipObject);
+                if (relationshipObject2 != null) {
+                    context.notifyAll(relationshipObject2);
+                }
 
-                String id = context.backend.extractId(relationshipObject);
-
-                return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
+                return new Single<>(context.replacePath(Query.to(relationshipObject.getEntity().getPath())));
             });
         }
 

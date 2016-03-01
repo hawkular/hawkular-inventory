@@ -53,6 +53,7 @@ import java.util.stream.StreamSupport;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
@@ -167,8 +168,18 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         q = new HawkularPipeline<Object, Element>(start);
 
         if (startingPoint == null) {
-            if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+            Filter first = query.getFragments()[0].getFilter();
+
+            if (first instanceof RelationFilter) {
                 q = q.E();
+            } else if (first instanceof With.CanonicalPaths) {
+                //XXX this does NOT handle the situation where we mix relationships and entities in one filter
+                Class<?> elementType = ((With.CanonicalPaths) first).getPaths()[0].getSegment().getElementType();
+                if (Relationship.class.equals(elementType)) {
+                    q = q.E();
+                } else {
+                    q = q.V();
+                }
             } else {
                 q = q.V();
             }
