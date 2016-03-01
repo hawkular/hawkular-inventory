@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
 
