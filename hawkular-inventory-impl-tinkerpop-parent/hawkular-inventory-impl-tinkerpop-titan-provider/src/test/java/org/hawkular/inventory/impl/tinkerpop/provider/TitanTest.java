@@ -61,12 +61,12 @@ public class TitanTest extends AbstractBaseInventoryTestsuite<Element> {
 
     @Before
     public void reportStart() {
-        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
+        //System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
     }
 
     @After
     public void reportEnd() {
-        System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
+        //System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
     }
 
     @Override protected BaseInventory<Element> getInventoryForTest() {
