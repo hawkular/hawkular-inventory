@@ -27,6 +27,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -175,7 +176,8 @@ final class Util {
     }
 
     public static <BE> EntityAndPendingNotifications<Relationship>
-    createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target) {
+    createAssociationNoTransaction(TraversalContext<BE, ?> context, BE source, String relationship, BE target,
+                                   Map<String, Object> properties) {
         if (context.backend.hasRelationship(source, target, relationship)) {
             throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(context.backend
                     .extractCanonicalPath(source))));
@@ -183,7 +185,7 @@ final class Util {
 
         RelationshipRules.checkCreate(context.backend, source, Relationships.Direction.outgoing, relationship,
                 target);
-        BE relationshipObject = context.backend.relate(source, target, relationship, null);
+        BE relationshipObject = context.backend.relate(source, target, relationship, properties);
 
         Relationship ret = context.backend.convert(relationshipObject, Relationship.class);
 

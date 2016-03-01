@@ -235,7 +235,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 BE to = direction == outgoing ? endObject : entity;
 
                 EntityAndPendingNotifications<Relationship> res = Util.createAssociationNoTransaction(context,
-                        from, name, to);
+                        from, name, to, null);
 
                 notifications.addAll(res.getNotifications());
             } catch (ElementNotFoundException e) {
