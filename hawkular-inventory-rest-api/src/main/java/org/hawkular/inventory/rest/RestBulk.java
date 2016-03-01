@@ -47,6 +47,7 @@ import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
@@ -110,8 +111,15 @@ public class RestBulk extends RestBase {
             typeStatuses = new HashMap<>();
             statuses.put(et, typeStatuses);
         }
+        if (!typeStatuses.containsKey(cp)) {
+            typeStatuses.put(cp, status);
+        }
+    }
 
-        typeStatuses.put(cp, status);
+    private static boolean hasBeenProcessed(Map<ElementType, Map<CanonicalPath, Integer>> statuses, ElementType et,
+                                            CanonicalPath cp) {
+        Map<CanonicalPath, Integer> typeStatuses = statuses.get(et);
+        return (typeStatuses != null && typeStatuses.containsKey(cp));
     }
 
     private static String arrow(Relationship.Blueprint b) {
@@ -274,59 +282,59 @@ public class RestBulk extends RestBase {
     create (Blueprint b, WriteInterface<?, ?, ?, ?> wrt) {
         return b.accept(
                 new ElementBlueprintVisitor.Simple<ResolvableToSingle<? extends AbstractElement<?, ?>, ?>, Void>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitData(DataEntity.Blueprint<?> data, Void parameter) {
-                return ((Data.ReadWrite) wrt).create(data);
-            }
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitData(DataEntity.Blueprint<?> data, Void parameter) {
+                        return ((Data.ReadWrite) wrt).create(data);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return ((Environments.ReadWrite) wrt).create(environment);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitEnvironment(Environment.Blueprint environment, Void parameter) {
+                        return ((Environments.ReadWrite) wrt).create(environment);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitFeed(Feed.Blueprint feed, Void parameter) {
-                return ((Feeds.ReadWrite) wrt).create(feed);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitFeed(Feed.Blueprint feed, Void parameter) {
+                        return ((Feeds.ReadWrite) wrt).create(feed);
+                    }
 
-            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetric(Metric.Blueprint metric, Void parameter) {
-                return ((Metrics.ReadWrite) wrt).create(metric);
-            }
+                    @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetric(Metric.Blueprint metric, Void parameter) {
+                        return ((Metrics.ReadWrite) wrt).create(metric);
+                    }
 
-            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetricType(MetricType.Blueprint metricType, Void parameter) {
-                return ((MetricTypes.ReadWrite) wrt).create(metricType);
-            }
+                    @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetricType(MetricType.Blueprint metricType, Void parameter) {
+                        return ((MetricTypes.ReadWrite) wrt).create(metricType);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                return ((OperationTypes.ReadWrite) wrt).create(operationType);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitOperationType(OperationType.Blueprint operationType, Void parameter) {
+                        return ((OperationTypes.ReadWrite) wrt).create(operationType);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitResource(Resource.Blueprint resource, Void parameter) {
-                return ((Resources.ReadWrite) wrt).create(resource);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitResource(Resource.Blueprint resource, Void parameter) {
+                        return ((Resources.ReadWrite) wrt).create(resource);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return ((ResourceTypes.ReadWrite) wrt).create(type);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitResourceType(ResourceType.Blueprint type, Void parameter) {
+                        return ((ResourceTypes.ReadWrite) wrt).create(type);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
-                return ((MetadataPacks.ReadWrite) wrt).create(metadataPack);
-            }
-        }, null);
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+                        return ((MetadataPacks.ReadWrite) wrt).create(metadataPack);
+                    }
+                }, null);
     }
 
     @POST
@@ -433,6 +441,11 @@ public class RestBulk extends RestBase {
 
             CanonicalPath provisionalChildPath = parentPath.extend(elementType.elementType, b.accept(idExtractor, null))
                     .get();
+            boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, provisionalChildPath);
+            if (hasBeenProcessed) {
+                // this entity has it's own record in the list with statuses so let's move to another one
+                continue;
+            }
             try {
                 //this is cheap - the call to entity() right after create() doesn't fetch from the backend
                 String childId = create(b, wrt).entity().getId();
@@ -465,16 +478,24 @@ public class RestBulk extends RestBase {
         for (Blueprint b : blueprints) {
             Relationship.Blueprint rb = (Relationship.Blueprint) b;
 
+            String fakeId = parentPath.toString() + arrow(rb) + rb.getOtherEnd().toString();
+            CanonicalPath cPath = CanonicalPath.of().relationship(fakeId).get();
+            boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, cPath);
+            if (hasBeenProcessed) {
+                // this relationship has it's own record in the list with statuses so let's move to another one
+                continue;
+            }
+
             try {
                 Relationships.Single rel = single.relationships(rb.getDirection())
                         .linkWith(rb.getName(), rb.getOtherEnd(), rb.getProperties());
-
-                putStatus(statuses, elementType, rel.entity().getPath(), CREATED.getStatusCode());
+                putStatus(statuses, elementType, cPath, CREATED.getStatusCode());
             } catch (EntityNotFoundException ex) {
-                String fakeId = parentPath.toString() + arrow(rb) + rb.getOtherEnd().toString();
-
-                putStatus(statuses, elementType, CanonicalPath.of().relationship(fakeId).get(),
-                        NOT_FOUND.getStatusCode());
+                putStatus(statuses, elementType, cPath, NOT_FOUND.getStatusCode());
+            } catch (RelationAlreadyExistsException ex) {
+                putStatus(statuses, elementType, cPath, CONFLICT.getStatusCode());
+            } catch (Exception ex) {
+                putStatus(statuses, elementType, cPath, INTERNAL_SERVER_ERROR.getStatusCode());
             }
         }
     }
