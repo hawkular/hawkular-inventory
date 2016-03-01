@@ -20,6 +20,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -37,11 +36,12 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -50,7 +50,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/tenant")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/tenant", description = "Work with the tenant of the current persona")
+@Api(value = "/tenant", description = "Work with the tenant of the current persona", tags = "Tenants")
 public class RestTenants extends RestBase {
 
     @Inject
@@ -74,11 +74,11 @@ public class RestTenants extends RestBase {
     @Path("/relationships")
     @ApiOperation("Retrieves tenant's relationships")
     @ApiResponses({
-                          @ApiResponse(code = 200, message = "OK"),
-                          @ApiResponse(code = 401, message = "Unauthorized access"),
-                          @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
-                          @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
-                  })
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 401, message = "Unauthorized access"),
+            @ApiResponse(code = 404, message = "Tenant doesn't exist", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
+    })
     public Response getTenantRelationships(@DefaultValue("both") @QueryParam("direction") String direction,
                                            @DefaultValue("") @QueryParam("property") String propertyName,
                                            @DefaultValue("") @QueryParam("propertyValue") String propertyValue,

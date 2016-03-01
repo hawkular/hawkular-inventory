@@ -30,6 +30,7 @@ import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Resources;

@@ -67,11 +67,12 @@ import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Jiri Kremser
@@ -80,7 +81,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/.*/relationships", description = "Work with the relationships.")
+@Api(value = "/.*/relationships", description = "Work with the relationships.", tags = "Relationships")
 public class RestRelationships extends RestBase {
 
     public static Map<String, Class<? extends Entity<?, ?>>> entityMap;
@@ -111,8 +112,7 @@ public class RestRelationships extends RestBase {
     @ApiOperation("Retrieves relationships")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of relationships"),
-            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
-                    .class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response get(@PathParam("path") String path,
@@ -150,8 +150,7 @@ public class RestRelationships extends RestBase {
     @ApiOperation("Retrieves relationship info")
     @ApiResponses({
         @ApiResponse(code = 200, message = "The details of relationship"),
-        @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
-            .class),
+        @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError.class),
         @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response getRelationship(@PathParam("relationshipId") String relationshipId,
@@ -168,8 +167,7 @@ public class RestRelationships extends RestBase {
     @ApiOperation("Deletes a relationship")
     @ApiResponses({
             @ApiResponse(code = 200, message = "The list of relationships"),
-            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError
-                    .class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response delete(@PathParam("path") String path,
@@ -200,8 +198,7 @@ public class RestRelationships extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
-            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
-                    ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 409, message = "Relationship already exists", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
@@ -234,14 +231,15 @@ public class RestRelationships extends RestBase {
         }
 
         // link the current entity with the target or the source of the relationship
-        String newId = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
-                .getProperties()).entity().getId();
+        Relationship rel = resolvable.relationships(directed).linkWith(relation.getName(), theOtherSide, relation
+                .getProperties()).entity();
+        String newId = rel.getId();
         if (RestApiLogger.LOGGER.isDebugEnabled()) {
             RestApiLogger.LOGGER.debug("creating relationship with id: " + newId + " and name: " +
                                                relation.getName());
         }
 
-        return ResponseUtil.created(uriInfo, newId).build();
+        return ResponseUtil.created(rel, uriInfo, newId).build();
     }
 
     @PUT
@@ -250,8 +248,7 @@ public class RestRelationships extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 400, message = "Invalid input data", response = ApiError.class),
-            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response =
-                    ApiError.class),
+            @ApiResponse(code = 404, message = "Accompanying entity doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response update(@PathParam("path") String path,

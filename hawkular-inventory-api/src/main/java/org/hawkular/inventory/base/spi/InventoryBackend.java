@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
@@ -32,7 +33,6 @@ import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.PotentiallyCommittingPayload;
-import org.hawkular.inventory.base.Query;
 
 /**
  * The backend for the base inventory that does all the "low level" stuff like querying the actual inventory store,

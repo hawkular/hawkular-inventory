@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@ import javax.jms.TextMessage;
 import org.hawkular.bus.common.AbstractMessage;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -36,16 +35,12 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.json.InventoryJacksonConfig;
-import org.hawkular.inventory.json.mixins.CanonicalPathMixin;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends AbstractMessage {
+public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends InventoryAbstractMessage {
 
     private Action.Enumerated action;
     private Tenant tenant;
@@ -181,23 +176,6 @@ public abstract class InventoryEvent<T extends AbstractElement<?, ?>> extends Ab
         }
         return headers;
     }
-
-    @Override
-    protected ObjectMapper buildObjectMapperForSerialization() {
-        final ObjectMapper mapper = new ObjectMapper();
-        InventoryJacksonConfig.configure(mapper);
-        mapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
-        return mapper;
-    }
-
-    @SuppressWarnings("unused")
-    public static ObjectMapper buildObjectMapperForDeserialization() {
-        final ObjectMapper mapper = new ObjectMapper();
-        InventoryJacksonConfig.configure(mapper);
-        mapper.addMixIn(CanonicalPath.class, CanonicalPathMixin.class);
-        return mapper;
-    }
-
 
     private static String firstLetterLowercased(String source) {
         return Character.toLowerCase(source.charAt(0)) + source.substring(1);

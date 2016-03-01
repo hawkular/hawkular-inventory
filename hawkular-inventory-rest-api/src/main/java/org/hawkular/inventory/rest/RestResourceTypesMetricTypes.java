@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,11 +46,12 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -59,7 +60,8 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Manages associations between resource types and metric types")
+@Api(value = "/", description = "Manages associations between resource types and metric types",
+        tags = "ResourceTypes MetricTypes")
 public class RestResourceTypesMetricTypes extends RestBase {
 
     @GET

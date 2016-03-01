@@ -25,6 +25,7 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
@@ -150,11 +151,11 @@ public final class BaseMetricTypes {
         private String getErrorMessage(MetricType.Blueprint blueprint) {
             String msg;
             if (blueprint.getCollectionInterval() == null) {
-                msg = "Interval";
+                msg = "Interval (\"collectionInterval\" in JSON)";
             } else if (blueprint.getType() == null) {
-                msg = "Data type";
+                msg = "Data type (\"type\" in JSON)";
             } else {
-                msg = "Metric unit";
+                msg = "Metric unit (\"unit\" in JSON)";
             }
 
             return msg + " is null";

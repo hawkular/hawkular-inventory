@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.hawkular.inventory</groupId>
+    <artifactId>hawkular-inventory-parent</artifactId>
+    <version>0.13.0.Final-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hawkular-inventory-itest</artifactId>
+
+  <build>
+    <plugins>
+      <!-- skip tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!-- tests are reused in another modules, so dependencies are transitively needed -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-feature-pack</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.groovy.modules.http-builder</groupId>
+      <artifactId>http-builder</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>itest</id>
+
+      <properties>
+
+        <!-- hawkular dist properties -->
+        <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
+        <hawkular.port.offset>0</hawkular.port.offset>
+        <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
+        <hawkular.management.port>9990</hawkular.management.port>
+        <hawkular.agent.enabled>false</hawkular.agent.enabled>
+        <hawkular.log>INFO</hawkular.log>
+        <hawkular.log.accounts>INFO</hawkular.log.accounts>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.alerts>INFO</hawkular.log.alerts>
+        <hawkular.log.bus>INFO</hawkular.log.bus>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
+        <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
+        <hawkular.log.pinger>INFO</hawkular.log.pinger>
+        <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
+        <hawkular.log.metrics>INFO</hawkular.log.metrics>
+        <hawkular.log.nest>INFO</hawkular.log.nest>
+        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
+        <hawkular.log.liquibase>WARN</hawkular.log.liquibase>
+        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
+        <hawkular.log.ejb3>WARN</hawkular.log.ejb3>
+        <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
+        <http.log>ERROR</http.log>
+        <http.log.wire>WARN</http.log.wire>
+      </properties>
+
+      <build>
+        <plugins>
+
+          <plugin>
+            <groupId>org.wildfly.build</groupId>
+            <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>server-provisioning</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>server-provisioning.xml</config-file>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Start WildFly and run integration tests -->
+          <plugin>
+            <groupId>org.wildfly.plugins</groupId>
+            <artifactId>wildfly-maven-plugin</artifactId>
+            <configuration>
+              <jboss-home>${project.build.directory}/${project.artifactId}-${project.version}</jboss-home>
+              <skip>${skipTests}</skip>
+              <startupTimeout>240</startupTimeout>
+              <port>${hawkular.management.port}</port>
+              <javaOpts>
+                <javaOpt>-server</javaOpt>
+                <javaOpt>-Xms64m</javaOpt>
+                <javaOpt>-Xmx512m</javaOpt>
+                <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
+                <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
+                <javaOpt>-Djava.awt.headless=true</javaOpt>
+                <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
+                <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
+                <javaOpt>-Dkeycloak.import=${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration/hawkular-realm-for-dev.json</javaOpt>
+                <javaOpt>-Dhawkular.agent.enabled=${hawkular.agent.enabled}</javaOpt>
+                <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
+                <javaOpt>-Dhawkular.log.accounts=${hawkular.log.accounts}</javaOpt>
+                <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
+                <javaOpt>-Dhawkular.log.alerts=${hawkular.log.alerts}</javaOpt>
+                <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
+                <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
+                <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
+                <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
+                <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
+                <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
+                <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
+                <javaOpt>-Dhawkular.log.liquibase=${hawkular.log.liquibase}</javaOpt>
+                <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
+                <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <!--<javaOpt>-Xdebug</javaOpt>-->
+                <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
+              </javaOpts>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start-wildfly</id>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <server-config>standalone.xml</server-config>
+                </configuration>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-wildfly</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>shutdown</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
+
+              <includes>
+                <include>**/*ITest*</include>
+              </includes>
+
+              <systemPropertyVariables>
+                <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
+                <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
+
+                <!--output over-the-wire traffic-->
+                <org.apache.commons.logging.Log>
+                  org.apache.commons.logging.impl.SimpleLog
+                </org.apache.commons.logging.Log>
+                <org.apache.commons.logging.simplelog.log.org.apache.http>
+                  ${http.log}
+                </org.apache.commons.logging.simplelog.log.org.apache.http>
+                <org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                  ${http.log.wire}
+                </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+              </systemPropertyVariables>
+              <!--<argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y</argLine>-->
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

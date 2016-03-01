@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +20,12 @@ import static org.hawkular.inventory.bus.Log.LOG;
 
 import java.util.Map;
 
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
-import javax.jms.TopicConnectionFactory;
 
 import org.hawkular.bus.common.ConnectionContextFactory;
 import org.hawkular.bus.common.Endpoint;
+import org.hawkular.bus.common.MessageId;
 import org.hawkular.bus.common.MessageProcessor;
 import org.hawkular.bus.common.producer.ProducerConnectionContext;
 import org.hawkular.inventory.api.Interest;
@@ -37,10 +38,10 @@ import org.hawkular.inventory.bus.api.InventoryEvent;
  */
 final class MessageSender {
     private final String topicName;
-    private final TopicConnectionFactory topicConnectionFactory;
+    private final ConnectionFactory topicConnectionFactory;
     private final MessageProcessor messageProcessor;
 
-    public MessageSender(TopicConnectionFactory  topicConnectionFactory, String topicName) {
+    public MessageSender(ConnectionFactory topicConnectionFactory, String topicName) {
         this.topicConnectionFactory = topicConnectionFactory;
         this.topicName = topicName;
 
@@ -51,6 +52,8 @@ final class MessageSender {
         InventoryEvent<?> message = InventoryEvent.from(interest.getAction(), tenant, entity);
         Map<String, String> headers = message.createMessageHeaders();
 
+
+        message.setCorrelationId(new MessageId());
         try (ConnectionContextFactory ccf = new ConnectionContextFactory(topicConnectionFactory)) {
 
             ProducerConnectionContext producerConnectionContext = ccf.createProducerConnectionContext(
