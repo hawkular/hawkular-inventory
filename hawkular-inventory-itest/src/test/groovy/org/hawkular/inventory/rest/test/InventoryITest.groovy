@@ -16,23 +16,14 @@
  */
 package org.hawkular.inventory.rest.test
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains
-import static org.hawkular.inventory.api.Relationships.WellKnown.defines
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.fail
-
+import groovyx.net.http.HttpResponseException
 import org.hawkular.inventory.api.model.CanonicalPath
 import org.hawkular.inventory.api.model.PathSegmentCodec
 import org.hawkular.inventory.api.model.Resource
-import org.junit.AfterClass
-import org.junit.Assert
-import org.junit.BeforeClass
-import org.junit.Ignore
-import org.junit.Test
+import org.junit.*
 
-import groovyx.net.http.HttpResponseException
+import static org.hawkular.inventory.api.Relationships.WellKnown.*
+import static org.junit.Assert.*
 
 /**
  * Test the basic inventory functionality via REST.
@@ -458,7 +449,7 @@ class InventoryITest extends AbstractTestBase {
                 ignorance: "strength"
             ]
         ]
-        response = AbstractTestBase.client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
+        response = client.post(path: "$basePath/$environmentId/resources/$host2ResourceId/data",
                 body: data)
         assertEquals(201, response.status)
 
@@ -1009,7 +1000,7 @@ class InventoryITest extends AbstractTestBase {
                 '"' + rpath + '": {"relationship" : [' +
                 '{"name": "incorporates", "otherEnd": "' + mpath + '", "direction": "outgoing"}]}}'
 
-        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
+        def response = client.post(path: "$basePath/bulk", body: payload)
 
         assertEquals(201, response.status)
         def resourceCodes = response.data.resource as Map<String, Integer>

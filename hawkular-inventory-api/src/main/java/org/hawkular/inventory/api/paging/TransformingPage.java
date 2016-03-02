@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
@@ -32,7 +31,7 @@ import java.util.stream.StreamSupport;
  * @author Jirka Kremser
  * @since 0.3.4
  */
-public final class TransformingPage<I, O> extends Page<O> {
+public class TransformingPage<I, O> extends Page<O> {
     private Function<? super I, ? extends O> conversionFunction;
     private Page<I> wrappedPage;
     private PageContext pageContext;
@@ -79,12 +78,14 @@ public final class TransformingPage<I, O> extends Page<O> {
 
     @Override
     public List<O> toList() {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+        List<O> ret = StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
                 .collect(Collectors.<O>toList());
+        close();
+        return ret;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.totalSize = wrappedPage.getTotalSize();
         this.wrappedPage.close();
         this.wrappedPage = null;

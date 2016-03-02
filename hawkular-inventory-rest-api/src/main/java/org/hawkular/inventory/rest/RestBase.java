@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.hawkular.inventory.rest;
+
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -71,11 +73,16 @@ public class RestBase {
             return ResponseUtil.pagedResponse(response, uriInfo, mapper, page);
         } else {
             try {
-                return ResponseUtil.pagedResponse(response, uriInfo, page, mapper.writeValueAsString(page.toList()));
+                RestApiLogger.LOGGER.debug("Fetching data from backend");
+                List<?> data = page.toList();
+                RestApiLogger.LOGGER.debug("Finished fetching data from backend");
+                return ResponseUtil.pagedResponse(response, uriInfo, page, mapper.writeValueAsString(data));
             } catch (JsonProcessingException e) {
                 RestApiLogger.LOGGER.warn(e);
                 // fallback to the default object mapper
                 return ResponseUtil.pagedResponse(response, uriInfo, page, page.toList());
+            } finally {
+                RestApiLogger.LOGGER.debug("Finished building paged response (no data sent to client yet)");
             }
         }
     }

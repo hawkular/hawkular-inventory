@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
@@ -38,7 +40,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * @author Lukas Krejci
@@ -58,17 +59,18 @@ public final class BaseTenants {
         }
 
         @Override
-        protected String getProposedId(Tenant.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, Tenant.Blueprint blueprint) {
             return blueprint.getId();
         }
 
         @Override
-        protected EntityAndPendingNotifications<Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
-                                                                        CanonicalPath parentPath, BE parent,
-                                                                        InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+                                                                            CanonicalPath parentPath, BE parent,
+                                                                            Transaction<BE> tx) {
 
-            return new EntityAndPendingNotifications<>(new Tenant(blueprint.getName(), CanonicalPath.of()
-                    .tenant(context.backend.extractId(entity)).get(), blueprint.getProperties()));
+            return new EntityAndPendingNotifications<>(entity,
+                    new Tenant(blueprint.getName(), CanonicalPath.of()
+                    .tenant(tx.extractId(entity)).get(), blueprint.getProperties()), emptyList());
         }
 
         @Override
@@ -83,7 +85,7 @@ public final class BaseTenants {
 
         @Override
         public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

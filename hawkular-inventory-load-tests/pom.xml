@@ -107,6 +107,7 @@
         <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
         <http.log>ERROR</http.log>
         <http.log.wire>WARN</http.log.wire>
+        <sql.datasource.jndi>java:/jboss/datasources/HawkularInventoryDS</sql.datasource.jndi>
       </properties>
 
       <build>
@@ -170,6 +171,7 @@
                 <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
                 <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
                 <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <javaOpt>-Dsql.datasource.jndi=${sql.datasource.jndi}</javaOpt>
                 <!--<javaOpt>-Xdebug</javaOpt>-->
                 <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
               </javaOpts>

@@ -36,6 +36,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-logging</artifactId>
+      <version>${version.org.wildfly.core}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-dist</artifactId>
       <version>${project.version}</version>
@@ -83,6 +89,14 @@
                   <includes>configuration/**/hawkular-accounts-template.xml,subsystem-templates/*.xml</includes>
                   <!-- we will use unchanged from here -->
                   <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.wildfly.core</groupId>
+                  <artifactId>wildfly-logging</artifactId>
+                  <version>${version.org.wildfly.core}</version>
+                  <includes>subsystem-templates/*.xml</includes>
+                  <!-- we will transfrorm from here -->
+                  <outputDirectory>${project.build.directory}/feature-pack-resources-logging</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -157,6 +171,20 @@
                   <fileMappers>
                     <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
                       <pattern>^subsystem-templates/hawkular-accounts-(.*)\.xml$</pattern>
+                      <replacement>subsystem-templates/hawkular-inventory-$1.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources-logging</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-inventory-logging.xsl</stylesheet>
+                  <includes>
+                    <include>subsystem-templates/logging.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/${project.artifactId}-${project.version}</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^subsystem-templates/(.*)\.xml$</pattern>
                       <replacement>subsystem-templates/hawkular-inventory-$1.xml</replacement>
                     </fileMapper>
                   </fileMappers>

@@ -36,6 +36,7 @@
     <module>hawkular-inventory-impl-tinkerpop-spi</module>
     <module>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</module>
     <module>hawkular-inventory-impl-tinkerpop-titan-provider</module>
+    <module>hawkular-inventory-impl-tinkerpop-sql-provider</module>
   </modules>
 
   <scm>

@@ -14,34 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.base;
-
-import org.hawkular.inventory.base.spi.CommitFailureException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
+package org.hawkular.inventory.impl.tinkerpop.sql.impl;
 
 /**
  * @author Lukas Krejci
- * @since 0.10.0
+ * @since 0.13.0
  */
-final class TransactionFixedBackend<E> extends DelegatingInventoryBackend<E> {
-
-    private final Transaction transaction;
-
-    public TransactionFixedBackend(InventoryBackend<E> backend, Transaction transaction) {
-        super(backend);
-        this.transaction = transaction;
+public class InsertException extends SqlGraphException {
+    public InsertException() {
     }
 
-    @Override
-    public Transaction startTransaction(boolean mutating) {
-        return transaction;
+    public InsertException(Throwable cause) {
+        super(cause);
     }
 
-    @Override
-    public void commit(Transaction transaction) throws CommitFailureException {
+    public InsertException(String message) {
+        super(message);
     }
 
-    @Override
-    public void rollback(Transaction transaction) {
+    public InsertException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
