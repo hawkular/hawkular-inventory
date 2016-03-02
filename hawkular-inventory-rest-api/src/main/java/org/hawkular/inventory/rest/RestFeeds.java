@@ -41,9 +41,10 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -52,6 +53,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
+@Api(value = "/", description = "CRUD of feeds", tags = "Feeds")
 public class RestFeeds extends RestBase {
 
     @POST
@@ -118,8 +120,7 @@ public class RestFeeds extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 400, message = "The update failed because of invalid data"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
@@ -141,8 +142,7 @@ public class RestFeeds extends RestBase {
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
             @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Environment or the feed doesn't exist", response = ApiError.class),
             @ApiResponse(code = 400, message = "The delete failed because it would make inventory invalid"),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })

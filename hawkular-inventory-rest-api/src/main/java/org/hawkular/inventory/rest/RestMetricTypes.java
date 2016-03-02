@@ -44,11 +44,11 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -57,7 +57,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-@Api(value = "/", description = "Metric types CRUD")
+@Api(value = "/", description = "Metric types CRUD", tags = "MetricTypes")
 public class RestMetricTypes extends RestBase {
 
     @GET

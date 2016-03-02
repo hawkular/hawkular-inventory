@@ -60,7 +60,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
             BE source = tx.querySingle(sourceQuery);
 
             EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(tx, source,
-                    relationship.name(), target);
+                    relationship.name(), target, null);
 
             tx.getPreCommit().addNotifications(rel);
 

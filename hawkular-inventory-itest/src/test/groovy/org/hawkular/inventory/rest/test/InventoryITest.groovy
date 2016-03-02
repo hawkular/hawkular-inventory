@@ -18,6 +18,7 @@ package org.hawkular.inventory.rest.test
 
 import groovyx.net.http.HttpResponseException
 import org.hawkular.inventory.api.model.CanonicalPath
+import org.hawkular.inventory.api.model.PathSegmentCodec
 import org.hawkular.inventory.api.model.Resource
 import org.junit.*
 
@@ -59,6 +60,8 @@ class InventoryITest extends AbstractTestBase {
     private static final String responseStatusCodeMetricId = "itest-response-status-code-" + host1ResourceId;
     private static final String feedId = "itest-feed-" + UUID.randomUUID().toString();
     private static final String bulkResourcePrefix = "bulk-resource-" + UUID.randomUUID().toString();
+    private static final String bulkResourceTypePrefix = "bulk-resource-type-" + UUID.randomUUID().toString();
+    private static final String bulkMetricTypePrefix = "bulk-metric-type-" + UUID.randomUUID().toString();
     private static final String customRelationName = "inTheSameRoom";
 
     /* key is the path to delete while value is the path to GET to verify the deletion */
@@ -276,8 +279,8 @@ class InventoryITest extends AbstractTestBase {
                 body: ["/e;" + environmentId + "/r;" + room1ResourceId + "/r;table/r;leg%2F1", "../" + room1ResourceId
                         + "/table/leg-4"])
         assertEquals(204, response.status)
-        pathsToDelete.put("$path/../table/leg%2F1", "$path/../table/leg%2F1")
-        pathsToDelete.put("$path/../table/leg-4", "$path/../table/leg-4")
+//        pathsToDelete.put("$path/../table/leg%2F1", "$path/../table/leg%2F1")
+//        pathsToDelete.put("$path/../table/leg-4", "$path/../table/leg-4")
 
         /* link the metric to resource */
         path = "$basePath/$environmentId/resources/$host1ResourceId/metrics"
@@ -472,7 +475,7 @@ class InventoryITest extends AbstractTestBase {
             String path = en.getKey();
             String getValidationPath = en.getValue();
             try {
-                def response = AbstractTestBase.client.delete(path: path)
+                def response = AbstractTestBase.client.delete(uri: baseURI + path)
                 assertEquals(204, response.status)
             } catch (groovyx.net.http.HttpResponseException e) {
                 println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -483,7 +486,7 @@ class InventoryITest extends AbstractTestBase {
 
             if (getValidationPath != null) {
                 try {
-                    def response = AbstractTestBase.client.get(path: getValidationPath)
+                    def response = AbstractTestBase.client.get(uri: baseURI + getValidationPath)
                     Assert.fail("The path '$getValidationPath' should not exist after the entity was deleted")
                 } catch (groovyx.net.http.HttpResponseException e) {
                     assertEquals("Error message for path '$path'", "Not Found", e.getMessage())
@@ -871,13 +874,108 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
+    void testResourceBulkCreateUnderFeedWithDuplicates() {
+        def pathToResType = "/t;$tenantId/f;$feedId/rt;$bulkResourceTypePrefix.1";
+        def payload = """
+        {
+            "/t;$tenantId/f;$feedId": {
+                "resourceType": [
+                    {
+                        "id": "$bulkResourceTypePrefix.1"
+                    },
+                    {
+                        "id": "$bulkResourceTypePrefix.1"
+                    }
+                ],
+                "resource": [
+                    {
+                        "id"              : "$bulkResourcePrefix.1",
+                        "resourceTypePath": "$pathToResType"
+                    },
+                    {
+                        "id"              : "$bulkResourcePrefix.2",
+                        "resourceTypePath": "$pathToResType"
+                    }
+                ],
+                "metricType": [
+                    {
+                        "id"                : "$bulkMetricTypePrefix.1",
+                        "unit"              : "BYTES",
+                        "type"              : "GAUGE",
+                        "collectionInterval": "300"
+                    },
+                    {
+                        "id"                : "$bulkMetricTypePrefix.2",
+                        "unit"              : "BYTES",
+                        "type"              : "GAUGE",
+                        "collectionInterval": "300"
+                    }
+                ]
+            },
+            "$pathToResType": {
+                "relationship": [
+                    {
+                        "name"     : "incorporates",
+                        "otherEnd" : "/t;$tenantId/f;$feedId/mt;$bulkMetricTypePrefix.1",
+                        "direction": "outgoing"
+                    },
+                    {
+                        "name"     : "incorporates",
+                        "otherEnd" : "/t;$tenantId/f;$feedId/mt;$bulkMetricTypePrefix.1",
+                        "direction": "outgoing"
+                    },
+                    {
+                        "name"     : "incorporates",
+                        "otherEnd" : "/t;$tenantId/f;$feedId/mt;$bulkMetricTypePrefix.2",
+                        "direction": "outgoing"
+                    }
+                ]
+            }
+        }
+        """
+
+        def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
+
+        assertEquals(201, response.status)
+        def resourceCodes = response.data.resource as Map<String, Integer>
+        def metricTypeCodes = response.data.metricType as Map<String, Integer>
+        def resourceTypeCodes = response.data.resourceType as Map<String, Integer>
+        def relationshipCodes = response.data.relationship as Map<String, Integer>
+
+        // check, there are no dupes
+        assertEquals(2, resourceCodes.size())
+        assertEquals(2, metricTypeCodes.size())
+        assertEquals(1, resourceTypeCodes.size())
+        assertEquals(2, relationshipCodes.size())
+
+        // check, no 409 was raised, because only the first status code is taken
+        assertEquals(201, resourceCodes.get("/t;" + tenantId + "/f;" + feedId + "/r;" + bulkResourcePrefix + ".1"))
+        assertEquals(201, resourceCodes.get("/t;" + tenantId + "/f;" + feedId + "/r;" + bulkResourcePrefix + ".2"))
+        assertEquals(201, resourceTypeCodes.get(pathToResType))
+        assertEquals(201, metricTypeCodes.get("/t;" + tenantId + "/f;" + feedId + "/mt;" + bulkMetricTypePrefix + ".1"))
+        assertEquals(201, metricTypeCodes.get("/t;" + tenantId + "/f;" + feedId + "/mt;" + bulkMetricTypePrefix + ".2"))
+
+        assertEquals(201, relationshipCodes.get("/rl;" + PathSegmentCodec.encode(pathToResType
+            + "-(incorporates)->"
+            + "/t;$tenantId/f;$feedId/mt;$bulkMetricTypePrefix" + ".1")))
+        assertEquals(201, relationshipCodes.get("/rl;" + PathSegmentCodec.encode(pathToResType
+            + "-(incorporates)->"
+            + "/t;$tenantId/f;$feedId/mt;$bulkMetricTypePrefix" + ".2")))
+
+        client.delete(path: "$basePath/feeds/$feedId/resources/$bulkResourcePrefix" + ".1")
+        client.delete(path: "$basePath/feeds/$feedId/metricTypes/$bulkMetricTypePrefix" + ".1")
+        client.delete(path: "$basePath/feeds/$feedId/metricTypes/$bulkMetricTypePrefix" + ".2")
+//        client.delete(path: "$basePath/feeds/$feedId/resourceTypes/$bulkResourceTypePrefix" + ".1")
+    }
+
+    @Test
     void testResourceBulkCreateWithErrors() {
         def payload = "{\"/e;" + environmentId + "\": {\"resource\": ["
         def rs = new ArrayList<String>()
         //this should fail
         rs.add("{\"id\": \"" + room1ResourceId + "\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
         //this should succeed
-        rs.add("{\"id\": \"" + bulkResourcePrefix + "+1\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
+        rs.add("{\"id\": \"" + bulkResourcePrefix + "-1\", \"resourceTypePath\": \"/rt;" + roomRTypeId + "\"}")
 
         payload += String.join(",", rs) + "]}}"
         def response = AbstractTestBase.client.post(path: "$basePath/bulk", body: payload)
@@ -887,18 +985,18 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(2, codes.size())
 
         assertEquals(409, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + room1ResourceId))
-        assertEquals(201, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "+1"))
+        assertEquals(201, codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "-1"))
 
-        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1")
     }
 
     @Test
     void testBulkCreateAndRelate() {
         def epath = "/t;$tenantId/e;$environmentId"
-        def rpath = "$epath/r;$bulkResourcePrefix" + "+1"
+        def rpath = "$epath/r;$bulkResourcePrefix" + "-1"
         def mpath = "$epath/m;$responseTimeMetricId"
         def payload = '{"' + epath + '": {"resource": [' +
-                '{"id": "' + bulkResourcePrefix + '+1", "resourceTypePath": "/rt;' + roomRTypeId + '"}]},' +
+                '{"id": "' + bulkResourcePrefix + '-1", "resourceTypePath": "/rt;' + roomRTypeId + '"}]},' +
                 '"' + rpath + '": {"relationship" : [' +
                 '{"name": "incorporates", "otherEnd": "' + mpath + '", "direction": "outgoing"}]}}'
 
@@ -914,8 +1012,8 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(1, relationshipCodes.size())
         assertEquals(201, relationshipCodes.entrySet().getAt(0).getValue())
 
-        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1/metrics/../$responseTimeMetricId")
-        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix+1")
+        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1/metrics/../$responseTimeMetricId")
+        client.delete(path: "$basePath/$environmentId/resources/$bulkResourcePrefix-1")
     }
 
     @Test
@@ -1225,12 +1323,12 @@ class InventoryITest extends AbstractTestBase {
     /* Add the deletable path to {@link #pathsToDelete} and send a {@code POST} request using the given map of
      * arguments. */
     private static Object postDeletable(Map args) {
-        String getVerificationPath = args.path + "/" + args.body.id
+        String getVerificationPath = args.path + "/" + PathSegmentCodec.encode(args.body.id)
         postDeletable(args, getVerificationPath)
     }
     private static Object postDeletable(Map args, String getVerificationPath) {
         args.path = basePath + "/" + args.path
-        String path = args.path + "/" + args.body.id
+        String path = args.path + "/" + PathSegmentCodec.encode(args.body.id)
         pathsToDelete.put(path, basePath + "/" + getVerificationPath)
         println "posting $args"
         return AbstractTestBase.client.post(args)

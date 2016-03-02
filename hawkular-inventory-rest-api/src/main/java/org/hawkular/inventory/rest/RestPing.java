@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,8 @@ import org.jboss.resteasy.core.ResourceInvoker;
 import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 
+import io.swagger.annotations.Api;
+
 /**
  * @author Lukas Krejci
  * @since 1.0
@@ -48,6 +50,7 @@ import org.jboss.resteasy.core.ResourceMethodRegistry;
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
+@Api(value = "/", tags = "REST API Endpoints")
 public class RestPing {
 
     @Context

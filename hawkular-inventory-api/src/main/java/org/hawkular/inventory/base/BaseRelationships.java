@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.updated;
 
@@ -123,29 +122,33 @@ public final class BaseRelationships {
                 // if this is a well-known relationship, there might be some semantic checks for it...
                 RelationshipRules.checkCreate(tx, origin, direction, name, incidenceObject);
 
-                BE relationshipObject;
+                EntityAndPendingNotifications<BE, Relationship> relationshipObject;
+                EntityAndPendingNotifications<BE, Relationship> relationshipObject2 = null;
 
                 switch (direction) {
                     case incoming:
-                        relationshipObject = tx.relate(incidenceObject, origin, name, properties);
+                        relationshipObject = Util.createAssociation(tx, incidenceObject, name, origin, properties);
                         break;
                     case outgoing:
-                        relationshipObject = tx.relate(origin, incidenceObject, name, properties);
+                        relationshipObject = Util.createAssociation(tx, origin, name, incidenceObject, properties);
                         break;
                     case both:
-                        tx.relate(incidenceObject, origin, name, properties);
-                        relationshipObject = tx.relate(origin, incidenceObject, name, properties);
+                        relationshipObject2 = Util.createAssociation(tx, origin, name, incidenceObject, properties);
+
+                        relationshipObject = Util.createAssociation(tx, incidenceObject, name, origin, properties);
+
                         break;
                     default:
                         throw new AssertionError("Unhandled direction when linking. This shouldn't have happened.");
                 }
 
-                tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(relationshipObject, tx.convert
-                        (relationshipObject, Relationship.class), created()));
+                tx.getPreCommit().addNotifications(relationshipObject);
 
-                String id = tx.extractId(relationshipObject);
+                if (relationshipObject2 != null) {
+                    tx.getPreCommit().addNotifications(relationshipObject2);
+                }
 
-                return new Single<>(context.replacePath(Query.path().with(RelationWith.id(id)).get()));
+                return new Single<>(context.replacePath(Query.to(relationshipObject.getEntity().getPath())));
             });
         }
 

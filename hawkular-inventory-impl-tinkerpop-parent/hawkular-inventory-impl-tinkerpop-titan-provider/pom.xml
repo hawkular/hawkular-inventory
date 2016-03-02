@@ -149,15 +149,6 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
-
-      <!-- This module is essentially an implementation detail. No need to have it API checked. -->
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>

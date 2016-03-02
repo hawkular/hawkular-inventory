@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -121,10 +121,10 @@ public class CanonicalPathTest {
                 .environment("e").resource("r").data(connectionConfiguration).key("bl/ah").get().toString());
 
         // escaped chars scenario
-        Assert.assertEquals("/t;te%2Fnant/e;e;nv/r;r%25%2Fes;;", CanonicalPath.of().tenant("te/nant")
+        Assert.assertEquals("/t;te%2Fnant/e;e%3Bnv/r;r%25%2Fes%3B%3B", CanonicalPath.of().tenant("te/nant")
                 .environment("e;nv").resource("r%/es;;").get().toString());
 
-        Assert.assertEquals("/t;t/e;e/r;res%2F1;res%252/r;res;%203", CanonicalPath.of().tenant("t").environment("e")
+        Assert.assertEquals("/t;t/e;e/r;res%2F1%3Bres%252/r;res%3B%203", CanonicalPath.of().tenant("t").environment("e")
                 .resource("res/1;res%2").resource("res; 3").get().toString());
     }
 
@@ -148,7 +148,7 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t", p.up().up().toString());
 
         CanonicalPath p2 = CanonicalPath.of().tenant("t").feed("f").metric("m/e;t%r%|%C").get();
-        Assert.assertEquals("/t;t/f;f/m;m%2Fe;t%25r%25%7C%25C", p2.down().up().toString());
+        Assert.assertEquals("/t;t/f;f/m;m%2Fe%3Bt%25r%25%7C%25C", p2.down().up().toString());
 
         CanonicalPath p3 = CanonicalPath.of().tenant("t").feed("f").resource("res1").resource("res2").get();
         Assert.assertEquals("/t;t/f;f/r;res1/r;res2", p3.down().up().toString());
@@ -173,10 +173,10 @@ public class CanonicalPathTest {
         Assert.assertEquals("/t;t/f;f/m;m%25et%25%2Fric", p2.toString());
 
         p2 = p.getRoot().extend(MetricType.class, "m%et%/ric;type").get();
-        Assert.assertEquals("/t;t/mt;m%25et%25%2Fric;type", p2.toString());
+        Assert.assertEquals("/t;t/mt;m%25et%25%2Fric%3Btype", p2.toString());
 
         CanonicalPath p3 = p.extend(Metric.class, "/;/%").get();
-        Assert.assertEquals("/t;t/f;f/m;%2F;%2F%25", p3.toString());
+        Assert.assertEquals("/t;t/f;f/m;%2F%3B%2F%25", p3.toString());
     }
 
     @Test
@@ -241,7 +241,7 @@ public class CanonicalPathTest {
 
         // escaped chars scenario
         rp = RelativePath.fromString("../e;e%2f;nv/../t;t%2fenant");
-        Assert.assertEquals("../e;e%2F;nv/../t;t%2Fenant", rp.toString());
+        Assert.assertEquals("../e;e%2F%3Bnv/../t;t%2Fenant", rp.toString());
 
         try {
             RelativePath.fromString("../r");
@@ -339,7 +339,7 @@ public class CanonicalPathTest {
 
         //testing robustness against letter case in escape sequences and trailing type delimiter, too
         mp = Path.fromPartiallyUntypedString("/%2fg;", cp, cp, Metric.class);
-        Assert.assertEquals("/t;t/f;f/m;%2Fg;", mp.toString());
+        Assert.assertEquals("/t;t/f;f/m;%2Fg%3B", mp.toString());
     }
 
     @Test
