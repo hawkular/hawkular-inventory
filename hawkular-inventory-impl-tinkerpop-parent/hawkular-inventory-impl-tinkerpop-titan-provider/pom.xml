@@ -149,31 +149,6 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <analysisConfiguration><![CDATA[
-            {
-              "revapi": {
-                "filter": {
-                  "archives": {
-                    "include": ["org\\.revapi.*"]
-                  },
-                  "elements": {
-                    "include": ["org\\.revapi.*"]
-                  }
-                },
-                "java": {
-                  "missing-classes": {
-                    "behavior": "report"
-                  }
-                }
-              }
-            }
-          ]]></analysisConfiguration>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>

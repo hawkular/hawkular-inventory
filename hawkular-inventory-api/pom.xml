@@ -108,27 +108,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <analysisConfiguration>
-            <![CDATA[
-              {
-                "revapi": {
-                  "filter": {
-                    //leaving this empty to include everything - this is to reconfigure the default provided in the
-                    //parent pom.
-                    "elements": {
-                      "exclude": [".*_\\$logger.*"]
-                    }
-                  }
-                }
-              }
-            ]]>
-          </analysisConfiguration>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>
