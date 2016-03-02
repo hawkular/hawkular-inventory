@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.14.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-cdi</artifactId>
