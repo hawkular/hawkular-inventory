@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -40,7 +42,6 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.RecurseFilter;
-import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -60,16 +61,15 @@ public final class BaseFeeds {
         }
 
         @Override
-        protected String getProposedId(Feed.Blueprint blueprint) {
-            BE tenant = context.backend.querySingle(context.sourcePath.extend().filter()
+        protected String getProposedId(Transaction<BE> tx, Feed.Blueprint blueprint) {
+            BE tenant = tx.querySingle(context.sourcePath.extend().filter()
                     .with(type(Tenant.class)).get());
 
             if (tenant == null) {
                 throw new EntityNotFoundException(Tenant.class, Query.filters(context.sourcePath));
             }
 
-            CanonicalPath feedPath = context.backend.extractCanonicalPath(tenant)
-                    .extend(Feed.class, blueprint.getId()).get();
+            CanonicalPath feedPath = tx.extractCanonicalPath(tenant).extend(Feed.class, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath, null));
         }
@@ -79,8 +79,8 @@ public final class BaseFeeds {
         wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
-                    parentPath.extend(Feed.class, context.backend.extractId(entity)).get(), null,
-                    blueprint.getProperties()));
+                    parentPath.extend(Feed.class, transaction.extractId(entity)).get(), null,
+                    blueprint.getProperties()), emptyList());
         }
 
         @Override

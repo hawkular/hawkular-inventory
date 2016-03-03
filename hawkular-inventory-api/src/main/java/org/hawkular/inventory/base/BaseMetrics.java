@@ -35,7 +35,6 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * @author Lukas Krejci
@@ -56,14 +55,14 @@ public final class BaseMetrics {
         }
 
         @Override
-        protected String getProposedId(Metric.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, Metric.Blueprint blueprint) {
             return blueprint.getId();
         }
 
         @Override
         protected EntityAndPendingNotifications<BE, Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
                                                                             CanonicalPath parentPath, BE parent,
-                                                                            Transaction<BE> transaction) {
+                                                                            Transaction<BE> tx) {
 
             BE metricTypeObject;
 
@@ -71,7 +70,7 @@ public final class BaseMetrics {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
                         MetricType.class);
-                metricTypeObject = context.backend.find(metricTypePath);
+                metricTypeObject = tx.find(metricTypePath);
 
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("A metric type with path '" + blueprint.getMetricTypePath() +
@@ -81,24 +80,24 @@ public final class BaseMetrics {
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
             //here we "know what we are doing" and need to create the defines relationship to capture the
             //contract of the metric.
-            BE r = context.backend.relate(metricTypeObject, entity, defines.name(), null);
+            BE r = tx.relate(metricTypeObject, entity, defines.name(), null);
 
-            CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
+            CanonicalPath entityPath = tx.extractCanonicalPath(entity);
 
-            MetricType metricType = context.backend.convert(metricTypeObject, MetricType.class);
+            MetricType metricType = tx.convert(metricTypeObject, MetricType.class);
 
             Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.class,
-                    context.backend.extractId(entity)).get(), null, metricType, blueprint.getCollectionInterval(),
+                    tx.extractId(entity)).get(), null, metricType, blueprint.getCollectionInterval(),
                     blueprint.getProperties());
 
-            Relationship rel = new Relationship(context.backend.extractId(r), defines.name(), parentPath, entityPath);
+            Relationship rel = new Relationship(tx.extractId(r), defines.name(), parentPath, entityPath);
 
             List<Notification<?, ?>> notifs = new ArrayList<>();
             notifs.add(new Notification<>(rel, rel, created()));
 
-            if (Resource.class.equals(context.backend.extractType(parent))) {
-                r = context.backend.relate(parent, entity, incorporates.name(), null);
-                rel = new Relationship(context.backend.extractId(r), incorporates.name(), parentPath, entityPath);
+            if (Resource.class.equals(tx.extractType(parent))) {
+                r = tx.relate(parent, entity, incorporates.name(), null);
+                rel = new Relationship(tx.extractId(r), incorporates.name(), parentPath, entityPath);
                 notifs.add(new Notification<>(rel, rel, created()));
             }
 

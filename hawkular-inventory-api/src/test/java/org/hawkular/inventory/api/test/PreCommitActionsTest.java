@@ -18,18 +18,15 @@ package org.hawkular.inventory.api.test;
 
 import static org.hawkular.inventory.api.Action.created;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Interest;
@@ -39,10 +36,10 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.EntityAndPendingNotifications;
-import org.hawkular.inventory.base.PotentiallyCommittingPayload;
+import org.hawkular.inventory.base.Transaction;
+import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-import org.hawkular.inventory.base.spi.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -58,47 +55,35 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
+        //just so that we avoid additional logic that we would need to mock
+        when(backend.isUniqueIndexSupported()).thenReturn(true);
+
         //holders for counters that we are going to be modifying in inner classes
-        boolean[] actionsObtained = new boolean[1];
         int[] payloadsExecuted = new int[1];
+        PrecommitTracker pct = new PrecommitTracker();
 
-        Transaction.PreCommit<String> manager = new Transaction.PreCommit.Simple<String>() {
-            @Override public List<Consumer<Transaction<String>>> getActions() {
-                actionsObtained[0] = true;
-                return Collections.emptyList();
-            }
-        };
-
-        Transaction<String> tx = new TestTransaction<String>(true, manager) {
-            @Override public <R> R execute(PotentiallyCommittingPayload<R, String> payload)
-                    throws CommitFailureException {
-                payloadsExecuted[0]++;
-                Assert.assertFalse(actionsObtained[0]);
-                return super.execute(payload);
-            }
-        };
+        when(backend.startTransaction()).then(a -> {
+            payloadsExecuted[0]++;
+            Assert.assertEquals(0, pct.actionsObtained);
+            return backend;
+        });
 
         doAnswer((args) -> {
             Assert.assertEquals(1, payloadsExecuted[0]);
-            Assert.assertFalse(actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
+            Assert.assertEquals(1, pct.actionsObtained);
+            Assert.assertEquals(0, pct.finalNotificationsObtained);
             return null;
-        }).when(backend).commit(eq(tx));
+        }).when(backend).commit();
 
-        BaseInventory<String> inv = new BaseInventory<String>((ctx, mutating, preCommit) -> tx) {
-            @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
-                return backend;
-            }
-        };
+        TestInventory inv = new TestInventory(backend, pct);
 
         inv.initialize(new Configuration(null, null, Collections.emptyMap()));
 
         inv.tenants().create(Tenant.Blueprint.builder().withId("asdf").build());
 
         Assert.assertEquals(1, payloadsExecuted[0]);
-        Assert.assertTrue(actionsObtained[0]);
+        Assert.assertEquals(1, pct.actionsObtained);
+        Assert.assertEquals(1, pct.finalNotificationsObtained);
     }
 
     @Test
@@ -106,17 +91,17 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
+        //just so that we avoid additional logic that we would need to mock
+        when(backend.isUniqueIndexSupported()).thenReturn(true);
+        when(backend.isPreferringBigTransactions()).thenReturn(true);
+        when(backend.startTransaction()).thenReturn(backend);
+
         //holders for counters that we are going to be modifying in inner classes
-        int[] actionsObtained = new int[1];
         int[] dataPersisted = new int[1];
         int[] notifsSent = new int[1];
+        PrecommitTracker pct = new PrecommitTracker();
 
-        BaseInventory<String> inv = new BaseInventory<String>((ctx, mutating, preCommit) ->
-                new TestTransaction<>(mutating, new TrackingPreCommit(preCommit, actionsObtained))) {
-            @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
-                return backend;
-            }
-        };
+        TestInventory inv = new TestInventory(backend, pct);
 
         inv.observable(Interest.in(Tenant.class).being(created())).subscribe(t -> notifsSent[0]++);
 
@@ -133,24 +118,10 @@ public class PreCommitActionsTest {
         //noinspection Duplicates
         doAnswer((args) -> {
             Assert.assertEquals(2, dataPersisted[0]);
-            Assert.assertEquals(0, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
-            Assert.assertEquals(0, notifsSent[0]);
-            throw new CommitFailureException();
-        }).doAnswer((args) -> {
-            Assert.assertEquals(4, dataPersisted[0]);
-            Assert.assertEquals(1, actionsObtained[0]);
-
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(2, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             return null;
-        }).when(backend).commit(any());
+        }).when(backend).commit();
 
         inv.initialize(new Configuration(null, null, Collections.emptyMap()));
 
@@ -165,12 +136,9 @@ public class PreCommitActionsTest {
         //now commit the frame
         frame.commit();
 
-        Assert.assertEquals(4, dataPersisted[0]);
-        Assert.assertEquals(2, actionsObtained[0]);
+        Assert.assertEquals(2, dataPersisted[0]);
+        Assert.assertEquals(2, pct.actionsObtained);
         Assert.assertEquals(2, notifsSent[0]);
-
-        //check that we had exactly 2 commit attemps
-        verify(backend, times(2)).commit(any());
     }
 
     @Test
@@ -178,49 +146,36 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
+        //just so that we avoid additional logic that we would need to mock
+        when(backend.isUniqueIndexSupported()).thenReturn(true);
+        when(backend.startTransaction()).thenReturn(backend);
+
         //holders for counters that we are going to be modifying in inner classes
-        int[] actionsObtained = new int[1];
         int[] dataPersisted = new int[1];
         int[] notifsSent = new int[1];
+        PrecommitTracker pct = new PrecommitTracker();
 
-        BaseInventory<String> inv = new BaseInventory<String>((ctx, mutating, preCommit) ->
-                new TestTransaction<>(mutating, new TrackingPreCommit(preCommit, actionsObtained))) {
-            @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
-                return backend;
-            }
-        };
+        TestInventory inv = new TestInventory(backend, pct);
 
         inv.observable(Interest.in(Tenant.class).being(created())).subscribe(t -> notifsSent[0]++);
 
         //noinspection Duplicates
         doAnswer((args) -> {
             Assert.assertEquals(1, dataPersisted[0]);
-            Assert.assertEquals(0, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(1, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(2, dataPersisted[0]);
-            Assert.assertEquals(1, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(2, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(3, dataPersisted[0]);
-            Assert.assertEquals(2, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(3, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             return null;
-        }).when(backend).commit(any());
+        }).when(backend).commit();
 
         when(backend.persist(any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
@@ -234,7 +189,7 @@ public class PreCommitActionsTest {
         inv.tenants().create(Tenant.Blueprint.builder().withId("asdf").build());
 
         Assert.assertEquals(3, dataPersisted[0]);
-        Assert.assertEquals(3, actionsObtained[0]);
+        Assert.assertEquals(3, pct.actionsObtained);
         Assert.assertEquals(1, notifsSent[0]);
     }
 
@@ -243,48 +198,37 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
+        //just so that we avoid additional logic that we would need to mock
+        when(backend.isUniqueIndexSupported()).thenReturn(true);
+        when(backend.isPreferringBigTransactions()).thenReturn(true);
+        when(backend.startTransaction()).thenReturn(backend);
+
         //holders for counters that we are going to be modifying in inner classes
-        int[] actionsObtained = new int[1];
         int[] dataPersisted = new int[1];
         int[] notifsSent = new int[1];
+        PrecommitTracker pct = new PrecommitTracker();
 
-        BaseInventory<String> inv = new BaseInventory<String>((ctx, mutating, preCommit) ->
-                new TestTransaction<>(mutating, new TrackingPreCommit(preCommit, actionsObtained))) {
-            @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
-                return backend;
-            }
-        };
+        TestInventory inv = new TestInventory(backend, pct);
 
         inv.observable(Interest.in(Tenant.class).being(created())).subscribe(t -> notifsSent[0]++);
 
         //noinspection Duplicates
         doAnswer((args) -> {
             Assert.assertEquals(2, dataPersisted[0]);
-            Assert.assertEquals(0, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(2, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(4, dataPersisted[0]);
-            Assert.assertEquals(1, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
-
+            Assert.assertEquals(4, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(6, dataPersisted[0]);
-            Assert.assertEquals(2, actionsObtained[0]);
-            //this is what the backend should be doing, so let's do it... It should make the asserts at the end of the
-            //test method succeed.
-            ((Transaction<?>) args.getArguments()[0]).getPreCommit().getActions();
+            Assert.assertEquals(6, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             return null;
-        }).when(backend).commit(any());
+        }).when(backend).commit();
 
         when(backend.persist(any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
@@ -305,92 +249,100 @@ public class PreCommitActionsTest {
         frame.commit();
 
         Assert.assertEquals(6, dataPersisted[0]);
-        Assert.assertEquals(3, actionsObtained[0]);
+        Assert.assertEquals(6, pct.actionsObtained);
         Assert.assertEquals(2, notifsSent[0]);
+
+        //check that we had exactly 2 commit attemps
+        verify(backend, times(3)).commit();
     }
 
-    static class TrackingPreCommit extends Transaction.PreCommit.Simple<String> {
-        private final Transaction.PreCommit<String> wrapped;
-        private final int[] actionsObtained;
+    private static final class PrecommitTracker implements Function<Transaction.PreCommit<String>,
+            Transaction.PreCommit<String>> {
+        int actionsObtained;
+        int finalNotificationsObtained;
+        int initialized;
+        int reset;
 
-        TrackingPreCommit(Transaction.PreCommit<String> wrapped, int[] actionsObtained) {
-            this.wrapped = wrapped;
-            this.actionsObtained = actionsObtained;
-        }
+        @Override
+        public Transaction.PreCommit<String> apply(Transaction.PreCommit<String> pc) {
+            return new Transaction.PreCommit<String>() {
+                @Override public List<EntityAndPendingNotifications<String, ?>> getFinalNotifications() {
+                    finalNotificationsObtained++;
+                    return pc.getFinalNotifications();
+                }
 
-        @Override public void reset() {
-            wrapped.reset();
-        }
+                @Override public void initialize(Inventory inventory, Transaction<String> tx) {
+                    if (this.getClass() != pc.getClass()) {
+                        initialized++;
+                    }
+                    pc.initialize(inventory, tx);
+                }
 
-        @Override public void addNotifications(EntityAndPendingNotifications<String, ?> element) {
-            wrapped.addNotifications(element);
-        }
+                @Override public void reset() {
+                    if (this.getClass() != pc.getClass()) {
+                        reset++;
+                    }
+                    pc.reset();
+                }
 
-        @Override public List<Consumer<Transaction<String>>> getActions() {
-            if (!(wrapped instanceof TrackingPreCommit)) {
-                actionsObtained[0]++;
-            }
-            return wrapped.getActions();
-        }
+                @Override public void addAction(Consumer<Transaction<String>> action) {
+                    pc.addAction(action);
+                }
 
-        @Override public List<EntityAndPendingNotifications<String, ?>> getFinalNotifications() {
-            return wrapped.getFinalNotifications();
+                @Override public List<Consumer<Transaction<String>>> getActions() {
+                    if (this.getClass() != pc.getClass()) {
+                        actionsObtained++;
+                    }
+                    return pc.getActions();
+                }
+
+                @Override public void addNotifications(EntityAndPendingNotifications<String, ?> element) {
+                    pc.addNotifications(element);
+                }
+
+                @Override public void addProcessedNotifications(EntityAndPendingNotifications<String, ?> element) {
+                    pc.addProcessedNotifications(element);
+                }
+            };
         }
     }
 
-    private static class TestTransaction<BE> implements Transaction<BE> {
-        private final boolean mutating;
-        private List<Consumer<Transaction<BE>>> preCommitActions;
-        private final PreCommit<BE> preCommit;
-        private final HashMap<Object, Object> attachments = new HashMap<>(1);
+    private static final class TestInventory extends BaseInventory<String> {
 
-        TestTransaction(boolean mutating, PreCommit<BE> preCommit) {
-            this.mutating = mutating;
-            this.preCommit = preCommit == null ? new PreCommit.Simple<>()
-                    : preCommit;
+        private final InventoryBackend<String> backend;
+        private final PrecommitTracker tracker;
+
+        public TestInventory(InventoryBackend<String> backend, PrecommitTracker tracker) {
+            super((b, p) -> {
+                Transaction.PreCommit<String> realPrecommit = tracker.apply(p);
+                return TransactionConstructor.<String>startInBackend().construct(b, realPrecommit);
+            });
+            this.backend = backend;
+            this.tracker = tracker;
         }
 
-        public boolean isMutating() {
-            return mutating;
+        private TestInventory(BaseInventory<String> orig, InventoryBackend<String> backend,
+                              TransactionConstructor<String> transactionConstructor,
+                              PrecommitTracker tracker) {
+            super(orig, backend, transactionConstructor);
+            this.backend = backend;
+            this.tracker = tracker;
         }
 
-        public Map<Object, Object> getAttachments() {
-            return attachments;
+        @Override protected BaseInventory<String> cloneWith(TransactionConstructor<String> transactionCtor) {
+            return new TestInventory(this, backend, transactionCtor, tracker);
         }
 
-        public void addPreCommitAction(Consumer<Transaction<BE>> action) {
-            if (preCommitActions == null) {
-                preCommitActions = new ArrayList<>();
-            }
-
-            preCommitActions.add(action);
+        @Override
+        protected TransactionConstructor<String> adaptTransactionConstructor(TransactionConstructor<String> txCtor) {
+            return (b, p) -> {
+                Transaction.PreCommit<String> realPrecommit = tracker.apply(p);
+                return txCtor.construct(b, realPrecommit);
+            };
         }
 
-        /**
-         * Use {@link #addPreCommitAction(Consumer)} to add an action to this list.
-         *
-         * @return the unmodifiable list of manually created pre-commit actions
-         */
-        public List<Consumer<Transaction<BE>>> getPreCommitActions() {
-            return preCommitActions == null ? Collections.emptyList() : Collections.unmodifiableList(preCommitActions);
-        }
-
-        /**
-         * In addition to "manual" ad-hoc pre-commit actions, it is possible to also define the actions using a
-         * precommit action manager. This is meant to be used to handle stuff that is best done after a bulk of
-         * work is done in a single transaction and needs to do this work based on what entities or relationships
-         * have been created/updated/deleted.
-         *
-         * <p>The base implementation calls this manager to inform it of the creations/updates/deletions it does.
-         *
-         * @return the precommit action manager to use, never null
-         */
-        public PreCommit<BE> getPreCommit() {
-            return preCommit;
-        }
-
-        public <R> R execute(PotentiallyCommittingPayload<R, BE> payload) throws CommitFailureException {
-            return payload.run(this);
+        @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
+            return backend;
         }
     }
 }

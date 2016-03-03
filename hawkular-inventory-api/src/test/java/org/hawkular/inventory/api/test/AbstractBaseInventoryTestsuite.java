@@ -117,7 +117,6 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -1119,9 +1118,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         assert !f1.getId().equals(f2.getId());
     }
 
-    // the uniqueness is ensured by __cp index that has the unique property (in titan)
-    // the tests are by default run on the TinkerGraph and so this test is ignored
-    @Ignore
     @Test
     public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
         try {
@@ -1886,7 +1882,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         MetadataPack mp = inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).entity();
 
         Assert.assertEquals(expectedContentHash, mp.getId());
-        Assert.assertEquals(expectedContentHash, IdentityHash.of(mp, inventory));
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
@@ -2910,6 +2905,15 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             try {
                 Relationship rel2 = inventory.inspect(r).allMetrics().associate(m.getPath());
+                Assert.fail("Should not be possible to create an association twice.");
+            } catch (RelationAlreadyExistsException e) {
+                //expected
+            }
+
+            //also check that the duplicates are not possible using an explicit relationship creation call
+            try {
+                Relationship rel2 = inventory.inspect(r).relationships().linkWith(incorporates, m.getPath(), null)
+                        .entity();
                 Assert.fail("Should not be possible to create an association twice.");
             } catch (RelationAlreadyExistsException e) {
                 //expected

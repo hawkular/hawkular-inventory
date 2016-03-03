@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,11 +38,12 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -51,15 +52,15 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "CRUD for operation type data")
+@Api(value = "/", description = "CRUD for operation type data",
+        tags = "ResourceTypes OperationTypes Data")
 public class RestResourceTypesOperationTypesData extends RestBase {
     @POST
     @javax.ws.rs.Path("/resourceTypes/{resourceTypeId}/operationTypes/{operationTypeId}/data")
     @ApiOperation("Creates the configuration for pre-existing resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK Created"),
-            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response createConfiguration(@PathParam("resourceTypeId") String resourceType,
@@ -95,8 +96,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     @ApiOperation("Updates the configuration of a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, or resource type doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response updateData(@PathParam("resourceTypeId") String resourceType,
@@ -132,8 +132,7 @@ public class RestResourceTypesOperationTypesData extends RestBase {
     @ApiOperation("Updates the configuration of a resource type")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Tenant, or resource type doesn't exist",
-                    response = ApiError.class),
+            @ApiResponse(code = 404, message = "Tenant, or resource type doesn't exist", response = ApiError.class),
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response deleteData(@PathParam("resourceTypeId") String resourceType,
@@ -201,9 +200,10 @@ public class RestResourceTypesOperationTypesData extends RestBase {
         if (!security.canUpdate(operationType)) {
             return Response.status(FORBIDDEN).build();
         }
-        inventory.inspect(operationType, OperationTypes.Single.class).data().create(blueprint);
+        DataEntity entity =
+                inventory.inspect(operationType, OperationTypes.Single.class).data().create(blueprint).entity();
 
-        return ResponseUtil.created(uriInfo, blueprint.getRole().name()).build();
+        return ResponseUtil.created(entity, uriInfo, blueprint.getRole().name()).build();
 
     }
 

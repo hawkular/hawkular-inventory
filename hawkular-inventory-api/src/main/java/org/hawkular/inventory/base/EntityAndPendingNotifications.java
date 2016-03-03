@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
 
 /**
@@ -34,6 +35,14 @@ public final class EntityAndPendingNotifications<BE, E extends AbstractElement<?
     private final BE entityRepresentation;
     private final E entity;
     private final List<Notification<?, ?>> notifications;
+
+    EntityAndPendingNotifications(BE entityRepresentation, E entity, Action<E, E> action) {
+        this(entityRepresentation, entity, new Notification<>(entity, entity, action));
+    }
+
+    <C> EntityAndPendingNotifications(BE entityRepresentation, E entity, C actionContext, Action<C, E> action) {
+        this(entityRepresentation, entity, new Notification<>(actionContext, entity, action));
+    }
 
     /**
      * Constructs a new instance.

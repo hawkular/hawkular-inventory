@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -29,7 +28,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.api.paging.TransformingPage;
-import org.hawkular.inventory.base.spi.Transaction;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 
 /**
  * A base class for all interface impls that need to resolve the entities.
@@ -53,7 +52,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             useCachedEntity = false;
             return context.getCreatedEntity();
         }
-        return loadEntity((b, e) -> e);
+        return loadEntity((b, e, tx) -> e);
     }
 
     /**
@@ -67,45 +66,51 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
      * @throws EntityNotFoundException
      * @throws RelationNotFoundException
      */
-    protected <T> T loadEntity(BiFunction<BE, E, T> conversion)
+    protected <T> T loadEntity(EntityConvertor<BE, E, T> conversion)
             throws EntityNotFoundException, RelationNotFoundException {
 
-        return readOnly(() -> {
-            BE result = context.backend.querySingle(context.select().get());
+        return inTx(tx -> {
+            BE result = tx.querySingle(context.select().get());
 
             if (result == null) {
                 throwNotFoundException();
             }
 
-            E entity = context.backend.convert(result, context.entityClass);
+            E entity = tx.convert(result, context.entityClass);
 
             if (!isApplicable(entity)) {
                 throwNotFoundException();
             }
 
-            return conversion.apply(result, entity);
+            return conversion.convert(result, entity, tx);
         });
     }
 
     @Override
     public void delete() {
-        Util.delete(context, context.select().get(), this::preDelete, this::postDelete);
+        inTx(tx -> {
+            Util.delete(context.entityClass, tx, context.select().get(), this::preDelete, this::postDelete);
+            return null;
+        });
     }
 
     @Override
     public void update(U u) throws EntityNotFoundException, RelationNotFoundException {
-        Util.update(context, context.select().get(), u, this::preUpdate, this::postUpdate);
+        inTx(tx -> {
+            Util.update(context.entityClass, tx, context.select().get(), u, this::preUpdate, this::postUpdate);
+            return null;
+        });
     }
 
     public String identityHash() {
-        return readOnly(() -> {
-            BE result = context.backend.querySingle(context.select().get());
+        return inTx(tx -> {
+            BE result = tx.querySingle(context.select().get());
 
             if (result == null) {
                 throwNotFoundException();
             }
 
-            return context.backend.extractIdentityHash(result);
+            return tx.extractIdentityHash(result);
         });
     }
 
@@ -153,7 +158,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     @Override
     public Page<E> entities(Pager pager) {
-        return loadEntities(pager, (b, e) -> e);
+        return loadEntities(pager, (b, e, tx) -> e);
     }
 
     /**
@@ -168,17 +173,28 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
      * @param <T>                the desired target type of the elements of the returned page
      * @return the page of the results as specified by the pager
      */
-    protected <T> Page<T> loadEntities(Pager pager, BiFunction<BE, E, T> conversionFunction) {
-        return readOnly(() -> {
+    protected <T> Page<T> loadEntities(Pager pager, EntityConvertor<BE, E, T> conversionFunction) {
+        return inCommittableTx(tx -> {
             Function<BE, Pair<BE, E>> conversion =
-                    (e) -> new Pair<>(e, context.backend.convert(e, context.entityClass));
+                    (e) -> new Pair<>(e, tx.convert(e, context.entityClass));
 
             Function<Pair<BE, E>, Boolean> filter = context.configuration.getResultFilter() == null ? null :
                     (p) -> context.configuration.getResultFilter().isApplicable(p.second);
 
             Page<Pair<BE, E>> intermediate =
-                    context.backend.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
-            return new TransformingPage<>(intermediate, (p) -> conversionFunction.apply(p.first, p.second));
+                    tx.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
+
+            return new TransformingPage<Pair<BE, E>, T>(intermediate,
+                    (p) -> conversionFunction.convert(p.first, p.second, tx)) {
+                @Override public void close() {
+                    try {
+                        tx.commit();
+                    } catch (CommitFailureException e) {
+                        throw new IllegalStateException("Failed to commit the read operation.", e);
+                    }
+                    super.close();
+                }
+            };
         });
     }
 
@@ -204,5 +220,9 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             this.first = first;
             this.second = second;
         }
+    }
+
+    interface EntityConvertor<BE, E extends AbstractElement<?, ?>, T> {
+        T convert(BE backendRepresentation, E entity, Transaction<BE> tx);
     }
 }

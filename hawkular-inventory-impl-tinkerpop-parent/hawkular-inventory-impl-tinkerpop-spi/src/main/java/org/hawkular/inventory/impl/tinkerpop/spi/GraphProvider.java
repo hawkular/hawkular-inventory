@@ -17,9 +17,9 @@
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.base.spi.Transaction;
+import org.hawkular.inventory.api.model.CanonicalPath;
 
-import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
@@ -32,7 +32,21 @@ import com.tinkerpop.blueprints.TransactionalGraph;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public interface GraphProvider<G extends TransactionalGraph> {
+public interface GraphProvider {
+
+    boolean isPreferringBigTransactions();
+
+    /**
+     * Some implementations need the pipeline to be fully drained in order to be able to reclaim backend resources.
+     *
+     * @return true if the underlying graph needs pipelines drained in order to clean up.
+     */
+    boolean needsDraining();
+
+    /**
+     * @see org.hawkular.inventory.base.spi.InventoryBackend#isUniqueIndexSupported()
+     */
+    boolean isUniqueIndexSupported();
 
     /**
      * Given provided configuration, tries to instantiate a graph to be used by the inventory.
@@ -40,7 +54,7 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * @param configuration the configuration of the graph
      * @return a configured instance of the graph or null if not possible
      */
-    G instantiateGraph(Configuration configuration);
+    TransactionalGraph instantiateGraph(Configuration configuration);
 
     /**
      * Makes sure all the indexes needed for good performance.
@@ -52,18 +66,18 @@ public interface GraphProvider<G extends TransactionalGraph> {
      *                   {@link #instantiateGraph(Configuration)} call) to index
      * @param indexSpecs the core set of indices to define
      */
-    void ensureIndices(G graph, IndexSpec... indexSpecs);
+    void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs);
 
     /**
-     * Initializes new transaction for use with given graph. The transaction is not subclass-able by the providers but
-     * they can use the {@link Transaction#getAttachments()} method to attach artibtrary data to the
-     * transaction for their use.
+     * Initializes new transaction for use with given graph.
      *
      * @param graph    the graph to start the transaction in
-     * @param transaction the transaction being started
+     * @return a new transactional graph that is bound to a new transaction
      */
-    default void startTransaction(G graph, Transaction<Element> transaction) {
-
+    default TransactionalGraph startTransaction(TransactionalGraph graph) {
+        return graph instanceof ThreadedTransactionalGraph
+                ? ((ThreadedTransactionalGraph) graph).newTransaction()
+                : graph;
     }
 
     /**
@@ -72,9 +86,8 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * <p>The default implementation merely calls {@link TransactionalGraph#commit()}.
      *
      * @param graph the graph to commit the transaction to
-     * @param t     the transaction
      */
-    default void commit(G graph, Transaction<Element> t) {
+    default void commit(TransactionalGraph graph) {
         graph.commit();
     }
 
@@ -84,9 +97,8 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * <p>The default implementation merely calls {@link TransactionalGraph#rollback()}.
      *
      * @param graph the graph to rollback the transaction from
-     * @param t     the transaction
      */
-    default void rollback(G graph, Transaction<Element> t) {
+    default void rollback(TransactionalGraph graph) {
         graph.rollback();
     }
 
@@ -96,9 +108,10 @@ public interface GraphProvider<G extends TransactionalGraph> {
      * <p>The default implementation is an identity function.</p>
      *
      * @param inputException an exception to convert
+     * @param affectedPath
      * @return converted exception
      */
-    default RuntimeException translateException(RuntimeException inputException) {
+    default RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
         return inputException;
     }
 }

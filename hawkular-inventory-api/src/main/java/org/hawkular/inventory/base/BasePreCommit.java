@@ -48,8 +48,6 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.base.spi.InventoryBackend;
-import org.hawkular.inventory.base.spi.Transaction;
 
 /**
  * Takes care of defining the pre-commit actions based on the set of entities modified within a single transaction.
@@ -79,17 +77,17 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
     /**
      * Keeps track of the work needed to be done.
      */
-    private final ProcessingTree<BE> processingTree = new ProcessingTree<BE>();
+    private final ProcessingTree<BE> processingTree = new ProcessingTree<>();
 
     private Inventory inventory;
-    private InventoryBackend<BE> backend;
+    private Transaction<BE> backend;
 
     /**
      * Pre-commit actions that reset the identity hash
      */
     private Consumer<Transaction<BE>> correctiveAction;
 
-    @Override public void initialize(Inventory inventory, InventoryBackend<BE> backend) {
+    @Override public void initialize(Inventory inventory, Transaction<BE> tx) {
         this.inventory = inventory;
         this.backend = backend;
     }
@@ -134,6 +132,10 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         } else {
             nonHashedChanges.add(element);
         }
+    }
+
+    @Override public void addProcessedNotifications(EntityAndPendingNotifications<BE, ?> element) {
+        nonHashedChanges.add(element);
     }
 
     private boolean needsProcessing(EntityAndPendingNotifications<?, ?> element) {

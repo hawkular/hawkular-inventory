@@ -35,7 +35,6 @@ import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
-import org.hawkular.inventory.base.spi.Transaction;
 
 import rx.subjects.Subject;
 
@@ -64,7 +63,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     /**
      * The inventory backend to be used for querying and persistence.
      */
-    protected final InventoryBackend<BE> backend;
+    private final InventoryBackend<BE> backend;
 
     /**
      * The type of the entity currently being sought after.
@@ -258,7 +257,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      */
     TraversalContext<BE, E> replacePath(Query path) {
         return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
-                observableContext, transactionRetries, this, null, null);
+                observableContext, transactionRetries, this, null, transactionConstructor);
     }
 
     //XXX not used ATM - after creating an entity, we can't be sure it is fully initialized due to the lazy way identity
@@ -308,6 +307,10 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         return transactionRetries;
     }
 
+    public TransactionConstructor<BE> getTransactionConstructor() {
+        return transactionConstructor;
+    }
+
     /**
      * Sends out all the pending notifications in the supplied object.
      *
@@ -328,13 +331,13 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         notify(notification.getValue(), notification.getActionContext(), notification.getAction());
     }
 
-    Transaction<BE> startTransaction(boolean mutating) {
-        return startTransaction(mutating, new BasePreCommit<>());
+    Transaction<BE> startTransaction() {
+        return startTransaction(new BasePreCommit<>());
     }
 
-    Transaction<BE> startTransaction(boolean mutating, Transaction.PreCommit<BE> actionsManager) {
-        Transaction<BE> tx = transactionConstructor.construct(this, mutating, actionsManager);
-        tx.getPreCommit().initialize(inventory.keepTransaction(), new TransactionIgnoringBackend<>(backend));
+    Transaction<BE> startTransaction(Transaction.PreCommit<BE> preCommit) {
+        Transaction<BE> tx = transactionConstructor.construct(backend, preCommit);
+        tx.getPreCommit().initialize(inventory.keepTransaction(tx), tx);
         return tx;
     }
 
@@ -433,7 +436,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
         TraversalContext<BE, E> get() {
             return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
                     sourceContext.backend, entityClass, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext, null, null);
+                    sourceContext.transactionRetries, sourceContext, null, sourceContext.transactionConstructor);
         }
 
         /**

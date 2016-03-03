@@ -48,11 +48,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
@@ -85,7 +87,6 @@ import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
-import org.hawkular.inventory.base.spi.Transaction;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -103,15 +104,23 @@ import com.tinkerpop.pipes.PipeFunction;
  * @since 0.1.0
  */
 final class TinkerpopBackend implements InventoryBackend<Element> {
-    private final InventoryContext<?> context;
+    private final InventoryContext context;
 
-    public TinkerpopBackend(InventoryContext<?> context) {
+    public TinkerpopBackend(InventoryContext context) {
         this.context = context;
     }
 
+    @Override public boolean isUniqueIndexSupported() {
+        return context.isUniqueIndexSupported();
+    }
+
+    @Override public boolean isPreferringBigTransactions() {
+        return context.isPreferringBigTransactions();
+    }
+
     @Override
-    public void startTransaction(Transaction<Element> transaction) {
-        context.startTransaction(transaction);
+    public InventoryBackend<Element> startTransaction() {
+        return new TinkerpopBackend(context.cloneWith(context.startTransaction()));
     }
 
     @Override
@@ -145,10 +154,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override public Element traverseToSingle(Element startingPoint, Query query) {
         HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
         Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
-        if (q.hasNext()) {
-            return q.cast(Element.class).next();
-        }
-        return null;
+        return drainAfter(q, () -> {
+            if (q.hasNext()) {
+                return q.cast(Element.class).next();
+            }
+            return null;
+        });
     }
 
     @Override
@@ -165,11 +176,21 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Object start = startingPoint == null ? context.getGraph() : startingPoint;
 
-        q = new HawkularPipeline<Object, Element>(start);
+        q = new HawkularPipeline<>(start);
 
         if (startingPoint == null) {
-            if (query.getFragments()[0].getFilter() instanceof RelationFilter) {
+            Filter first = query.getFragments()[0].getFilter();
+
+            if (first instanceof RelationFilter) {
                 q = q.E();
+            } else if (first instanceof With.CanonicalPaths) {
+                //XXX this does NOT handle the situation where we mix relationships and entities in one filter
+                Class<?> elementType = ((With.CanonicalPaths) first).getPaths()[0].getSegment().getElementType();
+                if (Relationship.class.equals(elementType)) {
+                    q = q.E();
+                } else {
+                    q = q.V();
+                }
             } else {
                 q = q.V();
             }
@@ -278,7 +299,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        return ((Vertex) entity).getEdges(toNative(direction), relationshipName).iterator().hasNext();
+        Iterator<Edge> it = ((Vertex) entity).getEdges(toNative(direction), relationshipName).iterator();
+
+        return closeAfter(it, it::hasNext);
     }
 
     @Override
@@ -289,13 +312,15 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Iterator<Vertex> targets = ((Vertex) source).getVertices(Direction.OUT, relationshipName).iterator();
 
-        while (targets.hasNext()) {
-            if (target.equals(targets.next())) {
-                return true;
+        return closeAfter(targets, () -> {
+            while (targets.hasNext()) {
+                if (target.equals(targets.next())) {
+                    return true;
+                }
             }
-        }
 
-        return false;
+            return false;
+        });
     }
 
     @Override
@@ -316,10 +341,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Iterator<Edge> it = new HawkularPipeline<>(source).outE(relationshipName)
                 .has(__targetCp.name(), t.getProperty(__cp.name())).cast(Edge.class);
 
-        if (!it.hasNext()) {
-            throw new ElementNotFoundException();
-        } else {
-            return it.next();
+        try {
+            if (!it.hasNext()) {
+                throw new ElementNotFoundException();
+            } else {
+                return it.next();
+            }
+        } finally {
+            closeIfNeeded(it);
         }
     }
 
@@ -347,7 +376,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new AssertionError("Invalid relationship direction specified: " + direction);
         }
 
-        return StreamSupport.stream(q.spliterator(), false).filter(e -> !isBackendInternal(e)).collect(toSet());
+        return drainAfter(q,
+                () -> StreamSupport.stream(q.spliterator(), false).filter(e -> !isBackendInternal(e)).collect(toSet()));
     }
 
     @Override
@@ -425,19 +455,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 .labels(Constants.InternalEdge.__containsIdentityHash.name())
                 .has(Constants.Property.__targetIdentityHash.name(), identityHash).vertices().iterator();
 
-        if (hashNodesIt.hasNext()) {
-            Vertex hashNode = hashNodesIt.next();
-            vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
-        } else {
-            Vertex hashNode = context.getGraph().addVertex(null);
-            hashNode.setProperty(Constants.Property.__identityHash.name(), identityHash);
-            hashNode.setProperty(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
+        closeAfter(hashNodesIt, () -> {
+            if (hashNodesIt.hasNext()) {
+                Vertex hashNode = hashNodesIt.next();
+                vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
+            } else {
+                Vertex hashNode = context.getGraph().addVertex(null);
+                hashNode.setProperty(Constants.Property.__identityHash.name(), identityHash);
+                hashNode.setProperty(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
 
-            Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode);
-            e.setProperty(Constants.Property.__targetIdentityHash.name(), identityHash);
+                Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode);
+                e.setProperty(Constants.Property.__targetIdentityHash.name(), identityHash);
 
-            vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
-        }
+                vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
+            }
+
+            return null;
+        });
     }
 
     private void removeHashNodeOf(Vertex vertex) {
@@ -446,29 +480,33 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Iterator<Edge> hashNodeEdgeIt = hashNodeEdges.iterator();
 
-        if (hashNodeEdgeIt.hasNext()) {
-            Edge hashNodeEdge = hashNodeEdgeIt.next();
-
+        closeAfter(hashNodeEdgeIt, () -> {
             if (hashNodeEdgeIt.hasNext()) {
-                throw new IllegalStateException(
-                        "Entity with path: " + extractCanonicalPath(vertex) + " was associated " +
-                                "with more than 1 hash node. That is a bug.");
+                Edge hashNodeEdge = hashNodeEdgeIt.next();
+
+                if (hashNodeEdgeIt.hasNext()) {
+                    throw new IllegalStateException(
+                            "Entity with path: " + extractCanonicalPath(vertex) + " was associated " +
+                                    "with more than 1 hash node. That is a bug.");
+                }
+
+                //XXX do we need to do this check? It might be quite expensive to determine the count
+                //An alternative might be a periodical clean job.
+
+                //check if were are the last user of the hash node
+                Vertex hashNode = hashNodeEdge.getVertex(Direction.IN);
+                Iterable<Edge> entitiesWithSameHash =
+                        hashNode.getEdges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
+
+                if (StreamSupport.stream(entitiesWithSameHash.spliterator(), false).count() == 1) {
+                    hashNode.remove();
+                } else {
+                    hashNodeEdge.remove();
+                }
             }
 
-            //XXX do we need to do this check? It might be quite expensive to determine the count
-            //An alternative might be a periodical clean job.
-
-            //check if were are the last user of the hash node
-            Vertex hashNode = hashNodeEdge.getVertex(Direction.IN);
-            Iterable<Edge> entitiesWithSameHash =
-                    hashNode.getEdges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
-
-            if (StreamSupport.stream(entitiesWithSameHash.spliterator(), false).count() == 1) {
-                hashNode.remove();
-            } else {
-                hashNodeEdge.remove();
-            }
-        }
+            return null;
+        });
     }
 
     @Override
@@ -488,6 +526,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             Vertex v = (Vertex) entityRepresentation;
             name = v.getProperty(Constants.Property.name.name());
 
+            Iterator<Vertex> it;
             switch (type) {
                 case environment:
                     e = new Environment(extractCanonicalPath(v));
@@ -496,8 +535,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     e = new Feed(extractCanonicalPath(v), extractIdentityHash(v));
                     break;
                 case metric:
-                    Vertex mdv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator()
-                            .next();
+                    it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
+                    Vertex mdv = closeAfter(it, it::next);
                     MetricType md = convert(mdv, MetricType.class);
                     e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), md,
                             v.<Long>getProperty(Constants.Property.__metric_interval.name()));
@@ -509,7 +548,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             v.getProperty(Constants.Property.__metric_interval.name()));
                     break;
                 case resource:
-                    Vertex rtv = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator().next();
+                    it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
+                    Vertex rtv = closeAfter(it, it::next);
                     ResourceType rt = convert(rtv, ResourceType.class);
                     e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), rt);
                     break;
@@ -631,11 +671,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         FilterApplicator.applyAll(q, pipeline);
 
-        if (pipeline.hasNext()) {
-            return pipeline.next();
-        } else {
-            return null;
-        }
+        return drainAfter(pipeline, () -> {
+            if (pipeline.hasNext()) {
+                return pipeline.next();
+            } else {
+                return null;
+            }
+        });
     }
 
     @Override
@@ -765,7 +807,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     }
                     return v;
                 } catch (RuntimeException e) {
-                    throw context.translateException(e);
+                    throw context.translateException(e, path);
                 }
             }
         }, null);
@@ -983,28 +1025,30 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Iterator<Element> dataElements = getTransitiveClosureOver(dataRepresentation, outgoing, contains.name());
 
-        // we know the closure is constructed eagerly in this impl, so this loop is OK.
-        while (dataElements.hasNext()) {
-            delete(dataElements.next());
-        }
+        closeAfter(dataElements, () -> {
+            // we know the closure is constructed eagerly in this impl, so this loop is OK.
+            while (dataElements.hasNext()) {
+                delete(dataElements.next());
+            }
 
-        delete(dataRepresentation);
+            delete(dataRepresentation);
+            return null;
+        });
     }
 
     @Override
-    public void commit(Transaction<Element> t) throws CommitFailureException {
+    public void commit() throws CommitFailureException {
         try {
-            t.getPreCommit().getActions().forEach(a -> a.accept(t));
-            context.commit(t);
-            Log.LOG.trace("Transaction committed: " + t);
+            context.commit();
+            Log.LOG.trace("Transaction committed: " + context.getGraph());
         } catch (Exception e) {
             throw new CommitFailureException(e);
         }
     }
 
     @Override
-    public void rollback(Transaction<Element> t) {
-        context.rollback(t);
+    public void rollback() {
+        context.rollback();
     }
 
     @Override
@@ -1025,10 +1069,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     private StructuredData loadStructuredData(Vertex owner, Relationships.WellKnown owningEdge) {
         Iterator<Vertex> it = owner.getVertices(Direction.OUT, owningEdge.name()).iterator();
         if (!it.hasNext()) {
+            closeIfNeeded(it);
             return null;
         }
 
-        return loadStructuredData(it.next(), true);
+        return loadStructuredData(closeAfter(it, it::next), true);
     }
 
     private StructuredData loadStructuredData(Vertex root, boolean recurse) {
@@ -1305,6 +1350,34 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
         }).start();
         return in;
+    }
+
+    private void drainIfNeeded(HawkularPipeline<?, ?> pipeline) {
+        if (context.needsDraining()) {
+            pipeline.iterate();
+        }
+    }
+
+    private void closeIfNeeded(Iterator<?> it) {
+        if (context.needsDraining() && it instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) it).close();
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to close a closeable result iterator.", e);
+            }
+        }
+    }
+
+    private <R> R closeAfter(Iterator<?> it, Supplier<R> payload) {
+        R ret = payload.get();
+        closeIfNeeded(it);
+        return ret;
+    }
+
+    private <R, S, E> R drainAfter(HawkularPipeline<S, E> pipeline, Supplier<R> payload) {
+        R ret = payload.get();
+        drainIfNeeded(pipeline);
+        return ret;
     }
 
     private static final class Pair<F, S> {

@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.function.Supplier;
-
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResultFilter;
@@ -60,7 +58,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @throws EntityNotFoundException if the query doesn't return any results
      */
     protected BE getSingle(Query query, Class<? extends Entity<?, ?>> entityType) {
-        return Util.getSingle(context.backend, query, entityType);
+        return inTx(backend -> Util.getSingle(backend, query, entityType));
     }
 
     /**
@@ -75,22 +73,43 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @param <R>     the return type
      * @return the return value provided by the payload
      */
-    protected <R> R mutating(PotentiallyCommittingPayload<R, BE> payload) {
-        return Util.runInTransaction(context, false, payload);
+    protected <R> R inTx(TransactionPayload<R, BE> payload) {
+        return inTx(context, payload);
     }
 
-    /**
-     * A "shortcut" method for executing read-only payloads in transaction. Such payloads don't have to have a reference
-     * to the transaction in which they're being executed.
-     * <p>
-     * <p><b>WARNING:</b> the payload might be called multiple times if the transaction it runs within fails. It is
-     * therefore dangerous to keep any mutable state outside of the payload function that the function depends on.
-     *
-     * @param payload the read-only payload to execute
-     * @param <R>     the type of the return value
-     * @return the return value provided by the payload
-     */
-    protected <R> R readOnly(Supplier<R> payload) {
-        return Util.runInTransaction(context, true, (t) -> payload.get());
+    protected static <R, BE, E extends AbstractElement<?, ?>>
+    R inTx(TraversalContext<BE, E> context, TransactionPayload<R, BE> payload) {
+        class Ret {
+            final R val;
+            final Transaction.PreCommit<BE> preCommit;
+
+            Ret(Transaction.PreCommit<BE> preCommit, R val) {
+                this.preCommit = preCommit;
+                this.val = val;
+            }
+        }
+
+        Ret ret = Util.inTx(context, tx -> {
+            R v = payload.run(tx);
+            Transaction.PreCommit<BE> preCommit = tx.getPreCommit();
+
+            return new Ret(preCommit, v);
+        });
+
+        //k, now the transaction finished, we can send out the notifications
+        ret.preCommit.getFinalNotifications().forEach(context::notifyAll);
+
+        return ret.val;
+    }
+
+    protected <R> R inCommittableTx(TransactionPayload.Committing<R, BE> payload) {
+        return Util.inCommittableTx(context, tx -> {
+            R v = payload.run(tx);
+
+            //k, now the transaction finished, we can send out the notifications
+            tx.getPreCommit().getFinalNotifications().forEach(context::notifyAll);
+
+            return v;
+        });
     }
 }

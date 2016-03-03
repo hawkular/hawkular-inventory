@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import org.hawkular.inventory.base.spi.Transaction;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 
 import com.tinkerpop.blueprints.Element;
@@ -28,16 +28,20 @@ import com.tinkerpop.blueprints.TransactionalGraph;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class InventoryContext<G extends TransactionalGraph> {
+final class InventoryContext {
 
-    private final G graph;
+    private final TransactionalGraph graph;
     private final TinkerpopInventory inventory;
-    private final GraphProvider<G> graphProvider;
+    private final GraphProvider graphProvider;
 
-    public InventoryContext(TinkerpopInventory inventory, G graph, GraphProvider<G> graphProvider) {
+    public InventoryContext(TinkerpopInventory inventory, TransactionalGraph graph, GraphProvider graphProvider) {
         this.inventory = inventory;
         this.graph = graph;
         this.graphProvider = graphProvider;
+    }
+
+    public InventoryContext cloneWith(TransactionalGraph graph) {
+        return new InventoryContext(inventory, graph, graphProvider);
     }
 
     public TinkerpopInventory getInventory() {
@@ -48,19 +52,31 @@ final class InventoryContext<G extends TransactionalGraph> {
         return graph;
     }
 
-    public void startTransaction(Transaction<Element> tx) {
-        graphProvider.startTransaction(graph, tx);
+    public TransactionalGraph startTransaction() {
+        return graphProvider.startTransaction(graph);
     }
 
-    public void commit(Transaction<Element> t) {
-        graphProvider.commit(graph, t);
+    public void commit() {
+        graphProvider.commit(graph);
     }
 
-    public void rollback(Transaction<Element> t) {
-        graphProvider.rollback(graph, t);
+    public void rollback() {
+        graphProvider.rollback(graph);
     }
 
-    public RuntimeException translateException(RuntimeException inputException) {
-        return graphProvider.translateException(inputException);
+    public boolean isUniqueIndexSupported() {
+        return graphProvider.isUniqueIndexSupported();
+    }
+
+    public boolean needsDraining() {
+        return graphProvider.needsDraining();
+    }
+
+    public boolean isPreferringBigTransactions() {
+        return graphProvider.isPreferringBigTransactions();
+    }
+
+    public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
+        return graphProvider.translateException(inputException, affectedPath);
     }
 }

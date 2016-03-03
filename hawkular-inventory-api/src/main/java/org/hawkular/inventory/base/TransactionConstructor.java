@@ -16,7 +16,7 @@
  */
 package org.hawkular.inventory.base;
 
-import org.hawkular.inventory.base.spi.Transaction;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
  * A transaction constructor can instantiate a new transaction implementation with some behavior. This is then used
@@ -37,30 +37,8 @@ public interface TransactionConstructor<BE> {
      * @return a transaction constructor that initializes the transaction also in the backend
      */
     static <BE> TransactionConstructor<BE> startInBackend() {
-        return (ctx, mutating, preCommit) -> {
-            Transaction<BE> tx = new BaseTransaction<>(mutating, preCommit);
-            ctx.backend.startTransaction(tx);
-            return tx;
-        };
+        return (backend, preCommit) -> new BackendTransaction<>(backend.startTransaction(), preCommit);
     }
 
-    /**
-     * This creates a new transaction constructor that will create initialized transaction objects but will NOT tell
-     * the backends to start a new transaction.
-     *
-     * <p>This is meant to be used in scenarios where you need to "fake" new transaction being created, like in
-     * {@link BaseInventory#keepTransaction()} or with transaction framing.
-     *
-     * @param <BE> the type of teh backend representation of the entities
-     * @return a new transaction constructor
-     */
-    static <BE> TransactionConstructor<BE> ignoreBackend() {
-        return (ctx, mutating, preCommit) -> {
-            Transaction<BE> tx = new BaseTransaction<>(mutating, preCommit);
-            return tx;
-        };
-    }
-
-    Transaction<BE> construct(TraversalContext<BE, ?> traversalContext, boolean mutating,
-                              Transaction.PreCommit<BE> preCommit);
+    Transaction<BE> construct(InventoryBackend<BE> backend, Transaction.PreCommit<BE> preCommit);
 }

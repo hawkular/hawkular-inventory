@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-parent</artifactId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.14.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-api</artifactId>
@@ -107,29 +107,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <analysisConfiguration>
-            <![CDATA[
-              {
-                "revapi": {
-                  "filter": {
-                    //leaving this empty to include everything - this is to reconfigure the default provided in the
-                    //parent pom.
-                    "elements": {
-                      "include": ["\w+ org\\.hawkular\\.inventory\\.api.*",
-                        "method( parameter)? (<.*> )?[^<>]* org\\.hawkular\\.inventory\\.api[^:]*::.*"],
-                      "exclude": [".*_\\$logger.*"]
-                    }
-                  }
-                }
-              }
-            ]]>
-          </analysisConfiguration>
-        </configuration>
       </plugin>
     </plugins>
   </build>

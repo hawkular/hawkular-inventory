@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-parent</artifactId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.14.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-load-tests</artifactId>
@@ -51,4 +51,187 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>ltest</id>
+      <properties>
+        <!-- ltest properties -->
+        <!-- how many times all the entities for 1 hawkular with 1 wildfly in it should be inserted to the inventory (~real data) -->
+        <ltest.hawkularInventoryMultiple>1</ltest.hawkularInventoryMultiple>
+        <!-- how many resource types should be created by 1 client (~fake data) -->
+        <ltest.resourceTypes>1</ltest.resourceTypes>
+        <!-- how many metric types should be created by 1 client on each resource type -->
+        <ltest.metricTypes>1</ltest.metricTypes>
+        <!-- how many resources should be created by 1 client -->
+        <ltest.resources>1</ltest.resources>
+        <!-- how many metrics should be created by 1 client on each resource -->
+        <ltest.metrics>1</ltest.metrics>
+        <!-- how many times the read of all {(resource|metric)(Type)?s} should be performed by 1 client. It also tests
+        'getAllResourcesOfGivenTypeMultipleTimes' -->
+        <ltest.readEntity>1</ltest.readEntity>
+        <!-- how many concurrent clients will be running all the test suite -->
+        <ltest.users>1</ltest.users>
+        <!-- delay before firing up another client (in seconds) -->
+        <ltest.ramp>5</ltest.ramp>
+        <!-- Interval between requests that don't have to be synchronized (in millis) -->
+        <ltest.interval>1</ltest.interval>
+        <!-- log verbosity (0,1,2) -->
+        <ltest.logLevel>1</ltest.logLevel>
+        <ltest.baseURI>http://localhost:8080</ltest.baseURI>
+        <ltest.username>jdoe</ltest.username>
+        <ltest.password>password</ltest.password>
+
+        <!-- hawkular dist properties -->
+        <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
+        <hawkular.port.offset>0</hawkular.port.offset>
+        <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
+        <hawkular.management.port>9990</hawkular.management.port>
+        <hawkular.agent.enabled>false</hawkular.agent.enabled>
+        <hawkular.log>INFO</hawkular.log>
+        <hawkular.log.accounts>INFO</hawkular.log.accounts>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.alerts>INFO</hawkular.log.alerts>
+        <hawkular.log.bus>INFO</hawkular.log.bus>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
+        <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
+        <hawkular.log.pinger>INFO</hawkular.log.pinger>
+        <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
+        <hawkular.log.metrics>INFO</hawkular.log.metrics>
+        <hawkular.log.nest>INFO</hawkular.log.nest>
+        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
+        <hawkular.log.liquibase>WARN</hawkular.log.liquibase>
+        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
+        <hawkular.log.ejb3>WARN</hawkular.log.ejb3>
+        <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
+        <http.log>ERROR</http.log>
+        <http.log.wire>WARN</http.log.wire>
+        <sql.datasource.jndi>java:/jboss/datasources/HawkularInventoryDS</sql.datasource.jndi>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.wildfly.build</groupId>
+            <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>server-provisioning</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>
+                    ../hawkular-inventory-itest/server-provisioning.xml
+                  </config-file>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Start WildFly -->
+          <plugin>
+            <groupId>org.wildfly.plugins</groupId>
+            <artifactId>wildfly-maven-plugin</artifactId>
+            <configuration>
+              <jboss-home>${project.build.directory}/${project.artifactId}-${project.version}</jboss-home>
+              <skip>false</skip>
+              <startupTimeout>240</startupTimeout>
+              <port>${hawkular.management.port}</port>
+              <javaOpts>
+                <javaOpt>-server</javaOpt>
+                <javaOpt>-Xms64m</javaOpt>
+                <javaOpt>-Xmx512m</javaOpt>
+                <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
+                <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
+                <javaOpt>-Djava.awt.headless=true</javaOpt>
+                <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
+                <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
+                <javaOpt>
+                  -Dkeycloak.import=${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration/hawkular-realm-for-dev.json
+                </javaOpt>
+                <javaOpt>-Dhawkular.agent.enabled=${hawkular.agent.enabled}</javaOpt>
+                <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
+                <javaOpt>-Dhawkular.log.accounts=${hawkular.log.accounts}</javaOpt>
+                <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
+                <javaOpt>-Dhawkular.log.alerts=${hawkular.log.alerts}</javaOpt>
+                <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
+                <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
+                <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
+                <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
+                <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
+                <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
+                <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
+                <javaOpt>-Dhawkular.log.liquibase=${hawkular.log.liquibase}</javaOpt>
+                <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
+                <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
+                <javaOpt>-Dsql.datasource.jndi=${sql.datasource.jndi}</javaOpt>
+                <!--<javaOpt>-Xdebug</javaOpt>-->
+                <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
+              </javaOpts>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start-wildfly</id>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <server-config>standalone.xml</server-config>
+                </configuration>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-wildfly</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>shutdown</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-maven-plugin</artifactId>
+            <configuration>
+              <simulationClass>org.hawkular.inventory.loadtest.AgentSimulation</simulationClass>
+              <propagateSystemProperties>true</propagateSystemProperties>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+                <configuration>
+                  <jvmArgs>
+                    <jvmArg>-Dltest.resourceTypes=${ltest.resourceTypes}</jvmArg>
+                    <jvmArg>-Dltest.metricTypes=${ltest.metricTypes}</jvmArg>
+                    <jvmArg>-Dltest.resources=${ltest.resources}</jvmArg>
+                    <jvmArg>-Dltest.metrics=${ltest.metrics}</jvmArg>
+                    <jvmArg>-Dltest.readEntity=${ltest.readEntity}</jvmArg>
+                    <jvmArg>-Dltest.users=${ltest.users}</jvmArg>
+                    <jvmArg>-Dltest.ramp=${ltest.ramp}</jvmArg>
+                    <jvmArg>-Dltest.interval=${ltest.interval}</jvmArg>
+                    <jvmArg>-Dltest.logLevel=${ltest.logLevel}</jvmArg>
+                    <jvmArg>-Dltest.baseURI=${ltest.baseURI}</jvmArg>
+                    <jvmArg>-Dltest.username=${ltest.username}</jvmArg>
+                    <jvmArg>-Dltest.password=${ltest.password}</jvmArg>
+                    <jvmArg>-Dltest.hawkularInventoryMultiple=${ltest.hawkularInventoryMultiple}</jvmArg>
+                  </jvmArgs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

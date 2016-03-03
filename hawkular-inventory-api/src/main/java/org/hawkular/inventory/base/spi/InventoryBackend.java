@@ -44,13 +44,26 @@ import org.hawkular.inventory.api.paging.Pager;
  */
 public interface InventoryBackend<E> extends AutoCloseable {
 
+    boolean isPreferringBigTransactions();
+
+    /**
+     * Inventory tries to use unique indices in the backend store to ensure certain conditions in the inventory (like
+     * each entity having a unique canonical path).
+     * <p>
+     * If this is not supported by the backend, alternative techniques are employed to ensure at least some level
+     * consistency (even if not completely as safe as having the unique index ensured by the backend).
+     *
+     * @return whether the backend supports unique indices or not
+     */
+    boolean isUniqueIndexSupported();
+
     /**
      * Starts a transaction in the backend. The transaction is not subclassable by the backends but they can attach
      * arbitrary data using the {@link Transaction#getAttachments()} method.
      *
-     * @param transaction the transaction to start and initialize
+     * @return a new inventory backend instance that is bound to a new transaction
      */
-    void startTransaction(Transaction<E> transaction);
+    InventoryBackend<E> startTransaction();
 
     /**
      * Tries to find an element at given canonical path.
@@ -307,19 +320,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
 
     /**
      * Commits the transaction.
-     *
-     * <p>It is mandatory for the implementation to run all the
-     * {@link Transaction#getPreCommit()} pre-commit actions} prior to actually committing the transaction.
-     *
-     * @param transaction the transaction to commit
      */
-    void commit(Transaction<E> transaction) throws CommitFailureException;
+    void commit() throws CommitFailureException;
 
     /**
      * Rolls back the transaction.
-     * @param transaction the transaction to roll back
      */
-    void rollback(Transaction<E> transaction);
+    void rollback();
 
     /**
      * The query results might sometimes return elements that are not representable in the inventory API because they
