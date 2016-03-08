@@ -38,7 +38,6 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
@@ -80,9 +79,6 @@ public final class BaseResourceTypes {
             ResourceType resourceType = new ResourceType(blueprint.getName(),
                     parentPath.extend(ResourceType.class, tx.extractId(entity)).get(), null,
                     blueprint.getProperties());
-
-            tx.updateIdentityHash(entity,
-                    IdentityHash.of(resourceType, context.inventory.keepTransaction(tx)));
 
             return new EntityAndPendingNotifications<>(entity, resourceType, emptyList());
         }
@@ -263,9 +259,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postCreate(BE dataEntity, Transaction<BE> tx) {
-            BE rte = tx.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains)).get());
-            ResourceType rt = tx.convert(rte, ResourceType.class);
-            tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
         }
 
         @Override
@@ -291,12 +284,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postUpdate(BE dataEntity, Transaction<BE> tx) {
-            BE rt = tx.traverseToSingle(dataEntity, Query.path().with(
-                    asTargetBy(contains) //up to resource type
-            ).get());
-
-            tx.updateIdentityHash(rt, IdentityHash.of(tx.convert(rt, ResourceType.class),
-                    context.inventory.keepTransaction(tx)));
         }
 
         @Override
@@ -320,14 +307,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postDelete(BE dataEntity, Transaction<BE> tx) {
-            CanonicalPath cp = tx.extractCanonicalPath(dataEntity);
-            try {
-                BE rte = tx.find(cp.up());
-                ResourceType rt = tx.convert(rte, ResourceType.class);
-                tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
-            } catch (ElementNotFoundException e) {
-                throw new IllegalStateException("Could not find the owning resource type of the operation type " + cp);
-            }
         }
     }
 }

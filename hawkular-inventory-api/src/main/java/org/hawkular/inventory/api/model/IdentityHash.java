@@ -48,6 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.TreeTraversal;
 
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
@@ -386,7 +387,7 @@ public final class IdentityHash {
 
                 @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resource(rt.getId()).get();
+                            : RelativePath.to().resourceType(rt.getId()).get();
 
                     return structure.getChildren(p, DataEntity.class)
                             .filter(d -> configurationSchema.equals(d.getRole()))
@@ -406,7 +407,7 @@ public final class IdentityHash {
 
                 @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resource(rt.getId()).get();
+                            : RelativePath.to().resourceType(rt.getId()).get();
 
                     return structure.getChildren(p, DataEntity.class)
                             .filter(d -> connectionConfigurationSchema.equals(d.getRole()))
@@ -427,7 +428,7 @@ public final class IdentityHash {
 
                 @Override public List<OperationType.Blueprint> getOperationTypes(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resource(rt.getId()).get();
+                            : RelativePath.to().resourceType(rt.getId()).get();
 
                     return structure.getChildren(p, OperationType.class).collect(toList());
                 }
@@ -665,6 +666,10 @@ public final class IdentityHash {
 
         public RelativePath getPath() {
             return path;
+        }
+
+        public TreeTraversal<Tree> traversal() {
+            return new TreeTraversal<>(t -> t.children.iterator());
         }
 
         @Override

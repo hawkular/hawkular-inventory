@@ -152,7 +152,7 @@ public interface Transaction<E> {
 
     void updateIdentityHash(E entity, String identityHash);
 
-    public interface PreCommit<E> {
+    interface PreCommit<E> {
         /**
          * This is always to be called AFTER a transaction is committed and therefore after {@link #getActions()} is
          * called.
@@ -266,7 +266,7 @@ public interface Transaction<E> {
             return new Committable<>(tx);
         }
 
-        public Committable(Transaction<E> tx) {
+        protected Committable(Transaction<E> tx) {
             super(tx);
         }
 

@@ -31,7 +31,6 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -71,9 +70,6 @@ public final class BaseMetricTypes {
                     parentPath.extend(MetricType.class, tx.extractId(entity)).get(), null,
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
-
-            tx.updateIdentityHash(entity,
-                    IdentityHash.of(metricType, context.inventory.keepTransaction(tx)));
 
             return new EntityAndPendingNotifications<>(entity, metricType, emptyList());
         }

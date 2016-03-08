@@ -32,10 +32,8 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
@@ -205,13 +203,6 @@ public final class BaseOperationTypes {
 
         @Override
         public void postUpdate(BE dataEntity, Transaction<BE> tx) {
-            BE rt = tx.traverseToSingle(dataEntity, Query.path().with(
-                    asTargetBy(contains), //up to operation type
-                    asTargetBy(contains) //up to resource type
-            ).get());
-
-            tx.updateIdentityHash(rt, IdentityHash.of(tx.convert(rt, ResourceType.class),
-                    context.inventory.keepTransaction(tx)));
         }
 
         @Override
@@ -224,7 +215,7 @@ public final class BaseOperationTypes {
                 Fetcher.throwNotFoundException(context);
             }
 
-            if (!ReadWrite.isResourceTypeInMetadataPack(rt, tx)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(rt, tx)) {
                 throw new IllegalArgumentException(
                         "Data '" + dataPath.getSegment().getElementId() + "' cannot be deleted" +
                                 " under operation type " + dataPath.up() +
@@ -235,22 +226,10 @@ public final class BaseOperationTypes {
 
         @Override
         public void postCreate(BE dataEntity, Transaction<BE> tx) {
-            BE rte = tx.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains),
-                    asTargetBy(contains)).get());
-            ResourceType rt = tx.convert(rte, ResourceType.class);
-            tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
         }
 
         @Override
         public void postDelete(BE dataEntity, Transaction<BE> tx) {
-            CanonicalPath cp = tx.extractCanonicalPath(dataEntity);
-            try {
-                BE rte = tx.find(cp.up(2));
-                ResourceType rt = tx.convert(rte, ResourceType.class);
-                tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
-            } catch (ElementNotFoundException e) {
-                throw new IllegalStateException("Could not find the owning resource type of the operation type " + cp);
-            }
         }
     }
 }

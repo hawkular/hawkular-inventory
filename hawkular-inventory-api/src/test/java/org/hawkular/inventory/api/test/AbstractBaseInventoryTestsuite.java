@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.identityHashChanged;
 import static org.hawkular.inventory.api.Action.updated;
 import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
@@ -119,6 +121,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import rx.Observable;
 import rx.Subscription;
 
 /**
@@ -1068,7 +1071,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     public void queryMultipleTenants() throws Exception {
         Set<Tenant> tenants = inventory.tenants().getAll().entities();
 
-        assert tenants.size() == 2;
+        Assert.assertEquals(2, tenants.size());
     }
 
     @Test
@@ -1983,9 +1986,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    public void testParentIdentityHashUpdatedWhenChildUpdated() throws Exception {
-        //TODO implement
-        String tenantId = "testParentIdentityHashUpdatedWhenChildUpdated";
+    public void testParentIdentityHashUpdatedWhenChildCreated() throws Exception {
+        String tenantId = "testParentIdentityHashUpdatedWhenChildCreated";
         try {
             Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
                     .feeds().create(Feed.Blueprint.builder().withId("feed").build());
@@ -1993,7 +1995,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
 
             Resources.Single r = f.resources()
-                    .create(Resource.Blueprint.builder().withId("res").withResourceTypePath("../resourceType").build());
+                    .create(Resource.Blueprint.builder().withId("res").withResourceTypePath("resourceType").build());
 
             String fHash = IdentityHash.of(f.entity(), inventory);
 
@@ -2011,13 +2013,51 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    public void testParentIdentityHashUpdatedWhenChildCreated() throws Exception {
-        //TODO implement
+    public void testParentIdentityHashUpdatedWhenChildUpdated() throws Exception {
+        String tenantId = "testParentIdentityHashUpdatedWhenChildUpdated";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
+                    (MetricUnit.BITS).withInterval(0L).build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            f.metricTypes().get("metricType").update(MetricType.Update.builder().withUnit(MetricUnit.BYTES).build());
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
     }
 
     @Test
     public void testParentIdentityHashUpdatedWhenChildDeleted() throws Exception {
-        //TODO implement
+        String tenantId = "testParentIdentityHashUpdatedWhenChildDeleted";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
+                    (MetricUnit.BITS).withInterval(0L).build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            f.metricTypes().delete("metricType");
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
     }
 
     @Test
@@ -2193,17 +2233,101 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testObserveIdentityHashChangedOnParentOfChangedEntity() throws Exception {
-        //TODO implement
+        String tenantId = "testObserveIdentityHashChangedOnParentOfChangedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now update the unit of the metric type
+            inventory.tenants().get(tenantId).feeds().get("feed").metricTypes().get("metricType").update(MetricType
+                    .Update.builder().withUnit(MetricUnit.BYTES).build());
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(MetricType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
     }
 
     @Test
     public void testObserveIdentityHashChangedOnParentOfCreatedEntity() throws Exception {
-        //TODO implement
+        String tenantId = "testObserveIdentityHashChangedOnParentOfCreatedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now create some new grandchild of the feed, let's say new sub-resource
+            inventory.tenants().get(tenantId).feeds().get("feed").resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath
+                            ("../resourceType").build());
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(Resource.class).intValue()); //the hash of parent resource
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
     }
 
     @Test
     public void testObserveIdentityHashChangedOnParentOfDeletedEntity() throws Exception {
-        //TODO implement
+        String tenantId = "testObserveIdentityHashChangedOnParentOfDeletedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now delete the return type of the operation type
+            inventory.tenants().get(tenantId).feeds().get("feed").resourceTypes().get("resourceType")
+                    .operationTypes().get("operationType").data().delete(returnType);
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(OperationType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(ResourceType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
+    }
+
+    private void testIdentityHashObservation(String tenantId, Consumer<Map<Class<?>, Integer>> test) throws Exception {
+        Subscription subs = null;
+        try {
+            createInventoryForIdentityHashChangeObservations(tenantId);
+
+            Map<Class<?>, Integer> updateCounts = new HashMap<>();
+
+            subs = Observable.merge(
+                    inventory.observable(Interest.in(Feed.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(ResourceType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(MetricType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(OperationType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(Resource.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(Metric.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(DataEntity.class).having(identityHashChanged()))
+            ).subscribe(e ->
+                    updateCounts.put(e.getClass(), updateCounts.getOrDefault(e.getClass(), 0) + 1));
+
+            test.accept(updateCounts);
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+            if (subs != null) {
+                subs.unsubscribe();
+            }
+        }
+    }
+
+    private void createInventoryForIdentityHashChangeObservations(String tenantId) throws Exception {
+        Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+        f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
+                (MetricUnit.BITS).withInterval(0L).build());
+
+        ResourceTypes.Single rt = f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                .build());
+
+        OperationTypes.Single ot = rt.operationTypes().create(OperationType.Blueprint.builder().withId("operationType")
+                .build());
+
+        ot.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder().withRole(returnType)
+                .withValue(StructuredData.get().map().putString("type", "string").build()).build());
+
+        Resources.Single r = f.resources()
+                .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build());
+
+        r.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration).withValue
+                (StructuredData.get().integral(42L)).build());
     }
 
     @Test

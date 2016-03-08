@@ -18,12 +18,12 @@ package org.hawkular.inventory.base;
 
 import static java.util.stream.Collectors.toList;
 
-import java.util.ArrayDeque;
+import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Action.identityHashChanged;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,7 +32,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Query;
+import org.hawkular.inventory.api.TreeTraversal;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -48,6 +51,7 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.base.spi.ElementNotFoundException;
 
 /**
  * Takes care of defining the pre-commit actions based on the set of entities modified within a single transaction.
@@ -80,7 +84,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
     private final ProcessingTree<BE> processingTree = new ProcessingTree<>();
 
     private Inventory inventory;
-    private Transaction<BE> backend;
+    private Transaction<BE> tx;
 
     /**
      * Pre-commit actions that reset the identity hash
@@ -89,7 +93,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     @Override public void initialize(Inventory inventory, Transaction<BE> tx) {
         this.inventory = inventory;
-        this.backend = backend;
+        this.tx = tx;
     }
 
     @Override public void reset() {
@@ -163,12 +167,13 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
         correctiveAction = t -> {
             for (ProcessingTree<BE> root : identityHashRoots) {
-                Entity<?, ?> e = (Entity<?, ?>) root.element;
-
-                if (e == null) {
-                    e = inventory.getElement(root.cp);
-                    root.element = e;
+                try {
+                    root.loadFrom(tx);
+                } catch (ElementNotFoundException e) {
+                    //ok, we're inside a delete and the root entity no longer exists... bail out quickly...
+                    break;
                 }
+                Entity<?, ?> e = (Entity<?, ?>) root.element;
 
                 IdentityHash.Tree treeHash = IdentityHash.treeOf(InventoryStructure.of(e, inventory));
 
@@ -179,8 +184,10 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private void correctChanges(IdentityHash.Tree treeHash, ProcessingTree<BE> changesTree) {
         if (changesTree.needsResolution()) {
-            if (changesTree.element == null) {
-                changesTree.element = inventory.getElement(changesTree.cp);
+            try {
+                changesTree.loadFrom(tx);
+            } catch (ElementNotFoundException e) {
+                throw new EntityNotFoundException(Query.filters(Query.to(changesTree.cp)));
             }
 
             Entity<?, ?> e = cloneWithHash((Entity<?, ?>) changesTree.element, treeHash.getHash());
@@ -211,24 +218,21 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             String origIdentityHash = ((IdentityHashable) changesTree.element).getIdentityHash();
             if (!Objects.equals(origIdentityHash, treeHash.getHash())) {
                 //check if the notifications contain an update or create
-                Optional<Notification<?, ?>> updateOrCreateNotif = ns.stream()
-                        .filter(n -> (n.getAction() == Action.created() || n.getAction() == Action.updated())
-                                && n.getValue().equals(changesTree.element))
+                Optional<Notification<?, ?>> createNotif = ns.stream()
+                        .filter(n -> n.getAction() == created() && n.getValue().equals(changesTree.element))
                         .findAny();
 
-                if (!updateOrCreateNotif.isPresent()) {
+                if (!createNotif.isPresent()) {
                     if (origIdentityHash == null) {
-                        ns.add(new Notification<>(changesTree.element, changesTree.element, Action.created()));
+                        ns.add(new Notification<>(changesTree.element, changesTree.element, created()));
                     } else {
-                        //noinspection unchecked
-                        ns.add(new Notification(
-                                new Action.Update(changesTree.element, new IdentityHashable.Update(treeHash.getHash())),
-                                e, Action.updated()));
+                        IdentityHashable el = (IdentityHashable) changesTree.element;
+                        ns.add(new Notification<>(el, el, identityHashChanged()));
                     }
                 }
 
                 //now also actually update the element in inventory with the new hash
-                backend.updateIdentityHash(changesTree.representation, treeHash.getHash());
+                tx.updateIdentityHash(changesTree.representation, treeHash.getHash());
             }
 
             //set the notifications to emit
@@ -375,6 +379,16 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             return IdentityHashable.class.isAssignableFrom(path.getElementType());
         }
 
+        public void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {
+            if (element == null) {
+                representation = tx.find(cp);
+                @SuppressWarnings("unchecked")
+                Class<? extends AbstractElement<?, ?>> type = (Class<? extends AbstractElement<?, ?>>)
+                        tx.extractType(representation);
+                element = tx.convert(representation, type);
+            }
+        }
+
         void add(EntityAndPendingNotifications<BE, ?> entity) {
             if (this.path != null) {
                 throw new IllegalStateException("Cannot add element to partial results from a non-root segment.");
@@ -414,21 +428,16 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }
 
         void dfsTraversal(Function<ProcessingTree<BE>, Boolean> visitor) {
-            Deque<Iterator<ProcessingTree<BE>>> depthStack = new ArrayDeque<>();
+            TreeTraversal<ProcessingTree<BE>> traversal = new TreeTraversal<>(t -> t.children.iterator());
 
-            depthStack.push(children.iterator());
-
-            while (!depthStack.isEmpty()) {
-                if (!depthStack.peek().hasNext()) {
-                    depthStack.pop();
-                    continue;
+            //skip the root element - this is what the callers assume of the dfsTraversal
+            traversal.depthFirst(this, t -> {
+                if (t == this) {
+                    return true;
+                } else {
+                    return visitor.apply(t);
                 }
-
-                ProcessingTree<BE> tree = depthStack.peek().next();
-                if (visitor.apply(tree)) {
-                    depthStack.push(tree.children.iterator());
-                }
-            }
+            });
         }
 
         @Override public boolean equals(Object o) {

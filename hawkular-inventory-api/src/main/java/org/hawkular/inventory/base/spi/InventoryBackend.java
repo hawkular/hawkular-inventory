@@ -58,8 +58,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
     boolean isUniqueIndexSupported();
 
     /**
-     * Starts a transaction in the backend. The transaction is not subclassable by the backends but they can attach
-     * arbitrary data using the {@link Transaction#getAttachments()} method.
+     * Starts a transaction in the backend.
      *
      * @return a new inventory backend instance that is bound to a new transaction
      */
