@@ -427,6 +427,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public void updateIdentityHash(Element entity, String identityHash) {
+        Objects.requireNonNull(entity, "entity == null");
+
         if (!(entity instanceof Vertex)) {
             return;
         }
