@@ -19,7 +19,6 @@ package org.hawkular.inventory.impl.tinkerpop;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**

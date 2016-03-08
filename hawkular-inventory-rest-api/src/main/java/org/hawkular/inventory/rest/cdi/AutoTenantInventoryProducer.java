@@ -118,7 +118,7 @@ public class AutoTenantInventoryProducer {
             };
         }
 
-        @Override public <T extends AbstractElement> T getElement(CanonicalPath path) {
+        @Override public <T extends AbstractElement<?, ?>> T getElement(CanonicalPath path) {
             return inventory.getElement(path);
         }
 
