@@ -208,14 +208,14 @@ public final class BaseOperationTypes {
         @Override
         public void preDelete(BE dataEntity, Transaction<BE> tx) {
             CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
-            BE rt = null;
+            BE ot = null;
             try {
-                rt = tx.find(dataPath.up(2));
+                ot = tx.find(dataPath.up());
             } catch (ElementNotFoundException e) {
                 Fetcher.throwNotFoundException(context);
             }
 
-            if (ReadWrite.isResourceTypeInMetadataPack(rt, tx)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(ot, tx)) {
                 throw new IllegalArgumentException(
                         "Data '" + dataPath.getSegment().getElementId() + "' cannot be deleted" +
                                 " under operation type " + dataPath.up() +
