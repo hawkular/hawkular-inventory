@@ -723,7 +723,7 @@ public interface InventoryStructure<Root extends Blueprint> {
             this.root = root;
         }
 
-        public InventoryStructure<Root> build() {
+        public Offline<Root> build() {
             return new Offline<>(root, children, relationships);
         }
     }

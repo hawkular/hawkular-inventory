@@ -50,14 +50,14 @@ import io.swagger.annotations.ApiResponses;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-@Path("/feeds")
+@Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
 @Api(value = "/", description = "CRUD of feeds", tags = "Feeds")
 public class RestFeeds extends RestBase {
 
     @POST
-    @Path("/")
+    @Path("/feeds")
     @ApiOperation("Registers a feed with the inventory, giving it a unique ID.")
     @ApiResponses({
             @ApiResponse(code = 201, message = "OK", response = Feed.class),
@@ -80,7 +80,7 @@ public class RestFeeds extends RestBase {
     }
 
     @GET
-    @Path("/")
+    @Path("/feeds")
     @ApiOperation("Return all the feeds registered with the inventory")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
@@ -98,7 +98,7 @@ public class RestFeeds extends RestBase {
     }
 
     @GET
-    @Path("/{feedId}")
+    @Path("/feeds/{feedId}")
     @ApiOperation("Return a single feed by its ID.")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK", response = Set.class),
@@ -115,7 +115,7 @@ public class RestFeeds extends RestBase {
     }
 
     @PUT
-    @Path("/{feedId}")
+    @Path("/feeds/{feedId}")
     @ApiOperation("Updates a feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -137,7 +137,7 @@ public class RestFeeds extends RestBase {
     }
 
     @DELETE
-    @Path("/{feedId}")
+    @Path("/feeds/{feedId}")
     @ApiOperation("Deletes a feed")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
@@ -158,9 +158,4 @@ public class RestFeeds extends RestBase {
         return Response.noContent().build();
     }
 
-    @POST
-    @Path("/{feedId}/sync")
-    public Response sync() {
-        return null;
-    }
 }
