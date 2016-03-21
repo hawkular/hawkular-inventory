@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 /**
  * @author Lukas Krejci
- * @since 0.14.0
+ * @since 0.15.0
  */
 public final class TreeTraversal<Node> {
 
@@ -66,11 +66,11 @@ public final class TreeTraversal<Node> {
             }
 
             @Override public Iterator<Node> getCurrent() {
-                return queue.peekLast();
+                return queue.peekFirst();
             }
 
             @Override public void removeCurrent() {
-                queue.removeLast();
+                queue.removeFirst();
             }
 
             @Override public boolean hasData() {

@@ -195,22 +195,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             List<Notification<?, ?>> ns = changesTree.notifications.stream().map(n -> cloneWithNewEntity(n, e))
                     .collect(toList());
 
-            Optional<Notification<?, ?>> deleteNotification = ns.stream()
-                    .filter(n -> n.getAction() == Action.deleted() && n.getValue().equals(changesTree.element))
-                    .findAny();
-
-
-            if (deleteNotification.isPresent()) {
-                //just emit what the caller wanted and don't bother any longer
-                correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
-                        changesTree.representation, e, ns));
-
-                IdentityHash.Tree emptyTree = IdentityHash.Tree.builder().build();
-                changesTree.dfsTraversal(pt -> {
-                    correctChanges(emptyTree, pt);
-                    return true;
-                });
-
+            if (processDeletion(changesTree, e, ns)) {
                 return;
             }
 
@@ -275,13 +260,42 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                     i++;
 
                     if (p.needsResolution()) {
-                        throw new IllegalStateException("Entity on path " + p.element.getPath() + " requires identity" +
-                                " hash re-computation but was not found contributing to a tree hash of a parent. This" +
-                                " is inconsistency in the inventory model and a bug.");
+                        //if p was deleted, it's ok, but if it wasn't we have a serious problem - we found a change
+                        //contributing to the identity hash of some parent, but the computed treeHash that should
+                        //reflect the current state of inventory doesn't have a reference to the changed entity
+                        if (!processDeletion(p, (Entity<?, ?>) p.element, p.notifications)) {
+                            throw new IllegalStateException(
+                                    "Entity on path " + p.element.getPath() + " requires identity hash re-computation" +
+                                            " but was not found contributing to a tree hash of a parent. This is" +
+                                            " inconsistency in the inventory model and a bug.");
+                        }
                     }
                 }
             }
         }
+    }
+
+    private boolean processDeletion(ProcessingTree<BE> changesTree, Entity<?, ?> e,
+                                    List<Notification<?, ?>> ns) {
+        Optional<Notification<?, ?>> deleteNotification = ns.stream()
+                .filter(n -> n.getAction() == Action.deleted() && n.getValue().equals(changesTree.element))
+                .findAny();
+
+
+        if (deleteNotification.isPresent()) {
+            //just emit what the caller wanted and don't bother any longer
+            correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
+                    changesTree.representation, e, ns));
+
+            IdentityHash.Tree emptyTree = IdentityHash.Tree.builder().build();
+            changesTree.dfsTraversal(pt -> {
+                correctChanges(emptyTree, pt);
+                return true;
+            });
+
+            return true;
+        }
+        return false;
     }
 
     private Entity<?, ?> cloneWithHash(Entity<?, ?> entity, String identityHash) {

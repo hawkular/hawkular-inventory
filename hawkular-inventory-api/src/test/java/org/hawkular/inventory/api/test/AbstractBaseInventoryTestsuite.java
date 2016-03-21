@@ -2043,14 +2043,19 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
                     .feeds().create(Feed.Blueprint.builder().withId("feed").build());
 
-            f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
-                    (MetricUnit.BITS).withInterval(0L).build());
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
+
+            f.resources().create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                    .build());
+
+            f.resources().get("resource").resources().create(Resource.Blueprint.builder().withId("childRersource")
+                    .withResourceTypePath("../resourceType").build());
 
             String fHash = IdentityHash.of(f.entity(), inventory);
 
             Assert.assertEquals(fHash, f.entity().getIdentityHash());
 
-            f.metricTypes().delete("metricType");
+            f.resources().delete("resource");
 
             Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
         } finally {
