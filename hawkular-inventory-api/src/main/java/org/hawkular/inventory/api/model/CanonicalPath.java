@@ -233,24 +233,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     }
 
     public boolean isParentOf(CanonicalPath other) {
-        if (other == null) {
-            throw new IllegalArgumentException("other == null");
-        }
-
-        if (other.path.size() <= path.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < path.size(); ++i) {
-            Segment mySeg = path.get(i);
-            Segment otherSeg = other.path.get(i);
-
-            if (!mySeg.equals(otherSeg)) {
-                return false;
-            }
-        }
-
-        return true;
+        return super.isParentOf(other);
     }
 
     public RelativePath relativeTo(CanonicalPath root) {

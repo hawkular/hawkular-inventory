@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -228,6 +228,10 @@ public final class RelativePath extends Path implements Serializable {
      */
     public RelativePath slide(int startDelta, int endDelta) {
         return new RelativePath(startIdx + startDelta, endIdx + endDelta, path);
+    }
+
+    public boolean isParentOf(RelativePath other) {
+        return super.isParentOf(other);
     }
 
     @Override
