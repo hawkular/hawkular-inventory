@@ -24,11 +24,14 @@ import java.util.Map;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHash;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -126,7 +129,7 @@ public class EmptyInventory implements Inventory {
         return new EntityNotFoundException(entityClass, null);
     }
 
-    protected static class SingleBase<E extends Entity<?, ?>, Update>
+    protected static class SingleBase<E extends Entity<?, ?>, B extends Blueprint, Update>
             implements ResolvableToSingle<E, Update> {
         private final Class<E> entityType;
 
@@ -147,6 +150,10 @@ public class EmptyInventory implements Inventory {
         @Override
         public void delete() {
             throw entityNotFound(entityType);
+        }
+
+        public IdentityHash.Tree treeHash() {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -244,7 +251,8 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class TenantsSingle extends SingleBase<Tenant, Tenant.Update> implements Tenants.Single {
+    public static class TenantsSingle extends SingleBase<Tenant, Tenant.Blueprint, Tenant.Update>
+            implements Tenants.Single {
 
         public TenantsSingle() {
             super(Tenant.class);
@@ -349,7 +357,8 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourceTypesSingle extends SingleBase<ResourceType, ResourceType.Update>
+    public static class ResourceTypesSingle
+            extends SingleBase<ResourceType, ResourceType.Blueprint, ResourceType.Update>
             implements ResourceTypes.Single {
 
         public ResourceTypesSingle() {
@@ -387,13 +396,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public String identityHash() throws EntityNotFoundException {
-            return "";
-        }
-
-        @Override
         public ResourceTypes.Read identical() {
             return new ResourceTypesRead();
+        }
+
+        @Override public void synchronize(InventoryStructure<ResourceType.Blueprint> newStructure) {
         }
     }
 
@@ -551,7 +558,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricTypesSingle extends SingleBase<MetricType, MetricType.Update>
+    public static class MetricTypesSingle extends SingleBase<MetricType, MetricType.Blueprint, MetricType.Update>
             implements MetricTypes.Single {
 
         public MetricTypesSingle() {
@@ -574,13 +581,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public String identityHash() throws EntityNotFoundException {
-            return "";
-        }
-
-        @Override
         public MetricTypes.Read identical() {
             return new MetricTypesRead();
+        }
+
+        @Override public void synchronize(InventoryStructure<MetricType.Blueprint> newStructure) {
         }
     }
 
@@ -642,7 +647,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class EnvironmentsSingle extends SingleBase<Environment, Environment.Update>
+    public static class EnvironmentsSingle extends SingleBase<Environment, Environment.Blueprint, Environment.Update>
             implements Environments.Single {
 
         public EnvironmentsSingle() {
@@ -940,7 +945,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class FeedsSingle extends SingleBase<Feed, Feed.Update> implements Feeds.Single {
+    public static class FeedsSingle extends SingleBase<Feed, Feed.Blueprint, Feed.Update> implements Feeds.Single {
 
         public FeedsSingle() {
             super(Feed.class);
@@ -984,6 +989,9 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
+        }
+
+        @Override public void synchronize(InventoryStructure<Feed.Blueprint> newStructure) {
         }
     }
 
@@ -1118,7 +1126,8 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class MetricsSingle extends SingleBase<Metric, Metric.Update> implements Metrics.Single {
+    public static class MetricsSingle extends SingleBase<Metric, Metric.Blueprint, Metric.Update>
+            implements Metrics.Single {
 
         public MetricsSingle() {
             super(Metric.class);
@@ -1132,6 +1141,9 @@ public class EmptyInventory implements Inventory {
         @Override
         public Relationships.ReadWrite relationships(Relationships.Direction direction) {
             return new RelationshipsReadWrite();
+        }
+
+        @Override public void synchronize(InventoryStructure<Metric.Blueprint> newStructure) {
         }
     }
 
@@ -1207,7 +1219,8 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class ResourcesSingle extends SingleBase<Resource, Resource.Update> implements Resources.Single {
+    public static class ResourcesSingle extends SingleBase<Resource, Resource.Blueprint, Resource.Update>
+            implements Resources.Single {
 
         public ResourcesSingle() {
             super(Resource.class);
@@ -1263,6 +1276,8 @@ public class EmptyInventory implements Inventory {
             return new DataReadWrite<>();
         }
 
+        @Override public void synchronize(InventoryStructure<Resource.Blueprint> newStructure) {
+        }
     }
 
     public static class ResourcesMultiple implements Resources.Multiple {
@@ -1414,6 +1429,13 @@ public class EmptyInventory implements Inventory {
         public void delete() {
             throw new UnsupportedOperationException();
         }
+
+        @Override public void synchronize(InventoryStructure<DataEntity.Blueprint<?>> newStructure) {
+        }
+
+        @Override public IdentityHash.Tree treeHash() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public static class DatasMultiple implements Data.Multiple {
@@ -1492,6 +1514,13 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override public void delete() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void synchronize(InventoryStructure<OperationType.Blueprint> newStructure) {
+        }
+
+        @Override public IdentityHash.Tree treeHash() {
             throw new UnsupportedOperationException();
         }
     }

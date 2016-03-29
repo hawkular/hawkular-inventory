@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,29 +40,21 @@ public final class Tenants {
     }
 
     private interface BrowserBase<AccessResourceTypes, AccessMetricTypes, AccessEnvs, AccessFeeds,
-            AccessMetadataPacks> {
-        /**
-         * @return resources types in the tenant(s)
-         */
-        AccessResourceTypes resourceTypes();
+            AccessMetadataPacks> extends ResourceTypes.Container<AccessResourceTypes>,
+            MetricTypes.Container<AccessMetricTypes>, Environments.Container<AccessEnvs>,
+            Feeds.Container<AccessFeeds>, MetadataPacks.Container<AccessMetadataPacks> {
 
         ResourceTypes.Read resourceTypesUnder(ResourceTypeParents... parents);
 
-        /**
-         * @return metric types in the tenant(s)
-         */
-        AccessMetricTypes metricTypes();
-
         MetricTypes.Read metricTypesUnder(MetricTypeParents... parents);
+    }
 
-        /**
-         * @return environments in the tenant(s)
-         */
-        AccessEnvs environments();
-
-        AccessMetadataPacks metadataPacks();
-
-        AccessFeeds feeds();
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain tenants.
+     * @param <Access> the type of access to tenants
+     */
+    public interface Container<Access> {
+        Access tenants();
     }
 
     /**

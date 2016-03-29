@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,17 +39,15 @@ public final class Environments {
         ENVIRONMENT, FEED, RESOURCE
     }
 
-    private interface BrowserBase<Feeds, ResourcesAccess, MetricsAccess> {
-        /**
-         * @return feeds in the environment(s)
-         */
-        Feeds feeds();
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain environments.
+     * @param <Access> the type of access to environments
+     */
+    public interface Container<Access> {
+        Access environments();
+    }
 
-        /**
-         * @return resources in the environment(s) that do not come from any feed
-         */
-        ResourcesAccess resources();
-
+    private interface BrowserBase<F, R, M> extends Feeds.Container<F>, Resources.Container<R>, Metrics.Container<M> {
         /**
          * Returns access to all resources in this environment regardless of whether they are under some feed or
          * directly under the environment.
@@ -57,11 +55,6 @@ public final class Environments {
          * @return the access interface to all resources in this environment
          */
         Resources.Read resourcesUnder(ResourceParents... parents);
-
-        /**
-         * @return metrics in the environment(s) that do not come from any feed
-         */
-        MetricsAccess metrics();
 
         /**
          * Returns access to all metrics in this environment regardless of whether they are under some feed or

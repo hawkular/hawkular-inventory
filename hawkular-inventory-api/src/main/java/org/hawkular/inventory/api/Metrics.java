@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,9 +32,18 @@ public final class Metrics {
     }
 
     /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain metrics.
+     * @param <Access> the type of access to metrics
+     */
+    public interface Container<Access> {
+        Access metrics();
+    }
+
+    /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Metric, Metric.Update> {}
+    public interface Single extends ResolvableToSingleWithRelationships<Metric, Metric.Update>,
+            IdentityHashed.Single<Metric.Blueprint> {}
 
     /**
      * Interface for traversing over a set of metrics.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,14 @@ public final class Data {
 
     }
 
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain data.
+     * @param <Access> the type of access to data
+     */
+    public interface Container<Access> {
+        Access data();
+    }
+
     public interface Read<Role extends DataEntity.Role> extends ReadInterface<Single, Multiple, Role> {
     }
 
@@ -45,7 +53,8 @@ public final class Data {
         void update(Role role, DataEntity.Update update) throws EntityNotFoundException, ValidationException;
     }
 
-    public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update>, IdentityHashed.Single {
+    public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update>,
+            IdentityHashed.Single<DataEntity.Blueprint<?>> {
 
         /**
          * Loads the data entity on the current position in the inventory traversal along with its data.

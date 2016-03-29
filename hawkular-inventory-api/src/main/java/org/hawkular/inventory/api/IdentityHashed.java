@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +16,16 @@
  */
 package org.hawkular.inventory.api;
 
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.IdentityHash;
+import org.hawkular.inventory.api.model.InventoryStructure;
+
 /**
  * These interfaces are extended by accessor interfaces for {@link org.hawkular.inventory.api.model.IdentityHashable}
  * model entities.
  *
  * @author Lukas Krejci
- * @since 0.10.0
+ * @since 0.15.0
  */
 public final class IdentityHashed {
 
@@ -29,14 +33,20 @@ public final class IdentityHashed {
 
     }
 
-    //TODO commented out for now so that we can develop this piecewise
-    public interface Single {
-//        String identityHash();
-//        IdentityHash.Tree computedTreeHash();
-    }
+    public interface Single<B extends Entity.Blueprint> {
+        /**
+         * This is useful for figuring out what changed about the structure of the entity
+         * @return the hash of the entity together with the hashes of all contained entities
+         */
+        IdentityHash.Tree treeHash();
 
-    public interface Multiple {
-//        Map<CanonicalPath, String> identityHashes();
-//        Set<IdentityHash.Tree> computedTreeHashes();
+        /**
+         * Synchronizes the entity and any of its children. The structure is considered to be complete - i.e.
+         * any contained entity currently present in inventory that is not present in the supplied structure will be
+         * deleted from the inventory.
+         *
+         * @param newStructure the new structure of the entity and all its contained entities.
+         */
+        void synchronize(InventoryStructure<B> newStructure);
     }
 }

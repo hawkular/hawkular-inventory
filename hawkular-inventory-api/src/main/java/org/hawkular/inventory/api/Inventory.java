@@ -98,7 +98,7 @@ import org.hawkular.inventory.api.paging.Pager;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public interface Inventory extends AutoCloseable {
+public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.ReadWrite> {
 
     /**
      * Initializes the inventory from the provided configuration object.

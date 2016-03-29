@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,22 +37,25 @@ public final class Feeds {
         FEED, RESOURCE
     }
 
-    private interface BrowserBase<AccessResources, AccessMetrics, MetricTypes, ResourceTypes> {
-        AccessResources resources();
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain feeds.
+     * @param <Access> the type of access to feeds
+     */
+    public interface Container<Access> {
+        Access feeds();
+    }
 
+    private interface BrowserBase<AccessResources, AccessMetrics, AccessMetricTypes, AccessResourceTypes>
+            extends Resources.Container<AccessResources>, Metrics.Container<AccessMetrics>,
+            MetricTypes.Container<AccessMetricTypes>, ResourceTypes.Container<AccessResourceTypes> {
         Resources.Read resourcesUnder(ResourceParents... parents);
 
-        AccessMetrics metrics();
-
         Metrics.Read metricsUnder(MetricParents... parents);
-
-        MetricTypes metricTypes();
-
-        ResourceTypes resourceTypes();
     }
 
     public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
-            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite> {}
+            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite>,
+            IdentityHashed.Single<Feed.Blueprint> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
             BrowserBase<Resources.ReadContained, Metrics.ReadContained, MetricTypes.ReadContained,

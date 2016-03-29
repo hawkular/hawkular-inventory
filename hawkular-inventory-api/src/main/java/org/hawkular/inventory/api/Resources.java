@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,9 @@ public final class Resources {
         CONTAINING_RESOURCE, INCORPORATING_RESOURCE
     }
 
-    private interface BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess> {
+    private interface BrowserBase<ContainedMetrics, AllMetrics, DataAccess, ContainedAccess, AllAccess>
+            extends Metrics.Container<ContainedMetrics>, Data.Container<DataAccess>,
+            Resources.Container<ContainedAccess> {
 
         ContainedMetrics metrics();
 
@@ -129,14 +131,23 @@ public final class Resources {
          * @return data associated with the resource. See {@link org.hawkular.inventory.api.model.DataEntity.Role} for
          * possible kinds of data associated with a resource.
          */
-        Data data();
+        DataAccess data();
+    }
+
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain resources.
+     * @param <Access> the type of access to resources
+     */
+    public interface Container<Access> {
+        Access resources();
     }
 
     /**
      * Interface for accessing a single resource in a writable manner.
      */
     public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
+            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate>,
+            IdentityHashed.Single<Resource.Blueprint> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the
