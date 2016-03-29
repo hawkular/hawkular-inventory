@@ -122,8 +122,8 @@ public final class BaseOperationTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, OperationType, OperationType.Update>
-            implements OperationTypes.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, OperationType, OperationType.Blueprint,
+            OperationType.Update> implements OperationTypes.Single {
 
         public Single(TraversalContext<BE, OperationType> context) {
             super(context);

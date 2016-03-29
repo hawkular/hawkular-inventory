@@ -208,8 +208,8 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, MetricType, MetricType.Update>
-            implements MetricTypes.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, MetricType, MetricType.Blueprint,
+            MetricType.Update> implements MetricTypes.Single {
 
         public Single(TraversalContext<BE, MetricType> context) {
             super(context);

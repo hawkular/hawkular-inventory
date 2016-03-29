@@ -28,22 +28,24 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.MetadataPacks;
+import org.hawkular.inventory.api.MetricTypes;
+import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
-import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
-import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Pager;
 
 /**
@@ -54,7 +56,7 @@ import org.hawkular.inventory.api.paging.Pager;
  * @author Lukas Krejci
  * @since 0.11.0
  */
-public interface InventoryStructure<Root extends Blueprint> {
+public interface InventoryStructure<Root extends Entity.Blueprint> {
 
     /**
      * Creates a lazily loaded online inventory structure, backed by the provided inventory instance.
@@ -63,7 +65,7 @@ public interface InventoryStructure<Root extends Blueprint> {
      * @param inventory  the inventory to load the data from
      * @return the structure of given entity and its children
      */
-    static <E extends Entity<B, ?>, B extends Blueprint>
+    static <E extends Entity<B, ?>, B extends Entity.Blueprint>
     InventoryStructure<B> of(E rootEntity, Inventory inventory) {
         return new InventoryStructure<B>() {
             B root = asBlueprint(rootEntity);
@@ -89,25 +91,26 @@ public interface InventoryStructure<Root extends Blueprint> {
                     }
 
                     @Override public Stream<BB> visitEnvironment(Void parameter) {
-                        return fromRead(Tenant.class, Tenants.Single.class, (ts) -> ts.environments());
+                        return fromRead(Tenant.class, Tenants.Single.class, Environments.Container::environments);
                     }
 
                     @Override public Stream<BB> visitFeed(Void parameter) {
-                        return fromRead(Tenant.class, Tenants.Single.class, (ts) -> ts.feeds());
+                        return fromRead(Tenant.class, Tenants.Single.class, Feeds.Container::feeds);
                     }
 
                     @Override public Stream<BB> visitMetric(Void parameter) {
                         return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
                             @Override public Stream<BB> visitEnvironment(Void parameter) {
-                                return fromRead(Environment.class, Environments.Single.class, (es) -> es.metrics());
+                                return fromRead(Environment.class, Environments.Single.class,
+                                        Metrics.Container::metrics);
                             }
 
                             @Override public Stream<BB> visitFeed(Void parameter) {
-                                return fromRead(Feed.class, Feeds.Single.class, (es) -> es.metrics());
+                                return fromRead(Feed.class, Feeds.Single.class, Metrics.Container::metrics);
                             }
 
                             @Override public Stream<BB> visitResource(Void parameter) {
-                                return fromRead(Resource.class, Resources.Single.class, (rs) -> rs.metrics());
+                                return fromRead(Resource.class, Resources.Single.class, Metrics.Container::metrics);
                             }
                         }, null);
                     }
@@ -115,11 +118,11 @@ public interface InventoryStructure<Root extends Blueprint> {
                     @Override public Stream<BB> visitMetricType(Void parameter) {
                         return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
                             @Override public Stream<BB> visitTenant(Void parameter) {
-                                return fromRead(Tenant.class, Tenants.Single.class, (es) -> es.metricTypes());
+                                return fromRead(Tenant.class, Tenants.Single.class, MetricTypes.Container::metricTypes);
                             }
 
                             @Override public Stream<BB> visitFeed(Void parameter) {
-                                return fromRead(Feed.class, Feeds.Single.class, (es) -> es.metricTypes());
+                                return fromRead(Feed.class, Feeds.Single.class, MetricTypes.Container::metricTypes);
                             }
                         }, null);
                     }
@@ -127,15 +130,16 @@ public interface InventoryStructure<Root extends Blueprint> {
                     @Override public Stream<BB> visitResource(Void parameter) {
                         return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
                             @Override public Stream<BB> visitEnvironment(Void parameter) {
-                                return fromRead(Environment.class, Environments.Single.class, (es) -> es.resources());
+                                return fromRead(Environment.class, Environments.Single.class,
+                                        Resources.Container::resources);
                             }
 
                             @Override public Stream<BB> visitFeed(Void parameter) {
-                                return fromRead(Feed.class, Feeds.Single.class, (es) -> es.resources());
+                                return fromRead(Feed.class, Feeds.Single.class, Resources.Container::resources);
                             }
 
                             @Override public Stream<BB> visitResource(Void parameter) {
-                                return fromRead(Resource.class, Resources.Single.class, (es) -> es.resources());
+                                return fromRead(Resource.class, Resources.Single.class, Resources.Container::resources);
                             }
                         }, null);
                     }
@@ -143,11 +147,12 @@ public interface InventoryStructure<Root extends Blueprint> {
                     @Override public Stream<BB> visitResourceType(Void parameter) {
                         return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
                             @Override public Stream<BB> visitTenant(Void parameter) {
-                                return fromRead(Tenant.class, Tenants.Single.class, (es) -> es.resourceTypes());
+                                return fromRead(Tenant.class, Tenants.Single.class,
+                                        ResourceTypes.Container::resourceTypes);
                             }
 
                             @Override public Stream<BB> visitFeed(Void parameter) {
-                                return fromRead(Feed.class, Feeds.Single.class, (es) -> es.resourceTypes());
+                                return fromRead(Feed.class, Feeds.Single.class, ResourceTypes.Container::resourceTypes);
                             }
                         }, null);
                     }
@@ -159,26 +164,27 @@ public interface InventoryStructure<Root extends Blueprint> {
                     @Override public Stream<BB> visitData(Void parameter) {
                         return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
                             @Override public Stream<BB> visitResource(Void parameter) {
-                                return fromRead(Resource.class, Resources.Single.class, (rs) -> rs.data());
+                                return fromRead(Resource.class, Resources.Single.class, Data.Container::data);
                             }
 
                             @Override public Stream<BB> visitResourceType(Void parameter) {
-                                return fromRead(ResourceType.class, ResourceTypes.Single.class, (rts) -> rts.data());
+                                return fromRead(ResourceType.class, ResourceTypes.Single.class, Data.Container::data);
                             }
 
                             @Override public Stream<BB> visitOperationType(Void parameter) {
                                 return fromRead(OperationType.class, OperationTypes.Single.class,
-                                        OperationTypes.BrowserBase::data);
+                                        Data.Container::data);
                             }
                         }, null);
                     }
 
                     @Override public Stream<BB> visitOperationType(Void parameter) {
-                        return fromRead(ResourceType.class, ResourceTypes.Single.class, (rts) -> rts.operationTypes());
+                        return fromRead(ResourceType.class, ResourceTypes.Single.class,
+                                OperationTypes.Container::operationTypes);
                     }
 
                     @Override public Stream<BB> visitMetadataPack(Void parameter) {
-                        return fromRead(Tenant.class, Tenants.Single.class, (ts) -> ts.metadataPacks());
+                        return fromRead(Tenant.class, Tenants.Single.class, MetadataPacks.Container::metadataPacks);
                     }
 
                     @Override public Stream<BB> visitUnknown(Void parameter) {
@@ -215,30 +221,14 @@ public interface InventoryStructure<Root extends Blueprint> {
                 }, null);
             }
 
-            @Override
-            public Stream<Relationship> getRelationships(RelativePath sourceEntityPath, String... names) {
-                CanonicalPath absoluteSource = rootEntity.getPath().modified().extend(sourceEntityPath.getPath()).get();
+            @Override public Blueprint get(RelativePath path) {
+                CanonicalPath pathToElement = rootEntity.getPath().modified().extend(path.getPath()).get();
+
                 @SuppressWarnings("unchecked")
-                ResolvableToSingle<?, ?> access = inventory.inspect(absoluteSource, ResolvableToSingle.class);
+                Entity<?, ?> entity = (Entity<?, ?>) inventory.inspect(pathToElement, ResolvableToSingle.class)
+                        .entity();
 
-                if (access instanceof ResolvableToSingleWithRelationships) {
-                    Iterator<org.hawkular.inventory.api.model.Relationship> rels =
-                            ((ResolvableToSingleWithRelationships<?, ?>) access)
-                                    .relationships(Relationships.Direction.outgoing).getAll()
-                                    .entities(Pager.unlimited(Order.unspecified()));
-
-                    Spliterator<org.hawkular.inventory.api.model.Relationship> sit = Spliterators.spliterator(rels,
-                            Long.MAX_VALUE, Spliterator.DISTINCT & Spliterator.IMMUTABLE & Spliterator.NONNULL);
-
-                    return StreamSupport.stream(sit, false).map(r -> {
-                        RelativePath source = r.getSource().relativeTo(rootEntity.getPath());
-                        RelativePath target = r.getTarget().relativeTo(rootEntity.getPath());
-
-                        return new Relationship(r.getName(), target);
-                    });
-                } else {
-                    return Stream.empty();
-                }
+                return asBlueprint(entity);
             }
 
             @SuppressWarnings("unchecked")
@@ -362,27 +352,29 @@ public interface InventoryStructure<Root extends Blueprint> {
      */
     <E extends Entity<B, ?>, B extends Blueprint> Stream<B> getChildren(RelativePath parent, Class<E> childType);
 
+    /**
+     * Gets a blueprint on the given path.
+     *
+     * @param path the path under the root of the structure
+     * @return the blueprint describing the entity on the given path
+     */
+    Blueprint get(RelativePath path);
+
     @SuppressWarnings("unchecked")
     default Stream<Entity.Blueprint> getAllChildren(RelativePath parent) {
         Stream ret = Stream.empty();
+        RelativePath.Extender check = RelativePath.empty()
+                .extend(Blueprint.getEntityTypeOf(getRoot()),getRoot().getId())
+                .extend(parent.getPath());
+
         for (Class<?> cls : CanonicalPath.SHORT_TYPE_NAMES.keySet()) {
-            if (Entity.class.isAssignableFrom(cls)) {
+            if (Entity.class.isAssignableFrom(cls) && check.canExtendTo(cls)) {
                 ret = Stream.concat(ret, getChildren(parent, (Class<Entity>) cls));
             }
         }
 
         return ret;
     }
-
-    /**
-     * Returns the <b>outgoing</b> relationships of an entity on the provided path with given names. If no names are
-     * supplied (either null or an empty array), all relationships are returned.
-     *
-     * @param sourceEntityPath the path to the source of the relationships, relative to the root entity
-     * @param names            the names of the relationships to retrieve or empty for all relationships
-     * @return the stream of relationships
-     */
-    Stream<Relationship> getRelationships(RelativePath sourceEntityPath, String... names);
 
     /**
      * A specliazed representation of relationship that needs to be used instead of the "real"
@@ -456,10 +448,6 @@ public interface InventoryStructure<Root extends Blueprint> {
             this.blueprintType = blueprintType;
         }
 
-        public Class<? extends Blueprint> getBlueprintType() {
-            return blueprintType;
-        }
-
         public Class<? extends AbstractElement<?, ?>> getElementType() {
             return elementType;
         }
@@ -478,12 +466,15 @@ public interface InventoryStructure<Root extends Blueprint> {
         private final Root root;
         private final Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children;
         private final Map<RelativePath, Map<String, Set<Relationship>>> relationships;
+        private final Map<RelativePath, Entity.Blueprint> entities;
 
-        private Offline(Root root, Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
+        private Offline(Root root, Map<RelativePath, Entity.Blueprint> entities,
+                        Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
                         Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
             this.root = root;
             this.children = children;
             this.relationships = relationships;
+            this.entities = entities;
         }
 
         public static <R extends Entity.Blueprint> Offline<R> copy(InventoryStructure<R> other) {
@@ -512,8 +503,14 @@ public interface InventoryStructure<Root extends Blueprint> {
 
                                 EntityAndChildren parentChildren = entities.get(parentPath);
                                 if (parentChildren == null) {
-                                    parentChildren = new EntityAndChildren();
-                                    entities.put(parentPath, parentChildren);
+                                    if (parentPath.isDefined()) {
+                                        throw new IllegalStateException("Could not find the tracked children of a" +
+                                                " parent " + parent + " during inventory structure copy. This is a " +
+                                                "bug.");
+                                    } else {
+                                        parentChildren = new EntityAndChildren(other.getRoot());
+                                        entities.put(parentPath, parentChildren);
+                                    }
                                 }
 
                                 otherChildren.forEach(c -> {
@@ -543,11 +540,14 @@ public interface InventoryStructure<Root extends Blueprint> {
 
             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children = new HashMap<>();
             Map<RelativePath, Map<String, Set<Relationship>>> relationships = new HashMap<>();
+            Map<RelativePath, Entity.Blueprint> blueprints = new HashMap<>();
 
             for (Map.Entry<RelativePath, EntityAndChildren> e : entities.entrySet()) {
                 //handle entities
                 RelativePath entityPath = e.getKey();
                 EntityAndChildren entity = e.getValue();
+
+                blueprints.put(entityPath, entity.entity);
 
                 RelativePath parent = entityPath.up();
                 EntityType entityType = EntityType.of(Blueprint.getEntityTypeOf(entity.entity));
@@ -564,22 +564,20 @@ public interface InventoryStructure<Root extends Blueprint> {
                     childrenByType.put(entityType, childrenBlueprints);
                 }
                 childrenBlueprints.add(entity.entity);
-
-                //handle relationships
-                Stream<Relationship> otherRels = other.getRelationships(entityPath);
-                Map<String, Set<Relationship>> myRels = relationships.get(entityPath);
-
-                otherRels.forEach(r -> {
-                    Set<Relationship> relsOfName = myRels.get(r.getName());
-                    if (relsOfName == null) {
-                        relsOfName = new HashSet<>();
-                        myRels.put(r.getName(), relsOfName);
-                    }
-                    relsOfName.add(r);
-                });
             }
 
-            return new Offline<>(root, children, relationships);
+            return new Offline<>(root, blueprints, children, relationships);
+        }
+
+
+        /**
+         * You can use this method if you have an existing inventory structure and want to make modifications to it.
+         *
+         * @return a builder seeded with this inventory structure
+         */
+        public InventoryStructure.Offline.Builder<Root> asBuilder() {
+            return new InventoryStructure.Offline.Builder<>(root, RelativePath.empty().get(), entities, children,
+                    relationships);
         }
 
         public static <R extends Entity.Blueprint> Builder<R> of(R root) {
@@ -598,49 +596,33 @@ public interface InventoryStructure<Root extends Blueprint> {
                     .stream();
         }
 
-        @Override
-        public Stream<Relationship> getRelationships(RelativePath sourceEntityPath, String... names) {
-            Map<String, Set<Relationship>> rels = relationships.getOrDefault(sourceEntityPath, Collections.emptyMap());
-
-            if (names == null || names.length == 0) {
-                return rels.values().stream().flatMap(Collection::stream);
-            } else {
-                return Stream.of(names).flatMap(n -> rels.getOrDefault(n, Collections.emptySet()).stream());
-            }
+        @Override public Blueprint get(RelativePath path) {
+            return entities.get(path);
         }
 
         private static final class EntityAndChildren {
             final Map<Class<?>, Map<String, Entity.Blueprint>> children = new HashMap<>();
             Entity.Blueprint entity;
 
-            EntityAndChildren() {
-            }
-
             EntityAndChildren(Entity.Blueprint entity) {
                 this.entity = entity;
-            }
-
-            void addChild(Entity.Blueprint child) {
-                Map<String, Entity.Blueprint> byId = children.get(child.getClass());
-                if (byId == null) {
-                    byId = new HashMap<>();
-                    children.put(child.getClass(), byId);
-                }
-                byId.put(child.getId(), child);
             }
         }
     }
 
-    class AbstractBuilder<This extends AbstractBuilder<?>> {
-        protected final RelativePath myPath;
+    abstract class AbstractBuilder<This extends AbstractBuilder<?>> {
+        protected RelativePath myPath;
         protected final Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children;
         protected final Map<RelativePath, Map<String, Set<Relationship>>> relationships;
+        protected final Map<RelativePath, Entity.Blueprint> blueprints;
 
-        private AbstractBuilder(RelativePath myPath, Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
+        private AbstractBuilder(RelativePath myPath, Map<RelativePath, Entity.Blueprint> blueprints,
+                                Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
                                 Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
             this.myPath = myPath;
             this.children = children;
             this.relationships = relationships;
+            this.blueprints = blueprints;
         }
 
         /**
@@ -661,21 +643,98 @@ public interface InventoryStructure<Root extends Blueprint> {
 
             RelativePath childPath = extender.extend(childType, child.getId()).get();
 
+            Set<Entity.Blueprint> bls = getChildrenOfType(EntityType.of(childType));
+
+            bls.add(child);
+
+            blueprints.put(childPath, child);
+
+            return new ChildBuilder<>(castThis(), childPath, blueprints, children, relationships);
+        }
+
+        /**
+         * Returns a child builder of a pre-existing child.
+         * @param childPath the path to the child
+         * @return the child builder or null
+         */
+        public ChildBuilder<This> getChild(Path.Segment childPath) {
+            Map<EntityType, Set<Entity.Blueprint>> myChildren = children.get(myPath);
+            if (myChildren == null) {
+                return null;
+            }
+
+            EntityType childType = EntityType.of(childPath.getElementType());
+            Set<Entity.Blueprint> childrenOfType = myChildren.get(childType);
+
+            return childrenOfType.stream().filter(child -> child.getId().equals(childPath.getElementId()))
+                    .findAny().map(child -> {
+                        RelativePath cp = myPath.modified().extend(childPath).get();
+                        return new ChildBuilder<>(castThis(), cp, blueprints, children, relationships);
+                    }).orElse(null);
+        }
+
+        public This removeChild(Path.Segment childPath) {
+            ChildBuilder<This> childBuilder = getChild(childPath);
+
+            if (childBuilder != null) {
+                childBuilder.remove();
+            }
+
+            return castThis();
+        }
+
+        public Set<Path.Segment> getChildrenPaths() {
+            Map<EntityType, Set<Entity.Blueprint>> myChildren = children.get(myPath);
+            if (myChildren == null) {
+                return Collections.emptySet();
+            }
+
+            return myChildren.values().stream().flatMap(Collection::stream)
+                    .map(b -> new Path.Segment(Blueprint.getEntityTypeOf(b), b.getId())).collect(Collectors.toSet());
+        }
+
+        public This removeAllChildren() {
+            getChildrenPaths().forEach(this::removeChild);
+            children.remove(myPath);
+            return castThis();
+        }
+
+        /**
+         * Replaces the blueprint on this position in the structure with another. The blueprint must have the same type
+         * as the original one.
+         *
+         * @param blueprint the blueprint to replace the current with
+         * @return this builder
+         */
+        public This replace(Entity.Blueprint blueprint) {
+            removeAllChildren();
+
+            Entity.Blueprint myBl = blueprints.get(myPath);
+            if (!myBl.getClass().equals(blueprint.getClass())) {
+                throw new IllegalArgumentException("Blueprint " + blueprint + " not of the same type as " + myBl);
+            }
+
+            doReplace(blueprint);
+
+            return castThis();
+        }
+
+        protected abstract void doReplace(Entity.Blueprint blueprint);
+
+        protected Set<Entity.Blueprint> getChildrenOfType(EntityType childType) {
             Map<EntityType, Set<Entity.Blueprint>> cs = children.get(myPath);
             if (cs == null) {
                 cs = new EnumMap<>(EntityType.class);
                 children.put(myPath, cs);
             }
 
-            Set<Entity.Blueprint> bls = cs.get(EntityType.of(childType));
+            Set<Entity.Blueprint> bls = cs.get(childType);
             if (bls == null) {
                 bls = new HashSet<>();
-                cs.put(EntityType.of(childType), bls);
+                cs.put(childType, bls);
             }
 
-            bls.add(child);
-
-            return new ChildBuilder<>(castThis(), childPath, children, relationships);
+            return bls;
         }
 
         /**
@@ -687,25 +746,7 @@ public interface InventoryStructure<Root extends Blueprint> {
          * (i.e. a resource type cannot be contained in a resource for example).
          */
         public This addChild(Entity.Blueprint child) {
-            startChild(child);
-            return castThis();
-        }
-
-        public This addRelationship(String name, RelativePath target) {
-            Map<String, Set<Relationship>> relsByName = relationships.get(myPath);
-            if (relsByName == null) {
-                relsByName = new HashMap<>();
-                relationships.put(myPath, relsByName);
-            }
-
-            Set<Relationship> rels = relsByName.get(name);
-            if (rels == null) {
-                rels = new HashSet<>();
-                relsByName.put(name, rels);
-            }
-
-            rels.add(new Relationship(name, target));
-
+            startChild(child).end();
             return castThis();
         }
 
@@ -718,13 +759,26 @@ public interface InventoryStructure<Root extends Blueprint> {
     class Builder<Root extends Entity.Blueprint> extends AbstractBuilder<Builder<Root>> {
         private final Root root;
 
-        public Builder(Root root) {
-            super(RelativePath.empty().get(), new HashMap<>(), new HashMap<>());
+        private Builder(Root root, RelativePath myPath,
+                       Map<RelativePath, Entity.Blueprint> blueprints,
+                       Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
+                       Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
+            super(myPath, blueprints, children, relationships);
             this.root = root;
+            this.blueprints.put(RelativePath.empty().get(), root);
+        }
+
+        public Builder(Root root) {
+            this(root, RelativePath.empty().get(), new HashMap<>(), new HashMap<>(), new HashMap<>());
         }
 
         public Offline<Root> build() {
-            return new Offline<>(root, children, relationships);
+            return new Offline<>(root, blueprints, children, relationships);
+        }
+
+        @Override protected void doReplace(Entity.Blueprint blueprint) {
+            blueprints.put(myPath, blueprint);
+            children.remove(myPath);
         }
     }
 
@@ -733,9 +787,10 @@ public interface InventoryStructure<Root extends Blueprint> {
         protected final ParentBuilder parentBuilder;
 
         private ChildBuilder(ParentBuilder parentBuilder, RelativePath parent,
+                             Map<RelativePath, Entity.Blueprint> blueprints,
                              Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
                              Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
-            super(parent, children, relationships);
+            super(parent, blueprints, children, relationships);
             this.parentBuilder = parentBuilder;
         }
 
@@ -745,6 +800,36 @@ public interface InventoryStructure<Root extends Blueprint> {
          */
         public ParentBuilder end() {
             return parentBuilder;
+        }
+
+        /**
+         * Removes this child from the structure.
+         * @return the parent builder
+         */
+        public ParentBuilder remove() {
+            removeAllChildren();
+            Set<Entity.Blueprint> siblings = getSiblings();
+            Entity.Blueprint myBlueprint = blueprints.remove(myPath);
+            siblings.remove(myBlueprint);
+            return parentBuilder;
+        }
+
+        @Override protected void doReplace(Entity.Blueprint blueprint) {
+            Set<Entity.Blueprint> siblings = getSiblings();
+            Entity.Blueprint myBlueprint = blueprints.remove(myPath);
+            siblings.remove(myBlueprint);
+            siblings.add(blueprint);
+            children.remove(myPath);
+            myPath = parentBuilder.myPath.modified().extend(Blueprint.getEntityTypeOf(blueprint), blueprint.getId())
+                    .get();
+            blueprints.put(myPath, blueprint);
+        }
+
+        private Set<Entity.Blueprint> getSiblings() {
+            Entity.Blueprint myBlueprint = blueprints.get(myPath);
+            Map<EntityType, Set<Entity.Blueprint>> siblingsByType = children.get(parentBuilder.myPath);
+            EntityType myType = EntityType.of(Blueprint.getEntityTypeOf(myBlueprint));
+            return siblingsByType.get(myType);
         }
     }
 }

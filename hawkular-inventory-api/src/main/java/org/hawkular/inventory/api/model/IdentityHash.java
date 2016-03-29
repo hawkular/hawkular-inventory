@@ -27,6 +27,7 @@ import static org.hawkular.inventory.api.Resources.DataRole.connectionConfigurat
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -36,12 +37,13 @@ import java.nio.charset.CodingErrorAction;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -139,12 +141,12 @@ public final class IdentityHash {
         return ctor.getDigestor().digest();
     }
 
-    public static String of(Entity<?, ?> entity, Inventory inventory) {
+    public static String of(Entity<? extends Entity.Blueprint, ?> entity, Inventory inventory) {
         return of(InventoryStructure.of(entity, inventory));
     }
 
     public static String of(MetadataPack mp, Inventory inventory) {
-        List<Entity<?, ?>> all = new ArrayList<>();
+        List<Entity<? extends Entity.Blueprint, ?>> all = new ArrayList<>();
         all.addAll(inventory.inspect(mp).resourceTypes().getAll().entities());
         all.addAll(inventory.inspect(mp).metricTypes().getAll().entities());
 
@@ -187,12 +189,12 @@ public final class IdentityHash {
         return tbld[0].build();
     }
 
-    public static String of(Iterable<? extends Entity<?, ?>> entities, Inventory inventory) {
+    public static String of(Iterable<? extends Entity<? extends Entity.Blueprint, ?>> entities, Inventory inventory) {
         return of(entities.iterator(), inventory);
     }
 
-    public static String of(Iterator<? extends Entity<?, ?>> entities, Inventory inventory) {
-        SortedSet<Entity<?, ?>> sortedEntities = new TreeSet<>(ENTITY_COMPARATOR);
+    public static String of(Iterator<? extends Entity<? extends Entity.Blueprint, ?>> entities, Inventory inventory) {
+        SortedSet<Entity<? extends Entity.Blueprint, ?>> sortedEntities = new TreeSet<>(ENTITY_COMPARATOR);
 
         entities.forEachRemaining(sortedEntities::add);
 
@@ -641,12 +643,12 @@ public final class IdentityHash {
         }
     }
 
-    public static final class Tree {
+    public static final class Tree implements Serializable {
         private final RelativePath path;
         private final String hash;
-        private final Set<Tree> children;
+        private final Map<Path.Segment, Tree> children;
 
-        private Tree(RelativePath path, String hash, Set<Tree> children) {
+        private Tree(RelativePath path, String hash, Map<Path.Segment, Tree> children) {
             this.path = path;
             this.hash = hash;
             this.children = children;
@@ -656,8 +658,12 @@ public final class IdentityHash {
             return new Builder();
         }
 
-        public Set<Tree> getChildren() {
-            return children;
+        public Collection<Tree> getChildren() {
+            return children.values();
+        }
+
+        public Tree getChild(Path.Segment path) {
+            return children.get(path);
         }
 
         public String getHash() {
@@ -669,7 +675,7 @@ public final class IdentityHash {
         }
 
         public TreeTraversal<Tree> traversal() {
-            return new TreeTraversal<>(t -> t.children.iterator());
+            return new TreeTraversal<>(t -> t.children.values().iterator());
         }
 
         @Override
@@ -691,14 +697,14 @@ public final class IdentityHash {
         public String toString() {
             return "Tree[" + "path=" + path +
                     ", hash='" + hash + '\'' +
-                    ",children=" + children +
+                    ",children=" + children.values() +
                     ']';
         }
 
-        private abstract static class AbstractBuilder<This extends AbstractBuilder<?>> {
+        public abstract static class AbstractBuilder<This extends AbstractBuilder<?>> {
             private RelativePath path;
             private String hash;
-            private Set<Tree> children;
+            private Map<Path.Segment, Tree> children;
 
             public This withPath(RelativePath path) {
                 this.path = path;
@@ -710,8 +716,20 @@ public final class IdentityHash {
                 return castThis();
             }
 
+            public String getHash() {
+                return hash;
+            }
+
+            public RelativePath getPath() {
+                return path;
+            }
+
+            public boolean hasChildren() {
+                return children != null && !children.isEmpty();
+            }
+
             protected void addChild(Tree childTree) {
-                getChildren().add(childTree);
+                getChildren().put(childTree.getPath().getSegment(), childTree);
             }
 
             public ChildBuilder<This> startChild() {
@@ -721,12 +739,33 @@ public final class IdentityHash {
             }
 
             protected Tree build() {
-                return new Tree(path, hash, Collections.unmodifiableSet(new HashSet<>(getChildren())));
+                if ((path == null || hash == null) && (children != null && !children.isEmpty())) {
+                    throw new IllegalStateException("Cannot construct and IndentityHash.Tree node without a path or " +
+                            "hash and with children. While empty tree without a hash or path is OK, having children" +
+                            "assumes the parent to be fully established.");
+                }
+
+                if (path != null) {
+                    int myDepth = path.getDepth();
+
+                    for (Tree child : getChildren().values()) {
+                        int childDepth = child.getPath().getDepth();
+                        if (!path.isParentOf(child.getPath()) || childDepth != myDepth + 1) {
+                            throw new IllegalStateException(
+                                    "When building a tree node with path " + path + " an attempt " +
+                                            "to add a child on path " + child.getPath() +
+                                            " was made. The child's path must extend the parent's path by exactly" +
+                                            " one segment, which is not true in this case.");
+                        }
+                    }
+                }
+
+                return new Tree(path, hash, Collections.unmodifiableMap(getChildren()));
             }
 
-            private Set<Tree> getChildren() {
+            private Map<Path.Segment, Tree> getChildren() {
                 if (children == null) {
-                    children = new HashSet<>();
+                    children = new HashMap<>();
                 }
 
                 return children;

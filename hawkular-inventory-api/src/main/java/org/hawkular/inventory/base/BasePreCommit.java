@@ -173,7 +173,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                     //ok, we're inside a delete and the root entity no longer exists... bail out quickly...
                     break;
                 }
-                Entity<?, ?> e = (Entity<?, ?>) root.element;
+                @SuppressWarnings("unchecked")
+                Entity<? extends Entity.Blueprint, ?> e = (Entity<? extends Entity.Blueprint, ?>) root.element;
 
                 IdentityHash.Tree treeHash = IdentityHash.treeOf(InventoryStructure.of(e, inventory));
 

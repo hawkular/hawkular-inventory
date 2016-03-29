@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,13 +32,5 @@ public class CommitFailureException extends Exception {
 
     public CommitFailureException(Throwable cause) {
         super(cause);
-    }
-
-    public CommitFailureException(String message) {
-        super(message);
-    }
-
-    public CommitFailureException(String message, Throwable cause) {
-        super(message, cause);
     }
 }

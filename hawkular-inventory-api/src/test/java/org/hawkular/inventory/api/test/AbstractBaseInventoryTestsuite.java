@@ -98,6 +98,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.IdentityHash;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
@@ -1916,8 +1917,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertTrue(identicals.contains(rt1));
             Assert.assertTrue(identicals.contains(rt2));
 
-            String hash = inventory.inspect(rt1).identityHash();
-            Assert.assertEquals(hash, inventory.inspect(rt2).identityHash());
+            String hash = inventory.inspect(rt1).entity().getIdentityHash();
+            Assert.assertEquals(hash, inventory.inspect(rt2).entity().getIdentityHash());
 
             DataEntity.Blueprint<ResourceTypes.DataRole> bl = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
                     .withRole(ResourceTypes.DataRole.configurationSchema).withValue(StructuredData.get().map()
@@ -1926,7 +1927,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             inventory.inspect(rt1).data().create(bl);
 
-            Assert.assertNotEquals(hash, inventory.inspect(rt1).identityHash());
+            Assert.assertNotEquals(hash, inventory.inspect(rt1).entity().getIdentityHash());
 
             identicals = inventory.inspect(rt1).identical().getAll().entities();
             Assert.assertEquals(1, identicals.size());
@@ -1963,12 +1964,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertTrue(identicals.contains(mt1));
             Assert.assertTrue(identicals.contains(mt2));
 
-            String hash = inventory.inspect(mt1).identityHash();
-            Assert.assertEquals(hash, inventory.inspect(mt2).identityHash());
+            String hash = inventory.inspect(mt1).entity().getIdentityHash();
+            Assert.assertEquals(hash, inventory.inspect(mt2).entity().getIdentityHash());
 
             inventory.inspect(mt1).update(MetricType.Update.builder().withUnit(MetricUnit.MILLISECONDS).build());
 
-            Assert.assertNotEquals(hash, inventory.inspect(mt1).identityHash());
+            Assert.assertNotEquals(hash, inventory.inspect(mt1).entity().getIdentityHash());
 
             identicals = inventory.inspect(mt1).identical().getAll().entities();
             Assert.assertEquals(1, identicals.size());
@@ -2058,6 +2059,209 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             f.resources().delete("resource");
 
             Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testTreeHash() throws Exception {
+        String tenantId = "testTreeHash";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            ResourceType rt = f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                    .build()).entity();
+
+            MetricType mt = f.metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .entity();
+
+            //get the resource only after all its children are created so that we obtain the right hash
+            f.resources()
+                    .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                        .build())
+                    .entity();
+
+            f.resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../resourceType")
+                            .build())
+                    .entity();
+
+            Metric resourceMetric = f.resources().get("resource").metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("../metricType").build())
+                    .entity();
+
+            Metric feedMetric = f.metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType").build())
+                    .entity();
+
+            //just create an association so that we can check that the association doesn't affect the tree hash
+            f.resources().descendContained(RelativePath.to().resource("resource").resource("childResource").get())
+                    .allMetrics().associate(RelativePath.to().up().metric("metric").get());
+
+            Resource resource = f.resources().get("resource").entity();
+            Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
+
+            IdentityHash.Tree feedTreeHash = f.treeHash();
+
+            Assert.assertEquals(4, feedTreeHash.getChildren().size());
+            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
+            Assert.assertEquals(mt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
+            Assert.assertEquals(resource.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
+            Assert.assertEquals(feedMetric.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+
+            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            Assert.assertEquals(2, resourceTreeHash.getChildren().size());
+            Assert.assertEquals(resourceMetric.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+            Assert.assertEquals(childResource.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
+
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getChildren().isEmpty());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testSynchronizeNew() throws Exception {
+        String tenantId = "testSynchronizeNew";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            InventoryStructure<Feed.Blueprint> structure = InventoryStructure.Offline
+                    .of(Feed.Blueprint.builder().withId("feed").build())
+                    .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                    .addChild(MetricType.Blueprint.builder(MetricDataType.GAUGE)
+                            .withId("metricType").withInterval(0L).withUnit(MetricUnit.NONE).build())
+                    .startChild(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                            .build())
+                    /**/.addChild(Resource.Blueprint.builder().withId("childResource")
+                    /**/        .withResourceTypePath("../resourceType").build())
+                    /**/.addChild(Metric.Blueprint.builder().withId("metric").withInterval(0L)
+                    /**/        .withMetricTypePath("../metricType").build())
+                    .end()
+                    .addChild(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType")
+                            .withInterval(0L).build())
+                    .build();
+
+            f.synchronize(structure);
+
+            IdentityHash.Tree feedTreeHash = f.treeHash();
+
+            ResourceType rt = f.resourceTypes().get("resourceType").entity();
+            MetricType mt = f.metricTypes().get("metricType").entity();
+            Resource resource = f.resources().get("resource").entity();
+            Metric feedMetric = f.metrics().get("metric").entity();
+            Metric resourceMetric = f.resources().get("resource").metrics().get("metric").entity();
+            Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
+
+            Assert.assertEquals(4, feedTreeHash.getChildren().size());
+            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
+            Assert.assertEquals(mt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
+            Assert.assertEquals(resource.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
+            Assert.assertEquals(feedMetric.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+
+            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            Assert.assertEquals(2, resourceTreeHash.getChildren().size());
+            Assert.assertEquals(resourceMetric.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+            Assert.assertEquals(childResource.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
+
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getChildren().isEmpty());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testSynchronizeUpdate() throws Exception {
+        String tenantId = "testSynchronizeUpdate";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                    .build()).entity();
+
+            f.metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .entity();
+
+            //get the resource only after all its children are created so that we obtain the right hash
+            f.resources()
+                    .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                            .build())
+                    .entity();
+
+            f.resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../resourceType")
+                            .build())
+                    .entity();
+
+            f.resources().get("resource").metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("../metricType").build())
+                    .entity();
+
+            f.metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType").build())
+                    .entity();
+
+            //just create an association so that we can check that the association doesn't affect the tree hash
+            f.resources().descendContained(RelativePath.to().resource("resource").resource("childResource").get())
+                    .allMetrics().associate(RelativePath.to().up().metric("metric").get());
+
+            f.resources().get("resource").entity();
+            f.resources().get("resource").resources().get("childResource").entity();
+
+            InventoryStructure.Offline.Builder<Feed.Blueprint> structureBuiler = InventoryStructure.Offline
+                    .copy(InventoryStructure.of(f.entity(),inventory)).asBuilder();
+
+            structureBuiler.getChild(Path.Segment.from("mt;metricType")).replace(MetricType.Blueprint.builder(
+                    MetricDataType.GAUGE).withId("metricType").withInterval(0L).withUnit(MetricUnit.BYTES).build());
+
+            structureBuiler.getChild(Path.Segment.from("r;resource")).remove();
+
+            InventoryStructure<Feed.Blueprint> structure = structureBuiler.build();
+
+            f.synchronize(structure);
+
+            Assert.assertTrue(f.metricTypes().get("metricType").exists());
+            Assert.assertFalse(f.resources().get("resource").exists());
+            Assert.assertFalse(f.resources().get("resource").resources().get("childResource").exists());
+            Assert.assertFalse(f.resources().get("resource").metrics().get("metrics").exists());
         } finally {
             if (inventory.tenants().get(tenantId).exists()) {
                 inventory.tenants().get(tenantId).delete();

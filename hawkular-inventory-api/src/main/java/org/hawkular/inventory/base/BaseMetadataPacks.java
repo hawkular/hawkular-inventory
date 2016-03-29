@@ -58,17 +58,19 @@ public final class BaseMetadataPacks {
             super(context);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         protected String getProposedId(Transaction<BE> tx, MetadataPack.Blueprint blueprint) {
-            Iterator<? extends Entity<?, ?>> members = blueprint.getMembers().stream().map((p) -> {
-                Class<?> cls = p.getSegment().getElementType();
-                try {
-                    BE e = tx.find(p);
-                    return (Entity<?, ?>) tx.convert(e, cls);
-                } catch (ElementNotFoundException ex) {
-                    throw new EntityNotFoundException(cls, Query.filters(Query.to(p)));
-                }
-            }).iterator();
+            Iterator<? extends Entity<? extends Entity.Blueprint, ?>> members = blueprint.getMembers().stream()
+                    .map((p) -> {
+                        Class<?> cls = p.getSegment().getElementType();
+                        try {
+                            BE e = tx.find(p);
+                            return (Entity<? extends Entity.Blueprint, ?>) tx.convert(e, cls);
+                        } catch (ElementNotFoundException ex) {
+                            throw new EntityNotFoundException(cls, Query.filters(Query.to(p)));
+                        }
+                    }).iterator();
 
             return IdentityHash.of(members, context.inventory);
         }

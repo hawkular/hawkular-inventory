@@ -150,7 +150,8 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Feed, Feed.Blueprint, Feed.Update>
+            implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {
             super(context);

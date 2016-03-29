@@ -196,8 +196,8 @@ public final class BaseResources {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Resource, Resource.Update>
-            implements Resources.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Resource, Resource.Blueprint,
+            Resource.Update> implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
             super(context);

@@ -102,18 +102,6 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
         });
     }
 
-    public String identityHash() {
-        return inTx(tx -> {
-            BE result = tx.querySingle(context.select().get());
-
-            if (result == null) {
-                throwNotFoundException();
-            }
-
-            return tx.extractIdentityHash(result);
-        });
-    }
-
     /**
      * Serves the same purpose as {@link Mutator#preDelete(Object, Object, Transaction <BE>)} and is
      * called during the {@link #delete()} method inside the transaction.

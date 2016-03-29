@@ -217,8 +217,8 @@ public final class BaseData {
         }
     }
 
-    public static final class Single<BE> extends SingleEntityFetcher<BE, DataEntity, DataEntity.Update>
-            implements Data.Single {
+    public static final class Single<BE> extends SingleIdentityHashedFetcher<BE, DataEntity, DataEntity.Blueprint<?>,
+            DataEntity.Update> implements Data.Single {
 
         private final DataModificationChecks<BE> checks;
 

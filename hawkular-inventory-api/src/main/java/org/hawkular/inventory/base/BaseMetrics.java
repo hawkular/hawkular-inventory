@@ -171,7 +171,8 @@ public final class BaseMetrics {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Metric, Metric.Update> implements Metrics.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Metric, Metric.Blueprint, Metric.Update>
+            implements Metrics.Single {
 
         public Single(TraversalContext<BE, Metric> context) {
             super(context);
