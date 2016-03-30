@@ -465,15 +465,12 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
         private final Root root;
         private final Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children;
-        private final Map<RelativePath, Map<String, Set<Relationship>>> relationships;
         private final Map<RelativePath, Entity.Blueprint> entities;
 
         private Offline(Root root, Map<RelativePath, Entity.Blueprint> entities,
-                        Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
-                        Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
+                        Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children) {
             this.root = root;
             this.children = children;
-            this.relationships = relationships;
             this.entities = entities;
         }
 
@@ -539,7 +536,6 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                     b -> ElementTypeVisitor.accept(Blueprint.getEntityTypeOf(b), visitor, empty.modified()));
 
             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children = new HashMap<>();
-            Map<RelativePath, Map<String, Set<Relationship>>> relationships = new HashMap<>();
             Map<RelativePath, Entity.Blueprint> blueprints = new HashMap<>();
 
             for (Map.Entry<RelativePath, EntityAndChildren> e : entities.entrySet()) {
@@ -566,7 +562,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 childrenBlueprints.add(entity.entity);
             }
 
-            return new Offline<>(root, blueprints, children, relationships);
+            return new Offline<>(root, blueprints, children);
         }
 
 
@@ -576,8 +572,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
          * @return a builder seeded with this inventory structure
          */
         public InventoryStructure.Offline.Builder<Root> asBuilder() {
-            return new InventoryStructure.Offline.Builder<>(root, RelativePath.empty().get(), entities, children,
-                    relationships);
+            return new InventoryStructure.Offline.Builder<>(root, RelativePath.empty().get(), entities, children);
         }
 
         public static <R extends Entity.Blueprint> Builder<R> of(R root) {
@@ -613,15 +608,12 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     abstract class AbstractBuilder<This extends AbstractBuilder<?>> {
         protected RelativePath myPath;
         protected final Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children;
-        protected final Map<RelativePath, Map<String, Set<Relationship>>> relationships;
         protected final Map<RelativePath, Entity.Blueprint> blueprints;
 
         private AbstractBuilder(RelativePath myPath, Map<RelativePath, Entity.Blueprint> blueprints,
-                                Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
-                                Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
+                                Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children) {
             this.myPath = myPath;
             this.children = children;
-            this.relationships = relationships;
             this.blueprints = blueprints;
         }
 
@@ -649,7 +641,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             blueprints.put(childPath, child);
 
-            return new ChildBuilder<>(castThis(), childPath, blueprints, children, relationships);
+            return new ChildBuilder<>(castThis(), childPath, blueprints, children);
         }
 
         /**
@@ -669,7 +661,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             return childrenOfType.stream().filter(child -> child.getId().equals(childPath.getElementId()))
                     .findAny().map(child -> {
                         RelativePath cp = myPath.modified().extend(childPath).get();
-                        return new ChildBuilder<>(castThis(), cp, blueprints, children, relationships);
+                        return new ChildBuilder<>(castThis(), cp, blueprints, children);
                     }).orElse(null);
         }
 
@@ -761,19 +753,18 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
         private Builder(Root root, RelativePath myPath,
                        Map<RelativePath, Entity.Blueprint> blueprints,
-                       Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
-                       Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
-            super(myPath, blueprints, children, relationships);
+                       Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children) {
+            super(myPath, blueprints, children);
             this.root = root;
             this.blueprints.put(RelativePath.empty().get(), root);
         }
 
         public Builder(Root root) {
-            this(root, RelativePath.empty().get(), new HashMap<>(), new HashMap<>(), new HashMap<>());
+            this(root, RelativePath.empty().get(), new HashMap<>(), new HashMap<>());
         }
 
         public Offline<Root> build() {
-            return new Offline<>(root, blueprints, children, relationships);
+            return new Offline<>(root, blueprints, children);
         }
 
         @Override protected void doReplace(Entity.Blueprint blueprint) {
@@ -788,9 +779,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
         private ChildBuilder(ParentBuilder parentBuilder, RelativePath parent,
                              Map<RelativePath, Entity.Blueprint> blueprints,
-                             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children,
-                             Map<RelativePath, Map<String, Set<Relationship>>> relationships) {
-            super(parent, blueprints, children, relationships);
+                             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children) {
+            super(parent, blueprints, children);
             this.parentBuilder = parentBuilder;
         }
 
