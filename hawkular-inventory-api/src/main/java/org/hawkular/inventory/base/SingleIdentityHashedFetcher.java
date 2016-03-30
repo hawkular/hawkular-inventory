@@ -65,7 +65,7 @@ import org.hawkular.inventory.base.spi.ElementNotFoundException;
  * @since 0.15.0
  */
 abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & IdentityHashable, B extends Entity.Blueprint,
-        U extends Entity.Update> extends SingleEntityFetcher<BE, E, U> implements IdentityHashed.Single<B> {
+        U extends Entity.Update> extends SingleEntityFetcher<BE, E, U> implements IdentityHashed.Single<E, B, U> {
 
     public SingleIdentityHashedFetcher(TraversalContext<BE, E> context) {
         super(context);

@@ -42,8 +42,7 @@ public final class Metrics {
     /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Metric, Metric.Update>,
-            IdentityHashed.Single<Metric.Blueprint> {}
+    public interface Single extends IdentityHashed.Single<Metric, Metric.Blueprint, Metric.Update> {}
 
     /**
      * Interface for traversing over a set of metrics.

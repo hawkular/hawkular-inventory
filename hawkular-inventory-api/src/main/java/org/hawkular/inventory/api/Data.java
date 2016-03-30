@@ -53,8 +53,7 @@ public final class Data {
         void update(Role role, DataEntity.Update update) throws EntityNotFoundException, ValidationException;
     }
 
-    public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update>,
-            IdentityHashed.Single<DataEntity.Blueprint<?>> {
+    public interface Single extends IdentityHashed.Single<DataEntity, DataEntity.Blueprint<?>, DataEntity.Update> {
 
         /**
          * Loads the data entity on the current position in the inventory traversal along with its data.

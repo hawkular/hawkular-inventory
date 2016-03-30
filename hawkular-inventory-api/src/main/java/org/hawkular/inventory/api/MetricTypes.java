@@ -55,8 +55,8 @@ public final class MetricTypes {
     /**
      * Interface for accessing a single metric type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<MetricType, MetricType.Update>, BrowserBase,
-            IdentityHashed.Single<MetricType.Blueprint> {
+    public interface Single extends IdentityHashed.Single<MetricType, MetricType.Blueprint, MetricType.Update>,
+            BrowserBase {
     }
 
     /**

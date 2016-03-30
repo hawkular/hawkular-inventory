@@ -33,7 +33,9 @@ public final class IdentityHashed {
 
     }
 
-    public interface Single<B extends Entity.Blueprint> {
+    public interface Single<E extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
+            extends ResolvableToSingleWithRelationships<E, U> {
+
         /**
          * This is useful for figuring out what changed about the structure of the entity
          * @return the hash of the entity together with the hashes of all contained entities

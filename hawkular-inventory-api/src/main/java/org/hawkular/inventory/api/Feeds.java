@@ -53,9 +53,8 @@ public final class Feeds {
         Metrics.Read metricsUnder(MetricParents... parents);
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
-            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite>,
-            IdentityHashed.Single<Feed.Blueprint> {}
+    public interface Single extends IdentityHashed.Single<Feed, Feed.Blueprint, Feed.Update>,
+            BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
             BrowserBase<Resources.ReadContained, Metrics.ReadContained, MetricTypes.ReadContained,

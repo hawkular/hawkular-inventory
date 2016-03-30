@@ -145,9 +145,8 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
-            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate>,
-            IdentityHashed.Single<Resource.Blueprint> {
+    public interface Single extends  IdentityHashed.Single<Resource, Resource.Blueprint, Resource.Update>,
+            BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
 
         /**
          * @return access to the parent resource (if any) that contains the resource on the current position in the

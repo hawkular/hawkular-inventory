@@ -98,9 +98,8 @@ public final class ResourceTypes {
     /**
      * Interface for accessing a single resource type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
-            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite, Data.ReadWrite<DataRole>>,
-            IdentityHashed.Single<ResourceType.Blueprint> {
+    public interface Single extends  IdentityHashed.Single<ResourceType, ResourceType.Blueprint, ResourceType.Update>,
+            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite, Data.ReadWrite<DataRole>> {
     }
 
     /**
