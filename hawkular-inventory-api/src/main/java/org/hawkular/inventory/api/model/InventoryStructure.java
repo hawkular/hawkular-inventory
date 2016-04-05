@@ -376,49 +376,6 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
         return ret;
     }
 
-    /**
-     * A specliazed representation of relationship that needs to be used instead of the "real"
-     * {@link org.hawkular.inventory.api.model.Relationship} so that relative paths can be used to specify the targets.
-     */
-    final class Relationship {
-        private final String name;
-        private final RelativePath target;
-
-        public Relationship(String name, RelativePath target) {
-            this.name = name;
-            this.target = target;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public RelativePath getTarget() {
-            return target;
-        }
-
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Relationship that = (Relationship) o;
-
-            return name.equals(that.name) && target.equals(that.target);
-        }
-
-        @Override public int hashCode() {
-            int result = name.hashCode();
-            result = 31 * result + target.hashCode();
-            return result;
-        }
-
-        @Override public String toString() {
-            return "Relationship[" + "name='" + name + '\'' +
-                    ", target=" + target +
-                    ']';
-        }
-    }
-
     enum EntityType {
         environment(Environment.class, Environment.Blueprint.class),
         resourceType(ResourceType.class, ResourceType.Blueprint.class),
