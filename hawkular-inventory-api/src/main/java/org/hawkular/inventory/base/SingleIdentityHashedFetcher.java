@@ -22,6 +22,8 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,6 +79,11 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
         inTx(tx -> {
             BE root = tx.querySingle(context.select().get());
 
+            if (root == null) {
+                throw new IllegalArgumentException("The root element must exist before its inventory structure can be" +
+                        " synchronized.");
+            }
+
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
 
             //getting the whole tree is not the most efficient thing but it makes things so much simpler ;)
@@ -112,25 +119,37 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             Set<IdentityHash.Tree> unprocessedChildren = new HashSet<>(newTree.getChildren());
             Map<IdentityHash.Tree, IdentityHash.Tree> updates = new HashMap<>();
 
-            for (IdentityHash.Tree oldChild : oldTree.getChildren()) {
-                IdentityHash.Tree newChild = newTree.getChild(oldChild.getPath().getSegment());
+            //it is important to make sure that resource or metric types are create prior to resources or metrics
+            //we can exploit the InventoryStructure.EntityType enum which is ordered with this in mind.
+            Map<InventoryStructure.EntityType, Set<IdentityHash.Tree>> childrenByType = splitByType(oldTree
+                    .getChildren());
 
-                if (newChild == null) {
-                    //ok, this entity is no longer in the new structure
-                    CanonicalPath childCp = oldChild.getPath().applyTo(root);
-                    try {
-                        //delete using a normal API so that all checks are run
-                        inv.inspect(childCp, ResolvableToSingle.class).delete();
-                    } catch (EntityNotFoundException e) {
-                        Log.LOGGER.debug("Failed to find a child to be deleted on canonical path " + childCp + ". " +
-                                "Ignoring this since we were going to delete it anyway.", e);
+            for (InventoryStructure.EntityType type : InventoryStructure.EntityType.values()) {
+                Set<IdentityHash.Tree> oldChildren = childrenByType.get(type);
+                if (oldChildren == null) {
+                    continue;
+                }
+
+                for (IdentityHash.Tree oldChild : oldChildren) {
+                    IdentityHash.Tree newChild = newTree.getChild(oldChild.getPath().getSegment());
+
+                    if (newChild == null) {
+                        //ok, this entity is no longer in the new structure
+                        CanonicalPath childCp = oldChild.getPath().applyTo(root);
+                        try {
+                            //delete using a normal API so that all checks are run
+                            inv.inspect(childCp, ResolvableToSingle.class).delete();
+                        } catch (EntityNotFoundException e) {
+                            Log.LOGGER.debug("Failed to find a child to be deleted on canonical path " + childCp
+                                    + ". Ignoring this since we were going to delete it anyway.", e);
+                        }
+                    } else {
+                        //kewl, we have a matching child that we need to sync
+                        //let's just postpone the actual update until the end of the method, just in case Java gets
+                        //tail-call optimization ;)
+                        unprocessedChildren.remove(newChild);
+                        updates.put(oldChild, newChild);
                     }
-                } else {
-                    //kewl, we have a matching child that we need to sync
-                    //let's just postpone the actual update until the end of the method, just in case Java gets
-                    //tail-call optimization ;)
-                    unprocessedChildren.remove(newChild);
-                    updates.put(oldChild, newChild);
                 }
             }
 
@@ -252,7 +271,10 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
 
             private <UU extends Entity.Update, Bld extends Entity.Update.Builder<UU, Bld>>
             Bld fillCommon(Bld bld, Entity.Blueprint bl) {
-                return bld.withName(bl.getName()).withProperties(bl.getProperties());
+                if (bl.getProperties() != null) {
+                    bld.withProperties(bl.getProperties());
+                }
+                return bld.withName(bl.getName());
             }
         }, null);
     }
@@ -317,5 +339,26 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
                 .filter(p -> p.getPath().isParentOf(childPath) && p.getPath().getDepth() == childPath.getDepth() - 1)
                 .findAny()
                 .orElse(null);
+    }
+
+    private static Map<InventoryStructure.EntityType, Set<IdentityHash.Tree>>
+    splitByType(Collection<IdentityHash.Tree> group) {
+
+        EnumMap<InventoryStructure.EntityType, Set<IdentityHash.Tree>> ret =
+                new EnumMap<>(InventoryStructure.EntityType.class);
+
+        group.forEach(t -> {
+            Class<?> elementType = t.getPath().getSegment().getElementType();
+            InventoryStructure.EntityType entityType = InventoryStructure.EntityType.of(elementType);
+            Set<IdentityHash.Tree> siblings = ret.get(entityType);
+            if (siblings == null) {
+                siblings = new HashSet<>();
+                ret.put(entityType, siblings);
+            }
+
+            siblings.add(t);
+        });
+
+        return ret;
     }
 }
