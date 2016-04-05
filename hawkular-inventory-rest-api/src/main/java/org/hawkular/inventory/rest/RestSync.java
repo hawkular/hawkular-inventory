@@ -29,9 +29,17 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 
+import org.hawkular.inventory.api.IdentityHashed;
+import org.hawkular.inventory.api.model.Blueprint;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.IdentityHashable;
 import org.hawkular.inventory.api.model.InventoryStructure;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -40,12 +48,27 @@ import io.swagger.annotations.Api;
 @Path("/sync")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-@Api(value = "/", description = "CRUD of feeds", tags = "Feeds")
-public class RestSync {
+@Api(value = "/sync", description = "Synchronization of entity trees", tags = "Sync")
+public class RestSync extends RestBase {
 
     @POST
-    @Path("/${path}")
+    @Path("/{path}")
+    @ApiOperation("Make the inventory under given path match the provided inventory structure. Note that the " +
+            "relationships specified in the provided entities will be ignored and will not be applied.")
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "Synchronization success")
+    })
+    @SuppressWarnings("unchecked")
     public Response sync(@Encoded @PathParam("path") List<PathSegment> path, InventoryStructure.Offline<?> structure) {
-        return Response.serverError().build();
+        CanonicalPath cp = parsePath(path);
+
+        if (!IdentityHashable.class.isAssignableFrom(cp.getSegment().getElementType())) {
+            throw new IllegalArgumentException("Entities of type " + cp.getSegment().getElementType().getSimpleName()
+                    + " are not synchronizable.");
+        }
+
+        inventory.inspect(cp, IdentityHashed.SingleWithRelationships.class).synchronize(structure);
+
+        return Response.noContent().build();
     }
 }
