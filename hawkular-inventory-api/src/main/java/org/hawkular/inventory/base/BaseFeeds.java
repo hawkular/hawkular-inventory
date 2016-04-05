@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import static java.util.Collections.emptyList;
+
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.filters.Related.by;
@@ -26,20 +28,20 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -59,31 +61,31 @@ public final class BaseFeeds {
         }
 
         @Override
-        protected String getProposedId(Feed.Blueprint blueprint) {
-            BE tenant = context.backend.querySingle(context.sourcePath.extend().filter()
+        protected String getProposedId(Transaction<BE> tx, Feed.Blueprint blueprint) {
+            BE tenant = tx.querySingle(context.sourcePath.extend().filter()
                     .with(type(Tenant.class)).get());
 
             if (tenant == null) {
                 throw new EntityNotFoundException(Tenant.class, Query.filters(context.sourcePath));
             }
 
-            CanonicalPath feedPath = context.backend.extractCanonicalPath(tenant)
-                    .extend(Feed.class, blueprint.getId()).get();
+            CanonicalPath feedPath = tx.extractCanonicalPath(tenant).extend(Feed.class, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));
         }
 
         @Override
-        protected EntityAndPendingNotifications<Feed> wireUpNewEntity(BE entity, Feed.Blueprint blueprint,
-                                                                      CanonicalPath parentPath, BE parent,
-                                                                      InventoryBackend.Transaction transaction) {
-            return new EntityAndPendingNotifications<>(new Feed(blueprint.getName(), parentPath.extend(Feed.class,
-                    context.backend.extractId(entity)).get(), blueprint.getProperties()));
+        protected EntityAndPendingNotifications<BE, Feed>
+        wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+                        Transaction<BE> transaction) {
+            return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
+                    parentPath.extend(Feed.class, transaction.extractId(entity)).get(), blueprint.getProperties()),
+                    emptyList());
         }
 
         @Override
         public Feeds.Single create(Feed.Blueprint blueprint) {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
 
         @Override
@@ -134,7 +136,7 @@ public final class BaseFeeds {
     public static class ReadAssociate<BE> extends Associator<BE, Feed> implements Feeds.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, Feed> context) {
-            super(context, incorporates, Environment.class);
+            super(context, incorporates, SegmentType.e);
         }
 
         @Override

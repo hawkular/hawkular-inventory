@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.bus.Log;
@@ -52,16 +53,20 @@ final class ResponseUtil {
      * This method exists solely to concentrate usage of {@link javax.ws.rs.core.Response#created(java.net.URI)} into
      * one place until <a href="https://issues.jboss.org/browse/RESTEASY-1162">this JIRA</a> is resolved somehow.
      *
+     * @param element the newly created element. This will be returned in the response body as a JSON payload
      * @param info the UriInfo instance of the current request
      * @param id   the ID of a newly created entity under the base
      * @return the response builder with status 201 and location set to the entity with the provided id.
      */
-    public static Response.ResponseBuilder created(UriInfo info, String id) {
-        return Response.status(CREATED).location(info.getRequestUriBuilder().segment(id).build());
+    public static Response.ResponseBuilder created(AbstractElement element, UriInfo info, String id) {
+        return Response.status(CREATED)
+                .location(info.getRequestUriBuilder().segment(id).build())
+                .entity(element);
     }
 
     /**
-     * Similar to {@link #created(UriInfo, String)} but used when more than 1 entity is created during the request.
+     * Similar to {@link #created(AbstractElement, UriInfo, String)} but used when more than 1 entity is created
+     * during the request.
      * <p>
      * The provided list of ids is converted to URIs (by merely appending the ids using the
      * {@link UriBuilder#segment(String...)} method) and put in the response as its entity.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
@@ -42,12 +43,13 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public class TitanProvider implements GraphProvider<TitanGraph> {
+public class TitanProvider implements GraphProvider {
 
     private static class ExceptionMapper {
         private Class<? extends RuntimeException> targetException;
@@ -88,6 +90,17 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
         }
     }
 
+    @Override public boolean isPreferringBigTransactions() {
+        return false;
+    }
+
+    @Override public boolean isUniqueIndexSupported() {
+        return true;
+    }
+
+    @Override public boolean needsDraining() {
+        return false;
+    }
 
     @Override
     public TitanGraph instantiateGraph(Configuration configuration) {
@@ -96,12 +109,12 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
     }
 
     @Override
-    public void ensureIndices(TitanGraph graph, IndexSpec... indexSpecs) {
+    public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
         Set<IndexSpec.Property> undefinedPropertyKeys = new HashSet<>();
         Map<String, PropertyKey> definedPropertyKeys = new HashMap<>();
         Map<String, IndexSpec> undefinedIndices = new HashMap<>();
 
-        TitanManagement mgmt = graph.getManagementSystem();
+        TitanManagement mgmt = ((TitanGraph) graph).getManagementSystem();
 
         for (IndexSpec spec : indexSpecs) {
             String indexName = getIndexName(spec.getProperties());
@@ -207,7 +220,7 @@ public class TitanProvider implements GraphProvider<TitanGraph> {
     }
 
     @Override
-    public RuntimeException translateException(RuntimeException inputException) {
+    public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
         List<ExceptionMapper> exceptionMappers = exceptionMapping.get(inputException.getClass());
         if (exceptionMappers != null) {
             Optional<RuntimeException> firstMatch =

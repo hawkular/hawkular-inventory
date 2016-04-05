@@ -42,11 +42,11 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -66,15 +66,15 @@ public final class BaseResources {
         }
 
         @Override
-        protected String getProposedId(Resource.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, Resource.Blueprint blueprint) {
             return blueprint.getId();
         }
 
         @Override
-        protected EntityAndPendingNotifications<Resource> wireUpNewEntity(BE entity,
-                                                                          Resource.Blueprint blueprint,
-                                                                          CanonicalPath parentPath, BE parent,
-                                                                          InventoryBackend.Transaction transaction) {
+        protected EntityAndPendingNotifications<BE, Resource> wireUpNewEntity(BE entity,
+                                                                              Resource.Blueprint blueprint,
+                                                                              CanonicalPath parentPath, BE parent,
+                                                                              Transaction<BE> tx) {
 
             BE resourceTypeObject;
             CanonicalPath resourceTypePath = null;
@@ -82,7 +82,7 @@ public final class BaseResources {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
                         parentPath, ResourceType.class);
-                resourceTypeObject = context.backend.find(resourceTypePath);
+                resourceTypeObject = tx.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
                         " when resolved to '" + resourceTypePath + "'.");
@@ -91,37 +91,35 @@ public final class BaseResources {
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
             //here we "know what we are doing" and need to create the defines relationship to capture the
             //contract of the resource.
-            BE r = context.backend.relate(resourceTypeObject, entity, defines.name(), null);
+            BE r = tx.relate(resourceTypeObject, entity, defines.name(), null);
 
-            CanonicalPath entityPath = context.backend.extractCanonicalPath(entity);
-            resourceTypePath = context.backend.extractCanonicalPath(resourceTypeObject);
+            CanonicalPath entityPath = tx.extractCanonicalPath(entity);
+            resourceTypePath = tx.extractCanonicalPath(resourceTypeObject);
 
-            ResourceType resourceType = context.backend.convert(resourceTypeObject, ResourceType.class);
+            ResourceType resourceType = tx.convert(resourceTypeObject, ResourceType.class);
 
-            Resource
-                    ret = new Resource(blueprint.getName(), parentPath.extend(
-                    Resource.class,
-                    context.backend.extractId(entity)).get(), resourceType, blueprint.getProperties());
+            Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.class,
+                    tx.extractId(entity)).get(), resourceType, blueprint.getProperties());
 
-            Relationship definesRel = new Relationship(context.backend.extractId(r), defines.name(), resourceTypePath,
+            Relationship definesRel = new Relationship(tx.extractId(r), defines.name(), resourceTypePath,
                     entityPath);
 
             List<Notification<?, ?>> notifications = new ArrayList<>();
             notifications.add(new Notification<>(definesRel, definesRel, created()));
 
-            if (context.backend.extractType(parent).equals(Resource.class)) {
+            if (tx.extractType(parent).equals(Resource.class)) {
                 //we're creating a child resource... need to also create the implicit isParentOf
                 //in here, we do use the relationship rules to check if the hierarchy we're introducing by this call
                 //conforms to the rules.
                 r = relate(parent, entity, isParentOf.name());
 
-                Relationship parentRel = new Relationship(context.backend.extractId(r), isParentOf.name(),
+                Relationship parentRel = new Relationship(tx.extractId(r), isParentOf.name(),
                         parentPath, entityPath);
 
                 notifications.add(new Notification<>(parentRel, parentRel, created()));
             }
 
-            return new EntityAndPendingNotifications<>(ret, notifications);
+            return new EntityAndPendingNotifications<>(entity, ret, notifications);
         }
 
         @Override
@@ -140,7 +138,7 @@ public final class BaseResources {
                 throw new IllegalArgumentException("ResourceType path is null");
             }
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 
@@ -186,36 +184,17 @@ public final class BaseResources {
         @Override
         public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
-            Query sourceQuery = context.sourcePath;
-
-            BE targetEntity = Util.find(context, id);
-
-            EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
-                    Resource.class, isParentOf.name(), targetEntity);
-
-            context.notifyAll(rel);
-            return rel.getEntity();
+            return Associator.associate(context, SegmentType.r, isParentOf, id);
         }
 
         @Override
         public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
-            Query sourceQuery = context.select().get();
-            BE targetEntity = Util.find(context, id);
-
-            EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
-                    Resource.class, isParentOf.name(), targetEntity);
-
-            context.notifyAll(rel);
-            return rel.getEntity();
+            return Associator.disassociate(context, SegmentType.r, isParentOf, id);
         }
 
         @Override
         public Relationship associationWith(Path path) throws RelationNotFoundException {
-            Query sourceQuery = context.select().get();
-            Query targetResource = Util.queryTo(context, path);
-
-            return Util.getAssociation(context, sourceQuery, Resource.class, targetResource, Resource.class,
-                    isParentOf.name());
+            return Associator.associationWith(context, SegmentType.r, isParentOf, path);
         }
     }
 

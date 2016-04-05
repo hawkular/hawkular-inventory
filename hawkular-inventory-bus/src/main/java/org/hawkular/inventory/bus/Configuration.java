@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@ public final class Configuration {
 
     private final String connectionFactoryJndiName;
     private final String entityChangesTopicName;
+    private final String queryQueueName;
 
     public static Configuration fromProperties(Properties properties) {
         Map<String, String> map = new HashMap<>();
@@ -57,6 +58,7 @@ public final class Configuration {
     public static Configuration fromEnumMap(Map<Property, String> map) {
         String connectionFactoryJndiName = null;
         String entityChangesTopicName = null;
+        String queryQueueName = null;
 
         for (Property p : Property.values()) {
             String value = map.get(p);
@@ -71,10 +73,13 @@ public final class Configuration {
                 case INVENTORY_CHANGES_TOPIC_NAME:
                     entityChangesTopicName = value;
                     break;
+                case INVENTORY_QUERY_QUEUE_NAME:
+                    queryQueueName = value;
+                    break;
             }
         }
 
-        return new Configuration(connectionFactoryJndiName, entityChangesTopicName);
+        return new Configuration(connectionFactoryJndiName, entityChangesTopicName, queryQueueName);
     }
 
     public static Configuration getDefaultConfiguration() {
@@ -85,9 +90,10 @@ public final class Configuration {
         return new Builder();
     }
 
-    private Configuration(String connectionFactoryJndiName, String entityChangesTopicName) {
+    private Configuration(String connectionFactoryJndiName, String entityChangesTopicName, String queryQueueName) {
         this.connectionFactoryJndiName = connectionFactoryJndiName;
         this.entityChangesTopicName = entityChangesTopicName;
+        this.queryQueueName = queryQueueName;
     }
 
     public String getConnectionFactoryJndiName() {
@@ -96,6 +102,10 @@ public final class Configuration {
 
     public String getInventoryChangesTopicName() {
         return entityChangesTopicName;
+    }
+
+    public String getQueryQueueName() {
+        return queryQueueName;
     }
 
     public Builder modify() {
@@ -118,7 +128,9 @@ public final class Configuration {
         CONNECTION_FACTORY_JNDI_NAME("java:/HawkularBusConnectionFactory",
                 "hawkular.inventory.bus.connectionFactoryJndiName"),
         INVENTORY_CHANGES_TOPIC_NAME("HawkularInventoryChanges",
-                "hawkular.inventory.bus.inventoryChangesTopicName");
+                "hawkular.inventory.bus.inventoryChangesTopicName"),
+        INVENTORY_QUERY_QUEUE_NAME("HawkularInventoryQuery",
+                "hawkular.inventory.bus.inventoryQueryQueName");
 
         private final String defaultValue;
         private final String propertyName;

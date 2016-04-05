@@ -35,6 +35,8 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
@@ -513,4 +515,8 @@ public interface Inventory extends AutoCloseable {
                                                                   String... relationshipNames);
 
     Configuration getConfiguration();
+
+    default <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
+        return null;
+    }
 }

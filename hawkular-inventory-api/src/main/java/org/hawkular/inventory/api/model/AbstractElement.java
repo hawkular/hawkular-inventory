@@ -25,6 +25,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A common super class of both entities and relationships.
@@ -43,6 +44,41 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
     private final CanonicalPath path;
 
     protected final Map<String, Object> properties;
+
+    /**
+     * This should be used only in extreme cases where {@link SegmentType} is not possible.
+     * @param elementType the type of the element
+     * @return the class representing the element type
+     */
+    public static Class<? extends AbstractElement<?, ?>> toElementClass(SegmentType elementType) {
+        switch (elementType) {
+            case t:
+                return Tenant.class;
+            case e:
+                return Environment.class;
+            case f:
+                return Feed.class;
+            case m:
+                return Metric.class;
+            case mt:
+                return MetricType.class;
+            case r:
+                return Resource.class;
+            case rt:
+                return ResourceType.class;
+             case rl:
+                return Relationship.class;
+            case d:
+                return DataEntity.class;
+            case ot:
+                return OperationType.class;
+            case mp:
+                return MetadataPack.class;
+            default:
+                throw new IllegalStateException("There is no " + Entity.class.getName() + " type for " +
+                        elementType.getClass().getName() + " '" + elementType.name() + "'");
+        }
+    }
 
     //JAXB support
     AbstractElement() {

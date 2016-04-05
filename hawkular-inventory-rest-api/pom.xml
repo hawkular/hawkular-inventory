@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-parent</artifactId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.15.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-rest-api</artifactId>
@@ -183,12 +183,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.keycloak.secretstore</groupId>
-      <artifactId>secret-store-undertow-filter</artifactId>
-      <version>${version.org.keycloak.secretstore}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-rest-status</artifactId>
       <version>${version.org.hawkular.commons}</version>
@@ -238,14 +232,21 @@
     </dependency>
 
     <!-- docs -->
-
     <dependency>
-      <groupId>com.wordnik</groupId>
+      <groupId>io.swagger</groupId>
       <artifactId>swagger-annotations</artifactId>
+      <version>${version.io.swagger}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger</groupId>
+      <artifactId>swagger-core</artifactId>
+      <version>${version.io.swagger}</version>
       <scope>provided</scope>
     </dependency>
 
     <!-- javadoc requires all the annotations on the classpath -->
+    <!-- https://stackoverflow.com/questions/27808734/jdk8-error-class-file-for-javax-interceptor-interceptorbinding-not-found-whe -->
     <dependency>
       <groupId>org.hibernate.javax.persistence</groupId>
       <artifactId>hibernate-jpa-2.1-api</artifactId>
@@ -264,6 +265,7 @@
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <version>${version.maven-war-plugin}</version>
         <configuration>
@@ -297,6 +299,10 @@
   <profiles>
     <profile>
       <id>docgen</id>
+      <properties>
+        <restDocDirectory>${project.basedir}/src/main/rest-doc</restDocDirectory>
+        <swaggerDirectory>${project.build.directory}/generated/swagger-ui</swaggerDirectory>
+      </properties>
       <build>
         <!-- Document generation from the Swagger annotations on the REST-API. -->
         <plugins>
@@ -306,13 +312,14 @@
             <configuration>
               <apiSources>
                 <apiSource>
+                  <springmvc>false</springmvc>
                   <locations>org.hawkular.inventory.rest</locations>
-                  <apiVersion>0.1</apiVersion>
-                  <basePath>http://localhost:8080/hawkular/inventory</basePath>
-                  <outputTemplate>https://raw.githubusercontent.com/hawkular/hawkular.github.io/swagger/asciidoc.mustache</outputTemplate>
-                  <swaggerDirectory>${project.build.directory}/generated/swagger-ui</swaggerDirectory>
-                  <swaggerApiReader>com.wordnik.swagger.jaxrs.reader.DefaultJaxrsApiReader</swaggerApiReader>
-                  <outputPath>${project.build.directory}/generated/rest-inventory.adoc</outputPath>
+                  <basePath>/hawkular/inventory</basePath>
+                  <info>
+                    <title>Hawkular Inventory</title>
+                    <version>0.1</version>
+                  </info>
+                  <swaggerDirectory>${swaggerDirectory}</swaggerDirectory>
                 </apiSource>
               </apiSources>
             </configuration>
@@ -321,6 +328,36 @@
                 <phase>compile</phase>
                 <goals>
                   <goal>generate</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-all</artifactId>
+                <version>${version.org.codehaus.groovy}</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <properties>
+                <baseFile>${restDocDirectory}/base.adoc</baseFile>
+                <swaggerFile>${swaggerDirectory}/swagger.json</swaggerFile>
+                <outputFile>${project.build.directory}/generated/rest-inventory.adoc</outputFile>
+              </properties>
+              <scripts>
+                <script>file:///${restDocDirectory}/apidoc.groovy</script>
+              </scripts>
+            </configuration>
+            <executions>
+              <execution>
+                <id>generate-api-doc</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>execute</goal>
                 </goals>
               </execution>
             </executions>
@@ -346,6 +383,7 @@
         <plugins>
           <!-- download and unzip wildfly -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
@@ -364,6 +402,7 @@
           </plugin>
           <!-- deploy the war -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
             <executions>
               <execution>
@@ -388,6 +427,7 @@
           </plugin>
           <!-- echo the usage -->
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
               <execution>

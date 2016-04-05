@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.15.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-dist</artifactId>
@@ -42,6 +42,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <res.dir>titan</res.dir>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -49,11 +53,13 @@
       <artifactId>jackson-databind</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
@@ -92,7 +98,52 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- These 3 are to be included in Hawkular - We're using Titan on Cassandra there -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- TODO HACK ALERT: We're coupling pinger here... -->
+    <!-- This is being used by Pinger which also depends on us. Going forward should work shouldn't it? ;) -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${version.org.apache.httpcomponents}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-codec</artifactId>
+          <groupId>commons-codec</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-processor</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.spec.javax.ejb</groupId>
+      <artifactId>jboss-ejb-api_3.2_spec</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Titan dependency mess -->
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-impl-tinkerpop-titan-provider</artifactId>
@@ -124,13 +175,6 @@
           <groupId>commons-beanutils</groupId><!-- provided by commons-beanutils since 1.9.x -->
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -274,47 +318,15 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- TODO HACK ALERT: We're coupling pinger here... -->
-    <!-- This is being used by Pinger which also depends on us. Going forward should work shouldn't it? ;) -->
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>${version.org.apache.httpcomponents}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Logging -->
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging-annotations</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging-processor</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.spec.javax.ejb</groupId>
-      <artifactId>jboss-ejb-api_3.2_spec</artifactId>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${project.build.sourceDirectory}/../resources/${res.dir}</directory>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -341,4 +353,28 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>sql</id>
+      <properties>
+        <res.dir>sql</res.dir>
+      </properties>
+
+      <dependencies>
+        <!--
+        NOTE THAT THE SQL PROVIDER BUNDLED BY DEFAULT (AND SHOULD NOT BE OUTSIDE OF DEV TESTING). IN ADDITION
+        TO BUILDING THIS MODULE WITH WITH -Psql, YOU HAVE TO MODIFY THE hawkular-inventory-feature-pack TO
+        INCLUDE THE DATASOURCE DEFINITION (OR DEFINE IT YOURSELF) AND PASS SOME SYSTEM PROPS TO HAWKULAR SERVER
+        STARTUP. SEE
+        hawkular-inventory-feature-pack/src/main/resources/subsystem-templates/hawkular-inventory-datasources.xsl
+        FILE FOR MORE DETAILS. -->
+        <dependency>
+          <groupId>org.hawkular.inventory</groupId>
+          <artifactId>hawkular-inventory-impl-tinkerpop-sql-provider</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

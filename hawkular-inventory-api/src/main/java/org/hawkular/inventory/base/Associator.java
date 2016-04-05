@@ -19,12 +19,14 @@ package org.hawkular.inventory.base;
 import static org.hawkular.inventory.api.filters.With.type;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A base class for implementations of {@code *ReadAssociate} implementations.
@@ -35,10 +37,10 @@ import org.hawkular.inventory.paths.Path;
 class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
     private final Relationships.WellKnown relationship;
-    private final Class<? extends Entity<?, ?>> sourceEntityType;
+    private final SegmentType sourceEntityType;
 
     protected Associator(TraversalContext<BE, E> context, Relationships.WellKnown relationship,
-                         Class<? extends Entity<?, ?>> sourceEntityType) {
+                         SegmentType sourceEntityType) {
         super(context);
         this.relationship = relationship;
         this.sourceEntityType = sourceEntityType;
@@ -46,22 +48,65 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
     public Relationship associate(Path id) throws EntityNotFoundException, RelationAlreadyExistsException {
         checkPathLegal(id);
+        return associate(context, sourceEntityType, relationship, id);
+    }
 
-        BE target = Util.find(context, id);
+    static <BE> Relationship associate(TraversalContext<BE, ?> context, SegmentType sourceEntityType,
+                                       Relationships.WellKnown relationship, Path id) {
+        return inTx(context, tx -> {
+            BE target = Util.find(tx, context.sourcePath, id);
 
-        return createAssociation(sourceEntityType, relationship, target);
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+
+            BE source = tx.querySingle(sourceQuery);
+
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(tx, source,
+                    relationship.name(), target, null);
+
+            tx.getPreCommit().addNotifications(rel);
+
+            return rel.getEntity();
+        });
     }
 
     public Relationship disassociate(Path id) throws EntityNotFoundException {
         checkPathLegal(id);
+        return disassociate(context, sourceEntityType, relationship, id);
+    }
 
-        BE target = Util.find(context, id);
+    static <BE> Relationship disassociate(TraversalContext<BE, ?> context,
+                                          SegmentType sourceEntityType,
+                                          Relationships.WellKnown relationship, Path id) {
+        return inTx(context, tx -> {
+            BE target = Util.find(tx, context.sourcePath, id);
 
-        return deleteAssociation(sourceEntityType, relationship, target);
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(tx, sourceQuery,
+                    sourceEntityType, relationship.name(), target);
+
+            tx.getPreCommit().addNotifications(rel);
+
+            return rel.getEntity();
+        });
     }
 
     public Relationship associationWith(Path path) throws RelationNotFoundException {
-        return getAssociation(sourceEntityType, path, relationship);
+        return associationWith(context, sourceEntityType, relationship, path);
+    }
+
+    static <BE> Relationship associationWith(TraversalContext<BE, ?> context,
+                                             SegmentType sourceEntityType,
+                                             Relationships.WellKnown relationship, Path path)
+            throws RelationNotFoundException {
+
+        return inTx(context, tx -> {
+            Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
+            Query targetQuery = Util.queryTo(context.sourcePath, path);
+
+            SegmentType targetType = path.getSegment().getElementType();
+
+            return Util.getAssociation(tx, sourceQuery, sourceEntityType, targetQuery, targetType, relationship.name());
+        });
     }
 
     protected void checkPathLegal(Path targetPath) {
@@ -70,43 +115,6 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
                     context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
                     targetPath);
         }
-    }
-
-    protected Relationship createAssociation(Class<? extends Entity<?, ?>> sourceType,
-            Relationships.WellKnown relationship, BE target) {
-
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-
-        EntityAndPendingNotifications<Relationship> rel = Util.createAssociation(context, sourceQuery,
-                sourceType, relationship.name(), target);
-
-        context.notifyAll(rel);
-
-        return rel.getEntity();
-    }
-
-    protected Relationship deleteAssociation(Class<? extends Entity<?, ?>> sourceType,
-            Relationships.WellKnown relationship, BE target) {
-
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        EntityAndPendingNotifications<Relationship> rel = Util.deleteAssociation(context, sourceQuery,
-                sourceType, relationship.name(), target);
-
-        context.notifyAll(rel);
-
-        return rel.getEntity();
-    }
-
-    protected Relationship getAssociation(Class<? extends Entity<?, ?>> sourceType, Path targetPath,
-            Relationships.WellKnown rel) {
-        Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceType)).get();
-        Query targetQuery = Util.queryTo(context, targetPath);
-
-        @SuppressWarnings("unchecked")
-        Class<? extends Entity<?, ?>> targetType = Entity.entityTypeFromSegmentType(targetPath.getSegment()
-                .getElementType());
-
-        return Util.getAssociation(context, sourceQuery, sourceType, targetQuery, targetType, rel.name());
     }
 
     /**

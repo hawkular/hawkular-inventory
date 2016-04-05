@@ -46,11 +46,11 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -59,7 +59,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Manages associations between environments and feeds")
+@Api(value = "/", description = "Manages associations between environments and feeds", tags = "Environments Feeds")
 public class RestEnvironmentsFeeds extends RestBase {
 
     @POST

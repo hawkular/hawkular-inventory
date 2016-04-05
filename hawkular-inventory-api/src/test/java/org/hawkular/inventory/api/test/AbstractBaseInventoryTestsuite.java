@@ -71,6 +71,8 @@ import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.Parents;
+import org.hawkular.inventory.api.PathFragment;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
@@ -108,8 +110,6 @@ import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.BaseInventory;
-import org.hawkular.inventory.base.PathFragment;
-import org.hawkular.inventory.base.Query;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -119,7 +119,6 @@ import org.hawkular.inventory.paths.SegmentType;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -465,76 +464,83 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.example.tenant").get();
         CanonicalPath environmentPath = tenantPath.extend(Environment.class, "test").get();
 
-        Tenant t = new Tenant(tenantPath);
-        Environment e = new Environment(environmentPath);
-        MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get());
-        ResourceType playRoomType = new ResourceType(tenantPath.extend(
-                ResourceType.class, "Playroom").get());
-        ResourceType kachnaType = new ResourceType(tenantPath.extend(
-                ResourceType.class, "Kachna").get());
-        Resource playroom1 = new Resource(environmentPath.extend(
-                Resource.class, "playroom1").get(), playRoomType);
-        Resource playroom2 = new Resource(environmentPath.extend(
-                Resource.class, "playroom2").get(), playRoomType);
-        Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(), sizeType);
-        Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(), sizeType);
-
-        //when an association is deleted, it should not be possible to access the target entity through the same
-        //traversal again
-        inventory.inspect(playroom2).allMetrics().disassociate(playroom2Size.getPath());
-        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(playroom2Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(
-                RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
-
-        inventory.inspect(playroom2Size).delete();
-
-        assertDoesNotExist(inventory, playroom2Size);
-        assertExists(inventory, t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
-
-        //disassociation using a relative path should work, too
-        inventory.inspect(playroom1).allMetrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId())
-                .get());
-        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(playroom1Size.getPath()).exists());
-        Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(
-                RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
-
-        inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
-        assertDoesNotExist(inventory, kachnaType);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
-
         try {
+            Tenant t = new Tenant(tenantPath);
+            Environment e = new Environment(environmentPath);
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get());
+            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
+            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
+            Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(),
+                    playRoomType);
+            Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(),
+                    playRoomType);
+            Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
+                    sizeType);
+            Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
+                    sizeType);
+
+            //when an association is deleted, it should not be possible to access the target entity through the same
+            //traversal again
+            inventory.inspect(playroom2).allMetrics().disassociate(playroom2Size.getPath());
+            Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(playroom2Size.getPath()).exists());
+            Assert.assertFalse(inventory.inspect(playroom2).allMetrics().get(
+                    RelativePath.to().up().metric(playroom2Size.getId()).get()).exists());
+
+            inventory.inspect(playroom2Size).delete();
+
+            assertDoesNotExist(inventory, playroom2Size);
+            assertExists(inventory, t, e, sizeType, playRoomType, kachnaType, playroom1, playroom2, playroom1Size);
+
+            //disassociation using a relative path should work, too
+            inventory.inspect(playroom1).allMetrics().disassociate(RelativePath.to().up().metric(playroom1Size.getId())
+                    .get());
+            Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(playroom1Size.getPath()).exists());
+            Assert.assertFalse(inventory.inspect(playroom1).allMetrics().get(
+                    RelativePath.to().up().metric(playroom1Size.getId()).get()).exists());
+
+            inventory.inspect(t).resourceTypes().delete(kachnaType.getId());
+            assertDoesNotExist(inventory, kachnaType);
+            assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2, playroom1Size);
+
+            try {
+                inventory.inspect(t).metricTypes().delete(sizeType.getId());
+                Assert.fail("Deleting a metric type which references some metrics should not be possible.");
+            } catch (IllegalArgumentException ignored) {
+                //good
+            }
+
+            inventory.inspect(e).metrics().delete(playroom1Size.getId());
+            assertDoesNotExist(inventory, playroom1Size);
+            assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2);
+
             inventory.inspect(t).metricTypes().delete(sizeType.getId());
-            Assert.fail("Deleting a metric type which references some metrics should not be possible.");
-        } catch (IllegalArgumentException ignored) {
-            //good
+            assertDoesNotExist(inventory, sizeType);
+            assertExists(inventory, t, e, playRoomType, playroom1, playroom2);
+
+            try {
+                inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
+                Assert.fail("Deleting a resource type which references some resources should not be possible.");
+            } catch (IllegalArgumentException ignored) {
+                //good
+            }
+
+            inventory.inspect(e).resources().delete(playroom1.getId());
+            assertDoesNotExist(inventory, playroom1);
+            assertExists(inventory, t, e, playRoomType, playroom2);
+
+            inventory.tenants().delete(t.getId());
+            assertDoesNotExist(inventory, t);
+            assertDoesNotExist(inventory, e);
+            assertDoesNotExist(inventory, playRoomType);
+            assertDoesNotExist(inventory, playroom2);
+        } finally {
+            Tenants.Single tenant = inventory.inspect(tenantPath, Tenants.Single.class);
+            if (tenant.exists()) {
+                tenant.delete();
+            }
+
+            inventory.tenants().delete("com.acme.tenant");
         }
-
-        inventory.inspect(e).metrics().delete(playroom1Size.getId());
-        assertDoesNotExist(inventory, playroom1Size);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom1, playroom2);
-
-        inventory.inspect(t).metricTypes().delete(sizeType.getId());
-        assertDoesNotExist(inventory, sizeType);
-        assertExists(inventory, t, e, playRoomType, playroom1, playroom2);
-
-        try {
-            inventory.inspect(t).resourceTypes().delete(playRoomType.getId());
-            Assert.fail("Deleting a resource type which references some resources should not be possible.");
-        } catch (IllegalArgumentException ignored) {
-            //good
-        }
-
-        inventory.inspect(e).resources().delete(playroom1.getId());
-        assertDoesNotExist(inventory, playroom1);
-        assertExists(inventory, t, e, sizeType, playRoomType, playroom2);
-
-        inventory.tenants().delete(t.getId());
-        assertDoesNotExist(inventory, t);
-        assertDoesNotExist(inventory, e);
-        assertDoesNotExist(inventory, playRoomType);
-        assertDoesNotExist(inventory, playroom2);
-
-        inventory.tenants().delete("com.acme.tenant");
     }
 
     private static void assertDoesNotExist(BaseInventory<?> inventory, Entity e) {
@@ -546,12 +552,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
-    private static void assertExists(BaseInventory<?> inventory, Entity e) {
-        try {
-            inventory.inspect(e, ResolvableToSingle.class);
-        } catch (EntityNotFoundException ignored) {
-            Assert.fail(e + " should have been present in the inventory.");
-        }
+    @SuppressWarnings("unchecked")
+    private static void assertExists(BaseInventory<?> inventory, Entity<?, ?> e) {
+        Assert.assertTrue("Entity should exist: " + e, inventory.inspect(e, ResolvableToSingle.class).exists());
     }
 
     private static void assertExists(BaseInventory<?> inventory, Entity... es) {
@@ -1129,9 +1132,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         assert !f1.getId().equals(f2.getId());
     }
 
-    // the uniqueness is ensured by __cp index that has the unique property (in titan)
-    // the tests are by default run on the TinkerGraph and so this test is ignored
-    @Ignore
     @Test
     public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
         try {
@@ -1902,7 +1902,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .done()
                 .build());
 
-        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).exists());
+        MetadataPack mp = inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).entity();
+
+        Assert.assertEquals(expectedContentHash, mp.getId());
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
@@ -2063,17 +2065,19 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     public void testObserveMetricTypes() throws Exception {
         String tid = "testObserveMetricTypes";
         String mtid = "mtype";
-        runObserverTest(MetricType.class, 1, 1, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+        try {
+            runObserverTest(MetricType.class, 1, 1, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
 
-            inventory.tenants().get(tid).metricTypes()
-                    .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
-            inventory.tenants().get(tid).metricTypes().update(mtid, MetricType.Update.builder()
-                    .withUnit(MetricUnit.MILLISECONDS).build());
-            inventory.tenants().get(tid).metricTypes().delete(mtid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).metricTypes()
+                        .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
+                inventory.tenants().get(tid).metricTypes().update(mtid, MetricType.Update.builder()
+                        .withUnit(MetricUnit.MILLISECONDS).build());
+                inventory.tenants().get(tid).metricTypes().delete(mtid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2082,21 +2086,23 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String eid = "env";
         String mtid = "mtype";
         String mid = "met";
-        runObserverTest(Metric.class, 4, 2, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).metricTypes()
-                    .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
+        try {
+            runObserverTest(Metric.class, 4, 2, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).metricTypes()
+                        .create(new MetricType.Blueprint(mtid, MetricUnit.BYTES, MetricDataType.COUNTER, 0L));
 
-            inventory.tenants().get(tid).environments().get(eid).metrics()
-                    .create(new Metric.Blueprint("/" + mtid, mid));
-            inventory.tenants().get(tid).environments().get(eid).metrics().update(mid,
-                    Metric.Update.builder().build());
+                inventory.tenants().get(tid).environments().get(eid).metrics()
+                        .create(new Metric.Blueprint("/" + mtid, mid));
+                inventory.tenants().get(tid).environments().get(eid).metrics().update(mid,
+                        Metric.Update.builder().build());
 
-            inventory.tenants().get(tid).environments().get(eid).metrics().delete(mid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).environments().get(eid).metrics().delete(mid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2107,37 +2113,39 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String mtid = "mtype";
         String mid = "met";
         String rid = "res";
-        runObserverTest(Resource.class, 8, 3, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).resourceTypes().create(
-                    ResourceType.Blueprint.builder().withId(rtid)
-                    .build());
-            inventory.tenants().get(tid).metricTypes()
-                    .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId(mtid)
-                            .withUnit(MetricUnit.BYTES).withInterval(0L).build());
+        try {
+            runObserverTest(Resource.class, 8, 3, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
+                        .build());
+                inventory.tenants().get(tid).metricTypes()
+                        .create(MetricType.Blueprint.builder(MetricDataType.COUNTER).withId(mtid)
+                                .withUnit(MetricUnit.BYTES).withInterval(0L).build());
 
-            inventory.tenants().get(tid).environments().get(eid).resources()
-                    .create(new Resource.Blueprint(rid, "/" + rtid));
-            inventory.tenants().get(tid).environments().get(eid).resources().update(rid,
-                    Resource.Update.builder().build());
+                inventory.tenants().get(tid).environments().get(eid).resources()
+                        .create(new Resource.Blueprint(rid, "/" + rtid));
+                inventory.tenants().get(tid).environments().get(eid).resources().update(rid,
+                        Resource.Update.builder().build());
 
-            Metric m = inventory.tenants().get(tid).environments().get(eid).metrics()
-                    .create(Metric.Blueprint.builder().withId(mid).withMetricTypePath("/" + mtid).build()).entity();
+                Metric m = inventory.tenants().get(tid).environments().get(eid).metrics()
+                        .create(Metric.Blueprint.builder().withId(mid).withMetricTypePath("/" + mtid).build()).entity();
 
-            List<Relationship> createdRelationships = new ArrayList<>();
+                List<Relationship> createdRelationships = new ArrayList<>();
 
-            inventory.observable(Interest.in(Relationship.class).being(created())).subscribe(createdRelationships::add);
+                inventory.observable(Interest.in(Relationship.class).being(created()))
+                        .subscribe(createdRelationships::add);
 
-            inventory.tenants().get(tid).environments().get(eid).resources().get(rid).allMetrics().associate(
-                    m.getPath());
+                inventory.tenants().get(tid).environments().get(eid).resources().get(rid).allMetrics().associate(
+                        m.getPath());
 
-            Assert.assertEquals(1, createdRelationships.size());
+                Assert.assertEquals(1, createdRelationships.size());
 
-            inventory.tenants().get(tid).environments().get(eid).resources().delete(rid);
-        });
-
-        inventory.tenants().delete(tid);
+                inventory.tenants().get(tid).environments().get(eid).resources().delete(rid);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2146,14 +2154,14 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String eid = "env";
         String rtid = "rtype";
         String rid = "res";
-        runObserverTest(DataEntity.class, 5, 1, () -> {
-            inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
-            inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
-            inventory.tenants().get(tid).resourceTypes().create(
-                    ResourceType.Blueprint.builder().withId(rtid)
-                    .build());
-            inventory.tenants().get(tid).environments().get(eid).resources()
-                    .create(new Resource.Blueprint(rid, "/" + rtid));
+        try {
+            runObserverTest(DataEntity.class, 5, 1, () -> {
+                inventory.tenants().create(Tenant.Blueprint.builder().withId(tid).build());
+                inventory.tenants().get(tid).environments().create(Environment.Blueprint.builder().withId(eid).build());
+                inventory.tenants().get(tid).resourceTypes().create(ResourceType.Blueprint.builder().withId(rtid)
+                        .build());
+                inventory.tenants().get(tid).environments().get(eid).resources()
+                        .create(new Resource.Blueprint(rid, "/" + rtid));
 
             Data.ReadWrite<DataRole.Resource> dataAccess = inventory.tenants().get(tid).environments().get(eid)
                     .resources().get(rid).data();
@@ -2161,12 +2169,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             dataAccess.create(DataEntity.Blueprint.<DataRole.Resource>builder()
                     .withRole(configuration).build());
 
-            dataAccess.update(configuration, DataEntity.Update.builder().build());
+                dataAccess.update(configuration, DataEntity.Update.builder().build());
 
-            dataAccess.delete(configuration);
-        });
-
-        inventory.tenants().delete(tid);
+                dataAccess.delete(configuration);
+            });
+        } finally {
+            inventory.tenants().delete(tid);
+        }
     }
 
     @Test
@@ -2871,6 +2880,15 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             try {
                 Relationship rel2 = inventory.inspect(r).allMetrics().associate(m.getPath());
+                Assert.fail("Should not be possible to create an association twice.");
+            } catch (RelationAlreadyExistsException e) {
+                //expected
+            }
+
+            //also check that the duplicates are not possible using an explicit relationship creation call
+            try {
+                Relationship rel2 = inventory.inspect(r).relationships().linkWith(incorporates, m.getPath(), null)
+                        .entity();
                 Assert.fail("Should not be possible to create an association twice.");
             } catch (RelationAlreadyExistsException e) {
                 //expected

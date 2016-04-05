@@ -17,14 +17,14 @@
 package org.hawkular.inventory.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -48,11 +48,12 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.security.EntityIdUtils;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -61,7 +62,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Resource Metrics CRUD")
+@Api(value = "/", description = "Resource Metrics CRUD", tags = "Resources Metrics")
 public class RestResourcesMetrics extends RestResources {
 
     @POST
@@ -129,9 +130,9 @@ public class RestResourcesMetrics extends RestResources {
 
     private Response createOrAssociateMetric(CanonicalPath tenant, CanonicalPath resource,
                                              Object metricPathsOrBlueprint, UriInfo uriInfo) {
-        BiConsumer<Map<?, ?>, Metrics.ReadWrite> createMetric = (map, access) -> {
+        BiFunction<Map<?, ?>, Metrics.ReadWrite, Metric> createMetric = (map, access) -> {
             Metric.Blueprint blueprint = mapper.convertValue(map, Metric.Blueprint.class);
-            access.create(blueprint);
+            return access.create(blueprint).entity();
         };
 
         if (metricPathsOrBlueprint instanceof List) {
@@ -147,13 +148,15 @@ public class RestResourcesMetrics extends RestResources {
 
                 Metrics.ReadWrite metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
 
-                list.forEach(m -> createMetric.accept((Map<?, ?>) m, metricDao));
+                List<Metric> createdMetrics = list.stream().map(m -> createMetric.apply((Map<?, ?>) m, metricDao))
+                        .collect(Collectors.toList());
 
-                if (list.size() == 1) {
+                if (createdMetrics.size() == 1) {
                     Metric.Blueprint blueprint = mapper.convertValue(list.get(0), Metric.Blueprint.class);
-                    return ResponseUtil.created(uriInfo, blueprint.getId()).build();
+                    return ResponseUtil.created(createdMetrics.get(0), uriInfo, blueprint.getId()).build();
                 } else {
-                    return Response.status(CREATED).build();
+                    return ResponseUtil.created(uriInfo, createdMetrics.stream().map(Metric::getId).spliterator())
+                            .build();
                 }
             } else {
                 if (!security.canAssociateFrom(resource)) {
@@ -172,10 +175,10 @@ public class RestResourcesMetrics extends RestResources {
             }
 
             Metrics.ReadWrite metricDao = inventory.inspect(resource, Resources.Single.class).metrics();
-            createMetric.accept((Map<?, ?>) metricPathsOrBlueprint, metricDao);
+            Metric entity = createMetric.apply((Map<?, ?>) metricPathsOrBlueprint, metricDao);
 
             Metric.Blueprint blueprint = mapper.convertValue(metricPathsOrBlueprint, Metric.Blueprint.class);
-            return ResponseUtil.created(uriInfo, blueprint.getId()).build();
+            return ResponseUtil.created(entity, uriInfo, blueprint.getId()).build();
         } else {
             throw new IllegalArgumentException("Unhandled type of input");
         }

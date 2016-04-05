@@ -56,11 +56,12 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.filters.ResourceFilters;
 import org.hawkular.inventory.rest.json.ApiError;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 
 /**
  * @author Lukas Krejci
@@ -69,7 +70,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @javax.ws.rs.Path("/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/", description = "Resources CRUD")
+@Api(value = "/", description = "Resources CRUD", tags = "Resources")
 public class RestResources extends RestBase {
 
     @POST
@@ -83,7 +84,7 @@ public class RestResources extends RestBase {
             @ApiResponse(code = 500, message = "Server error", response = ApiError.class)
     })
     public Response addResource(@PathParam("environmentId") String environmentId,
-            @ApiParam(required = true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
+                                @ApiParam(required = true) Resource.Blueprint resource, @Context UriInfo uriInfo) {
 
         String tenantId = getTenantId();
 
@@ -93,9 +94,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(env, Environments.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(env, Environments.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -120,9 +121,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(parent, Resources.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -146,9 +147,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(feed, Feeds.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(feed, Feeds.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     @POST
@@ -173,9 +174,9 @@ public class RestResources extends RestBase {
             return Response.status(FORBIDDEN).build();
         }
 
-        inventory.inspect(parent, Resources.Single.class).resources().create(resource);
+        Resource entity = inventory.inspect(parent, Resources.Single.class).resources().create(resource).entity();
 
-        return ResponseUtil.created(uriInfo, resource.getId()).build();
+        return ResponseUtil.created(entity, uriInfo, resource.getId()).build();
     }
 
     // TODO the is one of the few bits of querying in the API. How should we go about it generally?
@@ -439,7 +440,8 @@ public class RestResources extends RestBase {
             "the child will no longer be considered a child of the resource, otherwise an error will be returned.")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "environment, the parent resource or the child resource not found"),
+            @ApiResponse(code = 404, message = "environment, the parent resource or the child resource not found",
+                    response = ApiError.class),
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response disassociateChild(@PathParam("environmentId") String environmentId,
@@ -470,8 +472,7 @@ public class RestResources extends RestBase {
             "the child will no longer be considered a child of the resource, otherwise an error will be returned.")
     @ApiResponses({
             @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "feed, the parent resource or the child resource not " +
-                    "found"),
+            @ApiResponse(code = 404, message = "feed, the parent resource or the child resource not found"),
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     public Response disassociateChildInFeed(@PathParam("feedId") String feedId,

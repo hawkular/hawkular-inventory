@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-parent</artifactId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.15.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-api</artifactId>
@@ -89,7 +89,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>1.10.19</version>
       <scope>test</scope>
     </dependency>
 
@@ -104,6 +103,7 @@
     <finalName>hawkular-${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -113,27 +113,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <analysisConfiguration>
-            <![CDATA[
-              {
-                "revapi": {
-                  "filter": {
-                    //leaving this empty to include everything - this is to reconfigure the default provided in the
-                    //parent pom.
-                    "elements": {
-                      "exclude": [".*_\\$logger.*"]
-                    }
-                  }
-                }
-              }
-            ]]>
-          </analysisConfiguration>
-        </configuration>
       </plugin>
     </plugins>
   </build>

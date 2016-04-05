@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.model.AbstractElement;
 
 /**
@@ -29,28 +30,43 @@ import org.hawkular.inventory.api.model.AbstractElement;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-public final class EntityAndPendingNotifications<E extends AbstractElement<?, ?>> {
+public final class EntityAndPendingNotifications<BE, E extends AbstractElement<?, ?>> {
 
+    private final BE entityRepresentation;
     private final E entity;
     private final List<Notification<?, ?>> notifications;
+
+    EntityAndPendingNotifications(BE entityRepresentation, E entity, Action<E, E> action) {
+        this(entityRepresentation, entity, new Notification<>(entity, entity, action));
+    }
+
+    <C> EntityAndPendingNotifications(BE entityRepresentation, E entity, C actionContext, Action<C, E> action) {
+        this(entityRepresentation, entity, new Notification<>(actionContext, entity, action));
+    }
 
     /**
      * Constructs a new instance.
      *
+     * @param entityRepresentation the backend representation of the entity
      * @param entity        the inventory element
      * @param notifications the list of notifications to be sent out describing the actions performed during the wiring
-     *                      up of the new element.
      */
-    EntityAndPendingNotifications(E entity, Notification<?, ?>... notifications) {
+    EntityAndPendingNotifications(BE entityRepresentation, E entity, Notification<?, ?>... notifications) {
+        this.entityRepresentation = entityRepresentation;
         this.entity = entity;
         this.notifications = new ArrayList<>();
         Collections.addAll(this.notifications, notifications);
     }
 
-    EntityAndPendingNotifications(E entity, Iterable<Notification<?, ?>> notifications) {
+    EntityAndPendingNotifications(BE entityRepresentation, E entity, Iterable<Notification<?, ?>> notifications) {
+        this.entityRepresentation = entityRepresentation;
         this.entity = entity;
         this.notifications = new ArrayList<>();
         notifications.forEach(this.notifications::add);
+    }
+
+    public BE getEntityRepresentation() {
+        return entityRepresentation;
     }
 
     public E getEntity() {

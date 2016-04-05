@@ -42,6 +42,7 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
                 return entityTypeFromSegmentType(segmentType);
         }
     }
+
     public static Class<? extends Entity<?, ?>> entityTypeFromSegmentType(SegmentType segmentType) {
         switch (segmentType) {
             case t:

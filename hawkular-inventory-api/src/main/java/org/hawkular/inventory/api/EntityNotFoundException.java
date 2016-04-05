@@ -19,6 +19,7 @@ package org.hawkular.inventory.api;
 import java.util.Arrays;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -32,6 +33,10 @@ public final class EntityNotFoundException extends InventoryException {
 
     public EntityNotFoundException(Class<?> entityClass, Filter[][] filters) {
         this(entityClass == null ? null : entityClass.getSimpleName(), filters);
+    }
+
+    public EntityNotFoundException(SegmentType entityType, Filter[][] filters) {
+        this(entityType == null ? null : entityType.getSimpleName(), filters);
     }
 
     public EntityNotFoundException(String entitySimpleTypeName, Filter[][] filters) {

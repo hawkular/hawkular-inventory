@@ -17,12 +17,17 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.Consumer;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
@@ -31,6 +36,9 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -60,22 +68,66 @@ public abstract class BaseInventory<E> implements Inventory {
     private Configuration configuration;
     private TraversalContext<E, Tenant> tenantContext;
     private TraversalContext<E, Relationship> relationshipContext;
+    private final TransactionConstructor<E> transactionConstructor;
 
     /**
      * This is a sort of copy constructor.
+     * Can be used by subclasses when implementing the {@link #cloneWith(TransactionConstructor)} method.
      *
-     * @param backend           the backend
-     * @param observableContext the observable context
+     * @param orig the original instance to copy stuff over from
+     * @param backend       if not null, then use this backend instead of the one used by {@code orig}
+     * @param transactionConstructor if not null, then use this ctor instead of the one used by {@code orig}
      */
-    BaseInventory(InventoryBackend<E> backend, ObservableContext observableContext,
-                  Configuration configuration) {
-        this.backend = backend;
-        this.observableContext = observableContext;
-        this.configuration = configuration;
+    protected BaseInventory(BaseInventory<E> orig, InventoryBackend<E> backend,
+                            TransactionConstructor<E> transactionConstructor) {
+
+        this.observableContext = orig.observableContext;
+        this.configuration = orig.configuration;
+
+        this.backend = backend == null ? orig.backend : backend;
+        this.transactionConstructor = transactionConstructor == null
+                ? orig.transactionConstructor : transactionConstructor;
+
+        tenantContext = new TraversalContext<>(this, Query.empty(),
+                Query.path().with(With.type(Tenant.class)).get(), this.backend, Tenant.class, configuration,
+                observableContext, this.transactionConstructor);
+
+        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), this.backend,
+                Relationship.class, configuration, observableContext, this.transactionConstructor);
     }
 
     protected BaseInventory() {
         observableContext = new ObservableContext();
+        transactionConstructor = TransactionConstructor.startInBackend();
+    }
+
+    /**
+     * Mainly here for testing purposes
+     * @param txCtor transaction constructor to use - useful to supply some test-enabled impl
+     */
+    protected BaseInventory(TransactionConstructor<E> txCtor) {
+        observableContext = new ObservableContext();
+        transactionConstructor = txCtor;
+    }
+
+    /**
+     * Clones this inventory with the exception of the transaction constructor. The returned inventory will be the
+     * exact copy of this one but its transaction constructor will be set to the provided one.
+     *
+     * @param transactionCtor the transaction constructor to use. It has already been adapted using
+     * {@link #adaptTransactionConstructor(TransactionConstructor)}.
+     *
+     * @return the cloned inventory
+     */
+    protected abstract BaseInventory<E> cloneWith(TransactionConstructor<E> transactionCtor);
+
+    /**
+     * This is a hook used for unit testing. Using this we can keep track of how transaction constructors are used.
+     * @param txCtor a potentially modified transaction constructor
+     * @return a transaction constructor fit to use with this inventory impl.
+     */
+    protected TransactionConstructor<E> adaptTransactionConstructor(TransactionConstructor<E> txCtor) {
+        return txCtor;
     }
 
     @Override
@@ -84,21 +136,114 @@ public abstract class BaseInventory<E> implements Inventory {
 
         tenantContext = new TraversalContext<>(this, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
-                observableContext);
+                observableContext, transactionConstructor);
 
         relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
-                Relationship.class, configuration, observableContext);
+                Relationship.class, configuration, observableContext, transactionConstructor);
         this.configuration = configuration;
     }
 
     @Override
     public TransactionFrame newTransactionFrame() {
-        return new BaseTransactionFrame<>(backend, observableContext, tenantContext);
+        if (backend.isPreferringBigTransactions()) {
+            return new TransactionFrame() {
+                private InventoryBackend<E> activeBackend;
+                private final Transaction.PreCommit.Simple<E> globalPreCommit =
+                        new Transaction.PreCommit.Simple<>();
+                private List<TransactionPayload.Committing<?, E>> committedPayloads = new ArrayList<>();
+
+                private final TransactionConstructor<E> fakeTxCtor = (b, p) -> {
+                    InventoryBackend<E> realBackend;
+                    if (activeBackend == null) {
+                        activeBackend = b.startTransaction();
+                    }
+                    realBackend = activeBackend;
+
+                    NotificationsHidingPreCommit<E> txPrecommit = new NotificationsHidingPreCommit<>(p);
+
+                    Runnable onCommit = () -> {
+                        //transfer the resulting notifications - they will be emitted once the "real" transaction
+                        //really successfully commits.
+                        p.getFinalNotifications().forEach(globalPreCommit::addProcessedNotifications);
+                    };
+
+                    return new BackendTransaction<E>(new TransactionIgnoringBackend<>(realBackend, onCommit),
+                            txPrecommit) {
+                        @Override public void registerCommittedPayload(TransactionPayload.Committing<?, E>
+                                                                               committedPayload) {
+                            committedPayloads.add(committedPayload);
+                        }
+                    };
+                };
+
+                @Override public void commit() throws CommitException {
+                    Util.onFailureRetry(p ->
+                                    new BackendTransaction<>(new TransactionIgnoringBackend<>(activeBackend, null), p),
+                            Transaction.Committable.from(
+                                    adaptTransactionConstructor(fakeTxCtor)
+                                            .construct(activeBackend, new BasePreCommit<>())),
+                            (TransactionPayload.Committing<Void, E>) tx -> {
+                                //we specifically don't run the pre-commit actions here, because they were already ran
+                                //by the individual fake transaction commits of the "activities" in this frame.
+                                activeBackend.commit();
+
+                                //but we do fire the notifications - those are only to be emitted once the "true" commit
+                                //that actually persists stuff to backend, i.e. the above one, has bee issued.
+                                globalPreCommit.getFinalNotifications().forEach(tenantContext::notifyAll);
+
+                                return null;
+                            },
+                            tx -> {
+                                for (TransactionPayload.Committing<?, E> p : committedPayloads) {
+                                    p.run(tx);
+                                }
+
+                                activeBackend.commit();
+
+                                //but we do fire the notifications - those are only to be emitted once the "true" commit
+                                //that actually persists stuff to backend, i.e. the above one, has bee issued.
+                                globalPreCommit.getFinalNotifications().forEach(tenantContext::notifyAll);
+
+                                return null;
+                            }, relationshipContext.getTransactionRetriesCount());
+                }
+
+                @Override public void rollback() {
+                    backend.rollback();
+                }
+
+                @Override public Inventory boundInventory() {
+                    return cloneWith(adaptTransactionConstructor(fakeTxCtor));
+                }
+            };
+        } else {
+            return new TransactionFrame() {
+                @Override public void commit() throws CommitException {
+                }
+
+                @Override public void rollback() {
+                }
+
+                @Override public Inventory boundInventory() {
+                    return BaseInventory.this;
+                }
+            };
+        }
     }
 
-    Initialized<E> keepTransaction(InventoryBackend.Transaction transaction) {
-        return new Initialized<>(new TransactionFixedBackend<>(backend, transaction), observableContext, configuration);
+    BaseInventory<E> keepTransaction(Transaction<E> tx) {
+        return cloneWith(adaptTransactionConstructor((b, p) -> {
+            Runnable transferActionsAndNotifs = () -> {
+                //transfer the resulting notifications - they will be emitted once the "real" transaction
+                //really successfully commits.
+                p.getFinalNotifications().forEach(tx.getPreCommit()::addProcessedNotifications);
+            };
+
+            return new BackendTransaction<>(new TransactionIgnoringBackend<>(tx.directAccess(),
+                    transferActionsAndNotifs), new NotificationsHidingPreCommit<>(p));
+        }));
     }
+
     /**
      * This method is called during {@link #initialize(Configuration)} and provides the instance of the backend
      * initialized from the configuration.
@@ -168,20 +313,80 @@ public abstract class BaseInventory<E> implements Inventory {
         return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
     }
 
-    static class Initialized<E> extends BaseInventory<E> {
-        Initialized(InventoryBackend<E> backend, ObservableContext observableContext,
-                           Configuration configuration) {
-            super(backend, observableContext, configuration);
-            initialize(configuration);
+    @Override
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    @Override
+    public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
+
+        Page<T> page = backend.query(query, pager, e -> backend.convert(e, requestedEntity), null);
+
+        return page;
+    }
+
+    private static class TransactionIgnoringBackend<E> extends DelegatingInventoryBackend<E> {
+
+        private final Runnable onCommit;
+
+
+        public TransactionIgnoringBackend(InventoryBackend<E> backend, Runnable onCommit) {
+            super(backend);
+            this.onCommit = onCommit;
         }
 
-        @Override
-        protected InventoryBackend<E> doInitialize(Configuration configuration) {
-            return getBackend();
+        @Override public void commit() throws CommitFailureException {
+            if (onCommit != null) {
+                onCommit.run();
+            }
+        }
+
+        @Override public void rollback() {
+        }
+
+        @Override public InventoryBackend<E> startTransaction() {
+            return this;
         }
     }
 
-    @Override public Configuration getConfiguration() {
-        return configuration;
+    private static final class NotificationsHidingPreCommit<E> implements Transaction.PreCommit<E> {
+        private final Transaction.PreCommit<E> pc;
+
+        private NotificationsHidingPreCommit(Transaction.PreCommit<E> pc) {
+            this.pc = pc;
+        }
+
+        @Override public void addAction(Consumer<Transaction<E>> action) {
+            pc.addAction(action);
+        }
+
+        @Override public void addNotifications(EntityAndPendingNotifications<E, ?> element) {
+            pc.addNotifications(element);
+        }
+
+        @Override public void addProcessedNotifications(EntityAndPendingNotifications<E, ?> element) {
+            pc.addProcessedNotifications(element);
+        }
+
+        @Override public List<Consumer<Transaction<E>>> getActions() {
+            return pc.getActions();
+        }
+
+        @Override public List<EntityAndPendingNotifications<E, ?>> getFinalNotifications() {
+            return Collections.emptyList();
+        }
+
+        @Override public void initialize(Inventory inventory, Transaction<E> tx) {
+            pc.initialize(inventory, tx);
+        }
+
+        @Override public void reset() {
+            pc.reset();
+        }
+
+        public List<EntityAndPendingNotifications<E, ?>> getHiddenFinalNotifications() {
+            return pc.getFinalNotifications();
+        }
     }
 }

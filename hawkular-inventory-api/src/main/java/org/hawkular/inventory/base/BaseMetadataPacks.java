@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
@@ -37,7 +38,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.SegmentType;
@@ -60,13 +60,13 @@ public final class BaseMetadataPacks {
         }
 
         @Override
-        protected String getProposedId(MetadataPack.Blueprint blueprint) {
+        protected String getProposedId(Transaction<BE> tx, MetadataPack.Blueprint blueprint) {
             Iterator<? extends Entity<?, ?>> members = blueprint.getMembers().stream().map((p) -> {
                 SegmentType type = p.getSegment().getElementType();
                 Class<? extends Entity<?, ?>> cls = Entity.entityTypeFromSegmentType(type);
                 try {
-                    BE e = context.backend.find(p);
-                    return context.backend.convert(e, cls);
+                    BE e = tx.find(p);
+                    return (Entity<?, ?>) tx.convert(e, cls);
                 } catch (ElementNotFoundException ex) {
                     throw new EntityNotFoundException(type.getSimpleName(), Query.filters(Query.to(p)));
                 }
@@ -76,18 +76,18 @@ public final class BaseMetadataPacks {
         }
 
         @Override
-        protected EntityAndPendingNotifications<MetadataPack>
+        protected EntityAndPendingNotifications<BE, MetadataPack>
         wireUpNewEntity(BE entity, MetadataPack.Blueprint blueprint, CanonicalPath parentPath, BE parent,
-                        InventoryBackend.Transaction transaction) {
+                        Transaction<BE> tx) {
             Set<Notification<?, ?>> newRels = new HashSet<>();
 
             blueprint.getMembers().forEach((p) -> {
                 try {
-                    BE member = context.backend.find(p);
+                    BE member = tx.find(p);
 
-                    BE rel = context.backend.relate(entity, member, incorporates.name(), null);
+                    BE rel = tx.relate(entity, member, incorporates.name(), null);
 
-                    Relationship r = context.backend.convert(rel, Relationship.class);
+                    Relationship r = tx.convert(rel, Relationship.class);
                     newRels.add(new Notification<>(r, r, created()));
                 } catch (ElementNotFoundException e) {
                     throw new EntityNotFoundException(p.getSegment().getElementType().getSimpleName(),
@@ -95,9 +95,9 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            MetadataPack entityObject = context.backend.convert(entity, MetadataPack.class);
+            MetadataPack entityObject = tx.convert(entity, MetadataPack.class);
 
-            return new EntityAndPendingNotifications<>(entityObject, newRels);
+            return new EntityAndPendingNotifications<>(entity, entityObject, newRels);
         }
 
         @Override public MetadataPacks.Multiple getAll(Filter[][] filters) {
@@ -118,7 +118,7 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.replacePath(doCreate(blueprint)));
         }
     }
 

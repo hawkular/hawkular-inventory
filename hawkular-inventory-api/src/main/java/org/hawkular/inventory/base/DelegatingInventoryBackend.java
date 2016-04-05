@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
@@ -44,15 +45,23 @@ import org.hawkular.inventory.paths.RelativePath;
  */
 public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
 
-    private final InventoryBackend<E> backend;
+    protected final InventoryBackend<E> backend;
 
     public DelegatingInventoryBackend(InventoryBackend<E> backend) {
         this.backend = backend;
     }
 
+    @Override public boolean isUniqueIndexSupported() {
+        return backend.isUniqueIndexSupported();
+    }
+
+    @Override public boolean isPreferringBigTransactions() {
+        return backend.isPreferringBigTransactions();
+    }
+
     @Override
-    public void commit(Transaction transaction) throws CommitFailureException {
-        backend.commit(transaction);
+    public void commit() throws CommitFailureException {
+        backend.commit();
     }
 
     @Override
@@ -197,8 +206,8 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public void rollback(Transaction transaction) {
-        backend.rollback(transaction);
+    public void rollback() {
+        backend.rollback();
     }
 
     @Override
@@ -207,8 +216,8 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public Transaction startTransaction(boolean mutating) {
-        return backend.startTransaction(mutating);
+    public InventoryBackend<E> startTransaction() {
+        return backend.startTransaction();
     }
 
     @Override

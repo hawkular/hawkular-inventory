@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.15.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-bus</artifactId>
@@ -47,6 +47,12 @@
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-bus-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-cdi</artifactId>
       <version>${project.version}</version>
     </dependency>
 

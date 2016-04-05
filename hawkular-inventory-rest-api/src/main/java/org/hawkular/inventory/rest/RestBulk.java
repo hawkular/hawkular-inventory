@@ -47,6 +47,7 @@ import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
+import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
@@ -74,11 +75,11 @@ import org.hawkular.inventory.paths.ElementTypeVisitor;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.SegmentType;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * @author Lukas Krejci
@@ -87,7 +88,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 @javax.ws.rs.Path("/bulk")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-@Api(value = "/bulk", description = "Endpoint for bulk operations on inventory entities")
+@Api(value = "/bulk", description = "Endpoint for bulk operations on inventory entities", tags = "Bulk Create")
 public class RestBulk extends RestBase {
 
     private static CanonicalPath canonicalize(String path, CanonicalPath rootPath) {
@@ -111,8 +112,21 @@ public class RestBulk extends RestBase {
             typeStatuses = new HashMap<>();
             statuses.put(et, typeStatuses);
         }
+        if (!typeStatuses.containsKey(cp)) {
+            typeStatuses.put(cp, status);
+        }
 
-        typeStatuses.put(cp, status);
+        if (status >= 200 && status < 300) {
+            RestApiLogger.LOGGER.debugf("REST BULK created: %s", cp);
+        } else {
+            RestApiLogger.LOGGER.debugf("REST BULK failed (%d): %s", status, cp);
+        }
+    }
+
+    private static boolean hasBeenProcessed(Map<ElementType, Map<CanonicalPath, Integer>> statuses, ElementType et,
+                                            CanonicalPath cp) {
+        Map<CanonicalPath, Integer> typeStatuses = statuses.get(et);
+        return (typeStatuses != null && typeStatuses.containsKey(cp));
     }
 
     private static String arrow(Relationship.Blueprint b) {
@@ -275,59 +289,59 @@ public class RestBulk extends RestBase {
     create (Blueprint b, WriteInterface<?, ?, ?, ?> wrt) {
         return b.accept(
                 new ElementBlueprintVisitor.Simple<ResolvableToSingle<? extends AbstractElement<?, ?>, ?>, Void>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitData(DataEntity.Blueprint<?> data, Void parameter) {
-                return ((Data.ReadWrite) wrt).create(data);
-            }
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitData(DataEntity.Blueprint<?> data, Void parameter) {
+                        return ((Data.ReadWrite) wrt).create(data);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return ((Environments.ReadWrite) wrt).create(environment);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitEnvironment(Environment.Blueprint environment, Void parameter) {
+                        return ((Environments.ReadWrite) wrt).create(environment);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitFeed(Feed.Blueprint feed, Void parameter) {
-                return ((Feeds.ReadWrite) wrt).create(feed);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitFeed(Feed.Blueprint feed, Void parameter) {
+                        return ((Feeds.ReadWrite) wrt).create(feed);
+                    }
 
-            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetric(Metric.Blueprint metric, Void parameter) {
-                return ((Metrics.ReadWrite) wrt).create(metric);
-            }
+                    @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetric(Metric.Blueprint metric, Void parameter) {
+                        return ((Metrics.ReadWrite) wrt).create(metric);
+                    }
 
-            @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetricType(MetricType.Blueprint metricType, Void parameter) {
-                return ((MetricTypes.ReadWrite) wrt).create(metricType);
-            }
+                    @Override public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetricType(MetricType.Blueprint metricType, Void parameter) {
+                        return ((MetricTypes.ReadWrite) wrt).create(metricType);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                return ((OperationTypes.ReadWrite) wrt).create(operationType);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitOperationType(OperationType.Blueprint operationType, Void parameter) {
+                        return ((OperationTypes.ReadWrite) wrt).create(operationType);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitResource(Resource.Blueprint resource, Void parameter) {
-                return ((Resources.ReadWrite) wrt).create(resource);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitResource(Resource.Blueprint resource, Void parameter) {
+                        return ((Resources.ReadWrite) wrt).create(resource);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return ((ResourceTypes.ReadWrite) wrt).create(type);
-            }
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitResourceType(ResourceType.Blueprint type, Void parameter) {
+                        return ((ResourceTypes.ReadWrite) wrt).create(type);
+                    }
 
-            @Override
-            public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
-            visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
-                return ((MetadataPacks.ReadWrite) wrt).create(metadataPack);
-            }
-        }, null);
+                    @Override
+                    public ResolvableToSingle<? extends AbstractElement<?, ?>, ?>
+                    visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
+                        return ((MetadataPacks.ReadWrite) wrt).create(metadataPack);
+                    }
+                }, null);
     }
 
     @POST
@@ -390,8 +404,8 @@ public class RestBulk extends RestBase {
             transaction.commit();
             return statuses;
         } catch (Throwable t) {
-            // TODO this potentially leaves behind the security resources of the entities that have been created
-            // before the transaction failure
+            //note that the security resources are not yet created (they only get created after a successful commit)
+            //so no "leftovers" are left behind in case of transaction rollback.
             transaction.rollback();
             throw t;
         }
@@ -418,7 +432,7 @@ public class RestBulk extends RestBase {
             return;
         }
 
-        if (!canCreateUnderParent(elementType, parentPath)) {
+        if (!canCreateUnderParent(elementType, parentPath, statuses)) {
             for (Blueprint b : blueprints) {
                 String id = b.accept(idExtractor, null);
                 putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
@@ -434,6 +448,11 @@ public class RestBulk extends RestBase {
 
             CanonicalPath provisionalChildPath = parentPath.extend(elementType.elementType, b.accept(idExtractor, null))
                     .get();
+            boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, provisionalChildPath);
+            if (hasBeenProcessed) {
+                // this entity has it's own record in the list with statuses so let's move to another one
+                continue;
+            }
             try {
                 //this is cheap - the call to entity() right after create() doesn't fetch from the backend
                 String childId = create(b, wrt).entity().getId();
@@ -453,34 +472,52 @@ public class RestBulk extends RestBase {
     private void bulkCreateRelationships(Map<ElementType, Map<CanonicalPath, Integer>> statuses,
                                          CanonicalPath parentPath, ResolvableToSingleWithRelationships<?, ?> single,
                                          ElementType elementType, List<Blueprint> blueprints) {
-        if (!security.canAssociateFrom(parentPath)) {
-            for (Blueprint b : blueprints) {
-                Relationship.Blueprint rb = (Relationship.Blueprint) b;
-                String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
-                putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
-                        FORBIDDEN.getStatusCode());
+        if (!hasBeenCreatedInBulk(parentPath, statuses)) {
+            if (!security.canAssociateFrom(parentPath)) {
+                for (Blueprint b : blueprints) {
+                    Relationship.Blueprint rb = (Relationship.Blueprint) b;
+                    String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
+                    putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                            FORBIDDEN.getStatusCode());
+                }
+                return;
             }
-            return;
         }
 
         for (Blueprint b : blueprints) {
             Relationship.Blueprint rb = (Relationship.Blueprint) b;
 
+            String fakeId = parentPath.toString() + arrow(rb) + rb.getOtherEnd().toString();
+            CanonicalPath cPath = CanonicalPath.of().relationship(fakeId).get();
+            boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, cPath);
+            if (hasBeenProcessed) {
+                // this relationship has it's own record in the list with statuses so let's move to another one
+                continue;
+            }
+
             try {
                 Relationships.Single rel = single.relationships(rb.getDirection())
                         .linkWith(rb.getName(), rb.getOtherEnd(), rb.getProperties());
-
-                putStatus(statuses, elementType, rel.entity().getPath(), CREATED.getStatusCode());
+                putStatus(statuses, elementType, cPath, CREATED.getStatusCode());
             } catch (EntityNotFoundException ex) {
-                String fakeId = parentPath.toString() + arrow(rb) + rb.getOtherEnd().toString();
-
-                putStatus(statuses, elementType, CanonicalPath.of().relationship(fakeId).get(),
-                        NOT_FOUND.getStatusCode());
+                putStatus(statuses, elementType, cPath, NOT_FOUND.getStatusCode());
+            } catch (RelationAlreadyExistsException ex) {
+                putStatus(statuses, elementType, cPath, CONFLICT.getStatusCode());
+            } catch (Exception ex) {
+                putStatus(statuses, elementType, cPath, INTERNAL_SERVER_ERROR.getStatusCode());
             }
         }
     }
 
-    private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath) {
+    private boolean canCreateUnderParent(ElementType elementType, CanonicalPath parentPath,
+                                         Map<ElementType, Map<CanonicalPath, Integer>> statuses) {
+        if (hasBeenCreatedInBulk(parentPath, statuses)) {
+            //the parent has been created in the bulk request. I.e. we're still in a transaction that's creating the
+            //entities and therefore the security resources have not been created for such elements yet. We assume that
+            //if we were allowed to create the parent, we can also create its child.
+            return true;
+        }
+
         switch (elementType) {
             case dataEntity:
                 return security.canUpdate(parentPath);
@@ -489,6 +526,25 @@ public class RestBulk extends RestBase {
             default:
                 return security.canCreate(elementType.elementType).under(parentPath);
         }
+    }
+
+    private boolean hasBeenCreatedInBulk(CanonicalPath elementPath, Map<ElementType, Map<CanonicalPath, Integer>>
+            statuses) {
+
+        Map<CanonicalPath, Integer> elementsOfType = statuses.get(
+                ElementType.ofSegmentType(elementPath.getSegment().getElementType()));
+
+        if (elementsOfType == null) {
+            return false;
+        }
+
+        Integer status = elementsOfType.get(elementPath);
+
+        if (status == null) {
+            return false;
+        }
+
+        return status == 201 || status == 204;
     }
 
     private enum ElementType {
@@ -512,6 +568,24 @@ public class RestBulk extends RestBase {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
             this.segmentType = segmentType;
+        }
+
+        public static ElementType ofSegmentType(SegmentType type) {
+            for (ElementType et : ElementType.values()) {
+                if (et.segmentType.equals(type)) {
+                    return et;
+                }
+            }
+            return null;
+        }
+
+        public static ElementType ofBlueprintType(Class<?> type) {
+            for (ElementType et : ElementType.values()) {
+                if (et.blueprintType.equals(type)) {
+                    return et;
+                }
+            }
+            return null;
         }
     }
 

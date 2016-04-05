@@ -47,5 +47,10 @@ public interface Log extends BasicLogger {
     void wInterruptedWhileWaitingForTransactionRetry();
 
     @LogMessage(level = Logger.Level.DEBUG)
-    @Message(id = 4, value = "Transaction failed: %s") void dTransactionFailed(String msg);
+    @Message(id = 4, value = "Transaction failed: %s")
+    void dTransactionFailed(String msg);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 5, value = "Silent rollback.")
+    void wSilentRollback();
 }

@@ -19,11 +19,15 @@ package org.hawkular.inventory.api.filters;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -49,6 +53,28 @@ public final class With {
 
     public static Types type(Class<? extends Entity<?, ?>> type) {
         return new Types(type);
+    }
+
+    public static Types types(SegmentType... types) {
+        @SuppressWarnings("unchecked")
+        Class<? extends Entity<?, ?>>[] clss = Stream.of(types).map(With::convertAsEntityType)
+                .toArray(Class[]::new);
+
+        return new Types(clss);
+    }
+
+    public static Types type(SegmentType type) {
+        return new Types(convertAsEntityType(type));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Entity<?, ?>> convertAsEntityType(SegmentType type) {
+        Class<? extends AbstractElement<?, ?>> cls = AbstractElement.toElementClass(type);
+        if (Relationship.class.isAssignableFrom(cls)) {
+            throw new IllegalArgumentException("Type filter not applicable to relationships.");
+        }
+
+        return (Class<? extends Entity<?, ?>>) cls;
     }
 
     public static CanonicalPaths path(CanonicalPath path) {

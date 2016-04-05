@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.13.0.Final-SNAPSHOT</version>
+    <version>0.15.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
@@ -121,6 +121,15 @@
           <systemPropertyVariables>
             <graph.config>${project.build.testOutputDirectory}/testsuite-graph.properties</graph.config>
           </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <!-- This module is essentially an implementation detail. No need to have it API checked. -->
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
