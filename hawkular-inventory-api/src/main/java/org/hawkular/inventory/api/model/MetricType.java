@@ -181,10 +181,20 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
         }
 
         public MetricUnit getUnit() {
+            //this is so that we throw a meaningful exception when processing blueprints created by deserialization
+            //from user data.
+            if (unit == null) {
+                throw new IllegalStateException("Unit of metric type cannot be null.");
+            }
             return unit;
         }
 
         public MetricDataType getType() {
+            //this is so that we throw a meaningful exception when processing blueprints created by deserialization
+            //from user data.
+            if (type == null) {
+                throw new IllegalStateException("Data type of metric type cannot be null.");
+            }
             return type;
         }
 

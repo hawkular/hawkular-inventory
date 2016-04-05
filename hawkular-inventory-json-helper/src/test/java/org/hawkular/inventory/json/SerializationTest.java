@@ -25,8 +25,12 @@ import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
 import static org.hawkular.inventory.api.model.MetricDataType.GAUGE;
 
+import java.beans.BeanInfo;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +53,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
@@ -168,7 +173,7 @@ public class SerializationTest {
 
     @Test
     public void testResourceType() throws Exception {
-        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), null, new HashMap<String, Object>() {{
+        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), "a", new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -218,8 +223,8 @@ public class SerializationTest {
     @Test
     public void testFeed() throws Exception {
         Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, new HashMap<String, Object>() {{
-                    put("a", "b");
-                }});
+            put("a", "b");
+        }});
 
         test(f);
     }
@@ -229,8 +234,8 @@ public class SerializationTest {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
         Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, new HashMap<String, Object>() {{
-                    put("a", "b");
-                }});
+            put("a", "b");
+        }});
 
         testDetyped(f, "{\"path\":\"/t;t/f;c\",\"properties\":{\"a\":\"b\"}}");
         testDetyped(f, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
@@ -386,7 +391,7 @@ public class SerializationTest {
                 .withOutgoingRelationships(outgoing).withProperties(properties).withMetricTypePath("kachna")
                 .build(), null);
 
-        testBlueprint(MetricType.Blueprint.builder(GAUGE).withId("mt").withName("nmt")
+        testBlueprint(MetricType.Blueprint.builder(GAUGE).withId("mt").withName("nmt").withUnit(MetricUnit.NONE)
                 .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
                 .build(), null);
 
@@ -540,7 +545,25 @@ public class SerializationTest {
         assertThat(fromJson.getOrder().equals(pager.getOrder()), is(Boolean.TRUE));
     }
 
-    private void testDetyped(Entity<?, ?> orig,  String serialized) throws Exception {
+    @Test
+    public void testInventoryStructure() throws Exception {
+        InventoryStructure<?> s = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId("feed").build())
+                .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                .addChild(MetricType.Blueprint.builder(GAUGE).withId("metricType").withUnit(MetricUnit.NONE)
+                        .withInterval(0L).build())
+                .addChild(Metric.Blueprint.builder().withId("metrics").withMetricTypePath("metricType").withInterval
+                        (0L).build())
+                .startChild(
+                        Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build())
+                .addChild(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../.resourceType")
+                        .build())
+                .end()
+                .build();
+
+        test(s);
+    }
+
+    private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
         DetypedPathDeserializer.setCurrentEntityType(orig.getClass());
         mapper.addMixIn(CanonicalPath.class, TenantlessCanonicalPathMixin.class);
 
@@ -584,6 +607,44 @@ public class SerializationTest {
         Object o2 = deserialize(serialize(o), cls);
 
         Assert.assertEquals(o, o2);
+
+        BeanInfo beanInfo = Introspector.getBeanInfo(cls);
+        for (PropertyDescriptor prop : beanInfo.getPropertyDescriptors()) {
+            Object origValue = prop.getReadMethod().invoke(o);
+            Object newValue = prop.getReadMethod().invoke(o2);
+            Assert.assertTrue("Unexpected value of property '" + prop.getName() + "' on class " + cls, isEqual
+                    (origValue, newValue));
+        }
+    }
+
+    private boolean isEqual(Object a, Object b) {
+        if (a == null) {
+            return b == null;
+        } else if (a.getClass().isArray()) {
+            if (b == null || !b.getClass().isArray()) {
+                return false;
+            }
+
+            int aLen = Array.getLength(a);
+            int bLen = Array.getLength(b);
+
+            if (aLen != bLen) {
+                return false;
+            }
+
+            for (int i = 0; i < aLen; ++i) {
+                Object aVal = Array.get(a, i);
+                Object bVal = Array.get(b, i);
+
+                if (!isEqual(aVal, bVal)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } else {
+            return a.equals(b);
+        }
     }
 
     private String serialize(Object object) throws IOException {

@@ -377,18 +377,17 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     }
 
     enum EntityType {
-        environment(Environment.class, Environment.Blueprint.class),
+        //the order is significant.. the latter cannot exist without (some of) the prior
+        feed(Feed.class, Feed.Blueprint.class),
         resourceType(ResourceType.class, ResourceType.Blueprint.class),
         metricType(MetricType.class, MetricType.Blueprint.class),
         operationType(OperationType.class, OperationType.Blueprint.class),
-        feed(Feed.class, Feed.Blueprint.class),
         metric(Metric.class, Metric.Blueprint.class),
         resource(Resource.class, Resource.Blueprint.class),
-        dataEntity(DataEntity.class, DataEntity.Blueprint.class),
-        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class);
+        dataEntity(DataEntity.class, DataEntity.Blueprint.class);
 
-        final Class<? extends AbstractElement<?, ?>> elementType;
-        final Class<? extends Blueprint> blueprintType;
+        public final Class<? extends Entity<?, ?>> elementType;
+        public final Class<? extends Entity.Blueprint> blueprintType;
 
         public static EntityType of(Class<?> type) {
             for (EntityType t : EntityType.values()) {
@@ -397,16 +396,22 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 }
             }
 
+            throw new IllegalArgumentException("Unknown type of entity: " + type);
+        }
+
+        public static EntityType ofBlueprint(Class<?> type) {
+            for (EntityType t : EntityType.values()) {
+                if (type.equals(t.blueprintType)) {
+                    return t;
+                }
+            }
+
             return null;
         }
 
-        EntityType(Class<? extends Entity<?, ?>> elementType, Class<? extends Blueprint> blueprintType) {
+        EntityType(Class<? extends Entity<?, ?>> elementType, Class<? extends Entity.Blueprint> blueprintType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
-        }
-
-        public Class<? extends AbstractElement<?, ?>> getElementType() {
-            return elementType;
         }
     }
 
@@ -559,6 +564,25 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             EntityAndChildren(Entity.Blueprint entity) {
                 this.entity = entity;
             }
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Offline<?> offline = (Offline<?>) o;
+
+            if (!root.equals(offline.root)) return false;
+            if (!children.equals(offline.children)) return false;
+            return entities.equals(offline.entities);
+
+        }
+
+        @Override public int hashCode() {
+            int result = root.hashCode();
+            result = 31 * result + children.hashCode();
+            result = 31 * result + entities.hashCode();
+            return result;
         }
     }
 
