@@ -33,8 +33,12 @@ public final class IdentityHashed {
 
     }
 
-    public interface Single<E extends Entity<B, U>, B extends Entity.Blueprint, U extends Entity.Update>
-            extends ResolvableToSingleWithRelationships<E, U> {
+    public interface SingleWithRelationships<E extends Entity<B, U>, B extends Entity.Blueprint,
+            U extends Entity.Update> extends Single<E, B, U>, ResolvableToSingleWithRelationships<E, U> {
+    }
+
+    public interface Single<E extends Entity<B, U>, B extends Entity.Blueprint,
+            U extends Entity.Update> extends ResolvableToSingle<E, U> {
 
         /**
          * This is useful for figuring out what changed about the structure of the entity

@@ -74,8 +74,8 @@ public final class OperationTypes {
     }
 
     public interface Single
-            extends  IdentityHashed.Single<OperationType, OperationType.Blueprint, OperationType.Update>,
-            BrowserBase<Data.ReadWrite<DataRole>> {
+            extends IdentityHashed.SingleWithRelationships<OperationType, OperationType.Blueprint,
+            OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole>> {
 
     }
 

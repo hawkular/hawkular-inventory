@@ -145,7 +145,8 @@ public final class Resources {
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends  IdentityHashed.Single<Resource, Resource.Blueprint, Resource.Update>,
+    public interface Single
+            extends IdentityHashed.SingleWithRelationships<Resource, Resource.Blueprint, Resource.Update>,
             BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole>, ReadWrite, ReadAssociate> {
 
         /**
