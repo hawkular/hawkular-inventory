@@ -30,9 +30,7 @@ import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 
 import org.hawkular.inventory.api.IdentityHashed;
-import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.IdentityHashable;
 import org.hawkular.inventory.api.model.InventoryStructure;
 
