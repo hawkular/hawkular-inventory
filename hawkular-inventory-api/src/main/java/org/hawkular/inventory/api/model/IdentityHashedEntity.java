@@ -18,6 +18,8 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Map;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+
 /**
  * @author Lukas Krejci
  * @since 0.11.0

@@ -16,10 +16,9 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on resource types.
@@ -31,31 +30,6 @@ public final class ResourceTypes {
 
     private ResourceTypes() {
 
-    }
-
-    public enum DataRole implements DataEntity.Role {
-        configurationSchema {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        },
-        connectionConfigurationSchema {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        }
     }
 
     private interface BrowserBase<ResourcesAccess, MetricTypesAccess, OperationTypesAccess, DataAccess>
@@ -100,7 +74,8 @@ public final class ResourceTypes {
      */
     public interface Single
             extends IdentityHashed.SingleWithRelationships<ResourceType, ResourceType.Blueprint, ResourceType.Update>,
-            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite, Data.ReadWrite<DataRole>> {
+            BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite,
+                    Data.ReadWrite<DataRole.ResourceType>> {
     }
 
     /**
@@ -111,7 +86,8 @@ public final class ResourceTypes {
      * {@link ReadInterface#get(Object)} method).
      */
     public interface Multiple extends ResolvableToManyWithRelationships<ResourceType>,
-            BrowserBase<Resources.Read, MetricTypes.Read, OperationTypes.ReadContained, Data.Read<DataRole>> {
+            BrowserBase<Resources.Read, MetricTypes.Read, OperationTypes.ReadContained,
+                    Data.Read<DataRole.ResourceType>> {
     }
 
     /**

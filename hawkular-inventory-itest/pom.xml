@@ -60,6 +60,12 @@
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-paths</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-feature-pack</artifactId>
       <version>${project.version}</version>
       <type>pom</type>

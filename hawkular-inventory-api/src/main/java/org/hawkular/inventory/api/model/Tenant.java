@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,9 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
  * each other.
@@ -35,6 +38,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement
 public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.t;
 
     private Tenant() {
     }

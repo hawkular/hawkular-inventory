@@ -16,19 +16,17 @@
  */
 package org.hawkular.inventory.api.test;
 
-import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
-import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
-import static org.hawkular.inventory.api.Resources.DataRole.configuration;
-import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
+import static org.hawkular.inventory.paths.DataRole.OperationType.parameterTypes;
+import static org.hawkular.inventory.paths.DataRole.OperationType.returnType;
+import static org.hawkular.inventory.paths.DataRole.Resource.configuration;
+import static org.hawkular.inventory.paths.DataRole.Resource.connectionConfiguration;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
@@ -36,10 +34,11 @@ import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.RelativePath;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -83,21 +82,21 @@ public class IdentityHashTest {
     @SuppressWarnings("Duplicates")
     @Test
     public void testResourceTypeHashWithAppendages() throws Exception {
-        DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
-                .<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> configSchema = DataEntity.Blueprint
+                .<DataRole.ResourceType>builder()
                 .withRole(configurationSchema).withValue(StructuredData.get().integral(5L)).build();
-        DataEntity.Blueprint<ResourceTypes.DataRole> connSchema = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> connSchema = DataEntity.Blueprint.<DataRole.ResourceType>builder()
                 .withRole(connectionConfigurationSchema)
                 .withValue(StructuredData.get().list().addBool(true).addUndefined().build())
                 .build();
 
         OperationType.Blueprint otb = OperationType.Blueprint.builder().withId("op").build();
-        DataEntity.Blueprint<OperationTypes.DataRole> retType = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.OperationType> retType = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
                 .withRole(returnType)
                 .withValue(StructuredData.get().integral(42L)).build();
-        DataEntity.Blueprint<OperationTypes.DataRole> paramTypes = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.OperationType> paramTypes = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
                 .withRole(parameterTypes)
                 .withValue(StructuredData.get().string("answer")).build();
 
@@ -123,21 +122,21 @@ public class IdentityHashTest {
     @SuppressWarnings("Duplicates")
     @Test
     public void testIdentityHashTree_ResourceTypes() throws Exception {
-        DataEntity.Blueprint<ResourceTypes.DataRole> configSchema = DataEntity.Blueprint
-                .<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> configSchema = DataEntity.Blueprint
+                .<DataRole.ResourceType>builder()
                 .withRole(configurationSchema).withValue(StructuredData.get().integral(5L)).build();
-        DataEntity.Blueprint<ResourceTypes.DataRole> connSchema = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.ResourceType> connSchema = DataEntity.Blueprint.<DataRole.ResourceType>builder()
                 .withRole(connectionConfigurationSchema)
                 .withValue(StructuredData.get().list().addBool(true).addUndefined().build())
                 .build();
 
         OperationType.Blueprint otb = OperationType.Blueprint.builder().withId("op").build();
-        DataEntity.Blueprint<OperationTypes.DataRole> retType = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.OperationType> retType = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
                 .withRole(returnType)
                 .withValue(StructuredData.get().integral(42L)).build();
-        DataEntity.Blueprint<OperationTypes.DataRole> paramTypes = DataEntity.Blueprint
-                .<OperationTypes.DataRole>builder()
+        DataEntity.Blueprint<DataRole.OperationType> paramTypes = DataEntity.Blueprint
+                .<DataRole.OperationType>builder()
                 .withRole(parameterTypes)
                 .withValue(StructuredData.get().string("answer")).build();
 
@@ -240,7 +239,7 @@ public class IdentityHashTest {
         return bld.toString();
     }
 
-    private static <R extends DataEntity.Role> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
+    private static <R extends DataRole> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
         return DataEntity.Blueprint.<R>builder().withRole(role).withValue(StructuredData.get().undefined()).build();
     }
 }

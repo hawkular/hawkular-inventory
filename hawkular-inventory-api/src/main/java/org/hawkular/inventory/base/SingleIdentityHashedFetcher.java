@@ -45,10 +45,8 @@ import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.IdentityHash;
@@ -57,10 +55,13 @@ import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -348,7 +349,7 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
                 new EnumMap<>(InventoryStructure.EntityType.class);
 
         group.forEach(t -> {
-            Class<?> elementType = t.getPath().getSegment().getElementType();
+            SegmentType elementType = t.getPath().getSegment().getElementType();
             InventoryStructure.EntityType entityType = InventoryStructure.EntityType.of(elementType);
             Set<IdentityHash.Tree> siblings = ret.get(entityType);
             if (siblings == null) {

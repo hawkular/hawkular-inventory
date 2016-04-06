@@ -34,6 +34,7 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
+    <module>hawkular-inventory-paths</module>
     <module>hawkular-inventory-api</module>
     <module>hawkular-inventory-bus</module>
     <module>hawkular-inventory-bus-api</module>
@@ -70,7 +71,7 @@
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
     <version.commons-beanutils>1.9.2</version.commons-beanutils>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/collections/main/ -->
-    <version.commons-collections>3.2.1</version.commons-collections>
+    <version.commons-collections>3.2.2</version.commons-collections>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/io/main/ -->
     <version.commons-io>2.4</version.commons-io>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/lang/main/ -->

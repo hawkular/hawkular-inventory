@@ -30,9 +30,8 @@ import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 
 import org.hawkular.inventory.api.IdentityHashed;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.IdentityHashable;
 import org.hawkular.inventory.api.model.InventoryStructure;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -60,7 +59,7 @@ public class RestSync extends RestBase {
     public Response sync(@Encoded @PathParam("path") List<PathSegment> path, InventoryStructure.Offline<?> structure) {
         CanonicalPath cp = parsePath(path);
 
-        if (!IdentityHashable.class.isAssignableFrom(cp.getSegment().getElementType())) {
+        if (!InventoryStructure.EntityType.supports(cp.getSegment().getElementType())) {
             throw new IllegalArgumentException("Entities of type " + cp.getSegment().getElementType().getSimpleName()
                     + " are not synchronizable.");
         }

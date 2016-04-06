@@ -37,12 +37,12 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.hawkular.inventory.impl.tinkerpop.sql.impl.InsertException;
 import org.hawkular.inventory.impl.tinkerpop.sql.impl.SqlGraph;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Parameter;

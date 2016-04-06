@@ -16,9 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.paths.DataRole;
 
 /**
  * @author Lukas Krejci
@@ -28,33 +27,9 @@ public final class OperationTypes {
     private OperationTypes() {
     }
 
-    public enum DataRole implements DataEntity.Role {
-        returnType {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        },
-        parameterTypes {
-            @Override
-            public boolean isSchema() {
-                return true;
-            }
-
-            @Override
-            public Filter[] navigateToSchema() {
-                return null;
-            }
-        }
-    }
-
     public interface BrowserBase<D> extends Data.Container<D> {
     }
+
 
     /**
      * An interface implemented by Single/Multiple interfaces of entities that can contain operation types.
@@ -75,12 +50,12 @@ public final class OperationTypes {
 
     public interface Single
             extends IdentityHashed.SingleWithRelationships<OperationType, OperationType.Blueprint,
-            OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole>> {
+            OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
 
     }
 
     public interface Multiple extends ResolvableToManyWithRelationships<OperationType>,
-            BrowserBase<Data.Read<DataRole>> {
+            BrowserBase<Data.Read<DataRole.OperationType>> {
 
     }
 }

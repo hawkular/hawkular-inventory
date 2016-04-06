@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,46 +39,22 @@ import java.util.Set;
  */
 public final class CanonicalPath extends Path implements Iterable<CanonicalPath>, Serializable {
 
-    static final Map<String, Class<?>> SHORT_NAME_TYPES = new HashMap<>();
-    static final Map<Class<?>, String> SHORT_TYPE_NAMES = new HashMap<>();
-    static final Map<Class<?>, List<Class<?>>> VALID_PROGRESSIONS = new HashMap<>();
+    private static final long serialVersionUID = -333891787878559703L;
+    static final Map<SegmentType, EnumSet<SegmentType>> VALID_PROGRESSIONS = new HashMap<>();
 
     static {
-        SHORT_NAME_TYPES.put("t", Tenant.class);
-        SHORT_NAME_TYPES.put("e", Environment.class);
-        SHORT_NAME_TYPES.put("f", Feed.class);
-        SHORT_NAME_TYPES.put("m", Metric.class);
-        SHORT_NAME_TYPES.put("r", Resource.class);
-        SHORT_NAME_TYPES.put("rt", ResourceType.class);
-        SHORT_NAME_TYPES.put("mt", MetricType.class);
-        SHORT_NAME_TYPES.put("rl", Relationship.class);
-        SHORT_NAME_TYPES.put("d", DataEntity.class);
-        SHORT_NAME_TYPES.put("ot", OperationType.class);
-        SHORT_NAME_TYPES.put("mp", MetadataPack.class);
 
-        SHORT_TYPE_NAMES.put(Tenant.class, "t");
-        SHORT_TYPE_NAMES.put(Environment.class, "e");
-        SHORT_TYPE_NAMES.put(Feed.class, "f");
-        SHORT_TYPE_NAMES.put(Metric.class, "m");
-        SHORT_TYPE_NAMES.put(Resource.class, "r");
-        SHORT_TYPE_NAMES.put(ResourceType.class, "rt");
-        SHORT_TYPE_NAMES.put(MetricType.class, "mt");
-        SHORT_TYPE_NAMES.put(Relationship.class, "rl");
-        SHORT_TYPE_NAMES.put(DataEntity.class, "d");
-        SHORT_TYPE_NAMES.put(OperationType.class, "ot");
-        SHORT_TYPE_NAMES.put(MetadataPack.class, "mp");
-
-        VALID_PROGRESSIONS.put(Tenant.class, Arrays.asList(Environment.class, MetricType.class, ResourceType.class,
-                Feed.class, MetadataPack.class));
-        VALID_PROGRESSIONS.put(Environment.class, Arrays.asList(Metric.class, Resource.class));
-        VALID_PROGRESSIONS.put(Feed.class, Arrays.asList(Metric.class, Resource.class, MetricType.class,
-                ResourceType.class));
-        VALID_PROGRESSIONS.put(ResourceType.class, Arrays.asList(DataEntity.class, OperationType.class));
-        VALID_PROGRESSIONS.put(OperationType.class, Collections.singletonList(DataEntity.class));
-        VALID_PROGRESSIONS.put(Resource.class, Arrays.asList(Resource.class, DataEntity.class, Metric.class));
-        VALID_PROGRESSIONS.put(DataEntity.class, Collections.singletonList(StructuredData.class));
-        VALID_PROGRESSIONS.put(StructuredData.class, Collections.singletonList(StructuredData.class));
-        VALID_PROGRESSIONS.put(null, Arrays.asList(Tenant.class, Relationship.class));
+        VALID_PROGRESSIONS.put(SegmentType.t, EnumSet.of(SegmentType.e, SegmentType.mt, SegmentType.rt,
+                SegmentType.f, SegmentType.mp));
+        VALID_PROGRESSIONS.put(SegmentType.e, EnumSet.of(SegmentType.m, SegmentType.r));
+        VALID_PROGRESSIONS.put(SegmentType.f, EnumSet.of(SegmentType.m, SegmentType.r, SegmentType.mt,
+                SegmentType.rt));
+        VALID_PROGRESSIONS.put(SegmentType.rt, EnumSet.of(SegmentType.d, SegmentType.ot));
+        VALID_PROGRESSIONS.put(SegmentType.ot, EnumSet.of(SegmentType.d));
+        VALID_PROGRESSIONS.put(SegmentType.r, EnumSet.of(SegmentType.r, SegmentType.d, SegmentType.m));
+        VALID_PROGRESSIONS.put(SegmentType.d, EnumSet.of(SegmentType.sd));
+        VALID_PROGRESSIONS.put(SegmentType.sd, EnumSet.of(SegmentType.sd));
+        VALID_PROGRESSIONS.put(null, EnumSet.of(SegmentType.t, SegmentType.rl));
     }
 
     /**
@@ -149,6 +125,11 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      */
     public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
             Class<?> intendedFinalType) {
+        return fromPartiallyUntypedString(path, initialPosition, SegmentType.fromElementType(intendedFinalType));
+    }
+
+    public static CanonicalPath fromPartiallyUntypedString(String path, CanonicalPath initialPosition,
+            SegmentType intendedFinalType) {
 
         ExtenderConstructor ctor = (idx, list) -> {
             if (initialPosition != null) {
@@ -278,7 +259,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      * @return a new path instance
      * @throws IllegalArgumentException if adding the provided segment would create an invalid canonical path
      */
-    public Extender extend(Class<?> type, String id) {
+    public Extender extend(SegmentType type, String id) {
         return modified().extend(new Segment(type, id));
     }
 
@@ -306,7 +287,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
     @Override
     public String toString() {
-        return new Encoder(SHORT_TYPE_NAMES, x -> true).encode(Character.toString(PATH_DELIM), this);
+        return new Encoder(x -> true).encode(Character.toString(PATH_DELIM), this);
     }
 
     @Override
@@ -495,31 +476,31 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     public final class IdExtractor {
 
         public String getTenantId() {
-            return idIfTypeCorrect(getRoot(), Tenant.class);
+            return idIfTypeCorrect(getRoot(), SegmentType.t);
         }
 
         public String getEnvironmentId() {
-            return idIfTypeCorrect(getRoot().down(), Environment.class);
+            return idIfTypeCorrect(getRoot().down(), SegmentType.e);
         }
 
         public String getMetricTypeId() {
             if (getFeedId() != null) {
-                return idIfTypeCorrect(getRoot().down(2), MetricType.class);
+                return idIfTypeCorrect(getRoot().down(2), SegmentType.mt);
             } else {
-                return idIfTypeCorrect(getRoot().down(), MetricType.class);
+                return idIfTypeCorrect(getRoot().down(), SegmentType.mt);
             }
         }
 
         public String getResourceTypeId() {
             if (getFeedId() != null) {
-                return idIfTypeCorrect(getRoot().down(2), ResourceType.class);
+                return idIfTypeCorrect(getRoot().down(2), SegmentType.rt);
             } else {
-                return idIfTypeCorrect(getRoot().down(), ResourceType.class);
+                return idIfTypeCorrect(getRoot().down(), SegmentType.rt);
             }
         }
 
         public String getFeedId() {
-            return idIfTypeCorrect(getRoot().down(), Feed.class);
+            return idIfTypeCorrect(getRoot().down(), SegmentType.f);
         }
 
         /**
@@ -537,7 +518,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
             List<Segment> path = CanonicalPath.this.path;
 
             for (from = CanonicalPath.this.startIdx; from < CanonicalPath.this.endIdx; ++from) {
-                if (Resource.class.equals(path.get(from).getElementType())) {
+                if (SegmentType.r.equals(path.get(from).getElementType())) {
                     break;
                 }
             }
@@ -546,7 +527,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
                 return null;
             }
             for (to = from; to < CanonicalPath.this.endIdx; ++to) {
-                if (!Resource.class.equals(path.get(to).getElementType())) {
+                if (!SegmentType.r.equals(path.get(to).getElementType())) {
                     break;
                 }
             }
@@ -555,37 +536,36 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getMetricId() {
-            return idIfTypeCorrect(CanonicalPath.this, Metric.class);
+            return idIfTypeCorrect(CanonicalPath.this, SegmentType.m);
         }
 
         public String getRelationshipId() {
-            return idIfTypeCorrect(getRoot(), Relationship.class);
+            return idIfTypeCorrect(getRoot(), SegmentType.rl);
         }
 
         public String getOperationTypeId() {
             if (getFeedId() != null) {
-                return idIfTypeCorrect(getRoot().down(3), OperationType.class);
+                return idIfTypeCorrect(getRoot().down(3), SegmentType.ot);
             } else {
-                return idIfTypeCorrect(getRoot().down(2), OperationType.class);
+                return idIfTypeCorrect(getRoot().down(2), SegmentType.ot);
             }
         }
 
-        @SuppressWarnings("unchecked")
-        public <R extends DataEntity.Role> R getDataRole() {
+        public String getDataRole() {
             CanonicalPath currentPath = CanonicalPath.this;
 
             //move up from the potential data path segments
-            while (StructuredData.class.equals(currentPath.getSegment().getElementType())) {
+            while (SegmentType.sd.equals(currentPath.getSegment().getElementType())) {
                 currentPath = currentPath.up();
             }
 
             //now we should be at the data entity, which should contain our role
-            String roleStr = idIfTypeCorrect(currentPath, DataEntity.class);
+            String roleStr = idIfTypeCorrect(currentPath, SegmentType.d);
 
-            return roleStr == null ? null : (R) DataEntity.Role.valueOf(roleStr);
+            return roleStr;
         }
 
-        private String idIfTypeCorrect(CanonicalPath path, Class<? extends AbstractElement<?, ?>> desiredType) {
+        private String idIfTypeCorrect(CanonicalPath path, SegmentType desiredType) {
             if (path.isDefined() && path.getSegment().getElementType().equals(desiredType)) {
                 return path.getSegment().getElementId();
             } else {
@@ -597,7 +577,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     public static class Extender extends Path.Extender {
 
         Extender(int from, List<Segment> segments) {
-            super(from, segments, true, (s) -> s.isEmpty() ? Arrays.asList(Tenant.class, Relationship.class)
+            super(from, segments, true, (s) -> s.isEmpty() ? Arrays.asList(SegmentType.t, SegmentType.rl)
                     : VALID_PROGRESSIONS.get(s.get(s.size() - 1).getElementType()));
         }
 
@@ -616,7 +596,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         @Override
-        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+        public Extender extend(SegmentType type, String id) {
             return (Extender) super.extend(type, id);
         }
 
@@ -624,6 +604,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         public CanonicalPath get() {
             return (CanonicalPath) super.get();
         }
+
     }
 
     private static class CanonicalTypeProvider extends EnhancedTypeProvider {
@@ -646,7 +627,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
                 if (id == null || id.isEmpty()) {
                     return null;
                 } else {
-                    return new Segment(SHORT_NAME_TYPES.get(type), id);
+                    return new Segment(SegmentType.fastValueOf(type), id);
                 }
             }
 
@@ -654,7 +635,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
                 return null;
             }
 
-            Class<?> cls = SHORT_NAME_TYPES.get(id);
+            SegmentType cls = SegmentType.fastValueOf(id);
             if (cls == null && wrapped != null) {
                 return wrapped.deduceSegment(type, id, isLast);
             } else if (cls != null) {
@@ -673,7 +654,7 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
 
         @Override
         Set<String> getValidTypeName() {
-            return SHORT_NAME_TYPES.keySet();
+            return SegmentType.getCanonicalShortNames();
         }
     }
 }

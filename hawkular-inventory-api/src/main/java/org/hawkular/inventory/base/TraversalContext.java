@@ -31,10 +31,10 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.SwitchElementType;
+import org.hawkular.inventory.paths.Path;
 
 import rx.subjects.Subject;
 
@@ -268,7 +268,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     TraversalContext<BE, E> proceedTo(Path path) {
-        if (!entityClass.equals(path.getSegment().getElementType())) {
+        if (!AbstractElement.segmentTypeFromType(entityClass).equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Path doesn't point to the type of element currently being accessed.");
         }
         return replacePath(Util.extendTo(this, path));

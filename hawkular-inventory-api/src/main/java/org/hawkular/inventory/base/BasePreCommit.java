@@ -37,7 +37,6 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.TreeTraversal;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -48,10 +47,11 @@ import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * Takes care of defining the pre-commit actions based on the set of entities modified within a single transaction.
@@ -391,7 +391,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }
 
         public boolean needsResolution() {
-            return IdentityHashable.class.isAssignableFrom(path.getElementType());
+            return InventoryStructure.EntityType.supports(path.getElementType());
         }
 
         public void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {

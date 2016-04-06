@@ -36,15 +36,17 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -79,7 +81,7 @@ public final class BaseResources {
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
-                        parentPath, ResourceType.class);
+                        parentPath, ResourceType.SEGMENT_TYPE);
                 resourceTypeObject = tx.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
@@ -96,7 +98,7 @@ public final class BaseResources {
 
             ResourceType resourceType = tx.convert(resourceTypeObject, ResourceType.class);
 
-            Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.class,
+            Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.SEGMENT_TYPE,
                     tx.extractId(entity)).get(), null, resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(tx.extractId(r), defines.name(), resourceTypePath,
@@ -182,17 +184,17 @@ public final class BaseResources {
         @Override
         public Relationship associate(Path id) throws EntityNotFoundException,
                 RelationAlreadyExistsException {
-            return Associator.associate(context, Resource.class, isParentOf, id);
+            return Associator.associate(context, SegmentType.r, isParentOf, id);
         }
 
         @Override
         public Relationship disassociate(Path id) throws EntityNotFoundException, IllegalArgumentException {
-            return Associator.disassociate(context, Resource.class, isParentOf, id);
+            return Associator.disassociate(context, SegmentType.r, isParentOf, id);
         }
 
         @Override
         public Relationship associationWith(Path path) throws RelationNotFoundException {
-            return Associator.associationWith(context, Resource.class, isParentOf, path);
+            return Associator.associationWith(context, SegmentType.r, isParentOf, path);
         }
     }
 
@@ -215,12 +217,14 @@ public final class BaseResources {
 
         @Override
         public Resources.ReadAssociate allResources() {
-            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.ReadWrite resources() {
-            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
@@ -231,16 +235,18 @@ public final class BaseResources {
 
         @Override
         public Resources.Single parent() {
-            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(Resource.class)).get());
+            return new Single<>(context.proceed().hop(Related.asTargetBy(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.Read parents() {
-            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
-        public Data.ReadWrite<Resources.DataRole> data() {
+        public Data.ReadWrite<DataRole.Resource> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     BaseData.DataModificationChecks.<BE>none());
         }
@@ -265,7 +271,8 @@ public final class BaseResources {
 
         @Override
         public Resources.Read allResources() {
-            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(Resource.class)).get());
+            return new ReadAssociate<>(context.proceed().hop(Related.by(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
@@ -276,16 +283,18 @@ public final class BaseResources {
 
         @Override
         public Resources.ReadWrite resources() {
-            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(Resource.class)).get());
+            return new ReadWrite<>(context.proceed().hop(Related.by(contains), With.type(
+                    Resource.class)).get());
         }
 
         @Override
         public Resources.Read parents() {
-            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(Resource.class)).get());
+            return new Read<>(context.proceed().hop(Related.asTargetBy(isParentOf), With.type(
+                    Resource.class)).get());
         }
 
         @Override
-        public Data.Read<Resources.DataRole> data() {
+        public Data.Read<DataRole.Resource> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     BaseData.DataModificationChecks.<BE>none());
         }

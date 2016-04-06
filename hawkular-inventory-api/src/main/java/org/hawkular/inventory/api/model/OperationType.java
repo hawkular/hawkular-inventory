@@ -19,11 +19,16 @@ package org.hawkular.inventory.api.model;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * @author Lukas Krejci
  * @since 0.4.0
  */
 public final class OperationType extends IdentityHashedEntity<OperationType.Blueprint, OperationType.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.ot;
 
     @SuppressWarnings("unused")
     private OperationType() {

@@ -32,13 +32,13 @@ import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * @author Lukas Krejci
@@ -128,7 +128,7 @@ public final class BaseEnvironments {
         wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
-                    parentPath.extend(Environment.class, tx.extractId(entity)).get(),
+                    parentPath.extend(Environment.SEGMENT_TYPE, tx.extractId(entity)).get(),
                     blueprint.getProperties()), emptyList());
         }
 

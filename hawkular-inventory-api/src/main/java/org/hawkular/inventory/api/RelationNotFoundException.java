@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.api;
 
 import java.util.Arrays;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Jirka Kremser
@@ -32,15 +32,31 @@ public final class RelationNotFoundException extends InventoryException {
     private final Filter[][] filters;
     private final String nameOrId;
 
+    public RelationNotFoundException(SegmentType sourceEntityType, String nameOrId, Filter[] filters,
+                                     String message, Throwable cause) {
+        this(sourceEntityType == null ? null : sourceEntityType.getSimpleName(), nameOrId, oneElem(filters), message,
+                cause);
+    }
+
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
                                      String message, Throwable cause) {
         this(sourceEntityType, nameOrId, oneElem(filters), message, cause);
     }
 
+    public RelationNotFoundException(SegmentType sourceEntityType, String nameOrId, Filter[][] filters,
+                                     String message, Throwable cause) {
+        this(sourceEntityType == null ? null : sourceEntityType.getSimpleName(), nameOrId, filters, message, cause);
+    }
+
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[][] filters,
                                      String message, Throwable cause) {
+        this(sourceEntityType == null ? null : sourceEntityType.getSimpleName(), nameOrId, filters, message, cause);
+    }
+
+    private RelationNotFoundException(String sourceEntityType, String nameOrId, Filter[][] filters,
+                                     String message, Throwable cause) {
         super(message, cause);
-        this.sourceEntityType = sourceEntityType != null ? sourceEntityType.getSimpleName() : null;
+        this.sourceEntityType = sourceEntityType;
         this.filters = filters;
         this.nameOrId = nameOrId;
     }
@@ -51,7 +67,7 @@ public final class RelationNotFoundException extends InventoryException {
     }
 
     public RelationNotFoundException(String nameOrId, Filter[] filters, String message) {
-        this(null, nameOrId, filters, message, null);
+        this((String) null, nameOrId, oneElem(filters), message, null);
     }
 
     public RelationNotFoundException(Class<? extends Entity> sourceEntityType, Filter[] filters) {
@@ -63,11 +79,11 @@ public final class RelationNotFoundException extends InventoryException {
     }
 
     public RelationNotFoundException(String nameOrId, Filter[] filters) {
-        this(null, nameOrId, filters, null, null);
+        this((String) null, nameOrId, oneElem(filters), null, null);
     }
 
     public RelationNotFoundException(String nameOrId, Filter[][] filters) {
-        this(null, nameOrId, filters, null, null);
+        this((String) null, nameOrId, filters, null, null);
     }
 
     @Override

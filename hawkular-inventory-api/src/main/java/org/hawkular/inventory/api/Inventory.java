@@ -22,9 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -34,12 +32,16 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Inventory stores "resources" which are groupings of measurements and other data. Inventory also stores metadata about
@@ -425,13 +427,16 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
                 if (rt != null && ot == null) {
                     ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
 
-                    return accessInterface.cast(rts.data().get(ids.getDataRole()));
+                    DataRole.ResourceType role = DataRole.ResourceType.valueOf(ids.getDataRole());
+                    return accessInterface.cast(rts.data().get(role));
                 } else if (ot != null) {
                     OperationTypes.Single ots = inspect(path.up(), OperationTypes.Single.class);
-                    return accessInterface.cast(ots.data().get(ids.getDataRole()));
+                    DataRole.OperationType role = DataRole.OperationType.valueOf(ids.getDataRole());
+                    return accessInterface.cast(ots.data().get(role));
                 } else {
                     Resources.Single res = inspect(path.up(), Resources.Single.class);
-                    return accessInterface.cast(res.data().get(ids.getDataRole()));
+                    DataRole.Resource role = DataRole.Resource.valueOf(ids.getDataRole());
+                    return accessInterface.cast(res.data().get(role));
                 }
             }
 
@@ -459,7 +464,7 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
                 int leftOutTop = 0;
                 while (it.hasNext()) {
                     CanonicalPath p = it.next();
-                    if (Resource.class.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
+                    if (SegmentType.r.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
                         ret.add(p);
                     }
                 }

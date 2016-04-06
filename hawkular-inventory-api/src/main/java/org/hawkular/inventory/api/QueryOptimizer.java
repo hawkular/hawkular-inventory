@@ -33,8 +33,10 @@ import java.util.Set;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -149,8 +151,9 @@ final class QueryOptimizer {
             boolean checkFailed = false;
             CHECK:
             for (CanonicalPath.Extender checker : checkers) {
+                org.hawkular.inventory.paths.SegmentType[] types = typeFilter.getSegmentTypes();
                 for (int n = 0; n < typeFilter.getTypes().length; ++n) {
-                    Path.Segment seg = new Path.Segment(typeFilter.getTypes()[n], idFilter.getIds()[n]);
+                    Path.Segment seg = new Path.Segment(types[n], idFilter.getIds()[n]);
                     if (!checker.canExtendTo(seg)) {
                         if (cpFilter == null) {
                             //k we tried to start a new cp filter, but failed
@@ -269,14 +272,15 @@ final class QueryOptimizer {
 
             //remove anything from newFilters that is also matched by the canonical path filter
             Set<Class<?>> expectedClasses = Arrays.asList(sources).stream()
-                    .map((s) -> s.getSegment().getElementType()).collect(toSet());
+                    .map((s) -> AbstractElement.toElementClass(s.getSegment().getElementType())).collect(toSet());
             Set<String> expectedIds = Arrays.asList(sources).stream().map((s) -> s.getSegment().getElementId())
                     .collect(toSet());
 
             for (Iterator<QueryFragment> it = newFilters.iterator(); it.hasNext(); ) {
                 QueryFragment f = it.next();
                 if (f.getFilter() instanceof With.Types) {
-                    Set<Class<?>> filterTypes = new HashSet<>(Arrays.asList(((With.Types) f.getFilter()).getTypes()));
+                    Set<SegmentType> filterTypes =
+                            new HashSet<>(Arrays.asList(((With.Types) f.getFilter()).getSegmentTypes()));
                     if (!expectedClasses.equals(filterTypes)) {
                         break;
                     }

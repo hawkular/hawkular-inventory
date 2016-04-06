@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,7 @@ import org.hawkular.accounts.api.OperationService;
 import org.hawkular.accounts.api.PermissionChecker;
 import org.hawkular.accounts.api.model.Operation;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
@@ -41,6 +41,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.RestApiLogger;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 
@@ -78,11 +79,11 @@ public class InventorySecurity implements Security {
     }
 
     public boolean canUpdate(CanonicalPath path) {
-        return safePermissionCheck(path, update(path.getSegment().getElementType()));
+        return safePermissionCheck(path, update(Entity.typeFromSegmentType(path.getSegment().getElementType())));
     }
 
     public boolean canDelete(CanonicalPath path) {
-        return safePermissionCheck(path, delete(path.getSegment().getElementType()));
+        return safePermissionCheck(path, delete(Entity.typeFromSegmentType(path.getSegment().getElementType())));
     }
 
     public boolean canAssociateFrom(CanonicalPath path) {
@@ -124,8 +125,8 @@ public class InventorySecurity implements Security {
     }
 
     private boolean safePermissionCheck(CanonicalPath path, Operation operation) {
-        return safePermissionCheck(path.getSegment().getElementType(), path.getSegment().getElementId(),
-                operation, EntityIdUtils.getStableId(path));
+        return safePermissionCheck(Entity.typeFromSegmentType(path.getSegment().getElementType()),
+                path.getSegment().getElementId(), operation, EntityIdUtils.getStableId(path));
     }
 
     private boolean safePermissionCheck(Class<?> entityType, String entityId, Operation operation, String stableId) {

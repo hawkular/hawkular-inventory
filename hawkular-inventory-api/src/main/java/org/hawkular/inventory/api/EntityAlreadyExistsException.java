@@ -19,8 +19,8 @@ package org.hawkular.inventory.api;
 import java.util.Arrays;
 
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * @author Lukas Krejci

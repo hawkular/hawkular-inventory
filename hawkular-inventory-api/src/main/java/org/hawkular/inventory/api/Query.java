@@ -24,8 +24,8 @@ import java.util.function.Function;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * Represents a tree of filters.

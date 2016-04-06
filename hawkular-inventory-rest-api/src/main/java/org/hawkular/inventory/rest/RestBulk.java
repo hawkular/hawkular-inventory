@@ -58,10 +58,8 @@ import org.hawkular.inventory.api.TransactionFrame;
 import org.hawkular.inventory.api.WriteInterface;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -69,10 +67,13 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -95,7 +96,7 @@ public class RestBulk extends RestBase {
         if (path == null || path.isEmpty()) {
             p = rootPath;
         } else {
-            p = Path.fromPartiallyUntypedString(path, rootPath, rootPath, Entity.class);
+            p = Path.fromPartiallyUntypedString(path, rootPath, rootPath, SegmentType.ANY_ENTITY);
         }
         if (p.isRelative()) {
             p = p.toRelativePath().applyTo(rootPath);
@@ -141,22 +142,22 @@ public class RestBulk extends RestBase {
         }
     }
 
-    private static WriteInterface<?, ?, ?, ?> step(Class<?> elementClass, Class<?> nextType,
+    private static WriteInterface<?, ?, ?, ?> step(SegmentType elementClass, Class<?> nextType,
                                                    ResolvableToSingle<?, ?> single) {
 
         return ElementTypeVisitor.accept(elementClass,
                 new ElementTypeVisitor.Simple<WriteInterface<?, ?, ?, ?>, Void>() {
 
                     @Override
-                    protected WriteInterface<?, ?, ?, ?> defaultAction(
-                            Class<? extends AbstractElement<?, ?>> elementType, Void parameter) {
+                    protected WriteInterface<?, ?, ?, ?> defaultAction(SegmentType elementType, Void parameter) {
                         throw new IllegalArgumentException("Entity of type '" + nextType.getSimpleName() + "' cannot " +
                                 "be created under an entity of type '" + elementClass.getSimpleName() + "'.");
                     }
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitEnvironment(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
                                 return ((Environments.Single) single).metrics();
@@ -171,7 +172,8 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
                                 return ((Feeds.Single) single).metrics();
@@ -196,7 +198,8 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitOperationType(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((OperationTypes.Single) single).data();
@@ -206,7 +209,8 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitResource(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((Resources.Single) single).data();
@@ -221,7 +225,8 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitResourceType(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override
                             public WriteInterface<?, ?, ?, ?> visitData(Void parameter) {
                                 return ((ResourceTypes.Single) single).data();
@@ -236,7 +241,8 @@ public class RestBulk extends RestBase {
 
                     @Override
                     public WriteInterface<?, ?, ?, ?> visitTenant(Void parameter) {
-                        return ElementTypeVisitor.accept(nextType, new RejectingVisitor() {
+                        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(nextType),
+                                new RejectingVisitor() {
                             @Override public WriteInterface<?, ?, ?, ?> visitFeed(Void parameter) {
                                 return ((Tenants.Single) single).feeds();
                             }
@@ -265,8 +271,7 @@ public class RestBulk extends RestBase {
 
                     class RejectingVisitor extends ElementTypeVisitor.Simple<WriteInterface<?, ?, ?, ?>, Void> {
                         @Override
-                        protected WriteInterface<?, ?, ?, ?> defaultAction(
-                                Class<? extends AbstractElement<?, ?>> elementType, Void parameter) {
+                        protected WriteInterface<?, ?, ?, ?> defaultAction(SegmentType elementType, Void parameter) {
                             throw new IllegalArgumentException(
                                     "Entity of type '" + nextType.getSimpleName() + "' cannot " +
                                             "be created under an entity of type '" + elementClass.getSimpleName() +
@@ -418,7 +423,7 @@ public class RestBulk extends RestBase {
                                   IdExtractor idExtractor, CanonicalPath parentPath,
                                   ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single,
                                   ElementType elementType, List<Blueprint> blueprints) {
-        if (!parentPath.modified().canExtendTo(elementType.elementType)) {
+        if (!parentPath.modified().canExtendTo(elementType.segmentType)) {
             putStatus(statuses, elementType, parentPath, BAD_REQUEST.getStatusCode());
             return;
         }
@@ -426,7 +431,7 @@ public class RestBulk extends RestBase {
         if (!canCreateUnderParent(elementType, parentPath, statuses)) {
             for (Blueprint b : blueprints) {
                 String id = b.accept(idExtractor, null);
-                putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                putStatus(statuses, elementType, parentPath.extend(elementType.segmentType, id).get(),
                         FORBIDDEN.getStatusCode());
             }
             return;
@@ -437,7 +442,7 @@ public class RestBulk extends RestBase {
                     step(parentPath.getSegment().getElementType(), elementType
                             .elementType, single);
 
-            CanonicalPath provisionalChildPath = parentPath.extend(elementType.elementType, b.accept(idExtractor, null))
+            CanonicalPath provisionalChildPath = parentPath.extend(elementType.segmentType, b.accept(idExtractor, null))
                     .get();
             boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, provisionalChildPath);
             if (hasBeenProcessed) {
@@ -448,7 +453,7 @@ public class RestBulk extends RestBase {
                 //this is cheap - the call to entity() right after create() doesn't fetch from the backend
                 String childId = create(b, wrt).entity().getId();
 
-                CanonicalPath childPath = parentPath.extend(elementType.elementType, childId).get();
+                CanonicalPath childPath = parentPath.extend(elementType.segmentType, childId).get();
 
                 putStatus(statuses, elementType, childPath, CREATED.getStatusCode());
             } catch (EntityAlreadyExistsException ex) {
@@ -468,7 +473,7 @@ public class RestBulk extends RestBase {
                 for (Blueprint b : blueprints) {
                     Relationship.Blueprint rb = (Relationship.Blueprint) b;
                     String id = parentPath.toString() + arrow(rb) + rb.getOtherEnd();
-                    putStatus(statuses, elementType, parentPath.extend(elementType.elementType, id).get(),
+                    putStatus(statuses, elementType, parentPath.extend(elementType.segmentType, id).get(),
                             FORBIDDEN.getStatusCode());
                 }
                 return;
@@ -523,7 +528,7 @@ public class RestBulk extends RestBase {
             statuses) {
 
         Map<CanonicalPath, Integer> elementsOfType = statuses.get(
-                ElementType.ofElementType(elementPath.getSegment().getElementType()));
+                ElementType.ofSegmentType(elementPath.getSegment().getElementType()));
 
         if (elementsOfType == null) {
             return false;
@@ -539,28 +544,31 @@ public class RestBulk extends RestBase {
     }
 
     private enum ElementType {
-        environment(Environment.class, Environment.Blueprint.class),
-        resourceType(ResourceType.class, ResourceType.Blueprint.class),
-        metricType(MetricType.class, MetricType.Blueprint.class),
-        operationType(OperationType.class, OperationType.Blueprint.class),
-        feed(Feed.class, Feed.Blueprint.class),
-        metric(Metric.class, Metric.Blueprint.class),
-        resource(Resource.class, Resource.Blueprint.class),
-        dataEntity(DataEntity.class, DataEntity.Blueprint.class),
-        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class),
-        relationship(Relationship.class, Relationship.Blueprint.class);
+        environment(Environment.class, Environment.Blueprint.class, SegmentType.e),
+        resourceType(ResourceType.class, ResourceType.Blueprint.class, SegmentType.rt),
+        metricType(MetricType.class, MetricType.Blueprint.class, SegmentType.mt),
+        operationType(OperationType.class, OperationType.Blueprint.class, SegmentType.ot),
+        feed(Feed.class, Feed.Blueprint.class, SegmentType.f),
+        metric(Metric.class, Metric.Blueprint.class, SegmentType.m),
+        resource(Resource.class, Resource.Blueprint.class, SegmentType.r),
+        dataEntity(DataEntity.class, DataEntity.Blueprint.class, SegmentType.d),
+        metadataPack(MetadataPack.class, MetadataPack.Blueprint.class, SegmentType.mp),
+        relationship(Relationship.class, Relationship.Blueprint.class, SegmentType.r);
 
         final Class<? extends AbstractElement<?, ?>> elementType;
         final Class<? extends Blueprint> blueprintType;
+        final SegmentType segmentType;
 
-        ElementType(Class<? extends AbstractElement<?, ?>> elementType, Class<? extends Blueprint> blueprintType) {
+        ElementType(Class<? extends AbstractElement<?, ?>> elementType, Class<? extends Blueprint> blueprintType,
+                SegmentType segmentType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
+            this.segmentType = segmentType;
         }
 
-        public static ElementType ofElementType(Class<?> type) {
+        public static ElementType ofSegmentType(SegmentType type) {
             for (ElementType et : ElementType.values()) {
-                if (et.elementType.equals(type)) {
+                if (et.segmentType.equals(type)) {
                     return et;
                 }
             }

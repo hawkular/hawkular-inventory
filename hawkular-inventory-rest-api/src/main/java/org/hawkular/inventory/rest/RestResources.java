@@ -45,14 +45,14 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.filters.ResourceFilters;
 import org.hawkular.inventory.rest.json.ApiError;
 
@@ -402,7 +402,7 @@ public class RestResources extends RestBase {
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
-        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.SEGMENT_TYPE))
                 .forEach(access::associate);
 
         return Response.noContent().build();
@@ -428,7 +428,7 @@ public class RestResources extends RestBase {
 
         Resources.ReadAssociate access = inventory.inspect(parent, Resources.Single.class).allResources();
 
-        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.class))
+        resources.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenantPath, parent, Resource.SEGMENT_TYPE))
                 .forEach(access::associate);
 
         return Response.noContent().build();
@@ -459,7 +459,7 @@ public class RestResources extends RestBase {
             childPath = "/" + childPath;
         }
 
-        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.SEGMENT_TYPE);
 
         inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
@@ -490,7 +490,7 @@ public class RestResources extends RestBase {
             childPath = "/" + childPath;
         }
 
-        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.class);
+        Path child = Path.fromPartiallyUntypedString(childPath, tenantPath, parent, Resource.SEGMENT_TYPE);
 
         inventory.inspect(parent, Resources.Single.class).allResources().disassociate(child);
 
@@ -601,16 +601,16 @@ public class RestResources extends RestBase {
     }
 
     protected CanonicalPath composeCanonicalPath(String tenantId, String envId, String feedId, String resourcePath) {
-        CanonicalPath.Extender parent = CanonicalPath.empty().extend(Tenant.class, tenantId);
+        CanonicalPath.Extender parent = CanonicalPath.empty().extend(Tenant.SEGMENT_TYPE, tenantId);
 
         if (feedId != null) {
-            parent = parent.extend(Feed.class, feedId);
+            parent = parent.extend(Feed.SEGMENT_TYPE, feedId);
         } else {
-            parent = parent.extend(Environment.class, envId);
+            parent = parent.extend(Environment.SEGMENT_TYPE, envId);
         }
 
         return CanonicalPath.fromPartiallyUntypedString(parent.get().toString() + "/" + resourcePath, parent.get(),
-                Resource.class);
+                Resource.SEGMENT_TYPE);
     }
 
     @GET

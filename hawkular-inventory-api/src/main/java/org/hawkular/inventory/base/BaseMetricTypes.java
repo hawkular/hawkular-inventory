@@ -30,12 +30,12 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
-import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -67,7 +67,7 @@ public final class BaseMetricTypes {
             tx.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
-                    parentPath.extend(MetricType.class, tx.extractId(entity)).get(), null,
+                    parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
 
@@ -194,7 +194,7 @@ public final class BaseMetricTypes {
             implements MetricTypes.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, MetricType> context) {
-            super(context, incorporates, ResourceType.class);
+            super(context, incorporates, SegmentType.rt);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,8 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A metadata pack defines a bunch of resource types and metric types. It computes a hash of its "contents" so that
@@ -39,12 +40,14 @@ import org.hawkular.inventory.api.ResourceTypes;
  */
 public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataPack.Update> {
 
-    public static boolean canIncorporate(CanonicalPath entityPath) {
-        Class<?> entityType = entityPath.getSegment().getElementType();
-        Class<?> parentType = entityPath.up().getSegment().getElementType();
+    public static final SegmentType SEGMENT_TYPE = SegmentType.mp;
 
-        return Tenant.class.equals(parentType)
-                && (ResourceType.class.equals(entityType) || MetricType.class.equals(entityType));
+    public static boolean canIncorporate(CanonicalPath entityPath) {
+        SegmentType entityType = entityPath.getSegment().getElementType();
+        SegmentType parentType = entityPath.up().getSegment().getElementType();
+
+        return SegmentType.t.equals(parentType)
+                && (SegmentType.rt.equals(entityType) || SegmentType.mt.equals(entityType));
     }
 
     private MetadataPack() {
@@ -140,23 +143,23 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
         }
 
         public DataEntity.Blueprint<?> getReturnType(OperationType.Blueprint operationType) {
-            return thatOrEmpty(returnTypes.get(operationType), OperationTypes.DataRole.returnType);
+            return thatOrEmpty(returnTypes.get(operationType), DataRole.OperationType.returnType);
         }
 
         public DataEntity.Blueprint<?> getParameterTypes(OperationType.Blueprint operationType) {
-            return thatOrEmpty(parameterTypes.get(operationType), OperationTypes.DataRole.parameterTypes);
+            return thatOrEmpty(parameterTypes.get(operationType), DataRole.OperationType.parameterTypes);
         }
 
         public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
-            return thatOrEmpty(configurationSchemas.get(rt), ResourceTypes.DataRole.configurationSchema);
+            return thatOrEmpty(configurationSchemas.get(rt), DataRole.ResourceType.configurationSchema);
         }
 
         public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
             return thatOrEmpty(connectionConfigurationSchemas.get(rt),
-                    ResourceTypes.DataRole.connectionConfigurationSchema);
+                    DataRole.ResourceType.connectionConfigurationSchema);
         }
 
-        private DataEntity.Blueprint<?> thatOrEmpty(DataEntity.Blueprint<?> b, DataEntity.Role role) {
+        private DataEntity.Blueprint<?> thatOrEmpty(DataEntity.Blueprint<?> b, DataRole role) {
             if (b == null) {
                 b = DataEntity.Blueprint.builder().withRole(role).build();
             }
@@ -213,7 +216,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
                     return new OperationTypeBuilder(ot);
                 }
 
-                public ResourceTypeBuilder with(DataEntity.Blueprint<ResourceTypes.DataRole> data) {
+                public ResourceTypeBuilder with(DataEntity.Blueprint<DataRole.ResourceType> data) {
                     switch (data.getRole()) {
                         case configurationSchema:
                             resourceTypeConfigurationSchemas.put(rt, data);
@@ -237,7 +240,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
                         this.ot = ot;
                     }
 
-                    public OperationTypeBuilder with(DataEntity.Blueprint<OperationTypes.DataRole> data) {
+                    public OperationTypeBuilder with(DataEntity.Blueprint<DataRole.OperationType> data) {
                         switch (data.getRole()) {
                             case returnType:
                                 operationTypeReturnType.put(ot, data);

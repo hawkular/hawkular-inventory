@@ -28,13 +28,14 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -69,7 +70,7 @@ public final class BaseMetrics {
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
-                        MetricType.class);
+                        MetricType.SEGMENT_TYPE);
                 metricTypeObject = tx.find(metricTypePath);
 
             } catch (ElementNotFoundException e) {
@@ -86,7 +87,7 @@ public final class BaseMetrics {
 
             MetricType metricType = tx.convert(metricTypeObject, MetricType.class);
 
-            Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.class,
+            Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.SEGMENT_TYPE,
                     tx.extractId(entity)).get(), null, metricType, blueprint.getCollectionInterval(),
                     blueprint.getProperties());
 
@@ -157,7 +158,7 @@ public final class BaseMetrics {
     public static class ReadAssociate<BE> extends Associator<BE, Metric> implements Metrics.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, Metric> context) {
-            super(context, incorporates, Resource.class);
+            super(context, incorporates, SegmentType.r);
         }
 
         @Override

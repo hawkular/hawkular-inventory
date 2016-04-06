@@ -22,6 +22,9 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
+
 
 /**
  * A resource is a grouping of other data (currently just metrics). A resource can have a type, which prescribes how
@@ -32,6 +35,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement
 public final class Resource extends IdentityHashedEntity<Resource.Blueprint, Resource.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.r;
 
     private final ResourceType type;
 

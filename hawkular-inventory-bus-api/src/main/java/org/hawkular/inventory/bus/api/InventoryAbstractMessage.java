@@ -17,9 +17,9 @@
 package org.hawkular.inventory.bus.api;
 
 import org.hawkular.bus.common.AbstractMessage;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.json.mixins.model.CanonicalPathMixin;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

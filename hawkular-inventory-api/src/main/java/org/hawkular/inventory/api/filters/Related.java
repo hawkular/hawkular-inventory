@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@ package org.hawkular.inventory.api.filters;
 import java.util.Objects;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * Defines a filter on entities having specified relationship.
@@ -46,7 +46,7 @@ public class Related extends Filter {
     }
 
     /**
-     * An overloaded version of {@link #with(org.hawkular.inventory.api.model.CanonicalPath, String)} that uses one of
+     * An overloaded version of {@link #with(org.hawkular.inventory.paths.CanonicalPath, String)} that uses one of
      * the {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
      *
      * @param entityPath the entity that is the target of the relationship
@@ -102,7 +102,7 @@ public class Related extends Filter {
     }
 
     /**
-     * An overloaded version of {@link #asTargetWith(org.hawkular.inventory.api.model.CanonicalPath, String)} that uses
+     * An overloaded version of {@link #asTargetWith(org.hawkular.inventory.paths.CanonicalPath, String)} that uses
      * one of the {@link org.hawkular.inventory.api.Relationships.WellKnown} as the name of the relationship.
      *
      * @param entityPath the entity that is the source of the relationship

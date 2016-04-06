@@ -25,7 +25,6 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -36,15 +35,17 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 import rx.Observable;
 
@@ -381,7 +382,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.ReadWrite<ResourceTypes.DataRole> data() {
+        public Data.ReadWrite<DataRole.ResourceType> data() {
             return new DataReadWrite<>();
         }
 
@@ -422,7 +423,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Read<ResourceTypes.DataRole> data() {
+        public Data.Read<DataRole.ResourceType> data() {
             return new DataRead<>();
         }
 
@@ -1272,7 +1273,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.ReadWrite<Resources.DataRole> data() {
+        public Data.ReadWrite<DataRole.Resource> data() {
             return new DataReadWrite<>();
         }
 
@@ -1328,7 +1329,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Read<Resources.DataRole> data() {
+        public Data.Read<DataRole.Resource> data() {
             return new DataRead<>();
         }
 
@@ -1363,7 +1364,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class DataRead<Role extends DataEntity.Role> implements Data.Read<Role> {
+    public static class DataRead<Role extends DataRole> implements Data.Read<Role> {
 
         @Override
         public Data.Multiple getAll(Filter[][] filters) {
@@ -1376,7 +1377,7 @@ public class EmptyInventory implements Inventory {
         }
     }
 
-    public static class DataReadWrite<Role extends DataEntity.Role> implements Data.ReadWrite<Role> {
+    public static class DataReadWrite<Role extends DataRole> implements Data.ReadWrite<Role> {
 
         @Override
         public Data.Multiple getAll(Filter[][] filters) {
@@ -1492,7 +1493,7 @@ public class EmptyInventory implements Inventory {
 
     public static class OperationTypesSingle implements OperationTypes.Single {
 
-        @Override public Data.ReadWrite<OperationTypes.DataRole> data() {
+        @Override public Data.ReadWrite<DataRole.OperationType> data() {
             return new DataReadWrite<>();
         }
 
@@ -1527,7 +1528,7 @@ public class EmptyInventory implements Inventory {
 
     public static class OperationTypesMultiple implements OperationTypes.Multiple {
 
-        @Override public Data.Read<OperationTypes.DataRole> data() {
+        @Override public Data.Read<DataRole.OperationType> data() {
             return new DataRead<>();
         }
 

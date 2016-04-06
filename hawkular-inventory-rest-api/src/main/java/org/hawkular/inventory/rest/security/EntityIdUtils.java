@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,17 +19,17 @@ package org.hawkular.inventory.rest.security;
 import java.util.UUID;
 
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 /**
  * @author Jirka Kremser
@@ -50,30 +50,36 @@ public class EntityIdUtils {
         CanonicalPath.Extender path = CanonicalPath.empty();
         if (chunks.length == 2) {
             if ("tenants".equals(chunks[0])) {
-                path.extend(Tenant.class, chunks[1]);
+                path.extend(Tenant.SEGMENT_TYPE, chunks[1]);
             } else if ("relationships".equals(chunks[0])) {
-                path.extend(Relationship.class, chunks[1]);
+                path.extend(Relationship.SEGMENT_TYPE, chunks[1]);
             }
         } else if (chunks.length == 3) {
             if ("environments".equals(chunks[1])) {
-                path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[2]);
+                path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Environment.SEGMENT_TYPE, chunks[2]);
             } else if ("resourceTypes".equals(chunks[1])) {
-                path.extend(Tenant.class, chunks[0]).extend(ResourceType.class, chunks[2]);
+                path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(ResourceType.SEGMENT_TYPE, chunks[2]);
             } else if ("metricTypes".equals(chunks[1])) {
-                path.extend(Tenant.class, chunks[0]).extend(MetricType.class, chunks[2]);
+                path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(MetricType.SEGMENT_TYPE, chunks[2]);
             } else if ("feeds".equals(chunks[1])) {
-                path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]);
+                path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Feed.SEGMENT_TYPE, chunks[2]);
             }
         } else if (chunks.length == 4 && "resources".equals(chunks[2])) {
-            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Resource.class,
+            path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Environment.SEGMENT_TYPE, chunks[1]).extend(
+                    Resource.SEGMENT_TYPE,
                     chunks[3]);
         } else if (chunks.length == 4 && "metrics".equals(chunks[2])) {
-            path.extend(Tenant.class, chunks[0]).extend(Environment.class, chunks[1]).extend(Metric.class,
+            path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Environment.SEGMENT_TYPE, chunks[1]).extend(
+                    Metric.SEGMENT_TYPE,
                     chunks[3]);
         } else if (chunks.length == 5 && "resources".equals(chunks[3])) {
-            path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]).extend(Resource.class, chunks[4]);
+            path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Feed.SEGMENT_TYPE, chunks[2]).extend(
+                    Resource.SEGMENT_TYPE,
+                    chunks[4]);
         } else if (chunks.length == 5 && "metrics".equals(chunks[3])) {
-            path.extend(Tenant.class, chunks[0]).extend(Feed.class, chunks[2]).extend(Metric.class, chunks[4]);
+            path.extend(Tenant.SEGMENT_TYPE, chunks[0]).extend(Feed.SEGMENT_TYPE, chunks[2]).extend(
+                    Metric.SEGMENT_TYPE,
+                    chunks[4]);
         }
         return path.get();
     }

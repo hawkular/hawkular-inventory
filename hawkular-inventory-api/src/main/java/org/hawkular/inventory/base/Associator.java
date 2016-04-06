@@ -24,8 +24,9 @@ import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A base class for implementations of {@code *ReadAssociate} implementations.
@@ -36,10 +37,10 @@ import org.hawkular.inventory.api.model.Relationship;
 class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
     private final Relationships.WellKnown relationship;
-    private final Class<? extends Entity<?, ?>> sourceEntityType;
+    private final SegmentType sourceEntityType;
 
     protected Associator(TraversalContext<BE, E> context, Relationships.WellKnown relationship,
-                         Class<? extends Entity<?, ?>> sourceEntityType) {
+                         SegmentType sourceEntityType) {
         super(context);
         this.relationship = relationship;
         this.sourceEntityType = sourceEntityType;
@@ -50,7 +51,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
         return associate(context, sourceEntityType, relationship, id);
     }
 
-    static <BE> Relationship associate(TraversalContext<BE, ?> context, Class<? extends Entity<?, ?>> sourceEntityType,
+    static <BE> Relationship associate(TraversalContext<BE, ?> context, SegmentType sourceEntityType,
                                        Relationships.WellKnown relationship, Path id) {
         return inTx(context, tx -> {
             BE target = Util.find(tx, context.sourcePath, id);
@@ -74,7 +75,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     }
 
     static <BE> Relationship disassociate(TraversalContext<BE, ?> context,
-                                          Class<? extends Entity<?, ?>> sourceEntityType,
+                                          SegmentType sourceEntityType,
                                           Relationships.WellKnown relationship, Path id) {
         return inTx(context, tx -> {
             BE target = Util.find(tx, context.sourcePath, id);
@@ -94,7 +95,7 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     }
 
     static <BE> Relationship associationWith(TraversalContext<BE, ?> context,
-                                             Class<? extends Entity<?, ?>> sourceEntityType,
+                                             SegmentType sourceEntityType,
                                              Relationships.WellKnown relationship, Path path)
             throws RelationNotFoundException {
 
@@ -102,16 +103,14 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
             Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
             Query targetQuery = Util.queryTo(context.sourcePath, path);
 
-            @SuppressWarnings("unchecked")
-            Class<? extends Entity<?, ?>> targetType = (Class<? extends Entity<?, ?>>) path.getSegment()
-                    .getElementType();
+            SegmentType targetType = path.getSegment().getElementType();
 
             return Util.getAssociation(tx, sourceQuery, sourceEntityType, targetQuery, targetType, relationship.name());
         });
     }
 
     protected void checkPathLegal(Path targetPath) {
-        if (!context.entityClass.equals(targetPath.getSegment().getElementType())) {
+        if (!context.entityClass.getSimpleName().equals(targetPath.getSegment().getElementType().getSimpleName())) {
             throw new IllegalArgumentException("Current position in the inventory traversal expects entities of type " +
                     context.entityClass.getSimpleName() + " which is incompatible with the provided path: " +
                     targetPath);

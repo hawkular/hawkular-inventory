@@ -18,12 +18,12 @@ package org.hawkular.inventory.api.model;
 
 import static java.util.stream.Collectors.toList;
 
-import static org.hawkular.inventory.api.OperationTypes.DataRole.parameterTypes;
-import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
-import static org.hawkular.inventory.api.Resources.DataRole.configuration;
-import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
+import static org.hawkular.inventory.paths.DataRole.OperationType.parameterTypes;
+import static org.hawkular.inventory.paths.DataRole.OperationType.returnType;
+import static org.hawkular.inventory.paths.DataRole.Resource.configuration;
+import static org.hawkular.inventory.paths.DataRole.Resource.connectionConfiguration;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,6 +51,10 @@ import java.util.function.Function;
 
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.TreeTraversal;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
@@ -332,7 +336,7 @@ public final class IdentityHash {
         }
     }
 
-    private static <R extends DataEntity.Role> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
+    private static <R extends DataRole> DataEntity.Blueprint<R> dummyDataBlueprint(R role) {
         return DataEntity.Blueprint.<R>builder().withRole(role).withValue(StructuredData.get().undefined()).build();
     }
 
@@ -379,7 +383,7 @@ public final class IdentityHash {
                 @Override
                 public DataEntity.Blueprint<?> getConfiguration(RelativePath rootPath,
                                                                 Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = rootPath.modified().extend(Resource.class, parentResource.getId())
+                    RelativePath resourcePath = rootPath.modified().extend(SegmentType.r, parentResource.getId())
                             .get().slide(1, 0);
 
                     return structure.getChildren(resourcePath, DataEntity.class)
@@ -399,7 +403,7 @@ public final class IdentityHash {
                 @Override
                 public DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root,
                                                                           Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = root.modified().extend(Resource.class, parentResource.getId())
+                    RelativePath resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
                             .get().slide(1, 0);
 
                     return structure.getChildren(resourcePath, DataEntity.class)
@@ -438,7 +442,7 @@ public final class IdentityHash {
                 @Override
                 public DataEntity.Blueprint<?> getParameterTypes(RelativePath rootResourceType,
                                                                  OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(OperationType.class, ot.getId()).get()
+                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
                             .slide(1, 0);
 
                     return structure.getChildren(p, DataEntity.class)
@@ -449,7 +453,7 @@ public final class IdentityHash {
                 @Override
                 public List<Metric.Blueprint> getResourceMetrics(RelativePath rootPath,
                                                                  Resource.Blueprint parentResource) {
-                    RelativePath p = rootPath.modified().extend(Resource.class, parentResource.getId()).get()
+                    RelativePath p = rootPath.modified().extend(SegmentType.r, parentResource.getId()).get()
                             .slide(1, 0);
 
                     return structure.getChildren(p, Metric.class).collect(toList());
@@ -457,7 +461,7 @@ public final class IdentityHash {
 
                 @Override
                 public List<Resource.Blueprint> getResources(RelativePath rootPath, Resource.Blueprint parentResource) {
-                    RelativePath p = rootPath.modified().extend(Resource.class, parentResource.getId()).get()
+                    RelativePath p = rootPath.modified().extend(SegmentType.r, parentResource.getId()).get()
                             .slide(1, 0);
 
                     return structure.getChildren(p, Resource.class).collect(toList());
@@ -469,7 +473,7 @@ public final class IdentityHash {
 
                 @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
                                                                        OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(OperationType.class, ot.getId()).get()
+                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
                             .slide(1, 0);
 
                     return structure.getChildren(p, DataEntity.class)
@@ -559,7 +563,8 @@ public final class IdentityHash {
         final StringBuilder content = new StringBuilder();
 
         public IntermediateHashContext progress(Entity.Blueprint bl) {
-            return new IntermediateHashContext(root.modified().extend(Blueprint.getEntityTypeOf(bl), bl.getId()).get());
+            return new IntermediateHashContext(root.modified().extend(Blueprint.getSegmentTypeOf(bl),
+                    bl.getId()).get());
         }
 
         public IntermediateHashContext(RelativePath root) {

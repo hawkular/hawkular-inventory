@@ -30,11 +30,12 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 /**
  * @author Lukas Krejci
@@ -63,7 +64,7 @@ public final class BaseOperationTypes {
         wireUpNewEntity(BE entity, OperationType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new OperationType(blueprint.getName(),
-                    parentPath.extend(OperationType.class, tx.extractId(entity)).get(), null,
+                    parentPath.extend(OperationType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
                     blueprint.getProperties()), emptyList());
         }
 
@@ -129,7 +130,7 @@ public final class BaseOperationTypes {
             super(context);
         }
 
-        @Override public Data.ReadWrite<OperationTypes.DataRole> data() {
+        @Override public Data.ReadWrite<DataRole.OperationType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     new OperationTypeDataModificationChecks<>(context));
         }
@@ -150,7 +151,7 @@ public final class BaseOperationTypes {
         }
 
 
-        @Override public Data.Read<OperationTypes.DataRole> data() {
+        @Override public Data.Read<DataRole.OperationType> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     new OperationTypeDataModificationChecks<>(context));
         }

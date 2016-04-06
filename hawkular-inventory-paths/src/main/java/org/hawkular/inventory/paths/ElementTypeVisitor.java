@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 /**
  * A visitor interface to accept different kinds of entities available in Hawkular.
@@ -24,31 +24,32 @@ package org.hawkular.inventory.api.model;
  */
 public interface ElementTypeVisitor<R, P> {
 
-    static <R, P> R accept(Class<?> entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
-        if (Tenant.class.equals(entityType)) {
-            return visitor.visitTenant(parameter);
-        } else if (Environment.class.equals(entityType)) {
-            return visitor.visitEnvironment(parameter);
-        } else if (Feed.class.equals(entityType)) {
-            return visitor.visitFeed(parameter);
-        } else if (Metric.class.equals(entityType)) {
-            return visitor.visitMetric(parameter);
-        } else if (MetricType.class.equals(entityType)) {
-            return visitor.visitMetricType(parameter);
-        } else if (Resource.class.equals(entityType)) {
-            return visitor.visitResource(parameter);
-        } else if (ResourceType.class.equals(entityType)) {
-            return visitor.visitResourceType(parameter);
-        } else if (Relationship.class.equals(entityType)) {
-            return visitor.visitRelationship(parameter);
-        } else if (DataEntity.class.equals(entityType)) {
-            return visitor.visitData(parameter);
-        } else if (OperationType.class.equals(entityType)) {
-            return visitor.visitOperationType(parameter);
-        } else if (MetadataPack.class.equals(entityType)) {
-            return visitor.visitMetadataPack(parameter);
-        } else {
-            return visitor.visitUnknown(parameter);
+    static <R, P> R accept(SegmentType entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
+        switch (entityType) {
+            case t:
+                return visitor.visitTenant(parameter);
+            case e:
+                return visitor.visitEnvironment(parameter);
+            case f:
+                return visitor.visitFeed(parameter);
+            case m:
+                return visitor.visitMetric(parameter);
+            case mt:
+                return visitor.visitMetricType(parameter);
+            case r:
+                return visitor.visitResource(parameter);
+            case rt:
+                return visitor.visitResourceType(parameter);
+            case rl:
+                return visitor.visitRelationship(parameter);
+            case d:
+                return visitor.visitData(parameter);
+            case ot:
+                return visitor.visitOperationType(parameter);
+            case mp:
+                return visitor.visitMetadataPack(parameter);
+            default:
+                return visitor.visitUnknown(parameter);
         }
     }
 
@@ -108,63 +109,63 @@ public interface ElementTypeVisitor<R, P> {
          * @param parameter the parameter provided to the visit* method
          * @return the default value
          */
-        protected R defaultAction(Class<? extends AbstractElement<?, ?>> elementType, P parameter) {
+        protected R defaultAction(SegmentType elementType, P parameter) {
             return defaultValue;
         }
 
         @Override
         public R visitTenant(P parameter) {
-            return defaultAction(Tenant.class, parameter);
+            return defaultAction(SegmentType.t, parameter);
         }
 
         @Override
         public R visitEnvironment(P parameter) {
-            return defaultAction(Environment.class, parameter);
+            return defaultAction(SegmentType.e, parameter);
         }
 
         @Override
         public R visitFeed(P parameter) {
-            return defaultAction(Feed.class, parameter);
+            return defaultAction(SegmentType.f, parameter);
         }
 
         @Override
         public R visitMetric(P parameter) {
-            return defaultAction(Metric.class, parameter);
+            return defaultAction(SegmentType.m, parameter);
         }
 
         @Override
         public R visitMetricType(P parameter) {
-            return defaultAction(MetricType.class, parameter);
+            return defaultAction(SegmentType.mt, parameter);
         }
 
         @Override
         public R visitResource(P parameter) {
-            return defaultAction(Resource.class, parameter);
+            return defaultAction(SegmentType.r, parameter);
         }
 
         @Override
         public R visitResourceType(P parameter) {
-            return defaultAction(ResourceType.class, parameter);
+            return defaultAction(SegmentType.rt, parameter);
         }
 
         @Override
         public R visitRelationship(P parameter) {
-            return defaultAction(Relationship.class, parameter);
+            return defaultAction(SegmentType.rl, parameter);
         }
 
         @Override
         public R visitData(P parameter) {
-            return defaultAction(DataEntity.class, parameter);
+            return defaultAction(SegmentType.d, parameter);
         }
 
         @Override
         public R visitOperationType(P parameter) {
-            return defaultAction(OperationType.class, parameter);
+            return defaultAction(SegmentType.ot, parameter);
         }
 
         @Override
         public R visitMetadataPack(P parameter) {
-            return defaultAction(MetadataPack.class, parameter);
+            return defaultAction(SegmentType.mp, parameter);
         }
 
         @Override

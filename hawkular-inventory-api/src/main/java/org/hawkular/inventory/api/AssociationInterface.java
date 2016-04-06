@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +22,8 @@ import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * An interface providing methods to add a pre-existing entity into relation with the single entity in the current
@@ -52,12 +52,12 @@ interface AssociationInterface {
      * <p>In here the {@code associate} method will add a new metric (identified by the {@code metricId}) to the
      * resource identified by the {@code rId}.
      *
-     * <p>The provided path can be a {@link org.hawkular.inventory.api.model.RelativePath} (as in the above example)
+     * <p>The provided path can be a {@link org.hawkular.inventory.paths.RelativePath} (as in the above example)
      * which is evaluated against the current position in the graph - the
-     * {@link org.hawkular.inventory.api.model.RelativePath#up() up()} call will move up the path from the resource
+     * {@link org.hawkular.inventory.paths.RelativePath#up() up()} call will move up the path from the resource
      * to the environment and the {@code metric()} call will the move to a metric in that environment.
      *
-     * <p>The provided path can also be a {@link org.hawkular.inventory.api.model.CanonicalPath} in which case it is
+     * <p>The provided path can also be a {@link org.hawkular.inventory.paths.CanonicalPath} in which case it is
      * fully evaluated and the entity on that path is associated (provided the path points to the correct type of
      * entity and all the rules specific for the association of the two types of entities are fulfilled).
      *

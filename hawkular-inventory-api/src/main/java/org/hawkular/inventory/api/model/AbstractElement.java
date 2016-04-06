@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,10 @@ import java.util.function.Function;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * A common super class of both entities and relationships.
  *
@@ -42,6 +46,41 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
 
     protected final Map<String, Object> properties;
 
+    /**
+     * This should be used only in extreme cases where {@link SegmentType} is not possible.
+     * @param elementType the type of the element
+     * @return the class representing the element type
+     */
+    public static Class<? extends AbstractElement<?, ?>> toElementClass(SegmentType elementType) {
+        switch (elementType) {
+            case t:
+                return Tenant.class;
+            case e:
+                return Environment.class;
+            case f:
+                return Feed.class;
+            case m:
+                return Metric.class;
+            case mt:
+                return MetricType.class;
+            case r:
+                return Resource.class;
+            case rt:
+                return ResourceType.class;
+             case rl:
+                return Relationship.class;
+            case d:
+                return DataEntity.class;
+            case ot:
+                return OperationType.class;
+            case mp:
+                return MetadataPack.class;
+            default:
+                throw new IllegalStateException("There is no " + Entity.class.getName() + " type for " +
+                        elementType.getClass().getName() + " '" + elementType.name() + "'");
+        }
+    }
+
     //JAXB support
     AbstractElement() {
         properties = null;
@@ -56,6 +95,46 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
             this.properties.remove(ID_PROPERTY);
         }
         this.path = path;
+    }
+
+    /**
+     * Returns the same result as {@link SegmentType#fromElementType(Class)} but provides a much better performance.
+     *
+     * @param cl the type to to map to a {@link SegmentType}
+     * @return the {@link SegmentType} corresponding to the given {@code cl}
+     * @throws IllegalStateException if there is no {@link SegmentType} corresponding to the given {@code cl}
+     */
+    public static SegmentType segmentTypeFromType(Class<?> cl) {
+        if (Tenant.class.equals(cl)) {
+            return Tenant.SEGMENT_TYPE;
+        } else if (Environment.class.equals(cl)) {
+            return Environment.SEGMENT_TYPE;
+        } else if (Feed.class.equals(cl)) {
+            return Feed.SEGMENT_TYPE;
+        } else if (Metric.class.equals(cl)) {
+            return Metric.SEGMENT_TYPE;
+        } else if (MetricType.class.equals(cl)) {
+            return MetricType.SEGMENT_TYPE;
+        } else if (Resource.class.equals(cl)) {
+            return Resource.SEGMENT_TYPE;
+        } else if (ResourceType.class.equals(cl)) {
+            return ResourceType.SEGMENT_TYPE;
+        } else if (DataEntity.class.equals(cl)) {
+            return DataEntity.SEGMENT_TYPE;
+        } else if (OperationType.class.equals(cl)) {
+            return OperationType.SEGMENT_TYPE;
+        } else if (MetadataPack.class.equals(cl)) {
+            return MetadataPack.SEGMENT_TYPE;
+        } else if (Relationship.class.equals(cl)) {
+            return Relationship.SEGMENT_TYPE;
+        } else if (StructuredData.class.equals(cl)) {
+            return StructuredData.SEGMENT_TYPE;
+        } else if (RelativePath.Up.class.equals(cl)) {
+            return RelativePath.Up.SEGMENT_TYPE;
+        } else {
+            throw new IllegalStateException("There is no " + SegmentType.class.getName() + " for type " +
+                    (cl == null ? "null" : cl.getName()));
+        }
     }
 
     /**

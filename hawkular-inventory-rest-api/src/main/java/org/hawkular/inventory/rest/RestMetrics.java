@@ -37,9 +37,9 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Parents;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import io.swagger.annotations.Api;
@@ -212,7 +212,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
 
-        if (!security.canUpdate(env.extend(Metric.class, metricId).get())) {
+        if (!security.canUpdate(env.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -239,7 +239,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
-        if (!security.canUpdate(feed.extend(Metric.class, metricId).get())) {
+        if (!security.canUpdate(feed.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -265,7 +265,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath env = CanonicalPath.of().tenant(tenantId).environment(environmentId).get();
 
-        if (!security.canDelete(env.extend(Metric.class, metricId).get())) {
+        if (!security.canDelete(env.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -289,7 +289,7 @@ public class RestMetrics extends RestBase {
 
         CanonicalPath feed = CanonicalPath.of().tenant(tenantId).feed(feedId).get();
 
-        if (!security.canDelete(feed.extend(Metric.class, metricId).get())) {
+        if (!security.canDelete(feed.extend(Metric.SEGMENT_TYPE, metricId).get())) {
             return Response.status(FORBIDDEN).build();
         }
 

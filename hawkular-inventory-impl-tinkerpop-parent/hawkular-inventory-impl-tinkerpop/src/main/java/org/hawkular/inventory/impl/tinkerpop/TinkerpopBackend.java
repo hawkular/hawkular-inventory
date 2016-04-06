@@ -60,7 +60,6 @@ import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.ElementUpdateVisitor;
@@ -75,7 +74,6 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -87,6 +85,10 @@ import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -126,7 +128,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     @Override
     public Element find(CanonicalPath path) throws ElementNotFoundException {
         Iterator<? extends Element> it;
-        if (Relationship.class.equals(path.getSegment().getElementType())) {
+        if (SegmentType.rl.equals(path.getSegment().getElementType())) {
             //__eid is globally unique for relationships
             GraphQuery query = context.getGraph().query().has(__eid.name(), path.getSegment().getElementId());
             it = query.edges().iterator();
@@ -185,8 +187,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 q = q.E();
             } else if (first instanceof With.CanonicalPaths) {
                 //XXX this does NOT handle the situation where we mix relationships and entities in one filter
-                Class<?> elementType = ((With.CanonicalPaths) first).getPaths()[0].getSegment().getElementType();
-                if (Relationship.class.equals(elementType)) {
+                SegmentType elementType = ((With.CanonicalPaths) first).getPaths()[0].getSegment().getElementType();
+                if (SegmentType.rl == elementType) {
                     q = q.E();
                 } else {
                     q = q.V();
@@ -567,7 +569,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 case dataEntity:
                     CanonicalPath cp = extractCanonicalPath(v);
                     String identityHash = extractIdentityHash(v);
-                    e = new DataEntity(cp.up(), DataEntity.Role.valueOf(cp.getSegment().getElementId()),
+                    e = new DataEntity(cp.up(), DataRole.valueOf(cp.getSegment().getElementId()),
                             loadStructuredData(v, hasData), identityHash);
                     break;
                 case operationType:
@@ -793,7 +795,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new IllegalArgumentException("Unknown type of entity blueprint: " + blueprint.getClass());
             }
 
-            private Vertex common(org.hawkular.inventory.api.model.CanonicalPath path, String name,
+            private Vertex common(org.hawkular.inventory.paths.CanonicalPath path, String name,
                                   Map<String, Object> properties, Class<? extends Entity<?, ?>> cls) {
                 try {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());

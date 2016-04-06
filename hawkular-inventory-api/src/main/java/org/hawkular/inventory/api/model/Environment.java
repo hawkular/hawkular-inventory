@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,9 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
  * "testing", "staging", "production", etc.
@@ -35,6 +38,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement
 public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.e;
 
     @SuppressWarnings("unused")
     private Environment() {

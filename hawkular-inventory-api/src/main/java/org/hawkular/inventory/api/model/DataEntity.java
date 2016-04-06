@@ -16,15 +16,12 @@
  */
 package org.hawkular.inventory.api.model;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
@@ -37,6 +34,8 @@ import org.hawkular.inventory.api.filters.Filter;
  */
 public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
+    public static final SegmentType SEGMENT_TYPE = SegmentType.d;
+
     private final StructuredData value;
 
     @SuppressWarnings("unused")
@@ -44,19 +43,19 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         this.value = null;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value, String identityHash) {
-        super(null, owner.extend(DataEntity.class, role.name()).get(), identityHash);
+    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, String identityHash) {
+        super(null, owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash);
         this.value = value;
     }
 
-    public DataEntity(CanonicalPath owner, Role role, StructuredData value, String identityHash,
+    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, String identityHash,
                       Map<String, Object> properties) {
-        super(owner.extend(DataEntity.class, role.name()).get(), identityHash, properties);
+        super(owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash, properties);
         this.value = value;
     }
 
     public DataEntity(CanonicalPath path, StructuredData value, String identityHash, Map<String, Object> properties) {
-        this(path.up(), Role.valueOf(path.getSegment().getElementId()), value, identityHash, properties);
+        this(path.up(), DataRole.valueOf(path.getSegment().getElementId()), value, identityHash, properties);
     }
 
     @Override
@@ -68,8 +67,8 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         return value;
     }
 
-    public Role getRole() {
-        return Role.valueOf(getId());
+    public DataRole getRole() {
+        return DataRole.valueOf(getId());
     }
 
     @Override
@@ -92,77 +91,20 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         });
     }
 
-    private static final class RoleInstanceHolder {
-        private static final HashMap<String, Role> instances;
-
-        static {
-            instances = new HashMap<>();
-            for (Resources.DataRole r : Resources.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-
-            for (ResourceTypes.DataRole r : ResourceTypes.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-
-            for (OperationTypes.DataRole r : OperationTypes.DataRole.values()) {
-                instances.put(r.name(), r);
-            }
-        }
-    }
-
-    /**
-     * An interface a Data entity role must implement.
-     *
-     * <p>Data entity roles are supposed to be enums, but to ensure type safety, we have to have different enums for
-     * different entity types. I.e. resources can only have data of roles from the
-     * {@link org.hawkular.inventory.api.Resources.DataRole} enum and resource types only from
-     * {@link org.hawkular.inventory.api.ResourceTypes.DataRole} enum. To achieve this, the {@link DataEntity} class
-     * works with instances of this interface (which all the individual enums have to implement) and these enums have
-     * to be "registered" in the private class of data entity - {@code RoleInstanceHolder}. Because our data model is
-     * not extensible this is easily achieved.
-     */
-    public interface Role {
-        static Role valueOf(String name) {
-            return RoleInstanceHolder.instances.get(name);
-        }
-
-        static Role[] values() {
-            Collection<Role> values = RoleInstanceHolder.instances.values();
-            return values.toArray(new Role[values.size()]);
-        }
-
-        /**
-         * @return the unique name of the role
-         */
-        String name();
-
-        /**
-         * @return the filters representing a query to go from the data entity to the data entity holding the data of
-         * the schema to validate the data. Can return null if the data entity with this role represents a schema.
-         */
-        Filter[] navigateToSchema();
-
-        /**
-         * @return true if this role represents a schema, false otherwise
-         */
-        boolean isSchema();
-    }
-
-    public static final class Blueprint<DataRole extends Role> extends Entity.Blueprint {
+    public static final class Blueprint<DR extends DataRole> extends Entity.Blueprint {
         private static final StructuredData UNDEFINED = StructuredData.get().undefined();
         private final StructuredData value;
-        private final DataRole role;
+        private final DR role;
 
-        public static <R extends Role> Builder<R> builder() {
+        public static <R extends DataRole> Builder<R> builder() {
             return new Builder<>();
         }
 
-        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties) {
+        public Blueprint(DR role, StructuredData value, Map<String, Object> properties) {
             this(role, value, properties, null, null);
         }
 
-        public Blueprint(DataRole role, StructuredData value, Map<String, Object> properties,
+        public Blueprint(DR role, StructuredData value, Map<String, Object> properties,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(role.name(), properties, outgoing, incoming);
@@ -185,7 +127,7 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             return value == null ? UNDEFINED : value;
         }
 
-        public DataRole getRole() {
+        public DR getRole() {
             return role;
         }
 
@@ -194,7 +136,7 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             return visitor.visitData(this, parameter);
         }
 
-        public static final class Builder<R extends Role> extends Entity.Blueprint.Builder<Blueprint, Builder<R>> {
+        public static final class Builder<R extends DataRole> extends Entity.Blueprint.Builder<Blueprint, Builder<R>> {
 
             private R role;
             private StructuredData value;

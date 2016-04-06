@@ -39,8 +39,6 @@ import java.util.function.BiConsumer;
 
 import org.hawkular.inventory.api.FilterFragment;
 import org.hawkular.inventory.api.Query;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Contained;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Incorporated;
@@ -48,7 +46,6 @@ import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -58,7 +55,6 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -70,6 +66,9 @@ import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.hawkular.inventory.json.mixins.model.TenantlessCanonicalPathMixin;
 import org.hawkular.inventory.json.mixins.model.TenantlessRelativePathMixin;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.RelativePath;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -111,7 +110,8 @@ public class SerializationTest {
 
     @Test
     public void testRelativePath() throws Exception {
-        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class));
+        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
+                Metric.SEGMENT_TYPE));
     }
 
     @Test
@@ -119,13 +119,13 @@ public class SerializationTest {
         mapper.addMixIn(RelativePath.class, TenantlessRelativePathMixin.class);
         DetypedPathDeserializer.setCurrentEntityType(Metric.class);
         DetypedPathDeserializer.setCurrentRelativePathOrigin(CanonicalPath.fromString("/t;t/e;e/r;r"));
-        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class)
-        );
+        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
+                Metric.SEGMENT_TYPE)        );
 
         //the test above doesn't test for deserializing a de-typed path.
         RelativePath rp = deserialize("\"../g\"", RelativePath.class);
         Assert.assertEquals(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
-                Metric.class), rp);
+                Metric.SEGMENT_TYPE), rp);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class SerializationTest {
     @Test
     public void testDataEntity() throws Exception {
         test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
-                Resources.DataRole.connectionConfiguration,
+                DataRole.Resource.connectionConfiguration,
                 StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
     }
 
@@ -374,7 +374,7 @@ public class SerializationTest {
             put("kachna", Collections.singleton(CanonicalPath.of().tenant("t").get()));
         }};
 
-        testBlueprint(DataEntity.Blueprint.builder().withRole(ResourceTypes.DataRole.configurationSchema).withName("nd")
+        testBlueprint(DataEntity.Blueprint.builder().withRole(DataRole.ResourceType.configurationSchema).withName("nd")
                 .withIncomingRelationships(incoming).withOutgoingRelationships(outgoing).withProperties(properties)
                 .build(), (bl, dbl) -> {
             Assert.assertEquals(bl.getRole(), dbl.getRole());

@@ -35,14 +35,15 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -106,7 +107,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                             "yet the entity is not a tenant: " + blueprint);
                 }
             } else {
-                entityPath = parentCanonicalPath.extend(context.entityClass, id).get();
+                entityPath = parentCanonicalPath.extend(AbstractElement.segmentTypeFromType(context.entityClass), id)
+                        .get();
             }
 
             BE entityObject = tx.persist(entityPath, blueprint);
@@ -203,25 +205,26 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     }
 
     protected BE getParent(Transaction<BE> tx) {
-        return ElementTypeVisitor.accept(context.entityClass, new ElementTypeVisitor.Simple<BE, Void>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            protected BE defaultAction(Class<? extends AbstractElement<?, ?>> elementType, Void parameter) {
-                BE res = tx.querySingle(context.sourcePath);
+        return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(context.entityClass),
+                new ElementTypeVisitor.Simple<BE, Void>() {
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    protected BE defaultAction(SegmentType elementType, Void parameter) {
+                        BE res = tx.querySingle(context.sourcePath);
 
-                if (res == null) {
-                    throw new EntityNotFoundException(context.previous.entityClass,
-                            Query.filters(context.sourcePath));
-                }
+                        if (res == null) {
+                            throw new EntityNotFoundException(context.previous.entityClass,
+                                    Query.filters(context.sourcePath));
+                        }
 
-                return res;
-            }
+                        return res;
+                    }
 
-            @Override
-            public BE visitTenant(Void parameter) {
-                return null;
-            }
-        }, null);
+                    @Override
+                    public BE visitTenant(Void parameter) {
+                        return null;
+                    }
+                }, null);
     }
 
     protected BE relate(BE source, BE target, String relationshipName) {

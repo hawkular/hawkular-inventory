@@ -31,15 +31,16 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -63,7 +64,8 @@ public final class BaseMetadataPacks {
         protected String getProposedId(Transaction<BE> tx, MetadataPack.Blueprint blueprint) {
             Iterator<? extends Entity<? extends Entity.Blueprint, ?>> members = blueprint.getMembers().stream()
                     .map((p) -> {
-                        Class<?> cls = p.getSegment().getElementType();
+                        SegmentType type = p.getSegment().getElementType();
+                        Class<?> cls = Entity.entityTypeFromSegmentType(type);
                         try {
                             BE e = tx.find(p);
                             return (Entity<? extends Entity.Blueprint, ?>) tx.convert(e, cls);
@@ -90,7 +92,8 @@ public final class BaseMetadataPacks {
                     Relationship r = tx.convert(rel, Relationship.class);
                     newRels.add(new Notification<>(r, r, created()));
                 } catch (ElementNotFoundException e) {
-                    throw new EntityNotFoundException(p.getSegment().getElementType(), Query.filters(Query.to(p)));
+                    throw new EntityNotFoundException(p.getSegment().getElementType().getSimpleName(),
+                            Query.filters(Query.to(p)));
                 }
             });
 

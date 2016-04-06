@@ -31,6 +31,8 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * Represents structured data. This is used to store configuration, operation params, etc.
  *
@@ -40,6 +42,8 @@ import java.util.function.Function;
  * @since 0.3.0
  */
 public final class StructuredData {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.sd;
 
     private final Serializable value;
 

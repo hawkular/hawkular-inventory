@@ -17,7 +17,7 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * This is a wrapper class to hold various interfaces defining available functionality on environments.

@@ -34,10 +34,10 @@ import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.cdi.Official;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import rx.Observable;
 

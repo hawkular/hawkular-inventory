@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.model;
+package org.hawkular.inventory.paths;
 
 import static java.util.stream.Collectors.toList;
 
@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,10 +32,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.hawkular.inventory.api.OperationTypes;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 
 /**
  * Represents a path in an inventory. The path is either {@link CanonicalPath} or {@link RelativePath}.
@@ -149,7 +146,7 @@ public abstract class Path {
     }
 
     /**
-     * Parses the provided path using the type provider ({@link org.hawkular.inventory.api.model.Path.TypeProvider})
+     * Parses the provided path using the type provider ({@link org.hawkular.inventory.paths.Path.TypeProvider})
      * to figure out the types of segments that don't explicitly mention it.
      *
      * <p>This is mainly geared at REST API in which this is used to parse the relative paths out of URIs in which
@@ -181,7 +178,7 @@ public abstract class Path {
      * @param intendedFinalType the intended type of the final segment of the path
      */
     public static Path fromPartiallyUntypedString(String path, CanonicalPath canonicalPathsOrigin,
-            CanonicalPath relativePathsOrigin, Class<?> intendedFinalType) {
+            CanonicalPath relativePathsOrigin, SegmentType intendedFinalType) {
         if (path.charAt(0) == PATH_DELIM) {
             return CanonicalPath.fromPartiallyUntypedString(path, canonicalPathsOrigin, intendedFinalType);
         } else {
@@ -571,11 +568,9 @@ public abstract class Path {
     }
 
     static final class Encoder {
-        private final Map<Class<?>, String> typeMap;
         private final Function<Segment, Boolean> requiresId;
 
-        public Encoder(Map<Class<?>, String> typeMap, Function<Segment, Boolean> requiresId) {
-            this.typeMap = typeMap;
+        public Encoder(Function<Segment, Boolean> requiresId) {
             this.requiresId = requiresId;
         }
 
@@ -583,13 +578,13 @@ public abstract class Path {
             StringBuilder bld = new StringBuilder(prefix);
 
             for (Segment seg : path.getPath()) {
-                String type = typeMap.get(seg.getElementType());
-                if (type != null) {
-                    bld.append(type);
+                SegmentType segmentType = seg.getElementType();
+                if (segmentType.isSerializable()) {
+                    bld.append(segmentType.getSerialized());
                 }
 
                 if (seg.getElementId() != null && requiresId.apply(seg)) {
-                    if (type != null) {
+                    if (segmentType.isSerializable()) {
                         bld.append(TYPE_DELIM);
                     }
 
@@ -602,7 +597,7 @@ public abstract class Path {
     }
 
     public static final class Segment implements Serializable {
-        private final Class<?> elementType;
+        private final SegmentType elementType;
         private final String entityId;
 
         public static Segment from(String string) {
@@ -615,7 +610,7 @@ public abstract class Path {
             String typeId = string.substring(0, delimIndex);
             String id = string.substring(delimIndex + 1);
 
-            Class<?> type = CanonicalPath.SHORT_NAME_TYPES.get(typeId);
+            SegmentType type = SegmentType.fastValueOf(typeId);
             if (type == null) {
                 throw new IllegalArgumentException("Unknown type string '" + typeId + "'.");
             }
@@ -624,10 +619,10 @@ public abstract class Path {
         }
 
         private Segment() {
-            this(null, null);
+            this((SegmentType) null, (String) null);
         }
 
-        public Segment(Class<?> elementType, String entityId) {
+        public Segment(SegmentType elementType, String entityId) {
             this.entityId = entityId;
             this.elementType = elementType;
         }
@@ -640,7 +635,7 @@ public abstract class Path {
             return entityId;
         }
 
-        public Class<?> getElementType() {
+        public SegmentType getElementType() {
             return elementType;
         }
 
@@ -676,7 +671,7 @@ public abstract class Path {
      */
     public abstract static class Extender {
         private final List<Segment> segments;
-        private final Function<List<Segment>, List<Class<?>>> validProgressions;
+        private final Function<List<Segment>, Collection<SegmentType>> validProgressions;
         private final int from;
         private int checkIndex;
 
@@ -691,7 +686,7 @@ public abstract class Path {
          * @param validProgressions given the current path, return the valid types of the next segment
          */
         Extender(int from, List<Segment> segments, boolean mergeWithInitial,
-                Function<List<Segment>, List<Class<?>>> validProgressions) {
+                Function<List<Segment>, Collection<SegmentType>> validProgressions) {
             this.from = from;
             this.segments = segments;
             this.validProgressions = validProgressions;
@@ -708,7 +703,7 @@ public abstract class Path {
          * not or null if the the extension will only succeed with a correct id (which can happen when this extender is
          * set up with some origin path and has not been extended past it).
          */
-        public Boolean canExtendTo(Class<?> segmentType) {
+        public Boolean canExtendTo(SegmentType segmentType) {
             switch (checkCanProgress(segmentType, false)) {
                 case PROCEED_IF_ID_MATCHES:
                     return null;
@@ -763,13 +758,14 @@ public abstract class Path {
                 default:
                     List<Segment> currentSegs = checkIndex >= 0 ? segments.subList(from, checkIndex) : segments;
 
-                    List<Class<?>> progress = validProgressions.apply(currentSegs);
+                    Collection<SegmentType> progress = validProgressions.apply(currentSegs);
 
                     throw new IllegalArgumentException("The provided segment " + segment + " is not valid extension" +
                             " of the path: " + currentSegs +
                             (progress == null ? ". There are no further extensions possible."
-                                    : ". Valid extension types are: " + progress.stream().map(Class::getSimpleName)
-                                    .collect(toList())));
+                                    : ". Valid extension types are: "
+                                            + progress.stream().map(SegmentType::getSimpleName)
+                                                    .collect(toList())));
             }
 
             if (checkIndex < 0 || checkIndex >= segments.size()) {
@@ -797,7 +793,7 @@ public abstract class Path {
             return this;
         }
 
-        public Extender extend(Class<? extends AbstractElement<?, ?>> type, String id) {
+        public Extender extend(SegmentType type, String id) {
             return extend(new Segment(type, id));
         }
 
@@ -805,7 +801,7 @@ public abstract class Path {
             return newPath(from, segments.size(), segments);
         }
 
-        private ProgressCheck checkCanProgress(Class<?> nextSegmentType, boolean idMatches) {
+        private ProgressCheck checkCanProgress(SegmentType nextSegmentType, boolean idMatches) {
             int indexToCheck = checkIndex;
             ProgressCheck ret = ProgressCheck.PROCEED;
 
@@ -822,7 +818,7 @@ public abstract class Path {
                         // Relationships are top-level and cannot be followed by anything else.
                         // Also relationships are independent of any entity hierarchy so it doesn't really make sense
                         // to "force them under" some custom "root path".
-                        if (Relationship.class.equals(nextSegmentType)) {
+                        if (SegmentType.rl.equals(nextSegmentType)) {
                             ret = ProgressCheck.CLEAR_SEGMENTS_AND_JUMP_TO_END;
                             indexToCheck = 0;
                         } else {
@@ -840,7 +836,7 @@ public abstract class Path {
 
             List<Segment> currentSegs = indexToCheck >= 0 ? segments.subList(from, indexToCheck) : segments;
 
-            List<Class<?>> progress = validProgressions.apply(currentSegs);
+            Collection<SegmentType> progress = validProgressions.apply(currentSegs);
 
             if (progress == null || !progress.contains(nextSegmentType)) {
                 //update the checkIndex so that the error reporting is correct in the calling method
@@ -863,13 +859,13 @@ public abstract class Path {
 
         @Override
         public void segmentParsed(Segment segment) {
-            insideDataEntity = DataEntity.class.equals(segment.getElementType());
+            insideDataEntity = SegmentType.d.equals(segment.getElementType());
         }
 
         @Override
         public Segment deduceSegment(String type, String id, boolean isLast) {
             if (type == null && insideDataEntity) {
-                return new Segment(StructuredData.class, id);
+                return new Segment(SegmentType.sd, id);
             }
             return null;
         }
@@ -881,12 +877,12 @@ public abstract class Path {
     }
 
     /**
-     * This is a type provider ({@link org.hawkular.inventory.api.model.Path.TypeProvider}) implementation that tries
+     * This is a type provider ({@link org.hawkular.inventory.paths.Path.TypeProvider}) implementation that tries
      * to deduce the types on the path based on the current position and the intended type of the final segment of
      * the path.
      */
     public static class HintedTypeProvider extends StructuredDataHintingTypeProvider {
-        private final Class<?> intendedFinalType;
+        private final SegmentType intendedFinalType;
         private final Extender extender;
 
         /**
@@ -895,7 +891,7 @@ public abstract class Path {
          * @param intendedFinalType the anticipated type of the final segment
          * @param extender          an initial path
          */
-        public HintedTypeProvider(Class<?> intendedFinalType, Extender extender) {
+        public HintedTypeProvider(SegmentType intendedFinalType, Extender extender) {
             this.intendedFinalType = intendedFinalType;
             this.extender = extender;
         }
@@ -916,9 +912,9 @@ public abstract class Path {
 
             CanonicalPath full = extender.get().toCanonicalPath();
 
-            Class<?> currentType = full.getDepth() >= 0 ? full.getSegment().getElementType() : null;
+            SegmentType currentType = full.getDepth() >= 0 ? full.getSegment().getElementType() : null;
 
-            Class<?> nextStep = unambiguousPathNextStep(intendedFinalType, currentType, isLast, new HashMap<>());
+            SegmentType nextStep = unambiguousPathNextStep(intendedFinalType, currentType, isLast, new HashMap<>());
 
             if (nextStep != null) {
                 return new Segment(nextStep, id);
@@ -931,14 +927,14 @@ public abstract class Path {
         public void finished() {
         }
 
-        private Class<?> unambiguousPathNextStep(Class<?> targetType, Class<?> currentType,
-                boolean isLast, Map<Class<?>, Boolean> visitedTypes) {
+        private SegmentType unambiguousPathNextStep(SegmentType targetType, SegmentType currentType,
+                boolean isLast, Map<SegmentType, Boolean> visitedTypes) {
 
             if (targetType.equals(currentType)) {
                 return targetType;
             }
 
-            Set<Class<?>> ret = new HashSet<>();
+            Set<SegmentType> ret = new HashSet<>();
 
             fillPossiblePathsToTarget(targetType, currentType, ret, visitedTypes, true);
 
@@ -959,8 +955,8 @@ public abstract class Path {
                     " segments.");
         }
 
-        private boolean fillPossiblePathsToTarget(Class<?> targetType, Class<?> currentType,
-                Set<Class<?>> result, Map<Class<?>, Boolean> visitedTypes, boolean isStart) {
+        private boolean fillPossiblePathsToTarget(SegmentType targetType, SegmentType currentType,
+                Set<SegmentType> result, Map<SegmentType, Boolean> visitedTypes, boolean isStart) {
 
             if (targetType.equals(currentType)) {
                 if (isStart) {
@@ -969,7 +965,7 @@ public abstract class Path {
                 return true;
             }
 
-            List<Class<?>> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
+            EnumSet<SegmentType> options = CanonicalPath.VALID_PROGRESSIONS.get(currentType);
             if (options == null || options.isEmpty()) {
                 return false;
             }
@@ -981,7 +977,7 @@ public abstract class Path {
 
             boolean matched = false;
 
-            for (Class<?> option : options) {
+            for (SegmentType option : options) {
                 if (!visitedTypes.containsKey(option)) {
                     visitedTypes.put(option, false);
 
@@ -1034,12 +1030,12 @@ public abstract class Path {
         }
 
         public TB tenant(String id) {
-            segments.add(new Segment(Tenant.class, id));
+            segments.add(new Segment(SegmentType.t, id));
             return tenantBuilder(segments);
         }
 
         public RLB relationship(String id) {
-            segments.add(new Segment(Relationship.class, id));
+            segments.add(new Segment(SegmentType.rl, id));
             return relationshipBuilder(segments);
         }
 
@@ -1077,27 +1073,27 @@ public abstract class Path {
         }
 
         public FB feed(String id) {
-            segments.add(new Segment(Feed.class, id));
+            segments.add(new Segment(SegmentType.f, id));
             return feedBuilder(segments);
         }
 
         public EB environment(String id) {
-            segments.add(new Segment(Environment.class, id));
+            segments.add(new Segment(SegmentType.e, id));
             return environmentBuilder(segments);
         }
 
         public RTB resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
+            segments.add(new Segment(SegmentType.rt, id));
             return resourceTypeBuilder(segments);
         }
 
         public MTB metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
+            segments.add(new Segment(SegmentType.mt, id));
             return metricTypeBuilder(segments);
         }
 
         public MPB metadataPack(String id) {
-            segments.add(new Segment(MetadataPack.class, id));
+            segments.add(new Segment(SegmentType.mp, id));
             return metadataPackBuilder(segments);
         }
 
@@ -1126,13 +1122,13 @@ public abstract class Path {
             super(segments, constructor);
         }
 
-        public SDB data(ResourceTypes.DataRole role) {
-            segments.add(new Segment(DataEntity.class, role.name()));
+        public SDB data(DataRole.ResourceType role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 
         public OTB operationType(String id) {
-            segments.add(new Segment(OperationType.class, id));
+            segments.add(new Segment(SegmentType.ot, id));
             return operationTypeBuilder(segments);
         }
 
@@ -1171,12 +1167,12 @@ public abstract class Path {
         }
 
         public RB resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+            segments.add(new Segment(SegmentType.r, id));
             return resourceBuilder(segments);
         }
 
         public MB metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+            segments.add(new Segment(SegmentType.m, id));
             return metricBuilder(segments);
         }
 
@@ -1203,22 +1199,22 @@ public abstract class Path {
         }
 
         public RB resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+            segments.add(new Segment(SegmentType.r, id));
             return resourceBuilder(segments);
         }
 
         public MB metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+            segments.add(new Segment(SegmentType.m, id));
             return metricBuilder(segments);
         }
 
         public MTB metricType(String id) {
-            segments.add(new Segment(MetricType.class, id));
+            segments.add(new Segment(SegmentType.mt, id));
             return metricTypeBuilder(segments);
         }
 
         public RTB resourceType(String id) {
-            segments.add(new Segment(ResourceType.class, id));
+            segments.add(new Segment(SegmentType.rt, id));
             return resourceTypeBuilder(segments);
         }
 
@@ -1248,17 +1244,17 @@ public abstract class Path {
 
         @SuppressWarnings("unchecked")
         public This resource(String id) {
-            segments.add(new Segment(Resource.class, id));
+            segments.add(new Segment(SegmentType.r, id));
             return (This) this;
         }
 
-        public SDB data(Resources.DataRole role) {
-            segments.add(new Segment(DataEntity.class, role.name()));
+        public SDB data(DataRole.Resource role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 
         public MB metric(String id) {
-            segments.add(new Segment(Metric.class, id));
+            segments.add(new Segment(SegmentType.m, id));
             return metricBuilder(segments);
         }
 
@@ -1293,13 +1289,13 @@ public abstract class Path {
 
         @SuppressWarnings("unchecked")
         public This key(String name) {
-            segments.add(new Segment(StructuredData.class, name));
+            segments.add(new Segment(SegmentType.sd, name));
             return (This) this;
         }
 
         @SuppressWarnings("unchecked")
         public This index(int index) {
-            segments.add(new Segment(StructuredData.class, "" + index));
+            segments.add(new Segment(SegmentType.sd, "" + index));
             return (This) this;
         }
 
@@ -1315,8 +1311,8 @@ public abstract class Path {
             super(segments, constructor);
         }
 
-        public SDB data(OperationTypes.DataRole role) {
-            segments.add(new Segment(DataEntity.class, role.name()));
+        public SDB data(DataRole.OperationType role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return structuredDataBuilder(segments);
         }
 

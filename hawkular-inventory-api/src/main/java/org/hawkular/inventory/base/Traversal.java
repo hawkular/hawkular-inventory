@@ -20,7 +20,7 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResultFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * A base class for all the inventory traversal interfaces. Contains only a minimal set of helper methods and holds the
@@ -57,8 +57,8 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @return the single result
      * @throws EntityNotFoundException if the query doesn't return any results
      */
-    protected BE getSingle(Query query, Class<? extends Entity<?, ?>> entityType) {
-        return inTx(backend -> Util.getSingle(backend, query, entityType));
+    protected BE getSingle(Query query, SegmentType entityType) {
+        return inTx(tx -> Util.getSingle(tx, query, entityType));
     }
 
     /**

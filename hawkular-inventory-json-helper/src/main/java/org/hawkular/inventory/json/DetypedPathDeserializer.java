@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,9 @@ package org.hawkular.inventory.json;
 
 import java.io.IOException;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -54,6 +55,6 @@ public final class DetypedPathDeserializer extends JsonDeserializer<Path> {
         CanonicalPath ro = CURRENT_RELATIVE_PATH_ORIGIN.get();
         Class<?> entityType = CURRENT_ENTITY_TYPE.get();
 
-        return Path.fromPartiallyUntypedString(str, co, ro, entityType);
+        return Path.fromPartiallyUntypedString(str, co, ro, AbstractElement.segmentTypeFromType(entityType));
     }
 }

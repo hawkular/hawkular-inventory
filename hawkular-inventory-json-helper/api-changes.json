@@ -1,0 +1,15 @@
+{
+  "0.13.0.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "regex": true,
+          "code": ".*[cC]hanged",
+          "old": ".*org\\.hawkular\\.inventory\\.api\\.model\\.\\w*Path.*",
+          "new": ".*org\\.hawkular\\.inventory\\.paths\\.\\w*Path.*",
+          "justification": "Path classes moved to a new shared location."
+        }
+      ]
+    }
+  }
+}

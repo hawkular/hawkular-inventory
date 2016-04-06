@@ -43,13 +43,13 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -158,7 +158,7 @@ final class Util {
     }
 
     public static <BE> BE getSingle(Transaction<BE> backend, Query query,
-                                    Class<? extends Entity<?, ?>> entityType) {
+                                    SegmentType entityType) {
         BE result = backend.querySingle(query);
         if (result == null) {
             throw new EntityNotFoundException(entityType, Query.filters(query));
@@ -186,7 +186,7 @@ final class Util {
     }
 
     public static <BE> EntityAndPendingNotifications<BE, Relationship>
-    deleteAssociation(Transaction<BE> tx, Query sourceQuery, Class<? extends Entity<?, ?>> sourceType,
+    deleteAssociation(Transaction<BE> tx, Query sourceQuery, SegmentType sourceType,
                       String relationship, BE target) {
 
         BE source = getSingle(tx, sourceQuery, sourceType);
@@ -197,7 +197,7 @@ final class Util {
             relationshipObject = tx.getRelationship(source, target, relationship);
         } catch (ElementNotFoundException e) {
             throw new RelationNotFoundException(sourceType, relationship, Query.filters(sourceQuery),
-                    null, null);
+                    null, e);
         }
 
         RelationshipRules.checkDelete(tx, source, Relationships.Direction.outgoing, relationship,
@@ -212,8 +212,8 @@ final class Util {
     }
 
     public static <BE> Relationship getAssociation(Transaction<BE> tx, Query sourceQuery,
-                                                   Class<? extends Entity<?, ?>> sourceType, Query targetQuery,
-                                                   Class<? extends Entity<?, ?>> targetType,
+                                                   SegmentType sourceType, Query targetQuery,
+                                                   SegmentType targetType,
                                                    String rel) {
 
         BE source = getSingle(tx, sourceQuery, sourceType);
@@ -416,10 +416,10 @@ final class Util {
      * @param relativeOrigin    origin to resolve a relative path against
      * @param intendedFinalType the intended type of the final segment of the path
      * @return the canonical path represented by the provided path string
-     * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, Class)
+     * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, SegmentType)
      */
     public static CanonicalPath canonicalize(String path, CanonicalPath canonicalPrefix, CanonicalPath relativeOrigin,
-                                             Class<?> intendedFinalType) {
+                                             SegmentType intendedFinalType) {
 
         Path p = Path.fromPartiallyUntypedString(path, canonicalPrefix, relativeOrigin, intendedFinalType);
 

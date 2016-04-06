@@ -32,16 +32,16 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.RecurseFilter;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -69,7 +69,8 @@ public final class BaseFeeds {
                 throw new EntityNotFoundException(Tenant.class, Query.filters(context.sourcePath));
             }
 
-            CanonicalPath feedPath = tx.extractCanonicalPath(tenant).extend(Feed.class, blueprint.getId()).get();
+            CanonicalPath feedPath = tx.extractCanonicalPath(tenant)
+                    .extend(Feed.SEGMENT_TYPE, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath, null));
         }
@@ -79,7 +80,7 @@ public final class BaseFeeds {
         wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
-                    parentPath.extend(Feed.class, transaction.extractId(entity)).get(), null,
+                    parentPath.extend(Feed.SEGMENT_TYPE, transaction.extractId(entity)).get(), null,
                     blueprint.getProperties()), emptyList());
         }
 
@@ -136,7 +137,7 @@ public final class BaseFeeds {
     public static class ReadAssociate<BE> extends Associator<BE, Feed> implements Feeds.ReadAssociate {
 
         public ReadAssociate(TraversalContext<BE, Feed> context) {
-            super(context, incorporates, Environment.class);
+            super(context, incorporates, SegmentType.e);
         }
 
         @Override

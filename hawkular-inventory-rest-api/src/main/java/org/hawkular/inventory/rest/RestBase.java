@@ -26,9 +26,9 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
 import org.hawkular.inventory.rest.security.RestConfiguration;

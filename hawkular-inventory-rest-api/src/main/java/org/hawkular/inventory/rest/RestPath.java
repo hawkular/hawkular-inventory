@@ -38,11 +38,12 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
 import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.JsonLd;
 
@@ -85,7 +86,7 @@ public class RestPath extends RestBase {
 
         // "/path".length() == 5
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(uriInfo.getPath(false).substring(5), tenant,
-                Entity.class);
+                SegmentType.ANY_ENTITY);
 
         return Response.ok(inventory.inspect(path, ResolvableToSingle.class).entity()).build();
 //        return Response.ok(inventory.getElement(path)).build();
@@ -117,7 +118,7 @@ public class RestPath extends RestBase {
         // "/relationships".length() == 14
         String pathString = uriInfo.getPath(false);
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(pathString.substring(5, pathString.length() -
-                14), tenant, Entity.class);
+                14), tenant, SegmentType.ANY_ENTITY);
         RelationFilter[] filters = RestRelationships.extractFilters(propertyName, propertyValue, named, sourceType,
                 targetType, uriInfo);
         Pager pager = extractPaging(uriInfo);

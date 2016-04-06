@@ -24,7 +24,7 @@ import java.util.List;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.InventoryStructure;
-import org.hawkular.inventory.api.model.RelativePath;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -74,7 +74,7 @@ public final class InventoryStructureSerializer extends JsonSerializer<Inventory
 
                     gen.writeFieldName("children");
                     gen.writeStartObject();
-                    serializeLevel(structure, rootPath.modified().extend(entityType.elementType, bl.getId()), gen);
+                    serializeLevel(structure, rootPath.modified().extend(entityType.segmentType, bl.getId()), gen);
                     gen.writeEndObject();
 
                     gen.writeEndObject();

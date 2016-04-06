@@ -36,15 +36,16 @@ import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * @author Lukas Krejci
@@ -77,7 +78,7 @@ public final class BaseResourceTypes {
             tx.update(entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
-                    parentPath.extend(ResourceType.class, tx.extractId(entity)).get(), null,
+                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
                     blueprint.getProperties());
 
             return new EntityAndPendingNotifications<>(entity, resourceType, emptyList());
@@ -190,7 +191,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public Data.ReadWrite<ResourceTypes.DataRole> data() {
+        public Data.ReadWrite<DataRole.ResourceType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
                     new ResourceTypeDataModificationChecks<>(context));
         }
@@ -223,7 +224,7 @@ public final class BaseResourceTypes {
         }
 
         @Override
-        public Data.Read<ResourceTypes.DataRole> data() {
+        public Data.Read<DataRole.ResourceType> data() {
             return new BaseData.Read<>(context.proceedTo(contains, DataEntity.class).get(),
                     new ResourceTypeDataModificationChecks<>(context));
         }

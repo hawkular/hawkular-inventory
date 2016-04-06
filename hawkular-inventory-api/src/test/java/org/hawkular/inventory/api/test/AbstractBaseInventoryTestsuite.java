@@ -24,7 +24,6 @@ import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
 import static org.hawkular.inventory.api.Action.identityHashChanged;
 import static org.hawkular.inventory.api.Action.updated;
-import static org.hawkular.inventory.api.OperationTypes.DataRole.returnType;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
@@ -32,14 +31,15 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.configurationSchema;
-import static org.hawkular.inventory.api.ResourceTypes.DataRole.connectionConfigurationSchema;
-import static org.hawkular.inventory.api.Resources.DataRole.configuration;
-import static org.hawkular.inventory.api.Resources.DataRole.connectionConfiguration;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
+import static org.hawkular.inventory.paths.DataRole.OperationType.returnType;
+import static org.hawkular.inventory.paths.DataRole.Resource.configuration;
+import static org.hawkular.inventory.paths.DataRole.Resource.connectionConfiguration;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSchema;
+import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -92,7 +92,6 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -105,9 +104,7 @@ import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.api.model.RelativePath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -117,6 +114,11 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -343,7 +345,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .build();
 
         assert inventory.tenants().get("com.example.tenant").environments().get("test")
-                .resources().get("playroom1").data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
+                .resources().get("playroom1").data().create(DataEntity.Blueprint.<DataRole.Resource>builder()
                         .withRole(configuration).withValue(config).build()).entity().getValue().equals(config);
 
         //create some config definitions...
@@ -351,7 +353,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .create(ResourceType.Blueprint.builder().withId("Person").build());
 
         personType.data().create(DataEntity.Blueprint
-                .<ResourceTypes.DataRole>builder().withRole(configurationSchema).withValue(StructuredData.get().map()
+                .<DataRole.ResourceType>builder().withRole(configurationSchema).withValue(StructuredData.get().map()
                         .putString("title", "Person")
                         .putString("description", "Utterly complete description of a human.")
                         .putString("type", "object")
@@ -374,16 +376,17 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                         .closeList()
                         .build()).build());
 
-        OperationTypes.Single startOp = personType.operationTypes().create(OperationType.Blueprint.builder().withId
+        OperationTypes.Single startOp = personType.operationTypes().create(
+                OperationType.Blueprint.builder().withId
                 ("start").build());
-        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+        startOp.data().create(DataEntity.Blueprint.<DataRole.OperationType>builder()
                 .withRole(returnType).withValue(StructuredData.get().map()
                         .putString("title", "start_returnType")
                         .putString("description", "start operation result")
                         .putString("type", "boolean")
                         .build()).build());
-        startOp.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
-                .withRole(OperationTypes.DataRole.parameterTypes).withValue(StructuredData.get().map()
+        startOp.data().create(DataEntity.Blueprint.<DataRole.OperationType>builder()
+                .withRole(DataRole.OperationType.parameterTypes).withValue(StructuredData.get().map()
                         .putString("title", "start_paramTypes")
                         .putString("description", "start operation parameter types")
                         .putString("type", "object")
@@ -401,32 +404,34 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .create(Resource.Blueprint.builder().withId("people").withResourceTypePath("/Person").build());
 
         people.resources().create(Resource.Blueprint.builder().withId("Alois").withResourceTypePath("/Person")
-                .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
+                .build()).data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration)
                 .withValue(StructuredData.get().map().putString("firstName", "Alois").putString("lastName", "Jirasek")
                         .build()).build());
 
         people.resources().create(Resource.Blueprint.builder().withId("Hynek").withResourceTypePath("/Person")
-                .build()).data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration)
+                .build()).data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration)
                 .withValue(StructuredData.get().map().putString("firstName", "Hynek").putString("lastName", "Macha")
                         .build()).build());
-        people.resources().get("Hynek").resources().create(Resource.Blueprint.builder().withResourceTypePath("/Person")
+        people.resources().get("Hynek").resources().create(
+                Resource.Blueprint.builder().withResourceTypePath("/Person")
                 .withId("Vilem").build());
-        people.resources().get("Hynek").resources().create(Resource.Blueprint.builder().withResourceTypePath("/Person")
+        people.resources().get("Hynek").resources().create(
+                Resource.Blueprint.builder().withResourceTypePath("/Person")
                 .withId("Jarmila").build());
 
         //create a metadata pack
         inventory.tenants().get("com.acme.tenant").resourceTypes().create(ResourceType.Blueprint.builder()
                 .withId("mpRt").withName("Resource Type in a metadata pack").build());
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").data().create(
-                DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
-                        .withRole(ResourceTypes.DataRole.configurationSchema)
+                DataEntity.Blueprint.<DataRole.ResourceType>builder()
+                        .withRole(DataRole.ResourceType.configurationSchema)
                         .withValue(StructuredData.get().map().putString("title", "mpRtCs").putString("type",
                                 "string").build()).build());
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").operationTypes().create(
                 OperationType.Blueprint.builder().withId("mpRtOt").build());
 
         inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").operationTypes().get("mpRtOt")
-                .data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder().withRole(returnType)
+                .data().create(DataEntity.Blueprint.<DataRole.OperationType>builder().withRole(returnType)
                 .withValue(StructuredData.get().map().putString("title", "mpRtOtRet")
                         .putString("type", "string").build()).build());
 
@@ -454,28 +459,31 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .withInterval(0L).build()).entity().getId().equals("feed1-metricType");
 
         assert inventory.tenants().get("com.acme.tenant").feeds().get("feed1").resources().get("feedResource1")
-                .resources().create(Resource.Blueprint.builder().withId("feedChildResource").withResourceTypePath
+                .resources().create(
+                        Resource.Blueprint.builder().withId("feedChildResource").withResourceTypePath
                         ("/URL").build()).entity().getId().equals("feedChildResource");
     }
 
     private static <E> void teardownData(BaseInventory<E> inventory) throws Exception {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.example.tenant").get();
-        CanonicalPath environmentPath = tenantPath.extend(Environment.class, "test").get();
+        CanonicalPath environmentPath = tenantPath.extend(Environment.SEGMENT_TYPE, "test").get();
 
         try {
             Tenant t = new Tenant(tenantPath);
             Environment e = new Environment(environmentPath);
-            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get(), null);
-            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
-            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
-            Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(), null,
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get(), null);
+            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Playroom").get(),
+                    null);
+            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Kachna").get(),
+                    null);
+            Resource playroom1 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom1").get(), null,
                     playRoomType);
-            Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(), null,
+            Resource playroom2 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom2").get(), null,
                     playRoomType);
-            Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
-                    null, sizeType);
-            Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
-                    null, sizeType);
+            Metric playroom1Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom1_size").get(), null,
+                    sizeType);
+            Metric playroom2Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom2_size").get(), null,
+                    sizeType);
 
             //when an association is deleted, it should not be possible to access the target entity through the same
             //traversal again
@@ -635,7 +643,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .accept(kids);
 
         kids = inventory.tenants().getAll().resourceTypes().getAll(asTargetBy("contains"));
-        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(5).apply(ResourceType.class).apply(parents)
+        testHelper.apply(2).apply(Tenant.class).apply("contains").apply(5).apply(
+                ResourceType.class).apply(parents)
                 .accept(kids);
 
         kids = inventory.tenants().getAll().metricTypes().getAll(asTargetBy("contains"));
@@ -650,7 +659,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         kids = inventory.tenants().getAll().environments().getAll().resources().getAll(
                 asTargetBy("contains"));
-        testHelper.apply(2).apply(Environment.class).apply("contains").apply(4).apply(Resource.class).apply(parents)
+        testHelper.apply(2).apply(Environment.class).apply("contains").apply(4).apply(
+                Resource.class).apply(parents)
                 .accept(kids);
 
         parents = inventory.tenants().getAll().metricTypesUnder(Parents.any()).getAll();
@@ -772,7 +782,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                         .targetOfType(Metric.class)).entities();
         assert rels != null && rels.size() == 2 : "There should be 2 relationships conforming the filters";
         assert rels.stream().allMatch(rel ->
-                Metric.class.equals(rel.getTarget().getSegment().getElementType())) : "The type of all the " +
+                SegmentType.m.equals(rel.getTarget().getSegment().getElementType())) : "The type of all the " +
                 "targets should be the 'Metric'";
 
 
@@ -786,14 +796,15 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         rels = inventory.tenants().getAll().relationships().named
                 (contains).environments().getAll().relationships().getAll(RelationWith
-                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(
+                Resource.class, Metric.class))
                 .entities();
         assert rels != null && rels.size() == 7 : "There should be 6 relationships conforming the filters";
         assert rels.stream().allMatch(rel -> "test".equals(rel.getSource().getSegment().getElementId())
                 || "production".equals(rel.getSource().getSegment().getElementId()))
                 : "Source should be either 'test' or 'production'";
-        assert rels.stream().allMatch(rel -> Resource.class.equals(rel.getTarget().getSegment().getElementType()) ||
-                Metric.class.equals(rel.getTarget().getSegment().getElementType()))
+        assert rels.stream().allMatch(rel -> SegmentType.r.equals(rel.getTarget().getSegment().getElementType()) ||
+                SegmentType.m.equals(rel.getTarget().getSegment().getElementType()))
                 : "Target should be either a metric or a resource";
     }
 
@@ -801,7 +812,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
         Metric metric = inventory.tenants().getAll().relationships().named
                 (contains).environments().getAll().relationships().getAll(RelationWith
-                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class, Metric.class))
+                .propertyValues("label", "contains"), RelationWith.targetsOfTypes(
+                Resource.class, Metric.class))
                 .metrics().getAll(id("playroom1_size")).entities().iterator().next();
         assert "playroom1_size".equals(metric.getId()) : "Metric playroom1_size was not found using various relation " +
                 "filters";
@@ -809,7 +821,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             inventory.tenants().getAll().relationships().named
                     (contains).environments().getAll().relationships().getAll(RelationWith
-                    .propertyValues("label", "contains"), RelationWith.targetsOfTypes(Resource.class))
+                    .propertyValues("label", "contains"), RelationWith.targetsOfTypes(
+                    Resource.class))
                     .metrics().getAll(id("playroom1_size")).entities().iterator().next();
             assert false : "this code should not be reachable. There should be no metric reachable under " +
                     "'RelationWith.targetsOfTypes(Resource.class))' filter";
@@ -890,7 +903,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             Assert.assertTrue(results.hasNext());
 
-            ResourceType rt = inventory.tenants().get(tenantId).resourceTypes().get(id).entity();
+            ResourceType
+                    rt = inventory.tenants().get(tenantId).resourceTypes().get(id).entity();
             assert rt.getId().equals(id);
 
             return null;
@@ -977,7 +991,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testResources() throws Exception {
         TetraFunction<String, String, String, String, Void> test = (tenantId, environmentId, resourceTypeId, id) -> {
-            Resource r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
+            Resource
+                    r = inventory.tenants().get(tenantId).environments().get(environmentId).resources()
                     .getAll(new Filter[][]{
                             {Defined.by(CanonicalPath.of().tenant(tenantId).resourceType(resourceTypeId).get())},
                             {id(id)}})
@@ -992,7 +1007,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
 
-        Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(Resource.class)).get(),
+        Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(
+                Resource.class)).get(),
                 Pager.unlimited(Order.unspecified())).toList().size());
     }
 
@@ -1060,7 +1076,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Assert.assertEquals("start", ots.entity().getId());
 
         StructuredData returnTypeSchema = ots.data().get(returnType).entity().getValue();
-        StructuredData parametersSchema = ots.data().get(OperationTypes.DataRole.parameterTypes).entity().getValue();
+        StructuredData parametersSchema = ots.data().get(DataRole.OperationType.parameterTypes).entity().getValue();
 
         Assert.assertEquals("start_returnType", returnTypeSchema.map().get("title").string());
         Assert.assertEquals("boolean", returnTypeSchema.map().get("type").string());
@@ -1445,7 +1461,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
 
         //now let's try self-loop using association interface
-        Resource r = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
+        Resource
+                r = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
                 .get("playroom1").entity();
 
         try {
@@ -1456,7 +1473,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
 
         //playroom1 -isParentOf> playroom2 exists. Let's try creating a loop
-        Resource r2 = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
+        Resource
+                r2 = inventory.inspect(t, Tenants.Single.class).environments().get("test").resources()
                 .get("playroom2").entity();
 
         try {
@@ -1660,7 +1678,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .build()).entity();
             Assert.assertEquals("feed", f.getName());
 
-            ResourceType rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
+            ResourceType
+                    rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
                     .withId("named-resourceType").withName("resourceType").build()).entity();
             Assert.assertEquals("resourceType", rt.getName());
 
@@ -1669,11 +1688,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .withName("metricType").withInterval(0L).build()).entity();
             Assert.assertEquals("metricType", mt.getName());
 
-            OperationType ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
+            OperationType
+                    ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
                     .withId("named-operationType").withName("operationType").build()).entity();
             Assert.assertEquals("operationType", ot.getName());
 
-            Resource r = inventory.inspect(f).resources().create(Resource.Blueprint.builder().withId("named-resource")
+            Resource r = inventory.inspect(f).resources().create(
+                    Resource.Blueprint.builder().withId("named-resource")
                     .withName("resource").withResourceTypePath(rt.getPath().toString()).build()).entity();
             Assert.assertEquals("resource", r.getName());
 
@@ -1711,7 +1732,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .build()).entity();
             testUpdate(f, Feed.Update.builder());
 
-            ResourceType rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
+            ResourceType
+                    rt = inventory.inspect(t).resourceTypes().create(ResourceType.Blueprint.builder()
                     .withId("named-resourceType").withName("resourceType").build()).entity();
             testUpdate(rt, ResourceType.Update.builder());
 
@@ -1720,11 +1742,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .withName("metricType").withInterval(0L).build()).entity();
             testUpdate(mt, MetricType.Update.builder());
 
-            OperationType ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
+            OperationType
+                    ot = inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder()
                     .withId("named-operationType").withName("operationType").build()).entity();
             testUpdate(ot, OperationType.Update.builder());
 
-            Resource r = inventory.inspect(f).resources().create(Resource.Blueprint.builder().withId("named-resource")
+            Resource r = inventory.inspect(f).resources().create(
+                    Resource.Blueprint.builder().withId("named-resource")
                     .withName("resource").withResourceTypePath(rt.getPath().toString()).build()).entity();
             testUpdate(r, Resource.Update.builder());
 
@@ -1748,7 +1772,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testMetadataPackMembershipNonUpdatable() throws Exception {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
-        CanonicalPath rtPath = tenantPath.extend(ResourceType.class, "Person").get();
+        CanonicalPath rtPath = tenantPath.extend(ResourceType.SEGMENT_TYPE, "Person").get();
 
         MetadataPack pack = inventory.inspect(tenantPath, Tenants.Single.class).metadataPacks().getAll().entities()
                 .iterator().next();
@@ -1785,7 +1809,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
 
         try {
-            inventory.inspect(rt).operationTypes().create(OperationType.Blueprint.builder().withId("asfd").build());
+            inventory.inspect(rt).operationTypes().create(
+                    OperationType.Blueprint.builder().withId("asfd").build());
             Assert.fail("It should not be possible to add an operation type to a resource type in metadata pack.");
         } catch (IllegalArgumentException e) {
             //good
@@ -1806,9 +1831,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
 
         try {
-            inventory.inspect(rt).operationTypes().get("mpRtOt").data().create(DataEntity.Blueprint.<OperationTypes
-                    .DataRole>builder().withRole(OperationTypes.DataRole.parameterTypes).withValue(StructuredData.get()
-                    .undefined()).build());
+            inventory.inspect(rt).operationTypes().get("mpRtOt").data()
+                    .create(DataEntity.Blueprint.<DataRole.OperationType>builder()
+                            .withRole(DataRole.OperationType.parameterTypes).withValue(
+                                    StructuredData.get().undefined()).build());
             Assert.fail("It should not be possible to add data to operation type from a resource type in metadata " +
                     "pack.");
         } catch (IllegalArgumentException e) {
@@ -1834,7 +1860,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         try {
             inventory.inspect(rt).data().create(
-                    DataEntity.Blueprint.<ResourceTypes.DataRole>builder().withRole(connectionConfigurationSchema)
+                    DataEntity.Blueprint.<DataRole.ResourceType>builder().withRole(connectionConfigurationSchema)
                             .withValue(StructuredData.get().bool(true)).build());
 
             Assert.fail("It should not be possible to add an data to a resource type in metadata pack.");
@@ -1861,7 +1887,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testMetadataPackIdEqualToContentHash() throws Exception {
         MetricType mt = inventory.tenants().get("com.acme.tenant").metricTypes().get("mpMt").entity();
-        ResourceType rt = inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").entity();
+        ResourceType
+                rt = inventory.tenants().get("com.acme.tenant").resourceTypes().get("mpRt").entity();
         OperationType ot = inventory.inspect(rt).operationTypes().get("mpRtOt").entity();
 
         StructuredData configSchema = inventory.inspect(rt).data().get(configurationSchema).entity().getValue();
@@ -1874,10 +1901,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                         .withInterval(0L)
                         .withId(mt.getId()).build())
                 .with(ResourceType.Blueprint.builder().withId(rt.getId()).build())
-                .with(DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
+                .with(DataEntity.Blueprint.<DataRole.ResourceType>builder()
                         .withRole(configurationSchema).withValue(configSchema).build())
                 .with(OperationType.Blueprint.builder().withId(ot.getId()).build())
-                .with(DataEntity.Blueprint.<OperationTypes.DataRole>builder()
+                .with(DataEntity.Blueprint.<DataRole.OperationType>builder()
                         .withRole(returnType).withValue(retType).build())
                 .done()
                 .done()
@@ -1905,10 +1932,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Feed f1 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f1").build()).entity();
             Feed f2 = inventory.inspect(t).feeds().create(Feed.Blueprint.builder().withId("f2").build()).entity();
 
-            ResourceType rt1 = inventory.inspect(f1).resourceTypes().create(ResourceType.Blueprint.builder().withId
+            ResourceType rt1 = inventory.inspect(f1).resourceTypes().create(
+                    ResourceType.Blueprint.builder().withId
                     ("rt").build()).entity();
 
-            ResourceType rt2 = inventory.inspect(f2).resourceTypes().create(ResourceType.Blueprint.builder().withId
+            ResourceType rt2 = inventory.inspect(f2).resourceTypes().create(
+                    ResourceType.Blueprint.builder().withId
                     ("rt").build()).entity();
 
             Set<ResourceType> identicals = inventory.inspect(rt1).identical().getAll().entities();
@@ -1920,8 +1949,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             String hash = inventory.inspect(rt1).entity().getIdentityHash();
             Assert.assertEquals(hash, inventory.inspect(rt2).entity().getIdentityHash());
 
-            DataEntity.Blueprint<ResourceTypes.DataRole> bl = DataEntity.Blueprint.<ResourceTypes.DataRole>builder()
-                    .withRole(ResourceTypes.DataRole.configurationSchema).withValue(StructuredData.get().map()
+            DataEntity.Blueprint<DataRole.ResourceType> bl = DataEntity.Blueprint.<DataRole.ResourceType>builder()
+                    .withRole(DataRole.ResourceType.configurationSchema).withValue(StructuredData.get().map()
                             .putString("title", "blah")
                             .putString("type", "string").build()).build();
 
@@ -2002,7 +2031,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             Assert.assertEquals(fHash, f.entity().getIdentityHash());
 
-            r.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration).withValue
+            r.data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration).withValue
                     (StructuredData.get().integral(42L)).build());
 
             Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
@@ -2425,11 +2454,11 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 inventory.tenants().get(tid).environments().get(eid).resources()
                         .create(new Resource.Blueprint(rid, "/" + rtid));
 
-                Data.ReadWrite<Resources.DataRole> dataAccess = inventory.tenants().get(tid).environments().get(eid)
-                        .resources().get(rid).data();
+            Data.ReadWrite<DataRole.Resource> dataAccess = inventory.tenants().get(tid).environments().get(eid)
+                    .resources().get(rid).data();
 
-                dataAccess.create(DataEntity.Blueprint.<Resources.DataRole>builder()
-                        .withRole(configuration).build());
+            dataAccess.create(DataEntity.Blueprint.<DataRole.Resource>builder()
+                    .withRole(configuration).build());
 
                 dataAccess.update(configuration, DataEntity.Update.builder().build());
 
@@ -2529,13 +2558,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         OperationTypes.Single ot = rt.operationTypes().create(OperationType.Blueprint.builder().withId("operationType")
                 .build());
 
-        ot.data().create(DataEntity.Blueprint.<OperationTypes.DataRole>builder().withRole(returnType)
+        ot.data().create(DataEntity.Blueprint.<DataRole.OperationType>builder().withRole(returnType)
                 .withValue(StructuredData.get().map().putString("type", "string").build()).build());
 
         Resources.Single r = f.resources()
                 .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build());
 
-        r.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(configuration).withValue
+        r.data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration).withValue
                 (StructuredData.get().integral(42L)).build());
     }
 
@@ -2549,50 +2578,51 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Tenant tenant = backend.convert(entity, Tenant.class);
         Assert.assertEquals("com.acme.tenant", tenant.getId());
 
-        CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
+        CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
         entity = backend.find(envPath);
         Environment env = backend.convert(entity, Environment.class);
         Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
         Assert.assertEquals("production", env.getId());
 
-        entity = backend.find(envPath.extend(Resource.class, "host1").get());
+        entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
         Resource r = backend.convert(entity, Resource.class);
         Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
         Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
         Assert.assertNull(r.getPath().ids().getFeedId());
         Assert.assertEquals("host1", r.getId());
 
-        entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
+        entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
         Metric m = backend.convert(entity, Metric.class);
         Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
         Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
         Assert.assertNull(m.getPath().ids().getFeedId());
         Assert.assertEquals("host1_ping_response", m.getId());
 
-        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
         entity = backend.find(feedPath);
         Feed f = backend.convert(entity, Feed.class);
         Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", f.getId());
 
-        entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
+        entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
         r = backend.convert(entity, Resource.class);
         Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
         Assert.assertEquals("feedResource1", r.getId());
 
-        entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
+        entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
         m = backend.convert(entity, Metric.class);
         Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
         Assert.assertEquals("feedMetric1", m.getId());
 
-        entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
-        ResourceType rt = backend.convert(entity, ResourceType.class);
+        entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
+        ResourceType
+                rt = backend.convert(entity, ResourceType.class);
         Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
         Assert.assertEquals("URL", rt.getId());
 
-        entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
+        entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
         MetricType mt = backend.convert(entity, MetricType.class);
         Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
         Assert.assertEquals("ResponseTime", mt.getId());
@@ -2742,30 +2772,30 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         E entity = backend.find(tenantPath);
         Assert.assertEquals(Tenant.class, backend.extractType(entity));
 
-        CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
+        CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
         entity = backend.find(envPath);
         Assert.assertEquals(Environment.class, backend.extractType(entity));
 
-        entity = backend.find(envPath.extend(Resource.class, "host1").get());
+        entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
         Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-        entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
+        entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
         Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
         entity = backend.find(feedPath);
         Assert.assertEquals(Feed.class, backend.extractType(entity));
 
-        entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
+        entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
         Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-        entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
+        entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
         Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-        entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
+        entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
         Assert.assertEquals(ResourceType.class, backend.extractType(entity));
 
-        entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
+        entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
         Assert.assertEquals(MetricType.class, backend.extractType(entity));
     }
 
@@ -2790,7 +2820,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         // equivalent to inventory.tenants().getAll(Related.by("contains"), type(ResourceType.class, id("URL"))
         // .environments().getAll().entities();
-        q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(ResourceType.class),
+        q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(
+                ResourceType.class),
                 id("URL")).path().with(Related.by("contains"), type(Environment.class)).get();
         results = backend.query(q, unlimited);
         Assert.assertTrue(results.hasNext());
@@ -2806,7 +2837,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         StructuredData orig = StructuredData.get().map().putBool("yes", true).putBool("no", false).build();
 
-        res.data().create(DataEntity.Blueprint.<Resources.DataRole>builder().withRole(connectionConfiguration)
+        res.data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(connectionConfiguration)
                 .withValue(orig).build());
 
         StructuredData retrieved = res.data().get(connectionConfiguration).entity().getValue();
@@ -2852,7 +2883,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testFilteringByData() throws Exception {
-        Data.Read<Resources.DataRole> configs = inventory.tenants().getAll().environments().getAll().resources()
+        Data.Read<DataRole.Resource> configs = inventory.tenants().getAll().environments().getAll().resources()
                 .getAll().data();
 
         Assert.assertEquals(1, configs.getAll(With.dataAt(RelativePath.to().structuredData().key("primitives").index(0)
@@ -2915,7 +2946,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 Resources.Single.class);
 
         try {
-            res.data().create(DataEntity.Blueprint.<Resources.DataRole>builder()
+            res.data().create(DataEntity.Blueprint.<DataRole.Resource>builder()
                     .withRole(configuration).withValue(StructuredData.get().map()
                             .putBool("firstName", false).build()).build());
             Assert.fail("Creating a config that doesn't conform to the schema shouldn't be possible.");
@@ -3226,7 +3257,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .build())
                 .entity();
 
-        Resource r = inventory.inspect(env).resources().create(Resource.Blueprint.builder().withId("res")
+        Resource r = inventory.inspect(env).resources().create(
+                Resource.Blueprint.builder().withId("res")
                 .withResourceTypePath(rt.getPath().toString()).build()).entity();
 
         Metric m = inventory.inspect(env).metrics().create(Metric.Blueprint.builder().withId("met")

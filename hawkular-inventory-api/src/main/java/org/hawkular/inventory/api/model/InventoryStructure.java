@@ -47,6 +47,11 @@ import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Represents the structure of an inventory. It is supposed that the structure is loaded lazily. The structure is
@@ -75,12 +80,14 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             }
 
             @Override
-            public <EE extends Entity<BB, ?>, BB extends Blueprint> Stream<BB>
+            public <EE extends Entity<? extends BB, ?>, BB extends Blueprint> Stream<BB>
             getChildren(RelativePath parent, Class<EE> childType) {
                 CanonicalPath absoluteParent = rootEntity.getPath().modified().extend(parent.getPath()).get();
-                Class<?> parentType = absoluteParent.getSegment().getElementType();
+                SegmentType parentType = absoluteParent.getSegment().getElementType();
 
-                return ElementTypeVisitor.accept(childType, new ElementTypeVisitor<Stream<BB>, Void>() {
+                SegmentType childSegment = SegmentType.fromElementType(childType);
+
+                return ElementTypeVisitor.accept(childSegment, new ElementTypeVisitor<Stream<BB>, Void>() {
 
                     @Override public Stream<BB> visitTenant(Void parameter) {
                         if (absoluteParent.isDefined()) {
@@ -200,8 +207,10 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                                         Function<PA, ResolvingToMultiple<? extends ResolvableToMany<X>>>
                                                childAccessSupplier) {
 
-                        if (!(absoluteParent.isDefined() && parentType.equals(absoluteParent.getSegment()
-                                .getElementType()))) {
+                        Class<?> parentSegmentType = AbstractElement.toElementClass(absoluteParent.getSegment()
+                                .getElementType());
+
+                        if (!(absoluteParent.isDefined() && parentType.equals(parentSegmentType))) {
                             return Stream.empty();
                         } else {
                             PA parentAccess = inventory.inspect(absoluteParent, parentAccessType);
@@ -350,7 +359,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      * @param <B>       the type of the child entity blueprint
      * @return a stream of blueprints corresponding to the child entities.
      */
-    <E extends Entity<B, ?>, B extends Blueprint> Stream<B> getChildren(RelativePath parent, Class<E> childType);
+    <E extends Entity<? extends B, ?>, B extends Blueprint> Stream<B> getChildren(RelativePath parent,
+                                                                                  Class<E> childType);
 
     /**
      * Gets a blueprint on the given path.
@@ -364,30 +374,36 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     default Stream<Entity.Blueprint> getAllChildren(RelativePath parent) {
         Stream ret = Stream.empty();
         RelativePath.Extender check = RelativePath.empty()
-                .extend(Blueprint.getEntityTypeOf(getRoot()),getRoot().getId())
+                .extend(Blueprint.getSegmentTypeOf(getRoot()),getRoot().getId())
                 .extend(parent.getPath());
 
-        for (Class<?> cls : CanonicalPath.SHORT_TYPE_NAMES.keySet()) {
-            if (Entity.class.isAssignableFrom(cls) && check.canExtendTo(cls)) {
-                ret = Stream.concat(ret, getChildren(parent, (Class<Entity>) cls));
+        for (SegmentType st : SegmentType.values()) {
+            if (st != SegmentType.rl && st.isAllowedInCanonical() && check.canExtendTo(st)) {
+                Stream<?> next = getChildren(parent, Entity.entityTypeFromSegmentType(st));
+                ret = Stream.concat(ret, next);
             }
         }
 
         return ret;
     }
 
+    /**
+     * This enum lists all the entity types that can be part of a inventory structure. This is a subset of all entity
+     * types because not all entities are {@link IdentityHashable}.
+     */
     enum EntityType {
         //the order is significant.. the latter cannot exist without (some of) the prior
-        feed(Feed.class, Feed.Blueprint.class),
-        resourceType(ResourceType.class, ResourceType.Blueprint.class),
-        metricType(MetricType.class, MetricType.Blueprint.class),
-        operationType(OperationType.class, OperationType.Blueprint.class),
-        metric(Metric.class, Metric.Blueprint.class),
-        resource(Resource.class, Resource.Blueprint.class),
-        dataEntity(DataEntity.class, DataEntity.Blueprint.class);
+        feed(Feed.class, Feed.Blueprint.class, SegmentType.f),
+        resourceType(ResourceType.class, ResourceType.Blueprint.class, SegmentType.rt),
+        metricType(MetricType.class, MetricType.Blueprint.class, SegmentType.mt),
+        operationType(OperationType.class, OperationType.Blueprint.class, SegmentType.ot),
+        metric(Metric.class, Metric.Blueprint.class, SegmentType.m),
+        resource(Resource.class, Resource.Blueprint.class, SegmentType.r),
+        dataEntity(DataEntity.class, DataEntity.Blueprint.class, SegmentType.d);
 
         public final Class<? extends Entity<?, ?>> elementType;
         public final Class<? extends Entity.Blueprint> blueprintType;
+        public final SegmentType segmentType;
 
         public static EntityType of(Class<?> type) {
             for (EntityType t : EntityType.values()) {
@@ -396,7 +412,27 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 }
             }
 
-            throw new IllegalArgumentException("Unknown type of entity: " + type);
+            throw new IllegalArgumentException("Unsupported type of entity: " + type);
+        }
+
+        public static EntityType of(SegmentType seg) {
+            for (EntityType t : EntityType.values()) {
+                if (seg == t.segmentType) {
+                    return t;
+                }
+            }
+
+            throw new IllegalArgumentException("Unsupported type of path segment: " + seg);
+        }
+
+        public static boolean supports(SegmentType seg) {
+            for (EntityType t : EntityType.values()) {
+                if (seg == t.segmentType) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static EntityType ofBlueprint(Class<?> type) {
@@ -409,9 +445,11 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             return null;
         }
 
-        EntityType(Class<? extends Entity<?, ?>> elementType, Class<? extends Entity.Blueprint> blueprintType) {
+        EntityType(Class<? extends Entity<?, ?>> elementType, Class<? extends Entity.Blueprint> blueprintType,
+                   SegmentType segmentType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
+            this.segmentType = segmentType;
         }
     }
 
@@ -441,12 +479,12 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             ElementTypeVisitor<Void, RelativePath.Extender> visitor =
                     new ElementTypeVisitor.Simple<Void, RelativePath.Extender>() {
-                        @Override protected Void defaultAction(Class<? extends AbstractElement<?, ?>> elementType,
+                        @Override protected Void defaultAction(SegmentType elementType,
                                                                RelativePath.Extender parentPath) {
 
                             @SuppressWarnings("unchecked")
                             Class<Entity<Entity.Blueprint, ?>> childType =
-                                    (Class<Entity<Entity.Blueprint,?>>) elementType;
+                                    (Class) Entity.typeFromSegmentType(elementType);
 
                             impl(childType, parentPath);
 
@@ -455,7 +493,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                         private <E extends Entity<B, ?>, B extends Entity.Blueprint>
                         void impl(Class<E> childType, RelativePath.Extender parent) {
-                            if (parent.canExtendTo(childType)) {
+                            SegmentType childSeg = Entity.segmentTypeFromType(childType);
+                            if (parent.canExtendTo(childSeg)) {
                                 Stream<B> otherChildren = other.getChildren(parent.get(), childType);
 
                                 RelativePath parentPath = parent.get();
@@ -474,7 +513,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                                 otherChildren.forEach(c -> {
                                     RelativePath.Extender childPath = parentPath.modified()
-                                            .extend(childType, c.getId());
+                                            .extend(childSeg, c.getId());
 
                                     RelativePath cp = childPath.get();
 
@@ -484,7 +523,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                                         entities.put(cp, childChildren);
                                     }
 
-                                    ElementTypeVisitor.accept(childType, this, childPath);
+                                    ElementTypeVisitor.accept(childSeg, this, childPath);
                                 });
                             }
                         }
@@ -495,7 +534,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             RelativePath empty = RelativePath.empty().get();
 
             other.getAllChildren(empty).forEach(
-                    b -> ElementTypeVisitor.accept(Blueprint.getEntityTypeOf(b), visitor, empty.modified()));
+                    b -> ElementTypeVisitor.accept(Blueprint.getSegmentTypeOf(b), visitor, empty.modified()));
 
             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children = new HashMap<>();
             Map<RelativePath, Entity.Blueprint> blueprints = new HashMap<>();
@@ -546,7 +585,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
         }
 
         @SuppressWarnings("unchecked") @Override
-        public <E extends Entity<B, ?>, B extends Blueprint> Stream<B>
+        public <E extends Entity<? extends B, ?>, B extends Blueprint> Stream<B>
         getChildren(RelativePath parent, Class<E> childType) {
             return (Stream<B>) children.getOrDefault(parent, Collections.emptyMap())
                     .getOrDefault(EntityType.of(childType), Collections.emptySet())
@@ -610,11 +649,13 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             RelativePath.Extender extender = myPath.modified();
             Class<? extends AbstractElement<?, ?>> childType = Blueprint.getEntityTypeOf(child);
 
-            if (!extender.canExtendTo(childType)) {
+            SegmentType childSeg = Blueprint.getSegmentTypeOf(child);
+
+            if (!extender.canExtendTo(childSeg)) {
                 throw new IllegalArgumentException("Cannot extend path " + myPath + " with child of type " + childType);
             }
 
-            RelativePath childPath = extender.extend(childType, child.getId()).get();
+            RelativePath childPath = extender.extend(childSeg, child.getId()).get();
 
             Set<Entity.Blueprint> bls = getChildrenOfType(EntityType.of(childType));
 
@@ -663,7 +704,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             }
 
             return myChildren.values().stream().flatMap(Collection::stream)
-                    .map(b -> new Path.Segment(Blueprint.getEntityTypeOf(b), b.getId())).collect(Collectors.toSet());
+                    .map(b -> new Path.Segment(Blueprint.getSegmentTypeOf(b), b.getId())).collect(Collectors.toSet());
         }
 
         public This removeAllChildren() {
@@ -791,7 +832,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             siblings.remove(myBlueprint);
             siblings.add(blueprint);
             children.remove(myPath);
-            myPath = parentBuilder.myPath.modified().extend(Blueprint.getEntityTypeOf(blueprint), blueprint.getId())
+            myPath = parentBuilder.myPath.modified().extend(Blueprint.getSegmentTypeOf(blueprint), blueprint.getId())
                     .get();
             blueprints.put(myPath, blueprint);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * A base class for filters. Defines no filtering logic in and of itself.
@@ -68,7 +68,7 @@ public abstract class Filter {
 
         for (Path.Segment s : path.getPath()) {
             fs.add(Related.by(Relationships.WellKnown.contains));
-            fs.add(With.type((Class<? extends Entity<?, ?>>) s.getElementType()));
+            fs.add(With.type(Entity.entityTypeFromSegmentType(s.getElementType())));
             fs.add(With.id(s.getElementId()));
         }
 

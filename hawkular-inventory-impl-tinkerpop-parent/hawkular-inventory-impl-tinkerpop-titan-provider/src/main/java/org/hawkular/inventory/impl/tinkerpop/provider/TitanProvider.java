@@ -31,9 +31,9 @@ import java.util.function.Predicate;
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
+import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;

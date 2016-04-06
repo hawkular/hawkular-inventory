@@ -23,6 +23,9 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
+
 
 /**
  * Metric type defines metadata of metrics of the same type. Metric types are owned by
@@ -34,6 +37,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement
 public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.mt;
 
     @XmlAttribute
     private final MetricUnit unit;
