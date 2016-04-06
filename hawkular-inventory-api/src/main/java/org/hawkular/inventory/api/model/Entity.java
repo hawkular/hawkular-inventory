@@ -101,7 +101,7 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
     Entity(String name, CanonicalPath path, Map<String, Object> properties) {
         super(path, properties);
         this.name = name;
-        if (!this.getClass().getSimpleName().equals(path.getSegment().getElementType().getSimpleName())) {
+        if (!segmentTypeFromType(this.getClass()).equals(path.getSegment().getElementType())) {
             throw new IllegalArgumentException("Invalid path specified. Trying to create " +
                     this.getClass().getSimpleName() + " but the path points to " +
                     path.getSegment().getElementType().getSimpleName());

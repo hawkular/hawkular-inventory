@@ -70,7 +70,7 @@ public final class BaseMetrics {
             try {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
-                        MetricType.class);
+                        MetricType.SEGMENT_TYPE);
                 metricTypeObject = tx.find(metricTypePath);
 
             } catch (ElementNotFoundException e) {
@@ -87,7 +87,7 @@ public final class BaseMetrics {
 
             MetricType metricType = tx.convert(metricTypeObject, MetricType.class);
 
-            Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.class,
+            Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.SEGMENT_TYPE,
                     tx.extractId(entity)).get(), metricType, blueprint.getCollectionInterval(),
                     blueprint.getProperties());
 

@@ -16,14 +16,30 @@
  */
 package org.hawkular.inventory.rest.test
 
+import org.hawkular.inventory.paths.PathSegmentCodec
+
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines
+import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates
 import groovyx.net.http.HttpResponseException
 import org.hawkular.inventory.paths.CanonicalPath
-import org.hawkular.inventory.paths.PathSegmentCodec
 import org.hawkular.inventory.api.model.Resource
 import org.junit.*
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.*
-import static org.junit.Assert.*
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
+import static org.junit.Assert.fail
+
+import org.hawkular.inventory.paths.CanonicalPath
+import org.hawkular.inventory.paths.SegmentType
+import org.hawkular.inventory.api.model.Resource
+import org.junit.AfterClass
+import org.junit.Assert
+import org.junit.BeforeClass
+import org.junit.Ignore
+import org.junit.Test
+
+import groovyx.net.http.HttpResponseException
 
 /**
  * Test the basic inventory functionality via REST.
@@ -129,7 +145,7 @@ class InventoryITest extends AbstractTestBase {
         assertEquals(baseURI + "$basePath/environments/$environmentId", response.headers.Location)
 
         /* URL resource type should have been autocreated */
-        response = AbstractTestBase.client.get(path: "$basePath/resourceTypes/$urlTypeId")
+        response = org.hawkular.inventory.rest.test.AbstractTestBase.client.get(path: "$basePath/resourceTypes/$urlTypeId")
         assertEquals(200, response.status)
         assertEquals(urlTypeId, response.data.id)
 
@@ -1335,7 +1351,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     private static String fullCanonicalPath(cp) {
-        return CanonicalPath.fromPartiallyUntypedString(cp, CanonicalPath.of().tenant(tenantId).get(), (Class<?>) null)
+        return CanonicalPath.fromPartiallyUntypedString(cp, CanonicalPath.of().tenant(tenantId).get(), SegmentType.ANY_ENTITY)
                 .toString()
     }
 }

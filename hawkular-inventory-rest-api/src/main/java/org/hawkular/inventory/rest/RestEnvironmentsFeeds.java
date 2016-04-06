@@ -82,7 +82,7 @@ public class RestEnvironmentsFeeds extends RestBase {
 
         CanonicalPath tenant = CanonicalPath.of().tenant(tenantId).get();
 
-        CanonicalPath env = tenant.extend(Environment.class, environmentId).get();
+        CanonicalPath env = tenant.extend(Environment.SEGMENT_TYPE, environmentId).get();
 
         if (!security.canAssociateFrom(env)) {
             return Response.status(FORBIDDEN).build();
@@ -90,7 +90,7 @@ public class RestEnvironmentsFeeds extends RestBase {
 
         Feeds.ReadAssociate feeds = inventory.inspect(env, Environments.Single.class).feeds();
 
-        feedPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, env, Feed.class))
+        feedPaths.stream().map((p) -> Path.fromPartiallyUntypedString(p, tenant, env, Feed.SEGMENT_TYPE))
                 .forEach(feeds::associate);
 
         return Response.noContent().build();
@@ -137,7 +137,7 @@ public class RestEnvironmentsFeeds extends RestBase {
             feedPath = "/" + feedPath;
         }
 
-        Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.class);
+        Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.SEGMENT_TYPE);
 
         if (EntityIdUtils.isTenantEscapeAttempt(env, fp)) {
             Response.status(FORBIDDEN).build();
@@ -174,7 +174,7 @@ public class RestEnvironmentsFeeds extends RestBase {
             feedPath = "/" + feedPath;
         }
 
-        Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.class);
+        Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.SEGMENT_TYPE);
 
         if (EntityIdUtils.isTenantEscapeAttempt(env, fp)) {
             Response.status(FORBIDDEN).build();

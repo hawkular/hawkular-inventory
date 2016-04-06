@@ -462,21 +462,23 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     private static <E> void teardownData(BaseInventory<E> inventory) throws Exception {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.example.tenant").get();
-        CanonicalPath environmentPath = tenantPath.extend(Environment.class, "test").get();
+        CanonicalPath environmentPath = tenantPath.extend(Environment.SEGMENT_TYPE, "test").get();
 
         try {
             Tenant t = new Tenant(tenantPath);
             Environment e = new Environment(environmentPath);
-            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.class, "Size").get());
-            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.class, "Playroom").get(), null);
-            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.class, "Kachna").get(), null);
-            Resource playroom1 = new Resource(environmentPath.extend(Resource.class, "playroom1").get(),
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get());
+            ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Playroom").get(),
+                    null);
+            ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Kachna").get(),
+                    null);
+            Resource playroom1 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom1").get(),
                     playRoomType);
-            Resource playroom2 = new Resource(environmentPath.extend(Resource.class, "playroom2").get(),
+            Resource playroom2 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom2").get(),
                     playRoomType);
-            Metric playroom1Size = new Metric(environmentPath.extend(Metric.class, "playroom1_size").get(),
+            Metric playroom1Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom1_size").get(),
                     sizeType);
-            Metric playroom2Size = new Metric(environmentPath.extend(Metric.class, "playroom2_size").get(),
+            Metric playroom2Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom2_size").get(),
                     sizeType);
 
             //when an association is deleted, it should not be possible to access the target entity through the same
@@ -1764,7 +1766,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testMetadataPackMembershipNonUpdatable() throws Exception {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
-        CanonicalPath rtPath = tenantPath.extend(ResourceType.class, "Person").get();
+        CanonicalPath rtPath = tenantPath.extend(ResourceType.SEGMENT_TYPE, "Person").get();
 
         MetadataPack pack = inventory.inspect(tenantPath, Tenants.Single.class).metadataPacks().getAll().entities()
                 .iterator().next();
@@ -2188,51 +2190,51 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Tenant tenant = backend.convert(entity, Tenant.class);
         Assert.assertEquals("com.acme.tenant", tenant.getId());
 
-        CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
+        CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
         entity = backend.find(envPath);
         Environment env = backend.convert(entity, Environment.class);
         Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
         Assert.assertEquals("production", env.getId());
 
-        entity = backend.find(envPath.extend(Resource.class, "host1").get());
+        entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
         Resource r = backend.convert(entity, Resource.class);
         Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
         Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
         Assert.assertNull(r.getPath().ids().getFeedId());
         Assert.assertEquals("host1", r.getId());
 
-        entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
+        entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
         Metric m = backend.convert(entity, Metric.class);
         Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
         Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
         Assert.assertNull(m.getPath().ids().getFeedId());
         Assert.assertEquals("host1_ping_response", m.getId());
 
-        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
         entity = backend.find(feedPath);
         Feed f = backend.convert(entity, Feed.class);
         Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", f.getId());
 
-        entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
+        entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
         r = backend.convert(entity, Resource.class);
         Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
         Assert.assertEquals("feedResource1", r.getId());
 
-        entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
+        entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
         m = backend.convert(entity, Metric.class);
         Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
         Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
         Assert.assertEquals("feedMetric1", m.getId());
 
-        entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
+        entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
         ResourceType
                 rt = backend.convert(entity, ResourceType.class);
         Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
         Assert.assertEquals("URL", rt.getId());
 
-        entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
+        entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
         MetricType mt = backend.convert(entity, MetricType.class);
         Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
         Assert.assertEquals("ResponseTime", mt.getId());
@@ -2382,30 +2384,30 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         E entity = backend.find(tenantPath);
         Assert.assertEquals(Tenant.class, backend.extractType(entity));
 
-        CanonicalPath envPath = tenantPath.extend(Environment.class, "production").get();
+        CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
         entity = backend.find(envPath);
         Assert.assertEquals(Environment.class, backend.extractType(entity));
 
-        entity = backend.find(envPath.extend(Resource.class, "host1").get());
+        entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
         Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-        entity = backend.find(envPath.extend(Metric.class, "host1_ping_response").get());
+        entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
         Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-        CanonicalPath feedPath = tenantPath.extend(Feed.class, "feed1").get();
+        CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
         entity = backend.find(feedPath);
         Assert.assertEquals(Feed.class, backend.extractType(entity));
 
-        entity = backend.find(feedPath.extend(Resource.class, "feedResource1").get());
+        entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
         Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-        entity = backend.find(feedPath.extend(Metric.class, "feedMetric1").get());
+        entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
         Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-        entity = backend.find(tenantPath.extend(ResourceType.class, "URL").get());
+        entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
         Assert.assertEquals(ResourceType.class, backend.extractType(entity));
 
-        entity = backend.find(tenantPath.extend(MetricType.class, "ResponseTime").get());
+        entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
         Assert.assertEquals(MetricType.class, backend.extractType(entity));
     }
 

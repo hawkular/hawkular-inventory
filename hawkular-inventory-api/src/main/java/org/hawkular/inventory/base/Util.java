@@ -413,10 +413,10 @@ final class Util {
      * @param relativeOrigin    origin to resolve a relative path against
      * @param intendedFinalType the intended type of the final segment of the path
      * @return the canonical path represented by the provided path string
-     * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, Class)
+     * @see Path#fromPartiallyUntypedString(String, CanonicalPath, CanonicalPath, SegmentType)
      */
     public static CanonicalPath canonicalize(String path, CanonicalPath canonicalPrefix, CanonicalPath relativeOrigin,
-                                             Class<?> intendedFinalType) {
+                                             SegmentType intendedFinalType) {
 
         Path p = Path.fromPartiallyUntypedString(path, canonicalPrefix, relativeOrigin, intendedFinalType);
 

@@ -23,6 +23,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 
 /**
@@ -36,6 +37,9 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.rl;
+
     @XmlAttribute
     private final String id;
 

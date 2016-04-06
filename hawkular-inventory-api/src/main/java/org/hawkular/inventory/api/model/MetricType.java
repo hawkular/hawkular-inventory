@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 
 /**
@@ -36,6 +37,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.mt;
 
     @XmlAttribute
     private final MetricUnit unit;

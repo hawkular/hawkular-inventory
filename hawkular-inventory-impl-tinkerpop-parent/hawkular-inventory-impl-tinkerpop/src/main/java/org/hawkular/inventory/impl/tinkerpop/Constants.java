@@ -57,6 +57,10 @@ import org.hawkular.inventory.paths.ElementTypeVisitor;
  */
 final class Constants {
 
+    private Constants() {
+        //no instances, thank you
+    }
+
     /**
      * The vertices in the graph have certain well-known properties.
      */
@@ -252,69 +256,70 @@ final class Constants {
         }
 
         public static Type of(Class<?> ec) {
-            return ElementTypeVisitor.accept(ec, new ElementTypeVisitor<Type, Void>() {
-                @Override
-                public Type visitTenant(Void parameter) {
-                    return tenant;
-                }
+            return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(ec),
+                    new ElementTypeVisitor<Type, Void>() {
+                        @Override
+                        public Type visitTenant(Void parameter) {
+                            return tenant;
+                        }
 
-                @Override
-                public Type visitEnvironment(Void parameter) {
-                    return environment;
-                }
+                        @Override
+                        public Type visitEnvironment(Void parameter) {
+                            return environment;
+                        }
 
-                @Override
-                public Type visitFeed(Void parameter) {
-                    return feed;
-                }
+                        @Override
+                        public Type visitFeed(Void parameter) {
+                            return feed;
+                        }
 
-                @Override
-                public Type visitMetric(Void parameter) {
-                    return metric;
-                }
+                        @Override
+                        public Type visitMetric(Void parameter) {
+                            return metric;
+                        }
 
-                @Override
-                public Type visitMetricType(Void parameter) {
-                    return metricType;
-                }
+                        @Override
+                        public Type visitMetricType(Void parameter) {
+                            return metricType;
+                        }
 
-                @Override
-                public Type visitResource(Void parameter) {
-                    return resource;
-                }
+                        @Override
+                        public Type visitResource(Void parameter) {
+                            return resource;
+                        }
 
-                @Override
-                public Type visitResourceType(Void parameter) {
-                    return resourceType;
-                }
+                        @Override
+                        public Type visitResourceType(Void parameter) {
+                            return resourceType;
+                        }
 
-                @Override
-                public Type visitRelationship(Void parameter) {
-                    return relationship;
-                }
+                        @Override
+                        public Type visitRelationship(Void parameter) {
+                            return relationship;
+                        }
 
-                @Override
-                public Type visitData(Void parameter) {
-                    return dataEntity;
-                }
+                        @Override
+                        public Type visitData(Void parameter) {
+                            return dataEntity;
+                        }
 
-                @Override
-                public Type visitOperationType(Void parameter) {
-                    return operationType;
-                }
+                        @Override
+                        public Type visitOperationType(Void parameter) {
+                            return operationType;
+                        }
 
-                @Override public Type visitMetadataPack(Void parameter) {
-                    return Type.metadatapack;
-                }
+                        @Override public Type visitMetadataPack(Void parameter) {
+                            return Type.metadatapack;
+                        }
 
-                @Override
-                public Type visitUnknown(Void parameter) {
-                    if (StructuredData.class.equals(ec)) {
-                        return structuredData;
-                    }
-                    throw new IllegalArgumentException("Unsupported entity class " + ec);
-                }
-            }, null);
+                        @Override
+                        public Type visitUnknown(Void parameter) {
+                            if (StructuredData.class.equals(ec)) {
+                                return structuredData;
+                            }
+                            throw new IllegalArgumentException("Unsupported entity class " + ec);
+                        }
+                    }, null);
         }
 
         public Class<?> getEntityType() {
@@ -335,8 +340,5 @@ final class Constants {
 
     enum InternalType {
         __identityHash
-    }
-    private Constants() {
-        //no instances, thank you
     }
 }

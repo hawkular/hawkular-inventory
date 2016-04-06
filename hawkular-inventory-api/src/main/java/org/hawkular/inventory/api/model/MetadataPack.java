@@ -41,6 +41,8 @@ import org.hawkular.inventory.paths.SegmentType;
  */
 public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataPack.Update> {
 
+    public static final SegmentType SEGMENT_TYPE = SegmentType.mp;
+
     public static boolean canIncorporate(CanonicalPath entityPath) {
         SegmentType entityType = entityPath.getSegment().getElementType();
         SegmentType parentType = entityPath.up().getSegment().getElementType();

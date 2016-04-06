@@ -18,6 +18,7 @@ package org.hawkular.inventory.json;
 
 import java.io.IOException;
 
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 
@@ -54,6 +55,6 @@ public final class DetypedPathDeserializer extends JsonDeserializer<Path> {
         CanonicalPath ro = CURRENT_RELATIVE_PATH_ORIGIN.get();
         Class<?> entityType = CURRENT_ENTITY_TYPE.get();
 
-        return Path.fromPartiallyUntypedString(str, co, ro, entityType);
+        return Path.fromPartiallyUntypedString(str, co, ro, AbstractElement.segmentTypeFromType(entityType));
     }
 }

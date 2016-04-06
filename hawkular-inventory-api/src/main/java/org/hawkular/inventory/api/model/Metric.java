@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
@@ -35,6 +36,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.m;
 
     private final MetricType type;
     private final Long collectionInterval;

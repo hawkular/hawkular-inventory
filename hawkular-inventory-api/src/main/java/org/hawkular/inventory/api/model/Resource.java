@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 
 /**
@@ -34,6 +35,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class Resource extends Entity<Resource.Blueprint, Resource.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.r;
 
     private final ResourceType type;
 

@@ -66,7 +66,7 @@ public final class BaseOperationTypes {
         wireUpNewEntity(BE entity, OperationType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new OperationType(blueprint.getName(),
-                    parentPath.extend(OperationType.class, tx.extractId(entity)).get(),
+                    parentPath.extend(OperationType.SEGMENT_TYPE, tx.extractId(entity)).get(),
                     blueprint.getProperties()), emptyList());
         }
 

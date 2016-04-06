@@ -79,7 +79,7 @@ public final class BaseResourceTypes {
             tx.update(entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
-                    parentPath.extend(ResourceType.class, tx.extractId(entity)).get(),
+                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(),
                     blueprint.getProperties());
 
             tx.updateIdentityHash(entity,

@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
@@ -37,6 +38,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 @XmlRootElement
 public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
+
+    public static final SegmentType SEGMENT_TYPE = SegmentType.e;
 
     @SuppressWarnings("unused")
     private Environment() {

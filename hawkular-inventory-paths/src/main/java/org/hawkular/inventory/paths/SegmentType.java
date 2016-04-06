@@ -16,16 +16,19 @@
  */
 package org.hawkular.inventory.paths;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.hawkular.inventory.paths.Path.Segment;
 
+/**
+ * An enumeration of all possible {@link Path} {@link Segment} types.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ */
 public enum SegmentType {
     /** Tenant */
     t("Tenant"),
@@ -66,12 +69,19 @@ public enum SegmentType {
     private static final Map<String, SegmentType> entriesByShortName;
     private static final Map<String, SegmentType> entriesBySimpleName;
     private static final Set<String> canonicalShortNames;
-    private static final List<SegmentType> relativeShortNames;
+    private static final Set<SegmentType> relativeShortNames;
+
+    /**
+     * Per convention, the {@code null} value is interpreted as any subclass of
+     * {@code org.hawkular.inventory.api.model.Entity}
+     */
+    public static final SegmentType ANY_ENTITY = null;
+
     static {
         Map<String, SegmentType> tmpByShortName = new HashMap<>();
         Map<String, SegmentType> tmpBySimpleName = new HashMap<>();
         Set<String> canonicalTmp = new HashSet<>();
-        List<SegmentType> relativeTmp = new ArrayList<>();
+        Set<SegmentType> relativeTmp = new HashSet<>();
         for (SegmentType segmentType : values()) {
             tmpByShortName.put(segmentType.name(), segmentType);
             tmpBySimpleName.put(segmentType.getSimpleName(), segmentType);
@@ -84,55 +94,67 @@ public enum SegmentType {
         entriesByShortName = Collections.unmodifiableMap(tmpByShortName);
         entriesBySimpleName = Collections.unmodifiableMap(tmpBySimpleName);
         canonicalShortNames = Collections.unmodifiableSet(canonicalTmp);
-        relativeShortNames = Collections.unmodifiableList(relativeTmp);
+        relativeShortNames = Collections.unmodifiableSet(relativeTmp);
     }
 
     /** The simple class name of the related Inventory model element */
     private final String simpleName;
     private final String serialized;
+
     private SegmentType(String simpleName) {
         this.simpleName = simpleName;
         this.serialized = name();
     }
+
     private SegmentType(String simpleName, String serialized) {
         this.simpleName = simpleName;
         this.serialized = serialized;
     }
 
-    public String getSimpleName() {
-        return simpleName;
-    }
-
     /**
-     * @param type
-     * @return
+     * A static {@link HashMap} based and {@code null}-tolerant alternative to {@link #valueOf(String)}.
+     *
+     * @param type the short name such as {@code "e"} or {@code "f"} to map to a {@link SegmentType}
+     * @return the {@link SegmentType} corresponding to the given {@code type} or <code>null</code> of there is no
+     *         corresponding {@link SegmentType}.
      */
     public static SegmentType fastValueOf(String type) {
         return entriesByShortName.get(type);
     }
 
     /**
-     * @param elementType
-     * @return
+     * Returns a {@link SegmentType} corresponding to the given {@code elementType} or {@code null} if no corresponding
+     * type can be found.
+     * <p>
+     * Performance note: this implementation looks up the given {@code elementType} using its
+     * {@code elementType.getSimpleName()}. Because {@link Class#getSimpleName()} invokes {@link String#substring(int)}
+     * this implementation may suboptimal in many use cases.
+     * <p>
+     * Therefore, the usage of this method should be avoided in all situations where there is a better alternative, such
+     * as using {@code SEGMENT_TYPE} constants defined in the subclasses of
+     * {@code org.hawkular.inventory.api.model.Entity} or
+     * {@code org.hawkular.inventory.api.model.Entity.segmentTypeFromType(Class)}
+     *
+     * @param elementType the type to map to a {@link SegmentType}
+     * @return the {@link SegmentType} corresponding to the given {@code elementType} or {@code null} if no
+     *         corresponding type can be found
      */
     public static SegmentType fromElementType(Class<?> elementType) {
         return elementType == null ? null : entriesBySimpleName.get(elementType.getSimpleName());
     }
 
+    /**
+     * @return a {@link Set} of short names that may occur in canonical paths
+     */
     public static Set<String> getCanonicalShortNames() {
         return canonicalShortNames;
     }
-    public static List<SegmentType> getRelativeShortNames() {
-        return relativeShortNames;
-    }
 
     /**
-     * We do not serialize {@link #sd}s with a {@code "sd;"} prefix.
-     *
-     * @return {@code true} unless this is a {@link #sd}, otherwise {@code false}
+     * @return a {@link Set} of short names that may occur in relative paths
      */
-    public boolean isSerializable() {
-        return true;
+    public static Set<SegmentType> getRelativeShortNames() {
+        return relativeShortNames;
     }
 
     /**
@@ -145,7 +167,29 @@ public enum SegmentType {
         return true;
     }
 
+    /**
+     * We do not serialize {@link #sd}s with a {@code "sd;"} prefix.
+     *
+     * @return {@code true} unless this is a {@link #sd}, otherwise {@code false}
+     */
+    public boolean isSerializable() {
+        return true;
+    }
+
+    /**
+     * Returns the representation of this {@link SegmentType} suitable for serialization. In most cases the result is
+     * equal to {@link #name()} with the notable exception of {@link #up}, the serialized form of which is {@code ".."}.
+     *
+     * @return the representation of this {@link SegmentType} suitable for serialization
+     */
     public String getSerialized() {
         return serialized;
+    }
+
+    /**
+     * @return the simple name of the corresponding class in {@code org.hawkular.inventory.api.model} package.
+     */
+    public String getSimpleName() {
+        return simpleName;
     }
 }

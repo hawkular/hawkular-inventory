@@ -105,7 +105,8 @@ public class SerializationTest {
 
     @Test
     public void testRelativePath() throws Exception {
-        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class));
+        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
+                Metric.SEGMENT_TYPE));
     }
 
     @Test
@@ -113,13 +114,13 @@ public class SerializationTest {
         mapper.addMixIn(RelativePath.class, TenantlessRelativePathMixin.class);
         DetypedPathDeserializer.setCurrentEntityType(Metric.class);
         DetypedPathDeserializer.setCurrentRelativePathOrigin(CanonicalPath.fromString("/t;t/e;e/r;r"));
-        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"), Metric.class)
-        );
+        test(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
+                Metric.SEGMENT_TYPE)        );
 
         //the test above doesn't test for deserializing a de-typed path.
         RelativePath rp = deserialize("\"../g\"", RelativePath.class);
         Assert.assertEquals(RelativePath.fromPartiallyUntypedString("../g", CanonicalPath.fromString("/t;t/e;e/r;r"),
-                Metric.class), rp);
+                Metric.SEGMENT_TYPE), rp);
     }
 
     @Test

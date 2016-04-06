@@ -24,9 +24,6 @@ package org.hawkular.inventory.paths;
  */
 public interface ElementTypeVisitor<R, P> {
 
-    static <R, P> R accept(Class<?> entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
-        return accept(SegmentType.fromElementType(entityType), visitor, parameter);
-    }
     static <R, P> R accept(SegmentType entityType, ElementTypeVisitor<R, P> visitor, P parameter) {
         switch (entityType) {
             case t:

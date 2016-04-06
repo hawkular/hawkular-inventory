@@ -29,6 +29,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * @author Lukas Krejci
  * @since 0.0.1
@@ -234,6 +236,11 @@ public final class With {
 
         public Class<? extends Entity<?, ?>>[] getTypes() {
             return types;
+        }
+
+        @JsonIgnore
+        public SegmentType[] getSegmentTypes() {
+            return Arrays.stream(types).map(AbstractElement::segmentTypeFromType).toArray(SegmentType[]::new);
         }
 
         @Override

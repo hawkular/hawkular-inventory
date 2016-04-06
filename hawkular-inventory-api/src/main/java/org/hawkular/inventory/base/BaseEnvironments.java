@@ -128,7 +128,7 @@ public final class BaseEnvironments {
         wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
-                    parentPath.extend(Environment.class, tx.extractId(entity)).get(),
+                    parentPath.extend(Environment.SEGMENT_TYPE, tx.extractId(entity)).get(),
                     blueprint.getProperties()), emptyList());
         }
 
