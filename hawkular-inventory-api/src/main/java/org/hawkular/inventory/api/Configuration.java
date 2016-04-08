@@ -251,15 +251,19 @@ public final class Configuration {
             }
 
             public Property build() {
-                return new Property() {
-                    //capture the values in the builder as they are at this very moment - further changes to the builder
-                    //won't affect the constructed instance
-                    private final String propertyName = Builder.this.propertyName;
-                    private final List<String> sysProps = Collections.unmodifiableList(
-                            new ArrayList<>(Builder.this.sysProps));
-                    private final List<String> envVars = Collections.unmodifiableList(
-                            new ArrayList<>(Builder.this.envVars));
+                if (propertyName == null) {
+                    throw new IllegalStateException("A property needs to have a name defined.");
+                }
 
+                //capture the values in the builder as they are at this very moment - further changes to the builder
+                //won't affect the constructed instance
+                String propertyName = this.propertyName;
+                List<String> sysProps = this.sysProps == null ? Collections.emptyList()
+                        : Collections.unmodifiableList(new ArrayList<>(this.sysProps));
+                List<String> envVars = this.envVars == null ? Collections.emptyList()
+                        : Collections.unmodifiableList(new ArrayList<>(this.envVars));
+
+                return new Property() {
                     @Override
                     public String getPropertyName() {
                         return propertyName;
