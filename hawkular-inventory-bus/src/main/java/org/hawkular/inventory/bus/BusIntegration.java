@@ -88,20 +88,21 @@ public final class BusIntegration {
 
     private void install() {
         install(inventory, subscriptions, Tenant.class, messageSender);
-        install(inventory, subscriptions, ResourceType.class, messageSender);
-        install(inventory, subscriptions, MetricType.class, messageSender);
+        install(inventory, subscriptions, ResourceType.class, messageSender, Action.identityHashChanged());
+        install(inventory, subscriptions, MetricType.class, messageSender, Action.identityHashChanged());
         install(inventory, subscriptions, Environment.class, messageSender, Action.copied());
-        install(inventory, subscriptions, Feed.class, messageSender, Action.registered());
-        install(inventory, subscriptions, Resource.class, messageSender);
-        install(inventory, subscriptions, Metric.class, messageSender);
+        install(inventory, subscriptions, Feed.class, messageSender, Action.registered(), Action.identityHashChanged());
+        install(inventory, subscriptions, Resource.class, messageSender, Action.identityHashChanged());
+        install(inventory, subscriptions, Metric.class, messageSender, Action.identityHashChanged());
         install(inventory, subscriptions, Relationship.class, messageSender);
-        install(inventory, subscriptions, DataEntity.class, messageSender);
+        install(inventory, subscriptions, DataEntity.class, messageSender, Action.identityHashChanged());
     }
 
     private void uninstall() {
         subscriptions.forEach(Subscription::unsubscribe);
     }
 
+    @SafeVarargs
     private static <U extends AbstractElement.Update, T extends AbstractElement<?, U>>
     void install(Inventory inventory, Set<Subscription> subscriptions, Class<T> entityClass,
             MessageSender sender, Action<?, T>... additionalActions) {
