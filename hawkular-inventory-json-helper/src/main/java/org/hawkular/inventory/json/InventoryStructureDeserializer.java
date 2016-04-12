@@ -103,7 +103,13 @@ public class InventoryStructureDeserializer extends JsonDeserializer<InventorySt
                     continue;
                 }
 
-                InventoryStructure.EntityType type = InventoryStructure.EntityType.valueOf(typeName);
+                InventoryStructure.EntityType type;
+                try {
+                    type = InventoryStructure.EntityType.valueOf(typeName);
+                } catch (IllegalArgumentException ex) {
+                    throw new JsonParseException("Unrecognized value of 'type'. Supported values are " + LEGAL_ENTITY_TYPES
+                            + " but got '" + typeName + "'.", JsonLocation.NA);
+                }
 
                 Iterator<JsonNode> childrenNodes = childrenNode.elements();
                 while (childrenNodes.hasNext()) {
