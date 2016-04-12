@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.api;
 
-import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.ArrayList;
@@ -136,6 +134,10 @@ public final class Configuration {
      * I.e. if a system property defined by some of the provided property objects overrides a property in the
      * implementation configuration, the value of the system property is used instead for that property (i.e. the key
      * stays the same but the value gets overridden to the value of the system property).
+     * <p>
+     * Additionally, if some of the {@code overridableProperties} are not present in this configuration, an attempt is
+     * made to load them from the system properties or environment variables according to the rules specified at
+     * {@link #getProperty(Property, String)}.
      *
      * @param overridableProperties the properties to override the implementation configuration with.
      * @return an overridden implementation configuration
@@ -147,13 +149,19 @@ public final class Configuration {
     //this hoop is needed so that we can type-check the "T" through the stream manipulations
     private <T extends Property> Map<String, String> getOverriddenImplementationConfiguration(
             Collection<T> overridableProperties) {
-        Map<String, T> propsByName = overridableProperties.stream().collect(toMap(Property::getPropertyName,
-                identity()));
 
-        return implementationConfiguration.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
-            Property p = propsByName.get(e.getKey());
-            return p == null ? e.getValue() : getProperty(p, e.getValue());
-        }));
+        Map<String, String> ret = new HashMap<>();
+
+        overridableProperties.forEach(p -> {
+            String val = getProperty(p, null);
+            if (val != null) {
+                ret.put(p.getPropertyName(), val);
+            }
+        });
+
+        implementationConfiguration.forEach(ret::putIfAbsent);
+
+        return ret;
     }
 
     public static final class Builder {
@@ -251,15 +259,19 @@ public final class Configuration {
             }
 
             public Property build() {
-                return new Property() {
-                    //capture the values in the builder as they are at this very moment - further changes to the builder
-                    //won't affect the constructed instance
-                    private final String propertyName = Builder.this.propertyName;
-                    private final List<String> sysProps = Collections.unmodifiableList(
-                            new ArrayList<>(Builder.this.sysProps));
-                    private final List<String> envVars = Collections.unmodifiableList(
-                            new ArrayList<>(Builder.this.envVars));
+                if (propertyName == null) {
+                    throw new IllegalStateException("A property needs to have a name defined.");
+                }
 
+                //capture the values in the builder as they are at this very moment - further changes to the builder
+                //won't affect the constructed instance
+                String propertyName = this.propertyName;
+                List<String> sysProps = this.sysProps == null ? Collections.emptyList()
+                        : Collections.unmodifiableList(new ArrayList<>(this.sysProps));
+                List<String> envVars = this.envVars == null ? Collections.emptyList()
+                        : Collections.unmodifiableList(new ArrayList<>(this.envVars));
+
+                return new Property() {
                     @Override
                     public String getPropertyName() {
                         return propertyName;
