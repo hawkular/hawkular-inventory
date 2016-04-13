@@ -32,41 +32,50 @@ public final class ResourceTypes {
 
     }
 
-    private interface BrowserBase<Resources, MetricTypes, OperationTypes, Data> {
+    private interface BrowserBase<ResourcesAccess, MetricTypesAccess, OperationTypesAccess, DataAccess>
+            extends OperationTypes.Container<OperationTypesAccess>, Data.Container<DataAccess> {
         /**
          * @return access to resources defined by the resource type(s)
          */
-        Resources resources();
+        ResourcesAccess resources();
 
         /**
          * @return access to metric types associated with the resource type(s)
          */
-        MetricTypes metricTypes();
+        MetricTypesAccess metricTypes();
 
         /**
          * @return access to the operation types contained by the resource type(s)
          */
-        OperationTypes operationTypes();
+        OperationTypesAccess operationTypes();
 
         /**
          * @return access to the data associated with the resource type.
          */
-        Data data();
+        DataAccess data();
 
         /**
-         * @return resource types that are equivalent to this resource type based on the {@link IdentityHash} rules.
+         * @return resource types that are equivalent to this resource type based on the
+         * {@link org.hawkular.inventory.api.model.IdentityHash} rules.
          */
         Read identical();
     }
 
     /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain resource types.
+     * @param <Access> the type of access to resource types
+     */
+    public interface Container<Access> {
+        Access resourceTypes();
+    }
+
+    /**
      * Interface for accessing a single resource type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<ResourceType, ResourceType.Update>,
+    public interface Single
+            extends IdentityHashed.SingleWithRelationships<ResourceType, ResourceType.Blueprint, ResourceType.Update>,
             BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite,
                     Data.ReadWrite<DataRole.ResourceType>> {
-
-        String identityHash() throws EntityNotFoundException;
     }
 
     /**

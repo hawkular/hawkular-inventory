@@ -43,6 +43,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -208,7 +209,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 new ElementTypeVisitor.Simple<BE, Void>() {
                     @SuppressWarnings("unchecked")
                     @Override
-                    protected BE defaultAction() {
+                    protected BE defaultAction(SegmentType elementType, Void parameter) {
                         BE res = tx.querySingle(context.sourcePath);
 
                         if (res == null) {

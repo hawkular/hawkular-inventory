@@ -26,13 +26,13 @@ import java.util.Set;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetadataPacks;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -59,18 +59,20 @@ public final class BaseMetadataPacks {
             super(context);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         protected String getProposedId(Transaction<BE> tx, MetadataPack.Blueprint blueprint) {
-            Iterator<? extends Entity<?, ?>> members = blueprint.getMembers().stream().map((p) -> {
-                SegmentType type = p.getSegment().getElementType();
-                Class<? extends Entity<?, ?>> cls = Entity.entityTypeFromSegmentType(type);
-                try {
-                    BE e = tx.find(p);
-                    return (Entity<?, ?>) tx.convert(e, cls);
-                } catch (ElementNotFoundException ex) {
-                    throw new EntityNotFoundException(type.getSimpleName(), Query.filters(Query.to(p)));
-                }
-            }).iterator();
+            Iterator<? extends Entity<? extends Entity.Blueprint, ?>> members = blueprint.getMembers().stream()
+                    .map((p) -> {
+                        SegmentType type = p.getSegment().getElementType();
+                        Class<?> cls = Entity.entityTypeFromSegmentType(type);
+                        try {
+                            BE e = tx.find(p);
+                            return (Entity<? extends Entity.Blueprint, ?>) tx.convert(e, cls);
+                        } catch (ElementNotFoundException ex) {
+                            throw new EntityNotFoundException(cls, Query.filters(Query.to(p)));
+                        }
+                    }).iterator();
 
             return IdentityHash.of(members, context.inventory);
         }

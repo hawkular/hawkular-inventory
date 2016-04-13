@@ -315,7 +315,15 @@ public final class StructuredData {
                 public Void visitList(List<StructuredData> value, Void parameter) {
                     try {
                         wrt.append("[");
-                        value.forEach((d) -> d.accept(this, parameter));
+                        Iterator<StructuredData> it = value.iterator();
+                        if (it.hasNext()) {
+                            it.next().accept(this, parameter);
+                        }
+
+                        while (it.hasNext()) {
+                            wrt.append(",");
+                            it.next().accept(this, parameter);
+                        }
                         wrt.append("]");
                         return null;
                     } catch (IOException e) {

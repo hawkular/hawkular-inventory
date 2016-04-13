@@ -37,21 +37,23 @@ public final class Feeds {
         FEED, RESOURCE
     }
 
-    private interface BrowserBase<AccessResources, AccessMetrics, MetricTypes, ResourceTypes> {
-        AccessResources resources();
-
-        Resources.Read resourcesUnder(ResourceParents... parents);
-
-        AccessMetrics metrics();
-
-        Metrics.Read metricsUnder(MetricParents... parents);
-
-        MetricTypes metricTypes();
-
-        ResourceTypes resourceTypes();
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain feeds.
+     * @param <Access> the type of access to feeds
+     */
+    public interface Container<Access> {
+        Access feeds();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<Feed, Feed.Update>,
+    private interface BrowserBase<AccessResources, AccessMetrics, AccessMetricTypes, AccessResourceTypes>
+            extends Resources.Container<AccessResources>, Metrics.Container<AccessMetrics>,
+            MetricTypes.Container<AccessMetricTypes>, ResourceTypes.Container<AccessResourceTypes> {
+        Resources.Read resourcesUnder(ResourceParents... parents);
+
+        Metrics.Read metricsUnder(MetricParents... parents);
+    }
+
+    public interface Single extends IdentityHashed.SingleWithRelationships<Feed, Feed.Blueprint, Feed.Update>,
             BrowserBase<Resources.ReadWrite, Metrics.ReadWrite, MetricTypes.ReadWrite, ResourceTypes.ReadWrite> {}
 
     public interface Multiple extends ResolvableToManyWithRelationships<Feed>,
@@ -80,5 +82,12 @@ public final class Feeds {
          * @return the access interface to the newly created feed
          */
         Single create(Feed.Blueprint blueprint);
+
+        //TODO commented out for now so that we can go piecewise
+        /**
+         * Synchronizes the inventory of the feed to conform to the provided sync object.
+         * @param sync
+         */
+        //void sync(Feed.Sync sync);
     }
 }

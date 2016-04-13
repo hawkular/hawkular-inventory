@@ -33,6 +33,14 @@ public final class Data {
 
     }
 
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain data.
+     * @param <Access> the type of access to data
+     */
+    public interface Container<Access> {
+        Access data();
+    }
+
     public interface Read<Role extends DataRole> extends ReadInterface<Single, Multiple, Role> {
     }
 
@@ -46,7 +54,7 @@ public final class Data {
         void update(Role role, DataEntity.Update update) throws EntityNotFoundException, ValidationException;
     }
 
-    public interface Single extends ResolvableToSingle<DataEntity, DataEntity.Update> {
+    public interface Single extends IdentityHashed.Single<DataEntity, DataEntity.Blueprint<?>, DataEntity.Update> {
 
         /**
          * Loads the data entity on the current position in the inventory traversal along with its data.

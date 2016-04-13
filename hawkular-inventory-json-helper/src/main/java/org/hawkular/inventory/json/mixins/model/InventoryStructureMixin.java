@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.base.spi;
+package org.hawkular.inventory.json.mixins.model;
+
+import org.hawkular.inventory.json.InventoryStructureDeserializer;
+import org.hawkular.inventory.json.InventoryStructureSerializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This exception is to be thrown by the backends when a commit fails. This exception is then used by the implementation
- * as a trigger for retrying the transaction.
- *
- * <p>Note that this is a checked exception on purpose because the {@link org.hawkular.inventory.base.BaseInventory}
- * uses this for transaction failure recovery and thus must handle it.
- *
  * @author Lukas Krejci
- * @since 0.2.0
+ * @since 0.15.0
  */
-public class CommitFailureException extends Exception {
-    public CommitFailureException() {
-    }
-
-    public CommitFailureException(Throwable cause) {
-        super(cause);
-    }
+@JsonSerialize(using = InventoryStructureSerializer.class)
+@JsonDeserialize(using = InventoryStructureDeserializer.class)
+public class InventoryStructureMixin {
 }

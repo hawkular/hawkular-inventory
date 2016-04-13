@@ -33,10 +33,10 @@ import org.hawkular.inventory.paths.SegmentType;
  * by a {@code String}.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.1.0
  */
 @XmlRootElement
-public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
+public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.f;
 
@@ -47,25 +47,25 @@ public final class Feed extends Entity<Feed.Blueprint, Feed.Update> {
     private Feed() {
     }
 
-    public Feed(CanonicalPath path) {
-        this(path, null);
+    public Feed(CanonicalPath path, String identityHash) {
+        this(path, identityHash, null);
     }
 
-    public Feed(String name, CanonicalPath path) {
-        super(name, path);
+    public Feed(String name, CanonicalPath path, String identityHash) {
+        super(name, path, identityHash);
     }
 
-    public Feed(CanonicalPath path, Map<String, Object> properties) {
-        super(path, properties);
+    public Feed(CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(path, identityHash, properties);
     }
 
-    public Feed(String name, CanonicalPath path, Map<String, Object> properties) {
-        super(name, path, properties);
+    public Feed(String name, CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(name, path, identityHash, properties);
     }
 
     @Override
     public Updater<Update, Feed> update() {
-        return new Updater<>((u) -> new Feed(u.getName(), getPath(), u.getProperties()));
+        return new Updater<>((u) -> new Feed(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
     }
 
     @Override

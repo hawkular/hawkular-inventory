@@ -36,7 +36,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Update> {
+public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.mt;
 
@@ -59,25 +59,26 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         collectionInterval = null;
     }
 
-    public MetricType(CanonicalPath path) {
-        this(path, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
+    public MetricType(CanonicalPath path, String identityHash) {
+        this(path, identityHash, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(path, unit, type, null, null);
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
+        this(path, identityHash, unit, type, null, null);
     }
 
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Long collectionInterval) {
-        this(path, unit, type, null, collectionInterval);
-    }
-
-    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type) {
-        this(name, path, unit, type, null, null);
-    }
-
-    public MetricType(CanonicalPath path, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
                       Long collectionInterval) {
-        super(path, properties);
+        this(path, identityHash, unit, type, null, collectionInterval);
+    }
+
+    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
+        this(name, path, identityHash, unit, type, null, null);
+    }
+
+    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
+                      Map<String, Object> properties, Long collectionInterval) {
+        super(path, identityHash, properties);
         if (type == null) {
             throw new IllegalArgumentException("metricDataType == null");
         }
@@ -86,9 +87,9 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         this.collectionInterval = collectionInterval;
     }
 
-    public MetricType(String name, CanonicalPath path, MetricUnit unit, MetricDataType type,
+    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
                       Map<String, Object> properties, Long collectionInterval) {
-        super(name, path, properties);
+        super(name, path, identityHash, properties);
         this.type = type;
         this.unit = unit;
         this.collectionInterval = collectionInterval;
@@ -108,8 +109,9 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
 
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), valueOrDefault(u.unit, this.unit), type,
-                u.getProperties(), collectionInterval));
+        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(),
+                valueOrDefault(u.unit, this.unit), type, u.getProperties(),
+                valueOrDefault(u.getCollectionInterval(), collectionInterval)));
     }
 
     @Override
@@ -184,10 +186,20 @@ public final class MetricType extends Entity<MetricType.Blueprint, MetricType.Up
         }
 
         public MetricUnit getUnit() {
+            //this is so that we throw a meaningful exception when processing blueprints created by deserialization
+            //from user data.
+            if (unit == null) {
+                throw new IllegalStateException("Unit of metric type cannot be null.");
+            }
             return unit;
         }
 
         public MetricDataType getType() {
+            //this is so that we throw a meaningful exception when processing blueprints created by deserialization
+            //from user data.
+            if (type == null) {
+                throw new IllegalStateException("Data type of metric type cannot be null.");
+            }
             return type;
         }
 

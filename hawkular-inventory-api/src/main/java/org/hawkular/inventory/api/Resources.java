@@ -42,7 +42,9 @@ public final class Resources {
         CONTAINING_RESOURCE, INCORPORATING_RESOURCE
     }
 
-    private interface BrowserBase<ContainedMetrics, AllMetrics, Data, ContainedAccess, AllAccess> {
+    private interface BrowserBase<ContainedMetrics, AllMetrics, DataAccess, ContainedAccess, AllAccess>
+            extends Metrics.Container<ContainedMetrics>, Data.Container<DataAccess>,
+            Resources.Container<ContainedAccess> {
 
         ContainedMetrics metrics();
 
@@ -81,13 +83,22 @@ public final class Resources {
          * @return data associated with the resource. See {@link org.hawkular.inventory.paths.DataRole} for
          * possible kinds of data associated with a resource.
          */
-        Data data();
+        DataAccess data();
+    }
+
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain resources.
+     * @param <Access> the type of access to resources
+     */
+    public interface Container<Access> {
+        Access resources();
     }
 
     /**
      * Interface for accessing a single resource in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Resource, Resource.Update>,
+    public interface Single
+            extends IdentityHashed.SingleWithRelationships<Resource, Resource.Blueprint, Resource.Update>,
             BrowserBase<Metrics.ReadWrite, Metrics.ReadAssociate, Data.ReadWrite<DataRole.Resource>, ReadWrite,
                     ReadAssociate> {
 

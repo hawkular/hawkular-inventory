@@ -733,6 +733,7 @@ class InventoryITest extends AbstractTestBase {
     }
 
     @Test
+    @Ignore //This needs to wait for HWKINVENT-162
     void testTenantsContainFeeds() {
         assertRelationshipExists("feeds/$feedId/relationships",
                 "/t;$tenantId",
@@ -1288,6 +1289,90 @@ class InventoryITest extends AbstractTestBase {
             assertTrue(ret.any {"grandChildResource2".equals(it.id)})
         } finally {
             AbstractTestBase.client.delete(path: "$basePath/$environmentId/resources/rootResource")
+        }
+    }
+
+    @Test
+    void testSync() {
+        def structure = [
+                type    : "feed",
+                data    : [
+                        id: "sync-feed"
+                ],
+                children: [
+                        resource    : [
+                                [
+                                        data    : [
+                                                id              : "resource",
+                                                resourceTypePath: "resourceType"
+                                        ],
+                                        children: [
+                                                resource: [
+                                                        [
+                                                                data: [
+                                                                        id              : "childResource",
+                                                                        resourceTypePath: "../resourceType"
+                                                                ]
+                                                        ]
+                                                ]
+                                        ]
+                                ]
+                        ],
+                        resourceType: [
+                                [
+                                        data: [
+                                                id  : "resourceType",
+                                                name: "My Resource Type With A Friendly Name"
+                                        ]
+                                ]
+                        ],
+                        metric      : [
+                                [
+                                        data: [
+                                                id                : "metric",
+                                                metricTypePath    : "metricType",
+                                                collectionInterval: 0
+                                        ]
+                                ]
+                        ],
+                        metricType  : [
+                                [
+                                        data: [
+                                                id                : "metricType",
+                                                type              : "GAUGE",
+                                                unit              : "NONE",
+                                                collectionInterval: 0,
+                                                name              : "My Metric Type With A Friendly Name"
+                                        ]
+                                ]
+                        ],
+                ]
+        ]
+
+        try {
+            def response = client.post(path: "$basePath/feeds", body: "{\"id\": \"sync-feed\"}")
+            assertEquals(201, response.status)
+
+            response = client.post(path: "$basePath/sync/f;sync-feed", body: structure)
+
+            assertEquals(204, response.status)
+
+            //check that stuff is there
+            response = client.get(path: "$basePath/path/f;sync-feed")
+            assertEquals(200, response.status)
+            response = client.get(path: "$basePath/path/f;sync-feed/r;resource")
+            assertEquals(200, response.status)
+            response = client.get(path: "$basePath/path/f;sync-feed/r;resource/r;childResource")
+            assertEquals(200, response.status)
+            response = client.get(path: "$basePath/path/f;sync-feed/rt;resourceType")
+            assertEquals(200, response.status)
+            response = client.get(path: "$basePath/path/f;sync-feed/mt;metricType")
+            assertEquals(200, response.status)
+        } finally {
+            def response = client.get(path: "$basePath/path/f;sync-feed")
+            if (response.status == 200) {
+                client.delete(path: "$basePath/feeds/sync-feed")
+            }
         }
     }
 

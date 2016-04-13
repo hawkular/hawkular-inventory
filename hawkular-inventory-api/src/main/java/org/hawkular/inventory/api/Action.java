@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package org.hawkular.inventory.api;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHashable;
 
 /**
  * @author Lukas Krejci
@@ -31,6 +32,7 @@ public final class Action<C, E> {
     private static final Action<?, ?> _DELETED = new Action<>();
     private static final Action<EnvironmentCopy, Environment> _COPIED = new Action<>();
     private static final Action<Feed, Feed> _REGISTERED = new Action<>();
+    private static final Action<?, ?> _IDENTITY_HASH_CHANGED = new Action<>();
 
     public static <E> Action<E, E> created() {
         return (Action<E, E>) _CREATED;
@@ -53,6 +55,10 @@ public final class Action<C, E> {
         return _REGISTERED;
     }
 
+    public static <E extends IdentityHashable> Action<E, E> identityHashChanged() {
+        return (Action<E, E>) _IDENTITY_HASH_CHANGED;
+    }
+
     private Action() {
 
     }
@@ -61,8 +67,14 @@ public final class Action<C, E> {
         return Enumerated.from(this);
     }
 
+    @Override
+    public String toString() {
+        return asEnum().name();
+    }
+
     public enum Enumerated {
-        CREATED(_CREATED), UPDATED(_UPDATED), DELETED(_DELETED), COPIED(_COPIED), REGISTERED(_REGISTERED);
+        CREATED(_CREATED), UPDATED(_UPDATED), DELETED(_DELETED), COPIED(_COPIED), REGISTERED(_REGISTERED),
+        IDENTITY_HASH_CHANGED(_IDENTITY_HASH_CHANGED);
 
         private final Action<?, ?> action;
 

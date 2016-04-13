@@ -162,6 +162,11 @@ public final class RelativePath extends Path implements Serializable {
         return extender.get();
     }
 
+    @Override
+    public Extender modified() {
+        return new Extender(startIdx, new ArrayList<>(path.subList(0, endIdx)));
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public Iterator<RelativePath> ascendingIterator() {
@@ -210,6 +215,10 @@ public final class RelativePath extends Path implements Serializable {
      */
     public RelativePath slide(int startDelta, int endDelta) {
         return new RelativePath(startIdx + startDelta, endIdx + endDelta, path);
+    }
+
+    public boolean isParentOf(RelativePath other) {
+        return super.isParentOf(other);
     }
 
     @Override
@@ -272,8 +281,8 @@ public final class RelativePath extends Path implements Serializable {
             return new MetricBuilder(segments);
         }
 
-        public StructuredDataBuilder dataEntity(String role) {
-            segments.add(new Segment(SegmentType.d, role));
+        public StructuredDataBuilder dataEntity(DataRole role) {
+            segments.add(new Segment(SegmentType.d, role.name()));
             return new StructuredDataBuilder(segments);
         }
 
@@ -618,6 +627,10 @@ public final class RelativePath extends Path implements Serializable {
         @Override
         public Extender extend(SegmentType type, String id) {
             return (Extender) super.extend(type, id);
+        }
+
+        public Extender extendUp() {
+            return (Extender) super.extend(new Segment(SegmentType.up, null));
         }
 
         @Override

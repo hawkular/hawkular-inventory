@@ -88,7 +88,7 @@ public final class BaseMetrics {
             MetricType metricType = tx.convert(metricTypeObject, MetricType.class);
 
             Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.SEGMENT_TYPE,
-                    tx.extractId(entity)).get(), metricType, blueprint.getCollectionInterval(),
+                    tx.extractId(entity)).get(), null, metricType, blueprint.getCollectionInterval(),
                     blueprint.getProperties());
 
             Relationship rel = new Relationship(tx.extractId(r), defines.name(), parentPath, entityPath);
@@ -172,7 +172,8 @@ public final class BaseMetrics {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Metric, Metric.Update> implements Metrics.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Metric, Metric.Blueprint, Metric.Update>
+            implements Metrics.Single {
 
         public Single(TraversalContext<BE, Metric> context) {
             super(context);

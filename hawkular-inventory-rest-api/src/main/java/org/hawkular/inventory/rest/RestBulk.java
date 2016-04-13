@@ -149,7 +149,7 @@ public class RestBulk extends RestBase {
                 new ElementTypeVisitor.Simple<WriteInterface<?, ?, ?, ?>, Void>() {
 
                     @Override
-                    protected WriteInterface<?, ?, ?, ?> defaultAction() {
+                    protected WriteInterface<?, ?, ?, ?> defaultAction(SegmentType elementType, Void parameter) {
                         throw new IllegalArgumentException("Entity of type '" + nextType.getSimpleName() + "' cannot " +
                                 "be created under an entity of type '" + elementClass.getSimpleName() + "'.");
                     }
@@ -194,16 +194,6 @@ public class RestBulk extends RestBase {
                                 return ((Feeds.Single) single).resourceTypes();
                             }
                         }, null);
-                    }
-
-                    @Override
-                    public WriteInterface<?, ?, ?, ?> visitMetric(Void parameter) {
-                        return defaultAction();
-                    }
-
-                    @Override
-                    public WriteInterface<?, ?, ?, ?> visitMetricType(Void parameter) {
-                        return defaultAction();
                     }
 
                     @Override
@@ -281,7 +271,7 @@ public class RestBulk extends RestBase {
 
                     class RejectingVisitor extends ElementTypeVisitor.Simple<WriteInterface<?, ?, ?, ?>, Void> {
                         @Override
-                        protected WriteInterface<?, ?, ?, ?> defaultAction() {
+                        protected WriteInterface<?, ?, ?, ?> defaultAction(SegmentType elementType, Void parameter) {
                             throw new IllegalArgumentException(
                                     "Entity of type '" + nextType.getSimpleName() + "' cannot " +
                                             "be created under an entity of type '" + elementClass.getSimpleName() +

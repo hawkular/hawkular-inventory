@@ -99,7 +99,7 @@ public final class BaseResources {
             ResourceType resourceType = tx.convert(resourceTypeObject, ResourceType.class);
 
             Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.SEGMENT_TYPE,
-                    tx.extractId(entity)).get(), resourceType, blueprint.getProperties());
+                    tx.extractId(entity)).get(), null, resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(tx.extractId(r), defines.name(), resourceTypePath,
                     entityPath);
@@ -198,8 +198,8 @@ public final class BaseResources {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Resource, Resource.Update>
-            implements Resources.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Resource, Resource.Blueprint,
+            Resource.Update> implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
             super(context);

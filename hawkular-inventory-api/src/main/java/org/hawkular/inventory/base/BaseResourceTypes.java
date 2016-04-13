@@ -28,7 +28,6 @@ import static org.hawkular.inventory.api.filters.With.type;
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.Query;
@@ -79,11 +78,8 @@ public final class BaseResourceTypes {
             tx.update(entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
-                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(),
+                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
                     blueprint.getProperties());
-
-            tx.updateIdentityHash(entity,
-                    IdentityHash.of(resourceType, context.inventory.keepTransaction(tx)));
 
             return new EntityAndPendingNotifications<>(entity, resourceType, emptyList());
         }
@@ -114,6 +110,8 @@ public final class BaseResourceTypes {
         @Override
         protected void preUpdate(String s, BE entityRepresentation, ResourceType.Update update,
                                  Transaction<BE> transaction) {
+            //we should check for violations of identity here if the resource type is a member of a metadata pack but
+            //because resource types contain no such updatable data, this is a no-op.
         }
 
         private static <BE> boolean isResourceTypeInMetadataPack(BE resourceType, Transaction<BE> tx) {
@@ -157,8 +155,8 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, ResourceType, ResourceType.Update>
-            implements ResourceTypes.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, ResourceType, ResourceType.Blueprint,
+            ResourceType.Update> implements ResourceTypes.Single {
 
         public Single(TraversalContext<BE, ResourceType> context) {
             super(context);
@@ -262,9 +260,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postCreate(BE dataEntity, Transaction<BE> tx) {
-            BE rte = tx.traverseToSingle(dataEntity, Query.path().with(asTargetBy(contains)).get());
-            ResourceType rt = tx.convert(rte, ResourceType.class);
-            tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
         }
 
         @Override
@@ -290,12 +285,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postUpdate(BE dataEntity, Transaction<BE> tx) {
-            BE rt = tx.traverseToSingle(dataEntity, Query.path().with(
-                    asTargetBy(contains) //up to resource type
-            ).get());
-
-            tx.updateIdentityHash(rt, IdentityHash.of(tx.convert(rt, ResourceType.class),
-                    context.inventory.keepTransaction(tx)));
         }
 
         @Override
@@ -319,14 +308,6 @@ public final class BaseResourceTypes {
 
         @Override
         public void postDelete(BE dataEntity, Transaction<BE> tx) {
-            CanonicalPath cp = tx.extractCanonicalPath(dataEntity);
-            try {
-                BE rte = tx.find(cp.up());
-                ResourceType rt = tx.convert(rte, ResourceType.class);
-                tx.updateIdentityHash(rte, IdentityHash.of(rt, context.inventory.keepTransaction(tx)));
-            } catch (ElementNotFoundException e) {
-                throw new IllegalStateException("Could not find the owning resource type of the operation type " + cp);
-            }
         }
     }
 }

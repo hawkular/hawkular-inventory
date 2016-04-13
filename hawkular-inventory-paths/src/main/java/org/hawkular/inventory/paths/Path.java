@@ -18,6 +18,7 @@ package org.hawkular.inventory.paths;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -203,6 +204,32 @@ public abstract class Path {
      * @throws IllegalArgumentException if this instance is a relative path and it cannot be converted to canonical path
      */
     public abstract CanonicalPath toCanonicalPath();
+
+    protected boolean isParentOf(Path other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other == null");
+        }
+
+        if (other.path.size() <= path.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < path.size(); ++i) {
+            Segment mySeg = path.get(i);
+            Segment otherSeg = other.path.get(i);
+
+            if (!mySeg.equals(otherSeg)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return extender instance to produce an new path instance extending this one
+     */
+    public abstract Extender modified();
 
     /**
      * @return true if this is an instance of {@link CanonicalPath}, false otherwise
@@ -565,13 +592,31 @@ public abstract class Path {
                 }
                 bld.append(PATH_DELIM);
             }
-            return bld.delete(bld.length() - 1, bld.length()).toString();
+            return bld.length() == 0 ? "" : bld.delete(bld.length() - 1, bld.length()).toString();
         }
     }
 
-    public static final class Segment {
+    public static final class Segment implements Serializable {
         private final SegmentType elementType;
         private final String entityId;
+
+        public static Segment from(String string) {
+            int delimIndex = string.indexOf(TYPE_DELIM);
+            if (delimIndex == -1) {
+                throw new IllegalArgumentException(
+                        "Untyped path segments not supported when parsing a single segment.");
+            }
+
+            String typeId = string.substring(0, delimIndex);
+            String id = string.substring(delimIndex + 1);
+
+            SegmentType type = SegmentType.fastValueOf(typeId);
+            if (type == null) {
+                throw new IllegalArgumentException("Unknown type string '" + typeId + "'.");
+            }
+
+            return new Segment(type, id);
+        }
 
         private Segment() {
             this((SegmentType) null, (String) null);

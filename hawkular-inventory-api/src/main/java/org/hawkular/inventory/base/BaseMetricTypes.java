@@ -24,7 +24,6 @@ import static org.hawkular.inventory.api.filters.With.id;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.Query;
@@ -68,12 +67,9 @@ public final class BaseMetricTypes {
             tx.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
-                    parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(),
+                    parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
-
-            tx.updateIdentityHash(entity,
-                    IdentityHash.of(metricType, context.inventory.keepTransaction(tx)));
 
             return new EntityAndPendingNotifications<>(entity, metricType, emptyList());
         }
@@ -137,9 +133,6 @@ public final class BaseMetricTypes {
 
         private static <BE> void postUpdate(TraversalContext<BE, ?> context, BE entity,
                                             Transaction<BE> tx) {
-            tx.updateIdentityHash(entity,
-                    IdentityHash.of(tx.convert(entity, MetricType.class), context.inventory.keepTransaction(tx)));
-
         }
 
         private static <BE> boolean isInMetadataPack(BE metricType, Transaction<BE> tx) {
@@ -215,8 +208,8 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, MetricType, MetricType.Update>
-            implements MetricTypes.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, MetricType, MetricType.Blueprint,
+            MetricType.Update> implements MetricTypes.Single {
 
         public Single(TraversalContext<BE, MetricType> context) {
             super(context);

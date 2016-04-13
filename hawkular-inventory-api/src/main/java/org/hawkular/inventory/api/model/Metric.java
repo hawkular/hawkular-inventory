@@ -35,7 +35,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.0.1
  */
 @XmlRootElement
-public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
+public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.m;
 
@@ -51,33 +51,33 @@ public final class Metric extends Entity<Metric.Blueprint, Metric.Update> {
         collectionInterval = null;
     }
 
-    public Metric(CanonicalPath path, MetricType type) {
-        this(null, path, type, null, null);
+    public Metric(CanonicalPath path, String identityHash, MetricType type) {
+        this(null, path, identityHash, type, null, null);
     }
 
-    public Metric(String name, CanonicalPath path, MetricType type) {
-        this(name, path, type, null ,null);
+    public Metric(String name, CanonicalPath path, String identityHash, MetricType type) {
+        this(name, path, identityHash, type, null ,null);
     }
 
-    public Metric(CanonicalPath path, MetricType type, Long collectionInterval) {
-        this(null, path, type, collectionInterval, null);
+    public Metric(CanonicalPath path, String identityHash, MetricType type, Long collectionInterval) {
+        this(null, path, identityHash, type, collectionInterval, null);
     }
 
-    public Metric(CanonicalPath path, MetricType type, Map<String, Object> properties) {
-        this(null, path, type, null, properties);
+    public Metric(CanonicalPath path, String identityHash, MetricType type, Map<String, Object> properties) {
+        this(null, path, identityHash, type, null, properties);
     }
 
-    public Metric(String name, CanonicalPath path, MetricType type, Long collectionInterval,
+    public Metric(String name, CanonicalPath path, String identityHash, MetricType type, Long collectionInterval,
                   Map<String, Object> properties) {
-        super(name, path, properties);
+        super(name, path, identityHash, properties);
         this.type = type;
         this.collectionInterval = collectionInterval;
     }
 
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(u.getName(), getPath(), getType(), getCollectionInterval(),
-                u.getProperties()));
+        return new Updater<>((u) -> new Metric(u.getName(), getPath(), getIdentityHash(), getType(),
+                u.getCollectionInterval(), u.getProperties()));
     }
 
     public MetricType getType() {

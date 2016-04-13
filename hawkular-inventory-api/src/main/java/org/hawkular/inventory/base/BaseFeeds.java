@@ -72,7 +72,7 @@ public final class BaseFeeds {
             CanonicalPath feedPath = tx.extractCanonicalPath(tenant)
                     .extend(Feed.SEGMENT_TYPE, blueprint.getId()).get();
 
-            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath));
+            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath, null));
         }
 
         @Override
@@ -80,7 +80,7 @@ public final class BaseFeeds {
         wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
-                    parentPath.extend(Feed.SEGMENT_TYPE, transaction.extractId(entity)).get(),
+                    parentPath.extend(Feed.SEGMENT_TYPE, transaction.extractId(entity)).get(), null,
                     blueprint.getProperties()), emptyList());
         }
 
@@ -151,7 +151,8 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Single<BE> extends SingleEntityFetcher<BE, Feed, Feed.Update> implements Feeds.Single {
+    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Feed, Feed.Blueprint, Feed.Update>
+            implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {
             super(context);

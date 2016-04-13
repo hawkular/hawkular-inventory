@@ -81,8 +81,8 @@ public interface ElementBlueprintVisitor<R, P> {
         }
 
         @Override
-        public R visitMetricType(MetricType.Blueprint definition, P parameter) {
-            return defaultAction(definition, parameter);
+        public R visitMetricType(MetricType.Blueprint type, P parameter) {
+            return defaultAction(type, parameter);
         }
 
         @Override

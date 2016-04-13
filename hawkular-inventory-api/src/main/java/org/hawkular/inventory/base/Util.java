@@ -358,10 +358,13 @@ final class Util {
 
         //we've gathered all entities to be deleted. Now record the notifications to be sent out when the transaction
         //commits.
-        deleted.stream().filter((o) -> isRepresentableInAPI(tx, o)).forEach(be -> {
+        Consumer<BE> addNotification = be -> {
             AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
             tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(be, e, deleted()));
-        });
+        };
+
+        deleted.stream().filter(o -> isRepresentableInAPI(tx, o)).forEach(addNotification);
+        verticesToDeleteThatDefineSomething.stream().filter(o -> isRepresentableInAPI(tx, o)).forEach(addNotification);
 
         deletedRels.stream().filter((o) -> isRepresentableInAPI(tx, o)).forEach(be -> {
             AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));

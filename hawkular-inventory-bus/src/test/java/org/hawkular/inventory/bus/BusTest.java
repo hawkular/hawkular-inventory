@@ -102,9 +102,9 @@ public class BusTest {
     @Test
     public void messagesSerializationTest() {
         Tenant tenant = new Tenant(CanonicalPath.fromString("/t;c"), objectProperties);
-        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
+        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), null, MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
-        ResourceType resourceType = new ResourceType(CanonicalPath.fromString("/t;t/rt;rt"), objectProperties);
+        ResourceType resourceType = new ResourceType(CanonicalPath.fromString("/t;t/rt;rt"), null, objectProperties);
 
         Tenant tenant2 = new Tenant(CanonicalPath.fromString("/t;t"));
         TenantEvent tenantEvent = new TenantEvent(Action.Enumerated.CREATED, tenant);
@@ -113,10 +113,10 @@ public class BusTest {
                 new Environment(CanonicalPath.fromString("/t;t/e;e"), objectProperties));
         FeedEvent feedEvent = new FeedEvent(Action.Enumerated.UPDATED,
                 tenant2,
-                new Feed(CanonicalPath.fromString("/t;t/f;f"), objectProperties));
+                new Feed(CanonicalPath.fromString("/t;t/f;f"), null, objectProperties));
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
                 tenant2,
-                new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
+                new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), null, metricType, objectProperties));
         MetricTypeEvent metricTypeEvent = new MetricTypeEvent(Action.Enumerated.COPIED, tenant2, metricType);
         RelationshipEvent relationshipEvent = new RelationshipEvent(Action.Enumerated.REGISTERED,
                 tenant2,
@@ -124,12 +124,12 @@ public class BusTest {
                         , objectProperties));
         ResourceEvent resourceEvent = new ResourceEvent(Action.Enumerated.UPDATED,
                 tenant2,
-                new Resource(CanonicalPath.fromString("/t;t/e;e/r;r"), resourceType));
+                new Resource(CanonicalPath.fromString("/t;t/e;e/r;r"), null, resourceType));
         ResourceTypeEvent resourceTypeEvent = new ResourceTypeEvent(Action.Enumerated.COPIED, tenant2, resourceType);
         DataEntityEvent dataEntityEvent = new DataEntityEvent(Action.Enumerated.DELETED,
                 tenant2,
                 new DataEntity(resourceType.getPath(), DataRole.ResourceType.configurationSchema,
-                        StructuredData.get().undefined()));
+                        StructuredData.get().undefined(), "hash"));
 
         String tenantJSON = tenantEvent.toJSON();
         String envJSON = environmentEvent.toJSON();
@@ -175,11 +175,11 @@ public class BusTest {
     @Test
     public void createMetricEventFromJSON() {
         Tenant tenant = new Tenant(CanonicalPath.fromString("/t;t"));
-        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), MetricUnit.MINUTES,
+        MetricType metricType = new MetricType(CanonicalPath.fromString("/t;t/mt;mt"), null, MetricUnit.MINUTES,
                 MetricDataType.GAUGE);
         MetricEvent metricEvent = new MetricEvent(Action.Enumerated.DELETED,
                 tenant,
-                new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), metricType, objectProperties));
+                new Metric(CanonicalPath.fromString("/t;t/e;e/m;m"), null, metricType, objectProperties));
 
         String metricJSON = "{\"action\":\"DELETED\",\"object\":{\"path\":\"/t;t/e;e/m;m\",\"type\"" +
                 ":{\"path\":\"/t;t/mt;mt\",\"properties\":null,\"unit\":\"MINUTES\",\"type\":\"GAUGE\"}," +

@@ -157,4 +157,5 @@ public class RestFeeds extends RestBase {
         inventory.tenants().get(tenantId).feeds().delete(feedId);
         return Response.noContent().build();
     }
+
 }

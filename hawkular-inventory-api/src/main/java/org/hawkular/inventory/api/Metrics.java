@@ -32,9 +32,17 @@ public final class Metrics {
     }
 
     /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain metrics.
+     * @param <Access> the type of access to metrics
+     */
+    public interface Container<Access> {
+        Access metrics();
+    }
+
+    /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Metric, Metric.Update> {}
+    public interface Single extends IdentityHashed.SingleWithRelationships<Metric, Metric.Blueprint, Metric.Update> {}
 
     /**
      * Interface for traversing over a set of metrics.

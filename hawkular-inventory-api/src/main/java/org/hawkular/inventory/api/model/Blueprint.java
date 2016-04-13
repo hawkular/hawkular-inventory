@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +16,22 @@
  */
 package org.hawkular.inventory.api.model;
 
+import org.hawkular.inventory.paths.SegmentType;
+
 /**
  * @author Lukas Krejci
  * @since 0.3.0
  */
 public interface Blueprint {
+
+    @SuppressWarnings("unchecked")
+    static <B extends Blueprint, E extends AbstractElement<B, ?>> Class<? extends E> getEntityTypeOf(B blueprint) {
+        return (Class<? extends E>) (Class) blueprint.getClass().getEnclosingClass();
+    }
+
+    static <B extends Blueprint> SegmentType getSegmentTypeOf(B blueprint) {
+        return SegmentType.fromElementType(getEntityTypeOf(blueprint));
+    }
 
     <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);
 }

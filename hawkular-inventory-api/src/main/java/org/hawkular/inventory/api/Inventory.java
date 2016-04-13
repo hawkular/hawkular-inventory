@@ -100,7 +100,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public interface Inventory extends AutoCloseable {
+public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.ReadWrite> {
 
     /**
      * Initializes the inventory from the provided configuration object.
@@ -424,7 +424,7 @@ public interface Inventory extends AutoCloseable {
                 String rt = ids.getResourceTypeId();
                 String ot = ids.getOperationTypeId();
 
-                if (rt != null) {
+                if (rt != null && ot == null) {
                     ResourceTypes.Single rts = inspect(path.up(), ResourceTypes.Single.class);
 
                     DataRole.ResourceType role = DataRole.ResourceType.valueOf(ids.getDataRole());
@@ -508,7 +508,7 @@ public interface Inventory extends AutoCloseable {
      */
     InputStream getGraphSON(String tenantId);
 
-    <T extends AbstractElement> T getElement(CanonicalPath path);
+    <T extends AbstractElement<?, ?>> T getElement(CanonicalPath path);
 
     <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
                                                                   Relationships.Direction direction, Class<T> clazz,

@@ -27,8 +27,16 @@ public final class OperationTypes {
     private OperationTypes() {
     }
 
-    public interface BrowserBase<Data> {
-        Data data();
+    public interface BrowserBase<D> extends Data.Container<D> {
+    }
+
+
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain operation types.
+     * @param <Access> the type of access to operation types
+     */
+    public interface Container<Access> {
+        Access operationTypes();
     }
 
     public interface ReadContained extends ReadInterface<Single, Multiple, String> {
@@ -41,8 +49,8 @@ public final class OperationTypes {
     }
 
     public interface Single
-            extends ResolvableToSingleWithRelationships<OperationType, OperationType.Update>,
-            BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
+            extends IdentityHashed.SingleWithRelationships<OperationType, OperationType.Blueprint,
+            OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
 
     }
 

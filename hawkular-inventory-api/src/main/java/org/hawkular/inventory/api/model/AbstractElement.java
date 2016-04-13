@@ -198,6 +198,12 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
     }
 
     public abstract static class Update {
+
+        @SuppressWarnings("unchecked")
+        static <U extends Update, E extends AbstractElement<?, U>> Class<? extends E> getEntityTypeOf(U update) {
+            return (Class<? extends E>) (Class) update.getClass().getEnclosingClass();
+        }
+
         private final Map<String, Object> properties;
 
         public Update(Map<String, Object> properties) {

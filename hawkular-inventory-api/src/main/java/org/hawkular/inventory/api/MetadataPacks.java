@@ -29,6 +29,16 @@ public final class MetadataPacks {
 
     }
 
+    /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain metadata packs.
+     * @param <Access> the type of access to metadata packs
+     */
+    public interface Container<Access> {
+        Access metadataPacks();
+    }
+
+    //note that this does not implement ResourceTypes.Container and MetricTypes.Container intentionally, because
+    //metadata packs do not *contain* those types - they merely reference them
     public interface BrowserBase {
 
         ResourceTypes.Read resourceTypes();

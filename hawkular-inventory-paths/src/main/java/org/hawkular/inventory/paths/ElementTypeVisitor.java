@@ -104,70 +104,73 @@ public interface ElementTypeVisitor<R, P> {
          * The default action executed from the visit methods. This returns the default value provided at
          * the construction time.
          *
+         *
+         * @param elementType the element type visited
+         * @param parameter the parameter provided to the visit* method
          * @return the default value
          */
-        protected R defaultAction() {
+        protected R defaultAction(SegmentType elementType, P parameter) {
             return defaultValue;
         }
 
         @Override
         public R visitTenant(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.t, parameter);
         }
 
         @Override
         public R visitEnvironment(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.e, parameter);
         }
 
         @Override
         public R visitFeed(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.f, parameter);
         }
 
         @Override
         public R visitMetric(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.m, parameter);
         }
 
         @Override
         public R visitMetricType(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.mt, parameter);
         }
 
         @Override
         public R visitResource(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.r, parameter);
         }
 
         @Override
         public R visitResourceType(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.rt, parameter);
         }
 
         @Override
         public R visitRelationship(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.rl, parameter);
         }
 
         @Override
         public R visitData(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.d, parameter);
         }
 
         @Override
         public R visitOperationType(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.ot, parameter);
         }
 
         @Override
         public R visitMetadataPack(P parameter) {
-            return defaultAction();
+            return defaultAction(SegmentType.mp, parameter);
         }
 
         @Override
         public R visitUnknown(P parameter) {
-            return defaultAction();
+            return defaultAction(null, parameter);
         }
     }
 }

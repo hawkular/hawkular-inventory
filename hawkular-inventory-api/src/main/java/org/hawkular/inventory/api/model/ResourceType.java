@@ -32,7 +32,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceType.Update> {
+public final class ResourceType extends IdentityHashedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rt;
 
@@ -43,25 +43,25 @@ public final class ResourceType extends Entity<ResourceType.Blueprint, ResourceT
     private ResourceType() {
     }
 
-    public ResourceType(CanonicalPath path) {
-        this(path, null);
+    public ResourceType(CanonicalPath path, String identityHash) {
+        this(path, identityHash, null);
     }
 
-    public ResourceType(String name, CanonicalPath path) {
-        super(name, path);
+    public ResourceType(String name, CanonicalPath path, String identityHash) {
+        super(name, path, identityHash);
     }
 
-    public ResourceType(CanonicalPath path, Map<String, Object> properties) {
-        super(path, properties);
+    public ResourceType(CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(path, identityHash, properties);
     }
 
-    public ResourceType(String name, CanonicalPath path, Map<String, Object> properties) {
-        super(name, path, properties);
+    public ResourceType(String name, CanonicalPath path, String identityHash, Map<String, Object> properties) {
+        super(name, path, identityHash, properties);
     }
 
     @Override
     public Updater<Update, ResourceType> update() {
-        return new Updater<>((u) -> new ResourceType(u.getName(), getPath(), u.getProperties()));
+        return new Updater<>((u) -> new ResourceType(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
     }
 
     @Override

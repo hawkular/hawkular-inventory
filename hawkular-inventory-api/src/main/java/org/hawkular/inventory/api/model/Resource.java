@@ -34,7 +34,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  */
 @XmlRootElement
-public final class Resource extends Entity<Resource.Blueprint, Resource.Update> {
+public final class Resource extends IdentityHashedEntity<Resource.Blueprint, Resource.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.r;
 
@@ -48,27 +48,29 @@ public final class Resource extends Entity<Resource.Blueprint, Resource.Update> 
         type = null;
     }
 
-    public Resource(CanonicalPath path, ResourceType type) {
-        this(path, type, null);
+    public Resource(CanonicalPath path, String identityHash, ResourceType type) {
+        this(path, identityHash, type, null);
     }
 
-    public Resource(String name, CanonicalPath path, ResourceType type) {
-        this(name, path, type, null);
+    public Resource(String name, CanonicalPath path, String identityHash, ResourceType type) {
+        this(name, path, identityHash, type, null);
     }
 
-    public Resource(CanonicalPath path, ResourceType type, Map<String, Object> properties) {
-        super(path, properties);
+    public Resource(CanonicalPath path, String identityHash, ResourceType type, Map<String, Object> properties) {
+        super(path, identityHash, properties);
         this.type = type;
     }
 
-    public Resource(String name, CanonicalPath path, ResourceType type, Map<String, Object> properties) {
-        super(name, path, properties);
+    public Resource(String name, CanonicalPath path, String identityHash, ResourceType type,
+                    Map<String, Object> properties) {
+        super(name, path, identityHash, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Resource> update() {
-        return new Updater<>((u) -> new Resource(u.getName(), getPath(), getType(), u.getProperties()));
+        return new Updater<>((u) -> new Resource(u.getName(), getPath(), getIdentityHash(), getType(),
+                u.getProperties()));
     }
 
     public ResourceType getType() {

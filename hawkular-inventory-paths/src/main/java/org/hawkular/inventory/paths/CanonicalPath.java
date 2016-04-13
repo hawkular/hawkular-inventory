@@ -214,24 +214,34 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
     }
 
     public boolean isParentOf(CanonicalPath other) {
-        if (other == null) {
-            throw new IllegalArgumentException("other == null");
+        return super.isParentOf(other);
+    }
+
+    public RelativePath relativeTo(CanonicalPath root) {
+        if (root == null) {
+            throw new IllegalArgumentException("root == null");
         }
 
-        if (other.path.size() <= path.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < path.size(); ++i) {
-            Segment mySeg = path.get(i);
-            Segment otherSeg = other.path.get(i);
-
-            if (!mySeg.equals(otherSeg)) {
-                return false;
+        //establish the common parts of root and this.
+        int maxCommonPrefixLength = Math.min(this.endIdx, root.endIdx);
+        int commonPrefixLength = 0;
+        for (; commonPrefixLength < maxCommonPrefixLength; ++commonPrefixLength) {
+            if (!this.path.get(commonPrefixLength).equals(root.path.get(commonPrefixLength))) {
+                break;
             }
         }
 
-        return true;
+        RelativePath.Extender ret = RelativePath.empty();
+
+        for (int ups = root.endIdx; ups > commonPrefixLength; --ups) {
+            ret = ret.extendUp();
+        }
+
+        for (int downs = commonPrefixLength; downs < this.endIdx; downs++) {
+            ret.extend(this.path.get(downs));
+        }
+
+        return ret.get();
     }
 
     /**
@@ -258,8 +268,9 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
      *
      * @return an extender initialized with the current path
      */
+    @Override
     public Extender modified() {
-        return new Extender(startIdx, new ArrayList<>(getPath()));
+        return new Extender(startIdx, new ArrayList<>(path.subList(0, endIdx)));
     }
 
     /**
@@ -533,7 +544,11 @@ public final class CanonicalPath extends Path implements Iterable<CanonicalPath>
         }
 
         public String getOperationTypeId() {
-            return idIfTypeCorrect(CanonicalPath.this, SegmentType.ot);
+            if (getFeedId() != null) {
+                return idIfTypeCorrect(getRoot().down(3), SegmentType.ot);
+            } else {
+                return idIfTypeCorrect(getRoot().down(2), SegmentType.ot);
+            }
         }
 
         public String getDataRole() {

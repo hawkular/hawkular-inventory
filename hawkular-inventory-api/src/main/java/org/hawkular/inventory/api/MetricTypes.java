@@ -23,7 +23,7 @@ import org.hawkular.inventory.paths.Path;
  * This is a wrapper class to hold various interfaces defining available functionality on metric types.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 public final class MetricTypes {
 
@@ -45,11 +45,19 @@ public final class MetricTypes {
     }
 
     /**
+     * An interface implemented by Single/Multiple interfaces of entities that can contain metric types.
+     * @param <Access> the type of access to metric types
+     */
+    public interface Container<Access> {
+        Access metricTypes();
+    }
+
+    /**
      * Interface for accessing a single metric type in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<MetricType, MetricType.Update>, BrowserBase {
-
-        String identityHash() throws EntityNotFoundException;
+    public interface Single
+            extends IdentityHashed.SingleWithRelationships<MetricType, MetricType.Blueprint, MetricType.Update>,
+            BrowserBase {
     }
 
     /**

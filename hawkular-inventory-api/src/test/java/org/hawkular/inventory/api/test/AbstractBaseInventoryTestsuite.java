@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
+import static org.hawkular.inventory.api.Action.identityHashChanged;
 import static org.hawkular.inventory.api.Action.updated;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
@@ -66,7 +68,6 @@ import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.IdentityHash;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
@@ -95,6 +96,8 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHash;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
@@ -121,6 +124,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import rx.Observable;
 import rx.Subscription;
 
 /**
@@ -467,18 +471,18 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             Tenant t = new Tenant(tenantPath);
             Environment e = new Environment(environmentPath);
-            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get());
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get(), null);
             ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Playroom").get(),
                     null);
             ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Kachna").get(),
                     null);
-            Resource playroom1 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom1").get(),
+            Resource playroom1 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom1").get(), null,
                     playRoomType);
-            Resource playroom2 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom2").get(),
+            Resource playroom2 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom2").get(), null,
                     playRoomType);
-            Metric playroom1Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom1_size").get(),
+            Metric playroom1Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom1_size").get(), null,
                     sizeType);
-            Metric playroom2Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom2_size").get(),
+            Metric playroom2Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom2_size").get(), null,
                     sizeType);
 
             //when an association is deleted, it should not be possible to access the target entity through the same
@@ -1084,7 +1088,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     public void queryMultipleTenants() throws Exception {
         Set<Tenant> tenants = inventory.tenants().getAll().entities();
 
-        assert tenants.size() == 2;
+        Assert.assertEquals(2, tenants.size());
     }
 
     @Test
@@ -1558,6 +1562,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             inventory.inspect(r).allMetrics().disassociate(Path.fromString("../m;assocMetric"));
 
             Assert.assertEquals(Collections.singleton(m2), inventory.inspect(r).allMetrics().getAll().entities());
+        } catch (Exception e)  {
+            e.printStackTrace();
         } finally {
             if (r != null) {
                 inventory.inspect(r).delete();
@@ -1940,8 +1946,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertTrue(identicals.contains(rt1));
             Assert.assertTrue(identicals.contains(rt2));
 
-            String hash = inventory.inspect(rt1).identityHash();
-            Assert.assertEquals(hash, inventory.inspect(rt2).identityHash());
+            String hash = inventory.inspect(rt1).entity().getIdentityHash();
+            Assert.assertEquals(hash, inventory.inspect(rt2).entity().getIdentityHash());
 
             DataEntity.Blueprint<DataRole.ResourceType> bl = DataEntity.Blueprint.<DataRole.ResourceType>builder()
                     .withRole(DataRole.ResourceType.configurationSchema).withValue(StructuredData.get().map()
@@ -1950,7 +1956,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             inventory.inspect(rt1).data().create(bl);
 
-            Assert.assertNotEquals(hash, inventory.inspect(rt1).identityHash());
+            Assert.assertNotEquals(hash, inventory.inspect(rt1).entity().getIdentityHash());
 
             identicals = inventory.inspect(rt1).identical().getAll().entities();
             Assert.assertEquals(1, identicals.size());
@@ -1987,12 +1993,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertTrue(identicals.contains(mt1));
             Assert.assertTrue(identicals.contains(mt2));
 
-            String hash = inventory.inspect(mt1).identityHash();
-            Assert.assertEquals(hash, inventory.inspect(mt2).identityHash());
+            String hash = inventory.inspect(mt1).entity().getIdentityHash();
+            Assert.assertEquals(hash, inventory.inspect(mt2).entity().getIdentityHash());
 
             inventory.inspect(mt1).update(MetricType.Update.builder().withUnit(MetricUnit.MILLISECONDS).build());
 
-            Assert.assertNotEquals(hash, inventory.inspect(mt1).identityHash());
+            Assert.assertNotEquals(hash, inventory.inspect(mt1).entity().getIdentityHash());
 
             identicals = inventory.inspect(mt1).identical().getAll().entities();
             Assert.assertEquals(1, identicals.size());
@@ -2006,6 +2012,289 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertTrue(identicals.contains(mt2));
         } finally {
             inventory.tenants().delete(t.getId());
+        }
+    }
+
+    @Test
+    public void testParentIdentityHashUpdatedWhenChildCreated() throws Exception {
+        String tenantId = "testParentIdentityHashUpdatedWhenChildCreated";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
+
+            Resources.Single r = f.resources()
+                    .create(Resource.Blueprint.builder().withId("res").withResourceTypePath("resourceType").build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            r.data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration).withValue
+                    (StructuredData.get().integral(42L)).build());
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testParentIdentityHashUpdatedWhenChildUpdated() throws Exception {
+        String tenantId = "testParentIdentityHashUpdatedWhenChildUpdated";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
+                    (MetricUnit.BITS).withInterval(0L).build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            f.metricTypes().get("metricType").update(MetricType.Update.builder().withUnit(MetricUnit.BYTES).build());
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testParentIdentityHashUpdatedWhenChildDeleted() throws Exception {
+        String tenantId = "testParentIdentityHashUpdatedWhenChildDeleted";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
+
+            f.resources().create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                    .build());
+
+            f.resources().get("resource").resources().create(Resource.Blueprint.builder().withId("childRersource")
+                    .withResourceTypePath("../resourceType").build());
+
+            String fHash = IdentityHash.of(f.entity(), inventory);
+
+            Assert.assertEquals(fHash, f.entity().getIdentityHash());
+
+            f.resources().delete("resource");
+
+            Assert.assertNotEquals(fHash, f.entity().getIdentityHash());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testTreeHash() throws Exception {
+        String tenantId = "testTreeHash";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            ResourceType rt = f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                    .build()).entity();
+
+            MetricType mt = f.metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .entity();
+
+            //get the resource only after all its children are created so that we obtain the right hash
+            f.resources()
+                    .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                        .build())
+                    .entity();
+
+            f.resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../resourceType")
+                            .build())
+                    .entity();
+
+            Metric resourceMetric = f.resources().get("resource").metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("../metricType").build())
+                    .entity();
+
+            Metric feedMetric = f.metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType").build())
+                    .entity();
+
+            //just create an association so that we can check that the association doesn't affect the tree hash
+            f.resources().descendContained(RelativePath.to().resource("resource").resource("childResource").get())
+                    .allMetrics().associate(RelativePath.to().up().metric("metric").get());
+
+            Resource resource = f.resources().get("resource").entity();
+            Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
+
+            IdentityHash.Tree feedTreeHash = f.treeHash();
+
+            Assert.assertEquals(4, feedTreeHash.getChildren().size());
+            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
+            Assert.assertEquals(mt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
+            Assert.assertEquals(resource.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
+            Assert.assertEquals(feedMetric.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+
+            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            Assert.assertEquals(2, resourceTreeHash.getChildren().size());
+            Assert.assertEquals(resourceMetric.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+            Assert.assertEquals(childResource.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
+
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getChildren().isEmpty());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testSynchronizeNew() throws Exception {
+        String tenantId = "testSynchronizeNew";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            InventoryStructure<Feed.Blueprint> structure = InventoryStructure.Offline
+                    .of(Feed.Blueprint.builder().withId("feed").build())
+                    .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                    .addChild(MetricType.Blueprint.builder(MetricDataType.GAUGE)
+                            .withId("metricType").withInterval(0L).withUnit(MetricUnit.NONE).build())
+                    .startChild(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                            .build())
+                    /**/.addChild(Resource.Blueprint.builder().withId("childResource")
+                    /**/        .withResourceTypePath("../resourceType").build())
+                    /**/.addChild(Metric.Blueprint.builder().withId("metric").withInterval(0L)
+                    /**/        .withMetricTypePath("../metricType").build())
+                    .end()
+                    .addChild(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType")
+                            .withInterval(0L).build())
+                    .build();
+
+            f.synchronize(structure);
+
+            IdentityHash.Tree feedTreeHash = f.treeHash();
+
+            ResourceType rt = f.resourceTypes().get("resourceType").entity();
+            MetricType mt = f.metricTypes().get("metricType").entity();
+            Resource resource = f.resources().get("resource").entity();
+            Metric feedMetric = f.metrics().get("metric").entity();
+            Metric resourceMetric = f.resources().get("resource").metrics().get("metric").entity();
+            Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
+
+            Assert.assertEquals(4, feedTreeHash.getChildren().size());
+            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
+            Assert.assertEquals(mt.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
+            Assert.assertEquals(resource.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
+            Assert.assertEquals(feedMetric.getIdentityHash(),
+                    feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+
+            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            Assert.assertEquals(2, resourceTreeHash.getChildren().size());
+            Assert.assertEquals(resourceMetric.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
+            Assert.assertEquals(childResource.getIdentityHash(),
+                    resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
+
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
+            Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getChildren().isEmpty());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testSynchronizeUpdate() throws Exception {
+        String tenantId = "testSynchronizeUpdate";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                    .build()).entity();
+
+            f.metricTypes()
+                    .create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .entity();
+
+            //get the resource only after all its children are created so that we obtain the right hash
+            f.resources()
+                    .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
+                            .build())
+                    .entity();
+
+            f.resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../resourceType")
+                            .build())
+                    .entity();
+
+            f.resources().get("resource").metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("../metricType").build())
+                    .entity();
+
+            f.metrics()
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType").build())
+                    .entity();
+
+            //just create an association so that we can check that the association doesn't affect the tree hash
+            f.resources().descendContained(RelativePath.to().resource("resource").resource("childResource").get())
+                    .allMetrics().associate(RelativePath.to().up().metric("metric").get());
+
+            f.resources().get("resource").entity();
+            f.resources().get("resource").resources().get("childResource").entity();
+
+            InventoryStructure.Offline.Builder<Feed.Blueprint> structureBuiler = InventoryStructure.Offline
+                    .copy(InventoryStructure.of(f.entity(),inventory)).asBuilder();
+
+            structureBuiler.getChild(Path.Segment.from("mt;metricType")).replace(MetricType.Blueprint.builder(
+                    MetricDataType.GAUGE).withId("metricType").withInterval(0L).withUnit(MetricUnit.BYTES).build());
+
+            structureBuiler.getChild(Path.Segment.from("r;resource")).remove();
+
+            InventoryStructure<Feed.Blueprint> structure = structureBuiler.build();
+
+            f.synchronize(structure);
+
+            Assert.assertTrue(f.metricTypes().get("metricType").exists());
+            Assert.assertFalse(f.resources().get("resource").exists());
+            Assert.assertFalse(f.resources().get("resource").resources().get("childResource").exists());
+            Assert.assertFalse(f.resources().get("resource").metrics().get("metrics").exists());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
         }
     }
 
@@ -2178,6 +2467,105 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         } finally {
             inventory.tenants().delete(tid);
         }
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfChangedEntity() throws Exception {
+        String tenantId = "testObserveIdentityHashChangedOnParentOfChangedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now update the unit of the metric type
+            inventory.tenants().get(tenantId).feeds().get("feed").metricTypes().get("metricType").update(MetricType
+                    .Update.builder().withUnit(MetricUnit.BYTES).build());
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(MetricType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfCreatedEntity() throws Exception {
+        String tenantId = "testObserveIdentityHashChangedOnParentOfCreatedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now create some new grandchild of the feed, let's say new sub-resource
+            inventory.tenants().get(tenantId).feeds().get("feed").resources().get("resource").resources()
+                    .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath
+                            ("../resourceType").build());
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(Resource.class).intValue()); //the hash of parent resource
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
+    }
+
+    @Test
+    public void testObserveIdentityHashChangedOnParentOfDeletedEntity() throws Exception {
+        String tenantId = "testObserveIdentityHashChangedOnParentOfDeletedEntity";
+        testIdentityHashObservation(tenantId, updateCounts -> {
+            //now delete the return type of the operation type
+            inventory.tenants().get(tenantId).feeds().get("feed").resourceTypes().get("resourceType")
+                    .operationTypes().get("operationType").data().delete(returnType);
+
+            //and check that identity hashes changed and we were informed about it
+            Assert.assertEquals(1, updateCounts.remove(OperationType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(ResourceType.class).intValue());
+            Assert.assertEquals(1, updateCounts.remove(Feed.class).intValue());
+            Assert.assertTrue(updateCounts.isEmpty());
+        });
+    }
+
+    private void testIdentityHashObservation(String tenantId, Consumer<Map<Class<?>, Integer>> test) throws Exception {
+        Subscription subs = null;
+        try {
+            createInventoryForIdentityHashChangeObservations(tenantId);
+
+            Map<Class<?>, Integer> updateCounts = new HashMap<>();
+
+            subs = Observable.merge(
+                    inventory.observable(Interest.in(Feed.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(ResourceType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(MetricType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(OperationType.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(Resource.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(Metric.class).having(identityHashChanged())),
+                    inventory.observable(Interest.in(DataEntity.class).having(identityHashChanged()))
+            ).subscribe(e ->
+                    updateCounts.put(e.getClass(), updateCounts.getOrDefault(e.getClass(), 0) + 1));
+
+            test.accept(updateCounts);
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+            if (subs != null) {
+                subs.unsubscribe();
+            }
+        }
+    }
+
+    private void createInventoryForIdentityHashChangeObservations(String tenantId) throws Exception {
+        Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+        f.metricTypes().create(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withUnit
+                (MetricUnit.BITS).withInterval(0L).build());
+
+        ResourceTypes.Single rt = f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
+                .build());
+
+        OperationTypes.Single ot = rt.operationTypes().create(OperationType.Blueprint.builder().withId("operationType")
+                .build());
+
+        ot.data().create(DataEntity.Blueprint.<DataRole.OperationType>builder().withRole(returnType)
+                .withValue(StructuredData.get().map().putString("type", "string").build()).build());
+
+        Resources.Single r = f.resources()
+                .create(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build());
+
+        r.data().create(DataEntity.Blueprint.<DataRole.Resource>builder().withRole(configuration).withValue
+                (StructuredData.get().integral(42L)).build());
     }
 
     @Test

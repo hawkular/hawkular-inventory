@@ -17,14 +17,18 @@
 package org.hawkular.inventory.rest;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
 import org.hawkular.inventory.rest.security.RestConfiguration;
@@ -90,5 +94,37 @@ public class RestBase {
 
     protected String getTenantId() {
         return tenantIdProducer.getTenantId().get();
+    }
+
+    protected CanonicalPath parsePath(List<PathSegment> uriPath) {
+        StringBuilder bld = new StringBuilder("/");
+
+        for (PathSegment seg : uriPath) {
+            if (seg.getPath() != null) {
+                bld.append(seg.getPath());
+            }
+            if (seg.getMatrixParameters() != null) {
+                for (Map.Entry<String, List<String>> e : seg.getMatrixParameters().entrySet()) {
+                    String param = e.getKey();
+                    List<String> values = e.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        for (String val : values) {
+                            bld.append(";").append(param);
+                            if (val != null) {
+                                bld.append("=").append(val);
+                            }
+                        }
+                    } else {
+                        bld.append(";").append(param);
+                    }
+                }
+            }
+            bld.append("/");
+        }
+
+        bld.replace(bld.length() - 1, bld.length(), "");
+
+        return CanonicalPath.fromPartiallyUntypedString(bld.toString(), CanonicalPath.of().tenant(getTenantId()).get
+                (), Entity.class);
     }
 }
