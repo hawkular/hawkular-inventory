@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.base;
 
+import java.util.List;
+
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResultFilter;
@@ -77,32 +79,29 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
         return inTx(context, payload);
     }
 
+    /**
+     * Identical to {@link #inTx(TransactionPayload)} but also returns the notifications emitted from the transaction.
+     * The list of notifications is final and they have already been sent. The caller should NOT send them again.
+     *
+     * @param payload the payload to run within a transaction
+     * @param <R> the type of the result returned from the payload
+     * @return the result of the payload together with the notifications sent as a result of the transaction
+     */
+    protected <R> ResultWithNofifications<R, BE> inTxWithNotifications(TransactionPayload<R, BE> payload) {
+        return inCommittableTxWithNotifications(context, TransactionPayload.Committing.committing(payload));
+    }
+
     protected static <R, BE, E extends AbstractElement<?, ?>>
     R inTx(TraversalContext<BE, E> context, TransactionPayload<R, BE> payload) {
-        class Ret {
-            final R val;
-            final Transaction.PreCommit<BE> preCommit;
-
-            Ret(Transaction.PreCommit<BE> preCommit, R val) {
-                this.preCommit = preCommit;
-                this.val = val;
-            }
-        }
-
-        Ret ret = Util.inTx(context, tx -> {
-            R v = payload.run(tx);
-            Transaction.PreCommit<BE> preCommit = tx.getPreCommit();
-
-            return new Ret(preCommit, v);
-        });
-
-        //k, now the transaction finished, we can send out the notifications
-        ret.preCommit.getFinalNotifications().forEach(context::notifyAll);
-
-        return ret.val;
+        return inCommittableTx(context, TransactionPayload.Committing.committing(payload));
     }
 
     protected <R> R inCommittableTx(TransactionPayload.Committing<R, BE> payload) {
+        return inCommittableTx(context, payload);
+    }
+
+    protected static <R, BE, E extends AbstractElement<?, ?>>
+    R inCommittableTx(TraversalContext<BE, E> context, TransactionPayload.Committing<R, BE> payload) {
         return Util.inCommittableTx(context, tx -> {
             R v = payload.run(tx);
 
@@ -111,5 +110,39 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
 
             return v;
         });
+    }
+
+    protected static <R, BE, E extends AbstractElement<?, ?>>
+    ResultWithNofifications<R, BE> inCommittableTxWithNotifications(TraversalContext<BE, E> context,
+                                                                       TransactionPayload.Committing<R, BE> payload) {
+        return Util.inCommittableTx(context, tx -> {
+            R v = payload.run(tx);
+
+            List<EntityAndPendingNotifications<BE, ?>> notifs = tx.getPreCommit().getFinalNotifications();
+
+            //k, now the transaction finished, we can send out the notifications
+            notifs.forEach(context::notifyAll);
+
+            return new ResultWithNofifications<>(v, notifs);
+        });
+    }
+
+    protected static final class ResultWithNofifications<R, BE> {
+        private final R result;
+        private final List<EntityAndPendingNotifications<BE, ?>> sentNotifications;
+
+
+        private ResultWithNofifications(R result, List<EntityAndPendingNotifications<BE, ?>> sentNotifications) {
+            this.result = result;
+            this.sentNotifications = sentNotifications;
+        }
+
+        public R getResult() {
+            return result;
+        }
+
+        public List<EntityAndPendingNotifications<BE, ?>> getSentNotifications() {
+            return sentNotifications;
+        }
     }
 }

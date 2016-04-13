@@ -80,7 +80,7 @@ public final class BaseOperationTypes {
 
         @Override public OperationTypes.Single create(OperationType.Blueprint blueprint) throws
                 EntityAlreadyExistsException {
-            return new BaseOperationTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseOperationTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
 
         @Override protected void preCreate(OperationType.Blueprint blueprint, Transaction<BE> tx) {

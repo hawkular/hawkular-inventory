@@ -100,7 +100,7 @@ public final class BaseResourceTypes {
 
         @Override
         public ResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new BaseResourceTypes.Single<>(context.replacePath(doCreate(blueprint)));
+            return new BaseResourceTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
 
         @Override

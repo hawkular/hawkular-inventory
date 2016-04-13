@@ -150,7 +150,7 @@ public final class BaseEnvironments {
 
         @Override
         public Environments.Single create(Environment.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

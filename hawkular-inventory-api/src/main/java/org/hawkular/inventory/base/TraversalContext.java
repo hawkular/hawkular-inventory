@@ -260,8 +260,6 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
                 observableContext, transactionRetries, this, null, transactionConstructor);
     }
 
-    //XXX not used ATM - after creating an entity, we can't be sure it is fully initialized due to the lazy way identity
-    //hashes are computed.
     TraversalContext<BE, E> toCreatedEntity(E entity) {
         return new TraversalContext<>(inventory, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
                 configuration, observableContext, transactionRetries, this, entity, null);
