@@ -42,15 +42,29 @@
     </dependency>
 
     <dependency>
-      <groupId>com.thinkaurelius.titan</groupId>
+      <groupId>org.hawkular.titan</groupId>
       <artifactId>titan-core</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
+      <exclusions>
+        <exclusion>
+          <!-- com.codahale.metrics:* is replaced by io.dropwizard.metrics:* pulled by cassandra-all -->
+          <groupId>com.codahale.metrics</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>com.thinkaurelius.titan</groupId>
+      <groupId>org.hawkular.titan</groupId>
       <artifactId>titan-hadoop</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
+      <exclusions>
+        <exclusion>
+          <!-- com.codahale.metrics:* is replaced by io.dropwizard.metrics:* pulled by cassandra-all -->
+          <groupId>com.codahale.metrics</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -88,6 +102,14 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-commons-embedded-cassandra-service</artifactId>
+      <version>${version.org.hawkular.commons}</version>
+      <type>ejb</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
       <version>${project.parent.version}</version>
@@ -103,16 +125,17 @@
     </dependency>
 
     <dependency>
-      <groupId>com.thinkaurelius.titan</groupId>
+      <groupId>org.hawkular.titan</groupId>
       <artifactId>titan-cassandra</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!-- com.codahale.metrics:* is replaced by io.dropwizard.metrics:* pulled by cassandra-all -->
+          <groupId>com.codahale.metrics</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -121,12 +144,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>com.codahale.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-      <version>3.0.2</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

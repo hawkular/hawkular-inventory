@@ -16,14 +16,19 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
-import java.net.URL;
+import static org.hawkular.commons.cassandra.EmbeddedConstants.CASSANDRA_YAML;
 
-import org.apache.cassandra.service.CassandraDaemon;
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Files;
+
+import org.apache.cassandra.service.EmbeddedCassandraService;
+import org.hawkular.commons.cassandra.CassandraYaml;
+import org.hawkular.commons.cassandra.CassandraYaml.CassandraYamlKey;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -37,27 +42,51 @@ import com.tinkerpop.blueprints.Element;
  */
 public class TitanTest extends AbstractBaseInventoryTestsuite<Element> {
 
-    private static CassandraDaemon CASSANDRA_DAEMON;
+    private static EmbeddedCassandraService service;
+    private static final int cassandraPortOffset = 0;
+    private static final int cassandraPort;
+
+    static {
+        cassandraPort = cassandraPortOffset + ((Integer) CassandraYamlKey.native_transport_port.getDefaultValue());
+    }
     private static TinkerpopInventory INVENTORY;
 
     @Rule public TestName name = new TestName();
 
     @BeforeClass
     public static void startCassandra() throws Exception {
-        URL cassandraConfigFile = TitanTest.class.getResource("/cassandra-config.yaml");
-        System.setProperty("cassandra.config", cassandraConfigFile.toString());
-        CASSANDRA_DAEMON = new CassandraDaemon(true);
-        CASSANDRA_DAEMON.activate();
+        if (service == null) {
+            File baseDir = Files.createTempDirectory(TitanTest.class.getName() + ".cassandra").toFile();
+            File cassandraYaml = new File(baseDir, "cassandra.yaml");
+
+            URL defaultCassandraYamlUrl = CassandraYaml.class.getResource("/" + CASSANDRA_YAML);
+            CassandraYaml.builder()
+                    .load(defaultCassandraYamlUrl)//
+                    .baseDir(baseDir)//
+                    .clusterName("hawkular-accounts-api-cassandra")//
+                    .portOffset(cassandraPortOffset)//
+                    .defaultKeyCacheSize()//
+                    .defaultNativeTransportMaxThreads()//
+                    .store(cassandraYaml)//
+                    .mkdirs()//
+                    .setCassandraConfigProp()//
+                    .setTriggersDirProp();
+
+            service = new EmbeddedCassandraService();
+            service.start();
+
+        }
+
         INVENTORY = new TinkerpopInventory();
         setupNewInventory(INVENTORY);
     }
 
-    @AfterClass
-    public static void stopCassandra() throws Exception {
-        if (CASSANDRA_DAEMON != null) {
-            CASSANDRA_DAEMON.deactivate();
-        }
-    }
+//    @AfterClass
+//    public static void stopCassandra() throws Exception {
+//        if (CASSANDRA_DAEMON != null) {
+//            CASSANDRA_DAEMON.deactivate();
+//        }
+//    }
 
     @Before
     public void reportStart() {
