@@ -117,6 +117,13 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
      * TransactionFrame#boundInventory()} method to obtain an inventory instance that will obey the transaction
      * boundaries set by the frame.
      * <p>
+     * Note also that identity-hashable entities created within the frame will not have their identity hashes computed
+     * (and other entities their identity hashes updated) until the transaction frame commits the transaction. Therefore
+     * if within the transaction frame you obtain an entity you created beforehand in the same frame, its identity hash
+     * will be null. If you depend on the identity hashes having their full value, you can either use
+     * {@link IdentityHash#of(Entity, Inventory)} to obtain the new value (at an expense of additional backend
+     * queries and computations) or actually commit the transaction.
+     * <p>
      * Note that it is not recommended to operate with more than 1 transaction frame in a single thread of execution.
      * The behavior might differ depending on the storage backend for the inventory. Concurrent usage of more
      * transaction frames is fine though (this is because of the weird "transaction-per-thread" policy in Tinkerpop

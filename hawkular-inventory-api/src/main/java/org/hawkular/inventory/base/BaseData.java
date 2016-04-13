@@ -131,7 +131,7 @@ public final class BaseData {
 
         @Override
         public Data.Single create(DataEntity.Blueprint<R> data) {
-            return new Single<>(context.replacePath(doCreate(data)), checks);
+            return new Single<>(context.toCreatedEntity(doCreate(data)), checks);
         }
 
         @Override

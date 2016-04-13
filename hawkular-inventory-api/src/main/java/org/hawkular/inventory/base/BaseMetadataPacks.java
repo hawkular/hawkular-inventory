@@ -120,7 +120,7 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            return new Single<>(context.replacePath(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
         }
     }
 

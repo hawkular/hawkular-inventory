@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.hawkular.inventory.api.Action;
@@ -73,10 +74,10 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * <p>The callers may merely use the returned query and construct a new {@code *Single} instance using it.
      *
      * @param blueprint the blueprint of the new entity
-     * @return the query to the newly created entity.
+     * @return the created entity
      */
-    protected final Query doCreate(B blueprint) {
-        return inTx(tx -> {
+    protected final E doCreate(B blueprint) {
+        ResultWithNofifications<E, BE> result = inTxWithNotifications(tx -> {
             String id = getProposedId(tx, blueprint);
 
             if (!tx.isUniqueIndexSupported()) {
@@ -140,8 +141,34 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
             tx.getPreCommit().addNotifications(pending);
 
-            return Query.to(entityPath);
+            return newEntity.getEntity();
         });
+
+        E entity = result.getResult();
+
+        //now try to see if the notifications emitted contain the notification about the entity creation - this will
+        //be true if the transaction was really committed above, but will not be true if we are being run inside a
+        //transaction frame.
+        for (EntityAndPendingNotifications<BE, ?> ns : result.getSentNotifications()) {
+            if (!ns.getEntity().getPath().equals(entity.getPath())) {
+                continue;
+            }
+
+            Optional<?> createdNotification = ns.getNotifications().stream()
+                    .filter(n -> n.getAction().asEnum() == Action.Enumerated.CREATED)
+                    .findAny();
+
+            if (createdNotification.isPresent()) {
+                //ok, the entity that has been notified about will have complete info. The entity returned from the
+                //transaction might not have.
+                //In particular, the entity returned from the transaction doesn't have an identity hash assigned because
+                //identity hash is computed only in the pre-commit phase.
+                entity = (E) ns.getEntity();
+                break;
+            }
+        }
+
+        return entity;
     }
 
     public final void update(Id id, U update) throws EntityNotFoundException {
