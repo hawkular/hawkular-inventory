@@ -85,8 +85,8 @@ public final class BaseFeeds {
         }
 
         @Override
-        public Feeds.Single create(Feed.Blueprint blueprint) {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+        public Feeds.Single create(Feed.Blueprint blueprint, boolean cache) {
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
 
         @Override

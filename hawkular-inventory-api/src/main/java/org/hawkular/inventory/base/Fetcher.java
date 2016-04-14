@@ -92,6 +92,8 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             Util.delete(context.entityClass, tx, context.select().get(), this::preDelete, this::postDelete);
             return null;
         });
+        useCachedEntity = false;
+        context.setCreatedEntity(null);
     }
 
     @Override
@@ -100,6 +102,10 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             Util.update(context.entityClass, tx, context.select().get(), u, this::preUpdate, this::postUpdate);
             return null;
         });
+
+        if (useCachedEntity && context.getCreatedEntity() != null) {
+            context.setCreatedEntity((E) context.getCreatedEntity().update().with(u));
+        }
     }
 
     /**

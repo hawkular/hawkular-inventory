@@ -110,7 +110,7 @@ public final class BaseMetadataPacks {
             return new Single<>(context.proceed().where(id(id)).get());
         }
 
-        @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint)
+        @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint, boolean cache)
                 throws EntityAlreadyExistsException {
 
             blueprint.getMembers().forEach(p -> {
@@ -120,7 +120,7 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
     }
 

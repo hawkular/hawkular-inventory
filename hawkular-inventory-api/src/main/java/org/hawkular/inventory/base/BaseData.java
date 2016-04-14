@@ -130,8 +130,8 @@ public final class BaseData {
         }
 
         @Override
-        public Data.Single create(DataEntity.Blueprint<R> data) {
-            return new Single<>(context.toCreatedEntity(doCreate(data)), checks);
+        public Data.Single create(DataEntity.Blueprint<R> data, boolean cache) {
+            return new Single<>(context.toCreatedEntity(doCreate(data), cache), checks);
         }
 
         @Override

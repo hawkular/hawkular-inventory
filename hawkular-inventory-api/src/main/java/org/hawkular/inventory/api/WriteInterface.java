@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,15 +33,32 @@ public interface WriteInterface<U, B extends Blueprint, Single, Id> {
 
     /**
      * Creates a new entity at the current position in the inventory traversal.
-     *
+     * <p>
+     * Note that the returned access interface can cache the entity created in this blueprint. That means that a
+     * subsequent call to {@link ResolvableToSingle#entity()} on the returned instance will NOT access the database
      * @param blueprint the blueprint to be used to create the new entity
+     * @param cache whether to cache the resulting entity so that the subsequent call to
+     * {@link ResolvableToSingle#entity()} doesn't need to touch database
      * @return access interface to the freshly created entity
      *
      * @throws EntityAlreadyExistsException if the entity already exists
      * @throws IllegalArgumentException if the blueprint or context in which the entity is being create is somehow
      *                                  invalid
      */
-    Single create(B blueprint) throws EntityAlreadyExistsException;
+    Single create(B blueprint, boolean cache) throws EntityAlreadyExistsException;
+
+    /**
+     * Equivalent to {@code create(blueprint, true)}
+     * @param blueprint the blueprint of the new entity
+     * @return access interface to the freshly create entity
+     * @throws EntityAlreadyExistsException
+     * @throws IllegalArgumentException if the blueprint or context in which the entity is being create is somehow
+     *                                  invalid
+     * @see #create(Blueprint, boolean)
+     */
+    default Single create(B blueprint) throws EntityAlreadyExistsException {
+        return create(blueprint, true);
+    }
 
     /**
      * Persists the provided entity on the current position in the inventory traversal.

@@ -116,8 +116,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        public Metrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+        public Metrics.Single create(Metric.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
     }
 

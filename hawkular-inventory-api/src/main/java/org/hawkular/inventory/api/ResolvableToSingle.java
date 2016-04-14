@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,9 @@ public interface ResolvableToSingle<Entity, Update> {
 
     /**
      * Resolves the entity and returns it.
+     * <p>
+     * Note that this might return stale data if the entity was freshly created (and therefore cached) and subsequent
+     * updates were made to the entity outside of this instance.
      *
      * @return the entity at the current position in the inventory traversal
      * @throws EntityNotFoundException   if there is no entity corresponding to the traversal

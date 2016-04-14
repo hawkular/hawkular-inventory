@@ -79,9 +79,10 @@ public final class Feeds {
          * advised to use the returned access interface to check what the actual ID was assigned to the feed.
          *
          * @param blueprint the blueprint of the feed
+         * @param cache whether to cache the created entity or not
          * @return the access interface to the newly created feed
          */
-        Single create(Feed.Blueprint blueprint);
+        Single create(Feed.Blueprint blueprint, boolean cache);
 
         //TODO commented out for now so that we can go piecewise
         /**

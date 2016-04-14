@@ -85,7 +85,8 @@ public final class BaseMetricTypes {
         }
 
         @Override
-        public MetricTypes.Single create(MetricType.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public MetricTypes.Single create(MetricType.Blueprint blueprint, boolean cache)
+                throws EntityAlreadyExistsException {
             if (blueprint.getType() == null ||
                 blueprint.getUnit() == null ||
                 blueprint.getCollectionInterval() == null) {
@@ -94,7 +95,7 @@ public final class BaseMetricTypes {
                 throw new IllegalArgumentException(msg);
             }
 
-            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new BaseMetricTypes.Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
 
         @Override
