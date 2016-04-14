@@ -133,12 +133,12 @@ public final class BaseResources {
         }
 
         @Override
-        public Resources.Single create(Resource.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Resources.Single create(Resource.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             if (blueprint.getResourceTypePath() == null) {
                 throw new IllegalArgumentException("ResourceType path is null");
             }
 
-            return new Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
     }
 

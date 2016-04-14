@@ -48,7 +48,13 @@ public final class Data {
             extends ReadWriteInterface<DataEntity.Update, DataEntity.Blueprint<Role>, Single, Multiple, Role> {
 
         @Override
-        Single create(DataEntity.Blueprint<Role> blueprint) throws EntityAlreadyExistsException, ValidationException;
+        Single create(DataEntity.Blueprint<Role> blueprint, boolean cache) throws EntityAlreadyExistsException,
+                ValidationException;
+
+        @Override
+        default Single create(DataEntity.Blueprint<Role> blueprint) throws EntityAlreadyExistsException {
+            return create(blueprint, true);
+        }
 
         @Override
         void update(Role role, DataEntity.Update update) throws EntityNotFoundException, ValidationException;

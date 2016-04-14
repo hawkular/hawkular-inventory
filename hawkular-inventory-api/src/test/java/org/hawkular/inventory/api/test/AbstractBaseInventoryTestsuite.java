@@ -2100,7 +2100,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String tenantId = "testTreeHash";
         try {
             Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
-                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build(), false);
 
             ResourceType rt = f.resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType")
                     .build()).entity();
@@ -2174,7 +2174,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         String tenantId = "testSynchronizeNew";
         try {
             Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
-                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build(), false);
 
             InventoryStructure<Feed.Blueprint> structure = InventoryStructure.Offline
                     .of(Feed.Blueprint.builder().withId("feed").build())

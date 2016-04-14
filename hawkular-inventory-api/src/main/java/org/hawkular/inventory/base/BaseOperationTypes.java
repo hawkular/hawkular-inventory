@@ -76,9 +76,9 @@ public final class BaseOperationTypes {
             return new BaseOperationTypes.Single<>(context.proceed().where(id(id)).get());
         }
 
-        @Override public OperationTypes.Single create(OperationType.Blueprint blueprint) throws
+        @Override public OperationTypes.Single create(OperationType.Blueprint blueprint, boolean cache) throws
                 EntityAlreadyExistsException {
-            return new BaseOperationTypes.Single<>(context.toCreatedEntity(doCreate(blueprint)));
+            return new BaseOperationTypes.Single<>(context.toCreatedEntity(doCreate(blueprint), cache));
         }
 
         @Override protected void preCreate(OperationType.Blueprint blueprint, Transaction<BE> tx) {

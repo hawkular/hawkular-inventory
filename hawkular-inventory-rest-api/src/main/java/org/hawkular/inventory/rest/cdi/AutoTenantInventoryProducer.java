@@ -152,8 +152,9 @@ public class AutoTenantInventoryProducer {
                 }
 
                 @Override
-                public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
-                    return actual.create(blueprint);
+                public Tenants.Single create(Tenant.Blueprint blueprint, boolean cache)
+                        throws EntityAlreadyExistsException {
+                    return actual.create(blueprint, cache);
                 }
 
                 @Override

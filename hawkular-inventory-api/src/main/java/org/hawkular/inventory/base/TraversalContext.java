@@ -89,7 +89,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      * creation time so it seems silly to load it from backend as soon as the caller requires to see the results of the
      * creation.
      */
-    private final E createdEntity;
+    private E createdEntity;
 
     private final TransactionConstructor<BE> transactionConstructor;
 
@@ -126,12 +126,14 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     /**
-     * XXX this is currently not used, because of the impossibility to get a fully initialized entity at the time of the
-     * return from the doCreate() method in mutator.
      * @return the entity previously created on this traversal position or null if no such thing happened.
      */
     public E getCreatedEntity() {
         return createdEntity;
+    }
+
+    public void setCreatedEntity(E entity) {
+        createdEntity = entity;
     }
 
     /**
@@ -260,9 +262,9 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
                 observableContext, transactionRetries, this, null, transactionConstructor);
     }
 
-    TraversalContext<BE, E> toCreatedEntity(E entity) {
+    TraversalContext<BE, E> toCreatedEntity(E entity, boolean cache) {
         return new TraversalContext<>(inventory, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
-                configuration, observableContext, transactionRetries, this, entity, null);
+                configuration, observableContext, transactionRetries, this, cache ? entity : null, null);
     }
 
     TraversalContext<BE, E> proceedTo(Path path) {

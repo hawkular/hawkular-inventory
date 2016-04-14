@@ -184,7 +184,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Tenants.Single create(Tenant.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Tenants.Single create(Tenant.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -343,7 +343,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public ResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public ResourceTypes.Single create(ResourceType.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -487,7 +487,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public MetricTypes.Single create(MetricType.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public MetricTypes.Single create(MetricType.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -633,7 +633,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Environments.Single create(Environment.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Environments.Single create(Environment.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -921,7 +921,7 @@ public class EmptyInventory implements Inventory {
     public static class FeedsReadWrite implements Feeds.ReadWrite {
 
         @Override
-        public Feeds.Single create(Feed.Blueprint blueprint) {
+        public Feeds.Single create(Feed.Blueprint blueprint, boolean cache) {
             throw new UnsupportedOperationException();
         }
 
@@ -1083,7 +1083,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Metrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Metrics.Single create(Metric.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -1205,7 +1205,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Resources.Single create(Resource.Blueprint blueprint) throws EntityAlreadyExistsException {
+        public Resources.Single create(Resource.Blueprint blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -1390,7 +1390,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Data.Single create(DataEntity.Blueprint<Role> blueprint) throws EntityAlreadyExistsException {
+        public Data.Single create(DataEntity.Blueprint<Role> blueprint, boolean cache) throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
 
@@ -1477,7 +1477,7 @@ public class EmptyInventory implements Inventory {
             return new OperationTypesSingle();
         }
 
-        @Override public OperationTypes.Single create(OperationType.Blueprint blueprint)
+        @Override public OperationTypes.Single create(OperationType.Blueprint blueprint, boolean cache)
                 throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }
@@ -1565,7 +1565,7 @@ public class EmptyInventory implements Inventory {
             return new MetadataPacksSingle();
         }
 
-        @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint)
+        @Override public MetadataPacks.Single create(MetadataPack.Blueprint blueprint, boolean cache)
                 throws EntityAlreadyExistsException {
             throw new UnsupportedOperationException();
         }

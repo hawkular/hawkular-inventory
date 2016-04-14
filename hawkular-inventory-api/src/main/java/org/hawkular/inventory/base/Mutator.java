@@ -69,7 +69,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
     /**
      * A helper method to be used in the implementation of the
-     * {@link org.hawkular.inventory.api.WriteInterface#create(Blueprint)} method.
+     * {@link org.hawkular.inventory.api.WriteInterface#create(Blueprint, boolean)} method.
      *
      * <p>The callers may merely use the returned query and construct a new {@code *Single} instance using it.
      *
