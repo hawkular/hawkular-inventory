@@ -65,6 +65,9 @@ public class AbstractTestBase {
 
     static {
         client = new OkHttpClient();
+        if (Boolean.parseBoolean(System.getProperty("http.log.wire", "false"))) {
+            client.interceptors().add(new LoggingInterceptor());
+        }
         client.setConnectTimeout(60, TimeUnit.SECONDS);
         client.setReadTimeout(60, TimeUnit.SECONDS);
         client.setWriteTimeout(60, TimeUnit.SECONDS);

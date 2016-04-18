@@ -101,6 +101,25 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging-processor</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -119,6 +138,8 @@
         <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
         <hawkular.management.port>9990</hawkular.management.port>
         <hawkular.agent.enabled>false</hawkular.agent.enabled>
+        <hawkular.log.root>INFO</hawkular.log.root>
+        <hawkular.log.console>INFO</hawkular.log.console>
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
         <hawkular.log.agent>INFO</hawkular.log.agent>
@@ -136,8 +157,7 @@
         <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
         <hawkular.log.ejb3>WARN</hawkular.log.ejb3>
         <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
-        <http.log>ERROR</http.log>
-        <http.log.wire>WARN</http.log.wire>
+        <http.log.wire>false</http.log.wire>
         <sql.datasource.jndi>java:/jboss/datasources/HawkularInventoryDS</sql.datasource.jndi>
       </properties>
 
@@ -189,6 +209,8 @@
                 <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                 <javaOpt>-Dkeycloak.import=${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration/hawkular-realm-for-dev.json</javaOpt>
                 <javaOpt>-Dhawkular.agent.enabled=${hawkular.agent.enabled}</javaOpt>
+                <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
+                <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
                 <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
                 <javaOpt>-Dhawkular.log.accounts=${hawkular.log.accounts}</javaOpt>
                 <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
@@ -246,17 +268,8 @@
               <systemPropertyVariables>
                 <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
                 <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
-
                 <!--output over-the-wire traffic-->
-                <org.apache.commons.logging.Log>
-                  org.apache.commons.logging.impl.SimpleLog
-                </org.apache.commons.logging.Log>
-                <org.apache.commons.logging.simplelog.log.org.apache.http>
-                  ${http.log}
-                </org.apache.commons.logging.simplelog.log.org.apache.http>
-                <org.apache.commons.logging.simplelog.log.org.apache.http.wire>
-                  ${http.log.wire}
-                </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                <hawkular.itest.httpWire>${http.log.wire}</hawkular.itest.httpWire>
               </systemPropertyVariables>
               <!--<argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y</argLine>-->
             </configuration>

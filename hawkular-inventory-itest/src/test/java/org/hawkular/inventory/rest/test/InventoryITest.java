@@ -196,10 +196,12 @@ public class InventoryITest extends AbstractTestBase {
         //we will try deleting the associations between resource types and metric types, too
         //this is not necessary because deleting either the resource type or the metric type will take care of it anyway
         //but this is to test that explicit deletes work, too
-        // TODO find out why this returns 500 on delete
-        // pathsToDelete.put(path + "/../" + responseTimeMTypeId, path +"/../" + responseTimeMTypeId);
-        // TODO find out why this returns 500 on delete
-        // pathsToDelete.put(path + "/../" + responseStatusCodeMTypeId, path +"/../" + responseStatusCodeMTypeId);
+        // XXX this should check for removal of a single association.
+        // OkHttp unconditionally canonicalizes the URL paths, which makes the below constructs impossible to send
+        // over the wire using OkHttp (even though they're perfectly valid URLs).
+        //pathsToDelete.put(path + "/../" + responseTimeMTypeId, path +"/../" + responseTimeMTypeId);
+        // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
+        //pathsToDelete.put(path + "/../" + responseStatusCodeMTypeId, path +"/../" + responseStatusCodeMTypeId);
 
         /* add a metric */
         response = postDeletable(environmentId +"/metrics", Metric.Blueprint.builder()
@@ -323,6 +325,7 @@ public class InventoryITest extends AbstractTestBase {
                 .add("../" + room1ResourceId + "/table/leg-4") //
                 .toString());
         assertEquals(204, response.code());
+        // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
 //        pathsToDelete.put(path + "/../table/leg%2F1", path + "/../table/leg%2F1")
 //        pathsToDelete.put(path + "/../table/leg-4", path + "/../table/leg-4")
 
@@ -334,10 +337,10 @@ public class InventoryITest extends AbstractTestBase {
                 .add("/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId)
                 .toString());
         assertEquals(204, response.code());
-        // TODO: why is this causing 403 on delete?
+        // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
         // pathsToDelete.put(path + "/../" + responseTimeMetricId, path + "/../" + responseTimeMetricId);
-        // TODO: why is this causing 403 on delete?
-        // pathsToDelete.put(path + "/../" + responseStatusCodeMetricId, path + "/../" + responseStatusCodeMetricId);
+        // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
+        //pathsToDelete.put(path + "/../" + responseStatusCodeMetricId, path + "/../" + responseStatusCodeMetricId);
 
         /* add a feed */
         response = postDeletable("feeds", Feed.Blueprint.builder().withId(feedId).build());
