@@ -57,7 +57,7 @@
 
   <properties>
     <version.org.hawkular.accounts>2.0.24.Final-SRC-revision-e6856f93e6522c6a911c5ee5a433136c2f873f8f</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.5.0.Final</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.5.1.Final-SRC-revision-2cf2f5d158d57491da51ddbff316c2f69f6847e8</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
     <version.io.swagger>1.5.7</version.io.swagger>
@@ -180,6 +180,12 @@
         <type>zip</type>
       </dependency>
 
+      <dependency>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-nest-feature-pack</artifactId>
+        <version>${version.org.hawkular.commons}</version>
+        <type>zip</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

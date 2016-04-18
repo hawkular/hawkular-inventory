@@ -39,6 +39,11 @@
     <subsystem>hawkular-inventory-datasources.xml</subsystem>
   </xsl:template>
 
+  <!-- use hawkular-inventory-logging.xml instead of hawkular-nest-logging.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-logging.xml']">
+    <subsystem>hawkular-inventory-logging.xml</subsystem>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
   <xsl:template match="node()|@*">
     <xsl:copy>
