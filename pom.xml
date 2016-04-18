@@ -187,6 +187,12 @@
         <type>zip</type>
       </dependency>
 
+      <dependency>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-nest-feature-pack</artifactId>
+        <version>${version.org.hawkular.commons}</version>
+        <type>zip</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
