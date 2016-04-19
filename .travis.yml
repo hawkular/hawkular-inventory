@@ -3,13 +3,14 @@ language: java
 jdk:
 - oraclejdk8
 
-# Enable container-based infrastructure + caching
-# see http://docs.travis-ci.com/user/workers/container-based-infrastructure/
-sudo: false
+# sudo: required and dist: trusty selects an Ubuntu 14.04 VM with 7.5 GB RAM
+sudo: required
+dist: trusty
 
-cache:
-  directories:
-  - $HOME/.m2
+# unsupported by dist: trusty
+#cache:
+#  directories:
+#  - $HOME/.m2
 
 install:
 - mvn -s .travis.maven.settings.xml -version -B
