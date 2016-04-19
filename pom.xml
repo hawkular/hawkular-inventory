@@ -66,6 +66,7 @@
     <version.com.github.fge>2.2.6</version.com.github.fge>
     <version.com.thinkaurelius.titan>0.5.4-jboss-1</version.com.thinkaurelius.titan>
     <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
+    <version.com.squareup.okhttp>2.6.0</version.com.squareup.okhttp>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
 
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
@@ -126,6 +127,12 @@
       </dependency>
 
       <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
         <groupId>commons-beanutils</groupId>
         <artifactId>commons-beanutils</artifactId>
         <version>${version.commons-beanutils}</version>
@@ -180,6 +187,12 @@
         <type>zip</type>
       </dependency>
 
+      <dependency>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-nest-feature-pack</artifactId>
+        <version>${version.org.hawkular.commons}</version>
+        <type>zip</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
