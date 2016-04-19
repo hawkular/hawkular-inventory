@@ -14,6 +14,19 @@ dist: trusty
 
 install:
 - mvn -s .travis.maven.settings.xml -version -B
+- which mvn
+# - curl https://www.apache.org/dyn/closer.cgi?asjson=1 # returned http://mirrors.ibiblio.org/apache as preferred mirror
+- export APACHE_MIRROR=http://mirrors.ibiblio.org/apache
+- export MVN_VERSION=3.3.9
+- pushd ~/
+- wget $APACHE_MIRROR/maven/maven-3/$MVN_VERSION/binaries/apache-maven-$MVN_VERSION-bin.tar.gz
+- tar xfz apache-maven-$MVN_VERSION-bin.tar.gz
+- chmod +x apache-maven-$MVN_VERSION/bin/mvn
+- export M2_HOME=$PWD/apache-maven-$MVN_VERSION
+- export PATH=$PWD/apache-maven-$MVN_VERSION/bin:${PATH}
+- popd
+- which mvn
+- mvn -s .travis.maven.settings.xml -version -B
 # unshallow is needed by license-maven-plugin
 - git fetch origin --unshallow
 
