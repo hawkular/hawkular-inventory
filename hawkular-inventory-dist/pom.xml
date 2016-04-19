@@ -178,7 +178,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.thinkaurelius.titan</groupId>
+      <groupId>org.hawkular.titan</groupId>
       <artifactId>titan-cassandra</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
       <scope>runtime</scope>
