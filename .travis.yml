@@ -31,10 +31,30 @@ install:
 - git fetch origin --unshallow
 
 before_script:
-- echo  "MAVEN_OPTS='-Dorg.slf4j.simpleLogger.defaultLogLevel=warn'" > ~/.mavenrc
+# we want 1) only log warning and errors, but info on the main CLI, so that we see what's being built atm. We also want to show the logger name of the maven log output, so that we can
+# filter on it using our sed expression below.
+- echo  "MAVEN_OPTS='-Dorg.slf4j.simpleLogger.defaultLogLevel=warn -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.event.ExecutionEventLogger=info -Dorg.slf4j.simpleLogger.showLogName=true'" > ~/.mavenrc
 
 script:
-- mvn -fae -s .travis.maven.settings.xml -Dsurefire.printSummary=false clean install -Pitest #,ltest
+# here we go... our mighty sed filter explained:
+# -n flag: print nothing unless specifically instructed to by the sed script
+#
+# s/^\\[INFO\\] org\\.apache\\.maven\\.cli\\.event\\.ExecutionEventLogger - \\( *[^ ].*\\)$/[INFO] \\1/p;
+# print all [INFO] lines of the main Maven CLI logger (if there is any non-space after [INFO]). This is used to make sure that we see what is currently being built.
+#
+# /WARN/p;
+# print any line that has "WARN" in it.
+#
+# /ERROR/p
+# print any line that has "ERROR" in it.
+#
+# /^Tests run/p
+# print the summary of the test results
+#
+# With this, we have the overview of what stage the build is currently in, yet we don't flood the output with stuff from tests and merely informative messages from the build.
+#
+- mvn -fae -s .travis.maven.settings.xml -Dsurefire.printSummary=false clean install -Pitest 2>&1 | sed -n 's/^\\[INFO\\] org\\.apache\\.maven\\.cli\\.event\\.ExecutionEventLogger - \\( *[^ ].*\\)$/[INFO] \\1/p; /WARN/p; /ERROR/p; /^Tests run/p'
+
 env:
   global:
   - secure: g/PGmXBWEd9PgmP9xfuUj60yGdvGR9x9cRzE3EDkX0ALkAdZZxHpI3qWdNpUl9mNrtjrxM/4/yi7oKDOpkwl+iCw2KAvlfjnn8sWTEwDIfK9+zyFAU0C6QEJnkToLFvkumO4NbbBBGxQ2KR4rxaIDRI6umf3F8roZybTD+SLXfg=
