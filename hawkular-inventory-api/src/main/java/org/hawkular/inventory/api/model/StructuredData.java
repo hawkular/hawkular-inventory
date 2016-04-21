@@ -44,7 +44,7 @@ import io.swagger.annotations.ApiModelProperty;
  * @author Lukas Krejci
  * @since 0.3.0
  */
-@ApiModel(value = "JSON", description = "Just free form JSON.")
+@ApiModel(value = "JSON", description = "Just a free form JSON.")
 public final class StructuredData {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.sd;
