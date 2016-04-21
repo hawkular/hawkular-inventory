@@ -65,8 +65,6 @@ public class TitanTest extends AbstractBaseInventoryTestsuite<Element> {
                     .baseDir(baseDir)//
                     .clusterName("hawkular-accounts-api-cassandra")//
                     .portOffset(cassandraPortOffset)//
-                    .defaultKeyCacheSize()//
-                    .defaultNativeTransportMaxThreads()//
                     .store(cassandraYaml)//
                     .mkdirs()//
                     .setCassandraConfigProp()//
