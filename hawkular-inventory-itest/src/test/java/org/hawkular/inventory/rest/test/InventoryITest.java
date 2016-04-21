@@ -1422,6 +1422,13 @@ public class InventoryITest extends AbstractTestBase {
             Response response = post(basePath + "/feeds", "{\"id\": \"sync-feed\"}");
             assertEquals(201, response.code());
 
+            response = post(basePath + "/feeds/sync-feed/resourceTypes", "{\"id\": \"doomed\"}");
+            assertEquals(201, response.code());
+
+            //check that the doomed resource type is there
+            response = get(basePath + "/path/f;sync-feed/rt;doomed");
+            assertEquals(200, response.code());
+
             response = post(basePath + "/sync/f;sync-feed", structure);
 
             assertEquals(204, response.code());
@@ -1437,6 +1444,10 @@ public class InventoryITest extends AbstractTestBase {
             assertEquals(200, response.code());
             response = get(basePath + "/path/f;sync-feed/mt;metricType");
             assertEquals(200, response.code());
+
+            //check that the doomed resource type is gone, because it was not part of the payload from the feed
+            response = get(basePath + "/path/f;sync-feed/rt;doomed");
+            assertEquals(404, response.code());
         } finally {
             Response response = get(basePath + "/path/f;sync-feed");
             if (response.code() == 200) {
