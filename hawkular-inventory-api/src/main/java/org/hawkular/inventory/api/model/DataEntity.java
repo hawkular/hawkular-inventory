@@ -23,6 +23,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * A data entity is an entity wrapping the data. It's sole purpose is to give a path to the piece of structured data.
  *
@@ -91,6 +93,7 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         });
     }
 
+    @ApiModel("DataEntityBlueprint")
     public static final class Blueprint<DR extends DataRole> extends Entity.Blueprint {
         private static final StructuredData UNDEFINED = StructuredData.get().undefined();
         private final StructuredData value;
@@ -161,6 +164,7 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         }
     }
 
+    @ApiModel("DataEntityUpdate")
     public static final class Update extends Entity.Update {
 
         private final StructuredData value;

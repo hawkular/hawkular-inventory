@@ -20,11 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 
 /**
@@ -35,22 +34,18 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Heiko W. Rupp
  * @author Lukas Krejci
  */
-@XmlRootElement
 public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.mt;
 
-    @XmlAttribute
     private final MetricUnit unit;
 
-    @XmlAttribute
     private final MetricDataType type;
 
-    @XmlAttribute
     private final Long collectionInterval;
 
     /**
-     * JAXB support
+     * Jackson support
      */
     @SuppressWarnings("unused")
     private MetricType() {
@@ -132,9 +127,8 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
      * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
      * called.
      */
-    @XmlRootElement
+    @ApiModel("MetricTypeBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
-        @XmlAttribute
         private final MetricUnit unit;
         private final MetricDataType type;
         private final Long collectionInterval;
@@ -243,6 +237,7 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
         }
     }
 
+    @ApiModel("MetricTypeUpdate")
     public static final class Update extends Entity.Update {
         private final MetricUnit unit;
         private final Long collectionInterval;
@@ -252,7 +247,7 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
             return new Builder();
         }
 
-        //JAXB support
+        //Jackson support
         @SuppressWarnings("unused")
         private Update() {
             this(null, null, null);

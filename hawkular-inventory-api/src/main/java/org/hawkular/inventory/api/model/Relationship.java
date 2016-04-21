@@ -18,12 +18,11 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 
 /**
@@ -35,15 +34,12 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Jirka Kremser
  * @since 1.0
  */
-@XmlRootElement
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rl;
 
-    @XmlAttribute
     private final String id;
 
-    @XmlAttribute
     private final String name;
 
     private final CanonicalPath source;
@@ -108,6 +104,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         return bld.toString();
     }
 
+    @ApiModel("RelationshipUpdate")
     public static final class Update extends AbstractElement.Update {
 
         public static Builder builder() {
@@ -137,13 +134,14 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
         }
     }
 
+    @ApiModel("RelationshipBlueprint")
     public static final class Blueprint extends AbstractElement.Blueprint {
 
         private final String name;
         private final CanonicalPath otherEnd;
         private final Relationships.Direction direction;
 
-        //JAXB support
+        //Jackson support
         private Blueprint() {
             super(null);
             this.name = null;

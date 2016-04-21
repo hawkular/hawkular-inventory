@@ -17,8 +17,6 @@
 package org.hawkular.inventory.rest.json;
 
 import javax.ws.rs.Produces;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -33,10 +31,9 @@ import io.swagger.annotations.ApiModelProperty;
  * @since 0.0.1
  */
 @ApiModel("Link between two resources")
-@XmlRootElement
 @JsonSerialize(using = LinkSerializer.class)
 @JsonDeserialize(using = LinkDeserializer.class)
-@Produces({"application/json", "application/xml"})
+@Produces({"application/json"})
 public class Link {
 
     private String rel;
@@ -52,7 +49,6 @@ public class Link {
 
 
     @ApiModelProperty("Name of the relation")
-    @XmlAttribute
     public String getRel() {
         return rel;
     }
@@ -62,7 +58,6 @@ public class Link {
     }
 
     @ApiModelProperty("Target of the relation")
-    @XmlAttribute
     public String getHref() {
         return href;
     }

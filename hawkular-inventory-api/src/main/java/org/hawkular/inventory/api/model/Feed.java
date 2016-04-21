@@ -19,10 +19,10 @@ package org.hawkular.inventory.api.model;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
@@ -35,7 +35,6 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-@XmlRootElement
 public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.f;
@@ -73,6 +72,7 @@ public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update
         return visitor.visitFeed(this, parameter);
     }
 
+    @ApiModel("FeedBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -123,6 +123,7 @@ public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update
         }
     }
 
+    @ApiModel("FeedUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {

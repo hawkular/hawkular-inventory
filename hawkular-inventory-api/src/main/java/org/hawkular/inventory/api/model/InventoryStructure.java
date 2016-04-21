@@ -53,6 +53,8 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * Represents the structure of an inventory. It is supposed that the structure is loaded lazily. The structure is
  * represented using entity blueprints instead of entity types themselves so that this structure can be computed
@@ -461,6 +463,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      * This is not directly instantiable but rather can be either copied from another structure (possibly lazily
      * loaded) or built using a {@link Builder}.
      */
+    @ApiModel("InventoryStructure")
     class Offline<Root extends Entity.Blueprint> implements InventoryStructure<Root>, Serializable {
 
         private final Root root;

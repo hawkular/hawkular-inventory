@@ -21,9 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -41,7 +38,6 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
         U extends AbstractElement.Update> {
     public static final String ID_PROPERTY = "id";
 
-    @XmlAttribute(name = "path")
     private final CanonicalPath path;
 
     protected final Map<String, Object> properties;
@@ -259,7 +255,6 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
     }
 
     public abstract static class Blueprint implements org.hawkular.inventory.api.model.Blueprint {
-        @XmlElement
         private final Map<String, Object> properties;
 
         protected Blueprint(Map<String, Object> properties) {

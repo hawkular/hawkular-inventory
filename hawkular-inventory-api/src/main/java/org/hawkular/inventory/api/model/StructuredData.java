@@ -33,6 +33,9 @@ import java.util.function.Function;
 
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * Represents structured data. This is used to store configuration, operation params, etc.
  *
@@ -41,10 +44,12 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.3.0
  */
+@ApiModel(value = "JSON", description = "Just a free form JSON.")
 public final class StructuredData {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.sd;
 
+    @ApiModelProperty(hidden = true)
     private final Serializable value;
 
     public static Builder get() {
@@ -61,6 +66,7 @@ public final class StructuredData {
      *
      * @return the value (possibly null for an undefined structured data)
      */
+    @ApiModelProperty(hidden = true)
     public Serializable getValue() {
         return value;
     }
@@ -68,6 +74,7 @@ public final class StructuredData {
     /**
      * @return true, if this data represents no value
      */
+    @ApiModelProperty(hidden = true)
     public boolean isUndefined() {
         return value == null;
     }
@@ -158,6 +165,7 @@ public final class StructuredData {
         return (Map<String, StructuredData>) value;
     }
 
+    @ApiModelProperty(hidden = true)
     public Type getType() {
         return this.accept(new Visitor<Type, Void>() {
             @Override

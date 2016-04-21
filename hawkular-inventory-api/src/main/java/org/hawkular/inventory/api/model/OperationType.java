@@ -22,6 +22,8 @@ import java.util.Set;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * @author Lukas Krejci
  * @since 0.4.0
@@ -60,6 +62,7 @@ public final class OperationType extends IdentityHashedEntity<OperationType.Blue
         return new Updater<>((u) -> new OperationType(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
     }
 
+    @ApiModel("OperationTypeBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -102,6 +105,7 @@ public final class OperationType extends IdentityHashedEntity<OperationType.Blue
         }
     }
 
+    @ApiModel("OperationTypeUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {
