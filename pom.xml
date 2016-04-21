@@ -34,7 +34,6 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
-    <module>hawkular-inventory-paths</module>
     <module>hawkular-inventory-api</module>
     <module>hawkular-inventory-bus</module>
     <module>hawkular-inventory-bus-api</module>
@@ -56,8 +55,8 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.accounts>2.0.24.Final-SRC-revision-853224b946c3eb3498ab53c6d78c2034674e9a7c</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.5.1.Final-SRC-revision-2cf2f5d158d57491da51ddbff316c2f69f6847e8</version.org.hawkular.commons>
+    <version.org.hawkular.accounts>2.0.25.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.6.0.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
     <version.io.swagger>1.5.7</version.io.swagger>
