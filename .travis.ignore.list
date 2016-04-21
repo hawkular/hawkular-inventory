@@ -1,0 +1,32 @@
+[INFO] Downloading:
+[INFO] Downloaded:
+[INFO] --- maven-compiler
+[INFO] Compiling
+[INFO] --- maven-clean-plugin
+[INFO] Deleting
+[INFO] --- maven-resources-plugin
+[INFO] Using 'UTF-8'
+[INFO] Copying
+[INFO] --- buildnumber-maven-plugin
+[INFO] --- build-helper-maven-plugin
+[INFO] --- maven-jar-plugin
+[INFO] Executing: /bin/sh
+[INFO] Working directory
+[INFO] Storing
+[WARNING] Unable to locate Source XRef to link to
+[WARNING] Cannot find annotation method
+org.jboss.as.clustering.infinispan
+org.hawkular.nest.extension.log
+WARN  [org.jboss.as.dependency.private] (MSC service thread 1-6) WFLYSRV0018
+java.lang.IllegalArgumentException: Cannot delete a resource type that is part of a metadata pack
+ERROR: error: object has missing required properties (["age","foo","male"])
+Failed to remove shutdown hook: java.lang.IllegalStateException
+ERROR [com.datastax.driver.core.ControlConnection]
+org.apache.cassandra.service.CassandraDaemon  - Classpath:
+as an identifier might not be supported in releases after Java SE 8
+has been deprecated
+[main] INFO  org.apache.cassandra.db.ColumnFamilyStore  - Initializing
+[Service Thread] INFO  org.apache.cassandra.utils.StatusLogger
+AND column1 >= 00 AND column1 <= ff THRIFT LIMIT
+INFO org.apache.cassandra.
+Warning: org.apache.xerces.parsers.SAXParser
