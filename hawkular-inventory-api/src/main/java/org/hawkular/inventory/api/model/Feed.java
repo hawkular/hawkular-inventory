@@ -19,8 +19,6 @@ package org.hawkular.inventory.api.model;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 
@@ -37,7 +35,6 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.1.0
  */
-@XmlRootElement
 public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.f;

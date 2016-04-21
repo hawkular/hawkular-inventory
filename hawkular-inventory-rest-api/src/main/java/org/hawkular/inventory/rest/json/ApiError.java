@@ -16,21 +16,16 @@
  */
 package org.hawkular.inventory.rest.json;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-//import io.swagger.annotations.ApiModelProperty;
-
 /**
  * Return information what failed in the REST-call.
  * @author Michael Burman
  */
-@XmlRootElement
 @ApiModel(description = "If REST-call returns other than success, detailed error is returned.")
 public class ApiError {
     private final String errorMsg;
