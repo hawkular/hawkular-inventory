@@ -20,11 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 /**
  * Metric describes a single metric that is sent out from a feed. Each metric has a unique ID and a type. Metrics live
@@ -34,7 +33,6 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-@XmlRootElement
 public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.m;
@@ -43,7 +41,7 @@ public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.
     private final Long collectionInterval;
 
     /**
-     * JAXB support
+     * Jackson support
      */
     @SuppressWarnings("unused")
     private Metric() {
@@ -106,9 +104,8 @@ public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.
      * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
      * called.
      */
-    @XmlRootElement
+    @ApiModel("MetricBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
-        @XmlAttribute
         private final String metricTypePath;
         private final Long collectionInterval;
 
@@ -194,6 +191,7 @@ public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.
         }
     }
 
+    @ApiModel("MetricUpdate")
     public static final class Update extends Entity.Update {
         private final Long collectionInterval;
 

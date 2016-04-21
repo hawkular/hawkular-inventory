@@ -30,6 +30,8 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * A metadata pack defines a bunch of resource types and metric types. It computes a hash of its "contents" so that
  * merely by examining the hash, one can make sure that certain set of resource types and metric types is present in
@@ -261,6 +263,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
         }
     }
 
+    @ApiModel("MetadataPackBlueprint")
     public static final class Blueprint extends AbstractElement.Blueprint {
 
         private final Set<CanonicalPath> members;
@@ -338,6 +341,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
         }
     }
 
+    @ApiModel("MetadataPackUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {

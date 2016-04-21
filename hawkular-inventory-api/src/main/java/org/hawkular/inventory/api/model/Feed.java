@@ -24,6 +24,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * Feed is a source of data. It reports about resources and metrics it knows about (and can send the actual data to
  * other Hawkular components like metrics).
@@ -73,6 +75,7 @@ public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update
         return visitor.visitFeed(this, parameter);
     }
 
+    @ApiModel("FeedBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -123,6 +126,7 @@ public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update
         }
     }
 
+    @ApiModel("FeedUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {

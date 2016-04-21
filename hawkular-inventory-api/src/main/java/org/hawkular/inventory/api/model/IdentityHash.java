@@ -56,6 +56,8 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * Produces an identity hash of entities. Identity hash is a hash that uniquely identifies an entity
  * and is produced using its user-defined id and structure. This hash is used to match a client-side state of an
@@ -648,6 +650,7 @@ public final class IdentityHash {
         }
     }
 
+    @ApiModel("IdentityHashTree")
     public static final class Tree implements Serializable {
         private final RelativePath path;
         private final String hash;

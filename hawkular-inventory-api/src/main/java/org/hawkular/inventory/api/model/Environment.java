@@ -20,10 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 /**
  * An environment is supposed to contain resources that belong to one infrastructure. Examples being "development",
@@ -36,7 +36,6 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 1.0
  */
-@XmlRootElement
 public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.e;
@@ -71,6 +70,7 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         return visitor.visitEnvironment(this, parameter);
     }
 
+    @ApiModel("EnvironmentBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -116,6 +116,7 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
         }
     }
 
+    @ApiModel("EnvironmentUpdate")
     public static final class Update extends Entity.Update {
         public static Builder builder() {
             return new Builder();

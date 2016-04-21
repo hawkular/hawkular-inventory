@@ -20,10 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 /**
  * Type of a resource. A resource type is versioned and currently just defines the types of metrics that should be
@@ -31,13 +31,12 @@ import org.hawkular.inventory.paths.SegmentType;
  *
  * @author Lukas Krejci
  */
-@XmlRootElement
 public final class ResourceType extends IdentityHashedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rt;
 
     /**
-     * JAXB support
+     * Jackson support
      */
     @SuppressWarnings("unused")
     private ResourceType() {
@@ -76,7 +75,7 @@ public final class ResourceType extends IdentityHashedEntity<ResourceType.Bluepr
      * {@link org.hawkular.inventory.api.WriteInterface#create(org.hawkular.inventory.api.model.Blueprint)} method is
      * called.
      */
-    @XmlRootElement
+    @ApiModel("ResourceTypeBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -122,6 +121,7 @@ public final class ResourceType extends IdentityHashedEntity<ResourceType.Bluepr
         }
     }
 
+    @ApiModel("ResourceTypeUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {

@@ -20,10 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+
+import io.swagger.annotations.ApiModel;
 
 /**
  * A tenant is a top level entity that owns everything else. Multiple tenants are not supposed to share anything between
@@ -34,9 +34,8 @@ import org.hawkular.inventory.paths.SegmentType;
  * by a {@code String}.
  *
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
-@XmlRootElement
 public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.t;
@@ -70,6 +69,7 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
         return visitor.visitTenant(this, parameter);
     }
 
+    @ApiModel("TenantBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
 
         public static Builder builder() {
@@ -115,6 +115,7 @@ public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
         }
     }
 
+    @ApiModel("TenantUpdate")
     public static final class Update extends Entity.Update {
 
         public static Builder builder() {
