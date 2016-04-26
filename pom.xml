@@ -206,6 +206,15 @@
           <arguments>-Pitest</arguments>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <excludes combine.children="append">
+            <exclude>**/travis_wait_*.log</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
