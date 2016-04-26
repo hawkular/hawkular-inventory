@@ -104,3 +104,4 @@ write_request_timeout_in_ms: 2000
 commitlog_directory: ${project.build.directory}/cassandra/commitlog
 saved_caches_directory: ${project.build.directory}/cassandra/saved_caches
 data_file_directories: [${project.build.directory}/cassandra/data]
+hints_directory: ${project.build.directory}/cassandra/hints

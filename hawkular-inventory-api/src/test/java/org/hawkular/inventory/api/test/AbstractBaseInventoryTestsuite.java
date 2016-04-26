@@ -55,6 +55,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -119,7 +120,7 @@ import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -132,19 +133,30 @@ import rx.Subscription;
  * @since 0.0.6
  */
 public abstract class AbstractBaseInventoryTestsuite<E> {
+    private static BaseInventory<?> staticInventoryInstance;
+    private static Callable<Void> teardownHook;
     protected BaseInventory<E> inventory;
 
+    /**
+     * This needs to return a SINGLETON - i.e. every time this method is called, it needs to return the very same
+     * instance
+     * @return the inventory instance to run the tests with
+     */
     protected abstract BaseInventory<E> getInventoryForTest();
+
+    protected abstract Callable<Void> getTeardownHook();
 
     @Before
     public final void setupData() throws Exception {
-        inventory = getInventoryForTest();
-        setupData(inventory);
+        inventory = initializeInventory(getInventoryForTest(), getTeardownHook());
     }
 
-    @After
-    public final void teardownData() throws Exception {
-        teardownData(inventory);
+    @AfterClass
+    public static final void teardownData() throws Exception {
+        teardownData(staticInventoryInstance);
+        if (teardownHook != null) {
+            teardownHook.call();
+        }
     }
 
     protected static <E> void setupNewInventory(BaseInventory<E> inventory) throws Exception {
@@ -174,6 +186,18 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             inventory.tenants().delete("perf0");
         } catch (Exception ignored) {
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static synchronized <E>
+    BaseInventory<E> initializeInventory(BaseInventory<E> inv, Callable<Void> teardownHook) throws Exception {
+        if (staticInventoryInstance == null) {
+            AbstractBaseInventoryTestsuite.teardownHook = teardownHook;
+            staticInventoryInstance = inv;
+            setupData(inv);
+        }
+
+        return (BaseInventory<E>) staticInventoryInstance;
     }
 
     private static <E> void setupData(BaseInventory<E> inventory) throws Exception {
@@ -1124,18 +1148,31 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testNoTwoFeedsWithSameID() throws Exception {
-        Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").feeds();
-
-        Feed f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+        Feed f1 = null;
         Feed f2 = null;
+
         try {
-            f2 = feeds.create(new Feed.Blueprint("feed", null)).entity();
-        } catch (FeedAlreadyRegisteredException fare) {
-            //good
+            Feeds.ReadWrite feeds = inventory.tenants().get("com.acme.tenant").feeds();
+
+            f1 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+            try {
+                f2 = feeds.create(new Feed.Blueprint("feed", null)).entity();
+            } catch (FeedAlreadyRegisteredException fare) {
+                //good
+            }
+            f2 = feeds.create(new Feed.Blueprint(null, null)).entity();
+
+            assert f1.getId().equals("feed");
+            assert !f1.getId().equals(f2.getId());
+        } finally {
+            if (f1 != null) {
+                inventory.inspect(f1).delete();
+            }
+
+            if (f2 != null) {
+                inventory.inspect(f2).delete();
+            }
         }
-        f2 = feeds.create(new Feed.Blueprint(null, null)).entity();
-        assert f1.getId().equals("feed");
-        assert !f1.getId().equals(f2.getId());
     }
 
     @Test

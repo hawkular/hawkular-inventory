@@ -23,11 +23,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.Callable;
 
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.tinkerpop.blueprints.Element;
@@ -51,26 +51,29 @@ public class TinkerGraphTest extends AbstractBaseInventoryTestsuite<Element> {
         return INVENTORY;
     }
 
-    @AfterClass
-    public static void teardown() throws Exception {
-        Path path = Paths.get("target", "__tinker.graph");
+    @Override protected Callable<Void> getTeardownHook() {
+        return () -> {
+            Path path = Paths.get("target", "__tinker.graph");
 
-        if (!path.toFile().exists()) {
-            return;
-        }
-
-        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
+            if (!path.toFile().exists()) {
+                return null;
             }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            return null;
+        };
     }
 }

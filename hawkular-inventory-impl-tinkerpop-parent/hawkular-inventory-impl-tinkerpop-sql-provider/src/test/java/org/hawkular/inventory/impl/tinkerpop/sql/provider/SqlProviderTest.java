@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.sql.provider;
 
+import java.util.concurrent.Callable;
+
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
@@ -53,5 +55,9 @@ public class SqlProviderTest extends AbstractBaseInventoryTestsuite<Element> {
 
     @Override protected BaseInventory<Element> getInventoryForTest() {
         return INVENTORY;
+    }
+
+    @Override protected Callable<Void> getTeardownHook() {
+        return null;
     }
 }
