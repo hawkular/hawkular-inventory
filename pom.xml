@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>41</version>
+    <version>42</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
@@ -55,11 +55,10 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.accounts>2.0.25.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.commons>0.6.0.Final</version.org.hawkular.commons>
+    <version.org.hawkular.accounts>2.0.26.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.commons>0.6.1.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
-    <version.io.swagger>1.5.7</version.io.swagger>
     <!-- overrides 3.1.2 from parent which produces NPE -->
     <version.com.github.kongchen.swagger-maven-plugin>3.1.1</version.com.github.kongchen.swagger-maven-plugin>
     <version.com.github.fge>2.2.6</version.com.github.fge>
