@@ -146,101 +146,28 @@ public abstract class BaseInventory<E> implements Inventory {
     @Override
     public TransactionFrame newTransactionFrame() {
         if (backend.isPreferringBigTransactions()) {
-            return new TransactionFrame() {
-                private InventoryBackend<E> activeBackend;
-                private final Transaction.PreCommit.Simple<E> globalPreCommit =
-                        new Transaction.PreCommit.Simple<>();
-                private List<TransactionPayload.Committing<?, E>> committedPayloads = new ArrayList<>();
-
-                private final TransactionConstructor<E> fakeTxCtor = (b, p) -> {
-                    InventoryBackend<E> realBackend;
-                    if (activeBackend == null) {
-                        activeBackend = b.startTransaction();
-                    }
-                    realBackend = activeBackend;
-
-                    NotificationsHidingPreCommit<E> txPrecommit = new NotificationsHidingPreCommit<>(p);
-
-                    Runnable onCommit = () -> {
-                        //transfer the resulting notifications - they will be emitted once the "real" transaction
-                        //really successfully commits.
-                        p.getFinalNotifications().forEach(globalPreCommit::addProcessedNotifications);
-                    };
-
-                    return new BackendTransaction<E>(new TransactionIgnoringBackend<>(realBackend, onCommit),
-                            txPrecommit) {
-                        @Override public void registerCommittedPayload(TransactionPayload.Committing<?, E>
-                                                                               committedPayload) {
-                            committedPayloads.add(committedPayload);
-                        }
-                    };
-                };
-
-                @Override public void commit() throws CommitException {
-                    Util.onFailureRetry(p ->
-                                    new BackendTransaction<>(new TransactionIgnoringBackend<>(activeBackend, null), p),
-                            Transaction.Committable.from(
-                                    adaptTransactionConstructor(fakeTxCtor)
-                                            .construct(activeBackend, new BasePreCommit<>())),
-                            (TransactionPayload.Committing<Void, E>) tx -> {
-                                //we specifically don't run the pre-commit actions here, because they were already ran
-                                //by the individual fake transaction commits of the "activities" in this frame.
-                                activeBackend.commit();
-
-                                //but we do fire the notifications - those are only to be emitted once the "true" commit
-                                //that actually persists stuff to backend, i.e. the above one, has bee issued.
-                                globalPreCommit.getFinalNotifications().forEach(tenantContext::notifyAll);
-
-                                return null;
-                            },
-                            tx -> {
-                                for (TransactionPayload.Committing<?, E> p : committedPayloads) {
-                                    p.run(tx);
-                                }
-
-                                activeBackend.commit();
-
-                                //but we do fire the notifications - those are only to be emitted once the "true" commit
-                                //that actually persists stuff to backend, i.e. the above one, has bee issued.
-                                globalPreCommit.getFinalNotifications().forEach(tenantContext::notifyAll);
-
-                                return null;
-                            }, relationshipContext.getTransactionRetriesCount());
-                }
-
-                @Override public void rollback() {
-                    backend.rollback();
-                }
-
-                @Override public Inventory boundInventory() {
-                    return cloneWith(adaptTransactionConstructor(fakeTxCtor));
-                }
-            };
+            //a full-blown transaction frame... we don't commit/rollback anything and postpone all that work to the
+            //frame's commit rollback
+            return new OneTxTransactionFrame();
         } else {
-            return new TransactionFrame() {
-                @Override public void commit() throws CommitException {
-                }
-
-                @Override public void rollback() {
-                }
-
-                @Override public Inventory boundInventory() {
-                    return BaseInventory.this;
-                }
-            };
+            //the backend doesn't like big transactions... we just commit everything as it goes, essentially rendering
+            //transaction frame useless..
+            return new ManyTxTransactionFrame();
         }
     }
 
     BaseInventory<E> keepTransaction(Transaction<E> tx) {
         return cloneWith(adaptTransactionConstructor((b, p) -> {
+            HidingPrecommit<E> precommit = new HidingPrecommit<>();
             Runnable transferActionsAndNotifs = () -> {
-                //transfer the resulting notifications - they will be emitted once the "real" transaction
+                //transfer the resulting notifications and actions - they will be emitted once the "real" transaction
                 //really successfully commits.
-                p.getFinalNotifications().forEach(tx.getPreCommit()::addProcessedNotifications);
+                precommit.getHiddenActions().forEach(tx.getPreCommit()::addAction);
+                precommit.getHiddenNotifications().forEach(tx.getPreCommit()::addNotifications);
             };
 
             return new BackendTransaction<>(new TransactionIgnoringBackend<>(tx.directAccess(),
-                    transferActionsAndNotifs), new NotificationsHidingPreCommit<>(p));
+                    transferActionsAndNotifs), precommit);
         }));
     }
 
@@ -353,43 +280,149 @@ public abstract class BaseInventory<E> implements Inventory {
         }
     }
 
-    private static final class NotificationsHidingPreCommit<E> implements Transaction.PreCommit<E> {
-        private final Transaction.PreCommit<E> pc;
-
-        private NotificationsHidingPreCommit(Transaction.PreCommit<E> pc) {
-            this.pc = pc;
-        }
-
-        @Override public void addAction(Consumer<Transaction<E>> action) {
-            pc.addAction(action);
-        }
-
-        @Override public void addNotifications(EntityAndPendingNotifications<E, ?> element) {
-            pc.addNotifications(element);
-        }
-
-        @Override public void addProcessedNotifications(EntityAndPendingNotifications<E, ?> element) {
-            pc.addProcessedNotifications(element);
+    private static final class HidingPrecommit<E> extends Transaction.PreCommit.Simple<E> {
+        private HidingPrecommit() {
         }
 
         @Override public List<Consumer<Transaction<E>>> getActions() {
-            return pc.getActions();
+            return Collections.emptyList();
         }
 
         @Override public List<EntityAndPendingNotifications<E, ?>> getFinalNotifications() {
             return Collections.emptyList();
         }
 
-        @Override public void initialize(Inventory inventory, Transaction<E> tx) {
-            pc.initialize(inventory, tx);
+        public List<EntityAndPendingNotifications<E, ?>> getHiddenNotifications() {
+            return super.getFinalNotifications();
         }
 
-        @Override public void reset() {
-            pc.reset();
+        public List<Consumer<Transaction<E>>> getHiddenActions() {
+            return super.getActions();
+        }
+    }
+
+    private class OneTxTransactionFrame implements TransactionFrame {
+        private InventoryBackend<E> activeBackend;
+        private Transaction.PreCommit<E> activePrecommit;
+        private List<TransactionPayload.Committing<?, E>> committedPayloads = new ArrayList<>();
+
+        private final TransactionConstructor<E> fakeTxCtor = (b, p) -> {
+            InventoryBackend<E> realBackend;
+            if (activeBackend == null) {
+                activeBackend = b.startTransaction();
+                activePrecommit = p;
+            }
+            realBackend = activeBackend;
+
+            BaseInventory.HidingPrecommit<E> txPrecommit = new BaseInventory.HidingPrecommit<>();
+
+            Runnable onCommit = () -> {
+                //transfer the resulting notifications - they will be emitted once the "real" transaction
+                //really successfully commits.
+                txPrecommit.getHiddenActions().forEach(activePrecommit::addAction);
+                txPrecommit.getHiddenNotifications().forEach(activePrecommit::addNotifications);
+            };
+
+            return new BackendTransaction<E>(new TransactionIgnoringBackend<>(realBackend, onCommit),
+                    txPrecommit) {
+                @Override public void registerCommittedPayload(TransactionPayload.Committing<?, E>
+                                                                       committedPayload) {
+                    committedPayloads.add(committedPayload);
+                }
+            };
+        };
+
+        @Override public void commit() throws CommitException {
+            Util.onFailureRetry(p ->
+                            new BackendTransaction<>(new TransactionIgnoringBackend<>(activeBackend, null), p),
+                    Transaction.Committable.from(
+                            adaptTransactionConstructor(fakeTxCtor)
+                                    .construct(activeBackend, new BasePreCommit<>())),
+                    (TransactionPayload.Committing<Void, E>) tx -> {
+                        activePrecommit.initialize(boundInventory(), tx);
+                        activePrecommit.getActions().forEach(a -> a.accept(tx));
+                        activeBackend.commit();
+                        activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
+
+                        return null;
+                    },
+                    tx -> {
+                        activePrecommit.reset();
+
+                        for (TransactionPayload.Committing<?, E> p : committedPayloads) {
+                            //the payloads "think" they each run in a transaction... prepare
+                            //those for each of them
+                            Transaction<E> fakeTx = fakeTxCtor.construct(activeBackend,
+                                    new Transaction.PreCommit.Simple<>());
+                            fakeTx.getPreCommit().initialize(boundInventory(), fakeTx);
+
+                            p.run(fakeTx);
+                        }
+
+                        activePrecommit.initialize(boundInventory(), tx);
+                        activePrecommit.getActions().forEach(a -> a.accept(tx));
+                        activeBackend.commit();
+                        activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
+
+                        return null;
+                    }, relationshipContext.getTransactionRetriesCount());
         }
 
-        public List<EntityAndPendingNotifications<E, ?>> getHiddenFinalNotifications() {
-            return pc.getFinalNotifications();
+        @Override public void rollback() {
+            backend.rollback();
+        }
+
+        @Override public Inventory boundInventory() {
+            return cloneWith(adaptTransactionConstructor(fakeTxCtor));
+        }
+    }
+
+    private class ManyTxTransactionFrame implements TransactionFrame {
+        private Transaction.PreCommit<E> activePrecommit;
+
+        private final TransactionConstructor<E> notifsStashingTxCtor = (b, p) -> {
+            if (activePrecommit == null) {
+                activePrecommit = p;
+            }
+
+            BaseInventory.HidingPrecommit<E> hidingPrecommit = new BaseInventory.HidingPrecommit<>();
+
+            return new BackendTransaction<>(new DelegatingInventoryBackend<E>(backend) {
+                @Override public void commit() throws CommitFailureException {
+                    hidingPrecommit.getHiddenActions().forEach(activePrecommit::addAction);
+                    hidingPrecommit.getHiddenNotifications().forEach(activePrecommit::addNotifications);
+                    super.commit();
+                }
+            }, hidingPrecommit);
+        };
+
+        @Override public void commit() throws CommitException {
+            //we need to start a new transaction for the actions to run in... The actual payloads are already
+            //committed.
+            try {
+                Transaction<E> tx = tenantContext.startTransaction();
+                activePrecommit.initialize(BaseInventory.this, tx);
+
+                activePrecommit.getActions().forEach(a -> a.accept(tx));
+
+                backend.commit();
+            } catch (Throwable t) {
+                backend.rollback();
+                throw new CommitException(t);
+            }
+
+            activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
+        }
+
+        @Override public void rollback() {
+            //This is a poor mans rollback... because the individual actions in this frame actually commit
+            //on their own and we only stash away the actions and notifications to be sent, in the case of
+            //rollback, we need to "complete" what's already committed by emitting the notifications.
+            commit();
+        }
+
+        @Override public Inventory boundInventory() {
+            return cloneWith(adaptTransactionConstructor(notifsStashingTxCtor));
         }
     }
 }

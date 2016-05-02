@@ -118,7 +118,9 @@ public class PreCommitActionsTest {
         //noinspection Duplicates
         doAnswer((args) -> {
             Assert.assertEquals(2, dataPersisted[0]);
-            Assert.assertEquals(2, pct.actionsObtained);
+            //even though we had 2 calls to inventory (persisted 2 pieces of data)
+            //the actions should be obtained only once - at the actual commit of the frame.
+            Assert.assertEquals(1, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             return null;
         }).when(backend).commit();
@@ -137,7 +139,7 @@ public class PreCommitActionsTest {
         frame.commit();
 
         Assert.assertEquals(2, dataPersisted[0]);
-        Assert.assertEquals(2, pct.actionsObtained);
+        Assert.assertEquals(1, pct.actionsObtained);
         Assert.assertEquals(2, notifsSent[0]);
     }
 
@@ -215,17 +217,17 @@ public class PreCommitActionsTest {
         //noinspection Duplicates
         doAnswer((args) -> {
             Assert.assertEquals(2, dataPersisted[0]);
-            Assert.assertEquals(2, pct.actionsObtained);
+            Assert.assertEquals(1, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(4, dataPersisted[0]);
-            Assert.assertEquals(4, pct.actionsObtained);
+            Assert.assertEquals(2, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             throw new CommitFailureException();
         }).doAnswer((args) -> {
             Assert.assertEquals(6, dataPersisted[0]);
-            Assert.assertEquals(6, pct.actionsObtained);
+            Assert.assertEquals(3, pct.actionsObtained);
             Assert.assertEquals(0, notifsSent[0]);
             return null;
         }).when(backend).commit();
@@ -249,10 +251,10 @@ public class PreCommitActionsTest {
         frame.commit();
 
         Assert.assertEquals(6, dataPersisted[0]);
-        Assert.assertEquals(6, pct.actionsObtained);
+        Assert.assertEquals(3, pct.actionsObtained);
         Assert.assertEquals(2, notifsSent[0]);
 
-        //check that we had exactly 2 commit attemps
+        //check that we had exactly 3 commit attemps
         verify(backend, times(3)).commit();
     }
 

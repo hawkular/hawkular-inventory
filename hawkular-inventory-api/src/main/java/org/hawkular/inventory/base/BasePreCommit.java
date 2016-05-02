@@ -171,6 +171,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                     root.loadFrom(tx);
                 } catch (ElementNotFoundException e) {
                     //ok, we're inside a delete and the root entity no longer exists... bail out quickly...
+                    processDeletion(root, root.notifications);
                     break;
                 }
                 @SuppressWarnings("unchecked")
@@ -187,18 +188,24 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         if (changesTree.needsResolution()) {
             try {
                 changesTree.loadFrom(tx);
-            } catch (ElementNotFoundException e) {
-                throw new EntityNotFoundException(Query.filters(Query.to(changesTree.cp)));
+            } catch (ElementNotFoundException ex) {
+                //this can happen depending on the mode of the backend. If it is not preferring big transactions,
+                //the element might actually be deleted prior to the notifications being sent out.
+                if (processDeletion(changesTree, changesTree.notifications)) {
+                    return;
+                } else {
+                    throw new EntityNotFoundException(Query.filters(Query.to(changesTree.cp)));
+                }
+            }
+
+            if (processDeletion(changesTree, changesTree.notifications)) {
+                return;
             }
 
             Entity<?, ?> e = cloneWithHash((Entity<?, ?>) changesTree.element, treeHash.getHash());
 
             List<Notification<?, ?>> ns = changesTree.notifications.stream().map(n -> cloneWithNewEntity(n, e))
                     .collect(toList());
-
-            if (processDeletion(changesTree, e, ns)) {
-                return;
-            }
 
             //check if there is a create or update notification if necessary
             String origIdentityHash = ((IdentityHashable) changesTree.element).getIdentityHash();
@@ -264,7 +271,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                         //if p was deleted, it's ok, but if it wasn't we have a serious problem - we found a change
                         //contributing to the identity hash of some parent, but the computed treeHash that should
                         //reflect the current state of inventory doesn't have a reference to the changed entity
-                        if (!processDeletion(p, (Entity<?, ?>) p.element, p.notifications)) {
+                        if (!processDeletion(p, p.notifications)) {
                             throw new IllegalStateException(
                                     "Entity on path " + p.element.getPath() + " requires identity hash re-computation" +
                                             " but was not found contributing to a tree hash of a parent. This is" +
@@ -276,17 +283,19 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }
     }
 
-    private boolean processDeletion(ProcessingTree<BE> changesTree, Entity<?, ?> e,
-                                    List<Notification<?, ?>> ns) {
+    private boolean processDeletion(ProcessingTree<BE> changesTree, List<Notification<?, ?>> ns) {
         Optional<Notification<?, ?>> deleteNotification = ns.stream()
-                .filter(n -> n.getAction() == Action.deleted() && n.getValue().equals(changesTree.element))
+                .filter(n -> n.getAction() == Action.deleted() && n.getValue() instanceof AbstractElement)
+                .filter(n -> ((AbstractElement<?, ?>) n.getValue()).getPath().equals(changesTree.cp))
                 .findAny();
 
 
         if (deleteNotification.isPresent()) {
             //just emit what the caller wanted and don't bother any longer
+            Notification<?, ?> n = deleteNotification.get();
+
             correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
-                    changesTree.representation, e, ns));
+                    null, (AbstractElement<?, ?>) n.getValue(), ns));
 
             IdentityHash.Tree emptyTree = IdentityHash.Tree.builder().build();
             changesTree.dfsTraversal(pt -> {
@@ -371,18 +380,18 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         final List<Notification<?, ?>> notifications;
         AbstractElement<?, ?> element;
         BE representation;
+        private Transaction<BE> loadingTx;
 
         ProcessingTree() {
-            this(null, null, null, null, null);
+            this(null, null);
         }
 
-        private ProcessingTree(BE representation, AbstractElement<?, ?> element, Path.Segment path, CanonicalPath cp,
-                               List<Notification<?, ?>> notifications) {
-            this.representation = representation;
-            this.element = element;
+        private ProcessingTree(Path.Segment path, CanonicalPath cp) {
+            this.representation = null;
+            this.element = null;
             this.path = path;
             this.cp = cp;
-            this.notifications = notifications == null ? new ArrayList<>(0) : notifications;
+            this.notifications = new ArrayList<>(0);
             clear();
         }
 
@@ -395,7 +404,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }
 
         public void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {
-            if (element == null) {
+            if (element == null || loadingTx != tx) {
+                loadingTx = tx;
                 representation = tx.find(cp);
                 @SuppressWarnings("unchecked")
                 Class<? extends AbstractElement<?, ?>> type = (Class<? extends AbstractElement<?, ?>>)
@@ -426,7 +436,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                 }
 
                 if (found == null) {
-                    found = new ProcessingTree<>(null, null, seg, cp.get(), null);
+                    found = new ProcessingTree<>(seg, cp.get());
                     children.add(found);
                 }
 

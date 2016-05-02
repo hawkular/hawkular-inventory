@@ -17,13 +17,13 @@
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
 import java.net.URL;
-import java.util.concurrent.Callable;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -50,29 +50,28 @@ public class TitanTest extends AbstractBaseInventoryTestsuite<Element> {
         CASSANDRA_DAEMON.activate();
         INVENTORY = new TinkerpopInventory();
         setupNewInventory(INVENTORY);
+        setupData(INVENTORY);
+    }
+
+    @AfterClass
+    public static void stopCassandra() throws Exception {
+        teardownData(INVENTORY);
+        if (CASSANDRA_DAEMON != null) {
+            CASSANDRA_DAEMON.deactivate();
+        }
     }
 
     @Before
     public void reportStart() {
-        //System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
     }
 
     @After
     public void reportEnd() {
-        //System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
+        System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
     }
 
     @Override protected BaseInventory<Element> getInventoryForTest() {
         return INVENTORY;
-    }
-
-    @Override protected Callable<Void> getTeardownHook() {
-        return () -> {
-            if (CASSANDRA_DAEMON != null) {
-                CASSANDRA_DAEMON.deactivate();
-            }
-
-            return null;
-        };
     }
 }

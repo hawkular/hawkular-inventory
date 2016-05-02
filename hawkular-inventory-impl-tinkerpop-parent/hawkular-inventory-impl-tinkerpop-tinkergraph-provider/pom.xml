@@ -119,7 +119,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <graph.config>${project.build.testOutputDirectory}/testsuite-graph.properties</graph.config>
+            <big-tx.config>${project.build.testOutputDirectory}/testsuite-big-tx.properties</big-tx.config>
+            <small-tx.config>${project.build.testOutputDirectory}/testsuite-small-tx.properties</small-tx.config>
           </systemPropertyVariables>
         </configuration>
       </plugin>

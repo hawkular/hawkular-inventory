@@ -38,6 +38,13 @@ public final class TinkerGraphProvider implements GraphProvider {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    private final boolean prefersBigTxs;
+
+    public TinkerGraphProvider() {
+        String val = System.getProperty("TinkerGraphProvider.prefersBigTxs");
+        prefersBigTxs = val == null || Boolean.parseBoolean(val);
+    }
+
     @Override public boolean isUniqueIndexSupported() {
         return false;
     }
@@ -49,7 +56,7 @@ public final class TinkerGraphProvider implements GraphProvider {
     @Override public boolean isPreferringBigTransactions() {
         //just for testing purposes... Otherwise tinkergraph doesn't actually care about this because it doesn't
         //support transactions anyway.
-        return true;
+        return prefersBigTxs;
     }
 
     @Override
