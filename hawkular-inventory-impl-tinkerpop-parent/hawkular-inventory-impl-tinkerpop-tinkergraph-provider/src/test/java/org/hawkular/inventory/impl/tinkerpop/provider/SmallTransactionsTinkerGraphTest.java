@@ -14,45 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop.sql.provider;
+package org.hawkular.inventory.impl.tinkerpop.provider;
 
-import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
 
 import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci
- * @since 0.13.0
+ * @since 0.15.1
  */
-public class SqlProviderTest extends AbstractBaseInventoryTestsuite<Element> {
-    private static final TinkerpopInventory INVENTORY = new TinkerpopInventory();
-
-    @Rule public TestName name = new TestName();
+public class SmallTransactionsTinkerGraphTest extends AbstractTinkerGraphTest {
+    private static TinkerpopInventory INVENTORY;
 
     @BeforeClass
-    public static void setupInventory() throws Exception {
+    public static void setup() throws Exception {
+        System.setProperty("TinkerGraphProvider.prefersBigTxs", "false");
+        String configPath = System.getProperty("small-tx.config");
+        System.setProperty("graph.config", configPath);
+        INVENTORY = new TinkerpopInventory();
         setupNewInventory(INVENTORY);
         setupData(INVENTORY);
     }
 
-    @Before
-    public void reportStart() {
-        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
+    @AfterClass
+    public static void teardownData() throws Exception {
+        teardownData(INVENTORY);
+        teardown(INVENTORY);
     }
 
-    @After
-    public void reportEnd() {
-        System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
-    }
-
-    @Override protected BaseInventory<Element> getInventoryForTest() {
+    @Override
+    protected BaseInventory<Element> getInventoryForTest() {
         return INVENTORY;
     }
 }

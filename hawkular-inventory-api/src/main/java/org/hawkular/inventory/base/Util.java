@@ -366,10 +366,7 @@ final class Util {
         deleted.stream().filter(o -> isRepresentableInAPI(tx, o)).forEach(addNotification);
         verticesToDeleteThatDefineSomething.stream().filter(o -> isRepresentableInAPI(tx, o)).forEach(addNotification);
 
-        deletedRels.stream().filter((o) -> isRepresentableInAPI(tx, o)).forEach(be -> {
-            AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
-            tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(be, e, deleted()));
-        });
+        deletedRels.stream().filter(o -> isRepresentableInAPI(tx, o)).forEach(addNotification);
 
         //k, now we can delete them all... the order is not important anymore
         for (BE e : deleted) {

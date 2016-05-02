@@ -55,7 +55,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -70,6 +69,7 @@ import org.hawkular.inventory.api.Environments;
 import org.hawkular.inventory.api.FeedAlreadyRegisteredException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.Parents;
@@ -83,6 +83,7 @@ import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.TransactionFrame;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
@@ -120,7 +121,6 @@ import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -133,8 +133,6 @@ import rx.Subscription;
  * @since 0.0.6
  */
 public abstract class AbstractBaseInventoryTestsuite<E> {
-    private static BaseInventory<?> staticInventoryInstance;
-    private static Callable<Void> teardownHook;
     protected BaseInventory<E> inventory;
 
     /**
@@ -144,19 +142,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
      */
     protected abstract BaseInventory<E> getInventoryForTest();
 
-    protected abstract Callable<Void> getTeardownHook();
-
     @Before
     public final void setupData() throws Exception {
-        inventory = initializeInventory(getInventoryForTest(), getTeardownHook());
-    }
-
-    @AfterClass
-    public static final void teardownData() throws Exception {
-        teardownData(staticInventoryInstance);
-        if (teardownHook != null) {
-            teardownHook.call();
-        }
+        inventory = getInventoryForTest();
     }
 
     protected static <E> void setupNewInventory(BaseInventory<E> inventory) throws Exception {
@@ -188,19 +176,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static synchronized <E>
-    BaseInventory<E> initializeInventory(BaseInventory<E> inv, Callable<Void> teardownHook) throws Exception {
-        if (staticInventoryInstance == null) {
-            AbstractBaseInventoryTestsuite.teardownHook = teardownHook;
-            staticInventoryInstance = inv;
-            setupData(inv);
-        }
-
-        return (BaseInventory<E>) staticInventoryInstance;
-    }
-
-    private static <E> void setupData(BaseInventory<E> inventory) throws Exception {
+    protected static <E> void setupData(BaseInventory<E> inventory) throws Exception {
         //noinspection AssertWithSideEffects
         assert inventory.tenants()
                 .create(Tenant.Blueprint.builder().withId("com.acme.tenant").withProperty("kachny", "moc").build())
@@ -488,7 +464,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                         ("/URL").build()).entity().getId().equals("feedChildResource");
     }
 
-    private static <E> void teardownData(BaseInventory<E> inventory) throws Exception {
+    protected static <E> void teardownData(BaseInventory<E> inventory) throws Exception {
         CanonicalPath tenantPath = CanonicalPath.of().tenant("com.example.tenant").get();
         CanonicalPath environmentPath = tenantPath.extend(Environment.SEGMENT_TYPE, "test").get();
 
@@ -3322,6 +3298,49 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             }
         } finally {
             inventory.inspect(t).delete();
+        }
+    }
+
+    @Test
+    public void testNotificationsInTransactionFrame() throws Exception {
+        Tenant tenant = null;
+        TransactionFrame frame = inventory.newTransactionFrame();
+
+        try {
+            Inventory inv = frame.boundInventory();
+
+            Integer[] observedCreations = new Integer[]{0};
+
+            Observable<Feed> obs = inv.observable(Interest.in(Feed.class).being(created()));
+
+            obs.subscribe((t) -> observedCreations[0]++);
+
+            tenant = inv.tenants()
+                    .create(Tenant.Blueprint.builder().withId("testNotificationsInTransactionFrame").build())
+                    .entity();
+
+            inv.inspect(tenant).feeds().create(Feed.Blueprint.builder().withId("feed").build()).entity();
+
+            Feed f = inv.inspect(tenant).feeds().get("feed").entity();
+
+            Assert.assertEquals(0, (int) observedCreations[0]);
+
+            //this must be computed at the time of the actual commit below
+            Assert.assertNull(f.getIdentityHash());
+
+            frame.commit();
+
+            Assert.assertEquals(1, (int) observedCreations[0]);
+
+            f = inventory.inspect(tenant).feeds().get("feed").entity();
+            Assert.assertNotNull(f.getIdentityHash());
+
+        } catch (Throwable t) {
+            frame.rollback();
+        } finally {
+            if (tenant != null) {
+                inventory.inspect(tenant).delete();
+            }
         }
     }
 
