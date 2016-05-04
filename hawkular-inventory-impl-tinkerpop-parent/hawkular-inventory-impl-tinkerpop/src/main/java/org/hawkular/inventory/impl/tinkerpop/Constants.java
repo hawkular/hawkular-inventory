@@ -33,7 +33,11 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.name;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -62,7 +66,9 @@ final class Constants {
     }
 
     /**
-     * The vertices in the graph have certain well-known properties.
+     * The vertices in the graph have certain well-known properties. The __foo form is used internally to decrease the
+     * chance of collision with any user defined properties. However, for sorting purposes it's quite cumbersome to use
+     * it directly, so the property can have also the user-friendly name (sortName).
      */
     enum Property {
         /**
@@ -74,20 +80,20 @@ final class Constants {
         /**
          * This is the name of the property that we use to store the type of the entity represented by the vertex
          */
-        __type,
+        __type("type"),
 
         /**
          * This is the name of the property that we use to store the user-defined ID of the entity represented by the
          * vertex. These ID are required to be unique only amongst their "siblings" as determined by the "contains"
          * hierarchy.
          */
-        __eid,
+        __eid("id"),
 
         /**
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
-        __unit,
+        __unit("unit"),
 
         /**
          * Property used on metric type to distinguish type of metric e.g. gauge, counter...
@@ -97,12 +103,12 @@ final class Constants {
         /**
          * Property used to store interval in seconds at which metrics are collected
          */
-        __metric_interval,
+        __metric_interval("collectionInterval"),
 
         /**
          * Property used to store the canonical path of an element.
          */
-        __cp,
+        __cp("path"),
 
         /**
          * The type of the data stored by the structured data vertex
@@ -125,13 +131,13 @@ final class Constants {
          */
         __structuredDataValue,
 
-        __sourceType,
+        __sourceType("sourceType"),
 
-        __targetType,
+        __targetType("targetType"),
 
-        __sourceCp,
+        __sourceCp("source"),
 
-        __targetCp,
+        __targetCp("target"),
 
         __sourceEid,
 
@@ -141,16 +147,43 @@ final class Constants {
 
         __targetIdentityHash;
 
+        private final String sortName;
+
+        Property() {
+            this(null);
+        }
+
+        Property(String sortName) {
+            this.sortName = sortName;
+        }
+
+        public String getSortName() {
+            return sortName;
+        }
 
         private static final HashSet<String> MIRRORED_PROPERTIES = new HashSet<>(Arrays.asList(__type.name(),
                 __eid.name(), __cp.name()));
 
-        public static String mapUserDefined(String property) {
-            if (AbstractElement.ID_PROPERTY.equals(property)) {
-                return __eid.name();
-            } else {
-                return property;
+        private static Map<String, String> NAME_TO_PROPERTY = new HashMap<>();
+
+        static {
+            try {
+                NAME_TO_PROPERTY = Collections.unmodifiableMap(Arrays.asList(values()).stream()
+                        .filter(prop -> prop.getSortName() != null)
+                        .collect(Collectors.toMap(Property::getSortName, Property::name)));
+            } catch (Exception e) {
+                // this may happen if there is a duplicate key when doing Collectors.toMap -> duplicated sortName
+                // it's better to swallow the exception and let the backend initialize properly
+                Log.LOG.error("Unable to initialize Constants.Property enum: " + e.getMessage());
             }
+        }
+
+
+        public static String mapUserDefined(String property) {
+            if (NAME_TO_PROPERTY.get(property) != null) {
+                return NAME_TO_PROPERTY.get(property);
+            }
+            return property;
         }
 
         public static boolean isMirroredInEdges(String property) {
