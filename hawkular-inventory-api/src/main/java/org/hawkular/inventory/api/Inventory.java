@@ -18,6 +18,7 @@ package org.hawkular.inventory.api;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -36,6 +37,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -121,8 +123,8 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
      * (and other entities their identity hashes updated) until the transaction frame commits the transaction. Therefore
      * if within the transaction frame you obtain an entity you created beforehand in the same frame, its identity hash
      * will be null. If you depend on the identity hashes having their full value, you can either use
-     * {@link IdentityHash#of(Entity, Inventory)} to obtain the new value (at an expense of additional backend
-     * queries and computations) or actually commit the transaction.
+     * {@link org.hawkular.inventory.api.model.IdentityHash#of(Entity, Inventory)} to obtain the new value (at an
+     * expense of additional backend queries and computations) or actually commit the transaction.
      * <p>
      * Note that it is not recommended to operate with more than 1 transaction frame in a single thread of execution.
      * The behavior might differ depending on the storage backend for the inventory. Concurrent usage of more
@@ -524,6 +526,6 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
     Configuration getConfiguration();
 
     default <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
-        return null;
+        return new Page<>(Collections.emptyIterator(), new PageContext(0, 0), 0);
     }
 }

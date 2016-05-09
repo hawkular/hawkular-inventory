@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import com.tinkerpop.blueprints.Direction;
  */
 final class QueryTranslationState implements Cloneable {
     private boolean inEdges;
+    private boolean explicitChange;
     private Direction comingFrom;
 
     public boolean isInEdges() {
@@ -32,6 +33,7 @@ final class QueryTranslationState implements Cloneable {
 
     public void setInEdges(boolean inEdges) {
         this.inEdges = inEdges;
+        explicitChange = false;
     }
 
     public Direction getComingFrom() {
@@ -40,6 +42,15 @@ final class QueryTranslationState implements Cloneable {
 
     public void setComingFrom(Direction comingFrom) {
         this.comingFrom = comingFrom;
+        explicitChange = false;
+    }
+
+    public boolean isExplicitChange() {
+        return explicitChange;
+    }
+
+    public void setExplicitChange(boolean explicitChange) {
+        this.explicitChange = explicitChange;
     }
 
     @Override
