@@ -27,6 +27,7 @@
   </parent>
 
   <artifactId>hawkular-inventory-itest</artifactId>
+  <name>Hawkular Inventory Integration Tests</name>
 
   <build>
     <plugins>
@@ -69,13 +70,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-api</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-api</artifactId>
       <version>${project.version}</version>
@@ -90,7 +84,6 @@
     <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
-      <version>${version.org.hawkular.commons}</version>
     </dependency>
 
     <dependency>
@@ -140,24 +133,13 @@
         <hawkular.agent.enabled>false</hawkular.agent.enabled>
         <hawkular.log.root>INFO</hawkular.log.root>
         <hawkular.log.console>INFO</hawkular.log.console>
-        <hawkular.log>INFO</hawkular.log>
-        <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>INFO</hawkular.log.agent>
-        <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
-        <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
-        <hawkular.log.pinger>INFO</hawkular.log.pinger>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
         <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
-        <hawkular.log.metrics>INFO</hawkular.log.metrics>
         <hawkular.log.nest>INFO</hawkular.log.nest>
         <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
-        <hawkular.log.liquibase>WARN</hawkular.log.liquibase>
         <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
-        <hawkular.log.ejb3>WARN</hawkular.log.ejb3>
-        <hawkular.log.rewrite>WARN</hawkular.log.rewrite>
-        <http.log.wire>false</http.log.wire>
         <sql.datasource.jndi>java:/jboss/datasources/HawkularInventoryDS</sql.datasource.jndi>
       </properties>
 
@@ -189,6 +171,57 @@
             </executions>
           </plugin>
 
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>process-classes</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${project.build.directory}/${project.build.finalName}/standalone/configuration/</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.basedir}/src/test/resources/standalone-configuration/</directory>
+                      <filtering>false</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Remove Command Gateway as it is not required for running Inventory itests  -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-clean-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>delete-command-gateway</id>
+                <phase>process-classes</phase>
+                <goals>
+                  <goal>clean</goal>
+                </goals>
+                <configuration>
+                  <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                  <filesets>
+                    <fileset>
+                      <directory>${project.build.directory}/${project.build.finalName}/modules/system/layers/hawkular/org/hawkular/nest/main/deployments</directory>
+                      <includes>
+                        <include>command-gateway-war*.war</include>
+                      </includes>
+                    </fileset>
+                  </filesets>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
           <!-- Start WildFly and run integration tests -->
           <plugin>
             <groupId>org.wildfly.plugins</groupId>
@@ -207,28 +240,16 @@
                 <javaOpt>-Djava.awt.headless=true</javaOpt>
                 <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
                 <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
-                <javaOpt>-Dkeycloak.import=${project.build.directory}/${project.artifactId}-${project.version}/standalone/configuration/hawkular-realm-for-dev.json</javaOpt>
                 <javaOpt>-Dhawkular.agent.enabled=${hawkular.agent.enabled}</javaOpt>
                 <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                 <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
-                <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
-                <javaOpt>-Dhawkular.log.accounts=${hawkular.log.accounts}</javaOpt>
-                <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
-                <javaOpt>-Dhawkular.log.alerts=${hawkular.log.alerts}</javaOpt>
                 <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
                 <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
-                <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
-                <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
                 <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
                 <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
-                <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
                 <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                 <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
-                <javaOpt>-Dhawkular.log.liquibase=${hawkular.log.liquibase}</javaOpt>
                 <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
-                <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
-                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
-                <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
                 <javaOpt>-Dsql.datasource.jndi=${sql.datasource.jndi}</javaOpt>
                 <!--<javaOpt>-Xdebug</javaOpt>-->
                 <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->

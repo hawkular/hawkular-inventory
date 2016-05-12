@@ -31,11 +31,6 @@
     </param-value>
   </context-param>
 
-  <context-param>
-    <param-name>org.keycloak.secretstore.enabled</param-name>
-    <param-value>true</param-value>
-  </context-param>
-
   <!-- to disable the auth, comment out the following elements -->
   <security-constraint>
     <web-resource-collection>
@@ -47,24 +42,16 @@
     </auth-constraint>
   </security-constraint>
 
-  <security-constraint>
-    <web-resource-collection>
-      <web-resource-name>WebSocket endpoints</web-resource-name>
-      <url-pattern>/ws/*</url-pattern>
-    </web-resource-collection>
-    <!-- no auth-constraint tag here -->
-  </security-constraint>
-
   <login-config>
-    <auth-method>KEYCLOAK</auth-method>
-    <realm-name>hawkular</realm-name>
+    <auth-method>BASIC</auth-method>
+    <realm-name>ApplicationRealm</realm-name>
   </login-config>
 
   <security-role>
-    <role-name>user</role-name>
+    <role-name>read-write</role-name>
   </security-role>
   <security-role>
-    <role-name>admin</role-name>
+    <role-name>read-only</role-name>
   </security-role>
 
 </web-app>

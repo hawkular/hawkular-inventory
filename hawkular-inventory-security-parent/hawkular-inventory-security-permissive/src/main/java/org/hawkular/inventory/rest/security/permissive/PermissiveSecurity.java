@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest.security.dummy;
+package org.hawkular.inventory.rest.security.permissive;
 
+import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -28,7 +29,7 @@ import org.hawkular.inventory.rest.security.Security;
  * @since 0.3.4
  */
 @Singleton
-@AllPermissive
+@Default
 public class PermissiveSecurity implements Security {
 
     @Override public Security.CreatePermissionCheckerFinisher canCreate(Class<?> entityType) {

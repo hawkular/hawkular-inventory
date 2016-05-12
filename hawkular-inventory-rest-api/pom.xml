@@ -59,6 +59,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-security-spi</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
       <scope>provided</scope>
@@ -174,12 +180,6 @@
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-json-helper</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-api</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
     </dependency>
 
     <dependency>

@@ -39,8 +39,12 @@ import com.squareup.okhttp.Response;
 
 public class AbstractTestBase {
 
+    protected static final String tenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
     protected static final String testUser = "jdoe";
     protected static final String testPasword = "password";
+    protected static final String basePath = "/hawkular/inventory";
+    protected static final String testEnvId = "test";
+
     protected static String authHeader;
     protected static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json");
     protected static TypeReference<Map<String, String>> mapTypeRef = new TypeReference<Map<String, String>>() {
@@ -94,7 +98,8 @@ public class AbstractTestBase {
     protected static Request.Builder newAuthRequest() {
         return new Request.Builder()//
                 .addHeader("Authorization", authHeader)//
-                .addHeader("Accept", "application/json");
+                .addHeader("Accept", "application/json")//
+                .addHeader("Hawkular-Tenant", tenantId);
     }
 
     protected static Response postNew(String path, Object payload) throws Throwable {

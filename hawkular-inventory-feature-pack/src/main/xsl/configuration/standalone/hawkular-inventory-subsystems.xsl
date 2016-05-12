@@ -21,21 +21,13 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
-  <xsl:strip-space elements="*" />
 
-  <xsl:param name="kc-adapter-subsystems-path" />
-  <xsl:param name="kc-server-subsystems-path" />
-
-  <!-- Replace these hawkular-accounts-*.xml files with ours hawkular-inventory-*.xml ones -->
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-accounts-keycloak-adapter.xml']">
-    <subsystem>hawkular-inventory-keycloak-adapter.xml</subsystem>
-  </xsl:template>
-
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-accounts-messaging-activemq.xml']">
+  <!-- Replace these hawkular-nest-*.xml files with ours hawkular-inventory-*.xml ones -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-messaging-activemq.xml']">
     <subsystem>hawkular-inventory-messaging-activemq.xml</subsystem>
   </xsl:template>
 
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-accounts-datasources.xml']">
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='datasources.xml']">
     <subsystem>hawkular-inventory-datasources.xml</subsystem>
   </xsl:template>
 
@@ -45,9 +37,9 @@
   </xsl:template>
 
   <!-- copy everything else as-is -->
-  <xsl:template match="node()|@*">
+  <xsl:template match="node()|comment()|@*">
     <xsl:copy>
-      <xsl:apply-templates select="node()|@*" />
+      <xsl:apply-templates select="node()|comment()|@*" />
     </xsl:copy>
   </xsl:template>
 

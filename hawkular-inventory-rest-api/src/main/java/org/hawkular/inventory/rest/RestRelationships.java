@@ -63,7 +63,6 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 import org.hawkular.inventory.rest.json.JsonLd;
-import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,7 +124,7 @@ public class RestRelationships extends RestBase {
                         @DefaultValue("false") @QueryParam("jsonld") String jsonLd,
                         @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
-        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        CanonicalPath cPath = RequestUtil.toCanonicalPath(securityId);
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
@@ -175,7 +174,7 @@ public class RestRelationships extends RestBase {
                            @Context UriInfo uriInfo) {
         String securityId = fixUpRestPath(path);
         checkForWellKnownLabels(relation.getName(), "delete");
-        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        CanonicalPath cPath = RequestUtil.toCanonicalPath(securityId);
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
@@ -208,7 +207,7 @@ public class RestRelationships extends RestBase {
 
         String restPath = fixUpRestPath(path);
         checkForWellKnownLabels(relation.getName(), "create");
-        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(restPath);
+        CanonicalPath cPath = RequestUtil.toCanonicalPath(restPath);
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
@@ -258,7 +257,7 @@ public class RestRelationships extends RestBase {
 
         // perhaps we could have allowed updating the properties of well-known rels
         checkForWellKnownLabels(relation.getName(), "update");
-        CanonicalPath cPath = EntityIdUtils.toCanonicalPath(securityId);
+        CanonicalPath cPath = RequestUtil.toCanonicalPath(securityId);
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }

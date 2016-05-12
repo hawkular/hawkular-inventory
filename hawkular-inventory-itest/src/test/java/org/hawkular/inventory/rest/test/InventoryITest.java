@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.hawkular.accounts.api.model.HawkularUser;
-import org.hawkular.accounts.api.model.Persona;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -69,10 +67,8 @@ import com.squareup.okhttp.Response;
  *
  */
 public class InventoryITest extends AbstractTestBase {
-    protected static final String basePath = "/hawkular/inventory";
 
     protected static final String urlTypeId = "URL";
-    protected static final String testEnvId = "test";
     protected static final String environmentId = "itest-env-" + UUID.randomUUID().toString();
     protected static final String pingableHostRTypeId = "itest-pingable-host-" + UUID.randomUUID().toString();
     protected static final String roomRTypeId = "itest-room-type-" + UUID.randomUUID().toString();
@@ -104,13 +100,9 @@ public class InventoryITest extends AbstractTestBase {
     /* key is the path to delete while value is the path to GET to verify the deletion */
     protected static Map<String, String> pathsToDelete = new LinkedHashMap<>();
 
-    protected static String tenantId;
 
     @BeforeClass
     public static void setupData() throws Throwable {
-        Persona persona = getWithRetries("/hawkular/accounts/personas/current", HawkularUser.class, 10, 2000);
-        tenantId = persona.getIdAsUUID().toString();
-        Assert.assertTrue("Cannot get the current tenant id.", tenantId != null && !tenantId.trim().isEmpty());
 
         /* assert the test environment exists */
         /* There is a race condition when WildFly agent is enabled:
