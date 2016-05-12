@@ -34,6 +34,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.api.filters.Related.asTargetBy;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
+import static org.hawkular.inventory.api.filters.With.path;
 import static org.hawkular.inventory.api.filters.With.type;
 import static org.hawkular.inventory.paths.DataRole.OperationType.returnType;
 import static org.hawkular.inventory.paths.DataRole.Resource.configuration;
@@ -91,6 +92,7 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
@@ -3342,6 +3344,33 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 inventory.inspect(tenant).delete();
             }
         }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testExecuteQuery() throws Exception {
+        Query normalQuery = Query.path().with(type(Tenant.class)).get();
+        Query elementTypeSwitchingQuery =
+                Query.path().with(type(Tenant.class), SwitchElementType.outgoingRelationships()).get();
+
+        Query elementTypeSwitchingQuery2 = Query.path().with(
+                path(CanonicalPath.of().tenant("com.acme.tenant").environment("production").resource("host1").get()),
+                SwitchElementType.outgoingRelationships(),
+                RelationWith.name("incorporates"),
+                SwitchElementType.targetEntities(),
+                type(Metric.class)).get();
+
+        Page<AbstractElement<?, ?>> res = inventory.execute(normalQuery, (Class) AbstractElement.class, Pager.none());
+        List<?> result = res.toList();
+        Assert.assertEquals(2, result.size());
+
+        Page<Relationship> res2 = inventory.execute(elementTypeSwitchingQuery, Relationship.class, Pager.none());
+        result = res2.toList();
+        Assert.assertEquals(12, result.size());
+
+        res = inventory.execute(elementTypeSwitchingQuery2, (Class) AbstractElement.class, Pager.none());
+        result = res.toList();
+        Assert.assertEquals(1, result.size());
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

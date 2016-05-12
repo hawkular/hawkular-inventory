@@ -29,11 +29,11 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.hawkular.inventory.paths.Path;
 
 import rx.subjects.Subject;

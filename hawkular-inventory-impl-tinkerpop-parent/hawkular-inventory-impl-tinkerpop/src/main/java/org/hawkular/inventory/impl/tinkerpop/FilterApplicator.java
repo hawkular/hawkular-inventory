@@ -36,10 +36,10 @@ import org.hawkular.inventory.api.filters.Incorporated;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.RecurseFilter;
-import org.hawkular.inventory.base.spi.SwitchElementType;
 
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.IntervalFilterPipe;
@@ -249,6 +249,10 @@ abstract class FilterApplicator<T extends Filter> {
 
     static <S, E> void finishPipeline(HawkularPipeline<S, E> pipeline, QueryTranslationState state,
                                               QueryTranslationState originalState) {
+        if (state.isExplicitChange()) {
+            return;
+        }
+
         if (originalState.isInEdges() != state.isInEdges()) {
             if (originalState.isInEdges()) {
                 switch (originalState.getComingFrom()) {

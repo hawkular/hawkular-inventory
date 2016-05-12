@@ -26,12 +26,12 @@ import org.hawkular.inventory.api.PathFragment;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.NoopFilter;
-import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.junit.Assert;
@@ -68,6 +68,21 @@ public class QueryTest {
         Query q = Query.path().with(type(Tenant.class)).with(id("t")).with(by(contains)).with(type(Environment.class))
                 .with(id("e")).with(by(contains)).with(type(Resource.class)).with(id("r")).get();
 
+        _testCanonicalPathConversionResults(q);
+    }
+
+    @Test
+    public void testCanonicalPathOnLongPathWithElementTypeSwitching() throws Exception {
+        Query q = Query.path().with(type(Tenant.class)).with(id("t")).with(SwitchElementType.outgoingRelationships())
+                .with(RelationWith.name("contains")).with(SwitchElementType.targetEntities())
+                .with(type(Environment.class)).with(id("e")).with(by(contains)).with(type(Resource.class)).with(id("r"))
+                .get();
+
+        _testCanonicalPathConversionResults(q);
+    }
+
+
+    private void _testCanonicalPathConversionResults(Query q) throws Exception {
         Assert.assertEquals(1, q.getFragments().length);
         Assert.assertTrue(q.getFragments()[0].getFilter() instanceof With.CanonicalPaths);
 

@@ -14,17 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.base.spi;
+package org.hawkular.inventory.api.filters;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.filters.Filter;
 
 /**
- * Filter used internally by the base impl for jumping from a vertex to an edge or back.
- * This needs to be understood by all backends but is not directly part of the public API.
+ * Filter for jumping from a vertex to an edge or back. Note that this is different from {@link Related} because
+ * it enables one to add additional filters on the relationship after the jump filter.
  */
 public final class SwitchElementType extends Filter {
     private final Relationships.Direction direction;

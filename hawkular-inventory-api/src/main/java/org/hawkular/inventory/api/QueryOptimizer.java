@@ -32,6 +32,8 @@ import java.util.Set;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -59,6 +61,8 @@ final class QueryOptimizer {
         }
 
         cleanUnnecessaryNoops(applicableNewFilters);
+
+        collapseSimpleTypeSwitches(fragments, applicableNewFilters);
 
         QueryFragment cpFilter = findLastCanonicalFilterAndPrepareNewFilters(fragments, applicableNewFilters);
 
@@ -354,5 +358,95 @@ final class QueryOptimizer {
         }
 
         return ret;
+    }
+
+    private static void collapseSimpleTypeSwitches(List<QueryFragment> fragments, List<QueryFragment> newFilters) {
+        int fragmentsToRemove = -2;
+
+        //-2 means 2 last elements from the fragments list
+        //-1 means last element from the fragments list
+        //0 means the first element from new filters
+        //1 means first 2 elements from new filters
+        //2 means first 3 elements from new filters
+
+        String label = null;
+        while (label == null && fragmentsToRemove <= 0) {
+            label = collapseSimpleTypeSwitchesHelper(fragmentsToRemove, fragments, newFilters);
+            fragmentsToRemove++;
+        }
+
+        if (label != null) {
+            Class<?> fragmentType = newFilters.get(0).getClass();
+
+            //fragmentsToRemove is 1 past what we actually need
+            removeLast(fragments, -fragmentsToRemove + 1);
+            removeFirst(newFilters, fragmentsToRemove + 2);
+
+            QueryFragment newFragment = PathFragment.class.equals(fragmentType)
+                    ? new PathFragment(Related.by(label))
+                    : new FilterFragment(Related.by(label));
+
+            newFilters.add(0, newFragment);
+        }
+    }
+
+    private static String collapseSimpleTypeSwitchesHelper(int start, List<QueryFragment> fragments,
+                                                           List<QueryFragment> newFilters) {
+
+        QueryFragment firstFragment = getElementFromEitherCollection(start, fragments, newFilters);
+        QueryFragment secondFragment = getElementFromEitherCollection(start + 1, fragments, newFilters);
+        QueryFragment thirdFragment = getElementFromEitherCollection(start + 2, fragments, newFilters);
+
+        if (firstFragment == null || secondFragment == null || thirdFragment == null) {
+            return null;
+        }
+
+        if (!firstFragment.getClass().equals(secondFragment.getClass())
+                || !firstFragment.getClass().equals(thirdFragment.getClass())) {
+            return null;
+        }
+
+        Filter firstFilter = firstFragment.getFilter();
+        Filter secondFilter = secondFragment.getFilter();
+        Filter thirdFilter = thirdFragment.getFilter();
+
+        if (firstFilter instanceof SwitchElementType && secondFilter instanceof RelationWith.PropertyValues
+                && thirdFilter instanceof SwitchElementType) {
+            SwitchElementType toEdge = (SwitchElementType) firstFilter;
+            RelationWith.PropertyValues labelCheck = (RelationWith.PropertyValues) secondFilter;
+            SwitchElementType toEntity = (SwitchElementType) thirdFilter;
+
+            boolean isLabelCheck = labelCheck.getProperty().equals("label")
+                    && labelCheck.getValues() != null && labelCheck.getValues().length == 1;
+
+            return !toEdge.isFromEdge() && isLabelCheck && toEntity.isFromEdge()
+                    ? (String) labelCheck.getValues()[0]
+                    : null;
+        } else {
+            return null;
+        }
+    }
+
+    private static <T> T getElementFromEitherCollection(int index, List<T> negativelyIndexed,
+                                                        List<T> normallyIndexed) {
+        if (index < 0) {
+            return negativelyIndexed.size() > Math.abs(index) - 1
+                    ? negativelyIndexed.get(negativelyIndexed.size() + index)
+                    : null;
+        } else {
+            return index < normallyIndexed.size() ? normallyIndexed.get(index) : null;
+        }
+    }
+
+    private static void removeLast(List<?> list, int itemsToRemove) {
+        for (int i = 0; i < itemsToRemove; ++i) {
+            list.remove(list.size() - 1);
+        }
+    }
+
+    private static void removeFirst(List<?> list, int itemsToRemove) {
+        for (int i = 0; i < itemsToRemove; ++i) {
+            list.remove(0);
+        }
     }
 }

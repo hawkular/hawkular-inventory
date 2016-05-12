@@ -38,11 +38,11 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
+import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.base.spi.RecurseFilter;
-import org.hawkular.inventory.base.spi.SwitchElementType;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -242,26 +242,39 @@ class FilterVisitor {
         switch (filter.getDirection()) {
             case incoming:
                 if (jumpFromEdge) {
+                    state.setInEdges(false);
+                    state.setComingFrom(null);
                     query.outV();
                 } else {
+                    state.setInEdges(true);
+                    state.setComingFrom(Direction.IN);
                     query.inE();
                 }
                 break;
             case outgoing:
                 if (jumpFromEdge) {
+                    state.setInEdges(false);
+                    state.setComingFrom(null);
                     query.inV();
                 } else {
+                    state.setInEdges(true);
+                    state.setComingFrom(Direction.OUT);
                     query.outE();
                 }
                 break;
             case both:
                 if (jumpFromEdge) {
+                    state.setInEdges(false);
+                    state.setComingFrom(null);
                     query.bothV();
                 } else {
+                    state.setInEdges(true);
+                    state.setComingFrom(Direction.BOTH);
                     query.bothE();
                 }
                 break;
         }
+        state.setExplicitChange(true);
     }
 
     public void visit(HawkularPipeline<?, ?> query, NoopFilter filter, QueryTranslationState state) {
