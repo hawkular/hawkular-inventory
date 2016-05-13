@@ -36,6 +36,8 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 1.0
  */
+@ApiModel(description = "Environment can incorporate feeds and can contain resources and metrics.",
+        parent = Entity.class)
 public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.e;

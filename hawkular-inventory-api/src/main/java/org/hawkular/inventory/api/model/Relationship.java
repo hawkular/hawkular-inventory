@@ -33,8 +33,9 @@ import io.swagger.annotations.ApiModel;
  *
  * @author Lukas Krejci
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
+@ApiModel(description = "A relationship between two entities.")
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rl;

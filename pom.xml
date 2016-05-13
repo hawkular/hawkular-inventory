@@ -65,6 +65,8 @@
     <version.com.thinkaurelius.titan>0.5.4-jboss-1</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
 
+    <version.org.antlr>4.5.3</version.org.antlr>
+
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
     <version.commons-beanutils>1.9.2</version.commons-beanutils>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/collections/main/ -->

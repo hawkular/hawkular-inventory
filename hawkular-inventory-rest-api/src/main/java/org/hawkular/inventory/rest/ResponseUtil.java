@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
@@ -47,7 +50,7 @@ import com.fasterxml.jackson.databind.SequenceWriter;
  * @author Heiko W. Rupp
  * @since 0.0.1
  */
-final class ResponseUtil {
+public final class ResponseUtil {
 
     /**
      * This method exists solely to concentrate usage of {@link javax.ws.rs.core.Response#created(java.net.URI)} into
@@ -57,11 +60,23 @@ final class ResponseUtil {
      * @param info the UriInfo instance of the current request
      * @param id   the ID of a newly created entity under the base
      * @return the response builder with status 201 and location set to the entity with the provided id.
+     * @deprecated This is only used by the deprecated REST API
      */
+    @Deprecated
     public static Response.ResponseBuilder created(AbstractElement element, UriInfo info, String id) {
         return Response.status(CREATED)
                 .location(info.getRequestUriBuilder().segment(id).build())
                 .entity(element);
+    }
+
+    public static Response.ResponseBuilder created(AbstractElement<?, ?> element, UriInfo info)
+            throws URISyntaxException {
+        URI baseURI = info.getBaseUri();
+        String newPath = baseURI.getPath() + "entity/" + Utils.getCanonicalLinkPath(element).toString();
+
+        URI uri = info.getRequestUriBuilder().replacePath(newPath).build();
+
+        return Response.status(CREATED).location(uri).entity(element);
     }
 
     /**
@@ -74,11 +89,26 @@ final class ResponseUtil {
      * @param info uri info to help with converting ids to URIs
      * @param ids  the list of ids of the entities
      * @return the response builder with status 201 and entity set
+     * @deprecated This returns just ids of the newly created entities in the response. That is not satisfactory.
      */
+    @Deprecated
     public static Response.ResponseBuilder created(UriInfo info, Spliterator<String> ids) {
         return Response.status(CREATED)
                 .entity(StreamSupport.stream(ids, false).map(
                         (id) -> info.getRequestUriBuilder().segment(id).build()));
+    }
+
+    public static Response.ResponseBuilder created(Collection<? extends AbstractElement<?, ?>> data, UriInfo info) {
+        Response.ResponseBuilder ret = Response.status(CREATED);
+        URI baseURI = info.getBaseUri();
+        data.forEach(e -> {
+            String newPath = baseURI.getPath() + "entity/" + Utils.getCanonicalLinkPath(e).toString();
+
+            URI uri = info.getRequestUriBuilder().replacePath(newPath).build();
+            ret.location(uri);
+        });
+
+        return ret.entity(data);
     }
 
     public static <T> Response.ResponseBuilder pagedResponse(Response.ResponseBuilder response, UriInfo uriInfo,

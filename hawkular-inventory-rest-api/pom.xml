@@ -249,6 +249,12 @@
       <version>1.2</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>${version.org.antlr}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -283,6 +289,17 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>${version.org.antlr}</version>
+        <executions>
+          <execution>
+            <goals><goal>antlr4</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -294,6 +311,17 @@
         <swaggerDirectory>${project.build.directory}/generated/swagger-ui</swaggerDirectory>
       </properties>
       <build>
+        <resources>
+          <resource>
+            <directory>${restDocDirectory}</directory>
+            <includes>
+              <include>*.json</include>
+            </includes>
+            <filtering>true</filtering>
+            <targetPath>${project.build.directory}/processed/rest-doc</targetPath>
+          </resource>
+        </resources>
+
         <!-- Document generation from the Swagger annotations on the REST-API. -->
         <plugins>
           <plugin>
@@ -331,7 +359,7 @@
                   <basePath>/hawkular/inventory</basePath>
                   <info>
                     <title>Hawkular Inventory</title>
-                    <version>0.1</version>
+                    <version>${project.version}</version>
                   </info>
                   <swaggerDirectory>${swaggerDirectory}</swaggerDirectory>
                 </apiSource>
@@ -359,6 +387,7 @@
             <configuration>
               <properties>
                 <baseFile>${restDocDirectory}/base.adoc</baseFile>
+                <baseSwaggerFile>${project.build.directory}/processed/rest-doc/swagger.json</baseSwaggerFile>
                 <swaggerFile>${swaggerDirectory}/swagger.json</swaggerFile>
                 <outputFile>${project.build.directory}/generated/rest-inventory.adoc</outputFile>
               </properties>
@@ -367,6 +396,66 @@
               </scripts>
             </configuration>
             <executions>
+              <execution>
+                <!-- We have the docs for the deprecated API defined using swagger annotations in code, but the new
+                     API is too much to swallow for swagger annotation, so it is documented in a standalone
+                     swagger json file: main/rest-doc/swagger.json. This groovy snippet merged the two together
+                     so that we can have nice docs for both the new API and the old API. -->
+                <id>merge-swagger-jsons</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+                <configuration>
+                  <scripts>
+                    <script><![CDATA[
+                      class Updater {
+                        static void updateBase(Object base, Object overrides) {
+                            if (base instanceof List) {
+                                if (overrides instanceof List) {
+                                    def b = (List) base
+                                    def o = (List) overrides
+                                    o.eachWithIndex { ov, i ->
+                                        if (b[i] == ov) {
+                                            updateBase(b[i], ov)
+                                        } else {
+                                            b.add(ov)
+                                        }
+                                    }
+                                }
+                            } else if (base instanceof Map) {
+                                if (overrides instanceof Map) {
+                                    def b = (Map) base
+                                    def o = (Map) overrides
+                                    o.each { k, v ->
+                                        if (b.containsKey(k)) {
+                                            updateBase(b[k], v)
+                                        } else {
+                                            b[k] = v
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                      }
+
+                      def js = new groovy.json.JsonSlurper()
+                      def bsf = new File(baseSwaggerFile)
+                      def sf = new File(swaggerFile)
+
+                      def base = js.parse(bsf)
+                      def updates = js.parse(sf)
+
+                      Updater.updateBase(base, updates)
+
+                      def json = groovy.json.JsonOutput.toJson(base)
+                      json = groovy.json.JsonOutput.prettyPrint(json)
+
+                      sf.newWriter().withWriter { w -> w << json }
+                    ]]></script>
+                  </scripts>
+                </configuration>
+              </execution>
               <execution>
                 <id>generate-api-doc</id>
                 <phase>compile</phase>

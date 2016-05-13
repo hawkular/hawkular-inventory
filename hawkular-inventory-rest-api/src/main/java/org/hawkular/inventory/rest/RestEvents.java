@@ -40,6 +40,8 @@ import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.paths.SegmentType;
+import org.hawkular.inventory.rest.deprecated.RestRelationships;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import io.swagger.annotations.Api;
@@ -60,6 +62,10 @@ public class RestEvents extends RestBase {
 
     @Inject
     private RestRelationships restRelationships;
+
+    public RestEvents() {
+        super("/events".length());
+    }
 
     @GET
     @Path("/")

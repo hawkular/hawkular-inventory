@@ -24,7 +24,9 @@ import javax.ws.rs.ext.Provider;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
+import org.hawkular.inventory.rest.cdi.TenantAware;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.Version;
@@ -40,14 +42,16 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 @Produces(MediaType.APPLICATION_JSON)
 public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
-    private ObjectMapper mapper;
-
+    private ObjectMapper deprecatedObjectMapper;
+    private ObjectMapper defaultObjectMapper;
     private EmbeddedObjectMapper embeddedRelationshipsMapper;
 
     public JacksonConfig() {
-        this.mapper = new ObjectMapper();
+        this.deprecatedObjectMapper = new ObjectMapper();
+        this.defaultObjectMapper = new ObjectMapper();
         this.embeddedRelationshipsMapper = new EmbeddedObjectMapper();
-        initializeObjectMapper(this.mapper);
+        initializeObjectMapper(this.deprecatedObjectMapper);
+        initializeObjectMapper(this.defaultObjectMapper);
         initializeObjectMapper(this.embeddedRelationshipsMapper);
 
         SimpleModule relationshipModule = new SimpleModule("RelationshipModule",
@@ -56,7 +60,11 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
         relationshipModule.addSerializer(Relationship.class, new RelationshipJacksonSerializer());
         relationshipModule.addDeserializer(Relationship.class, new RelationshipJacksonDeserializer());
 
-        this.mapper.registerModule(relationshipModule);
+        this.deprecatedObjectMapper.registerModule(relationshipModule);
+
+        this.defaultObjectMapper.addMixIn(CanonicalPath.class, PathSerializationMixin.class);
+        this.defaultObjectMapper.addMixIn(RelativePath.class, PathSerializationMixin.class);
+        this.defaultObjectMapper.addMixIn(Path.class, PathSerializationMixin.class);
     }
 
     public static void initializeObjectMapper(ObjectMapper mapper) {
@@ -67,12 +75,19 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
         InventoryJacksonConfig.configure(mapper);
         //need to reconfigure for path serialization
-        mapper.addMixIn(CanonicalPath.class, PathSerializationMixin.class);
-        mapper.addMixIn(RelativePath.class, PathSerializationMixin.class);
+        mapper.addMixIn(CanonicalPath.class, DeprecatedPathSerializationMixin.class);
+        mapper.addMixIn(RelativePath.class, DeprecatedPathSerializationMixin.class);
+        mapper.addMixIn(Path.class, DeprecatedPathSerializationMixin.class);
     }
 
     @Override
     public ObjectMapper getContext(Class<?> clazz) {
-        return clazz == EmbeddedObjectMapper.class ? embeddedRelationshipsMapper : mapper;
+        if (EmbeddedObjectMapper.class.equals(clazz)) {
+            return embeddedRelationshipsMapper;
+        } else if (TenantAware.class.equals(clazz)) {
+            return defaultObjectMapper;
+        } else {
+            return deprecatedObjectMapper;
+        }
     }
 }

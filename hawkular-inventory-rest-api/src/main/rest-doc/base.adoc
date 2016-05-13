@@ -16,3 +16,362 @@ When you send JSON data with a `POST` or `PUT` request, you _must_ add the follo
 ----
 Content-Type: application/json
 ----
+
+
+=== API Endpoints
+
+Since the version 0.17.0.Final, Hawkular inventory has a new REST API.
+
+There is a more detailed, generated, information about the endpoints further down in this document. The following
+sub-chapters give an overview of the endpoints available and examples of their usage.
+
+NOTE: The old API has been kept so that clients can gradually move to the new API, but the old API has moved from
+`/hawkular/inventory` to `/hawkular/inventory/deprecated`.
+The clients using the old API will have to be modified to use the new endpoint but are otherwise unaffected. We've
+decided to not keep the old API on its original place and actually remove in some future version (but before
+1.0.0.Final) because Inventory is not yet deemed stable and we don't want to spoil the first stable version with an API
+that is not fulfilling its purpose.
+
+==== Working With Entities
+The endpoint `/hawkular/inventory/entity` provides full read-write access to individual entities (and relationships).
+
+Single entities are addressed by their canonical paths. To learn more about the canonical paths, consult
+link:../components/inventory/index.html#basic-principles[the documentation].
+
+===== Read
+To access some entity, simply append its canonical path as is (with or without the tenant id) to the endpoint URL.
+
+I.e. to access a resource with id `myApp` which is in `prod` environment, use the following GET HTTP request:
+
+  GET /hawkular/inventory/entity/e;prod/r;myApp
+
+or
+
+  GET /hawkular/inventory/entity/t;my-tenant/e;prod/r;myApp
+
+if you want to include the tenant in the URL (i.e. use the canonical path as is). N. B. you still need to include the
+tenant in the `Hawkular-Tenant` header though.
+
+===== Create
+To create a new entity, simply use the URL of its parent (an empty path if the entity is placed directly under a tenant)
+and add a path segment with the type of the entity you are adding. As the body of the request, use the appropriate
+blueprint type.
+
+E. g. to create a new resource "myResource" under a feed "myFeed", issue:
+
+  POST /hawkular/inventory/entity/f;myFeed/resource
+
+  {
+    "id" : "myResource",
+    "resourceTypePath": "myResourceTypeUnderMyFeed"
+  }
+
+The paths in the payload of the post request are resolved against the parent under which the entity is being created.
+I.e. in the example above the value of the "resourceTypePath" key is a relative path and is resolved against
+`/t;myTenant/f;myFeed` (if `myTenant` is the current tenant) and thus is resolved as
+`/t;myTenant/f;myFeed/rt;myResourceTypeUnderMyFeed`). Of course, you can also use the full canonical paths if you wish.
+E.g. the following request would result in the same resource being created:
+
+  POST /hawkular/inventory/entity/f;myFeed/resource
+
+  {
+    "id" : "myResource",
+    "resourceTypePath": "/t;myTenant/f;myFeed/rt;myResourceTypeUnderMyFeed"
+  }
+
+Please consult the detailed documentation for the list of properties supported/required for the individual types of
+entities.
+
+===== Update
+To update an entity, send a `PUT` request to the `/entity/...` endpoint with the update object for given entity type.
+E.g.
+
+  PUT /hawkular/inventory/entity/f;My%20Feed/r;RootResource/r;child-resource
+
+  {
+    "properties": {
+      "admin's personal notes": "Seems to have stabilized in the new version..."
+    }
+  }
+
+This will update the resource with ID "child-resource" contained within a "RootResource" resource under a feed with
+ID "My Feed" (under the current tenant specified by the header) to have the above specified properties.
+
+===== Delete
+To delete a resource, send a DELETE request to its `/entity/...` endpoint. Deleting an entity will also recursively
+delete all the child entities contained within it (i.e. deleting a feed will delete all resources, metrics, resource
+types and metric types defined by it). It will NOT delete the entities otherwise associated with it. I.e. if a resource
+incorporates a metric and the resource is deleted, the metric still exists.
+
+===== Retrieving Tree Hash
+The identity hash of entities that support it is based on the Merkle tree hash of their child entities. To retrieve this
+tree hash (for example to quickly check if your local entity tree is the same), you can use:
+
+  /hawkular/inventory/entity/f;feedId/treeHash
+
+==== Traversing Many Entities
+
+Inventory data forms a graph. Using the `/hawkular/inventory/traversal` endpoint one can compose traversals of this
+graph that can search for certain entities. The traversals that can be expressed using the URL do not have the full
+strength of general purpose graph-traversal language like http://tinkerpop.incubator.apache.org/[Gremlin] but many
+things can be achieved with them.
+
+NOTE: In the future, there is a plan to support full Gremlin-based access to inventory.
+
+The URL traversal of the inventory is an extension of the format of canonical path. E.g.
+
+  /hawkular/inventory/traversal/f;feedId/r;resourceId
+
+is a valid URL traversal, because `/f;feedId/r;resourceId` is a valid (tenantless) canonical path.
+
+To be able to formulate efficient traversals, it is good to understand the inventory organization. Please consult
+the http://www.hawkular.org/docs/components/inventory/index.html#inventory-organization[documentation] for its details.
+
+Now to a more formal definition of the URL traversal (for the technically inclined, the traversal is described using an
+http://github.com/hakwular/hawkular-inventory/hawkular-inventory-rest-api/src/main/antlr4/org/hawkular/inventory/rest/HawkularInventoryGetUri.g4[Antlr4 grammar]).
+
+===== Filtering Entities
+
+Each path segment in the URL traversal expresses a filter on the "current" set of entities. The filtering is performed
+within a single URL path segment using a notation similar to HTTP matrix parameters.
+
+Given an example traversal `/hawkular/inventory/traversal/f;feedId;name=My%20Feed/r;resourceId` we'll be talking about
+a single path segment, e.g. `f;feedId;name=My%20Feed` or `r;resourceId`.
+
+Given the example `f;feedId;name=My%20Feed` you can spot two things:
+
+* multiple filters can be used, separated by a semi-colon,
+* within a single path segment everything must be percent-encoded (i.e. above we're looking for a feed with id `feedId`
+and name `My Feed`). Again this is in accordance with canonical path format which requires percent-encoding for IDs,
+too.
+
+//just splitting the above list from the below one
+Canonical path segment as filter::
+`r;resourceId` or `mt;AwesomeMetricType` are valid filters. The (one or two) letters perceding the first semicolon
+specify the type of the sought-after entities (for the full list, check
+http://hawkular.org/docs/components/inventory/index.html#basic-principles[canonical path format description]).
+
+Other Filters::
+** `type` -- only allows entities of the specified type. The type can be specified either as the segment type as in
+the canonical path segments (`type=d`) or by their full name (no spaces, first letter lower-case, camel-case afterwards,
+e.g. `type=resource`, `type=resourceType`, etc.). Multiple occurences of the `type` filter are or-ed together, i.e.
+the sought-after entities must have one of the types specified.
+** `id` -- only allows entities with the specified id. Multiple occurences of the filter are or-ed together, i.e. the
+entities must have only one of the provided ids.
+** `name` -- only allows entities with the specified name. Again, multiple occurences are or-ed together.
+** `cp` -- only allows entities with the given canonical path. Note that you have to percent-encode the value so that
+it can appear as a filter, e.g. `.../cp=%2Ft%3BtenantId%2Ff%3BfeedId/...`
+** `propertyName` -- only allows entities which have a property of specified name (regardless of its value).
+** `propertyName` & `propertyValue` -- if the URL traversal segment contains both `propertyName` and `propertyValue`
+then they are matched together to compose a filter for entities having a particular property with a particular value.
+It is possible to specify such pair more than once with the same property name, which will construct a filter for the
+entities having a property with given name having one of the provided values. To illustrate the behavior, let's consider
+the following examples:
+*** `.../propertyName=a;propertyName=b` -- filters for entities that have both properties `a` and `b` with any value,
+*** `.../propertyName=a;propertyValue=aa;propertyName=b` -- filters for entities that have both properties `a` and `b`.
+The property `a` must in addition have the value of `aa`, while property `b` is free to have any value.
+*** `.../propertyName=a;propertyValue=aa;propertyName=a;propertyValue=aaa;propertyValue=b` -- property `a` needs to have
+the value `aa` or `aaa` and there must be a property `b` with any value.
+*** it is not possible to express "an entity with a property `a` or a property `b`)
+*** unmatched `propertyValue` filters are illegal, e.g. `.../propertyName=a;propertyValue=aa;propertyValue=aaa`
+** `relatedBy` & `relatedTo` -- these two filters again come in pairs. One can filter for entities that are related to
+some other entity by some relationship. The name of the relationship is defined by the value of `relatedBy` filter and
+the canonical path (possibly tenant-less) of the entity is the value of `relatedTo`. E.g.
++
+  /hawkular/inventory/traversal/type=e;relatedTo=%2Ff%3BfeedId;relatedBy=incorporates
++
+will return an environment that incorporates a feed with id `feedId`.
+** `relatedBy` & `relatedWith` -- these are similar to `relatedBy` and `relatedTo` but the difference is in the
+understood direction of the relationship. While `relatedTo` assumes and outgoing relationship,  `relatedWith` assumes an
+incoming relationship. E.g.
++
+  /hawkular/inventory/traversal/type=f;relatedWith%2Fe%3Benv;relatedBy=incorporates
++
+will return all feeds that are incorporated by the environment with id `env`. Note that this can be equally expressed
+as:
++
+  /hawkular/inventory/traversal/e;id/rl;incorporates/type=f
++
+see the documentation about progressing the traversal on details about that type of traversal. `relatedWith` is
+nevertheless provided because sometimes such an equivalent traversal in the "progressing" form cannot be constructed.
+** `definedBy` -- a short cut for `relatedBy=defines;relatedWith=<<PATH>>`
+
+Filter without canonical path segment::
+It is valid to specify a filter without the canonical path segment. E.g.
++
+  /hawkular/inventory/traversal/type=environment/name=Guess%20Who%20I%20Am
++
+which will look for all entities of any type which have a name "Guess Who I Am" and which are contained in any
+environment.
+
+NOTE: From the above, you can see that `.../traversal/f;feedId/r;resource` is actually the same as
+`.../traversal/type=f;id=feedId/type=r;id=resource` only more concise.
+
+===== Progressing the Traversal
+In the previous chapter you could spot examples where multiple URL path segments were used, each specifying a filter.
+That is actually an implicit type of progression, but other progressions are also possible.
+
+Implicit Progression::
+If two filters specified as URL path segments, the implicit progression from the first set of entities (specified by
+the first filter) to the second set of entities is supposed to go over `contains` relationship. I.e. if we have the
+following graph:
++
+   +-----+             +-----+
+   |  A  |--contains-->|  B  |
+   +-----+             +-----+
++
+The following URL will find the entity `B`:
++
+  /hawkular/inventory/traversal/id=A/id=B
++
+
+Explicit Relationship Progression::
+It is possible to explicitly specify what relationship the progression should progress in the graph:
++
+  /hawkular/inventory/traversal/id=A/rl;defines/id=B
++
+I.e. the first filter `id=A` establishes a set of "source" entities. From those, the `rl;defines` instructs
+the progression to go over the `defines` relationship (implicitly in the outgoing direction). The targets of those
+relationships are then filtered using the `id=B` filter.
++
+The full definition of the explicit relationship progression can be expressed by the pseudo regular expression:
++
+  rl;<NAME>(;<DIRECTION>)?(;<FILTER>)*
++
+  <NAME>;;
+  Is the name of the relationship, e.g. `contains`, `defines` or other predefined relationships or indeed any
+  user-defined relationship name.
+  <DIRECTION>;;
+  is the direction in which to follow the relationship. The possible values are `in` or `out` (with `out` being the
+  default). The `in` direction means to go to the source entities of the relationships that target the current entity
+  (the naming comes from the Gremlin traversal language and the logic is that the relationship points "in" the current
+  entity).
+  <FILTER>;;
+  The relationships to follow can be filtered down using a number of relationship-specific filters. Those are:
+  +
+  *** `propertyName` & `propertyValue` -- with the same semantics as explained in the previous chapter,
+  *** `name` -- is the name of the relationship, again with same semantics as for entity filters,
+  *** `id` -- the id of the relationship,
+  *** `sourceType` -- the type of the entity from which the relationship originates. This allows for the same values
+  as the `type` filter for the entities (described above),
+  *** `targetType` -- the type of the entity to which the relationship points. Again, this can have the same values
+  as the `type` filter on entities.
+
+Progressing To Identical Entities::
+Certain entities have their http://hawkular.orgd/ocs/components/inventory/index.html#identity-hashing[identity hash]
+automatically computed. This makes it possible to find all other entities of the same type that appear identical to
+the current entity.
++
+  /hawkular/inventory/traversal/rt;Wildfly/identical/rl;defines/type=resource
++
+The above query will first find a global resource type with ID "Wildfly", will then find all its identical resource
+types (i.e. if some feed defines the same resource type, it will be included) and then from all those resource types
+will follow the `defines` relationship and will output all the target entities of that relationship that are of type
+`resource`.
++
+This type of progression doesn't accept any filters.
+
+Progressing Recursively::
+Sometimes it is useful to retrieve all child entities recursively. For example to find all metrics of all child
+resources, you can:
++
+  /hawkular/inventory/traversal/f;feed/r;rootResource/recursive;type=resource/rl;incorporates/type=metric
++
+This will traverse to the `rootResource` resource, will find recursively all its child resources and from them
+follow the `incorporates` relationship. From the entities targetted by those relationships, it will pick the ones with
+type `metric`.
++
+The full format of the recursive progression using a pseudo regular expression:
++
+  recursive(;over=<REL>)?(;<FILTER>)*
++
+  <REL>;;
+  is the name of the relationship to recursively progress over. Defaults to `contains`.
+  <FILTER>;;
+  is any entity filter as specified in the previous chapter. Note that these filters are applied to each of the entities
+  recursed over, so if an entity recursed over doesn't satisfy them, it will not be descended into.
+
+===== Retrieving Relationships
+If you know an ID of a specific relationship, you can access it directly using its canonical path using the single
+entity access endpoint:
+
+  /hawkular/inventory/entity/rl;<ID>
+
+where `<ID>` is the id of the relationship.
+
+If you want to find entities without knowing their exact ID, you can have a two of options:
+
+Relationships Of Entities::
++
+  /hawkular/inventory/traversal/f;feed/relationships;in
++
+The `relationships` ending segment can be augmented in the same way as an explicit relationship progression specified
+above. I.e. you can specify the direction of the relationships returned (defaults to `out`) and you can limit the number
+of the relationships returned using the relationship-specific filters.
+
+Relationships In Traversal::
+Using the `rl;<NAME>` progression you can "stay" at the relationships like so:
++
+  /hawkular/inventory/traversal/f;feedId/rl;myRelation/relationships
++
+This ending segment doesn't accept any filters but will return all the relationships called "myRelation" going out of
+the feed with id "feedId". If you want to obtain the incoming relationships this way, you can do:
++
+  /hawkular/inventory/traversal/f;feedId/rl;myRelation;in/relationship
+
+
+===== Retrieving Entities Of Relationship
+If you want to retrieve the "other ends" of a relationship during traversal and you don't want to restrict them or
+continue your traversal using them, you can use the following idiom:
+
+  /hawkular/inventory/traversal/f;feedId/rl;myRelation/entities
+
+This will return all the entities that relationships with name "myRelation" going out of the feed with id "feedId" are
+pointing to.
+
+==== Examples
+Access specific relationship::
++
+  /hawkular/inventory/entity/rl;<ID>
+
+Access all children of a resource::
++
+  /hawkular/inventory/traversal/e;envId/r;rootResourceId/recursive;type=resource
+
+Access direct contained child resources of a resource::
++
+  /hawkular/inventory/traversal/e;envId/r;rootResourceId/type=resource
+
+Access direct child resources of a resource::
++
+  /hawkular/inventory/traversal/e;envId;/r;rootResourceId/rl;isParentOf/entities
+
+Access metrics of a resource::
++
+  /hawkular/inventory/traversal/e;envId/r;resourceId/rl;incorporates/type=metric
+
+Access all resources identical to given one:
++
+  /hawkular/inventory/traversal/e;envId/r;resourceId/identical
+
+==== Listening To Inventory Events
+The `/hawkular/inventory/ws/events` endpoint enables you to listen to inventory events as they happen. The types of
+events you are interested in is specified using query parameters:
+
+* `tenantId` -- because websockets cannot work with http headers, you need to supply the tenant for which you want
+to receive the events as a query parameter.
+* `type` -- the type of entities you want to receive events about. This accepts the same values as the `type` filter
+in URL traversals.
+* `action` -- the type of action you are interested in - can be `created`, `updated`, `deleted`,
+`identity_hash_changed`.
+
+==== Paging
+The `/hawkular/inventory/traversal` endpoint supports paging of the results. Paging is controlled using query
+parameters:
+
+* `page` -- the number of the page to retrieve
+* `per_page` -- the number results per page
+* `sort` -- the name of the property to sort by. No sorting is applied if not specified, which is not recommended
+because sorting then is data storage specific and can differ between requests. The properties available are the keys
+in the returned JSON objects, e.g. "id", "path", "unit", "myCustomProperty"...
+* `order` -- `asc` or `desc` for ascending or descending ordering of the results.

@@ -656,6 +656,11 @@ public final class IdentityHash {
         private final String hash;
         private final Map<Path.Segment, Tree> children;
 
+        //jackson support
+        private Tree() {
+            this(null, null, null);
+        }
+
         private Tree(RelativePath path, String hash, Map<Path.Segment, Tree> children) {
             this.path = path;
             this.hash = hash;

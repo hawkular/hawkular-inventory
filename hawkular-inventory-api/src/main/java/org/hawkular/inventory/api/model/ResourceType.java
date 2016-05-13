@@ -31,6 +31,10 @@ import io.swagger.annotations.ApiModel;
  *
  * @author Lukas Krejci
  */
+@ApiModel(description = "A resource type contains metadata about resources it defines. It contains" +
+        " \"configurationSchema\" and \"connectionConfigurationSchema\" data entities that can prescribe a JSON" +
+        " schema to which the configurations of the resources should conform.",
+        parent = IdentityHashedEntity.class)
 public final class ResourceType extends IdentityHashedEntity<ResourceType.Blueprint, ResourceType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rt;

@@ -28,6 +28,10 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.4.0
  */
+@ApiModel(description = "Defines an type of operation that can be executed on resources of a resource type" +
+        " that contains this operation type. The operation type contains \"returnType\" and \"parameterTypes\"" +
+        " data entities which correspond to JSON schemas of values expected during the operation execution.",
+        parent = IdentityHashedEntity.class)
 public final class OperationType extends IdentityHashedEntity<OperationType.Blueprint, OperationType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.ot;

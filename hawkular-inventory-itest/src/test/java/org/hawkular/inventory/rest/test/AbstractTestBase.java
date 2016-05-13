@@ -17,6 +17,7 @@
 package org.hawkular.inventory.rest.test;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import org.junit.Assert;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -39,7 +41,7 @@ import com.squareup.okhttp.Response;
 
 public class AbstractTestBase {
 
-    protected static final String tenantId = "deadbeef-dead-beef-dead-beefdeadbeef";
+    protected static final String tenantId = "tentenantant";
     protected static final String testUser = "jdoe";
     protected static final String testPasword = "password";
     protected static final String basePath = "/hawkular/inventory";
@@ -119,10 +121,18 @@ public class AbstractTestBase {
         return response;
     }
 
+    @SuppressWarnings("unchecked")
     protected static <T> T getWithRetries(String path, Class<T> type, int attemptCount, long attemptDelay)
             throws Throwable {
         String json = getWithRetries(path, attemptCount, attemptDelay);
-        return mapper.readValue(json, type);
+        JsonNode root = mapper.readTree(json);
+
+        if (root.isArray()) {
+            Class<?> arrayType = Array.newInstance(type, 0).getClass();
+            return (T) Array.get(mapper.readValue(json, arrayType), 0);
+        } else {
+            return mapper.readValue(json, type);
+        }
     }
 
     protected static Response get(String path, String... query) throws Throwable {

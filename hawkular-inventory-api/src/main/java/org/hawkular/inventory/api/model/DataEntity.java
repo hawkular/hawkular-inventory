@@ -34,6 +34,8 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.3.0
  */
+@ApiModel(description = "Data entity contains JSON data and serves a certain \"role\" in the entity it is contained in",
+        parent = IdentityHashedEntity.class)
 public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.d;

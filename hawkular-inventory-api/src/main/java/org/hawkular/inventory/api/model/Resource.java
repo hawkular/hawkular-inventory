@@ -33,6 +33,8 @@ import io.swagger.annotations.ApiModel;
  * @author Heiko Rupp
  * @author Lukas Krejci
  */
+@ApiModel(description = "A resource has a type, can have configuration and connection configuration and can" +
+        " incorporate metrics.", parent = IdentityHashedEntity.class)
 public final class Resource extends IdentityHashedEntity<Resource.Blueprint, Resource.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.r;

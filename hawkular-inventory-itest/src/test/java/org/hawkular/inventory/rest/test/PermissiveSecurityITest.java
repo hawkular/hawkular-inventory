@@ -35,7 +35,7 @@ public class PermissiveSecurityITest extends AbstractTestBase {
 
         /* First make sure inventory has started through checking the test env is there
          * This also ensures that the access is granted with the tenantId set by newAuthRequest() */
-        String path = "/hawkular/inventory/environments/" + testEnvId;
+        String path = "/hawkular/inventory/entity/e;" + testEnvId;
         Environment env = getWithRetries(path, Environment.class, 10, 2000);
         assertEquals("Unable to get the '" + testEnvId + "' environment.", testEnvId, env.getId());
 

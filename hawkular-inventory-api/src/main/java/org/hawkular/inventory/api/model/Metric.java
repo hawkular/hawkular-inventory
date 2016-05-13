@@ -33,6 +33,10 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.0.1
  */
+@ApiModel(description = "A metric represents a monitored \"quality\". Its metric type specifies the unit in which" +
+        " the metric reports its values and the collection interval specifies how often the feed should be collecting" +
+        " the metric for changes in value.",
+        parent = Metric.class)
 public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.m;

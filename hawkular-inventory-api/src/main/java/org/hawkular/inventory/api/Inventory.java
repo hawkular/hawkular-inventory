@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.api.paging.Pager;
@@ -509,7 +510,7 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
     Configuration getConfiguration();
 
     default <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
-        return new Page<>(Collections.emptyIterator(), new PageContext(0, 0), 0);
+        return new Page<>(Collections.emptyIterator(), new PageContext(0, 0, Order.unspecified()), 0);
     }
 
     /**

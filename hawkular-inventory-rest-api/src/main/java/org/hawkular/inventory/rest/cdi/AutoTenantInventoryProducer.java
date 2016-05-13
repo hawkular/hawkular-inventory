@@ -29,6 +29,7 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.TransactionFrame;
@@ -36,6 +37,8 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.cdi.Official;
 import org.hawkular.inventory.paths.CanonicalPath;
 
@@ -167,6 +170,11 @@ public class AutoTenantInventoryProducer {
                     actual.delete(id);
                 }
             };
+        }
+
+        @Override
+        public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
+                return inventory.execute(query, requestedEntity, pager);
         }
     }
 }

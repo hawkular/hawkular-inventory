@@ -33,9 +33,9 @@ import javax.websocket.server.ServerEndpoint;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.impl.Utils;
 import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.inventory.rest.RestEvents;
+import org.hawkular.inventory.rest.Utils;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
 
