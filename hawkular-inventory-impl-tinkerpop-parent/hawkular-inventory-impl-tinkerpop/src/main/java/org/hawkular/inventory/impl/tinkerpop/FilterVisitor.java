@@ -170,6 +170,25 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.Names names, QueryTranslationState state) {
+        goBackFromEdges(query, state);
+
+        String prop = Constants.Property.name.name();
+
+        if (names.getNames().length == 1) {
+            query.has(prop, names.getNames()[0]);
+            return;
+        }
+
+        Pipe[] nameChecks = new Pipe[names.getNames().length];
+
+        Arrays.setAll(nameChecks,
+                i -> new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, names.getNames()[i]));
+
+        query.or(nameChecks);
+    }
+
+    @SuppressWarnings("unchecked")
     public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids, QueryTranslationState state) {
         if (ids.getIds().length == 1) {
             query.hasEid(ids.getIds()[0]);

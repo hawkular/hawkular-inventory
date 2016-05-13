@@ -535,4 +535,15 @@ abstract class FilterApplicator<T extends Filter> {
             visitor.visit(query, filter, state);
         }
     }
+
+    private static final class NamesApplicator extends FilterApplicator<With.Names> {
+
+        private NamesApplicator(With.Names names) {
+            super(names);
+        }
+
+        @Override public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+            visitor.visit(query, filter, state);
+        }
+    }
 }
