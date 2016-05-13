@@ -18,9 +18,14 @@ package org.hawkular.inventory.api;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
@@ -103,6 +108,30 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.0.1
  */
 public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.ReadWrite> {
+    static final class InventotyUtils {
+        private static final Map<String, Class<? extends Entity<?, ?>>>entityTypes;
+        static {
+            Map<String, Class<? extends Entity<?, ?>>> m = Stream.of(
+                    Tenant.class,
+                    Environment.class,
+                    Feed.class,
+                    ResourceType.class,
+                    MetricType.class,
+                    Resource.class,
+                    Metric.class,
+                    OperationType.class,
+                    MetadataPack.class)
+            .collect(Collectors.toMap(cls -> cls.getSimpleName().toLowerCase(), Function.identity()));
+            entityTypes = Collections.unmodifiableMap(m);
+        }
+    }
+
+    static Class<? extends Entity<?, ?>> getEntityType(String type) {
+        return InventotyUtils.entityTypes.get(type);
+    }
+    static Collection<Class<? extends Entity<?, ?>>> getEntityTypes() {
+        return InventotyUtils.entityTypes.values();
+    }
 
     /**
      * Initializes the inventory from the provided configuration object.

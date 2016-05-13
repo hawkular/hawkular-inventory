@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.inventory.websocket;
 
 import java.io.IOException;
@@ -37,7 +36,6 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.rest.RestEvents;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
-import org.hawkular.inventory.rest.security.SecurityIntegration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,7 +77,7 @@ public class WebsocketEvents {
             return;
         }
 
-        Class cls = SecurityIntegration.getClassFromName(type);
+        Class cls = Inventory.getEntityType(type);
         if (cls == null) {
             session.getAsyncRemote().sendText("Unknown type: " + type);
             closeSession(session);

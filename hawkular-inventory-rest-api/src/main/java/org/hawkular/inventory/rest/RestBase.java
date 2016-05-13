@@ -31,9 +31,8 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
-import org.hawkular.inventory.rest.security.RestConfiguration;
 import org.hawkular.inventory.rest.security.Security;
-import org.hawkular.inventory.rest.security.TenantIdProducer;
+import org.hawkular.inventory.rest.security.TenantId;
 import org.jboss.resteasy.annotations.GZIP;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -50,13 +49,11 @@ public class RestBase {
     @AutoTenant
     protected Inventory inventory;
 
-    // using the @AllPermissive annotation the access will be always granted
     @Inject
     protected Security security;
 
-    @Inject
-    // using the @AllPermissive annotation the tenant will be always the same
-    private TenantIdProducer tenantIdProducer;
+    @Inject @TenantId
+    private String tenantId;
 
     @Inject
     Configuration config;
@@ -93,7 +90,7 @@ public class RestBase {
 
 
     protected String getTenantId() {
-        return tenantIdProducer.getTenantId().get();
+        return tenantId;
     }
 
     protected CanonicalPath parsePath(List<PathSegment> uriPath) {

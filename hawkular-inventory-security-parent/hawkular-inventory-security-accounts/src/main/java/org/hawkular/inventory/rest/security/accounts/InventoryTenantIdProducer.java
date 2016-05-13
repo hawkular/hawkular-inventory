@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,28 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.rest.security;
+package org.hawkular.inventory.rest.security.accounts;
+
+import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
+
+import org.hawkular.accounts.api.model.Persona;
+import org.hawkular.inventory.rest.security.TenantId;
 
 /**
  * @author Lukas Krejci
  * @since 0.2.0
  */
-public class TenantId {
-    private String tenantId;
+@RequestScoped
+public class InventoryTenantIdProducer {
 
-    protected TenantId() {
+    @Inject
+    private Instance<Persona> personaInstance;
 
-    }
-
-    public TenantId(String tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String get() {
-        return tenantId;
-    }
-
-    public void set(String tenantId) {
-        this.tenantId = tenantId;
+    @Produces
+    @TenantId
+    public String getTenantId() {
+        return personaInstance.get().getIdAsUUID().toString();
     }
 }
+

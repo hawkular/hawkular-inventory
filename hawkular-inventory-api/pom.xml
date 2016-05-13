@@ -64,7 +64,6 @@
     <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
-      <version>${version.org.hawkular.commons}</version>
     </dependency>
 
     <dependency>

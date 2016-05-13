@@ -37,10 +37,10 @@ import javax.ws.rs.core.Response;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.security.SecurityIntegration;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -76,7 +76,7 @@ public class RestEvents extends RestBase {
 
         String tenantId = getTenantId();
 
-        Class cls = SecurityIntegration.getClassFromName(type);
+        Class cls = Inventory.getEntityType(type);
         if (cls == null) {
             asyncResponse.resume(Response.status(BAD_REQUEST).entity("Unknown type: " + type)
                     .build());

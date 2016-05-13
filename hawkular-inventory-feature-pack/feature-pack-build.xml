@@ -19,11 +19,11 @@
 -->
 <build xmlns="urn:wildfly:feature-pack-build:1.1">
   <dependencies>
-    <artifact name="org.hawkular.accounts:hawkular-accounts-feature-pack" />
+    <artifact name="org.hawkular.commons:hawkular-nest-feature-pack" />
   </dependencies>
 
   <config>
-    <standalone template="configuration/standalone/hawkular-accounts-template.xml" subsystems="configuration/standalone/hawkular-inventory-subsystems.xml"
+    <standalone template="configuration/standalone/hawkular-nest-template.xml" subsystems="configuration/standalone/hawkular-inventory-subsystems.xml"
                 output-file="standalone/configuration/standalone.xml" />
   </config>
 

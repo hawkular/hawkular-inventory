@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.paths.CanonicalPath;
-import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -104,7 +103,7 @@ public class RelationshipEmbeddedJacksonSerializer extends JsonSerializer<Relati
         jsonGenerator.writeStartObject();
 
         jsonGenerator.writeFieldName(FIELD_ID);
-        jsonGenerator.writeString(EntityIdUtils.getStableId(entity));
+        jsonGenerator.writeString(entity.getPath().toString());
 
         jsonGenerator.writeFieldName(FIELD_SHORT_ID);
         jsonGenerator.writeString(entity.getSegment().getElementId());

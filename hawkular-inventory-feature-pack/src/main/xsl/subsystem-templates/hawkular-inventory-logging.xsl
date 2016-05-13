@@ -18,47 +18,31 @@
 
 -->
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
-  <xsl:strip-space elements="*" />
 
   <!-- //*[local-name()='config']/*[local-name()='supplement' and @name='default'] is an xPath's 1.0
        way of saying of xPath's 2.0 prefix-less selector //*:config/*:supplement[@name='default']  -->
   <xsl:template match="//*[local-name()='config']/*[local-name()='supplement' and @name='default']/*[local-name()='replacement' and @placeholder='LOGGERS']">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
-      <xsl:element name="logger" namespace="{namespace-uri()}">
-        <xsl:attribute name="category">org.hawkular.inventory</xsl:attribute>
-        <xsl:element name="level">
-          <xsl:attribute name="name">
-            <xsl:text disable-output-escaping="yes">${hawkular.log.inventory:INFO}</xsl:text>
-          </xsl:attribute>
-        </xsl:element>
-      </xsl:element>
-      <xsl:element name="logger" namespace="{namespace-uri()}">
-        <xsl:attribute name="category">org.hawkular.inventory.rest.requests</xsl:attribute>
-        <xsl:element name="level">
-          <xsl:attribute name="name">
-            <xsl:text disable-output-escaping="yes">${hawkular.log.inventory.rest.requests:INFO}</xsl:text>
-          </xsl:attribute>
-        </xsl:element>
-      </xsl:element>
-    </xsl:copy>
-  </xsl:template>
-
-  <xsl:template
-      match="//*[local-name()='config']/*[local-name()='subsystem']/*[local-name()='console-handler']/*[local-name()='level']">
-    <xsl:copy>
-      <xsl:apply-templates select="@*|node()"/>
-      <xsl:attribute name="name">DEBUG</xsl:attribute>
+      <logger category="org.hawkular.inventory">
+        <level name="${{hawkular.log.inventory:INFO}}" />
+      </logger>
+      <logger category="org.hawkular.inventory.rest.requests">
+        <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
+      </logger>
+      <logger category="org.hawkular.inventory.rest.interceptors.AutocreateTenantRequestFilter">
+        <level name="TRACE" />
+      </logger>
     </xsl:copy>
   </xsl:template>
 
   <!-- copy everything else as-is -->
-  <xsl:template match="node()|@*">
+  <xsl:template match="node()|comment()|@*">
     <xsl:copy>
-      <xsl:apply-templates select="node()|@*" />
+      <xsl:apply-templates select="node()|comment()|@*" />
     </xsl:copy>
   </xsl:template>
 

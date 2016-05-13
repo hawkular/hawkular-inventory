@@ -44,7 +44,6 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.rest.json.ApiError;
-import org.hawkular.inventory.rest.security.EntityIdUtils;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -139,7 +138,7 @@ public class RestEnvironmentsFeeds extends RestBase {
 
         Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.SEGMENT_TYPE);
 
-        if (EntityIdUtils.isTenantEscapeAttempt(env, fp)) {
+        if (RequestUtil.isTenantEscapeAttempt(env, fp)) {
             Response.status(FORBIDDEN).build();
         }
 
@@ -176,7 +175,7 @@ public class RestEnvironmentsFeeds extends RestBase {
 
         Path fp = Path.fromPartiallyUntypedString(feedPath, tenant, env, Feed.SEGMENT_TYPE);
 
-        if (EntityIdUtils.isTenantEscapeAttempt(env, fp)) {
+        if (RequestUtil.isTenantEscapeAttempt(env, fp)) {
             Response.status(FORBIDDEN).build();
         }
 
