@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.model;
 
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.paths.SegmentType;
 
 /**
@@ -26,11 +27,11 @@ public interface Blueprint {
 
     @SuppressWarnings("unchecked")
     static <B extends Blueprint, E extends AbstractElement<B, ?>> Class<? extends E> getEntityTypeOf(B blueprint) {
-        return (Class<? extends E>) (Class) blueprint.getClass().getEnclosingClass();
+        return (Class<? extends E>) Inventory.types().byBlueprint(blueprint.getClass()).getElementType();
     }
 
     static <B extends Blueprint> SegmentType getSegmentTypeOf(B blueprint) {
-        return SegmentType.fromElementType(getEntityTypeOf(blueprint));
+        return Inventory.types().byBlueprint(blueprint.getClass()).getSegmentType();
     }
 
     <R, P> R accept(ElementBlueprintVisitor<R, P> visitor, P parameter);

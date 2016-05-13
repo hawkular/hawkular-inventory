@@ -41,7 +41,7 @@ import org.hawkular.inventory.paths.RelativePath;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public class RequestUtil {
+public final class RequestUtil {
 
     private RequestUtil() {
     }
@@ -76,7 +76,7 @@ public class RequestUtil {
         return new Pager(page, perPage, ordering);
     }
 
-    static CanonicalPath toCanonicalPath(String restPath) {
+    public static CanonicalPath toCanonicalPath(String restPath) {
         String[] chunks = restPath.split("(?<=[^\\\\])/");
         CanonicalPath.Extender path = CanonicalPath.empty();
         if (chunks.length == 2) {
@@ -115,7 +115,7 @@ public class RequestUtil {
         return path.get();
     }
 
-    static boolean isTenantEscapeAttempt(CanonicalPath origin, Path extension) {
+    public static boolean isTenantEscapeAttempt(CanonicalPath origin, Path extension) {
         if (extension instanceof CanonicalPath) {
             return !((CanonicalPath) extension).ids().getTenantId().equals(origin.ids().getTenantId());
         } else {

@@ -76,7 +76,10 @@ public class RestEvents extends RestBase {
 
         String tenantId = getTenantId();
 
-        Class cls = Inventory.getEntityType(type);
+        SegmentType st = Utils.getSegmentTypeFromSimpleName(type);
+
+        Class cls = Inventory.types().bySegment(st).getElementType();
+
         if (cls == null) {
             asyncResponse.resume(Response.status(BAD_REQUEST).entity("Unknown type: " + type)
                     .build());
