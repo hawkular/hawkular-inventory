@@ -19,7 +19,7 @@ package org.hawkular.inventory.api;
 import java.util.Map;
 
 import org.hawkular.inventory.api.model.Relationship;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * Generic methods to write access to relationships.
@@ -53,13 +53,13 @@ interface WriteRelationshipInterface<Single> {
      * @throws EntityNotFoundException if the current position in the inventory traversal doesn't evaluate to an
      * existing entity or if the provided other end of the relationship doesn't exist.
      */
-    Single linkWith(String name, CanonicalPath targetOrSource, Map<String, Object> properties)
+    Single linkWith(String name, Path targetOrSource, Map<String, Object> properties)
             throws IllegalArgumentException;
 
     /**
-     * @see #linkWith(String, CanonicalPath, Map)
+     * @see #linkWith(String, Path, Map)
      */
-    default Single linkWith(Relationships.WellKnown name, CanonicalPath targetOrSource, Map<String, Object> properties)
+    default Single linkWith(Relationships.WellKnown name, Path targetOrSource, Map<String, Object> properties)
             throws IllegalArgumentException {
         return linkWith(name.name(), targetOrSource, properties);
     }

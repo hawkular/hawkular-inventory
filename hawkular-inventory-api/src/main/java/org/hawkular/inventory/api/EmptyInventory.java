@@ -786,7 +786,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public Relationships.Single linkWith(String name, CanonicalPath targetOrSource, Map<String, Object> properties)
+        public Relationships.Single linkWith(String name, Path targetOrSource, Map<String, Object> properties)
                 throws IllegalArgumentException {
             throw new UnsupportedOperationException();
         }
