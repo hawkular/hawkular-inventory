@@ -33,9 +33,6 @@
       <logger category="org.hawkular.inventory.rest.requests">
         <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
       </logger>
-      <logger category="org.hawkular.inventory.rest.interceptors.AutocreateTenantRequestFilter">
-        <level name="TRACE" />
-      </logger>
     </xsl:copy>
   </xsl:template>
 
