@@ -53,6 +53,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>provided</scope> <!-- there is a WildFly module -->
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-cdi</artifactId>
       <version>${project.version}</version>
@@ -67,25 +73,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-handler</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-transport-native-epoll</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <scope>provided</scope> <!-- there is a WildFly module -->
     </dependency>
 
     <dependency>
@@ -166,6 +154,10 @@
         <exclusion>
           <groupId>commons-beanutils</groupId>
           <artifactId>commons-beanutils-core</artifactId><!-- provided by commons-beanutils since 1.9.x -->
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jettison</groupId>
+          <artifactId>jettison</artifactId> <!-- there is a WF module -->
         </exclusion>
       </exclusions>
     </dependency>

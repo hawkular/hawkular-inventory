@@ -84,6 +84,7 @@
     <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -213,7 +214,7 @@
                     <fileset>
                       <directory>${project.build.directory}/${project.build.finalName}/modules/system/layers/hawkular/org/hawkular/nest/main/deployments</directory>
                       <includes>
-                        <include>command-gateway-war*.war</include>
+                        <include>hawkular-command-gateway-war*.war</include>
                       </includes>
                     </fileset>
                   </filesets>
