@@ -63,7 +63,6 @@
     <version.com.github.kongchen.swagger-maven-plugin>3.1.1</version.com.github.kongchen.swagger-maven-plugin>
     <version.com.github.fge>2.2.6</version.com.github.fge>
     <version.com.thinkaurelius.titan>0.5.4-jboss-1</version.com.thinkaurelius.titan>
-    <version.org.apache.httpcomponents>4.3.1</version.org.apache.httpcomponents>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
 
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/beanutils/main/ -->
@@ -78,12 +77,16 @@
     <version.commons-logging>1.1.1</version.commons-logging>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/pool/main/ -->
     <version.commons-pool>1.6</version.commons-pool>
+    <!-- keep in sync with the WF module modules/system/layers/base/io/netty/main/ -->
+    <version.io.netty>4.0.32.Final</version.io.netty>
     <version.joda-time>2.9.1</version.joda-time>
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
     <version.javaee.spec>7.0</version.javaee.spec>
     <!-- keep in sync with the WF module modules/system/layers/base/com/h2database/h2/main -->
     <version.com.h2database>1.3.173</version.com.h2database>
+    <!-- keep in sync with the WF module modules/system/layers/base/org/codehaus/jettison/main/ -->
+    <version.org.codehaus.jettison>1.3.3</version.org.codehaus.jettison>
 
     <version.org.revapi.revapi-maven-plugin>0.4.1</version.org.revapi.revapi-maven-plugin>
     <version.org.revapi.revapi-java>0.6.0</version.org.revapi.revapi-java>
@@ -159,6 +162,13 @@
         <version>${version.commons-pool}</version>
       </dependency>
 
+      <!-- netty managed here so that this version is preferred over the ones pulled by our dependencies -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>${version.io.netty}</version>
+      </dependency>
+
       <dependency>
         <groupId>javax.mail</groupId>
         <artifactId>javax.mail-api</artifactId>
@@ -171,10 +181,19 @@
         <version>${version.joda-time}</version>
       </dependency>
 
+      <!-- jettison managed here so that this version is preferred over the ones pulled by our dependencies -->
+      <dependency>
+        <groupId>org.codehaus.jettison</groupId>
+        <artifactId>jettison</artifactId>
+        <version>${version.org.codehaus.jettison}</version>
+        <!-- There is a WildFly module - prefferably pull as <scope>provided</scope> -->
+      </dependency>
+
       <dependency>
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-inventory-paths</artifactId>
         <version>${version.org.hawkular.commons}</version>
+        <!-- There is a WildFly module - prefferably pull as <scope>provided</scope> -->
       </dependency>
 
       <dependency>

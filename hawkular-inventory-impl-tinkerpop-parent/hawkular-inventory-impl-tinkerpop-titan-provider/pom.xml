@@ -70,6 +70,7 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -105,7 +106,6 @@
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-commons-embedded-cassandra-service</artifactId>
       <version>${version.org.hawkular.commons}</version>
-      <type>ejb</type>
       <scope>test</scope>
     </dependency>
 

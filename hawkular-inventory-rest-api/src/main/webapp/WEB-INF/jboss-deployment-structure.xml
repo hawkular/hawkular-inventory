@@ -39,8 +39,12 @@
       <module name="org.apache.commons.beanutils"/>
       <module name="org.apache.commons.io"/>
       <module name="org.apache.commons.pool"/>
+      <module name="org.apache.httpcomponents"/>
+      <module name="org.codehaus.jettison"/>
+      <module name="org.dom4j"/>
       <module name="org.hawkular.bus" />
       <module name="org.hawkular.commons.cassandra-driver" />
+      <module name="org.hawkular.commons.hawkular-inventory-paths"/>
       <module name="javaee.api" />
       <module name="org.wildfly.extension.messaging-activemq" />
     </dependencies>

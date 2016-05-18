@@ -67,9 +67,21 @@
     </dependency>
 
     <dependency>
+      <groupId>javax.enterprise</groupId>
+      <artifactId>cdi-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>javax.mail</groupId>
       <artifactId>javax.mail-api</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>provided</scope> <!-- there is a WildFly module -->
     </dependency>
 
     <dependency>
@@ -109,18 +121,10 @@
       <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
-    </dependency>
-
-    <!-- TODO HACK ALERT: We're coupling pinger here... -->
-    <!-- This is being used by Pinger which also depends on us. Going forward should work shouldn't it? ;) -->
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>${version.org.apache.httpcomponents}</version>
       <exclusions>
         <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
+          <groupId>org.codehaus.jettison</groupId>
+          <artifactId>jettison</artifactId>  <!-- there is a WildFly module -->
         </exclusion>
       </exclusions>
     </dependency>
@@ -129,6 +133,7 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -157,28 +162,48 @@
       <scope>runtime</scope>
       <exclusions>
         <exclusion>
-          <artifactId>commons-codec</artifactId>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId> <!-- provided by commons-beanutils since 1.9.x and there is commons-beanutils WildFly module -->
+        </exclusion>
+        <exclusion>
           <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId> <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
-          <groupId>org.slf4j</groupId>
+          <groupId>org.apache.httpcomponents</groupId> <!-- there is WildFly module org.apache.httpcomponents -->
+          <artifactId>*</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>slf4j-log4j12</artifactId>
-          <groupId>org.slf4j</groupId>
+          <groupId>commons-httpclient</groupId> <!-- WildFly module org.apache.httpcomponents will hopefully serve the purpose -->
+          <artifactId>*</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>commons-lang</artifactId>
           <groupId>commons-lang</groupId>
+          <artifactId>commons-lang</artifactId> <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
-          <artifactId>log4j</artifactId>
           <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>commons-beanutils-core</artifactId>
-          <groupId>commons-beanutils</groupId><!-- provided by commons-beanutils since 1.9.x -->
+          <groupId>dom4j</groupId>
+          <artifactId>dom4j</artifactId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <groupId>antlr</groupId>
+          <artifactId>antlr</artifactId> <!-- a newer ANTLR is pulled by cassandra-all -->
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <artifactId>jsr305</artifactId>
+          <groupId>com.google.code.findbugs</groupId>  <!-- a newer version is already there in inventory-rest-api -->
         </exclusion>
       </exclusions>
     </dependency>
@@ -190,38 +215,48 @@
       <scope>runtime</scope>
       <exclusions>
         <exclusion>
-          <!-- We get a newer version from Cassandra -->
-          <groupId>org.jboss.netty</groupId>
-          <artifactId>netty</artifactId>
+          <groupId>com.carrotsearch</groupId>
+          <artifactId>junit-benchmarks</artifactId> <!-- hopefully not needed at runtime -->
         </exclusion>
         <exclusion>
-          <!-- we use our own -->
-          <groupId>org.apache.cassandra</groupId>
-          <artifactId>cassandra-all</artifactId>
+          <groupId>com.carrotsearch.randomizedtesting</groupId>
+          <artifactId>randomizedtesting-runner</artifactId> <!-- hopefully not needed at runtime -->
         </exclusion>
         <exclusion>
-          <!-- we use our own -->
+          <groupId>com.codahale.metrics</groupId>
+          <artifactId>metrics-core</artifactId> <!-- pulled from cassandra-driver WF module -->
+        </exclusion>
+        <exclusion>
           <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- TODO HACK ALERT: We're coupling pinger here... -->
-          <!-- We need to depend on another version that is also used in Pinger. This should disappear once pinger
-          becomes a proper remote client of inventory. -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
+          <artifactId>guava</artifactId>  <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
           <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>slf4j-api</artifactId>
-          <groupId>org.slf4j</groupId>
+          <groupId>commons-codec</groupId> <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
           <artifactId>commons-lang</artifactId>
-          <groupId>commons-lang</groupId>
+          <groupId>commons-lang</groupId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty</artifactId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.httpcomponents</groupId>  <!-- there is a WildFly module -->
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.cassandra</groupId>
+          <artifactId>cassandra-all</artifactId> <!-- we use our own -->
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jettison</groupId>
+          <artifactId>jettison</artifactId> <!-- there is a WildFly module -->
+        </exclusion>
+        <exclusion>
+          <artifactId>slf4j-api</artifactId>
+          <groupId>org.slf4j</groupId> <!-- there is a WildFly module -->
         </exclusion>
       </exclusions>
     </dependency>
@@ -229,19 +264,19 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
@@ -253,19 +288,19 @@
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
-      <scope>provided</scope><!-- there is a WF module -->
+      <scope>provided</scope> <!-- there is a WF module -->
     </dependency>
 
     <dependency>
@@ -273,34 +308,24 @@
       <artifactId>cassandra-all</artifactId>
       <exclusions>
         <exclusion>
-          <!-- we use our own -->
           <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-
-        <exclusion>
-          <groupId>org.antlr</groupId>
-          <artifactId>antlr</artifactId>
+          <artifactId>guava</artifactId> <!-- we use our own -->
         </exclusion>
         <exclusion>
-          <groupId>org.antlr</groupId>
-          <artifactId>antlr-runtime</artifactId>
+          <groupId>org.apache.httpcomponents</groupId> <!-- there is a WildFly module -->
+          <artifactId>*</artifactId>
         </exclusion>
-
-        <!-- loaded via WF module -->
         <exclusion>
           <artifactId>commons-cli</artifactId>
-          <groupId>commons-cli</groupId>
+          <groupId>commons-cli</groupId> <!-- there is a WildFly module -->
         </exclusion>
-
-        <!-- loaded via WF module -->
         <exclusion>
           <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
+          <groupId>commons-codec</groupId> <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
           <artifactId>slf4j-api</artifactId>
-          <groupId>org.slf4j</groupId>
+          <groupId>org.slf4j</groupId> <!-- there is a WildFly module -->
         </exclusion>
         <exclusion>
           <artifactId>log4j-over-slf4j</artifactId>
@@ -321,6 +346,18 @@
         <exclusion>
           <artifactId>logback-classic</artifactId>
           <groupId>ch.qos.logback</groupId>
+        </exclusion>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId> <!-- hopefully not needed at runtime -->
+        </exclusion>
+        <exclusion>
+          <artifactId>metrics-core</artifactId>
+          <groupId>io.dropwizard.metrics</groupId> <!-- pulled from cassandra-driver WF module -->
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId> <!-- there is a WildFly module -->
         </exclusion>
       </exclusions>
     </dependency>
