@@ -7,26 +7,20 @@ jdk:
 sudo: required
 dist: trusty
 
-# unsupported by dist: trusty
-#cache:
-#  directories:
-#  - $HOME/.m2
+# manage the caches here https://travis-ci.org/hawkular/hawkular-inventory/caches
+cache:
+  directories:
+  - $HOME/.m2/repository
+  - $HOME/mvn-home
 
 install:
-- mvn -s .travis.maven.settings.xml -version -B
-- which mvn
-# - curl https://www.apache.org/dyn/closer.cgi?asjson=1 # returned http://mirrors.ibiblio.org/apache as preferred mirror
-- export APACHE_MIRROR=http://mirrors.ibiblio.org/apache
-- export MVN_VERSION=3.3.9
-- pushd ~/
-- wget $APACHE_MIRROR/maven/maven-3/$MVN_VERSION/binaries/apache-maven-$MVN_VERSION-bin.tar.gz
-- tar xfz apache-maven-$MVN_VERSION-bin.tar.gz
-- chmod +x apache-maven-$MVN_VERSION/bin/mvn
-- export M2_HOME=$PWD/apache-maven-$MVN_VERSION
-- export PATH=$PWD/apache-maven-$MVN_VERSION/bin:${PATH}
-- popd
-- which mvn
-- mvn -s .travis.maven.settings.xml -version -B
+# install maven 3.3.9 if it is not in cache already
+- bash .travis.install.maven.sh "3.3.9" "${HOME}/mvn-home"
+- export M2_HOME=${HOME}/mvn-home
+- export PATH=${HOME}/mvn-home/bin:${PATH}
+
+# check visually if we really have the right maven version installed
+- mvn -version
 # unshallow is needed by license-maven-plugin
 - git fetch origin --unshallow
 
@@ -44,6 +38,20 @@ env:
   - secure: FlQ6i3L1vf5Gf73FMmEY8a0ZJpuQVzTwLjYlABbi5iJd+VQdlke3+5nEhEFYHKiiK6duye6GIxtti65s/VHS6VHJb62p/Z1Fj6/FsKgoFbVmzYenGDXEfGQYHnvCUm4OY/kcHIgeI5RpG2n0BXHRK9PSYfGD4G50i7ev7d0BnKw=
   # for pushing the swagger adoc documentation to the website repository
   - secure: fRgTtGRZRh1DhRIXlOnuWV6cROHhVvtNL3DzVay1zDnX0y0SVH3Aau/kbsytIkG4DaKvRi1XnI4sRC4HtUReXCMQjvwO9sdmj+9F3y04vbhH8qNR8IUBFADKjLCjjnq7Qo8PBbuk6b8Sj1bFpYSgd2sJXcvvA9cP/xlTMu6XZSM=
+
+before_cache:
+# Clean the cached directories once their size exceeds the space left on the partition.
+# This is important because Travis zips the chached directories to a temporary file on the same partition.
+# Note that while we consider the summed size of all cached dirs, we remove only those ones that tend to grow over time
+- CACHED_DIRECTORIES=("$HOME/.m2/repository" "$HOME/mvn-home")
+- availBytes=$(df -P . | tail -1 | awk '{print $4}')
+- cachedBytes=$(du -cs "${CACHED_DIRECTORIES[@]}" | tail -1 | awk '{print $1}')
+- echo "Checking if the size of directories to cache ${cachedBytes} Bytes exceeds the free space ${availBytes} Bytes left on the current partition"
+- if [ "${cachedBytes}" -gt "${availBytes}" ] ; then
+    echo "Cleaning the cached dirs (${cachedBytes} Bytes) because their size exceeds the free space (${availBytes} Bytes) left on the current partition"
+    rm -Rf "$HOME/.m2"
+  fi
+
 after_success:
 - rm ~/.mavenrc && export MAVEN_OPTS=""
 - PROJECT_VERSION=`mvn --batch-mode org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
