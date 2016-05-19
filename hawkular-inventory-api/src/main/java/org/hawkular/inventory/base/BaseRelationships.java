@@ -149,7 +149,7 @@ public final class BaseRelationships {
                     tx.getPreCommit().addNotifications(relationshipObject2);
                 }
 
-                return new Single<>(context.replacePath(Query.to(relationshipObject.getEntity().getPath())));
+                return new Single<>(context.toCreatedEntity(relationshipObject.getEntity(), true));
             });
         }
 
