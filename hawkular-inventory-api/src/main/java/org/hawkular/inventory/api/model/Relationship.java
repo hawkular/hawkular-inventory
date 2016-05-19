@@ -143,10 +143,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
 
         //Jackson support
         private Blueprint() {
-            super(null);
-            this.name = null;
-            this.otherEnd = null;
-            this.direction = null;
+            this(null, null, null, null);
         }
 
         public Blueprint(Relationships.Direction direction, String name, CanonicalPath otherEnd,
