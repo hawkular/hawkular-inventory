@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.base.spi;
+package org.hawkular.inventory.api.filters;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,9 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.hawkular.inventory.api.filters.Filter;
-
 /**
+ * A filter that can express conditions for retrieving elements recursively.
+ *
  * @author Lukas Krejci
  * @since 0.9.0
  */

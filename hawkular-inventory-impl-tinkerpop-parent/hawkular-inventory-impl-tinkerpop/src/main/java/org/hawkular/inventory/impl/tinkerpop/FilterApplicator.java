@@ -34,12 +34,12 @@ import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Incorporated;
 import org.hawkular.inventory.api.filters.Marker;
+import org.hawkular.inventory.api.filters.RecurseFilter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.base.spi.NoopFilter;
-import org.hawkular.inventory.base.spi.RecurseFilter;
 
 import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.filter.IntervalFilterPipe;
