@@ -130,8 +130,9 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             return value == null ? UNDEFINED : value;
         }
 
+        @SuppressWarnings("unchecked")
         public DR getRole() {
-            return role;
+            return (role == null) ? (DR) DataRole.valueOf(getId()) : role;
         }
 
         @Override
@@ -152,6 +153,11 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             public Builder<R> withRole(R role) {
                 this.role = role;
                 return this;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override public Builder<R> withId(String id) {
+                return withRole((R) DataRole.valueOf(id));
             }
 
             @Override

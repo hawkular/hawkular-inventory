@@ -248,7 +248,7 @@ public final class BaseResources {
         @Override
         public Data.ReadWrite<DataRole.Resource> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
-                    BaseData.DataModificationChecks.<BE>none());
+                    DataRole.Resource.class, BaseData.DataModificationChecks.<BE>none());
         }
     }
 
