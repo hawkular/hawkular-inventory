@@ -33,6 +33,7 @@ import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
 import org.apache.commons.configuration.MapConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
@@ -43,11 +44,7 @@ import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.hawkular.inventory.impl.tinkerpop.sql.impl.InsertException;
 import org.hawkular.inventory.impl.tinkerpop.sql.impl.SqlGraph;
 import org.hawkular.inventory.paths.CanonicalPath;
-
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 /**
  * This is a "toy" provider for Hawkular that uses the primitive Blueprints implementation for an RDBMS. It only
@@ -74,7 +71,7 @@ public class SqlGraphProvider implements GraphProvider {
         return true;
     }
 
-    @Override public SqlGraph instantiateGraph(Configuration configuration) {
+    @Override public SqlgGraph instantiateGraph(Configuration configuration) {
         try {
             Map<String, String> conf = configuration.prefixedWith("sql.")
                     .getImplementationConfiguration(sysPropsAsProperties());
@@ -82,19 +79,19 @@ public class SqlGraphProvider implements GraphProvider {
             String jndi = conf.get("sql.datasource.jndi");
             if (jndi == null || jndi.isEmpty()) {
                 Log.LOG.iUsingJdbcUrl(conf.get("sql.datasource.url"));
-                return new SqlGraph(new MapConfiguration(conf));
+                return SqlgGraph.open(new MapConfiguration(conf));
             } else {
                 InitialContext ctx = new InitialContext();
                 DataSource ds = (DataSource) ctx.lookup(jndi);
                 Log.LOG.iUsingDatasource(jndi);
-                return new SqlGraph(ds, new MapConfiguration(conf));
+                return new SqlgGraph(ds, new MapConfiguration(conf));
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not instantiate the SQL graph.", e);
         }
     }
 
-    @Override public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
+    @Override public void ensureIndices(Graph graph, IndexSpec... indexSpecs) {
         try {
             SqlGraph sqlg = (SqlGraph) graph;
 

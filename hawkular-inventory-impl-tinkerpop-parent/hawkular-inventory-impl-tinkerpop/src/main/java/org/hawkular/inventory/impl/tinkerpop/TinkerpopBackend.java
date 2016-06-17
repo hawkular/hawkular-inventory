@@ -16,8 +16,10 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.__;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -40,6 +42,7 @@ import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,10 +50,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Scope;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
@@ -81,7 +96,6 @@ import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
-import org.hawkular.inventory.api.paging.SizeAwarePage;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -90,17 +104,6 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
-
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
-import com.tinkerpop.pipes.PipeFunction;
 
 /**
  * @author Lukas Krejci
@@ -131,35 +134,33 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Iterator<? extends Element> it;
         if (SegmentType.rl.equals(path.getSegment().getElementType())) {
             //__eid is globally unique for relationships
-            GraphQuery query = context.getGraph().query().has(__eid.name(), path.getSegment().getElementId());
-            it = query.edges().iterator();
+            it = context.getGraph().traversal().E().has(__eid.name(), path.getSegment().getElementId());
         } else {
-            GraphQuery query = context.getGraph().query().has(__cp.name(), path.toString());
-            it = query.vertices().iterator();
+            it = context.getGraph().traversal().V().has(__cp.name(), path.toString());
         }
+
         if (!it.hasNext()) {
             throw new ElementNotFoundException();
         }
         return it.next();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Page<Element> traverse(Element startingPoint, Query query, Pager pager) {
-        HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
-
-        q.counter("total").page(pager);
+        GraphTraversal<?, ? extends Element> q = translate(startingPoint, query);
 
         Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
 
-        return new SizeAwarePage<>(q.cast(Element.class).iterator(), pager, () -> q.getCount("total"));
+        return page(q, pager, Function.identity());
     }
 
     @Override public Element traverseToSingle(Element startingPoint, Query query) {
-        HawkularPipeline<?, ? extends Element> q = translate(startingPoint, query);
+        GraphTraversal<?, ? extends Element> q = translate(startingPoint, query);
         Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
         return drainAfter(q, () -> {
             if (q.hasNext()) {
-                return q.cast(Element.class).next();
+                return q.next();
             }
             return null;
         });
@@ -174,29 +175,27 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return traverseToSingle(null, query);
     }
 
-    private HawkularPipeline<?, ? extends Element> translate(Element startingPoint, Query query) {
-        HawkularPipeline<?, ? extends Element> q;
-
-        Object start = startingPoint == null ? context.getGraph() : startingPoint;
-
-        q = new HawkularPipeline<>(start);
+    private GraphTraversal<?, ? extends Element> translate(Element startingPoint, Query query) {
+        GraphTraversal<?, ? extends Element> q;
 
         if (startingPoint == null) {
             Filter first = query.getFragments()[0].getFilter();
 
             if (first instanceof RelationFilter) {
-                q = q.E();
+                q = context.getGraph().traversal().E();
             } else if (first instanceof With.CanonicalPaths) {
                 //XXX this does NOT handle the situation where we mix relationships and entities in one filter
                 SegmentType elementType = ((With.CanonicalPaths) first).getPaths()[0].getSegment().getElementType();
                 if (SegmentType.rl == elementType) {
-                    q = q.E();
+                    q = context.getGraph().traversal().E();
                 } else {
-                    q = q.V();
+                    q = context.getGraph().traversal().V();
                 }
             } else {
-                q = q.V();
+                q = context.getGraph().traversal().V();
             }
+        } else {
+            q = __(startingPoint);
         }
 
         FilterApplicator.applyAll(query, q);
@@ -208,14 +207,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public <T> Page<T> query(Query query, Pager pager,
             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
-        HawkularPipeline<?, ? extends Element> q = translate(null, query);
+        GraphTraversal<?, ? extends Element> q = translate(null, query);
 
         //XXX this probably would be more efficient as a proper pipe
-        q.filter(e -> !isBackendInternal(e));
+        q.filter(e -> !isBackendInternal(e.get()));
 
-        HawkularPipeline<?, T> q2;
         if (filter == null) {
-            q2 = q.counter("total").page(pager).transform(conversion::apply);
+            return page(q, pager, conversion);
         } else {
             //the ResultFilter interface requires an entity to check its applicability and can rule out some of the
             //entities from the result set, which affects the total count. We therefore need to convert to entity first
@@ -224,25 +222,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             //to have stable ids, it needs to have the "canonical" path to the entity, which the inventory traversal
             //path might not be. The transformation of a non-canonical to canonical path is essentially identical
             //operation to converting the vertex to the entity.
-            q2 = q.transform(conversion::apply).filter(filter::apply).counter("total")
-                    .page(pager, (e, p) -> {
-                        if (!(e instanceof AbstractElement)) {
-                            return null;
-                        }
-
-                        AbstractElement<?, ?> el = (AbstractElement<?, ?>) e;
-
-                        if (AbstractElement.ID_PROPERTY.equals(p)) {
-                            return el.getId();
-                        } else {
-                            return (Comparable) el.getProperties().get(p);
-                        }
-                    });
+            return page(
+                    q.map(t -> conversion.apply(t.get())).filter(t -> filter.apply(t.get())),
+                    pager, Function.identity());
         }
-
-        Log.LOG.debugf("Query execution:\nquery:\n%s\n\npipeline:\n%s", query, q2);
-
-        return new SizeAwarePage<>(q2.iterator(), pager, () -> q.getCount("total"));
     }
 
     @Override
@@ -260,7 +243,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         try {
             Element startingElement = find(startingPoint);
             if (!(startingElement instanceof Vertex)) {
-                return Collections.<T>emptyList().iterator();
+                return Collections.emptyIterator();
             }
 
             return getTransitiveClosureOverImpl(startingElement, direction, relationshipNames).stream()
@@ -271,28 +254,32 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private List<Element> getTransitiveClosureOverImpl(Element startingPoint, Relationships.Direction direction,
                                                        String... relationshipNames) {
         if (!(startingPoint instanceof Vertex)) {
-            return Collections.<Element>emptyList();
+            return emptyList();
         } else {
-            HawkularPipeline<?, Element> ret = new HawkularPipeline<Element, Element>(startingPoint).as("start");
+            GraphTraversal<?, ? extends Element> loop;
 
             switch (direction) {
                 case incoming:
-                    ret.in(relationshipNames);
+                    loop = __.in(relationshipNames);
                     break;
                 case outgoing:
-                    ret.out(relationshipNames);
+                    loop = __.out(relationshipNames);
                     break;
                 case both:
-                    ret.both(relationshipNames);
+                    loop = __.both(relationshipNames);
                     break;
+                default:
+                    throw new IllegalStateException("Unhandled traversal direction: " + direction);
             }
 
             //toList() is important as it ensures eager evaluation of the closure - the callers might modify the
             //conditions for the evaluation during the iteration which would skew the results.
-            return ret.loop("start", (x) -> true, (x) -> true).toList();
+            return (List<Element>) (List) __((Vertex) startingPoint).repeat((Traversal<?, Vertex>) loop).emit()
+                    .toList();
         }
     }
 
@@ -302,7 +289,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        Iterator<Edge> it = ((Vertex) entity).getEdges(toNative(direction), relationshipName).iterator();
+        Iterator<Edge> it = ((Vertex) entity).edges(toNative(direction), relationshipName);
 
         return closeAfter(it, it::hasNext);
     }
@@ -313,7 +300,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        Iterator<Vertex> targets = ((Vertex) source).getVertices(Direction.OUT, relationshipName).iterator();
+        Iterator<Vertex> targets = ((Vertex) source).vertices(Direction.OUT, relationshipName);
 
         return closeAfter(targets, () -> {
             while (targets.hasNext()) {
@@ -341,8 +328,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Vertex t = (Vertex) target;
 
 
-        Iterator<Edge> it = new HawkularPipeline<>(source).outE(relationshipName)
-                .has(__targetCp.name(), t.getProperty(__cp.name())).cast(Edge.class);
+        Iterator<Edge> it = __(source).outE(relationshipName).has(__targetCp.name(), t.property(__cp.name()).value());
 
         try {
             if (!it.hasNext()) {
@@ -363,7 +349,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Vertex v = (Vertex) entity;
 
-        HawkularPipeline<?, Element> q = new HawkularPipeline<>(v);
+        GraphTraversal<?, Element> q = __(v);
 
         switch (direction) {
             case incoming:
@@ -379,28 +365,29 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 throw new AssertionError("Invalid relationship direction specified: " + direction);
         }
 
+        Spliterator<Element> sp = Spliterators.spliteratorUnknownSize(q, Spliterator.NONNULL & Spliterator.IMMUTABLE);
         return drainAfter(q,
-                () -> StreamSupport.stream(q.spliterator(), false).filter(e -> !isBackendInternal(e)).collect(toSet()));
+                () -> StreamSupport.stream(sp, false).filter(e -> !isBackendInternal(e)).collect(toSet()));
     }
 
     @Override
     public String extractRelationshipName(Element relationship) {
-        return ((Edge) relationship).getLabel();
+        return relationship.label();
     }
 
     @Override
     public Element getRelationshipSource(Element relationship) {
-        return ((Edge) relationship).getVertex(Direction.OUT);
+        return ((Edge) relationship).outVertex();
     }
 
     @Override
     public Element getRelationshipTarget(Element relationship) {
-        return ((Edge) relationship).getVertex(Direction.IN);
+        return ((Edge) relationship).inVertex();
     }
 
     @Override
     public String extractId(Element entityRepresentation) {
-        return entityRepresentation.getProperty(__eid.name());
+        return (String) entityRepresentation.property(__eid.name()).orElse(null);
     }
 
     @Override
@@ -414,7 +401,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public CanonicalPath extractCanonicalPath(Element entityRepresentation) {
-        String cp = entityRepresentation.getProperty(__cp.name());
+        String cp = (String) entityRepresentation.property(__cp.name()).orElse(null);
         if (cp == null) {
             throw new IllegalArgumentException("Element is not representable using a canonical path. Element type is "
                     + extractType(entityRepresentation).getSimpleName() + ", element id is '"
@@ -425,7 +412,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public String extractIdentityHash(Element entityRepresentation) {
-        return entityRepresentation.getProperty(Constants.Property.__identityHash.name());
+        return (String) entityRepresentation.property(Constants.Property.__identityHash.name()).orElse(null);
     }
 
     public String extractContentHash(Element entityRepresentation) {
@@ -455,7 +442,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return;
         }
 
-        entity.setProperty(Constants.Property.__identityHash.name(), identityHash);
+        entity.property(Constants.Property.__identityHash.name(), identityHash);
 
         Vertex vertex = (Vertex) entity;
 
@@ -465,24 +452,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         CanonicalPath cp = extractCanonicalPath(entity);
         String tenantId = cp.ids().getTenantId();
 
-        Vertex tenantVertex = new HawkularPipeline<Graph, Vertex>(context.getGraph()).V()
-                .hasCanonicalPath(CanonicalPath.of().tenant(tenantId).get()).cast(Vertex.class).next();
+        Vertex tenantVertex = context.getGraph().traversal().V()
+                .has(__cp.name(), CanonicalPath.of().tenant(tenantId).get().toString()).next();
 
-        Iterator<Vertex> hashNodesIt = tenantVertex.query().direction(Direction.OUT)
-                .labels(Constants.InternalEdge.__containsIdentityHash.name())
-                .has(Constants.Property.__targetIdentityHash.name(), identityHash).vertices().iterator();
+        Iterator<Vertex> hashNodesIt = __(tenantVertex).outE(Constants.InternalEdge.__containsIdentityHash.name())
+                .has(Constants.Property.__targetIdentityHash.name(), identityHash).inV();
 
         closeAfter(hashNodesIt, () -> {
             if (hashNodesIt.hasNext()) {
                 Vertex hashNode = hashNodesIt.next();
                 vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
             } else {
-                Vertex hashNode = context.getGraph().addVertex(null);
-                hashNode.setProperty(Constants.Property.__identityHash.name(), identityHash);
-                hashNode.setProperty(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
+                Vertex hashNode = context.getGraph().addVertex();
+                hashNode.property(Constants.Property.__identityHash.name(), identityHash);
+                hashNode.property(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
 
                 Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode);
-                e.setProperty(Constants.Property.__targetIdentityHash.name(), identityHash);
+                e.property(Constants.Property.__targetIdentityHash.name(), identityHash);
 
                 vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
             }
@@ -492,10 +478,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private void removeHashNodeOf(Vertex vertex) {
-        Iterable<Edge> hashNodeEdges = vertex.getEdges(Direction.OUT,
+        Iterator<Edge> hashNodeEdgeIt = vertex.edges(Direction.OUT,
                 Constants.InternalEdge.__withIdentityHash.name());
-
-        Iterator<Edge> hashNodeEdgeIt = hashNodeEdges.iterator();
 
         closeAfter(hashNodeEdgeIt, () -> {
             if (hashNodeEdgeIt.hasNext()) {
@@ -511,11 +495,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 //An alternative might be a periodical clean job.
 
                 //check if were are the last user of the hash node
-                Vertex hashNode = hashNodeEdge.getVertex(Direction.IN);
-                Iterable<Edge> entitiesWithSameHash =
-                        hashNode.getEdges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
+                Vertex hashNode = hashNodeEdge.inVertex();
+                Iterator<Edge> entitiesWithSameHash =
+                        hashNode.edges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
 
-                if (StreamSupport.stream(entitiesWithSameHash.spliterator(), false).count() == 1) {
+                Spliterator<Edge> sp = Spliterators.spliteratorUnknownSize(entitiesWithSameHash,
+                        Spliterator.IMMUTABLE & Spliterator.NONNULL);
+
+                if (StreamSupport.stream(sp, false).count() == 1) {
                     hashNode.remove();
                 } else {
                     hashNodeEdge.remove();
@@ -535,13 +522,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         if (type == relationship) {
             Edge edge = (Edge) entityRepresentation;
-            CanonicalPath source = extractCanonicalPath(edge.getVertex(Direction.OUT));
-            CanonicalPath target = extractCanonicalPath(edge.getVertex(Direction.IN));
+            CanonicalPath source = extractCanonicalPath(edge.outVertex());
+            CanonicalPath target = extractCanonicalPath(edge.inVertex());
 
-            e = new Relationship(extractId(edge), edge.getLabel(), source, target);
+            e = new Relationship(extractId(edge), edge.label(), source, target);
         } else {
             Vertex v = (Vertex) entityRepresentation;
-            name = v.getProperty(Constants.Property.name.name());
+            name = (String) v.property(Constants.Property.name.name()).orElse(null);
 
             Iterator<Vertex> it;
             switch (type) {
@@ -553,22 +540,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             extractSyncHash(v));
                     break;
                 case metric:
-                    it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
+                    it = v.vertices(Direction.IN, Relationships.WellKnown.defines.name());
                     Vertex mdv = closeAfter(it, it::next);
                     MetricType md = convert(mdv, MetricType.class);
                     e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
                             extractSyncHash(v), md,
-                            v.<Long>getProperty(Constants.Property.__metric_interval.name()));
+                            (Long) v.property(Constants.Property.__metric_interval.name()).orElse(null));
                     break;
                 case metricType:
                     e = new MetricType(extractCanonicalPath(v), extractIdentityHash(v),
                             extractContentHash(v), extractSyncHash(v),
-                            MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
-                            MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())),
-                            v.getProperty(Constants.Property.__metric_interval.name()));
+                            MetricUnit.fromDisplayName((String) v.property(Constants.Property.__unit.name()).value()),
+                            MetricDataType.fromDisplayName(
+                                    (String) v.property(Constants.Property.__metric_data_type.name()).value()),
+                            (Long) v.property(Constants.Property.__metric_interval.name()).orElse(null));
                     break;
                 case resource:
-                    it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
+                    it = v.vertices(Direction.IN, Relationships.WellKnown.defines.name());
                     Vertex rtv = closeAfter(it, it::next);
                     ResourceType rt = convert(rtv, ResourceType.class);
                     e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
@@ -604,9 +592,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         List<String> mappedProps = Arrays.asList(type.getMappedProperties());
         Map<String, Object> filteredProperties = new HashMap<>();
-        entityRepresentation.getPropertyKeys().forEach(k -> {
-            if (!mappedProps.contains(k)) {
-                filteredProperties.put(k, entityRepresentation.getProperty(k));
+        entityRepresentation.properties().forEachRemaining(p -> {
+            if (!mappedProps.contains(p.key())) {
+                filteredProperties.put(p.key(), p.value());
             }
         });
 
@@ -690,7 +678,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public Element descendToData(Element dataEntityRepresentation, RelativePath dataPath) {
         Query q = Query.path().with(With.dataAt(dataPath)).get();
 
-        HawkularPipeline<Element, Element> pipeline = new HawkularPipeline<>(dataEntityRepresentation);
+        GraphTraversal<Element, Element> pipeline = __(dataEntityRepresentation);
 
         FilterApplicator.applyAll(q, pipeline);
 
@@ -719,23 +707,24 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Edge e = ((Vertex) sourceEntity).addEdge(name, (Vertex) targetEntity);
         if (properties != null) {
-            ElementHelper.setProperties(e, properties);
+            properties.forEach(e::property);
         }
-        e.setProperty(__eid.name(), e.getId().toString());
-        e.setProperty(__cp.name(), CanonicalPath.of().relationship(e.getId().toString()).get().toString());
-        e.setProperty(__sourceType.name(), sourceEntity.getProperty(__type.name()));
-        setNonNullProperty(e, __targetType.name(), targetEntity.getProperty(__type.name()));
-        setNonNullProperty(e, __sourceCp.name(), sourceEntity.getProperty(__cp.name()));
-        setNonNullProperty(e, __targetCp.name(), targetEntity.getProperty(__cp.name()));
-        setNonNullProperty(e, __sourceEid.name(), sourceEntity.getProperty(__eid.name()));
-        setNonNullProperty(e, __targetEid.name(), targetEntity.getProperty(__eid.name()));
+
+        e.property(__eid.name(), e.id().toString());
+        e.property(__cp.name(), CanonicalPath.of().relationship(e.id().toString()).get().toString());
+        e.property(__sourceType.name(), sourceEntity.property(__type.name()).value());
+        setNonNullProperty(e, __targetType.name(), targetEntity.property(__type.name()).orElse(null));
+        setNonNullProperty(e, __sourceCp.name(), sourceEntity.property(__cp.name()).orElse(null));
+        setNonNullProperty(e, __targetCp.name(), targetEntity.property(__cp.name()).orElse(null));
+        setNonNullProperty(e, __sourceEid.name(), sourceEntity.property(__eid.name()).orElse(null));
+        setNonNullProperty(e, __targetEid.name(), targetEntity.property(__eid.name()).orElse(null));
 
         return e;
     }
 
     private void setNonNullProperty(Element el, String propertyName, Object propertyValue) {
         if (propertyValue != null) {
-            el.setProperty(propertyName, propertyValue);
+            el.property(propertyName, propertyValue);
         }
     }
 
@@ -763,7 +752,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Element entity = common(path, metric.getName(), metric.getProperties(), Metric.class);
 
                 if (metric.getCollectionInterval() != null) {
-                    entity.setProperty(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
+                    entity.property(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
                 }
 
                 return entity;
@@ -773,8 +762,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             public Element visitMetricType(MetricType.Blueprint type, Void parameter) {
                 Element entity = common(path, type.getName(), type.getProperties(), MetricType.class);
 
-                entity.setProperty(Constants.Property.__metric_data_type.name(), type.getMetricDataType().getDisplayName());
-                entity.setProperty(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
+                entity.property(Constants.Property.__metric_data_type.name(), type.getMetricDataType()
+                        .getDisplayName());
+                entity.property(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
 
                 return entity;
             }
@@ -819,14 +809,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 try {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
-                    Vertex v = context.getGraph().addVertex(null);
-                    v.setProperty(__type.name(), Constants.Type.of(cls).name());
-                    v.setProperty(__eid.name(), path.getSegment().getElementId());
-                    v.setProperty(__cp.name(), path.toString());
+                    Vertex v = context.getGraph().addVertex();
+                    v.property(__type.name(), Constants.Type.of(cls).name());
+                    v.property(__eid.name(), path.getSegment().getElementId());
+                    v.property(__cp.name(), path.toString());
                     setNonNullProperty(v, Constants.Property.name.name(), name);
 
                     if (properties != null) {
-                        ElementHelper.setProperties(v, properties);
+                        properties.forEach(v::property);
                     }
                     return v;
                 } catch (RuntimeException e) {
@@ -838,7 +828,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Vertex persist(StructuredData structuredData) {
-        Vertex thisVertex = context.getGraph().addVertex(null);
+        Vertex thisVertex = context.getGraph().addVertex();
 
         Pair<Vertex, Vertex> parentAndCurrent = new Pair<>(null, thisVertex);
 
@@ -846,12 +836,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             protected Void defaultAction(Serializable value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(__type.name(),
+                parentAndCurrent.second.property(__type.name(),
                         Constants.Type.structuredData.name());
-                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                parentAndCurrent.second.property(Constants.Property.__structuredDataType.name(),
                         data.getType().name());
                 if (value != null) {
-                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataValue.name(), value);
+                    parentAndCurrent.second.property(Constants.Property.__structuredDataValue.name(), value);
                 }
                 return null;
             }
@@ -859,9 +849,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitList(List<StructuredData> value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(__type.name(),
+                parentAndCurrent.second.property(__type.name(),
                         Constants.Type.structuredData.name());
-                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                parentAndCurrent.second.property(Constants.Property.__structuredDataType.name(),
                         StructuredData.Type.list.name());
 
                 Vertex currentParent = parentAndCurrent.first;
@@ -871,8 +861,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (StructuredData c : value) {
-                    parentAndCurrent.second = context.getGraph().addVertex(null);
-                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataIndex.name(), idx++);
+                    parentAndCurrent.second = context.getGraph().addVertex();
+                    parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
                     c.accept(this, c);
                 }
 
@@ -885,9 +875,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             @Override
             public Void visitMap(Map<String, StructuredData> value, StructuredData data) {
                 relateToParent();
-                parentAndCurrent.second.setProperty(__type.name(),
+                parentAndCurrent.second.property(__type.name(),
                         Constants.Type.structuredData.name());
-                parentAndCurrent.second.setProperty(Constants.Property.__structuredDataType.name(),
+                parentAndCurrent.second.property(Constants.Property.__structuredDataType.name(),
                         StructuredData.Type.map.name());
 
                 Vertex currentParent = parentAndCurrent.first;
@@ -897,11 +887,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (Map.Entry<String, StructuredData> e : value.entrySet()) {
-                    parentAndCurrent.second = context.getGraph().addVertex(null);
+                    parentAndCurrent.second = context.getGraph().addVertex();
                     //we need to make sure the maps are stored in the same order as seen - the maps are linked
                     //and therefore preserve insertion order
-                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataIndex.name(), idx++);
-                    parentAndCurrent.second.setProperty(Constants.Property.__structuredDataKey.name(), e.getKey());
+                    parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
+                    parentAndCurrent.second.property(Constants.Property.__structuredDataKey.name(), e.getKey());
                     e.getValue().accept(this, e.getValue());
                 }
 
@@ -947,9 +937,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             public Void visitMetric(Metric.Update metric, Void parameter) {
                 common(metric.getName(), metric.getProperties(), Metric.class);
                 if (metric.getCollectionInterval() != null) {
-                    entity.setProperty(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
+                    entity.property(Constants.Property.__metric_interval.name(), metric.getCollectionInterval());
                 } else {
-                    entity.removeProperty(Constants.Property.__metric_interval.name());
+                    entity.property(Constants.Property.__metric_interval.name()).remove();
                 }
                 return null;
             }
@@ -958,10 +948,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             public Void visitMetricType(MetricType.Update type, Void parameter) {
                 common(type.getName(), type.getProperties(), MetricType.class);
                 if (type.getUnit() != null) {
-                    entity.setProperty(Constants.Property.__unit.name(), type.getUnit().getDisplayName());
+                    entity.property(Constants.Property.__unit.name(), type.getUnit().getDisplayName());
                 }
                 if (type.getCollectionInterval() != null) {
-                    entity.setProperty(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
+                    entity.property(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
                 }
                 return null;
             }
@@ -989,7 +979,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 common(data.getName(), data.getProperties(), DataEntity.class);
 
                 Vertex v = (Vertex) entity;
-                Vertex dataVertex = v.getVertices(Direction.OUT, Relationships.WellKnown.hasData.name()).iterator()
+                Vertex dataVertex = v.vertices(Direction.OUT, Relationships.WellKnown.hasData.name())
                         .next();
 
                 Iterator<Element> children = getTransitiveClosureOver(dataVertex,
@@ -997,9 +987,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 while (children.hasNext()) {
                     Vertex c = (Vertex) children.next();
-                    context.getGraph().removeVertex(c);
+                    c.remove();
                 }
-                context.getGraph().removeVertex(dataVertex);
+                dataVertex.remove();
 
                 StructuredData dataValue = data.getValue();
                 if (dataValue == null) {
@@ -1076,17 +1066,17 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public boolean isBackendInternal(Element element) {
-        return (element instanceof Vertex && element.getProperty(Constants.Property.__type.name()).equals(
+        return (element instanceof Vertex && element.property(Constants.Property.__type.name()).value().equals(
                 Constants.InternalType.__identityHash.name())) || (element instanceof Edge && (
-                        ((Edge)element).getLabel().equals(Constants.InternalEdge.__withIdentityHash.name()) ||
-                        ((Edge)element).getLabel().equals(Constants.InternalEdge.__containsIdentityHash.name())
+                        element.label().equals(Constants.InternalEdge.__withIdentityHash.name()) ||
+                        element.label().equals(Constants.InternalEdge.__containsIdentityHash.name())
 
                 ));
     }
 
     @Override
     public void close() throws Exception {
-        context.getGraph().shutdown();
+        context.getGraph().close();
     }
 
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {
@@ -1094,7 +1084,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private StructuredData loadStructuredData(Vertex owner, Relationships.WellKnown owningEdge) {
-        Iterator<Vertex> it = owner.getVertices(Direction.OUT, owningEdge.name()).iterator();
+        Iterator<Vertex> it = owner.vertices(Direction.OUT, owningEdge.name());
         if (!it.hasNext()) {
             closeIfNeeded(it);
             return null;
@@ -1104,21 +1094,24 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private StructuredData loadStructuredData(Vertex root, boolean recurse) {
-        StructuredData.Type type = StructuredData.Type.valueOf(root.getProperty(
-                Constants.Property.__structuredDataType.name()));
+        StructuredData.Type type = StructuredData.Type.valueOf((String) root.property(
+                Constants.Property.__structuredDataType.name()).value());
 
         switch (type) {
             case bool:
-                return StructuredData.get().bool(root.getProperty(Constants.Property.__structuredDataValue.name()));
+                return StructuredData.get()
+                        .bool((Boolean) root.property(Constants.Property.__structuredDataValue.name()).value());
             case integral:
-                return StructuredData.get().integral(root.getProperty(Constants.Property.__structuredDataValue.name()));
+                return StructuredData.get()
+                        .integral((Long) root.property(Constants.Property.__structuredDataValue.name()).value());
             case floatingPoint:
                 return StructuredData.get()
-                        .floatingPoint(root.getProperty(Constants.Property.__structuredDataValue.name()));
+                        .floatingPoint((Double) root.property(Constants.Property.__structuredDataValue.name()).value());
             case undefined:
                 return StructuredData.get().undefined();
             case string:
-                return StructuredData.get().string(root.getProperty(Constants.Property.__structuredDataValue.name()));
+                return StructuredData.get()
+                        .string((String) root.property(Constants.Property.__structuredDataValue.name()).value());
             case list:
                 StructuredData.ListBuilder lst = StructuredData.get().list();
                 if (recurse) {
@@ -1137,32 +1130,37 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private void loadStructuredDataList(Vertex root, StructuredData.AbstractListBuilder<?> bld) {
-        PipeFunction<com.tinkerpop.pipes.util.structures.Pair<Vertex, Vertex>, Integer> orderFn = (vs) -> {
-            Integer idxA = vs.getA().getProperty(Constants.Property.__structuredDataIndex.name());
-            Integer idxB = vs.getB().getProperty(Constants.Property.__structuredDataIndex.name());
+        Comparator<Vertex> orderFn = (a, b) -> {
+            Integer idxA = (Integer) a.property(Constants.Property.__structuredDataIndex.name()).value();
+            Integer idxB = (Integer) b.property(Constants.Property.__structuredDataIndex.name()).value();
 
             return idxA - idxB;
         };
 
-        for (Vertex child : new HawkularPipeline<>(root).out(contains).order(orderFn)) {
-            StructuredData.Type type = StructuredData.Type.valueOf(child.getProperty(
-                    Constants.Property.__structuredDataType.name()));
+        Iterator<Vertex> it = __(root).out(contains.name()).order().by(orderFn);
+
+        while (it.hasNext()) {
+            Vertex child = it.next();
+
+            StructuredData.Type type = StructuredData.Type.valueOf(
+                    (String) child.property(Constants.Property.__structuredDataType.name()).value());
 
             switch (type) {
                 case bool:
-                    bld.addBool(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.addBool((Boolean) child.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case integral:
-                    bld.addIntegral(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.addIntegral((Long) child.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case floatingPoint:
-                    bld.addFloatingPoint(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.addFloatingPoint((Double) child.property(Constants.Property.__structuredDataValue.name())
+                            .value());
                     break;
                 case undefined:
                     bld.addUndefined();
                     break;
                 case string:
-                    bld.addString(child.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.addString((String) child.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case list:
                     StructuredData.InnerListBuilder<?> lst = bld.addList();
@@ -1181,33 +1179,37 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private void loadStructuredDataMap(Vertex root, StructuredData.AbstractMapBuilder<?> bld) {
-        PipeFunction<com.tinkerpop.pipes.util.structures.Pair<Vertex, Vertex>, Integer> orderFn = (vs) -> {
-            Integer idxA = vs.getA().getProperty(Constants.Property.__structuredDataIndex.name());
-            Integer idxB = vs.getB().getProperty(Constants.Property.__structuredDataIndex.name());
+        Comparator<Vertex> orderFn = (a, b) -> {
+            Integer idxA = (Integer) a.property(Constants.Property.__structuredDataIndex.name()).value();
+            Integer idxB = (Integer) b.property(Constants.Property.__structuredDataIndex.name()).value();
 
             return idxA - idxB;
         };
 
-        for (Vertex v : new HawkularPipeline<>(root).out(contains).order(orderFn)) {
-            String key = v.getProperty(Constants.Property.__structuredDataKey.name()).toString();
+        Iterator<Vertex> it = __(root).out(contains.name()).order().by(orderFn);
+        while (it.hasNext()) {
+            Vertex v = it.next();
 
-            String type = v.getProperty(Constants.Property.__structuredDataType.name());
+            String key = (String) v.property(Constants.Property.__structuredDataKey.name()).value();
+
+            String type = (String) v.property(Constants.Property.__structuredDataType.name()).value();
 
             switch (StructuredData.Type.valueOf(type)) {
                 case bool:
-                    bld.putBool(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.putBool(key, (Boolean) v.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case integral:
-                    bld.putIntegral(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.putIntegral(key, (Long) v.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case floatingPoint:
-                    bld.putFloatingPoint(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.putFloatingPoint(key, (Double) v.property(Constants.Property.__structuredDataValue.name())
+                            .value());
                     break;
                 case undefined:
                     bld.putUndefined(key);
                     break;
                 case string:
-                    bld.putString(key, v.getProperty(Constants.Property.__structuredDataValue.name()));
+                    bld.putString(key, (String) v.property(Constants.Property.__structuredDataValue.name()).value());
                     break;
                 case list:
                     StructuredData.InnerListBuilder<?> lst = bld.putList(key);
@@ -1264,97 +1266,33 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
 
         //remove all non-mapped properties, that are not in the update
-        String[] toRemove = e.getPropertyKeys().stream()
-                .filter((p) -> !disallowed.contains(p) && !properties.containsKey(p)).toArray(String[]::new);
+        Spliterator<Property<?>> sp = Spliterators.spliteratorUnknownSize(e.properties(),
+                Spliterator.NONNULL & Spliterator.IMMUTABLE);
+        Property<?>[] toRemove = StreamSupport.stream(sp, false)
+                .filter((p) -> !disallowed.contains(p.key()) && !properties.containsKey(p.key()))
+                .toArray(Property[]::new);
 
-        for (String p : toRemove) {
-            e.removeProperty(p);
+        for (Property<?> p : toRemove) {
+            p.remove();
         }
 
         //update and add new the properties
         properties.forEach((p, v) -> {
             if (!disallowed.contains(p)) {
-                e.setProperty(p, v);
+                e.property(p, v);
             }
         });
-    }
-
-    static Vertex getTenantVertexOf(Vertex entityVertex) {
-        Constants.Type type = getType(entityVertex);
-
-        switch (type) {
-            case environment:
-            case metricType:
-            case resourceType:
-                return entityVertex.getVertices(Direction.IN, Relationships.WellKnown.contains.name()).iterator()
-                        .next();
-            case feed:
-            case resource:
-            case metric:
-                return getTenantVertexOf(getEnvironmentVertexOf(entityVertex));
-            default:
-                return null;
-        }
-    }
-
-    static Vertex getEnvironmentVertexOf(Vertex entityVertex) {
-        Constants.Type type = getType(entityVertex);
-
-        switch (type) {
-            case feed:
-            case resource:
-            case metric:
-                return new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.environment).iterator()
-                        .next();
-            default:
-                return null;
-        }
-    }
-
-    static Vertex getEnvironmentVertexOrNull(Vertex entityVertex) {
-        Constants.Type type = getType(entityVertex);
-
-        switch (type) {
-            case feed:
-            case resource:
-            case metric:
-                Iterator<Vertex> envs = new HawkularPipeline<>(entityVertex).in(contains)
-                        .hasType(Constants.Type.environment).iterator();
-                if (envs.hasNext()) {
-                    return envs.next();
-                }
-                return null;
-            default:
-                return null;
-        }
-    }
-
-    static Vertex getFeedVertexOrNull(Vertex entityVertex) {
-        Constants.Type type = getType(entityVertex);
-
-        switch (type) {
-            case resource:
-            case metric:
-                Iterator<Vertex> feeds = new HawkularPipeline<>(entityVertex).in(contains).hasType(Constants.Type.feed)
-                        .iterator();
-                if (feeds.hasNext()) {
-                    return feeds.next();
-                }
-                return null;
-            default:
-                return null;
-        }
     }
 
     /**
      * Gets the type of the entity that the provided vertex represents.
      */
     static Constants.Type getType(Vertex v) {
-        return Constants.Type.valueOf(v.getProperty(__type.name()));
+        return Constants.Type.valueOf((String) v.property(__type.name()).value());
     }
 
     static String getEid(Element e) {
-        return e.getProperty(__eid.name());
+        return (String) e.property(__eid.name()).value();
     }
 
     static Direction toNative(Relationships.Direction direction) {
@@ -1368,10 +1306,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     public InputStream getGraphSON(String tenantId) {
         PipedInputStream in = new PipedInputStream();
-        //PartitionGraph pGraph = new PartitionGraph(context.getGraph(), Constants.Property.__eid.name(), tenantId);
         new Thread(() -> {
             try (PipedOutputStream out = new PipedOutputStream(in)) {
-                GraphSONWriter.outputGraph(/*pGraph*/context.getGraph(), out, GraphSONMode.NORMAL);
+                GraphSONWriter.build().create().writeGraph(out, context.getGraph());
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to create the GraphSON dump.", e);
             }
@@ -1379,7 +1316,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return in;
     }
 
-    private void drainIfNeeded(HawkularPipeline<?, ?> pipeline) {
+    private void drainIfNeeded(GraphTraversal<?, ?> pipeline) {
         if (context.needsDraining()) {
             pipeline.iterate();
         }
@@ -1401,7 +1338,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return ret;
     }
 
-    private <R, S, E> R drainAfter(HawkularPipeline<S, E> pipeline, Supplier<R> payload) {
+    private <R, S, E> R drainAfter(GraphTraversal<S, E> pipeline, Supplier<R> payload) {
         R ret = payload.get();
         drainIfNeeded(pipeline);
         return ret;
@@ -1415,5 +1352,29 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             this.first = first;
             this.second = second;
         }
+    }
+
+    private <T, U> Page<U> page(GraphTraversal<?, ? extends T> traversal, Pager pager, Function<T, U> transform) {
+        //TODO this doesn't apply any ordering
+        @SuppressWarnings("unchecked")
+        GraphTraversal<?, Map<String, Object>> paged = traversal
+                .fold().as("results", "total").select("results", "total")
+                .by(__.coalesce(__.range(Scope.local, pager.getStart(), pager.getEnd()), __.constant(emptyList())))
+                .by(__.count(Scope.local));
+
+        if (!paged.hasNext()) {
+            return new Page<>(Collections.emptyIterator(), pager, 0);
+        }
+
+        Map<String, Object> data = paged.next();
+
+        long total = (Long) data.get("total");
+
+        Object res = data.get("results");
+
+        @SuppressWarnings("unchecked")
+        List<T> results = res instanceof List ? (List<T>) res : Collections.singletonList((T) res);
+
+        return new Page<>(results.stream().map(transform).iterator(), pager, total);
     }
 }

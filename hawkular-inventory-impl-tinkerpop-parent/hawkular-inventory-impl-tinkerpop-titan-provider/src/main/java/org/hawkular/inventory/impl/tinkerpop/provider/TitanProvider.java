@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.commons.configuration.MapConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
@@ -36,7 +37,6 @@ import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.hawkular.inventory.paths.CanonicalPath;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import com.thinkaurelius.titan.core.TitanException;
@@ -44,7 +44,6 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * @author Lukas Krejci
@@ -110,12 +109,12 @@ public class TitanProvider implements GraphProvider {
     }
 
     @Override
-    public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
+    public void ensureIndices(Graph graph, IndexSpec... indexSpecs) {
         Set<IndexSpec.Property> undefinedPropertyKeys = new HashSet<>();
         Map<String, PropertyKey> definedPropertyKeys = new HashMap<>();
         Map<String, IndexSpec> undefinedIndices = new HashMap<>();
 
-        TitanManagement mgmt = ((TitanGraph) graph).getManagementSystem();
+        TitanManagement mgmt = ((TitanGraph) graph).openManagement();
 
         for (IndexSpec spec : indexSpecs) {
             String indexName = getIndexName(spec.getProperties());
@@ -129,11 +128,11 @@ public class TitanProvider implements GraphProvider {
                 if (key == null) {
                     undefinedPropertyKeys.add(p);
                 } else {
-                    if (!key.getDataType().equals(p.getType())) {
-                        throw new IllegalStateException("There already is a key '" + key.getName() +
+                    if (!key.dataType().equals(p.getType())) {
+                        throw new IllegalStateException("There already is a key '" + key.name() +
                                 "' that would be needed for index " + spec + ". The key has a different data type" +
                                 " than expected, though. Expected: '" + p.getType() + "', actual: '" +
-                                key.getDataType() + "'.");
+                                key.dataType() + "'.");
                     }
                     definedPropertyKeys.put(p.getName(), key);
                 }
@@ -143,13 +142,14 @@ public class TitanProvider implements GraphProvider {
         //first define all the undefined property keys
         for (IndexSpec.Property p : undefinedPropertyKeys) {
             PropertyKeyMaker propertyKeyMaker = mgmt.makePropertyKey(p.getName()).dataType(p.getType());
-            if (null != p.getLabelIndex()) {
-                propertyKeyMaker.signature(mgmt.makeEdgeLabel(p.getLabelIndex())
-                        // index on directed edges doesn't work
-                        .unidirected()
-                        .multiplicity(Multiplicity.SIMPLE)
-                        .make());
-            }
+            //this is currently not used and not working with Titan 1.0
+//            if (null != p.getLabelIndex()) {
+//                propertyKeyMaker.signature(mgmt.makeEdgeLabel(p.getLabelIndex())
+//                        // index on directed edges doesn't work
+//                        .unidirected()
+//                        .multiplicity(Multiplicity.SIMPLE)
+//                        .make());
+//            }
             if (p.isUnique()) {
                 propertyKeyMaker.cardinality(Cardinality.SINGLE);
             }

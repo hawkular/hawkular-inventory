@@ -42,7 +42,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.titan</groupId>
+      <groupId>com.thinkaurelius.titan</groupId>
       <artifactId>titan-core</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
       <exclusions>
@@ -55,7 +55,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.titan</groupId>
+      <groupId>com.thinkaurelius.titan</groupId>
       <artifactId>titan-hadoop</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
       <exclusions>
@@ -125,7 +125,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.titan</groupId>
+      <groupId>com.thinkaurelius.titan</groupId>
       <artifactId>titan-cassandra</artifactId>
       <version>${version.com.thinkaurelius.titan}</version>
       <scope>test</scope>

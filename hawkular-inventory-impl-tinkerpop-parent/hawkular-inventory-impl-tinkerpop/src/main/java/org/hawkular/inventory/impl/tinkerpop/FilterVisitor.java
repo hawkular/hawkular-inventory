@@ -32,7 +32,16 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
@@ -47,13 +56,6 @@ import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.pipes.Pipe;
-import com.tinkerpop.pipes.filter.PropertyFilterPipe;
-import com.tinkerpop.pipes.util.Pipeline;
-
 /**
  * @author Lukas Krejci
  * @author Jirka Kremser
@@ -61,7 +63,9 @@ import com.tinkerpop.pipes.util.Pipeline;
  */
 class FilterVisitor {
 
-    public void visit(HawkularPipeline<?, ?> query, Related related, QueryTranslationState state) {
+    private static final AtomicLong CNT = new AtomicLong();
+
+    public void visit(GraphTraversal<?, ?> query, Related related, QueryTranslationState state) {
         if (state.isInEdges()) {
             //jump to vertices
             switch (state.getComingFrom()) {
@@ -88,9 +92,9 @@ class FilterVisitor {
                 if (null != related.getRelationshipId()) {
                     // TODO test
                     if (applied) {
-                        query.hasEid(related.getRelationshipId());
+                        query.has(__eid.name(), related.getRelationshipId());
                     } else {
-                        query.inE().hasEid(related.getRelationshipId());
+                        query.inE().has(__eid.name(), related.getRelationshipId());
                     }
                 }
                 break;
@@ -104,9 +108,9 @@ class FilterVisitor {
                 if (null != related.getRelationshipId()) {
                     // TODO test
                     if (applied) {
-                        query.hasEid(related.getRelationshipId());
+                        query.has(__eid.name(), related.getRelationshipId());
                     } else {
-                        query.outE().hasEid(related.getRelationshipId());
+                        query.outE().has(__eid.name(), related.getRelationshipId());
                     }
                 }
                 break;
@@ -117,7 +121,7 @@ class FilterVisitor {
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().hasEid(related.getRelationshipId()).bothV();
+                    query.bothE().has(__eid.name(), related.getRelationshipId()).bothV();
                 }
         }
 
@@ -129,7 +133,7 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.Ids ids, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.Ids ids, QueryTranslationState state) {
         String prop = propertyNameBasedOnState(__eid, state);
 
         if (ids.getIds().length == 1) {
@@ -137,18 +141,17 @@ class FilterVisitor {
             return;
         }
 
-        Pipe[] idChecks = new Pipe[ids.getIds().length];
+        GraphTraversal<?, ?>[] idChecks = new GraphTraversal<?, ?>[ids.getIds().length];
 
-        Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, ids.getIds()[i]));
+        Arrays.setAll(idChecks, i -> __.has(prop, ids.getIds()[i]));
 
-        query.or(idChecks);
+        query.or((Traversal<?, ?>[]) idChecks);
 
         goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.Types types, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.Types types, QueryTranslationState state) {
             String prop = propertyNameBasedOnState(__type, state);
 
         if (types.getTypes().length == 1) {
@@ -157,20 +160,20 @@ class FilterVisitor {
             return;
         }
 
-        Pipe[] typeChecks = new Pipe[types.getTypes().length];
+        GraphTraversal<?, ?>[] typeChecks = new GraphTraversal<?, ?>[types.getTypes().length];
 
         Arrays.setAll(typeChecks, i -> {
             Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, type.name());
+            return __.has(prop, type.name());
         });
 
-        query.or(typeChecks);
+        query.or((Traversal<?, ?>[]) typeChecks);
 
         goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.Names names, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.Names names, QueryTranslationState state) {
         goBackFromEdges(query, state);
 
         String prop = Constants.Property.name.name();
@@ -180,55 +183,55 @@ class FilterVisitor {
             return;
         }
 
-        Pipe[] nameChecks = new Pipe[names.getNames().length];
+        GraphTraversal[] nameChecks = new GraphTraversal[names.getNames().length];
 
         Arrays.setAll(nameChecks,
-                i -> new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, names.getNames()[i]));
+                i -> __.has(prop, names.getNames()[i]));
 
         query.or(nameChecks);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.Ids ids, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, RelationWith.Ids ids, QueryTranslationState state) {
         if (ids.getIds().length == 1) {
-            query.hasEid(ids.getIds()[0]);
+            query.has(__eid.name(), ids.getIds()[0]);
             return;
         }
 
-        Pipe[] idChecks = new Pipe[ids.getIds().length];
+        GraphTraversal<?, ?>[] idChecks = new GraphTraversal<?, ?>[ids.getIds().length];
 
-        Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(__eid.name(), Compare.EQUAL,
-                        ids.getIds()[i]));
+        Arrays.setAll(idChecks, i -> __.has(__eid.name(), ids.getIds()[i]));
 
-        query.or(idChecks);
+        query.or((Traversal<?, ?>[]) idChecks);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.PropertyValues properties,
+    public void visit(GraphTraversal<?, ?> query, RelationWith.PropertyValues properties,
                       QueryTranslationState state) {
         applyPropertyFilter(query, properties.getProperty(), properties.getValues());
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOfType types, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, RelationWith.SourceOfType types, QueryTranslationState state) {
         visit(query, types, true, state);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.TargetOfType types, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, RelationWith.TargetOfType types, QueryTranslationState state) {
         visit(query, types, false, state);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types,
+    public void visit(GraphTraversal<?, ?> query, RelationWith.SourceOrTargetOfType types,
                       QueryTranslationState state) {
         visit(query, types, null, state);
     }
 
     @SuppressWarnings("unchecked")
-    private void visit(HawkularPipeline<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source,
+    private void visit(GraphTraversal<?, ?> query, RelationWith.SourceOrTargetOfType types, Boolean source,
                        QueryTranslationState state) {
+
+        GraphTraversal<?, ?> origQuery = query;
 
         String prop;
         if (source == null) {
-            query.remember().bothV();
+            query = __.bothV();
             prop = __type.name();
         } else if (source) {
             prop = __sourceType.name();
@@ -241,22 +244,21 @@ class FilterVisitor {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
             query.has(prop, type.name());
         } else {
-            Pipe[] typeChecks = new Pipe[types.getTypes().length];
+            GraphTraversal<?, ?>[] typeChecks = new GraphTraversal<?, ?>[types.getTypes().length];
             Arrays.setAll(typeChecks, i -> {
                 Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-                return new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL,
-                        type.name());
+                return __.has(prop, type.name());
             });
 
-            query.or(typeChecks);
+            query.or((Traversal<?, ?>[]) typeChecks);
         }
 
         if (source == null) {
-            query.recall();
+            origQuery.where(query);
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, SwitchElementType filter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, SwitchElementType filter, QueryTranslationState state) {
         final boolean jumpFromEdge = filter.isFromEdge();
         switch (filter.getDirection()) {
             case incoming:
@@ -296,11 +298,11 @@ class FilterVisitor {
         state.setExplicitChange(true);
     }
 
-    public void visit(HawkularPipeline<?, ?> query, NoopFilter filter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, NoopFilter filter, QueryTranslationState state) {
         //nothing to do
     }
 
-    public void visit(HawkularPipeline<?, ?> query, With.PropertyValues filter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.PropertyValues filter, QueryTranslationState state) {
         //if the property is mirrored, we check for its value directly at the edge and only move to the target
         //vertex afterwards. If it is not mirrored, we first move to the target vertex and then filter by the property
         boolean propertyMirrored = Constants.Property.isMirroredInEdges(filter.getName());
@@ -316,23 +318,31 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    private void applyPropertyFilter(HawkularPipeline<?, ?> query, String propertyName, Object... values) {
+    private void applyPropertyFilter(GraphTraversal<?, ?> query, String propertyName, Object... values) {
         String mappedName = Constants.Property.mapUserDefined(propertyName);
-        if (values.length == 0) {
-            query.has(mappedName);
-        } else if (values.length == 1) {
-            query.has(mappedName, values[0]);
-        } else {
-            Pipe[] checks = new Pipe[values.length];
+        Consumer<GraphTraversal<?, ?>> propertyCheck = (t) -> t.has(mappedName);
+        BiConsumer<GraphTraversal<?, ?>, Object> valueCheck = (t, v) -> t.has(mappedName, v);
 
-            Arrays.setAll(checks, i -> new PropertyFilterPipe<Element, String>(mappedName, Compare.EQUAL, values[i]));
-
-            query.or(checks);
+        switch (propertyName) {
+            case "id":
+                query.hasId(values);
+                break;
+            case "label":
+                query.hasLabel(Stream.of(values).map(Object::toString).toArray(String[]::new));
+                break;
+            default:
+                if (values.length == 0) {
+                    query.has(mappedName);
+                } else if (values.length == 1) {
+                    query.has(mappedName, values[0]);
+                } else {
+                    query.has(mappedName, P.within(values));
+                }
         }
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.CanonicalPaths filter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.CanonicalPaths filter, QueryTranslationState state) {
         String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
 
         if (filter.getPaths().length == 1) {
@@ -340,81 +350,93 @@ class FilterVisitor {
             return;
         }
 
-        Pipe[] idChecks = new Pipe[filter.getPaths().length];
+        GraphTraversal<?, ?>[] idChecks = new GraphTraversal<?, ?>[filter.getPaths().length];
 
-        Arrays.setAll(idChecks, i ->
-                new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL,
-                        filter.getPaths()[i].toString()));
+        Arrays.setAll(idChecks, i -> __.has(prop, filter.getPaths()[i].toString()));
 
-        query.or(idChecks);
+        query.or((GraphTraversal<?, ?>[]) idChecks);
 
         goBackFromEdges(query, state);
     }
 
     @SuppressWarnings("unchecked")
-    public <E> void visit(HawkularPipeline<?, E> query, With.RelativePaths filter, QueryTranslationState state) {
+    public <E> void visit(GraphTraversal<?, E> query, With.RelativePaths filter, QueryTranslationState state) {
         goBackFromEdges(query, state);
 
-        String label = filter.getMarkerLabel();
+        String originLabel = filter.getMarkerLabel();
 
         Set<E> seen = new HashSet<>();
 
         if (filter.getPaths().length == 1) {
-            if (label != null) {
+            if (originLabel != null) {
+                //progress our main query down to the candidates from which we will select the results
                 apply(filter.getPaths()[0].getSegment(), query);
-                query.store(seen);
-                query.back(label);
+                String candidateLabel = nextRandomLabel();
+                query.as(candidateLabel);
+
+
+                //create the traversal to a relative path going from the provided marked origin
+                GraphTraversal<?, ?> relativePath = __.as(originLabel);
+                convertToPipeline(filter.getPaths()[0], relativePath);
+                //using the same label makes sure the candidate in query matches the one navigated to by the relative
+                //path
+                relativePath.as(candidateLabel);
+
+                //extend the query with our match and select the matching candidates
+                query.match(relativePath).select(candidateLabel);
+            } else {
+                convertToPipeline(filter.getPaths()[0], query);
             }
-            convertToPipeline(filter.getPaths()[0], query);
         } else {
-            if (label != null) {
-                HawkularPipeline[] narrower = new HawkularPipeline[filter.getPaths().length];
-                Arrays.setAll(narrower, i -> {
-                    HawkularPipeline<?, ?> p = new HawkularPipeline<>();
-                    apply(filter.getPaths()[i].getSegment(), p);
-                    return p;
+            if (originLabel != null) {
+                String candidateLabel = nextRandomLabel();
+
+                Traversal[] candidates = new GraphTraversal<?, ?>[filter.getPaths().length];
+                Arrays.setAll(candidates, i -> {
+                    GraphTraversal<?, ?> n = __.start();
+                    apply(filter.getPaths()[i].getSegment(), n);
+                    return n;
                 });
 
-                query.or(narrower);
+                Traversal<?, ?>[] relativePaths = new GraphTraversal<?, ?>[filter.getPaths().length];
+                Arrays.setAll(relativePaths, i -> {
+                    GraphTraversal<?, ?> rp = __.as(originLabel);
+                    convertToPipeline(filter.getPaths()[i], rp);
+                    rp.as(candidateLabel);
+                    return rp;
+                });
 
-                query.store(seen);
+                query.union(candidates).as(candidateLabel).match(relativePaths).select(candidateLabel);
+            } else {
+                Traversal[] relativePaths = new GraphTraversal[filter.getPaths().length];
+                Arrays.setAll(relativePaths, i -> {
+                    GraphTraversal<?, ?> rp = __.start();
+                    convertToPipeline(filter.getPaths()[i], rp);
+                    return rp;
+                });
 
-                query.back(label);
+                query.union(relativePaths);
             }
-
-            HawkularPipeline[] pipes = new HawkularPipeline[filter.getPaths().length];
-
-            Arrays.setAll(pipes, i -> {
-                HawkularPipeline<?, ?> p = new HawkularPipeline<>();
-                convertToPipeline(filter.getPaths()[i], p);
-                return p;
-            });
-
-            query.or(pipes);
-        }
-
-        if (label != null) {
-            query.retain(seen);
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, Marker filter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, Marker filter, QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query.__().as(filter.getLabel());
+        query.as(filter.getLabel());
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.DataAt dataPos, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.DataAt dataPos, QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query.out(hasData);
+        query.out(hasData.name());
         for (Path.Segment seg : dataPos.getDataPath().getPath()) {
             if (SegmentType.up.equals(seg.getElementType())) {
-                query.in(contains);
+                query.in(contains.name());
             } else {
-                query.out(contains);
+                query.out(contains.name());
             }
 
-            query.hasType(Constants.Type.structuredData);
+            query.has(__type.name(), Constants.Type.structuredData.name());
 
             // map members have both index and key (so that the order of the elements is preserved)
             // list members have only the index
@@ -425,55 +447,57 @@ class FilterVisitor {
                 query.has(Constants.Property.__structuredDataKey.name(), seg.getElementId());
             } else {
                 //well, the map could have a numeric key, so we cannot say it has to be a list index here.
-                Pipeline[] indexOrKey = new Pipeline[2];
-                indexOrKey[0] = new HawkularPipeline<>().has(Constants.Property.__structuredDataIndex.name(), index)
+                GraphTraversal<?, ?>[] indexOrKey = new GraphTraversal<?, ?>[2];
+                indexOrKey[0] = __.has(Constants.Property.__structuredDataIndex.name(), index)
                         .hasNot(Constants.Property.__structuredDataKey.name());
-                indexOrKey[1] = new HawkularPipeline<>().has(Constants.Property.__structuredDataKey.name(),
+                indexOrKey[1] = __.has(Constants.Property.__structuredDataKey.name(),
                         seg.getElementId());
 
-                query.or(indexOrKey);
+                query.or((Traversal[]) indexOrKey);
             }
         }
     }
 
-    public void visit(HawkularPipeline<?, ?> query, With.DataValued dataValue, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.DataValued dataValue, QueryTranslationState state) {
         goBackFromEdges(query, state);
         query.has(Constants.Property.__structuredDataValue.name(), dataValue.getValue());
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, With.DataOfTypes dataTypes, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, With.DataOfTypes dataTypes, QueryTranslationState state) {
         goBackFromEdges(query, state);
         if (dataTypes.getTypes().length == 1) {
             query.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[0].name());
             return;
         }
 
-        Pipe[] pipes = new PropertyFilterPipe[dataTypes.getTypes().length];
+        GraphTraversal<?, ?>[] pipes = new GraphTraversal<?, ?>[dataTypes.getTypes().length];
         for (int i = 0; i < pipes.length; ++i) {
-            pipes[i] = new PropertyFilterPipe<>(Constants.Property.__structuredDataType.name(), Compare.EQUAL,
-                    dataTypes.getTypes()[i].name());
+            pipes[i] = __.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[i].name());
         }
 
-        query.or(pipes);
+        query.or((Traversal<?, ?>[]) pipes);
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularPipeline<?, ?> query, RecurseFilter recurseFilter, QueryTranslationState state) {
+    public void visit(GraphTraversal<?, ?> query, RecurseFilter recurseFilter, QueryTranslationState state) {
         goBackFromEdges(query, state);
 
-        String label = query.nextRandomLabel();
-        query.__().as(label);
+        GraphTraversal<?, ?> descend = __.start();
 
         if (recurseFilter.getLoopChains().length == 1) {
+            QueryTranslationState descendState = state.clone();
+
             for (Filter f : recurseFilter.getLoopChains()[0]) {
                 FilterApplicator<?> applicator = FilterApplicator.of(f);
-                applicator.applyTo(query, state);
+                applicator.applyTo(descend, descendState);
             }
+
+            goBackFromEdges(descend, descendState);
         } else {
-            HawkularPipeline[] pipes = new HawkularPipeline[recurseFilter.getLoopChains().length];
+            GraphTraversal[] pipes = new GraphTraversal[recurseFilter.getLoopChains().length];
             for (int i = 0; i < recurseFilter.getLoopChains().length; ++i) {
-                pipes[i] = new HawkularPipeline<>();
+                pipes[i] = __.start();
                 QueryTranslationState innerState = state.clone();
                 for (Filter f : recurseFilter.getLoopChains()[i]) {
                     FilterApplicator<?> applicator = FilterApplicator.of(f);
@@ -481,21 +505,19 @@ class FilterVisitor {
                 }
                 FilterApplicator.finishPipeline(pipes[i], innerState, state);
             }
-            query.copySplit(pipes).fairMerge().dedup();
+            descend.union(pipes).dedup();
         }
 
-        goBackFromEdges(query, state);
-
-        query.loop(label, (x) -> true, (x) -> true);
+        query.repeat((Traversal) descend).emit();
     }
 
-    public void visit(HawkularPipeline<?, ?> query, @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
+    public void visit(GraphTraversal<?, ?> query, @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
         query.out(__withIdentityHash.name()).in(__withIdentityHash.name());
     }
 
-    private void convertToPipeline(RelativePath path, HawkularPipeline<?, ?> pipeline) {
+    private void convertToPipeline(RelativePath path, GraphTraversal<?, ?> pipeline) {
         for (Path.Segment s : path.getPath()) {
             if (SegmentType.up.equals(s.getElementType())) {
                 pipeline.in(Relationships.WellKnown.contains.name());
@@ -506,9 +528,9 @@ class FilterVisitor {
         }
     }
 
-    private void apply(Path.Segment segment, HawkularPipeline<?, ?> pipeline) {
-        pipeline.hasType(Constants.Type.of(Entity.typeFromSegmentType(segment.getElementType())));
-        pipeline.hasEid(segment.getElementId());
+    private void apply(Path.Segment segment, GraphTraversal<?, ?> pipeline) {
+        pipeline.has(__type.name(), Constants.Type.of(Entity.typeFromSegmentType(segment.getElementType())).name());
+        pipeline.has(__eid.name(), segment.getElementId());
     }
 
     /**
@@ -569,7 +591,7 @@ class FilterVisitor {
         }
     }
 
-    private static void goBackFromEdges(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+    private static void goBackFromEdges(GraphTraversal<?, ?> query, QueryTranslationState state) {
         if (state.isInEdges()) {
             switch (state.getComingFrom()) {
                 case IN:
@@ -581,5 +603,9 @@ class FilterVisitor {
             state.setInEdges(false);
             state.setComingFrom(null);
         }
+    }
+
+    private static String nextRandomLabel() {
+        return "label-" + CNT.getAndIncrement();
     }
 }

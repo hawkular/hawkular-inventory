@@ -221,7 +221,6 @@ public final class BaseData {
             BE structuredData = tx.getRelationshipTarget(dataRel);
 
             tx.deleteStructuredData(structuredData);
-            tx.delete(dataRel);
         }
 
         private static <BE> void postDelete(DataModificationChecks<BE> checks, BE entity,
