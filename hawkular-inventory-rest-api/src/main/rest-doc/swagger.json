@@ -682,7 +682,7 @@
         "tags" : [ "Single Entity" ],
         "summary" : "Updates a relationship. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
         "description" : "",
-        "operationId" : "putMetric",
+        "operationId" : "putRelationship",
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
         "parameters" : [ {
@@ -695,7 +695,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description" : "Metric updated."
+            "description" : "Relationship updated."
           },
           "400" : {
             "description" : "Data in wrong format"
@@ -704,7 +704,7 @@
             "description" : "Unauthorized access"
           },
           "404" : {
-            "description" : "Metric not found."
+            "description" : "Relationship not found."
           },
           "500" : {
             "description" : "Server error."

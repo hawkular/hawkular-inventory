@@ -135,14 +135,14 @@ http://github.com/hakwular/hawkular-inventory/hawkular-inventory-rest-api/src/ma
 Each path segment in the URL traversal expresses a filter on the "current" set of entities. The filtering is performed
 within a single URL path segment using a notation similar to HTTP matrix parameters.
 
-Given an example traversal `/hawkular/inventory/traversal/f;feedId;name=My%20Feed/r;resourceId` we'll be talking about
-a single path segment, e.g. `f;feedId;name=My%20Feed` or `r;resourceId`.
+Given an example traversal `/hawkular/inventory/traversal/type=feed;name=My%20Feed/r;resourceId` we'll be talking about
+a single path segment, e.g. `type=feed;name=My%20Feed` or `r;resourceId`.
 
-Given the example `f;feedId;name=My%20Feed` you can spot two things:
+Given the example `type=feed;name=My%20Feed` you can spot two things:
 
 * multiple filters can be used, separated by a semi-colon,
-* within a single path segment everything must be percent-encoded (i.e. above we're looking for a feed with id `feedId`
-and name `My Feed`). Again this is in accordance with canonical path format which requires percent-encoding for IDs,
+* within a single path segment everything must be percent-encoded (i.e. above we're looking for feeds with name
+`My Feed`). Again this is in accordance with canonical path format which requires percent-encoding for IDs,
 too.
 
 //just splitting the above list from the below one
@@ -185,7 +185,7 @@ will return an environment that incorporates a feed with id `feedId`.
 understood direction of the relationship. While `relatedTo` assumes and outgoing relationship,  `relatedWith` assumes an
 incoming relationship. E.g.
 +
-  /hawkular/inventory/traversal/type=f;relatedWith%2Fe%3Benv;relatedBy=incorporates
+  /hawkular/inventory/traversal/type=f;relatedWith=%2Fe%3Benv;relatedBy=incorporates
 +
 will return all feeds that are incorporated by the environment with id `env`. Note that this can be equally expressed
 as:
