@@ -38,7 +38,7 @@ REL_TYPE : 'rl' ;
 ENTITIES : 'entities' ;
 RELATIONSHIPS : 'relationships' ;
 DIRECTION : 'in' | 'out' ;// | 'both' ; NOTE we don't support "both" because making the traversal behave right would be
-                          //            very expensive. Imagine grelim: v.bothE().bothV() - the result would contain
+                          //            very expensive. Imagine gremlin: v.bothE().bothV() - the result would contain
                           //            the "v" vertex (or vertices) n-times, where n is the number of edges connected
                           //            to v. To give an expected result, one would have to add ".dedup()" pipe after
                           //            that to remove the duplicities, but that means holding the whole result set
