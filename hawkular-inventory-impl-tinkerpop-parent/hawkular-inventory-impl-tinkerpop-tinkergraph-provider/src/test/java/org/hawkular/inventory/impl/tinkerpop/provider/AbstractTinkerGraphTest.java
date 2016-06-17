@@ -26,11 +26,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
-
-import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci

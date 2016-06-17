@@ -21,11 +21,10 @@ import static org.hawkular.inventory.impl.tinkerpop.spi.Log.LOG;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.paths.CanonicalPath;
-
-import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
-import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * This is a service interface that the Tinkerpop implementation will use to get a configured and initialized instance
@@ -59,7 +58,7 @@ public interface GraphProvider {
      * @param configuration the configuration of the graph
      * @return a configured instance of the graph or null if not possible
      */
-    TransactionalGraph instantiateGraph(Configuration configuration);
+    Graph instantiateGraph(Configuration configuration);
 
     /**
      * Makes sure all the indexes needed for good performance.
@@ -71,7 +70,7 @@ public interface GraphProvider {
      *                   {@link #instantiateGraph(Configuration)} call) to index
      * @param indexSpecs the core set of indices to define
      */
-    void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs);
+    void ensureIndices(Graph graph, IndexSpec... indexSpecs);
 
     /**
      * Initializes new transaction for use with given graph.
@@ -79,7 +78,7 @@ public interface GraphProvider {
      * @param graph    the graph to start the transaction in
      * @return a new transactional graph that is bound to a new transaction
      */
-    default TransactionalGraph startTransaction(TransactionalGraph graph) {
+    default Graph startTransaction(Graph graph) {
         boolean tracing = LOG.isTraceEnabled();
 
         Throwable previousTransactionAllocation = TransactionTracker.transactionStart.get().get(this);
@@ -94,9 +93,8 @@ public interface GraphProvider {
 
         boolean failed = false;
         try {
-            return graph instanceof ThreadedTransactionalGraph
-                    ? ((ThreadedTransactionalGraph) graph).newTransaction()
-                    : graph;
+            graph.tx().open();
+            return graph;
         } catch (Throwable t) {
             failed = true;
             throw t;
@@ -117,14 +115,17 @@ public interface GraphProvider {
     /**
      * Commits the transaction in the graph.
      *
-     * <p>The default implementation merely calls {@link TransactionalGraph#commit()}.
+     * <p>The default implementation merely calls {@link org.apache.tinkerpop.gremlin.structure.Transaction#commit()}.
      *
      * @param graph the graph to commit the transaction to
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    default void commit(TransactionalGraph graph) {
+    default void commit(Graph graph) {
         try {
-            graph.commit();
+            Transaction tx = graph.tx();
+            tx.commit();
+            tx.close();
+
             if (Log.LOG.isTraceEnabled()) {
                 Log.LOG.trace("------- TX COMMITTED ON GRAPH: " + graph);
             }
@@ -141,14 +142,17 @@ public interface GraphProvider {
     /**
      * Rolls back the transaction in the graph.
      * <p>
-     * <p>The default implementation merely calls {@link TransactionalGraph#rollback()}.
+     * <p>The default implementation merely calls {@link org.apache.tinkerpop.gremlin.structure.Transaction#rollback()}.
      *
      * @param graph the graph to rollback the transaction from
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    default void rollback(TransactionalGraph graph) {
+    default void rollback(Graph graph) {
         try {
-            graph.rollback();
+            Transaction tx = graph.tx();
+            tx.rollback();
+            tx.close();
+
             if (Log.LOG.isTraceEnabled()) {
                 Log.LOG.trace("------- TX ROLLED BACK ON GRAPH: " + graph);
             }

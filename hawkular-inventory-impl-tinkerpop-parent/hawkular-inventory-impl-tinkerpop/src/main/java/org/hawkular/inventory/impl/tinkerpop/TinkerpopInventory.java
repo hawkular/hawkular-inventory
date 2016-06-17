@@ -18,17 +18,16 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import java.util.ServiceLoader;
 
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
-
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 
 /**
  * @author Lukas Krejci
@@ -63,13 +62,13 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
 
         Log.LOG.iUsingGraphProvider(gp.getClass().getName());
 
-        TransactionalGraph g = ensureIndices(gp, configuration);
+        Graph g = ensureIndices(gp, configuration);
 
         return new InventoryContext(this, g, gp);
     }
 
-    private TransactionalGraph ensureIndices(GraphProvider graphProvider, Configuration config) {
-        TransactionalGraph graph = graphProvider.instantiateGraph(config);
+    private Graph ensureIndices(GraphProvider graphProvider, Configuration config) {
+        Graph graph = graphProvider.instantiateGraph(config);
 
         graphProvider.ensureIndices(graph,
                 IndexSpec.builder()

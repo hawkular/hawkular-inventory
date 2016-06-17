@@ -62,8 +62,9 @@
     <!-- overrides 3.1.2 from parent which produces NPE -->
     <version.com.github.kongchen.swagger-maven-plugin>3.1.1</version.com.github.kongchen.swagger-maven-plugin>
     <version.com.github.fge>2.2.6</version.com.github.fge>
-    <version.com.thinkaurelius.titan>0.5.4-jboss-1</version.com.thinkaurelius.titan>
+    <version.com.thinkaurelius.titan>1.0.0</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
+    <version.org.apache.tinkerpop>3.0.1-incubating</version.org.apache.tinkerpop>
 
     <version.org.antlr>4.5.3</version.org.antlr>
 
