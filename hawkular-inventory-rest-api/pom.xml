@@ -365,7 +365,8 @@
                   <basePath>/hawkular/inventory</basePath>
                   <info>
                     <title>Hawkular Inventory</title>
-                    <version>${project.version}</version>
+                    <!-- The version of the REST API - not of the project -->
+                    <version>0.2</version>
                   </info>
                   <swaggerDirectory>${swaggerDirectory}</swaggerDirectory>
                 </apiSource>
