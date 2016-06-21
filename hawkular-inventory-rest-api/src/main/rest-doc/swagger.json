@@ -73,7 +73,7 @@
         }
       }
     },
-    "/entity/{path:.+}" : {
+    "/entity/{path}" : {
       "get" : {
         "tags" : [ "Single Entity" ],
         "summary" : "Reads an inventory entity on the given location.",
@@ -82,11 +82,12 @@
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
         "parameters" : [ {
-            "name": "path",
-            "in": "path",
-            "required": true,
-            "description": "See the documentation above for the format of the path."
-          } ],
+          "name": "path",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "description": "See the documentation above for the format of the path."
+        } ],
         "responses" : {
           "200" : {
             "description" : "A single entity found and returned.",
@@ -113,6 +114,7 @@
           "name" : "path",
           "in" : "path",
           "required" : true,
+          "type": "string",
           "description" : "See the documentation above for the format of the path."
         } ],
         "responses" : {
@@ -126,27 +128,31 @@
             "description" : "Internal server error"
           }
         }
-      }
-    },
-    "/entity/{path.*}/d;{id}" : {
+      },
       "put" : {
         "tags" : [ "Single Entity" ],
-        "summary" : "Updates a data entity. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
+        "summary" : "Updates an entity. The path is actually a canonical path. The format of the accepted JSON object is governed by the type of the entity being updated. If you're updating an environment, look for EnvironmentUpdate type, etc.",
         "description" : "",
-        "operationId" : "putDataEntity",
+        "operationId" : "put",
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
         "parameters" : [ {
+          "name" : "path",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the path."
+        }, {
           "in" : "body",
           "name" : "update",
           "required" : true,
           "schema" : {
-            "$ref" : "#/definitions/DataEntityUpdate"
+            "$ref" : "#/definitions/AbstractElementUpdate"
           }
         } ],
         "responses" : {
           "204" : {
-            "description" : "Data entity updated."
+            "description" : "Entity updated."
           },
           "400" : {
             "description" : "Data in wrong format"
@@ -155,7 +161,7 @@
             "description" : "Unauthorized access"
           },
           "404" : {
-            "description" : "Data entity not found."
+            "description" : "Entity not found."
           },
           "500" : {
             "description" : "Server error."
@@ -163,27 +169,40 @@
         }
       }
     },
-    "/entity/{path.*}/{type:d(ata)?}" : {
+    "/entity/{path}/{type}" : {
       "post" : {
         "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new data entity",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 data entity at a time. Please consult the docs for what entities can contain a data entity.",
-        "operationId" : "postDataEntity",
+        "summary" : "Creates a new entity",
+        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 entity at a time.",
+        "operationId" : "post",
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
         "parameters" : [ {
+          "name" : "path",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the path."
+        }, {
+          "name": "type",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "enum": ["environment", "e", "resourceType", "rt", "metricType", "mt", "operationType", "ot", "metadataPack", "mp", "feed", "f", "resource", "r", "metric", "m", "data", "d"],
+          "description": "The type is either a camel-cased full name of the entity type or its short identifier as used in canonical path."
+        }, {
           "in" : "body",
           "name" : "blueprint",
           "required" : true,
           "schema" : {
-            "$ref" : "#/definitions/DataEntityBlueprint"
+            "$ref" : "#/definitions/AbstractElementBlueprint"
           }
         } ],
         "responses" : {
           "201" : {
-            "description" : "Data entity(ies) created.",
+            "description" : "Entity(ies) created.",
             "schema" : {
-              "$ref" : "#/definitions/DataEntity"
+              "$ref" : "#/definitions/AbstractElement"
             }
           },
           "400" : {
@@ -201,664 +220,7 @@
         }
       }
     },
-    "/entity/{path.*}/e;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates an environment. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putEnvironment",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/EnvironmentUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Environment updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Environment not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:e(nvironment)?}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new environment",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 environment at a time. Please consult the docs for what entities can contain an environment.",
-        "operationId" : "postEnvironment",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/EnvironmentBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Environments(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/Environment"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/f;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a feed. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putFeed",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/FeedUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Feed updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Feed not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:f(eed)?}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new feed",
-        "description" : "Pay attention to the returned entity/entities as the IDs assigned to the feeds might be different from what you passed in. As all POSTs, this can also accept an array of blueprints to create more than 1 feed at a time. Please consult the docs for what entities can contain a feed.",
-        "operationId" : "postFeed",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/FeedBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Feed(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/Feed"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:(mp|metadataPack)}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new metadata pack",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 metadata pack at a time. Please consult the docs for what entities can contain a metadata pack.",
-        "operationId" : "postMetadataPack",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetadataPackBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Metadata pack(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/MetadataPack"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:m(etric)?}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new metric",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 metric at a time. Please consult the docs for what entities can contain a metric.",
-        "operationId" : "postMetric",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetricBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Metric(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/Metric"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:(mt|metricType)}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new metric type",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 metric type at a time. Please consult the docs for what entities can contain a metric type.",
-        "operationId" : "postMetricType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetricTypeBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Metric type(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/MetricType"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/mp;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a metadata pack. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putMetadataPack",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetadataPackUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Metadata pack updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Metadata pack not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/mt;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a metric type. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putMetricType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetricTypeUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Metric type updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Metric type not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:(op|operationType)}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new operation type",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 operation type at a time. Please consult the docs for what entities can contain an operation type.",
-        "operationId" : "postOperationType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/OperationTypeBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Operation type(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/OperationType"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/ot;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates an operation type. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putOperationType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/OperationTypeUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Operation type updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Operation type not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/r;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a resource. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putResource",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/ResourceUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Resoure updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Resource not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:(rl|relationship)}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new relationship",
-        "description" : "Creates a new relationship with one end being the entity on the path and the other end specified by the relationship blueprint. The blueprint also defines the direction in which the relationship is created as well as its name. As all POSTs, this can also accept an array of blueprints to create more than 1 relationship at a time.",
-        "operationId" : "postRelationship",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/RelationshipBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Relationship(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/Relationship"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/rl;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a relationship. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putRelationship",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/RelationshipUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Relationship updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Relationship not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:r(esource)?}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new resource",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 resource at a time. Please consult the docs for what entities can contain a resource.",
-        "operationId" : "postResource",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/ResourceBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Resource(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/Resource"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/{type:(rt|resourceType)}" : {
-      "post" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Creates a new resource type",
-        "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 resource type at a time. Please consult the docs for what entities can contain a resource type.",
-        "operationId" : "postResourceType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "blueprint",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/ResourceTypeBlueprint"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Resource type(s) created.",
-            "schema" : {
-              "$ref" : "#/definitions/ResourceType"
-            }
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "One of the related entities doesn't exist."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/m;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a metric. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putMetric",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/MetricUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Metric updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Metric not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/rt;{id}" : {
-      "put" : {
-        "tags" : [ "Single Entity" ],
-        "summary" : "Updates a resource type. The URL is actually a canonical path. The path identifier used here is just to distinguish it from the rest of canonical paths so that we can reference the correct type of the expected payload.",
-        "description" : "",
-        "operationId" : "putResourceType",
-        "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "update",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/definitions/ResourceTypeUpdate"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Resource type updated."
-          },
-          "400" : {
-            "description" : "Data in wrong format"
-          },
-          "403" : {
-            "description" : "Unauthorized access"
-          },
-          "404" : {
-            "description" : "Resource type not found."
-          },
-          "500" : {
-            "description" : "Server error."
-          }
-        }
-      }
-    },
-    "/entity/{path.*}/treeHash" : {
+    "/entity/{path}/treeHash" : {
       "get" : {
         "tags" : [ "Single Entity" ],
         "summary" : "Obtains the identity tree hash of the entity.",
@@ -866,6 +228,13 @@
         "operationId" : "getTreeHash",
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "path",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the path."
+        } ],
         "responses" : {
           "200" : {
             "description" : "Tree hash returned.",
@@ -958,7 +327,7 @@
         }
       }
     },
-    "/sync/{path.*}" : {
+    "/sync/{path}" : {
       "post" : {
         "tags" : [ "Sync" ],
         "summary" : "Make the inventory under given path match the provided inventory structure. Note that the relationships specified in the provided entities will be ignored and will not be applied.",
@@ -970,11 +339,15 @@
           "name" : "path",
           "in" : "path",
           "required" : true,
-          "type" : "array",
-          "items" : {
-            "$ref" : "#/definitions/PathSegment"
-          },
-          "collectionFormat" : "multi"
+          "type": "string",
+          "description": "The canonical path to the synced entity."
+        }, {
+          "name" : "structure",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/InventoryStructure"
+          }
         } ],
         "responses" : {
           "204" : {
@@ -1006,7 +379,7 @@
         "tags" : [ "Tenant Information" ],
         "summary" : "Retrieves the details of the current tenant.",
         "description" : "",
-        "operationId" : "get",
+        "operationId" : "getTenant",
         "responses" : {
           "200" : {
             "description" : "Tenant obtained",
@@ -1032,7 +405,7 @@
         "tags" : [ "Tenant Information" ],
         "summary" : "Updates the properties of the tenant",
         "description" : "",
-        "operationId" : "put",
+        "operationId" : "putTenant",
         "parameters" : [ {
           "in" : "body",
           "name" : "body",
@@ -1119,14 +492,21 @@
         }
       }
     },
-    "/traversal/{path.*}" : {
+    "/traversal/{traversal}" : {
       "get" : {
         "tags" : [ "Entity Graph Traversal" ],
         "summary" : "Retrieves a list of entities",
         "description" : "Given the traversal of inventory expressed in the URL, this will return a (possibly empty) list of entities that the traversal found. The results can be paged. See above for a thorough description of the format of the URL. The type of the returned elements is determined by the URL.",
-        "operationId" : "get",
+        "operationId" : "getTraversal",
         "consumes" : [ "application/json" ],
         "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "traversal",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the traversal."
+        } ],
         "responses" : {
           "200" : {
             "description" : "Traversal finished successfully.",
@@ -1442,7 +822,7 @@
     },
     "MetricType" : {
       "allOf" : [{
-        "$ref" : "#/definitions/IdentityHashableEntity"
+        "$ref" : "#/definitions/IdentityHashedEntity"
       }, {
         "type" : "object",
         "properties" : {
@@ -1597,7 +977,7 @@
         "properties" : {
           "type" : {
             "$ref" : "#/definitions/ResourceType"
-          },
+          }
         },
         "description" : "A resource has a type, can have configuration and connection configuration and can incorporate metrics."
       }]
@@ -1752,6 +1132,87 @@
           "type" : "string"
         }
       }
+    },
+    "InventoryStructure" : {
+      "type" : "object",
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : ["feed", "resourceType", "metricType", "operationType", "metric", "resource", "dataEntity"]
+        },
+        "data" : {
+          "$ref" : "#/definitions/EntityBlueprint"
+        },
+        "children" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureMap"
+          }
+        }
+      },
+      "required": ["type", "data"]
+    },
+    "InventoryStructureMap" : {
+      "type" : "object",
+      "properties" : {
+        "feed" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "resource" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "resourceType" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "metric" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "metricType" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "dataEntity" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        },
+        "operationType" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureChild"
+          }
+        }
+      }
+    },
+    "InventoryStructureChild" : {
+      "type" : "object",
+      "properties" : {
+        "data" : {
+          "$ref" : "#/definitions/EntityBlueprint"
+        },
+        "children" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/InventoryStructureMap"
+          }
+        }
+      },
+      "required": ["data"]
     }
   }
 }
