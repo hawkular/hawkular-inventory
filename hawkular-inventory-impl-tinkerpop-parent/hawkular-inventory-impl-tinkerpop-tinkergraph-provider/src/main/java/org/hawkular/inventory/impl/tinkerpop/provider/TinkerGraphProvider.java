@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -44,8 +44,6 @@ import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
  * @since 0.0.1
  */
 public final class TinkerGraphProvider implements GraphProvider {
-
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final boolean prefersBigTxs;
 
@@ -80,28 +78,10 @@ public final class TinkerGraphProvider implements GraphProvider {
         //don't bother with this for a demo graph
     }
 
-    @Override
-    public Graph startTransaction(Graph graph) {
-        GraphProvider.super.startTransaction(graph);
-        lock.writeLock().lock();
-        return graph;
-    }
-
-    @Override
-    public void commit(Graph graph) {
-        GraphProvider.super.commit(graph);
-        lock.writeLock().unlock();
-    }
-
-    @Override
-    public void rollback(Graph graph) {
-        GraphProvider.super.rollback(graph);
-        lock.writeLock().unlock();
-    }
-
     private static final class WrappedTinkerGraph implements Graph, WrappedGraph<TinkerGraph> {
 
         private final TinkerGraph graph;
+        private final AtomicBoolean inTx = new AtomicBoolean(false);
 
         WrappedTinkerGraph(org.apache.commons.configuration.Configuration configuration) {
             graph = TinkerGraph.open(configuration);
@@ -173,22 +153,26 @@ public final class TinkerGraphProvider implements GraphProvider {
 
         @Override public Transaction tx() {
             return new AbstractTransaction(this) {
-                private boolean open;
-
                 @Override protected void doOpen() {
-                    open = true;
+                    if (!inTx.compareAndSet(false, true)) {
+                        throw new IllegalStateException("Nested transaction detected");
+                    }
                 }
 
                 @Override protected void doCommit() throws TransactionException {
-                    open = false;
+                    if (!inTx.compareAndSet(true, false)) {
+                        throw new IllegalStateException("No transaction active");
+                    }
                 }
 
                 @Override protected void doRollback() throws TransactionException {
-                    open = false;
+                    if (!inTx.compareAndSet(true, false)) {
+                        throw new IllegalStateException("No transaction active");
+                    }
                 }
 
                 @Override public boolean isOpen() {
-                    return open;
+                    return inTx.get();
                 }
             };
         }
