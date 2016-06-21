@@ -132,7 +132,7 @@ public final class BaseOperationTypes {
 
         @Override public Data.ReadWrite<DataRole.OperationType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
-                    new OperationTypeDataModificationChecks<>(context));
+                    DataRole.OperationType.class, new OperationTypeDataModificationChecks<>(context));
         }
 
         @Override protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {

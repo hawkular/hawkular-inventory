@@ -25,6 +25,7 @@ import static org.hawkular.inventory.api.filters.With.id;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,14 +100,21 @@ public final class BaseData {
             implements Data.ReadWrite<R> {
 
         private final DataModificationChecks<BE> checks;
+        private final Class<R> dataRoleClass;
 
-        public ReadWrite(TraversalContext<BE, DataEntity> context, DataModificationChecks<BE> checks) {
+        public ReadWrite(TraversalContext<BE, DataEntity> context, Class<R> dataRoleClass,
+                         DataModificationChecks<BE> checks) {
             super(context);
+            this.dataRoleClass = dataRoleClass;
             this.checks = checks;
         }
 
         @Override
         protected String getProposedId(Transaction<BE> tx, DataEntity.Blueprint<R> blueprint) {
+            if (!dataRoleClass.equals(blueprint.getRole().getClass())) {
+                throw new IllegalArgumentException("Invalid role/id. Admissible values for this data position are: "
+                    + Arrays.asList(dataRoleClass.getEnumConstants()).stream().map(DataRole::name));
+            }
             return blueprint.getRole().name();
         }
 

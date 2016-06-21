@@ -33,13 +33,15 @@ import org.hawkular.inventory.paths.SegmentType;
 import io.swagger.annotations.ApiModel;
 
 /**
- * A metadata pack defines a bunch of resource types and metric types. It computes a hash of its "contents" so that
+ * A metadata pack incorporates a bunch of resource types and metric types. It computes a hash of its "contents" so that
  * merely by examining the hash, one can make sure that certain set of resource types and metric types is present in
  * the form one expects.
  *
  * @author Lukas Krejci
  * @since 0.7.0
  */
+@ApiModel(description = "A metadata pack can incorporate global resource and metric types making them read-only.",
+        parent = Entity.class)
 public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataPack.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.mp;

@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.SegmentType;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -55,6 +56,18 @@ public final class DetypedPathDeserializer extends JsonDeserializer<Path> {
         CanonicalPath ro = CURRENT_RELATIVE_PATH_ORIGIN.get();
         Class<?> entityType = CURRENT_ENTITY_TYPE.get();
 
-        return Path.fromPartiallyUntypedString(str, co, ro, AbstractElement.segmentTypeFromType(entityType));
+        return Path.fromPartiallyUntypedString(str, co, ro, getIntendedFinalType(entityType));
+    }
+
+    private SegmentType getIntendedFinalType(Class<?> type) {
+        if (type == null) {
+            return null;
+        }
+
+        try {
+            return AbstractElement.segmentTypeFromType(type);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return null;
+        }
     }
 }

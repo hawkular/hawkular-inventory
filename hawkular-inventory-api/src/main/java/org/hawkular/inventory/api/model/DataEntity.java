@@ -34,6 +34,8 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.3.0
  */
+@ApiModel(description = "Data entity contains JSON data and serves a certain \"role\" in the entity it is contained in",
+        parent = IdentityHashedEntity.class)
 public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.d;
@@ -130,8 +132,9 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             return value == null ? UNDEFINED : value;
         }
 
+        @SuppressWarnings("unchecked")
         public DR getRole() {
-            return role;
+            return (role == null) ? (DR) DataRole.valueOf(getId()) : role;
         }
 
         @Override
@@ -152,6 +155,11 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
             public Builder<R> withRole(R role) {
                 this.role = role;
                 return this;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override public Builder<R> withId(String id) {
+                return withRole((R) DataRole.valueOf(id));
             }
 
             @Override

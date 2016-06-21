@@ -36,13 +36,13 @@ import java.util.Set;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
+import org.hawkular.inventory.api.filters.RecurseFilter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.base.spi.NoopFilter;
-import org.hawkular.inventory.base.spi.RecurseFilter;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -167,6 +167,25 @@ class FilterVisitor {
         query.or(typeChecks);
 
         goBackFromEdges(query, state);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void visit(HawkularPipeline<?, ?> query, With.Names names, QueryTranslationState state) {
+        goBackFromEdges(query, state);
+
+        String prop = Constants.Property.name.name();
+
+        if (names.getNames().length == 1) {
+            query.has(prop, names.getNames()[0]);
+            return;
+        }
+
+        Pipe[] nameChecks = new Pipe[names.getNames().length];
+
+        Arrays.setAll(nameChecks,
+                i -> new PropertyFilterPipe<Element, String>(prop, Compare.EQUAL, names.getNames()[i]));
+
+        query.or(nameChecks);
     }
 
     @SuppressWarnings("unchecked")

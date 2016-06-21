@@ -43,6 +43,10 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = "/graph", description = "Retrieves whole graph in the JSON representation.", tags = "Graph")
 public class RestGraphSON extends RestBase {
 
+    public RestGraphSON() {
+        super("/graph".length());
+    }
+
     @GET
     @Path("/")
     @ApiOperation("Gets the graph.")

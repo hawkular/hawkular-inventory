@@ -17,17 +17,14 @@
 package org.hawkular.inventory.api;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
@@ -41,12 +38,14 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.PageContext;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
@@ -108,30 +107,6 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.0.1
  */
 public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.ReadWrite> {
-    static final class InventotyUtils {
-        private static final Map<String, Class<? extends Entity<?, ?>>>entityTypes;
-        static {
-            Map<String, Class<? extends Entity<?, ?>>> m = Stream.of(
-                    Tenant.class,
-                    Environment.class,
-                    Feed.class,
-                    ResourceType.class,
-                    MetricType.class,
-                    Resource.class,
-                    Metric.class,
-                    OperationType.class,
-                    MetadataPack.class)
-            .collect(Collectors.toMap(cls -> cls.getSimpleName().toLowerCase(), Function.identity()));
-            entityTypes = Collections.unmodifiableMap(m);
-        }
-    }
-
-    static Class<? extends Entity<?, ?>> getEntityType(String type) {
-        return InventotyUtils.entityTypes.get(type);
-    }
-    static Collection<Class<? extends Entity<?, ?>>> getEntityTypes() {
-        return InventotyUtils.entityTypes.values();
-    }
 
     /**
      * Initializes the inventory from the provided configuration object.
@@ -494,26 +469,6 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
             public Single visitUnknown(Void parameter) {
                 return null;
             }
-
-            private CanonicalPath[] allResourceSegments(CanonicalPath path, int leaveOutTop, int leaveOutBottom) {
-                List<CanonicalPath> ret = new ArrayList<>();
-
-                Iterator<CanonicalPath> it = path.descendingIterator();
-                int leftOutTop = 0;
-                while (it.hasNext()) {
-                    CanonicalPath p = it.next();
-                    if (SegmentType.r.equals(p.getSegment().getElementType()) && leftOutTop++ >= leaveOutTop) {
-                        ret.add(p);
-                    }
-                }
-
-                if (ret.size() - leaveOutBottom > 0) {
-                    int len = ret.size() - leaveOutBottom;
-                    return ret.subList(0, len).toArray(new CanonicalPath[len]);
-                } else {
-                    return new CanonicalPath[0];
-                }
-            }
         }, null);
     }
 
@@ -555,6 +510,200 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
     Configuration getConfiguration();
 
     default <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
-        return new Page<>(Collections.emptyIterator(), new PageContext(0, 0), 0);
+        return new Page<>(Collections.emptyIterator(), new PageContext(0, 0, Order.unspecified()), 0);
+    }
+
+    /**
+     * @return a registry of various types associated with entities
+     */
+    static Types types() {
+        return Types.INSTANCE;
+    }
+
+    /**
+     * A registry of various types used with entities. You can look up an by things like segment type, entity type,
+     * blueprint type, etc. and then obtain the rest of the types for the corresponding entity type.
+     */
+    @SuppressWarnings("unchecked")
+    final class Types {
+        private static final Types INSTANCE = new Types();
+        private static final EnumMap<SegmentType, ElementTypes<?, ?, ?>> elementTypes;
+        static {
+            elementTypes = new EnumMap<>(SegmentType.class);
+
+            elementTypes.put(SegmentType.d,
+                    new ElementTypes<>(Data.Single.class, Data.Multiple.class, (Class) DataEntity.Blueprint.class,
+                            DataEntity.Update.class, DataEntity.class, SegmentType.d));
+            elementTypes.put(SegmentType.e,
+                    new ElementTypes<>(Environments.Single.class, Environments.Multiple.class,
+                            Environment.Blueprint.class, Environment.Update.class, Environment.class, SegmentType.e));
+            elementTypes.put(SegmentType.f,
+                    new ElementTypes<>(Feeds.Single.class, Feeds.Multiple.class, Feed.Blueprint.class, Feed.Update.class,
+                            Feed.class, SegmentType.f));
+            elementTypes.put(SegmentType.m,
+                    new ElementTypes<>(Metrics.Single.class, Metrics.Multiple.class, Metric.Blueprint.class,
+                            Metric.Update.class, Metric.class, SegmentType.m));
+            elementTypes.put(SegmentType.mp,
+                    new ElementTypes<>(MetadataPacks.Single.class, MetadataPacks.Multiple.class,
+                            MetadataPack.Blueprint.class, MetadataPack.Update.class, MetadataPack.class,
+                            SegmentType.mp));
+            elementTypes.put(SegmentType.mt,
+                    new ElementTypes<>(MetricTypes.Single.class, MetricTypes.Multiple.class, MetricType.Blueprint.class,
+                            MetricType.Update.class, MetricType.class, SegmentType.mt));
+            elementTypes.put(SegmentType.ot,
+                    new ElementTypes<>(OperationTypes.Single.class, OperationTypes.Multiple.class,
+                            OperationType.Blueprint.class, OperationType.Update.class, OperationType.class,
+                            SegmentType.ot));
+            elementTypes.put(SegmentType.r,
+                    new ElementTypes<>(Resources.Single.class, Resources.Multiple.class, Resource.Blueprint.class,
+                            Resource.Update.class, Resource.class, SegmentType.r));
+            elementTypes.put(SegmentType.rl,
+                    new ElementTypes<>(Relationships.Single.class, Relationships.Multiple.class,
+                            Relationship.Blueprint.class, Relationship.Update.class, Relationship.class,
+                            SegmentType.rl));
+            elementTypes.put(SegmentType.rt,
+                    new ElementTypes<>(ResourceTypes.Single.class, ResourceTypes.Multiple.class,
+                            ResourceType.Blueprint.class, ResourceType.Update.class, ResourceType.class,
+                            SegmentType.rt));
+            elementTypes.put(SegmentType.t,
+                    new ElementTypes<>(Tenants.Single.class, Tenants.Multiple. class, Tenant.Blueprint.class,
+                            Tenant.Update.class, Tenant.class, SegmentType.t));
+        }
+
+        private Types() {
+
+        }
+
+        /**
+         * @return element types that represent entities (i.e. everything but a relationship)
+         */
+        public Set<ElementTypes<? extends Entity<?, ?>, ?, ?>> entityTypes() {
+            return elementTypes.entrySet().stream()
+                    .filter(e -> {
+                        SegmentType st = e.getKey();
+                        return st != SegmentType.rl;
+                    })
+                    .map(e -> (ElementTypes<? extends Entity<?, ?>, ?, ?>) e.getValue())
+                    .collect(Collectors.toSet());
+        }
+
+        public ElementTypes<?, ?, ?> byPath(Path path) {
+            return bySegment(path.getSegment().getElementType());
+        }
+
+        public ElementTypes<?, ?, ?> bySegment(SegmentType segmentType) {
+            ElementTypes ret = elementTypes.get(segmentType);
+            if (ret == null) {
+                throw new IllegalArgumentException(
+                        "Unsupported segment type: " + segmentType);
+            }
+
+            return ret;
+        }
+
+        public <B extends Blueprint> ElementTypes<? extends AbstractElement<B, ?>, B, ?>
+        byBlueprint(Class<B> blueprintType) {
+            for(SegmentType st : SegmentType.values()) {
+                ElementTypes ret = elementTypes.get(st);
+                if (ret.getBlueprintType().equals(blueprintType)) {
+                    return ret;
+                }
+            }
+
+            throw new IllegalArgumentException("Unknown blueprint type: " + blueprintType);
+        }
+
+        public <U extends AbstractElement.Update> ElementTypes<?, ?, U> byUpdate(Class<U> updateType) {
+            for(SegmentType st : SegmentType.values()) {
+                ElementTypes ret = elementTypes.get(st);
+                if (ret.getUpdateType().equals(updateType)) {
+                    return ret;
+                }
+            }
+
+            throw new IllegalArgumentException("Unknown update type: " + updateType);
+        }
+
+        public <E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update>
+        ElementTypes<E, B, U> byElement(Class<E> elementType) {
+            for(SegmentType st : SegmentType.values()) {
+                ElementTypes ret = elementTypes.get(st);
+                if (ret.getElementType().equals(elementType)) {
+                    return ret;
+                }
+            }
+
+            throw new IllegalArgumentException("Unknown element type: " + elementType);
+        }
+
+        public <E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update>
+        ElementTypes<E, B, U> bySingle(Class<? extends ResolvableToSingle<E, U>> singleAccessorType) {
+            for(SegmentType st : SegmentType.values()) {
+                ElementTypes ret = elementTypes.get(st);
+                if (ret.getSingleAccessorType().equals(singleAccessorType)) {
+                    return ret;
+                }
+            }
+
+            throw new IllegalArgumentException("Unknown single accessor type: " + singleAccessorType);
+        }
+
+        public <E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update>
+        ElementTypes<E, B, U> byMultiple(Class<? extends ResolvableToMany<E>> multipleAccessorType) {
+            for(SegmentType st : SegmentType.values()) {
+                ElementTypes ret = elementTypes.get(st);
+                if (ret.getMultipleAccessorType().equals(multipleAccessorType)) {
+                    return ret;
+                }
+            }
+
+            throw new IllegalArgumentException("Unknown multiple accessor type: " + multipleAccessorType);
+        }
+    }
+
+    final class ElementTypes<E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update> {
+        private final Class<? extends ResolvableToSingle<E, U>> singleAccessorType;
+        private final Class<? extends ResolvableToMany<E>> manyAccessorType;
+        private final Class<B> blueprintType;
+        private final Class<U> updateType;
+        private final Class<E> elementType;
+        private final SegmentType segmentType;
+
+        private ElementTypes(Class<? extends ResolvableToSingle<E, U>> singleAccessorType,
+                             Class<? extends ResolvableToMany<E>> manyAccessorType,
+                             Class<B> blueprintType,
+                             Class<U> updateType,
+                             Class<E> elementType, SegmentType segmentType) {
+            this.singleAccessorType = singleAccessorType;
+            this.manyAccessorType = manyAccessorType;
+            this.blueprintType = blueprintType;
+            this.updateType = updateType;
+            this.elementType = elementType;
+            this.segmentType = segmentType;
+        }
+
+        public Class<B> getBlueprintType() {
+            return blueprintType;
+        }
+
+        public Class<E> getElementType() {
+            return elementType;
+        }
+
+        public SegmentType getSegmentType() {
+            return segmentType;
+        }
+
+        public Class<U> getUpdateType() {
+            return updateType;
+        }
+
+        public Class<? extends ResolvableToMany<E>> getMultipleAccessorType() {
+            return manyAccessorType;
+        }
+
+        public Class<? extends ResolvableToSingle<E, U>> getSingleAccessorType() {
+            return singleAccessorType;
+        }
     }
 }

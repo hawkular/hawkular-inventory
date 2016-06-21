@@ -35,6 +35,8 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.1.0
  */
+@ApiModel(description = "A feed represents a remote \"agent\" that is reporting its data to Hawkular.",
+        parent = IdentityHashedEntity.class)
 public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.f;

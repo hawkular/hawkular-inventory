@@ -36,6 +36,9 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  * @since 0.0.1
  */
+@ApiModel(description = "The tenants partition the data in the inventory graph." +
+        " No relationships between entities from 2 different tenants can exist.",
+        parent = Entity.class)
 public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.t;

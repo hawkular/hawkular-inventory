@@ -20,10 +20,15 @@ import java.util.Map;
 
 import org.hawkular.inventory.paths.CanonicalPath;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * @author Lukas Krejci
  * @since 0.11.0
  */
+@ApiModel(description = "A super type of all entities that support identity hashing",
+        subTypes = {Feed.class, MetricType.class, Metric.class, Resource.class, DataEntity.class, OperationType.class,
+        ResourceType.class}, parent = Entity.class)
 public abstract class IdentityHashedEntity<B extends Entity.Blueprint, U extends Entity.Update> extends Entity<B, U>
     implements IdentityHashable {
 

@@ -42,15 +42,16 @@ import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 /**
  * @author Lukas Krejci
- * @since 1.0
+ * @since 0.0.1
  */
 @Path("/")
 @Produces(value = APPLICATION_JSON)
 @Consumes(value = APPLICATION_JSON)
-@Api(value = "/", tags = "REST API Endpoints")
+@Api(value = "/", tags = "API Info")
 public class RestPing {
 
     @Context
@@ -66,6 +67,7 @@ public class RestPing {
 
     @GET
     @Path("/")
+    @ApiOperation(value = "List Endpoints", notes = "Lists all the REST API endpoints available")
     public Response ping(@Context Dispatcher dispatcher) {
         return Response.status(Response.Status.OK).entity(inventoryJaxRsInfo).build();
     }

@@ -49,8 +49,7 @@ public interface ResolvableToMany<Entity> {
      */
     default Set<Entity> entities() {
         try (Page<Entity> it = entities(Pager.unlimited(Order.unspecified()))) {
-            Iterable<Entity> iterable = () -> it;
-            return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toSet());
+            return StreamSupport.stream(it.spliterator(), false).collect(Collectors.toSet());
         }
     }
 

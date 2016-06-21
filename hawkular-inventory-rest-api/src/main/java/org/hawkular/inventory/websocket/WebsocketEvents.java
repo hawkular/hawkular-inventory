@@ -33,7 +33,9 @@ import javax.websocket.server.ServerEndpoint;
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Interest;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.inventory.rest.RestEvents;
+import org.hawkular.inventory.rest.Utils;
 import org.hawkular.inventory.rest.cdi.AutoTenant;
 import org.hawkular.inventory.rest.cdi.Our;
 
@@ -77,7 +79,8 @@ public class WebsocketEvents {
             return;
         }
 
-        Class cls = Inventory.getEntityType(type);
+        SegmentType st = Utils.getSegmentTypeFromSimpleName(type);
+        Class cls = Inventory.types().bySegment(st).getElementType();
         if (cls == null) {
             session.getAsyncRemote().sendText("Unknown type: " + type);
             closeSession(session);

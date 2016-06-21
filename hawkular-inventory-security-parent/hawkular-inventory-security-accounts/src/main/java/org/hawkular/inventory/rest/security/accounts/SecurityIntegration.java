@@ -68,7 +68,7 @@ public class SecurityIntegration {
     public void start(@Observes InventoryInitialized event) {
         Inventory inventory = event.getInventory();
 
-        Inventory.getEntityTypes().stream().forEach(t -> install(inventory, t));
+        Inventory.types().entityTypes().forEach(et -> install(inventory, et.getElementType()));
     }
 
     public void stop(@Observes DisposingInventory event) {

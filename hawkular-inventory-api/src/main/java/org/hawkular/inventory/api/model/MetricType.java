@@ -34,6 +34,9 @@ import io.swagger.annotations.ApiModel;
  * @author Heiko W. Rupp
  * @author Lukas Krejci
  */
+@ApiModel(description = "Metric type defines the unit and data type of a metric. It also specifies the default " +
+        " collection interval as a guideline for the feed on how often to collect the metric values.",
+        parent = IdentityHashedEntity.class)
 public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.mt;

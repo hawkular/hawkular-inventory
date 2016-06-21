@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,10 +34,12 @@ import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -59,7 +62,6 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.squareup.okhttp.Response;
 
 /**
@@ -104,99 +106,104 @@ public class InventoryITest extends AbstractTestBase {
     @BeforeClass
     public static void setupData() throws Throwable {
 
+        CanonicalPath tenantPath = CanonicalPath.of().tenant(tenantId).get();
+
         /* assert the test environment exists */
         /* There is a race condition when WildFly agent is enabled:
            both this test and Agent trigger the autocreation of test entities simultaneously,
            and one of them may get only a partially initialized state.
            That is why we do several delayed attempts do perform the first request.
          */
-        String path = "/hawkular/inventory/environments/" + testEnvId;
+        String path = "/hawkular/inventory/entity/e;" + testEnvId;
         Environment env = getWithRetries(path, Environment.class, 10, 2000);
         assertEquals("Unable to get the '" + testEnvId + "' environment.", testEnvId, env.getId());
 
         /* Create an environment that will be used exclusively by this test */
-        Response response = postDeletable("environments",
+        Response response = postDeletable(tenantPath,
                 Environment.Blueprint.builder().withId(environmentId).build());
         assertEquals(201, response.code());
         Environment environment = mapper.readValue(response.body().string(), Environment.class);
 
         assertEquals(environmentId, environment.getId());
         assertEquals(CanonicalPath.of().tenant(tenantId).environment(environmentId).get(), environment.getPath());
-        assertEquals(baseURI + basePath + "/environments/" + environmentId, response.headers().get("Location"));
+        assertEquals(baseURI + basePath + "/entity/e;" + environmentId, response.headers().get("Location"));
 
         /* URL resource type should have been autocreated */
-        path = basePath + "/resourceTypes/" + urlTypeId;
+        path = basePath + "/entity/rt;" + urlTypeId;
         ResourceType resourceType = getWithRetries(path, ResourceType.class, 10, 2000);
         assertEquals("Unable to get the '" + urlTypeId + "' resource type.", urlTypeId, resourceType.getId());
         assertEquals(urlTypeId, resourceType.getId());
 
         /* Create pingable host resource type */
-        response = postDeletable("resourceTypes", ResourceType.Blueprint.builder().withId(pingableHostRTypeId).build());
+        response = postDeletable(tenantPath, ResourceType.Blueprint.builder().withId(pingableHostRTypeId).build());
         assertEquals(201, response.code());
 
         ResourceType pingableHost = mapper.readValue(response.body().string(), ResourceType.class);
 
         assertEquals(pingableHostRTypeId, pingableHost.getId());
-        assertEquals(baseURI + basePath +"/resourceTypes/" + pingableHostRTypeId,
+        assertEquals(baseURI + basePath + "/entity/rt;" + pingableHostRTypeId,
                 response.headers().get("Location"));
 
         /* Create room resource type */
-        response = postDeletable("resourceTypes", ResourceType.Blueprint.builder().withId(roomRTypeId)
+        response = postDeletable(tenantPath, ResourceType.Blueprint.builder().withId(roomRTypeId)
                 .withProperty("expectedLifetime", expectedLifetime15years)//
                 .withProperty("ownedByDepartment", facilitiesDept).build());
 
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/resourceTypes/" + roomRTypeId, response.headers().get("Location"));
+        assertEquals(baseURI + basePath + "/entity/rt;" + roomRTypeId, response.headers().get("Location"));
 
         /* Create copy machine resource type */
-        response = postDeletable("resourceTypes", ResourceType.Blueprint.builder().withId(copyMachineRTypeId)
+        response = postDeletable(tenantPath, ResourceType.Blueprint.builder().withId(copyMachineRTypeId)
                 .withProperty("expectedLifetime", expectedLifetime15years)//
                 .withProperty("ownedByDepartment", itDept).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/resourceTypes/" + copyMachineRTypeId,
+        assertEquals(baseURI + basePath + "/entity/rt;" + copyMachineRTypeId,
                 response.headers().get("Location"));
 
 
         /* Create a metric type */
-        response = postDeletable("metricTypes", MetricType.Blueprint.builder(MetricDataType.COUNTER)
+        response = postDeletable(tenantPath, MetricType.Blueprint.builder(MetricDataType.COUNTER)
                 .withId(responseTimeMTypeId)//
                 .withUnit(MetricUnit.MILLISECONDS)//
                 .withInterval(1L)//
                 .build());
 
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/metricTypes/" + responseTimeMTypeId,
+        assertEquals(baseURI + basePath + "/entity/mt;" + responseTimeMTypeId,
                 response.headers().get("Location"));
 
         /* Create another metric type */
-        response = postDeletable("metricTypes", MetricType.Blueprint.builder(MetricDataType.GAUGE)
+        response = postDeletable(tenantPath, MetricType.Blueprint.builder(MetricDataType.GAUGE)
                 .withId(responseStatusCodeMTypeId)//
                 .withUnit(MetricUnit.NONE)//
                 .withInterval(1L)//
                 .build());
 
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/metricTypes/" + responseStatusCodeMTypeId,
+        assertEquals(baseURI + basePath + "/entity/mt;" + responseStatusCodeMTypeId,
                 response.headers().get("Location"));
 
         /* link pingableHostRTypeId with responseTimeMTypeId and responseStatusCodeMTypeId */
-        path = basePath + "/resourceTypes/" + pingableHostRTypeId +"/metricTypes";
+        path = basePath + "/entity/rt;" + pingableHostRTypeId +"/relationship";
         //just testing that both relative and canonical paths work when referencing the types
-        response = post(path, "[\"../" + responseTimeMTypeId +"\", \"/" + responseStatusCodeMTypeId +"\"]");
+        response = post(path, "[{\"otherEnd\": \"../mt;" + responseTimeMTypeId +"\", \"name\": \"incorporates\"}, " +
+                "{\"otherEnd\": \"/mt;" + responseStatusCodeMTypeId +"\", \"name\": \"incorporates\"}]");
 
-        assertEquals(204, response.code());
+        assertEquals(201, response.code());
         //we will try deleting the associations between resource types and metric types, too
         //this is not necessary because deleting either the resource type or the metric type will take care of it anyway
         //but this is to test that explicit deletes work, too
-        // XXX this should check for removal of a single association.
+        // XXX this should check for removal of a entity association.
         // OkHttp unconditionally canonicalizes the URL paths, which makes the below constructs impossible to send
         // over the wire using OkHttp (even though they're perfectly valid URLs).
         //pathsToDelete.put(path + "/../" + responseTimeMTypeId, path +"/../" + responseTimeMTypeId);
         // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
         //pathsToDelete.put(path + "/../" + responseStatusCodeMTypeId, path +"/../" + responseStatusCodeMTypeId);
 
+        CanonicalPath environmentPath = tenantPath.extend(SegmentType.e, environmentId).get();
+
         /* add a metric */
-        response = postDeletable(environmentId +"/metrics", Metric.Blueprint.builder()
+        response = postDeletable(environmentPath, Metric.Blueprint.builder()
                 .withId(responseTimeMetricId) //
                 .withMetricTypePath("../" + responseTimeMTypeId) //
                 .build());
@@ -204,22 +211,22 @@ public class InventoryITest extends AbstractTestBase {
         assertEquals(201, response.code());
         Metric responseTimeMetric = mapper.readValue(response.body().string(), Metric.class);
         assertEquals(responseTimeMetricId, responseTimeMetric.getId());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/metrics/" + responseTimeMetricId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/m;" + responseTimeMetricId,
                 response.headers().get("Location"));
 
         /* add another metric */
-        response = postDeletable(environmentId +"/metrics", Metric.Blueprint.builder()
+        response = postDeletable(environmentPath, Metric.Blueprint.builder()
                 .withId(responseStatusCodeMetricId) //
                 .withMetricTypePath("/" + responseStatusCodeMTypeId) //
                 .build());
         assertEquals(201, response.code());
         Metric responseStatusCode = mapper.readValue(response.body().string(), Metric.class);
         assertEquals(responseStatusCodeMetricId, responseStatusCode.getId());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/metrics/" + responseStatusCodeMetricId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/m;" + responseStatusCodeMetricId,
                 response.headers().get("Location"));
 
         /* add a resource */
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder() //
                     .withId(host1ResourceId) //
                     .withResourceTypePath("../" + pingableHostRTypeId) //
@@ -231,29 +238,29 @@ public class InventoryITest extends AbstractTestBase {
             resource(host1ResourceId).get(), host1Resource.getPath());
         assertEquals(CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get(),
                 host1Resource.getType().getPath());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + host1ResourceId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + host1ResourceId,
                 response.headers().get("Location"));
 
         /* add another resource */
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder()//
                 .withId(host2ResourceId)//
                 .withResourceTypePath("../" + pingableHostRTypeId)//
                 .build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + host2ResourceId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + host2ResourceId,
                 response.headers().get("Location"));
 
         /* add a room resource */
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder().withId(room1ResourceId).withResourceTypePath("../" + roomRTypeId)
                 .withProperty("purchaseDate", date20150626).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId,
                 response.headers().get("Location"));
 
         /* add a copy machine resource */
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder() //
                 .withId(copyMachine1ResourceId) //
                 .withResourceTypePath("../" + copyMachineRTypeId)//
@@ -261,111 +268,124 @@ public class InventoryITest extends AbstractTestBase {
                 .withProperty("nextMaintenanceDate", date20160801)//
                 .build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + copyMachine1ResourceId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + copyMachine1ResourceId,
                 response.headers().get("Location"));
 
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder() //
                 .withId(copyMachine2ResourceId) //
                 .withResourceTypePath("../" + copyMachineRTypeId) //
                 .withProperty("purchaseDate", date20160801) //
                 .build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + copyMachine2ResourceId,
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + copyMachine2ResourceId,
                 response.headers().get("Location"));
 
         /* add child resources */
-        response = postDeletable(environmentId + "/resources/" + room1ResourceId,
+        CanonicalPath room1Path = environmentPath.extend(SegmentType.r, room1ResourceId).get();
+
+        response = postDeletable(room1Path,
                 Resource.Blueprint.builder().withId("table").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId +"/table",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId +"/r;table",
                 response.headers().get("Location"));
 
-        response = postDeletable(environmentId + "/resources/" + room1ResourceId +"/table",
+        CanonicalPath tablePath = room1Path.extend(SegmentType.r, "table").get();
+
+        response = postDeletable(tablePath,
                 Resource.Blueprint.builder().withId("leg/1").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId +"/table/leg%2F1",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId +"/r;table/r;leg%2F1",
                 response.headers().get("Location"));
 
-        response = postDeletable(environmentId + "/resources/" + room1ResourceId +"/table",
+        response = postDeletable(tablePath,
                 Resource.Blueprint.builder().withId("leg 2").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId +"/table/leg%202",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId +"/r;table/r;leg%202",
                 response.headers().get("Location"));
 
-        response = postDeletable(environmentId + "/resources/" + room1ResourceId +"/table",
+        response = postDeletable(tablePath,
                 Resource.Blueprint.builder().withId("leg;3").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId +"/table/leg;3",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId +"/r;table/r;leg%3B3",
                 response.headers().get("Location"));
-        response = postDeletable(environmentId + "/resources/" + room1ResourceId +"/table",
+
+        response = postDeletable(tablePath,
                 Resource.Blueprint.builder().withId("leg-4").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/" + room1ResourceId +"/table/leg-4",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;" + room1ResourceId +"/r;table/r;leg-4",
                 response.headers().get("Location"));
 
         //alternative child hierarchies
-        response = postDeletable(environmentId + "/resources",
+        response = postDeletable(environmentPath,
                 Resource.Blueprint.builder().withId("weapons").withResourceTypePath("/" + roomRTypeId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId + "/resources/weapons",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId + "/r;weapons",
                 response.headers().get("Location"));
 
-        path = basePath + "/" + environmentId + "/resources/weapons/children";
-        response = post(path, JsonNodeFactory.instance.arrayNode() //
-                .add("/e;" + environmentId + "/r;" + room1ResourceId + "/r;table/r;leg%2F1") //
-                .add("../" + room1ResourceId + "/table/leg-4") //
-                .toString());
-        assertEquals(204, response.code());
+        path = basePath + "/entity/e;" + environmentId + "/r;weapons/relationship";
+        response = post(path, interpolate("[" +
+                "{\"otherEnd\": \"/e;${environmentId}/r;${room1ResourceId}/r;table/r;leg%2F1\", " +
+                "\"name\": \"isParentOf\"}," +
+                "{\"otherEnd\": \"../r;${room1ResourceId}/r;table/r;leg-4\", \"name\": \"isParentOf\"}]",
+                MapBuilder.<String, String>map()
+                        .put("environmentId", environmentId)
+                        .put("room1ResourceId", room1ResourceId)
+                        .create()
+        ));
+        assertEquals(201, response.code());
         // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
 //        pathsToDelete.put(path + "/../table/leg%2F1", path + "/../table/leg%2F1")
 //        pathsToDelete.put(path + "/../table/leg-4", path + "/../table/leg-4")
 
         /* link the metric to resource */
-        path = basePath + "/" + environmentId + "/resources/" + host1ResourceId +"/metrics";
-        response = post(path,
-                JsonNodeFactory.instance.arrayNode() //
-                .add("/e;"+ environmentId + "/m;"+ responseTimeMetricId)
-                .add("/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId)
-                .toString());
-        assertEquals(204, response.code());
+        path = basePath + "/entity/e;" + environmentId + "/r;" + host1ResourceId + "/relationship";
+        response = post(path, interpolate("[" +
+                "{\"otherEnd\": \"/e;${environmentId}/m;${responseTimeMetricId}\", \"name\": \"incorporates\"}," +
+                "{\"otherEnd\": \"/e;${environmentId}/m;${responseStatusCodeMetricId}\", \"name\": \"incorporates\"}" +
+                "]", MapBuilder.<String, String>map()
+                .put("environmentId", environmentId)
+                .put("responseTimeMetricId", responseTimeMetricId)
+                .put("responseStatusCodeMetricId", responseStatusCodeMetricId)
+                .create()
+        ));
+        assertEquals(201, response.code());
         // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
         // pathsToDelete.put(path + "/../" + responseTimeMetricId, path + "/../" + responseTimeMetricId);
         // XXX again, this is impossible due to OkHttp unconditionally canonicalizing the URL paths
         //pathsToDelete.put(path + "/../" + responseStatusCodeMetricId, path + "/../" + responseStatusCodeMetricId);
 
         /* add a feed */
-        response = postDeletable("feeds", Feed.Blueprint.builder().withId(feedId).build());
+        response = postDeletable(tenantPath, Feed.Blueprint.builder().withId(feedId).build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/feeds/" + feedId, response.headers().get("Location"));
+        assertEquals(baseURI + basePath +"/entity/f;" + feedId, response.headers().get("Location"));
 
         /* add a custom relationship, no need to clean up, it'll be deleted together with the resources */
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put("from", "2000-01-01");
         properties.put("confidence", "90%");
-        CanonicalPath src = CanonicalPath.fromString("/t;" + tenantId + "/e;" + environmentId + "/r;"
-                + host2ResourceId);
         CanonicalPath target = CanonicalPath.fromString("/t;" + tenantId + "/e;" + environmentId + "/r;"
                 + host1ResourceId);
-        Relationship h1h2Rel = new Relationship("42", customRelationName, src, target, properties);
-        response = postNew(basePath + "/" + environmentId +"/resources/" + host2ResourceId +"/relationships", h1h2Rel);
+        Relationship.Blueprint h1h2Rel = Relationship.Blueprint.builder().withName(customRelationName)
+                .withOtherEnd(target).withProperties(properties).build();
+        response = postNew(basePath + "/entity/e;" + environmentId +"/r;" + host2ResourceId +"/relationship", h1h2Rel);
         assertEquals(201, response.code());
         JsonNode h1h2Json = mapper.readTree(response.body().string());
         assertEquals(customRelationName, h1h2Json.get("name").asText());
 
         // relationship with tenant
-        CanonicalPath tenantPath = CanonicalPath.fromString("/t;" + tenantId);
-        Relationship tenantRel = new Relationship(UUID.randomUUID().toString(), "sampleRelationship", tenantPath,
-                tenantPath);
-        post(basePath + "/tenants/relationships", mapper.writeValueAsString(tenantRel));
+        Relationship.Blueprint tenantRel = Relationship.Blueprint.builder().withName("sampleRelationship")
+                .withOtherEnd(tenantPath).build();
+        post(basePath + "/tenant/relationship", mapper.writeValueAsString(tenantRel));
         assertEquals(201, response.code());
 
         // add operation type to the resource type
-        response = postDeletable("resourceTypes/" + pingableHostRTypeId +"/operationTypes",
+        CanonicalPath pingableHostRType = tenantPath.extend(SegmentType.rt, pingableHostRTypeId).get();
+        response = postDeletable(pingableHostRType,
                 OperationType.Blueprint.builder().withId("start").build());
         assertEquals(201, response.code());
 
-        response = postDeletable("resourceTypes/" + pingableHostRTypeId +"/operationTypes",
+        response = postDeletable(pingableHostRType,
                 OperationType.Blueprint.builder().withId("stop").build());
         assertEquals(201, response.code());
 
@@ -378,11 +398,11 @@ public class InventoryITest extends AbstractTestBase {
                     + "\"properties\": { \"quick\": { \"type\": \"boolean\"}}" //
                 + "}" //
             + "}";
-        response = post(basePath + "/resourceTypes/" + pingableHostRTypeId +"/operationTypes/start/data",
+        response = post(basePath + "/entity/rt;" + pingableHostRTypeId +"/ot;start/data",
                 startOpParamTypes);
         assertEquals(201, response.code());
 
-        response = post(basePath + "/resourceTypes/" + pingableHostRTypeId +"/operationTypes/start/data",
+        response = post(basePath + "/entity/rt;" + pingableHostRTypeId +"/ot;start/data",
                 "{\"role\": \"returnType\", \"value\": {\"title\": \"blah\", \"type\": \"boolean\"}}");
         assertEquals(201, response.code());
 
@@ -446,7 +466,7 @@ public class InventoryITest extends AbstractTestBase {
             + "}," //
             + "\"role\" : \"configurationSchema\"" //
         + "}";
-        response = post(basePath + "/resourceTypes/" + pingableHostRTypeId +"/data", schema);
+        response = post(basePath + "/entity/rt;" + pingableHostRTypeId +"/data", schema);
         assertEquals(201, response.code());
 
         /* add an invalid config data to a resource (invalid ~ not valid against the json schema) */
@@ -458,7 +478,7 @@ public class InventoryITest extends AbstractTestBase {
                 + "\"role\" : \"configuration\"" //
         + "}";
 
-        response = post(basePath + "/" + environmentId +"/resources/" + host2ResourceId +"/data", invalidData);
+        response = post(basePath + "/entity/e;" + environmentId +"/r;" + host2ResourceId +"/data", invalidData);
         assertEquals(400, response.code());
 
         /* add a config data to a resource, no need to clean up, it'll be deleted together with the resources */
@@ -490,18 +510,18 @@ public class InventoryITest extends AbstractTestBase {
                 + "\"ignorance\": \"strength\"" //
             + "}" //
         + "}";
-        response = post(basePath + "/" + environmentId +"/resources/" + host2ResourceId +"/data", data);
+        response = post(basePath + "/entity/e;" + environmentId +"/r;" + host2ResourceId +"/data", data);
         assertEquals(201, response.code());
 
         //add resource-owner metric
-        response = postDeletable(environmentId +"/resources/" + host2ResourceId +"/metrics",
+        response = postDeletable(environmentPath.extend(SegmentType.r, host2ResourceId).get(),
                 Metric.Blueprint.builder() //
                 .withId("resource-owned-metric") //
                 .withMetricTypePath("/"+responseTimeMTypeId) //
                 .build());
         assertEquals(201, response.code());
-        assertEquals(baseURI + basePath +"/" + environmentId +"/resources/" + host2ResourceId
-                +"/metrics/resource-owned-metric",
+        assertEquals(baseURI + basePath +"/entity/e;" + environmentId +"/r;" + host2ResourceId
+                +"/m;resource-owned-metric",
                 response.headers().get("Location"));
     }
 
@@ -509,12 +529,12 @@ public class InventoryITest extends AbstractTestBase {
     @AfterClass
     public static void deleteEverything() throws IOException {
         /* the following would delete all data of the present user. We cannot do that as long as we do not have
-         * a dedicated user for running this very single test class. */
+         * a dedicated user for running this very entity test class. */
         // Response response = client.delete(path : basePath + "/tenant")
         // assertEquals(204, response.code())
 
         /* Let's delete the entities one after another in the reverse order as we created them */
-        List<Map.Entry<String, String>> entries = new ArrayList<Map.Entry<String, String>>(pathsToDelete.entrySet());
+        List<Map.Entry<String, String>> entries = new ArrayList<>(pathsToDelete.entrySet());
         Collections.reverse(entries);
         for (Map.Entry<String, String> en : entries) {
             String path = en.getKey();
@@ -541,14 +561,14 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testEnvironmentsCreated() throws Throwable {
-        assertEntitiesExist("environments", "/e;"+ testEnvId, "/e;"+ environmentId);
+        assertEntitiesExist("traversal/type=e", "/e;"+ testEnvId, "/e;"+ environmentId);
     }
 
     @Test
     public void testResourceTypesCreated() throws Throwable {
-        assertEntityExists("resourceTypes/" + urlTypeId, "/rt;" + urlTypeId);
-        assertEntityExists("resourceTypes/" + pingableHostRTypeId, "/rt;" + pingableHostRTypeId);
-        assertEntityExists("resourceTypes/" + roomRTypeId, "/rt;" + roomRTypeId);
+        assertEntityExists("entity/rt;" + urlTypeId, "/rt;" + urlTypeId);
+        assertEntityExists("entity/rt;" + pingableHostRTypeId, "/rt;" + pingableHostRTypeId);
+        assertEntityExists("entity/rt;" + roomRTypeId, "/rt;" + roomRTypeId);
 
         // commented out as it interfers with WildFly Agent
         // assertEntitiesExist("resourceTypes", [urlTypeId, pingableHostRTypeId, roomRTypeId])
@@ -558,9 +578,9 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testMetricTypesCreated() throws Throwable {
-        assertEntityExists("metricTypes/" + responseTimeMTypeId, "/mt;" + responseTimeMTypeId);
-        assertEntityExists("metricTypes/" + statusDurationMTypeId, "/mt;" + statusDurationMTypeId);
-        assertEntityExists("metricTypes/" + statusCodeMTypeId, "/mt;" + statusCodeMTypeId);
+        assertEntityExists("entity/mt;" + responseTimeMTypeId, "/mt;" + responseTimeMTypeId);
+        assertEntityExists("entity/mt;" + statusDurationMTypeId, "/mt;" + statusDurationMTypeId);
+        assertEntityExists("entity/mt;" + statusCodeMTypeId, "/mt;" + statusCodeMTypeId);
         // commented out as it interfers with WildFly Agent
         // assertEntitiesExist("metricTypes",
         //    [responseTimeMTypeId, responseStatusCodeMTypeId, statusDurationMTypeId, statusCodeMTypeId])
@@ -568,66 +588,63 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testOperationTypesCreated() throws Throwable {
-        Response response = get(basePath + "/resourceTypes/" + pingableHostRTypeId +"/operationTypes");
+        Response response = get(basePath + "/traversal/rt;" + pingableHostRTypeId +"/type=operationType");
         JsonNode json = mapper.readTree(response.body().string());
         assertEquals(2, json.size());
 
-        assertEntityExists("resourceTypes/" + pingableHostRTypeId +"/operationTypes/start",
+        assertEntityExists("entity/rt;" + pingableHostRTypeId +"/ot;start",
                 "/rt;" + pingableHostRTypeId + "/ot;start");
-        assertEntityExists("resourceTypes/" + pingableHostRTypeId +"/operationTypes/start/data",
-                new String[] {"dataType", "returnType"}, "/rt;" + pingableHostRTypeId + "/ot;start/d;returnType");
-        assertEntityExists("resourceTypes/" + pingableHostRTypeId + "/operationTypes/start/data",
-                new String[] { "dataType", "parameterTypes" },
+        assertEntityExists("entity/rt;" + pingableHostRTypeId +"/ot;start/d;returnType",
+                "/rt;" + pingableHostRTypeId + "/ot;start/d;returnType");
+        assertEntityExists("entity/rt;" + pingableHostRTypeId + "/ot;start/d;parameterTypes",
                 "/rt;" + pingableHostRTypeId + "/ot;start/d;parameterTypes");
     }
 
     @Test
     public void testMetricTypesLinked() throws Throwable {
-        assertEntitiesExist("resourceTypes/" + pingableHostRTypeId +"/metricTypes", "/mt;" + responseTimeMTypeId,
+        assertEntitiesExist("traversal/rt;" + pingableHostRTypeId +"/rl;incorporates/type=mt", "/mt;" + responseTimeMTypeId,
                  "/mt;" + responseStatusCodeMTypeId);
     }
 
     @Test
     public void testResourcesCreated() throws Throwable {
-        assertEntityExists(environmentId + "/resources/" + host1ResourceId, "/e;" + environmentId + "/r;"
+        assertEntityExists("entity/e;" + environmentId + "/r;" + host1ResourceId, "/e;" + environmentId + "/r;"
                 + host1ResourceId);
-        assertEntityExists(environmentId + "/resources/" + host2ResourceId, "/e;" + environmentId + "/r;"
+        assertEntityExists("entity/e;" + environmentId + "/r;" + host2ResourceId, "/e;" + environmentId + "/r;"
                 + host2ResourceId);
-        assertEntityExists(environmentId + "/resources/" + room1ResourceId, "/e;" + environmentId + "/r;"
+        assertEntityExists("entity/e;" + environmentId + "/r;" + room1ResourceId, "/e;" + environmentId + "/r;"
                 + room1ResourceId);
     }
-
-
-
-
 
     @Test
     public void testResourcesFilters() throws Throwable {
 
         /* filter by resource properties */
-        Response response = get(basePath + "/" + environmentId +"/resources",
-                "properties", "purchaseDate:" + date20150626, "sort", "id");
+        Response response = get(
+                basePath + "/traversal/e;" + environmentId
+                        + "/type=r;propertyName=purchaseDate;propertyValue=" + date20150626,
+                "sort", "id");
         JsonNode json = mapper.readTree(response.body().string());
         assertEquals(2, json.size());
         assertEquals(copyMachine1ResourceId, json.get(0).get("id").asText());
         assertEquals(room1ResourceId, json.get(1).get("id").asText());
 
-        response = get(basePath + "/" + environmentId +"/resources",
-             "properties", "nextMaintenanceDate:"+ date20160801);
+        response = get(basePath + "/traversal/e;" + environmentId +"/type=r;propertyName=nextMaintenanceDate;propertyValue="
+                + date20160801);
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
         assertEquals(copyMachine1ResourceId, json.get(0).get("id").asText());
 
         /* query by two props at once */
-        response = get(basePath + "/" + environmentId +"/resources",
-            "properties", "nextMaintenanceDate:" +date20160801 +",purchaseDate:" +date20150626);
+        response = get(basePath + "/traversal/e;" + environmentId +"/type=r;propertyName=nextMaintenanceDate;propertyValue="
+                + date20160801 + ";propertyName=purchaseDate;propertyValue=" + date20150626);
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
         assertEquals(copyMachine1ResourceId, json.get(0).get("id").asText());
 
         /* query by property existence */
-        response = get(basePath + "/" + environmentId +"/resources",
-            "properties", "purchaseDate", "sort", "id");
+        response = get(basePath + "/traversal/e;" + environmentId +"/type=resource;propertyName=purchaseDate",
+            "sort", "id");
         json = mapper.readTree(response.body().string());
         assertEquals(3, json.size());
         assertEquals(copyMachine1ResourceId, json.get(0).get("id").asText());
@@ -635,25 +652,22 @@ public class InventoryITest extends AbstractTestBase {
         assertEquals(room1ResourceId, json.get(2).get("id").asText());
 
         /* filter by type */
-        response = get(basePath + "/" + environmentId +"/resources",
-            "type.id", pingableHostRTypeId);
+        response = get(basePath + "/traversal/e;" + environmentId +"/type=r;definedBy=%2Frt%3B" + pingableHostRTypeId);
         json = mapper.readTree(response.body().string());
         assertEquals(2, json.size());
 
-        response = get(basePath + "/" + environmentId +"/resources",
-            "type.id", roomRTypeId, "type.version", typeVersion);
+        response = get(basePath + "/traversal/e;" + environmentId +"/type=r;definedBy=%2Frt%3B" + roomRTypeId);
         json = mapper.readTree(response.body().string());
         assertEquals(2, json.size());
-
     }
 
     @Test
     public void testMetricsCreated() throws Throwable {
-        assertEntityExists(environmentId +"/metrics/" + responseTimeMetricId,
+        assertEntityExists("entity/e;" + environmentId + "/m;" + responseTimeMetricId,
                 "/e;"+ environmentId + "/m;"+ responseTimeMetricId);
-        assertEntityExists(environmentId +"/metrics/" + responseStatusCodeMetricId,
+        assertEntityExists("entity/e;" + environmentId + "/m;" + responseStatusCodeMetricId,
                 "/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId);
-        assertEntitiesExist(environmentId +"/metrics",
+        assertEntitiesExist("traversal/e;" + environmentId + "/recursive/type=m",
                 "/e;"+ environmentId + "/m;"+ responseTimeMetricId,
                 "/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId,
                 "/e;"+ environmentId + "/r;"+ host2ResourceId + "/m;resource-owned-metric");
@@ -661,14 +675,14 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testMetricsLinked() throws Throwable {
-        assertEntitiesExist(environmentId +"/resources/" + host1ResourceId +"/metrics",
+        assertEntitiesExist("traversal/e;" + environmentId +"/r;" + host1ResourceId +"/rl;incorporates/type=m",
                 "/e;" + environmentId + "/m;" + responseTimeMetricId, "/e;" + environmentId + "/m;" +
                responseStatusCodeMetricId);
     }
 
     @Test
     public void testConfigCreated() throws Throwable {
-        assertEntityExists(environmentId +"/resources/" + host2ResourceId +"/data",
+        assertEntityExists("entity/e;" + environmentId +"/r;" + host2ResourceId +"/d;configuration",
                 "/e;" + environmentId + "/r;" + host2ResourceId + "/d;configuration");
 //        assertEntitiesExist(environmentId +"/resources/"
 //        + host2ResourceId%2Ftable/data?dataType=connectionConfiguration",
@@ -677,34 +691,34 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testPaging() throws Throwable {
-        String path = basePath + "/" + environmentId +"/resources";
-        Response response = get(path, "type.id", pingableHostRTypeId, "page", "0", "per_page", "2", "sort", "id");
+        String path = basePath + "/traversal/e;" + environmentId +"/type=r;definedBy=%2Frt%3B" + pingableHostRTypeId;
+        Response response = get(path, "page", "0", "per_page", "2", "sort", "id");
         JsonNode json = mapper.readTree(response.body().string());
         assertEquals(2, json.size());
 
         JsonNode first = json.get(0);
         JsonNode second = json.get(1);
 
-        response = get(path, "type.id", pingableHostRTypeId, "page", "0", "per_page", "1", "sort", "id");
+        response = get(path, "page", "0", "per_page", "1", "sort", "id");
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
         assertEquals(first, json.get(0));
 
 
-        response = get(path, "type.id", pingableHostRTypeId, "page", "1", "per_page", "1", "sort", "id");
+        response = get(path, "page", "1", "per_page", "1", "sort", "id");
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
         assertEquals(second, json.get(0));
 
 
-        response = get(path, "type.id", pingableHostRTypeId, "page", "0", "per_page", "1", "sort", "id",
+        response = get(path, "page", "0", "per_page", "1", "sort", "id",
                                                                    "order", "desc");
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
         assertEquals(second, json.get(0));
 
 
-        response = get(path, "type.id", pingableHostRTypeId, "page", "1", "per_page", "1", "sort", "id",
+        response = get(path, "page", "1", "per_page", "1", "sort", "id",
                                                                    "order", "desc");
         json = mapper.readTree(response.body().string());
         assertEquals(1, json.size());
@@ -714,205 +728,208 @@ public class InventoryITest extends AbstractTestBase {
     @Test
     public void testTenantsContainEnvironments() throws Throwable {
         assertRelationshipExists("tenant/relationships",
-                "/t;"+ tenantId + "",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "");
-
-        assertRelationshipJsonldExists("tenant/relationships",
-                tenantId,
-                contains.name(),
-                environmentId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).get());
+// jsonld dropped
+//        assertRelationshipJsonldExists("tenant/relationships",
+//                tenantId,
+//                contains.name(),
+//                environmentId);
     }
 
 
 
     @Test
     public void testTenantsContainResourceTypes() throws Throwable {
-        assertRelationshipExists("resourceTypes/" + urlTypeId +"/relationships",
-                "/t;"+ tenantId + "",
+        assertRelationshipExists("traversal/rt;" + urlTypeId +"/relationships;in",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/rt;"+ urlTypeId + "");
+                CanonicalPath.of().tenant(tenantId).resourceType(urlTypeId).get());
 
         assertRelationshipExists("tenant/relationships",
-                "/t;"+ tenantId + "",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/rt;" +pingableHostRTypeId);
+                CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get());
     }
 
     @Test
     public void testTenantsContainMetricTypes() throws Throwable {
-        assertRelationshipExists("metricTypes/" + responseTimeMTypeId +"/relationships",
-                "/t;"+ tenantId + "",
+        assertRelationshipExists("traversal/mt;" + responseTimeMTypeId +"/relationships;in",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/mt;" + responseTimeMTypeId);
+                CanonicalPath.of().tenant(tenantId).metricType(responseTimeMTypeId).get());
 
         assertRelationshipExists("tenant/relationships",
-                "/t;"+ tenantId + "",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/mt;" + statusCodeMTypeId);
+                CanonicalPath.of().tenant(tenantId).metricType(statusCodeMTypeId).get());
     }
 
 
     @Test
     public void testEnvironmentsContainResources() throws Throwable {
-        assertRelationshipExists("environments/" + environmentId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host2ResourceId + "");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get());
 
-        assertRelationshipExists("environments/" + environmentId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "");
-
-        assertRelationshipJsonldExists("environments/" + environmentId +"/relationships",
-                environmentId,
-                contains.name(),
-                host1ResourceId);
-
-        assertRelationshipJsonldExists("environments/" + environmentId +"/relationships",
-                environmentId,
-                contains.name(),
-                host2ResourceId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get());
+// jsonld dropped
+//        assertRelationshipJsonldExists("/entity/e;" + environmentId +"/relationships",
+//                environmentId,
+//                contains.name(),
+//                host1ResourceId);
+//
+//        assertRelationshipJsonldExists("environments/" + environmentId +"/relationships",
+//                environmentId,
+//                contains.name(),
+//                host2ResourceId);
     }
 
 
 
     @Test
     public void testTenantsContainFeeds() throws Throwable {
-        assertRelationshipExists("feeds/" + feedId +"/relationships",
-                "/t;"+ tenantId + "",
+        assertRelationshipExists("traversal/f;" + feedId +"/relationships;in",
+                CanonicalPath.of().tenant(tenantId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/f;"+ feedId + "");
-
-        assertRelationshipJsonldExists("feeds/" + feedId +"/relationships",
-                tenantId,
-                contains.name(),
-                feedId);
+                CanonicalPath.of().tenant(tenantId).feed(feedId).get());
+// jsonld dropped
+//        assertRelationshipJsonldExists("feeds/" + feedId +"/relationships",
+//                tenantId,
+//                contains.name(),
+//                feedId);
     }
 
     @Test
     public void testEnvironmentsContainMetrics() throws Throwable {
-        assertRelationshipExists("environments/" + environmentId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/m;"+ responseTimeMetricId + "");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseTimeMetricId).get());
 
-        assertRelationshipExists("environments/" + environmentId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).get(),
                 contains.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId + "");
-
-        assertRelationshipJsonldExists("environments/" + environmentId +"/relationships",
-                environmentId,
-                contains.name(),
-                responseTimeMetricId);
-
-        assertRelationshipJsonldExists("environments/" + environmentId +"/relationships",
-                environmentId,
-                contains.name(),
-                responseStatusCodeMetricId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseStatusCodeMetricId)
+                        .get());
+// jsonld dropped
+//        assertRelationshipJsonldExists("/traversal/e;" + environmentId +"/relationships",
+//                environmentId,
+//                contains.name(),
+//                responseTimeMetricId);
+//
+//        assertRelationshipJsonldExists("/traversal/e;" + environmentId +"/relationships",
+//                environmentId,
+//                contains.name(),
+//                responseStatusCodeMetricId);
     }
 
     @Test
     public void testResourceTypesIncorporatesMetricTypes() throws Throwable {
-        assertRelationshipExists("resourceTypes/" + pingableHostRTypeId +"/relationships",
-                "/t;"+ tenantId + "/rt;" + pingableHostRTypeId,
+        assertRelationshipExists("traversal/rt;" + pingableHostRTypeId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get(),
                 incorporates.name(),
-                "/t;"+ tenantId + "/mt;" + responseTimeMTypeId);
+                CanonicalPath.of().tenant(tenantId).metricType(responseTimeMTypeId).get());
 
-        assertRelationshipExists("metricTypes/" + responseStatusCodeMTypeId +"/relationships",
-                "/t;"+ tenantId + "/rt;" + pingableHostRTypeId,
+        assertRelationshipExists("traversal/mt;" + responseStatusCodeMTypeId +"/relationships;in",
+                CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get(),
                 incorporates.name(),
-                "/t;"+ tenantId + "/mt;" + responseStatusCodeMTypeId);
-
-        assertRelationshipJsonldExists("resourceTypes/" + pingableHostRTypeId +"/relationships",
-                pingableHostRTypeId,
-                incorporates.name(),
-                responseTimeMTypeId);
+                CanonicalPath.of().tenant(tenantId).metricType(responseStatusCodeMTypeId).get());
+// jsonld dropped
+//        assertRelationshipJsonldExists("resourceTypes/" + pingableHostRTypeId +"/relationships",
+//                pingableHostRTypeId,
+//                incorporates.name(),
+//                responseTimeMTypeId);
     }
 
 
 
     @Test
     public void testResourcesIncorporatesMetrics() throws Throwable {
-        assertRelationshipExists(environmentId +"/resources/" + host1ResourceId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host1ResourceId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get(),
                 incorporates.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/m;"+ responseStatusCodeMetricId + "");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseStatusCodeMetricId)
+                        .get());
 
-        assertRelationshipExists(environmentId +"/resources/" + host1ResourceId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "",
+        assertRelationshipExists("traversal/e;" + environmentId + "/r;" + host1ResourceId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get(),
                 incorporates.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/m;"+ responseTimeMetricId + "");
-
-        assertRelationshipJsonldExists(environmentId +"/resources/" + host1ResourceId +"/relationships",
-                host1ResourceId,
-                incorporates.name(),
-                responseTimeMetricId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseTimeMetricId).get());
+// jsonld dropped
+//        assertRelationshipJsonldExists(environmentId +"/resources/" + host1ResourceId +"/relationships",
+//                host1ResourceId,
+//                incorporates.name(),
+//                responseTimeMetricId);
     }
 
     @Test
     public void testResourceTypesDefinesResources() throws Throwable {
-        assertRelationshipExists("resourceTypes/" + pingableHostRTypeId +"/relationships",
-                "/t;"+ tenantId + "/rt;" + pingableHostRTypeId,
+        assertRelationshipExists("traversal/rt;" + pingableHostRTypeId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).resourceType(pingableHostRTypeId).get(),
                 defines.name(),
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host2ResourceId + "");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get());
     }
 
     @Test
     public void testMetricTypesDefinesMetrics() throws Throwable {
-        assertRelationshipJsonldExists("metricTypes/" + responseStatusCodeMTypeId +"/relationships",
-                responseStatusCodeMTypeId,
+        assertRelationshipExists("traversal/mt;" + responseStatusCodeMTypeId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).metricType(responseStatusCodeMTypeId).get(),
                 defines.name(),
-                responseStatusCodeMetricId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseStatusCodeMetricId)
+                        .get());
 
-        assertRelationshipJsonldExists("metricTypes/" + responseTimeMTypeId +"/relationships",
-                responseTimeMTypeId,
+        assertRelationshipExists("traversal/mt;" + responseTimeMTypeId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).metricType(responseTimeMTypeId).get(),
                 defines.name(),
-                responseTimeMetricId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).metric(responseTimeMetricId).get());
     }
 
 
     @Test
     public void testCustomRelationship() throws Throwable {
-        assertRelationshipJsonldExists(environmentId +"/resources/" + host2ResourceId +"/relationships",
-                host2ResourceId,
+        assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host2ResourceId +"/relationships",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get(),
                 customRelationName,
-                host1ResourceId);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get());
     }
 
     @Test
-    public void testRelationshipFiltering() throws Throwable {
-        assertRelationshipExists(environmentId +"/resources/" + host2ResourceId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host2ResourceId + "",
+    public void ttestRelationshipFiltering() throws Throwable {
+        assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host2ResourceId
+                + "/relationships;propertyName=from;propertyValue=2000-01-01",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get(),
                 customRelationName,
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "",
-                "property", "from", "propertyValue", "2000-01-01");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get());
 
-        assertRelationshipExists(environmentId +"/resources/" + host2ResourceId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host2ResourceId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host2ResourceId
+                + "/relationships;propertyName=confidence;propertyValue=90%25",
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get(),
                 customRelationName,
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "",
-                "property", "confidence", "propertyValue", "90%");
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get());
 
-        assertRelationshipExists(environmentId +"/resources/" + host2ResourceId +"/relationships",
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host2ResourceId + "",
+        assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host2ResourceId
+                + "/relationships;name=" + customRelationName,
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get(),
                 customRelationName,
-                "/t;"+ tenantId + "/e;"+ environmentId + "/r;"+ host1ResourceId + "",
-                "named", customRelationName);
+                CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host1ResourceId).get());
     }
 
     @Test
     public void testResourceHierarchyQuerying() throws Throwable {
-        assertEntitiesExist(environmentId +"/resources/" + room1ResourceId +"/children",
+        assertEntitiesExist("traversal/e;" + environmentId +"/r;" + room1ResourceId +"/type=resource",
                 "/e;"+ environmentId + "/r;"+ room1ResourceId + "/r;table");
 
         String base = "/e;"+ environmentId + "/r;"+ room1ResourceId + "/r;table";
-        assertEntitiesExist(environmentId +"/resources/" + room1ResourceId +"/table/children",
-                base + "/r;leg%2F1", base + "/r;leg%202", base + "/r;leg;3", base + "/r;leg-4");
+        assertEntitiesExist("traversal/e;" + environmentId +"/r;" + room1ResourceId +"/r;table/type=r",
+                base + "/r;leg%2F1", base + "/r;leg%202", base + "/r;leg%3B3", base + "/r;leg-4");
 
-        assertEntitiesExist(environmentId +"/resources/weapons/children",
+        assertEntitiesExist("traversal/e;" + environmentId +"/r;weapons/rl;isParentOf/type=r",
                 "/e;"+ environmentId + "/r;"+ room1ResourceId + "/r;table/r;leg%2F1",
                  "/e;"+ environmentId + "/r;"+ room1ResourceId + "/r;table/r;leg-4");
     }
@@ -940,7 +957,7 @@ public class InventoryITest extends AbstractTestBase {
             CanonicalPath p = CanonicalPath.fromString(en.getKey());
             String env = p.ids().getEnvironmentId();
             String rid = p.ids().getResourcePath().getSegment().getElementId();
-            delete(basePath + "/" + env +"/resources/" + rid);
+            delete(basePath + "/entity/e;" + env +"/r;" + rid);
         }
     }
 
@@ -1039,14 +1056,11 @@ public class InventoryITest extends AbstractTestBase {
             + "-(incorporates)->"
             + "/t;"+ tenantId + "/f;"+ feedId + "/mt;"+ bulkMetricTypePrefix + "" + ".2")).asInt());
 
-        delete(basePath + "/feeds/" + feedId +"/resources/" + bulkResourcePrefix + ".1");
-        delete(basePath + "/feeds/" + feedId +"/metricTypes/" + bulkMetricTypePrefix + ".1");
-        delete(basePath + "/feeds/" + feedId +"/metricTypes/" + bulkMetricTypePrefix + ".2");
+        delete(basePath + "/entity/f;" + feedId +"/r;" + bulkResourcePrefix + ".1");
+        delete(basePath + "/entity/f;" + feedId +"/mt;" + bulkMetricTypePrefix + ".1");
+        delete(basePath + "/entity/f;" + feedId +"/mt;" + bulkMetricTypePrefix + ".2");
 //        client.delete(path: basePath + "/feeds/" + feedId +"/resourceTypes/" + bulkResourceTypePrefix" + ".1");
     }
-
-
-
 
     @Test
     public void testResourceBulkCreateWithErrors() throws Throwable {
@@ -1068,7 +1082,7 @@ public class InventoryITest extends AbstractTestBase {
         assertEquals(201,
                 codes.get("/t;" + tenantId + "/e;" + environmentId + "/r;" + bulkResourcePrefix + "-1").asInt());
 
-        delete(basePath + "/" + environmentId +"/resources/" + bulkResourcePrefix + "-1");
+        delete(basePath + "/entity/e;" + environmentId +"/r;" + bulkResourcePrefix + "-1");
     }
 
     @Test
@@ -1111,7 +1125,7 @@ public class InventoryITest extends AbstractTestBase {
         // TODO : find out if this returning 404 instead of 204 is a bug or feature
         //delete(basePath + "/" + environmentId + "/resources/" + bulkResourcePrefix + "-1/metrics/../"
         //        + responseTimeMetricId);
-        delete(basePath + "/" + environmentId +"/resources/" + bulkResourcePrefix +"-1");
+        delete(basePath + "/entity/e;" + environmentId +"/r;" + bulkResourcePrefix +"-1");
     }
 
 
@@ -1287,54 +1301,54 @@ public class InventoryITest extends AbstractTestBase {
         assertEquals(1, metadataPackCodes.size());
         assertEquals(201, metadataPackCodes.fields().next().getValue().asInt());
 
-        response = get(basePath + "/" + env1 +"/resources/url1/metrics");
+        response = get(basePath + "/traversal/e;" + env1 +"/r;url1/rl;incorporates/type=metric");
         json = mapper.readTree(response.body().string());
         assertEquals("/t;"+ tenantId + "/e;" + env1 +"/m;url1_responseTime", json.get(0).get("path").asText());
 
         String mpPath = metadataPackCodes.fields().next().getKey();
         String mpId = mpPath.substring(mpPath.lastIndexOf(";") + 1);
-        delete(basePath + "/metadatapacks/" + mpId);
-        delete(basePath + "/environments/" + env1);
-        delete(basePath + "/environments/" + env2);
-        delete(basePath + "/resourceTypes/" + rt1);
-        delete(basePath + "/metricTypes/" + mt1);
+        delete(basePath + "/entity/mp;" + mpId);
+        delete(basePath + "/entity/e;" + env1);
+        delete(basePath + "/entity/e;" + env2);
+        delete(basePath + "/entity/rt;" + rt1);
+        delete(basePath + "/entity/mt;" + mt1);
     }
 
     @Test
     public void testMetadataPacks() throws Throwable {
-        Response response = post(basePath + "/metadatapacks",
+        Response response = post(basePath + "/entity/metadataPack",
                 "{ \"members\": [\"/t;" + tenantId + "/rt;" + urlTypeId + "\"]}");
         JsonNode json = mapper.readTree(response.body().string());
         String mpId = json.get("id").asText();
-        String url = baseURI + basePath + "/resourceTypes/" + urlTypeId;
+        String url = baseURI + basePath + "/entity/rt;" + urlTypeId;
         response = client.newCall(newAuthRequest().url(url).delete().build()).execute();
         assertEquals("Deleting a resource type that is part of metadatapack should not be possible.",
                 400, response.code());
 
-        delete(basePath + "/metadatapacks/" + mpId);
+        delete(basePath + "/entity/mp;" + mpId);
     }
 
     @Test
     public void testRecursiveChildren() throws Throwable {
         try {
-            Response response = post(basePath + "/" + environmentId +"/resources",
+            Response response = post(basePath + "/entity/e;" + environmentId +"/resource",
                 "{ \"id\": \"rootResource\", \"resourceTypePath\": \"/" + urlTypeId +"\"}");
             assertEquals(201, response.code());
 
-            response = post(basePath + "/" + environmentId +"/resources/rootResource",
+            response = post(basePath + "/entity/e;" + environmentId +"/r;rootResource/resource",
                 "{\"id\": \"childResource\", \"resourceTypePath\": \"/" + urlTypeId +"\"}" );
             assertEquals(201, response.code());
 
-            response = post(basePath + "/" + environmentId +"/resources/rootResource/childResource",
+            response = post(basePath + "/entity/e;" + environmentId +"/r;rootResource/r;childResource/resource",
                         "{\"id\": \"grandChildResource\", \"resourceTypePath\": \"/" + urlTypeId +"\"}");
             assertEquals(201, response.code());
 
-            response = post(basePath + "/" + environmentId +"/resources/rootResource/childResource",
+            response = post(basePath + "/entity/e;" + environmentId +"/r;rootResource/r;childResource/resource",
                         "{\"id\": \"grandChildResource2\", \"resourceTypePath\": \"/" + roomRTypeId + "\"}");
             assertEquals(201, response.code());
 
-            response = get(basePath + "/" + environmentId +"/resources/rootResource/recursiveChildren",
-                    "typeId", urlTypeId);
+            response = get(basePath + "/traversal/e;" + environmentId +"/r;rootResource/recursive/definedBy=%2Frt%3B"
+                    + urlTypeId);
 
             JsonNode ret = mapper.readTree(response.body().string());
 
@@ -1342,14 +1356,14 @@ public class InventoryITest extends AbstractTestBase {
             Assert.assertTrue(toStream(ret).anyMatch(node -> "childResource".equals(node.get("id").asText())));
             Assert.assertTrue(toStream(ret).anyMatch(node -> "grandChildResource".equals(node.get("id").asText())));
 
-            response = get(basePath + "/" + environmentId +"/resources/rootResource/recursiveChildren",
-                    "typeId", roomRTypeId);
+            response = get(basePath + "/traversal/e;" + environmentId +"/r;rootResource/recursive;type=r" +
+                    "/definedBy=%2Frt%3B" + roomRTypeId);
 
             ret = mapper.readTree(response.body().string());
             assertEquals(1, ret.size());
             Assert.assertTrue(toStream(ret).anyMatch(node -> "grandChildResource2".equals(node.get("id").asText())));
         } finally {
-            delete(basePath + "/" + environmentId +"/resources/rootResource");
+            delete(basePath + "/entity/e;" + environmentId +"/r;rootResource");
         }
     }
 
@@ -1411,14 +1425,14 @@ public class InventoryITest extends AbstractTestBase {
                 + "}";
 
         try {
-            Response response = post(basePath + "/feeds", "{\"id\": \"sync-feed\"}");
+            Response response = post(basePath + "/entity/feed", "{\"id\": \"sync-feed\"}");
             assertEquals(201, response.code());
 
-            response = post(basePath + "/feeds/sync-feed/resourceTypes", "{\"id\": \"doomed\"}");
+            response = post(basePath + "/entity/f;sync-feed/resourceType", "{\"id\": \"doomed\"}");
             assertEquals(201, response.code());
 
             //check that the doomed resource type is there
-            response = get(basePath + "/path/f;sync-feed/rt;doomed");
+            response = get(basePath + "/entity/f;sync-feed/rt;doomed");
             assertEquals(200, response.code());
 
             response = post(basePath + "/sync/f;sync-feed", structure);
@@ -1426,24 +1440,24 @@ public class InventoryITest extends AbstractTestBase {
             assertEquals(204, response.code());
 
             //check that stuff is there
-            response = get(basePath + "/path/f;sync-feed");
+            response = get(basePath + "/entity/f;sync-feed");
             assertEquals(200, response.code());
-            response = get(basePath + "/path/f;sync-feed/r;resource");
+            response = get(basePath + "/entity/f;sync-feed/r;resource");
             assertEquals(200, response.code());
-            response = get(basePath + "/path/f;sync-feed/r;resource/r;childResource");
+            response = get(basePath + "/entity/f;sync-feed/r;resource/r;childResource");
             assertEquals(200, response.code());
-            response = get(basePath + "/path/f;sync-feed/rt;resourceType");
+            response = get(basePath + "/entity/f;sync-feed/rt;resourceType");
             assertEquals(200, response.code());
-            response = get(basePath + "/path/f;sync-feed/mt;metricType");
+            response = get(basePath + "/entity/f;sync-feed/mt;metricType");
             assertEquals(200, response.code());
 
             //check that the doomed resource type is gone, because it was not part of the payload from the feed
-            response = get(basePath + "/path/f;sync-feed/rt;doomed");
+            response = get(basePath + "/entity/f;sync-feed/rt;doomed");
             assertEquals(404, response.code());
         } finally {
-            Response response = get(basePath + "/path/f;sync-feed");
+            Response response = get(basePath + "/entity/f;sync-feed");
             if (response.code() == 200) {
-                delete(basePath + "/feeds/sync-feed");
+                delete(basePath + "/entity/f;sync-feed");
             }
         }
     }
@@ -1496,31 +1510,36 @@ public class InventoryITest extends AbstractTestBase {
                 found);
     }
 
-    protected static void assertRelationshipExists(final String path, final String source, final String label,
-            String target, String... query) throws Throwable {
+    protected static void assertRelationshipExists(final String path, final CanonicalPath source, final String label,
+            CanonicalPath target, String... query) throws Throwable {
         Response response = get(basePath + "/" + path, query);
         List<Relationship> rels = mapper.readValue(response.body().string(), new TypeReference<List<Relationship>>(){});
 
         Assert.assertTrue("Following Relationship not found: " + source +", " + label + ", " + target,
                 rels.stream().anyMatch(
-                        r -> source.equals(r.getSource().toString())
+                        r -> source.equals(r.getSource())
                             && label.equals(r.getName())
-                            && target.equals(r.getTarget().toString())
+                            && target.equals(r.getTarget())
                         )
                 );
     }
 
-    /* Add the deletable path to {@link #pathsToDelete} and send a {@code POST} request using the given map of
-     * arguments. */
-    protected static Response postDeletable(String path, Entity.Blueprint blueprint) throws Throwable {
-        String getVerificationPath = path + "/" + PathSegmentCodec.encode(blueprint.getId());
-        return postDeletable(path, blueprint, getVerificationPath);
-    }
-    protected static Response postDeletable(String path, Entity.Blueprint blueprint, String getVerificationPath)
-            throws Throwable {
-        String postPath = basePath + "/" + path;
-        String key = postPath + "/" + PathSegmentCodec.encode(blueprint.getId());
-        pathsToDelete.put(key, basePath + "/" + getVerificationPath);
+    protected static Response postDeletable(CanonicalPath parent, Entity.Blueprint blueprint) throws Throwable {
+        SegmentType entityType = Inventory.types().byBlueprint(blueprint.getClass()).getSegmentType();
+
+        CanonicalPath childCp = parent.extend(entityType, blueprint.getId()).get();
+
+        String type =
+                Character.toLowerCase(entityType.getSimpleName().charAt(0)) + entityType.getSimpleName().substring(1);
+
+        if ("dataEntity".equals(type)) {
+            type = "data";
+        }
+
+        String postPath = basePath + "/entity" + parent.toString() + "/" + type;
+        String verificationPath = basePath + "/entity" + childCp.toString();
+
+        pathsToDelete.put(verificationPath, verificationPath);
         return postNew(postPath, blueprint);
     }
 
@@ -1530,4 +1549,33 @@ public class InventoryITest extends AbstractTestBase {
                 .toString();
     }
 
+
+    private static String interpolate(String string, Map<String, String> values) {
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            string = string.replaceAll(Pattern.quote("${" + e.getKey() + "}"), e.getValue());
+        }
+
+        return string;
+    }
+
+    private static final class MapBuilder<K, V> {
+        private final Map<K, V> map = new HashMap<>();
+
+        public static <K, V> MapBuilder<K, V> map() {
+            return new MapBuilder<>();
+        }
+
+        private MapBuilder() {
+
+        }
+
+        MapBuilder<K, V> put(K key, V value) {
+            map.put(key, value);
+            return this;
+        }
+
+        public Map<K, V> create() {
+            return map;
+        }
+    }
 }

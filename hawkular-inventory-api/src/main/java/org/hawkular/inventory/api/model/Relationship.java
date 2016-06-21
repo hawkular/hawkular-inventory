@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.SegmentType;
 
 import io.swagger.annotations.ApiModel;
@@ -32,8 +33,9 @@ import io.swagger.annotations.ApiModel;
  *
  * @author Lukas Krejci
  * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
+@ApiModel(description = "A relationship between two entities.")
 public final class Relationship extends AbstractElement<Relationship.Blueprint, Relationship.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.rl;
@@ -138,18 +140,19 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
     public static final class Blueprint extends AbstractElement.Blueprint {
 
         private final String name;
-        private final CanonicalPath otherEnd;
+        private final Path otherEnd;
         private final Relationships.Direction direction;
+
+        public static Builder builder() {
+            return new Builder();
+        }
 
         //Jackson support
         private Blueprint() {
-            super(null);
-            this.name = null;
-            this.otherEnd = null;
-            this.direction = null;
+            this(null, null, null, null);
         }
 
-        public Blueprint(Relationships.Direction direction, String name, CanonicalPath otherEnd,
+        public Blueprint(Relationships.Direction direction, String name, Path otherEnd,
                 Map<String, Object> properties) {
             super(properties);
             this.name = name;
@@ -165,7 +168,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
             return direction;
         }
 
-        public CanonicalPath getOtherEnd() {
+        public Path getOtherEnd() {
             return otherEnd;
         }
 
@@ -176,7 +179,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
 
         public static final class Builder extends AbstractElement.Blueprint.Builder<Blueprint, Builder> {
             private String name;
-            private CanonicalPath otherEnd;
+            private Path otherEnd;
             private Relationships.Direction direction = Relationships.Direction.outgoing;
 
             public Builder withName(String name) {
@@ -184,7 +187,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
                 return this;
             }
 
-            public Builder withOtherEnd(CanonicalPath path) {
+            public Builder withOtherEnd(Path path) {
                 this.otherEnd = path;
                 return this;
             }

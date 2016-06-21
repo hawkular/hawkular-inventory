@@ -193,6 +193,14 @@ public final class With {
         return SameIdentityHash.INSTANCE;
     }
 
+    public static Names name(String name) {
+        return names(name);
+    }
+
+    public static Names names(String... names) {
+        return new Names(names);
+    }
+
     public static final class Ids extends Filter {
 
         private final String[] ids;
@@ -500,6 +508,39 @@ public final class With {
         @Override
         public String toString() {
             return "SameIdentityHash";
+        }
+    }
+
+    public static final class Names extends Filter {
+        private final String[] names;
+
+        public Names(String... names) {
+            this.names = names;
+        }
+
+        public String[] getNames() {
+            return names;
+        }
+
+        @Override
+        public String toString() {
+            return "Names[names=" + Arrays.toString(names) + "]";
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Names)) return false;
+
+            Names that = (Names) o;
+
+            return Arrays.equals(names, that.names);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(names);
         }
     }
 }

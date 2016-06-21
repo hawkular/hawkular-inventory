@@ -193,7 +193,7 @@ public final class BaseResourceTypes {
         @Override
         public Data.ReadWrite<DataRole.ResourceType> data() {
             return new BaseData.ReadWrite<>(context.proceedTo(contains, DataEntity.class).get(),
-                    new ResourceTypeDataModificationChecks<>(context));
+                    DataRole.ResourceType.class, new ResourceTypeDataModificationChecks<>(context));
         }
 
         @Override

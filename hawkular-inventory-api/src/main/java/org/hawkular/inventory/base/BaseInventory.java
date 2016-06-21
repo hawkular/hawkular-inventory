@@ -399,6 +399,11 @@ public abstract class BaseInventory<E> implements Inventory {
         @Override public void commit() throws CommitException {
             //we need to start a new transaction for the actions to run in... The actual payloads are already
             //committed.
+            //if there are no actions to commit, bail out quickly
+            if (activePrecommit == null) {
+                return;
+            }
+
             try {
                 Transaction<E> tx = tenantContext.startTransaction();
                 activePrecommit.initialize(BaseInventory.this, tx);

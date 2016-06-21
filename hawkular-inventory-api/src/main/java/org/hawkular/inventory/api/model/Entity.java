@@ -26,12 +26,16 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import io.swagger.annotations.ApiModel;
+
 /**
  * Base class for all Hawkular entities.
  *
  * @author Lukas Krejci
  * @since 0.0.1
  */
+@ApiModel(description = "Defines the basic properties of all entity types in inventory",
+        subTypes = {Environment.class, IdentityHashedEntity.class, MetadataPack.class, Tenant.class})
 public abstract class Entity<B extends Blueprint, U extends Entity.Update> extends AbstractElement<B, U> {
 
     public static Class<?> typeFromSegmentType(SegmentType segmentType) {

@@ -342,7 +342,8 @@ public class RestBulk extends RestBase {
 
     @POST
     @javax.ws.rs.Path("/")
-    @ApiOperation("Bulk creation of new entities. The response body contains details about results of creation" +
+    @ApiOperation(value = "Bulk creation of new entities.",
+            notes="The response body contains details about results of creation" +
             " of individual entities. The return value is a map where keys are types of entities created and values" +
             " are again maps where keys are the canonical paths of the entities to be created and values are HTTP" +
             " status codes - 201 OK, 400 if invalid path is supplied, 409 if the entity already exists on given path" +
@@ -410,8 +411,8 @@ public class RestBulk extends RestBase {
     private List<Blueprint> deserializeBlueprints(ElementType elementType, List<Object> rawBlueprints) {
         return rawBlueprints.stream().map((o) -> {
             try {
-                String js = mapper.writeValueAsString(o);
-                return (Blueprint) mapper.reader(elementType.blueprintType).readValue(js);
+                String js = getMapper().writeValueAsString(o);
+                return (Blueprint) getMapper().reader(elementType.blueprintType).readValue(js);
             } catch (IOException e1) {
                 throw new IllegalArgumentException("Failed to deserialize as " + elementType
                         .blueprintType + " the following data: " + o, e1);

@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 import org.hawkular.inventory.api.IdentityHashed;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.rest.json.ApiError;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -48,12 +49,20 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = "/sync", description = "Synchronization of entity trees", tags = "Sync")
 public class RestSync extends RestBase {
 
+    public RestSync() {
+        super("/sync".length());
+    }
+
     @POST
     @Path("/{path}")
     @ApiOperation("Make the inventory under given path match the provided inventory structure. Note that the " +
             "relationships specified in the provided entities will be ignored and will not be applied.")
     @ApiResponses({
-            @ApiResponse(code = 204, message = "Synchronization success")
+            @ApiResponse(code = 204, message = "Synchronization success"),
+            @ApiResponse(code = 400, message = "If the entity to be synchronized doesn't support synchronization",
+                response = ApiError.class),
+            @ApiResponse(code = 404, message = "Authorization problem", response = ApiError.class),
+            @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     @SuppressWarnings("unchecked")
     public Response sync(@Encoded @PathParam("path") List<PathSegment> path, InventoryStructure.Offline<?> structure) {

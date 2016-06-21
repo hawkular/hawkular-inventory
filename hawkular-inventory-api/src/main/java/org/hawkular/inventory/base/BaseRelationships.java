@@ -49,6 +49,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 
 /**
  * @author Lukas Krejci
@@ -94,8 +95,8 @@ public final class BaseRelationships {
 
         @SuppressWarnings("unchecked")
         @Override
-        public Relationships.Single linkWith(String name, CanonicalPath targetOrSource,
-                Map<String, Object> properties) throws IllegalArgumentException {
+        public Relationships.Single linkWith(String name, Path targetOrSource, Map<String, Object> properties)
+                throws IllegalArgumentException {
 
 
             if (null == name) {
@@ -107,13 +108,7 @@ public final class BaseRelationships {
 
             return inTx(tx -> {
                 BE incidenceObject;
-                try {
-                    incidenceObject = tx.find(targetOrSource);
-                } catch (ElementNotFoundException e) {
-                    throw new EntityNotFoundException(
-                            targetOrSource.getSegment().getElementType().getSimpleName(),
-                            Query.filters(Query.to(targetOrSource)));
-                }
+                incidenceObject = Util.find(tx, context.sourcePath, targetOrSource);
 
                 BE origin = tx.querySingle(context.sourcePath);
                 if (origin == null) {
@@ -149,7 +144,7 @@ public final class BaseRelationships {
                     tx.getPreCommit().addNotifications(relationshipObject2);
                 }
 
-                return new Single<>(context.replacePath(Query.to(relationshipObject.getEntity().getPath())));
+                return new Single<>(context.toCreatedEntity(relationshipObject.getEntity(), true));
             });
         }
 
