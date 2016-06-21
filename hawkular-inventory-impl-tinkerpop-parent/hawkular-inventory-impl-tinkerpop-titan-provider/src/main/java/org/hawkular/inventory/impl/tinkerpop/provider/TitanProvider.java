@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
@@ -104,8 +105,10 @@ public class TitanProvider implements GraphProvider {
 
     @Override
     public TitanGraph instantiateGraph(Configuration configuration) {
-        return TitanFactory.open(new MapConfiguration(configuration.prefixedWith(ALLOWED_PREFIXES)
+        TitanGraph g = TitanFactory.open(new MapConfiguration(configuration.prefixedWith(ALLOWED_PREFIXES)
                 .getImplementationConfiguration(EnumSet.allOf(PropertyKeys.class))));
+        g.tx().onReadWrite(Transaction.READ_WRITE_BEHAVIOR.MANUAL);
+        return g;
     }
 
     @Override
