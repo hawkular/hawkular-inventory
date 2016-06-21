@@ -17,9 +17,14 @@
 package org.hawkular.inventory.rest.interceptors;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -46,6 +51,10 @@ import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 @ServerInterceptor
 public class AutocreateTenantRequestFilter implements ContainerRequestFilter {
 
+    /* URI chunks to which this filter should not be applied */
+    private static final List<Pattern> uriExceptionPatterns = Stream.of(".*/inventory/status/?",
+            ".*/inventory/ping/?", ".*/inventory/?").map(Pattern::compile).collect(Collectors.toList());
+
     private static final RestApiLogger log =
             Logger.getMessageLogger(RestApiLogger.class, AutocreateTenantRequestFilter.class.getName());
 
@@ -53,7 +62,7 @@ public class AutocreateTenantRequestFilter implements ContainerRequestFilter {
 
     @Inject
     @TenantId
-    private String tenantId;
+    private Instance<String> tenantIdProducer;
 
     @Inject
     @AutoTenant
@@ -64,6 +73,12 @@ public class AutocreateTenantRequestFilter implements ContainerRequestFilter {
      */
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
+        boolean shouldSkip = shouldSkip(requestContext.getUriInfo().getRequestUri().getPath());
+        if (shouldSkip) {
+            return;
+        }
+
+        String tenantId = tenantIdProducer.get();
         log.tracef("Checking if tenant [%s] needs to be auto-created", tenantId);
         /* do nothing if tenantId is unknown */
         if (tenantId != null) {
@@ -71,11 +86,11 @@ public class AutocreateTenantRequestFilter implements ContainerRequestFilter {
                 log.tracef("Tenant [%s] needs to be created", tenantId);
                 try {
                     inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build());
-                    log.tracef("Tenant [%s] auto-created sucessfully", tenantId);
+                    log.tracef("Tenant [%s] auto-created successfully", tenantId);
                     existingTenantIds.add(tenantId);
                 } catch (EntityAlreadyExistsException e) {
                     /* Probably created by another thread or during a previous run of the server */
-                    log.tracef("Tenant [%s] could not be auto-created because it existed in the backedn already",
+                    log.tracef("Tenant [%s] could not be auto-created because it existed in the backend already",
                             tenantId);
                     existingTenantIds.add(tenantId);
                 }
@@ -83,6 +98,10 @@ public class AutocreateTenantRequestFilter implements ContainerRequestFilter {
                 log.tracef("Tenant [%s] exists already", tenantId);
             }
         }
+    }
+
+    private boolean shouldSkip(String uri) {
+        return uriExceptionPatterns.stream().anyMatch((p -> p.matcher(uri).matches()));
     }
 
 }
