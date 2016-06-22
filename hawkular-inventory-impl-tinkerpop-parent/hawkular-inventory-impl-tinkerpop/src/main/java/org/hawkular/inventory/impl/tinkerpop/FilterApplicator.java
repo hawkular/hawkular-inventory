@@ -83,6 +83,7 @@ abstract class FilterApplicator<T extends Filter> {
         applicators.put(With.DataOfTypes.class, DataOfTypesApplicator.class);
         applicators.put(RecurseFilter.class, RecurseApplicator.class);
         applicators.put(With.SameIdentityHash.class, SameIdentityHashApplicator.class);
+        applicators.put(With.Names.class, NamesApplicator.class);
     }
 
     protected final T filter;
