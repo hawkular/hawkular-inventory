@@ -52,7 +52,7 @@
           "in" : "body",
           "name" : "body",
           "description" : "This is a map where keys are paths to the parents under which entities should be created. The values are again maps where keys are one of [environment, resourceType, metricType, operationType, feed, resource, metric, dataEntity, relationship] and values are arrays of blueprints of entities of the corresponding types.",
-          "required" : false,
+          "required" : true,
           "schema" : {
             "type" : "object",
             "additionalProperties" : {
@@ -92,7 +92,7 @@
           "200" : {
             "description" : "A single entity found and returned.",
             "schema" : {
-              "$ref" : "#/definitions/Entity"
+              "$ref" : "#/definitions/AbstractElement"
             }
           },
           "404" : {
@@ -534,7 +534,8 @@
         "id" : {
           "type" : "string"
         }
-      }
+      },
+      "required": ["path"]
     },
     "AbstractElementBlueprint" : {
       "type" : "object",
@@ -585,7 +586,7 @@
         "type" : "object",
         "properties" : {
           "value" : {
-            "$ref" : "#/definitions/JSON"
+            "type": "object"
           }
         },
         "description" : "Data entity contains JSON data and serves a certain \"role\" in the entity it is contained in"
@@ -600,7 +601,8 @@
           "value" : {
             "$ref" : "#/definitions/JSON"
           }
-        }
+        },
+        "required": ["value"]
       } ]
     },
     "DataEntityUpdate" : {
@@ -610,9 +612,10 @@
         "type" : "object",
         "properties" : {
           "value" : {
-            "$ref" : "#/definitions/JSON"
+            "type": "object"
           }
-        }
+        },
+        "required": ["value"]
       }]
     },
     "Entity" : {
@@ -642,25 +645,14 @@
           },
           "outgoingRelationships" : {
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "array",
-              "uniqueItems" : true,
-              "items" : {
-                "$ref" : "#/definitions/CanonicalPath"
-              }
-            }
+            "description": "This is an object where keys are the names of the relationships and values are arrays of canonical paths."
           },
           "incomingRelationships" : {
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "array",
-              "uniqueItems" : true,
-              "items" : {
-                "$ref" : "#/definitions/CanonicalPath"
-              }
-            }
+            "description": "This is an object where keys are the names of the relationships and values are arrays of canonical paths."
           }
-        }
+        },
+        "required": ["id"]
       } ]
     },
     "EntityUpdate" : {
@@ -734,7 +726,8 @@
             "$ref" : "#/definitions/IdentityHashTree"
           }
         }
-      }
+      },
+      "required": ["path", "hash"]
     },
     "IdentityHashedEntity" : {
       "allOf" : [ {
@@ -746,6 +739,7 @@
             "type" : "string"
           }
         },
+        "required": ["identityHash"],
         "description" : "A super type of all entities that support identity hashing"
       } ]
     },
@@ -777,7 +771,8 @@
           "name" : {
             "type" : "string"
           }
-        }
+        },
+        "required": ["members"]
       }]
     },
     "MetadataPackUpdate" : {
@@ -801,6 +796,7 @@
             "format" : "int64"
           }
         },
+        "required": ["type", "collectionInterval"],
         "description" : "A metric represents a monitored \"quality\". Its metric type specifies the unit in which the metric reports its values and the collection interval specifies how often the feed should be collecting the metric for changes in value."
       } ]
     },
@@ -817,7 +813,8 @@
             "type" : "integer",
             "format" : "int64"
           }
-        }
+        },
+        "required": ["metricTypePath", "collectionInterval"]
       }]
     },
     "MetricType" : {
@@ -839,6 +836,7 @@
             "format" : "int64"
           }
         },
+        "required": ["unit", "type", "collectionInterval"],
         "description" : "Metric type defines the unit and data type of a metric. It also specifies the default  collection interval as a guideline for the feed on how often to collect the metric values."
       }]
     },
@@ -860,7 +858,8 @@
             "type" : "integer",
             "format" : "int64"
           }
-        }
+        },
+        "required": ["unit", "type", "collectionInterval"]
       }]
     },
     "MetricTypeUpdate" : {
@@ -937,6 +936,7 @@
             "$ref" : "#/definitions/CanonicalPath"
           }
         },
+        "required": ["id", "source", "target"],
         "description" : "A relationship between two entities."
       }]
     },
@@ -956,7 +956,8 @@
             "type" : "string",
             "enum" : [ "outgoing", "incoming", "both" ]
           }
-        }
+        },
+        "required": ["name", "otherEnd", "direction"]
       }]
     },
     "RelationshipUpdate" : {
@@ -983,133 +984,40 @@
       }]
     },
     "ResourceBlueprint" : {
-      "type" : "object",
-      "properties" : {
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
+      "allOf" : [{
+        "$ref": "#/definitions/EntityBlueprint"
+      }, {
+        "type": "object",
+        "properties": {
+          "resourceTypePath" : {
+            "type" : "string"
           }
         },
-        "id" : {
-          "type" : "string"
-        },
-        "name" : {
-          "type" : "string"
-        },
-        "resourceTypePath" : {
-          "type" : "string"
-        },
-        "outgoingRelationships" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "array",
-            "uniqueItems" : true,
-            "items" : {
-              "$ref" : "#/definitions/CanonicalPath"
-            }
-          }
-        },
-        "incomingRelationships" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "array",
-            "uniqueItems" : true,
-            "items" : {
-              "$ref" : "#/definitions/CanonicalPath"
-            }
-          }
-        }
-      }
+        "required": ["resourceTypePath"]
+      }]
     },
     "ResourceType" : {
-      "type" : "object",
-      "properties" : {
-        "path" : {
-          "$ref" : "#/definitions/CanonicalPath"
-        },
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
-          }
-        },
-        "name" : {
-          "type" : "string"
-        },
-        "identityHash" : {
-          "type" : "string"
-        },
-        "id" : {
-          "type" : "string"
-        }
-      },
-      "description" : "A resource type contains metadata about resources it defines. It contains \"configurationSchema\" and \"connectionConfigurationSchema\" data entities that can prescribe a JSON schema to which the configurations of the resources should conform."
+      "allOf": [{
+        "$ref": "#/definitions/IdentityHashedEntity"
+      }, {
+        "type": "object",
+        "description" : "A resource type contains metadata about resources it defines. It contains \"configurationSchema\" and \"connectionConfigurationSchema\" data entities that can prescribe a JSON schema to which the configurations of the resources should conform."
+      }]
     },
     "ResourceTypeBlueprint" : {
-      "type" : "object",
-      "properties" : {
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
-          }
-        },
-        "id" : {
-          "type" : "string"
-        },
-        "name" : {
-          "type" : "string"
-        },
-        "outgoingRelationships" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "array",
-            "uniqueItems" : true,
-            "items" : {
-              "$ref" : "#/definitions/CanonicalPath"
-            }
-          }
-        },
-        "incomingRelationships" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "array",
-            "uniqueItems" : true,
-            "items" : {
-              "$ref" : "#/definitions/CanonicalPath"
-            }
-          }
-        }
-      }
+      "allOf": [{
+        "$ref": "#/definitions/EntityBlueprint"
+      }]
     },
     "ResourceTypeUpdate" : {
-      "type" : "object",
-      "properties" : {
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
-          }
-        },
-        "name" : {
-          "type" : "string"
-        }
-      }
+      "allOf": [{
+        "$ref": "#/definitions/EntityUpdate"
+      }]
     },
     "ResourceUpdate" : {
-      "type" : "object",
-      "properties" : {
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
-          }
-        },
-        "name" : {
-          "type" : "string"
-        }
-      }
+      "allOf": [{
+        "$ref": "#/definitions/EntityUpdate"
+      }]
     },
     "Tenant" : {
       "allOf" : [ {
@@ -1120,18 +1028,9 @@
       } ]
     },
     "TenantUpdate" : {
-      "type" : "object",
-      "properties" : {
-        "properties" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "object"
-          }
-        },
-        "name" : {
-          "type" : "string"
-        }
-      }
+      "allOf": [{
+        "$ref": "#/definitions/EntityUpdate"
+      }]
     },
     "InventoryStructure" : {
       "type" : "object",
