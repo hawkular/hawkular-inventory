@@ -120,6 +120,7 @@ public class TraverserTest {
     public void testSimpleEntityQuery() throws Exception {
         testVariant("/r;id", path().with(type(Resource.class), id("id")).get());
         testVariant("/r;id/entities", path().with(type(Resource.class), id("id")).get());
+        testVariant("/r;id%20with%20escapes", path().with(type(Resource.class), id("id with escapes")).get());
     }
 
     @Test

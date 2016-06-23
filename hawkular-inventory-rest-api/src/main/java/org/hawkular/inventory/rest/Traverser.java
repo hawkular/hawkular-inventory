@@ -218,7 +218,7 @@ public final class Traverser {
                 SegmentType segmentType = SegmentType.valueOf(entityTypeCtx.getText());
                 //path is important because this can be a continuation of a canonical path...
                 //this helps the query optimizer do its magic
-                getQueryBuilder().path().with(type(segmentType), id(idCtx.getText()));
+                getQueryBuilder().path().with(type(segmentType), id(PathSegmentCodec.decode(idCtx.getText())));
             }
 
             if (filterSpecCtxs != null && !filterSpecCtxs.isEmpty()) {
