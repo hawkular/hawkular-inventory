@@ -453,7 +453,13 @@
                       def base = js.parse(bsf)
                       def updates = js.parse(sf)
 
+                      //deep copy
+                      def defs = evaluate(base["definitions"].inspect())
+
                       Updater.updateBase(base, updates)
+
+                      //the definitions in the deprecated API are royally messed up.
+                      base["definitions"] = defs
 
                       def json = groovy.json.JsonOutput.toJson(base)
                       json = groovy.json.JsonOutput.prettyPrint(json)
