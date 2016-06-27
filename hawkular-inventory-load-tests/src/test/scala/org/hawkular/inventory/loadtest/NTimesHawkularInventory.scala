@@ -41,7 +41,7 @@ object NTimesHawkularInventory extends Helpers {
 
   def bulkInsertSimulationForOneFeed() = {
       exec(http("bulk insert")
-      .post("bulk")
+      .post(baseURI + bulkInsertPath)
       .body(ELFileBody("data.json")).asJSON
       .check(status is 201)
       )

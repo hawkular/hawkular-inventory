@@ -26,6 +26,8 @@ trait Helpers {
 
   // --------------------------- Options
 
+  val inventoryPath = "/hawkular/inventory/deprecated/"
+  val bulkInsertPath = "/hawkular/inventory/bulk"
   val baseURI: String = System.getProperty("ltest.baseURI", "http://localhost:8080")
   val username: String = System.getProperty("ltest.username", "jdoe")
   val password: String = System.getProperty("ltest.password", "password")

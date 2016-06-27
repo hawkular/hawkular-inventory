@@ -26,9 +26,10 @@ class AgentSimulation extends Simulation with Helpers {
 
   // http://git.io/vqEnX
   val httpConf = http
-    .baseURL(baseURI + "/hawkular/inventory/")
+    .baseURL(baseURI + inventoryPath)
     //.disableWarmUp
     .basicAuth(username, password)
+    .header("Hawkular-Tenant", "tnt") //make sure the data in data.json mention the same tenant
     .acceptHeader("application/json")
     .contentTypeHeader("application/json")
     .acceptEncodingHeader("gzip, deflate")

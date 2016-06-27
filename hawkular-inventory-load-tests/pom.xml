@@ -102,6 +102,30 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>process-classes</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${project.build.directory}/${project.build.finalName}/standalone/configuration/</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.basedir}/src/test/resources/standalone-configuration/</directory>
+                      <filtering>false</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
             <executions>
