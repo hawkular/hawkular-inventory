@@ -118,6 +118,13 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-commons-embedded-cassandra-war</artifactId>
+      <version>${version.org.hawkular.commons}</version>
+      <type>war</type>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -197,6 +204,32 @@
             </executions>
           </plugin>
 
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>deploy-embedded-cassandra</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.commons</groupId>
+                      <artifactId>hawkular-commons-embedded-cassandra-war</artifactId>
+                      <type>war</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <outputDirectory>
+                    ${project.build.directory}/${project.build.finalName}/modules/system/layers/hawkular/org/hawkular/nest/main/deployments/
+                  </outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
           <!-- Remove Command Gateway as it is not required for running Inventory itests  -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -252,6 +285,7 @@
                 <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
                 <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
                 <javaOpt>-Dsql.datasource.jndi=${sql.datasource.jndi}</javaOpt>
+                <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
                 <!--<javaOpt>-Xdebug</javaOpt>-->
                 <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
               </javaOpts>
