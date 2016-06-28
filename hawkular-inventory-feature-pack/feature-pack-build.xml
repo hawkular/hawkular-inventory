@@ -23,7 +23,7 @@
   </dependencies>
 
   <config>
-    <standalone template="configuration/standalone/hawkular-nest-template.xml" subsystems="configuration/standalone/hawkular-inventory-subsystems.xml"
+    <standalone template="configuration/standalone/template.xml" subsystems="configuration/standalone/hawkular-inventory-subsystems.xml"
                 output-file="standalone/configuration/standalone.xml" />
   </config>
 
