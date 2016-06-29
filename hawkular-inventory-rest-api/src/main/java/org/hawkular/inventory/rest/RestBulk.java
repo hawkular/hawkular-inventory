@@ -544,7 +544,7 @@ public class RestBulk extends RestBase {
         return status == 201 || status == 204;
     }
 
-    private enum ElementType {
+    public enum ElementType {
         environment(Environment.class, Environment.Blueprint.class, SegmentType.e),
         resourceType(ResourceType.class, ResourceType.Blueprint.class, SegmentType.rt),
         metricType(MetricType.class, MetricType.Blueprint.class, SegmentType.mt),
@@ -586,7 +586,7 @@ public class RestBulk extends RestBase {
         }
     }
 
-    private static class IdExtractor extends ElementBlueprintVisitor.Simple<String, Void> {
+    public static class IdExtractor extends ElementBlueprintVisitor.Simple<String, Void> {
         @Override
         protected String defaultAction(Object blueprint, Void parameter) {
             return ((Entity.Blueprint) blueprint).getId();
