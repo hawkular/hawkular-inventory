@@ -74,7 +74,7 @@ public final class BaseMetadataPacks {
                         }
                     }).iterator();
 
-            return IdentityHash.of(members, context.inventory);
+            return IdentityHash.of(members, context.inventory.keepTransaction(tx));
         }
 
         @Override

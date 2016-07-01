@@ -73,17 +73,20 @@ public final class TinkerGraphProvider implements GraphProvider {
 
     @Override
     public TransactionalGraph startTransaction(TransactionalGraph graph) {
+        GraphProvider.super.startTransaction(graph);
         lock.writeLock().lock();
         return graph;
     }
 
     @Override
     public void commit(TransactionalGraph graph) {
+        GraphProvider.super.commit(graph);
         lock.writeLock().unlock();
     }
 
     @Override
     public void rollback(TransactionalGraph graph) {
+        GraphProvider.super.rollback(graph);
         lock.writeLock().unlock();
     }
 

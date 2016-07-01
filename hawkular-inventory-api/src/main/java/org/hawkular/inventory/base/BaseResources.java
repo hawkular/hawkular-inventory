@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.Action.created;
+import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
@@ -111,7 +112,9 @@ public final class BaseResources {
                 //we're creating a child resource... need to also create the implicit isParentOf
                 //in here, we do use the relationship rules to check if the hierarchy we're introducing by this call
                 //conforms to the rules.
-                r = relate(parent, entity, isParentOf.name());
+                String relationshipName = isParentOf.name();
+                RelationshipRules.checkCreate(tx, parent, outgoing, relationshipName, entity);
+                r = tx.relate(parent, entity, relationshipName, null);
 
                 Relationship parentRel = new Relationship(tx.extractId(r), isParentOf.name(),
                         parentPath, entityPath);

@@ -16,6 +16,12 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
+import static org.hawkular.inventory.impl.tinkerpop.spi.Log.LOG;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.paths.CanonicalPath;
 
@@ -75,9 +81,38 @@ public interface GraphProvider {
      * @return a new transactional graph that is bound to a new transaction
      */
     default TransactionalGraph startTransaction(TransactionalGraph graph) {
-        return graph instanceof ThreadedTransactionalGraph
-                ? ((ThreadedTransactionalGraph) graph).newTransaction()
-                : graph;
+        boolean tracing = LOG.isTraceEnabled();
+
+        Throwable previousTransactionAllocation = TransactionTracker.transactionStart.get(this);
+
+        if (previousTransactionAllocation != null) {
+            if (tracing) {
+                LOG.trace("FAILURE TO START THE TX.");
+                LOG.trace("THERE'S A TX ALREADY ACTIVE:", previousTransactionAllocation);
+            }
+            throw new IllegalStateException("Transaction already open.", previousTransactionAllocation);
+        }
+
+        boolean failed = false;
+        try {
+            return graph instanceof ThreadedTransactionalGraph
+                    ? ((ThreadedTransactionalGraph) graph).newTransaction()
+                    : graph;
+        } catch (Throwable t) {
+            failed = true;
+            throw t;
+        } finally {
+            if (!failed) {
+                if (tracing) {
+                    TransactionTracker.transactionStart
+                            .put(this, new Exception());
+                    LOG.trace("+++++++ TX STARTED ON GRAPH: " + graph);
+                } else {
+                    TransactionTracker.transactionStart
+                            .put(this, NoRecordedStacktrace.INSTANCE);
+                }
+            }
+        }
     }
 
     /**
@@ -87,8 +122,21 @@ public interface GraphProvider {
      *
      * @param graph the graph to commit the transaction to
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     default void commit(TransactionalGraph graph) {
-        graph.commit();
+        try {
+            graph.commit();
+            if (Log.LOG.isTraceEnabled()) {
+                Log.LOG.trace("------- TX COMMITTED ON GRAPH: " + graph);
+            }
+        } catch (Throwable t) {
+            if (Log.LOG.isTraceEnabled()) {
+                LOG.trace("FAILURE TO COMMIT TX:", t);
+            }
+            throw t;
+        } finally {
+            TransactionTracker.transactionStart.remove(this);
+        }
     }
 
     /**
@@ -98,8 +146,21 @@ public interface GraphProvider {
      *
      * @param graph the graph to rollback the transaction from
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     default void rollback(TransactionalGraph graph) {
-        graph.rollback();
+        try {
+            graph.rollback();
+            if (Log.LOG.isTraceEnabled()) {
+                Log.LOG.trace("------- TX ROLLED BACK ON GRAPH: " + graph);
+            }
+        } catch (Throwable t) {
+            if (Log.LOG.isTraceEnabled()) {
+                LOG.trace("FAILURE TO ROLLBACK TX:", t);
+            }
+            throw t;
+        } finally {
+            TransactionTracker.transactionStart.remove(this);
+        }
     }
 
     /**
@@ -108,10 +169,30 @@ public interface GraphProvider {
      * <p>The default implementation is an identity function.</p>
      *
      * @param inputException an exception to convert
-     * @param affectedPath
+     * @param affectedPath the canonical path of the entity affected by the exception
      * @return converted exception
      */
     default RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
         return inputException;
+    }
+}
+
+/**
+ * We use the littler overhead of synchronized access to a hash map to ensure none of our codebase tries to spawn
+ * nested transactions.
+ */
+class TransactionTracker {
+    static Map<GraphProvider, Throwable> transactionStart = Collections.synchronizedMap(new HashMap<>());
+}
+
+/**
+ * A trick to have an exception with no stacktrace. This is used in transaction tracker when the log level is not
+ * TRACE to save big time on execution time (because no stacktrace allocation needs to happen).
+ */
+class NoRecordedStacktrace extends Throwable {
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    static final NoRecordedStacktrace INSTANCE = new NoRecordedStacktrace();
+    @Override public synchronized Throwable fillInStackTrace() {
+        return this;
     }
 }

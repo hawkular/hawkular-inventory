@@ -387,7 +387,7 @@ public abstract class BaseInventory<E> implements Inventory {
 
             BaseInventory.HidingPrecommit<E> hidingPrecommit = new BaseInventory.HidingPrecommit<>();
 
-            return new BackendTransaction<>(new DelegatingInventoryBackend<E>(backend) {
+            return new BackendTransaction<>(new DelegatingInventoryBackend<E>(backend.startTransaction()) {
                 @Override public void commit() throws CommitFailureException {
                     hidingPrecommit.getHiddenActions().forEach(activePrecommit::addAction);
                     hidingPrecommit.getHiddenNotifications().forEach(activePrecommit::addNotifications);
@@ -404,15 +404,20 @@ public abstract class BaseInventory<E> implements Inventory {
                 return;
             }
 
+            Transaction<E> tx = null;
             try {
-                Transaction<E> tx = tenantContext.startTransaction();
-                activePrecommit.initialize(BaseInventory.this, tx);
+                tx = tenantContext.startTransaction();
+                activePrecommit.initialize(BaseInventory.this.keepTransaction(tx), tx);
 
-                activePrecommit.getActions().forEach(a -> a.accept(tx));
+                for(Consumer<Transaction<E>> action : activePrecommit.getActions()) {
+                    action.accept(tx);
+                }
 
-                backend.commit();
+                tx.directAccess().commit();
             } catch (Throwable t) {
-                backend.rollback();
+                if (tx != null) {
+                    tx.directAccess().rollback();
+                }
                 throw new CommitException(t);
             }
 

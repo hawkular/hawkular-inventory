@@ -254,13 +254,6 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                 }, null);
     }
 
-    protected BE relate(BE source, BE target, String relationshipName) {
-        return inTx(tx -> {
-            RelationshipRules.checkCreate(tx, source, outgoing, relationshipName, target);
-            return tx.relate(source, target, relationshipName, null);
-        });
-    }
-
     /**
      * Wires up the freshly created entity in the appropriate places in inventory. The "contains" relationship between
      * the parent and the new entity will already have been created so the implementations don't need to do that again.
