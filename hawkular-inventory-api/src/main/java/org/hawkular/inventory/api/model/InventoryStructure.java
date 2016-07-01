@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
@@ -46,6 +46,7 @@ import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
@@ -223,11 +224,11 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                     @SuppressWarnings("unchecked")
                     private <X extends Entity<XB, ?>, XB extends Blueprint>
                     Stream<BB> fromRead(ResolvingToMultiple<? extends ResolvableToMany<X>> read) {
-                        Iterator<X> it = read.getAll().entities(Pager.none());
+                        Page<X> it = read.getAll().entities(Pager.none());
                         Spliterator<X> sit = Spliterators.spliterator(it, Long.MAX_VALUE, Spliterator.DISTINCT &
                                 Spliterator.IMMUTABLE & Spliterator.NONNULL);
 
-                        return StreamSupport.stream(sit, false).map(e -> (BB) asBlueprint(e));
+                        return StreamSupport.stream(sit, false).map(e -> (BB) asBlueprint(e)).onClose(it::close);
                     }
                 }, null);
             }
@@ -289,13 +290,15 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                         MetadataPack.Blueprint.Builder bld = MetadataPack.Blueprint.builder()
                                 .withName(metadataPack.getName()).withProperties(metadataPack.getProperties());
 
-                        inventory.inspect(metadataPack).metricTypes().getAll()
-                                .entities(Pager.none())
-                                .forEachRemaining(e -> bld.withMember(e.getPath()));
+                        try (Page<MetricType> p = inventory.inspect(metadataPack).metricTypes().getAll()
+                                .entities(Pager.none())) {
+                            p.forEachRemaining(e -> bld.withMember(e.getPath()));
+                        }
 
-                        inventory.inspect(metadataPack).resourceTypes().getAll()
-                                .entities(Pager.none())
-                                .forEachRemaining(e -> bld.withMember(e.getPath()));
+                        try (Page<ResourceType> p = inventory.inspect(metadataPack).resourceTypes().getAll()
+                                .entities(Pager.none())) {
+                            p.forEachRemaining(e -> bld.withMember(e.getPath()));
+                        }
 
                         return (BB) bld.build();
                     }
@@ -355,6 +358,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      * Returns the direct children of given type under the supplied path to the parent entity, which is relative to some
      * root entity for which this structure was instantiated.
      *
+     * <p><b>WARNING</b>: the returned stream MUST BE closed after processing.
+     *
      * @param parent    the path to the parent entity, relative to the root entity
      * @param childType the type of the child entities to retrieve
      * @param <E>       the type of the child entities
@@ -372,6 +377,12 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      */
     Blueprint get(RelativePath path);
 
+    /**
+     * <b>WARNING</b>: the returned stream MUST BE closed after processing.
+     *
+     * @param parent
+     * @return the stream of all children of the parent
+     */
     @SuppressWarnings("unchecked")
     default Stream<Entity.Blueprint> getAllChildren(RelativePath parent) {
         Stream ret = Stream.empty();
@@ -381,8 +392,23 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
         for (SegmentType st : SegmentType.values()) {
             if (st != SegmentType.rl && st.isAllowedInCanonical() && check.canExtendTo(st)) {
-                Stream<?> next = getChildren(parent, Entity.entityTypeFromSegmentType(st));
-                ret = Stream.concat(ret, next);
+                //streams are a pain..
+                //we need to ensure that the children are evaluated 1 by one - 1 that no 2 queries run
+                //in parallel... in here we do not know if we are loading directly from a backend store
+                //or from memory.
+                //We cannot guarantee the transactional behavior of a backend - even if it supports a transaction frame
+                //it still may choose to use multiple transactions during the lifetime of a frame.
+                //Streams are evaluated lazily and concat'ed stream calls close on the underlying streams (i.e. commit()
+                //of the txs that we might be using) during its close method. As such, if we just concat'ed our calls
+                //to get children, we might try to nest the transactions - which is not supported by Titan at least.
+                //To overcome this, eagerly evaluate each of our children and compose the resulting stream from the
+                //loaded results.
+                List<?> res;
+                try (Stream<?> next = getChildren(parent, Entity.entityTypeFromSegmentType(st))) {
+                    res = next.collect(Collectors.toList());
+                }
+
+                ret = Stream.concat(ret, res.stream());
             }
         }
 
@@ -498,8 +524,6 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                         void impl(Class<E> childType, RelativePath.Extender parent) {
                             SegmentType childSeg = Entity.segmentTypeFromType(childType);
                             if (parent.canExtendTo(childSeg)) {
-                                Stream<B> otherChildren = other.getChildren(parent.get(), childType);
-
                                 RelativePath parentPath = parent.get();
 
                                 EntityAndChildren parentChildren = entities.get(parentPath);
@@ -512,6 +536,13 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                                         parentChildren = new EntityAndChildren(other.getRoot());
                                         entities.put(parentPath, parentChildren);
                                     }
+                                }
+
+                                //we cannot recursively call ourselves while evaluating the stream, because that
+                                //would result in nested transactions, which are not supported...
+                                List<B> otherChildren;
+                                try (Stream<B> s = other.getChildren(parent.get(), childType)) {
+                                    otherChildren = s.collect(Collectors.toList());
                                 }
 
                                 otherChildren.forEach(c -> {
@@ -536,8 +567,18 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             RelativePath empty = RelativePath.empty().get();
 
-            other.getAllChildren(empty).forEach(
-                    b -> ElementTypeVisitor.accept(Blueprint.getSegmentTypeOf(b), visitor, empty.modified()));
+            //this is important. We need to eagerly collect the children because we don't know if the other structure
+            //is online or offline. The backends usually don't support nested transactions and if the other is online
+            //inventory structure, then getAllChildren() opens a transaction. If we then processed the items in all
+            //children one by one from the stream, the visitor would then call to fetch other children recursively,
+            //potentially spawning other transactions. Backends that do not support nested txs would then freak out.
+            //The solution therefore is to fetch children eagerly (closing the stream) and then process them 1 by 1.
+            List<Entity.Blueprint> acs;
+            try (Stream<Entity.Blueprint> s = other.getAllChildren(empty)) {
+                acs = s.collect(Collectors.toList());
+            }
+            acs.forEach(b -> ElementTypeVisitor.accept(Blueprint.getSegmentTypeOf(b), visitor,
+                    empty.modified()));
 
             Map<RelativePath, Map<EntityType, Set<Entity.Blueprint>>> children = new HashMap<>();
             Map<RelativePath, Entity.Blueprint> blueprints = new HashMap<>();

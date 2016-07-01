@@ -72,7 +72,8 @@ public final class BaseFeeds {
             CanonicalPath feedPath = tx.extractCanonicalPath(tenant)
                     .extend(Feed.SEGMENT_TYPE, blueprint.getId()).get();
 
-            return context.configuration.getFeedIdStrategy().generate(context.inventory, new Feed(feedPath, null));
+            return context.configuration.getFeedIdStrategy().generate(context.inventory.keepTransaction(tx),
+                    new Feed(feedPath, null));
         }
 
         @Override

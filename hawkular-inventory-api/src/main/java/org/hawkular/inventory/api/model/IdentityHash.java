@@ -48,6 +48,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.TreeTraversal;
@@ -388,18 +389,20 @@ public final class IdentityHash {
                     RelativePath resourcePath = rootPath.modified().extend(SegmentType.r, parentResource.getId())
                             .get().slide(1, 0);
 
-                    return structure.getChildren(resourcePath, DataEntity.class)
-                            .filter(d -> configuration.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(configuration));
+                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(resourcePath, DataEntity.class)) {
+                        return s.filter(d -> configuration.equals(d.getRole()))
+                                .findFirst().orElse(dummyDataBlueprint(configuration));
+                    }
                 }
 
                 @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
                             : RelativePath.to().resourceType(rt.getId()).get();
 
-                    return structure.getChildren(p, DataEntity.class)
-                            .filter(d -> configurationSchema.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(configurationSchema));
+                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
+                            .filter(d -> configurationSchema.equals(d.getRole()))) {
+                        return s.findFirst().orElse(dummyDataBlueprint(configurationSchema));
+                    }
                 }
 
                 @Override
@@ -408,37 +411,49 @@ public final class IdentityHash {
                     RelativePath resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
                             .get().slide(1, 0);
 
-                    return structure.getChildren(resourcePath, DataEntity.class)
-                            .filter(d -> connectionConfiguration.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(connectionConfiguration));
+                    try (Stream<DataEntity.Blueprint<?>>s = structure.getChildren(resourcePath, DataEntity.class)
+                            .filter(d -> connectionConfiguration.equals(d.getRole()))) {
+                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfiguration));
+                    }
                 }
 
                 @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
                             : RelativePath.to().resourceType(rt.getId()).get();
 
-                    return structure.getChildren(p, DataEntity.class)
-                            .filter(d -> connectionConfigurationSchema.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(connectionConfigurationSchema));
+                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
+                            .filter(d -> connectionConfigurationSchema.equals(d.getRole()))) {
+                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfigurationSchema));
+                    }
                 }
 
                 @Override public List<Metric.Blueprint> getFeedMetrics() {
-                    return structure.getChildren(RelativePath.empty().get(), Metric.class).collect(toList());
+                    try (Stream<Metric.Blueprint> s = structure.getChildren(RelativePath.empty().get(), Metric.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override public List<Resource.Blueprint> getFeedResources() {
-                    return structure.getChildren(RelativePath.empty().get(), Resource.class).collect(toList());
+                    try (Stream<Resource.Blueprint> s = structure.getChildren(RelativePath.empty().get(),
+                            Resource.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override public List<MetricType.Blueprint> getMetricTypes() {
-                    return structure.getChildren(RelativePath.empty().get(), MetricType.class).collect(toList());
+                    try (Stream<MetricType.Blueprint> s = structure.getChildren(RelativePath.empty().get(),
+                            MetricType.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override public List<OperationType.Blueprint> getOperationTypes(ResourceType.Blueprint rt) {
                     RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
                             : RelativePath.to().resourceType(rt.getId()).get();
 
-                    return structure.getChildren(p, OperationType.class).collect(toList());
+                    try (Stream<OperationType.Blueprint> s = structure.getChildren(p, OperationType.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override
@@ -447,9 +462,10 @@ public final class IdentityHash {
                     RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
                             .slide(1, 0);
 
-                    return structure.getChildren(p, DataEntity.class)
-                            .filter(d -> parameterTypes.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(parameterTypes));
+                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
+                            .filter(d -> parameterTypes.equals(d.getRole()))) {
+                        return s.findFirst().orElse(dummyDataBlueprint(parameterTypes));
+                    }
                 }
 
                 @Override
@@ -458,7 +474,9 @@ public final class IdentityHash {
                     RelativePath p = rootPath.modified().extend(SegmentType.r, parentResource.getId()).get()
                             .slide(1, 0);
 
-                    return structure.getChildren(p, Metric.class).collect(toList());
+                    try (Stream<Metric.Blueprint> s = structure.getChildren(p, Metric.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override
@@ -466,11 +484,16 @@ public final class IdentityHash {
                     RelativePath p = rootPath.modified().extend(SegmentType.r, parentResource.getId()).get()
                             .slide(1, 0);
 
-                    return structure.getChildren(p, Resource.class).collect(toList());
+                    try (Stream<Resource.Blueprint> s = structure.getChildren(p, Resource.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override public List<ResourceType.Blueprint> getResourceTypes() {
-                    return structure.getChildren(RelativePath.empty().get(), ResourceType.class).collect(toList());
+                    try (Stream<ResourceType.Blueprint> s = structure.getChildren(RelativePath.empty().get(),
+                            ResourceType.class)) {
+                        return s.collect(toList());
+                    }
                 }
 
                 @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
@@ -478,9 +501,10 @@ public final class IdentityHash {
                     RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
                             .slide(1, 0);
 
-                    return structure.getChildren(p, DataEntity.class)
-                            .filter(d -> returnType.equals(d.getRole()))
-                            .findFirst().orElse(dummyDataBlueprint(returnType));
+                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
+                            .filter(d -> returnType.equals(d.getRole()))) {
+                        return s.findFirst().orElse(dummyDataBlueprint(returnType));
+                    }
                 }
             };
         }

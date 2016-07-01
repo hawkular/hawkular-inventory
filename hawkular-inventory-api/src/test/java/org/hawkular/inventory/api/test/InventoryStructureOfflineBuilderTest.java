@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Feed;
@@ -84,9 +85,12 @@ public class InventoryStructureOfflineBuilderTest {
         structure.getChild(Path.Segment.from("r;resource")).addChild(Resource.Blueprint.builder().withId("cr2")
                 .withResourceTypePath("../resourceType").build());
 
-        InventoryStructure s = structure.build();
+        InventoryStructure<?> s = structure.build();
 
-        Assert.assertEquals(2, s.getChildren(RelativePath.to().resource("resource").get(), Resource.class).count());
+        try (Stream<Resource.Blueprint> sm = s.getChildren(RelativePath.to().resource("resource").get(),
+                Resource.class)) {
+            Assert.assertEquals(2, sm.count());
+        }
     }
 
     @Test
