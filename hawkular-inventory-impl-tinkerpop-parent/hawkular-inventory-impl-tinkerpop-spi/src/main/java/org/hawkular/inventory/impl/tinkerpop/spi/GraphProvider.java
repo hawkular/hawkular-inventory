@@ -18,7 +18,6 @@ package org.hawkular.inventory.impl.tinkerpop.spi;
 
 import static org.hawkular.inventory.impl.tinkerpop.spi.Log.LOG;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,7 +82,7 @@ public interface GraphProvider {
     default TransactionalGraph startTransaction(TransactionalGraph graph) {
         boolean tracing = LOG.isTraceEnabled();
 
-        Throwable previousTransactionAllocation = TransactionTracker.transactionStart.get(this);
+        Throwable previousTransactionAllocation = TransactionTracker.transactionStart.get().get(this);
 
         if (previousTransactionAllocation != null) {
             if (tracing) {
@@ -104,11 +103,11 @@ public interface GraphProvider {
         } finally {
             if (!failed) {
                 if (tracing) {
-                    TransactionTracker.transactionStart
+                    TransactionTracker.transactionStart.get()
                             .put(this, new Exception());
                     LOG.trace("+++++++ TX STARTED ON GRAPH: " + graph);
                 } else {
-                    TransactionTracker.transactionStart
+                    TransactionTracker.transactionStart.get()
                             .put(this, NoRecordedStacktrace.INSTANCE);
                 }
             }
@@ -135,7 +134,7 @@ public interface GraphProvider {
             }
             throw t;
         } finally {
-            TransactionTracker.transactionStart.remove(this);
+            TransactionTracker.transactionStart.get().remove(this);
         }
     }
 
@@ -159,7 +158,7 @@ public interface GraphProvider {
             }
             throw t;
         } finally {
-            TransactionTracker.transactionStart.remove(this);
+            TransactionTracker.transactionStart.get().remove(this);
         }
     }
 
@@ -178,11 +177,17 @@ public interface GraphProvider {
 }
 
 /**
- * We use the littler overhead of synchronized access to a hash map to ensure none of our codebase tries to spawn
- * nested transactions.
+ * We use the smaller overhead of a thread local hash map to ensure none of our codebase tries to spawn
+ * nested transactions. Concurrent transactions from different threads are OK.
  */
 class TransactionTracker {
-    static Map<GraphProvider, Throwable> transactionStart = Collections.synchronizedMap(new HashMap<>());
+    static ThreadLocal<Map<GraphProvider, Throwable>> transactionStart =
+            new ThreadLocal<Map<GraphProvider, Throwable>>() {
+        @Override protected Map<GraphProvider, Throwable> initialValue() {
+            //usually we don't have more than 1 graph provider active, so let's keep this small for starts
+            return new HashMap<>(1);
+        }
+    };
 }
 
 /**
