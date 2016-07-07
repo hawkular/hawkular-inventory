@@ -94,6 +94,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
@@ -1357,7 +1358,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     private <T, U> Page<U> page(GraphTraversal<?, ? extends T> traversal, Pager pager, Function<T, U> transform) {
         //TODO this doesn't apply any ordering
         @SuppressWarnings("unchecked")
-        GraphTraversal<?, Map<String, Object>> paged = traversal
+        GraphTraversal<?, Map<String, Object>> paged = applyOrdering(traversal, pager)
                 .fold().as("results", "total").select("results", "total")
                 .by(__.coalesce(__.range(Scope.local, pager.getStart(), pager.getEnd()), __.constant(emptyList())))
                 .by(__.count(Scope.local));
@@ -1376,5 +1377,32 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         List<T> results = res instanceof List ? (List<T>) res : Collections.singletonList((T) res);
 
         return new Page<>(results.stream().map(transform).iterator(), pager, total);
+    }
+
+    private <S, E> GraphTraversal<S, E> applyOrdering(GraphTraversal<S, E> traversal, Pager pager) {
+        boolean specific = pager.getOrder().stream().filter(Order::isSpecific).map(o -> true).findFirst().orElse(false);
+
+        if (!specific) {
+            return traversal;
+        }
+
+        traversal.order();
+        pager.getOrder().stream().filter(Order::isSpecific).forEach(o -> {
+            String prop = Constants.Property.mapUserDefined(o.getField());
+            traversal.by(prop, toTinkerpopOrder(o.getDirection()));
+        });
+
+        return traversal;
+    }
+
+    private static org.apache.tinkerpop.gremlin.process.traversal.Order toTinkerpopOrder(Order.Direction direction) {
+        switch (direction) {
+            case ASCENDING:
+                return org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+            case DESCENDING:
+                return org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
+            default:
+                throw new IllegalStateException("Unsupported order direction: " + direction);
+        }
     }
 }
