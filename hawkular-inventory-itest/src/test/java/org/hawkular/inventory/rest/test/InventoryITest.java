@@ -1147,14 +1147,14 @@ public class InventoryITest extends AbstractTestBase {
                 + "    \"environment\": ["//
                 + "       {"//
                 + "         \"id\": \"" + env1 + "\","//
-                + "         \"properties\": {\"key\": \"value\"},"//
+                + "         \"properties\": {\"p_key\": \"value\"},"//
                 + "         \"outgoing\": {"//
                 + "           \"customRel\": [\"/t;"+ tenantId + "\"]"//
                 + "         }"//
                 + "       },"//
                 + "       {"//
                 + "         \"id\": \""+ env2 +"\","//
-                + "         \"properties\": {\"key\": \"value2\"}"//
+                + "         \"properties\": {\"p_key\": \"value2\"}"//
                 + "       }"//
                 + "    ],"//
                 + "    \"resourceType\": ["//
