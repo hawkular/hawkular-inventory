@@ -895,19 +895,23 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .with(PathFragment.from(type(Tenant.class), id(tenantId), by(contains),
                             type(Environment.class), id(id))).build();
 
-
-            Page<E> envs = inventory.getBackend().query(q, Pager.unlimited(Order.unspecified()));
-
-            Assert.assertTrue(envs.hasNext());
-
-
             //query, we should get the same results
             Environment env = inventory.tenants().get(tenantId).environments().get(id).entity();
             Assert.assertEquals(id, env.getId());
 
-            env = inventory.getBackend().convert(envs.next(), Environment.class);
-            Assert.assertTrue(!envs.hasNext());
-            Assert.assertEquals(id, env.getId());
+
+            InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+            try {
+                Page<E> envs = bcknd.query(q, Pager.unlimited(Order.unspecified()));
+
+                Assert.assertTrue(envs.hasNext());
+
+                env = inventory.getBackend().convert(envs.next(), Environment.class);
+                Assert.assertTrue(!envs.hasNext());
+                Assert.assertEquals(id, env.getId());
+            } finally {
+                bcknd.rollback();
+            }
 
             return null;
         };
@@ -918,7 +922,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Query q = Query.empty().asBuilder()
                 .with(PathFragment.from(type(Environment.class))).build();
 
-        Assert.assertEquals(2, inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).toList().size());
+        InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+        try {
+            Assert.assertEquals(2, bcknd.query(q, Pager.unlimited(Order.unspecified())).toList().size());
+        } finally {
+            bcknd.rollback();
+        }
     }
 
     @Test
@@ -928,9 +937,14 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Query query = Query.path().with(type(Tenant.class), id(tenantId),
                     by(contains), type(ResourceType.class), id(id)).get();
 
-            Page<?> results = inventory.getBackend().query(query, Pager.unlimited(Order.unspecified()));
+            InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+            try {
+                Page<?> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
 
-            Assert.assertTrue(results.hasNext());
+                Assert.assertTrue(results.hasNext());
+            } finally {
+                bcknd.rollback();
+            }
 
             ResourceType
                     rt = inventory.tenants().get(tenantId).resourceTypes().get(id).entity();
@@ -944,8 +958,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         test.apply("com.example.tenant", "Playroom");
 
         Query query = Query.path().with(type(ResourceType.class)).get();
-        Assert.assertEquals(6, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
-                .size());
+        InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+        try {
+            Assert.assertEquals(6, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+                    .size());
+        } finally {
+            bcknd.rollback();
+        }
     }
 
     @Test
@@ -955,7 +974,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Query query = Query.path().with(type(Tenant.class), id(tenantId),
                     by(contains), type(MetricType.class), id(id)).get();
 
-            assert inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).hasNext();
+            InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+            try {
+                assert bcknd.query(query, Pager.unlimited(Order.unspecified())).hasNext();
+            } finally {
+                bcknd.rollback();
+            }
 
             MetricType md = inventory.tenants().get(tenantId).metricTypes().get(id).entity();
             assert md.getId().equals(id);
@@ -967,8 +991,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         test.apply("com.example.tenant", "Size");
 
         Query query = Query.path().with(type(MetricType.class)).get();
-        Assert.assertEquals(4, inventory.getBackend().query(query, Pager.unlimited(Order.unspecified())).toList()
-                .size());
+        InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+        try {
+            Assert.assertEquals(4, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+                    .size());
+        } finally {
+            bcknd.rollback();
+        }
     }
 
     @Test
@@ -979,7 +1008,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     by(contains), type(ResourceType.class), id(resourceTypeId), by(incorporates),
                     type(MetricType.class), id(id)).get();
 
-            assert inventory.getBackend().query(q, Pager.unlimited(Order.unspecified())).hasNext();
+            InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+            try {
+                assert bcknd.query(q, Pager.unlimited(Order.unspecified())).hasNext();
+            } finally {
+                bcknd.rollback();
+            }
 
             MetricType md = inventory.tenants().get(tenantId).resourceTypes().get(resourceTypeId)
                     .metricTypes().get(path).entity();
@@ -1013,8 +1047,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         test.apply("com.example.tenant", "test", "Size", "playroom1_size");
         test.apply("com.example.tenant", "test", "Size", "playroom2_size");
 
-        Assert.assertEquals(5, inventory.getBackend().query(Query.path().with(type(Metric.class)).get(),
-                Pager.unlimited(Order.unspecified())).toList().size());
+        InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+        try {
+            Assert.assertEquals(5, bcknd.query(Query.path().with(type(Metric.class)).get(),
+                    Pager.unlimited(Order.unspecified())).toList().size());
+        } finally {
+            bcknd.rollback();
+        }
     }
 
     @Test
@@ -1035,10 +1074,14 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         test.apply("com.example.tenant", "test", "Playroom", "playroom1");
         test.apply("com.example.tenant", "test", "Playroom", "playroom2");
 
-
-        Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(
-                Resource.class)).get(),
-                Pager.unlimited(Order.unspecified())).toList().size());
+        InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
+        try {
+            Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(
+                    Resource.class)).get(),
+                    Pager.unlimited(Order.unspecified())).toList().size());
+        } finally {
+            bcknd.rollback();
+        }
     }
 
     @Test
@@ -2881,128 +2924,143 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testBackendGetRelationship() throws Exception {
-        InventoryBackend<E> backend = inventory.getBackend();
+        InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
-        E tenant = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
-        E environment = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-        E r = backend.getRelationship(tenant, environment, contains.name());
+        try {
+            E tenant = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
+            E environment = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E r = backend.getRelationship(tenant, environment, contains.name());
 
-        Relationship rel = backend.convert(r, Relationship.class);
+            Relationship rel = backend.convert(r, Relationship.class);
 
-        Assert.assertEquals("com.acme.tenant", rel.getSource().getSegment().getElementId());
-        Assert.assertEquals("production", rel.getTarget().getSegment().getElementId());
-        Assert.assertEquals("contains", rel.getName());
+            Assert.assertEquals("com.acme.tenant", rel.getSource().getSegment().getElementId());
+            Assert.assertEquals("production", rel.getTarget().getSegment().getElementId());
+            Assert.assertEquals("contains", rel.getName());
+        } finally {
+            backend.rollback();
+        }
     }
 
     @Test
     public void testBackendGetRelationships() throws Exception {
-        InventoryBackend<E> backend = inventory.getBackend();
+        InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
-        E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
-        Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
-        Set<E> rels = backend.getRelationships(entity, both);
-        Assert.assertEquals(8, rels.size());
+        try {
+            E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
+            Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
+            Set<E> rels = backend.getRelationships(entity, both);
+            Assert.assertEquals(8, rels.size());
 
-        Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
-                Relationship.class));
+            Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
+                    Relationship.class));
 
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "production".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "URL".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "Person".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "feed1".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "production".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "URL".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "Person".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "feed1".equals(r.getTarget().getSegment().getElementId())));
 
-        rels = backend.getRelationships(entity, incoming);
-        Assert.assertTrue(rels.isEmpty());
+            rels = backend.getRelationships(entity, incoming);
+            Assert.assertTrue(rels.isEmpty());
 
-        rels = backend.getRelationships(entity, outgoing);
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "production".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "URL".equals(r.getTarget().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
-                "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
-                "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
+            rels = backend.getRelationships(entity, outgoing);
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "production".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "URL".equals(r.getTarget().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
+                    "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
+                    "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
 
-        entity = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
-        Assert.assertEquals("test", backend.extractId(entity));
+            entity = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            Assert.assertEquals("test", backend.extractId(entity));
 
-        rels = backend.getRelationships(entity, incoming);
-        Assert.assertEquals(2, rels.size());
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "contains".equals(r.getName()) &&
-                "com.example.tenant".equals(r.getSource().getSegment().getElementId())));
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "yourMom".equals(r.getName()) &&
-                "playroom2_size".equals(r.getSource().getSegment().getElementId())));
+            rels = backend.getRelationships(entity, incoming);
+            Assert.assertEquals(2, rels.size());
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "contains".equals(r.getName()) &&
+                    "com.example.tenant".equals(r.getSource().getSegment().getElementId())));
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "yourMom".equals(r.getName()) &&
+                    "playroom2_size".equals(r.getSource().getSegment().getElementId())));
 
-        rels = backend.getRelationships(entity, outgoing, "IamYourFather");
-        Assert.assertEquals(1, rels.size());
-        Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "IamYourFather".equals(r.getName()) &&
-                "playroom2_size".equals(r.getTarget().getSegment().getElementId())));
-
+            rels = backend.getRelationships(entity, outgoing, "IamYourFather");
+            Assert.assertEquals(1, rels.size());
+            Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "IamYourFather".equals(r.getName()) &&
+                    "playroom2_size".equals(r.getTarget().getSegment().getElementId())));
+        } finally {
+            backend.rollback();
+        }
     }
 
     @Test
     public void testBackendGetTransitiveClosure() throws Exception {
-        InventoryBackend<E> backend = inventory.getBackend();
+        InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
-        TriFunction<E, Relationships.Direction, String[], Stream<? extends Entity<?, ?>>> test =
-                (start, direction, name) -> {
-                    Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
-                    return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
-                            false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
-                };
+        try {
+            TriFunction<E, Relationships.Direction, String[], Stream<? extends Entity<?, ?>>> test =
+                    (start, direction, name) -> {
+                        Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
+                        return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
+                                false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
+                    };
 
-        E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-        E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
-                .get());
+            E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
+                    .get());
 
-        Assert.assertEquals(8, test.apply(feed, outgoing, new String[]{"contains"}).count());
-        Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
-                "feed1".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
-                instanceof Resource && "feedResource1".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
-                instanceof Resource && "feedResource2".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
-                instanceof Resource && "feedResource3".equals(e.getId())));
-        Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
-                instanceof Metric && "feedMetric1".equals(e.getId())));
-        Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
-                instanceof ResourceType && "feed1-resourceType".equals(e.getId())));
-        Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
-                instanceof MetricType && "feed1-metricType".equals(e.getId())));
+            Assert.assertEquals(8, test.apply(feed, outgoing, new String[]{"contains"}).count());
+            Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
+                    "feed1".equals(e.getId())));
+            Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                    instanceof Resource && "feedResource1".equals(e.getId())));
+            Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                    instanceof Resource && "feedResource2".equals(e.getId())));
+            Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                    instanceof Resource && "feedResource3".equals(e.getId())));
+            Assert.assertTrue(test.apply(env, outgoing, new String[]{"contains", "incorporates"}).anyMatch((e) -> e
+                    instanceof Metric && "feedMetric1".equals(e.getId())));
+            Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
+                    instanceof ResourceType && "feed1-resourceType".equals(e.getId())));
+            Assert.assertTrue(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e
+                    instanceof MetricType && "feed1-metricType".equals(e.getId())));
 
-        Assert.assertEquals(1, test.apply(env, incoming, new String[]{"contains"}).count());
-        Assert.assertTrue(test.apply(env, incoming, new String[]{"contains"}).anyMatch((e) -> e instanceof Tenant &&
-                "com.acme.tenant".equals(e.getId())));
+            Assert.assertEquals(1, test.apply(env, incoming, new String[]{"contains"}).count());
+            Assert.assertTrue(test.apply(env, incoming, new String[]{"contains"}).anyMatch((e) -> e instanceof Tenant &&
+                    "com.acme.tenant".equals(e.getId())));
+        } finally {
+            backend.rollback();
+        }
     }
 
     @Test
     public void testBackendHasRelationship() throws Exception {
-        InventoryBackend<E> backend = inventory.getBackend();
+        InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
-        E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
+        try {
+            E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
 
-        Assert.assertTrue(backend.hasRelationship(tenant, outgoing, "contains"));
-        Assert.assertFalse(backend.hasRelationship(tenant, incoming, "contains"));
-        Assert.assertTrue(backend.hasRelationship(tenant, both, "contains"));
+            Assert.assertTrue(backend.hasRelationship(tenant, outgoing, "contains"));
+            Assert.assertFalse(backend.hasRelationship(tenant, incoming, "contains"));
+            Assert.assertTrue(backend.hasRelationship(tenant, both, "contains"));
 
-        E env = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            E env = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
 
-        Assert.assertTrue(backend.hasRelationship(tenant, env, "contains"));
-        Assert.assertFalse(backend.hasRelationship(tenant, env, "e-kachny"));
+            Assert.assertTrue(backend.hasRelationship(tenant, env, "contains"));
+            Assert.assertFalse(backend.hasRelationship(tenant, env, "e-kachny"));
+        } finally {
+            backend.rollback();
+        }
     }
 
     @Test
