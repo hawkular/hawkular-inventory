@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.sql.provider;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
@@ -24,8 +25,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-
-import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci

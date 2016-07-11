@@ -42,9 +42,15 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-core</artifactId>
+      <version>${version.org.apache.tinkerpop}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.umlg</groupId>
       <artifactId>sqlg-core</artifactId>
-      <version>1.1.0.RC2</version>
+      <version>1.2.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
@@ -85,6 +91,19 @@
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-hsqldb</artifactId>
+      <version>1.2.0-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>javax.mail-api</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
