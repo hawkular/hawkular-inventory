@@ -16,8 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.sql;
 
-import java.io.IOException;
-import java.sql.SQLException;
+import static java.util.stream.Collectors.toMap;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,25 +25,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
 import org.apache.commons.configuration.MapConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
-import org.hawkular.inventory.api.EntityAlreadyExistsException;
-import org.hawkular.inventory.api.RelationAlreadyExistsException;
-import org.hawkular.inventory.api.filters.RelationFilter;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
-import org.hawkular.inventory.impl.tinkerpop.sql.impl.InsertException;
-import org.hawkular.inventory.impl.tinkerpop.sql.impl.SqlGraph;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 /**
@@ -76,81 +66,50 @@ public class SqlGraphProvider implements GraphProvider {
             Map<String, String> conf = configuration.prefixedWith("sql.")
                     .getImplementationConfiguration(sysPropsAsProperties());
 
-            String jndi = conf.get("sql.datasource.jndi");
-            if (jndi == null || jndi.isEmpty()) {
-                Log.LOG.iUsingJdbcUrl(conf.get("sql.datasource.url"));
-                return SqlgGraph.open(new MapConfiguration(conf));
-            } else {
-                InitialContext ctx = new InitialContext();
-                DataSource ds = (DataSource) ctx.lookup(jndi);
-                Log.LOG.iUsingDatasource(jndi);
-                return new SqlgGraph(ds, new MapConfiguration(conf));
-            }
+            //Sqlg doesn't use any common prefix to the configuration properties it expects. We want that though, so
+            //let's just remove the "sql." prefix from all the props and pass it to sqlg.
+            conf = conf.entrySet().stream().collect(
+                    toMap(e -> e.getKey().startsWith("sql.") ? e.getKey().substring(4) : e.getKey(),
+                            Map.Entry::getValue));
+
+            return SqlgGraph.open(new MapConfiguration(conf));
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not instantiate the SQL graph.", e);
         }
     }
 
     @Override public void ensureIndices(Graph graph, IndexSpec... indexSpecs) {
-        try {
-            SqlGraph sqlg = (SqlGraph) graph;
+        SqlgGraph sqlg = (SqlgGraph) graph;
 
-            sqlg.createSchemaIfNeeded();
+        ArrayList<IndexSpec> specs = new ArrayList<>(Arrays.asList(indexSpecs));
 
-            Set<String> vertexIndices = sqlg.getIndexedKeys(Vertex.class);
-            Set<String> edgeIndices = sqlg.getIndexedKeys(Edge.class);
-            ArrayList<IndexSpec> specs = new ArrayList<>(Arrays.asList(indexSpecs));
+        sqlg.tx().open();
 
-            BiConsumer<IndexSpec, Consumer<IndexSpec.Property>> indexChecker = (is, indexMutator) -> {
-                IndexSpec.Property prop = is.getProperties().iterator().next();
-                if (!prop.isUnique()) {
-                    return;
-                }
+        Iterator<IndexSpec> it = specs.iterator();
+        while (it.hasNext()) {
+            IndexSpec is = it.next();
 
-                Set<String> indices = is.getElementType().equals(Edge.class) ? edgeIndices : vertexIndices;
-
-                if (indices.contains(prop.getName())) {
-                    return;
-                }
-
-                indexMutator.accept(prop);
-            };
-
-            Iterator<IndexSpec> it = specs.iterator();
-            while (it.hasNext()) {
-                IndexSpec is = it.next();
-
-                if (is.getProperties().stream().filter(IndexSpec.Property::isUnique).count() > 1) {
-                    throw new IllegalArgumentException("SQL Graph doesn't support unique indices over multiple " +
-                            "properties");
-                }
-
-                it.remove();
-
-                indexChecker.accept(is,
-                        prop -> sqlg.createKeyIndex(prop.getName(), is.getElementType(), (Parameter[]) null));
+            if (is.getProperties().stream().filter(IndexSpec.Property::isUnique).count() > 1) {
+                throw new IllegalArgumentException("SQL Graph doesn't support unique indices over multiple " +
+                        "properties");
             }
 
-            //now remove those that are defined but no longer needed
-            specs.forEach(is -> indexChecker.accept(is,
-                    prop -> sqlg.dropKeyIndex(prop.getName(), is.getElementType())));
+            it.remove();
 
-            sqlg.commit();
-        } catch (SQLException | IOException e) {
-            throw new IllegalStateException("Could not create the database schema and indices.", e);
-        }
-    }
+            ArrayList<Object> keyValues = new ArrayList<>(is.getProperties().size() * 2);
+            for (IndexSpec.Property p : is.getProperties()) {
+                keyValues.add(" ");
+                keyValues.add(p.getName());
+            }
 
-    @Override public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
-        if (inputException instanceof InsertException) {
-            if (Relationship.class.equals(affectedPath.getSegment().getElementType())) {
-                throw new RelationAlreadyExistsException(inputException, null, RelationFilter.pathTo(affectedPath));
+            if (Vertex.class.equals(is.getElementType())) {
+                sqlg.createVertexLabeledIndex(Vertex.DEFAULT_LABEL, keyValues.toArray());
             } else {
-                return new EntityAlreadyExistsException(inputException, affectedPath);
+                sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
             }
-        } else {
-            return inputException;
         }
+
+        sqlg.tx().commit();
     }
 
     private static Set<Configuration.Property> sysPropsAsProperties() {
