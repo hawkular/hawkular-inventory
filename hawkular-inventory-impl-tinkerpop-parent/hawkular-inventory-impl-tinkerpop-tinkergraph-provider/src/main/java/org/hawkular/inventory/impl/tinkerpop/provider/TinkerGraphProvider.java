@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -169,6 +170,36 @@ public final class TinkerGraphProvider implements GraphProvider {
                     if (!inTx.compareAndSet(true, false)) {
                         throw new IllegalStateException("No transaction active");
                     }
+                }
+
+                @Override protected void doClose() {
+                    inTx.set(false);
+                }
+
+                @Override protected void doReadWrite() {
+                }
+
+                @Override protected void fireOnCommit() {
+                }
+
+                @Override protected void fireOnRollback() {
+                }
+
+                @Override public Transaction onReadWrite(Consumer<Transaction> consumer) {
+                    return this;
+                }
+
+                @Override public Transaction onClose(Consumer<Transaction> consumer) {
+                    return this;
+                }
+
+                @Override public void addTransactionListener(Consumer<Status> listener) {
+                }
+
+                @Override public void removeTransactionListener(Consumer<Status> listener) {
+                }
+
+                @Override public void clearTransactionListeners() {
                 }
 
                 @Override public boolean isOpen() {
