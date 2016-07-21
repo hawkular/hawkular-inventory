@@ -18,6 +18,8 @@
 
 -->
 
+<!-- NOTE: THIS FILE IS ONLY TAKEN INTO ACCOUNT WHEN MAVEN BUILD IS RUN WITH THE "sql" PROFILE -->
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
@@ -28,26 +30,47 @@
     <xsl:copy>
       <!--
           If you wish to use Hawkular Inventory with an SQL backend (which is NOT recommended for anything but toy
-          deployments) you can build and deploy the
-          hawkular-inventory/hawkular-inventory-impl-tinkerpop-parent/hawkular-inventory-impl-tinkerpop-sql
-          -provider, put it in the Hawkular inventory dist's WEB-INF/lib, uncomment and configure
-          the below datasource and start hawkular with the following system properties:
-          -Dsql.datasource.jndi='java:jboss/datasources/HawkularInventoryDS'
+          deployments) you can start hawkular with the following system properties:
+          -Dsql.jdbc.url='jndi:java:jboss/datasources/HawkularInventoryDS_hsqldb'
           -Dhawkular.inventory.tinkerpop.graph-provider-impl=org.hawkular.inventory.impl.tinkerpop.sql.SqlGraphProvider
 
-          Note that inventory only supports H2 or Postgresql as its SQL backends (and the postgresql jdbc driver is not
-          deployed in the Hawkular server).
-
-        <datasource jndi-name="java:jboss/datasources/HawkularInventoryDS" pool-name="HawkularInventoryDS" enabled="true"
-                    use-java-context="true">
-          <connection-url>jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072</connection-url>
-          <driver>h2</driver>
-          <security>
-            <user-name>sa</user-name>
-            <password>sa</password>
-          </security>
-        </datasource>
+          Note that inventory only supports HSQLDB or Postgresql as its SQL backends (and the jdbc drivers are not
+          deployed in the Hawkular server by default).
       -->
+      <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_hsqldb" pool-name="HawkularInventoryDS_hsqldb"
+                  enabled="true" use-java-context="true">
+        <connection-url>
+          jdbc:hsqldb:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072
+        </connection-url>
+        <driver>hsqldb</driver>
+        <security>
+          <user-name>sa</user-name>
+          <password>sa</password>
+        </security>
+      </datasource>
+
+      <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_postgres"
+                  pool-name="HawkularInventoryDS_postgres" enabled="true" use-java-context="true">
+        <connection-url>
+          jdbc:postgresql://localhost:5432/hawkular
+        </connection-url>
+        <driver>postgresql</driver>
+        <security>
+          <user-name>hawkular</user-name>
+          <password>hawkular</password>
+        </security>
+        <connection-property name="prepareThreshold">0</connection-property>
+      </datasource>
+      <xsl:apply-templates select="@*|node()"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="//*[local-name()='config']/*[local-name()='subsystem']/*[local-name()='datasources']/*[local-name()='drivers']">
+    <xsl:copy>
+      <driver name="postgresql" module="org.postgresql.postgresql">
+        <xa-datasource-class>org.postgresql.xa.PGXADataSource</xa-datasource-class>
+      </driver>
+      <driver name="hsqldb" module="org.hsqldb.hsqldb"/>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>

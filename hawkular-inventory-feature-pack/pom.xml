@@ -49,7 +49,6 @@
       <artifactId>wildfly-connector</artifactId>
       <version>${version.org.wildfly}</version>
     </dependency>
-
   </dependencies>
 
 
@@ -130,21 +129,6 @@
 
                 <transformationSet>
                   <dir>${project.build.directory}/feature-pack-resources</dir>
-                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-inventory-datasources.xsl</stylesheet>
-                  <includes>
-                    <include>subsystem-templates/datasources.xml</include>
-                  </includes>
-                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
-                  <fileMappers>
-                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
-                      <pattern>^.*$</pattern>
-                      <replacement>subsystem-templates/hawkular-inventory-datasources.xml</replacement>
-                    </fileMapper>
-                  </fileMappers>
-                </transformationSet>
-
-                <transformationSet>
-                  <dir>${project.build.directory}/feature-pack-resources</dir>
                   <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-inventory-messaging-activemq.xsl</stylesheet>
                   <includes>
                     <include>subsystem-templates/hawkular-nest-messaging-activemq.xml</include>
@@ -217,4 +201,80 @@
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>sql</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>${version.org.postgresql}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.hsqldb</groupId>
+          <artifactId>hsqldb</artifactId>
+          <version>${version.org.hsqldb}</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${basedir}/src/main/resources/sql</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>xml-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>transform-datasources-xml</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>transform</goal>
+                </goals>
+                <configuration>
+                  <transformationSets>
+                    <transformationSet>
+                      <dir>${project.build.directory}/feature-pack-resources</dir>
+                      <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-inventory-datasources.xsl</stylesheet>
+                      <includes>
+                        <include>subsystem-templates/datasources.xml</include>
+                      </includes>
+                      <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                      <fileMappers>
+                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                          <pattern>^.*$</pattern>
+                          <replacement>subsystem-templates/hawkular-inventory-datasources.xml</replacement>
+                        </fileMapper>
+                      </fileMappers>
+                    </transformationSet>
+                  </transformationSets>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
