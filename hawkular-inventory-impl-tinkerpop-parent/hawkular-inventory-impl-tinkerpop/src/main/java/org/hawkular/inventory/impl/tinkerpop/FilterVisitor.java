@@ -42,6 +42,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
@@ -51,6 +52,7 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
@@ -460,7 +462,24 @@ class FilterVisitor {
 
     public void visit(GraphTraversal<?, ?> query, With.DataValued dataValue, QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query.has(Constants.Property.__structuredDataValue.name(), dataValue.getValue());
+        Object val = dataValue.getValue();
+
+        query.has(Constants.Property.__type.name(), Constants.Type.structuredData.name());
+
+        if (val == null) {
+            query.has(Constants.Property.__structuredDataType.name(), StructuredData.Type.undefined.name());
+        } else {
+            if (Long.class == val.getClass()) {
+                query.has(Constants.Property.__structuredDataValue_i.name(), val);
+            } else if (Boolean.class == val.getClass()) {
+                query.has(Constants.Property.__structuredDataValue_b.name(), val);
+            } else if (Double.class == val.getClass()) {
+                query.has(Constants.Property.__structuredDataValue_f.name(), val);
+            } else {
+                //fallback everything else to string
+                query.has(Constants.Property.__structuredDataValue_s.name(), val.toString());
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -569,7 +588,8 @@ class FilterVisitor {
             case __eid:
                 return chooseBasedOnDirection(__eid, __targetEid, __sourceEid, state.getComingFrom()).name();
             case __type:
-                return chooseBasedOnDirection(__type, __targetType, __sourceType, state.getComingFrom()).name();
+                return chooseBasedOnDirection(T.label.getAccessor(), __targetType.name(), __sourceType.name(),
+                        state.getComingFrom());
             default:
                 return prop.name();
         }
