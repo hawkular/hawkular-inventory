@@ -78,10 +78,12 @@ public class TransformingPage<I, O> extends Page<O> {
 
     @Override
     public List<O> toList() {
-        List<O> ret = StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
-                .collect(Collectors.<O>toList());
-        close();
-        return ret;
+        try {
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+                    .collect(Collectors.<O>toList());
+        } finally {
+            close();
+        }
     }
 
     @Override
