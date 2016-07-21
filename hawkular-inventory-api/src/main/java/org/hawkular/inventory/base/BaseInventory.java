@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -38,6 +39,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.api.paging.TransformingPage;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -250,10 +252,18 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
-
-        Page<T> page = backend.query(query, pager, e -> backend.convert(e, requestedEntity), null);
-
-        return page;
+        InventoryBackend<E> tx = getBackend().startTransaction();
+        try {
+            return new TransformingPage<T, T>(tx.query(query, pager, e -> backend.convert(e, requestedEntity), null),
+                    Function.identity()) {
+                @Override public void close() {
+                    tx.rollback();
+                }
+            };
+        } catch (Throwable t) {
+            tx.rollback();
+            throw t;
+        }
     }
 
     private static class TransactionIgnoringBackend<E> extends DelegatingInventoryBackend<E> {

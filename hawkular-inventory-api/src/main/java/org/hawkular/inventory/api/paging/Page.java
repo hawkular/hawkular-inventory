@@ -76,10 +76,12 @@ public class Page<T> implements Iterator<T>, AutoCloseable, Iterable<T> {
      * @return results in a list form
      */
     public List<T> toList() {
-        List<T> ret = StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
-                .collect(Collectors.<T>toList());
-        close();
-        return ret;
+        try {
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+                    .collect(Collectors.toList());
+        } finally {
+            close();
+        }
     }
 
     @Override public boolean hasNext() {
