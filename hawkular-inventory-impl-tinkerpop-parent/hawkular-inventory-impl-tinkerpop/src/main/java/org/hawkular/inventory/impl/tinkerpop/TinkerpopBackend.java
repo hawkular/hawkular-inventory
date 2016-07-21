@@ -464,7 +464,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Vertex hashNode = hashNodesIt.next();
                 vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
             } else {
-                Vertex hashNode = context.getGraph().addVertex();
+                Vertex hashNode = context.getGraph().addVertex(Constants.InternalType.__identityHash.name());
                 hashNode.property(Constants.Property.__identityHash.name(), identityHash);
                 hashNode.property(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
 
@@ -810,7 +810,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 try {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
-                    Vertex v = context.getGraph().addVertex();
+                    Vertex v = context.getGraph().addVertex(Constants.Type.of(cls).name());
                     v.property(__type.name(), Constants.Type.of(cls).name());
                     v.property(__eid.name(), path.getSegment().getElementId());
                     v.property(__cp.name(), path.toString());
@@ -842,7 +842,21 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 parentAndCurrent.second.property(Constants.Property.__structuredDataType.name(),
                         data.getType().name());
                 if (value != null) {
-                    parentAndCurrent.second.property(Constants.Property.__structuredDataValue.name(), value);
+                    String propName;
+                    Object val = value;
+                    Class<?> valType = value.getClass();
+                    if (Boolean.class == valType) {
+                        propName = Constants.Property.__structuredDataValue_b.name();
+                    } else if (Long.class == valType) {
+                        propName = Constants.Property.__structuredDataValue_i.name();
+                    } else if (Double.class == valType) {
+                        propName = Constants.Property.__structuredDataValue_f.name();
+                    } else {
+                        propName = Constants.Property.__structuredDataValue_s.name();
+                        val = value.toString(); //just to be sure
+                    }
+
+                    parentAndCurrent.second.property(propName, val);
                 }
                 return null;
             }
@@ -1101,18 +1115,18 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         switch (type) {
             case bool:
                 return StructuredData.get()
-                        .bool((Boolean) root.property(Constants.Property.__structuredDataValue.name()).value());
+                        .bool((Boolean) root.property(Constants.Property.__structuredDataValue_b.name()).value());
             case integral:
                 return StructuredData.get()
-                        .integral((Long) root.property(Constants.Property.__structuredDataValue.name()).value());
+                        .integral((Long) root.property(Constants.Property.__structuredDataValue_i.name()).value());
             case floatingPoint:
                 return StructuredData.get()
-                        .floatingPoint((Double) root.property(Constants.Property.__structuredDataValue.name()).value());
+                        .floatingPoint((Double) root.property(Constants.Property.__structuredDataValue_f.name()).value());
             case undefined:
                 return StructuredData.get().undefined();
             case string:
                 return StructuredData.get()
-                        .string((String) root.property(Constants.Property.__structuredDataValue.name()).value());
+                        .string((String) root.property(Constants.Property.__structuredDataValue_s.name()).value());
             case list:
                 StructuredData.ListBuilder lst = StructuredData.get().list();
                 if (recurse) {
@@ -1148,20 +1162,20 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             switch (type) {
                 case bool:
-                    bld.addBool((Boolean) child.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.addBool((Boolean) child.property(Constants.Property.__structuredDataValue_b.name()).value());
                     break;
                 case integral:
-                    bld.addIntegral((Long) child.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.addIntegral((Long) child.property(Constants.Property.__structuredDataValue_i.name()).value());
                     break;
                 case floatingPoint:
-                    bld.addFloatingPoint((Double) child.property(Constants.Property.__structuredDataValue.name())
+                    bld.addFloatingPoint((Double) child.property(Constants.Property.__structuredDataValue_f.name())
                             .value());
                     break;
                 case undefined:
                     bld.addUndefined();
                     break;
                 case string:
-                    bld.addString((String) child.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.addString((String) child.property(Constants.Property.__structuredDataValue_s.name()).value());
                     break;
                 case list:
                     StructuredData.InnerListBuilder<?> lst = bld.addList();
@@ -1197,20 +1211,20 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             switch (StructuredData.Type.valueOf(type)) {
                 case bool:
-                    bld.putBool(key, (Boolean) v.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.putBool(key, (Boolean) v.property(Constants.Property.__structuredDataValue_b.name()).value());
                     break;
                 case integral:
-                    bld.putIntegral(key, (Long) v.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.putIntegral(key, (Long) v.property(Constants.Property.__structuredDataValue_i.name()).value());
                     break;
                 case floatingPoint:
-                    bld.putFloatingPoint(key, (Double) v.property(Constants.Property.__structuredDataValue.name())
+                    bld.putFloatingPoint(key, (Double) v.property(Constants.Property.__structuredDataValue_f.name())
                             .value());
                     break;
                 case undefined:
                     bld.putUndefined(key);
                     break;
                 case string:
-                    bld.putString(key, (String) v.property(Constants.Property.__structuredDataValue.name()).value());
+                    bld.putString(key, (String) v.property(Constants.Property.__structuredDataValue_s.name()).value());
                     break;
                 case list:
                     StructuredData.InnerListBuilder<?> lst = bld.putList(key);
@@ -1356,7 +1370,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private <T, U> Page<U> page(GraphTraversal<?, ? extends T> traversal, Pager pager, Function<T, U> transform) {
-        //TODO this doesn't apply any ordering
         @SuppressWarnings("unchecked")
         GraphTraversal<?, Map<String, Object>> paged = applyOrdering(traversal, pager)
                 .fold().as("results", "total").select("results", "total")

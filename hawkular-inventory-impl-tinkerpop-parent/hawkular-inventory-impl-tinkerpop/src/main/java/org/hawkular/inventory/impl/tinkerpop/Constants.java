@@ -26,7 +26,10 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceT
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataIndex;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataKey;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue_b;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue_f;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue_i;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue_s;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__syncHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
@@ -131,7 +134,13 @@ final class Constants {
          * The name of the property on the structured data vertex that holds the primitive value of that vertex.
          * List and maps don't hold the value directly but instead have edges going out to the child vertices.
          */
-        __structuredDataValue,
+        __structuredDataValue_b,
+
+        __structuredDataValue_i,
+
+        __structuredDataValue_f,
+
+        __structuredDataValue_s,
 
         __sourceType("sourceType"),
 
@@ -214,7 +223,8 @@ final class Constants {
         relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
         dataEntity(DataEntity.class, name, __identityHash, __contentHash, __syncHash),
         structuredData(StructuredData.class, __structuredDataType,
-                __structuredDataValue, __structuredDataIndex, __structuredDataKey);
+                __structuredDataValue_b, __structuredDataValue_i, __structuredDataValue_f, __structuredDataValue_s,
+                __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;
