@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.MapConfiguration;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
@@ -54,7 +53,7 @@ public class SqlGraphProvider implements GraphProvider {
     }
 
     @Override public boolean isUniqueIndexSupported() {
-        return true;
+        return false;
     }
 
     @Override public boolean needsDraining() {
@@ -103,9 +102,10 @@ public class SqlGraphProvider implements GraphProvider {
             }
 
             if (Vertex.class.equals(is.getElementType())) {
-                sqlg.createVertexLabeledIndex(Vertex.DEFAULT_LABEL, keyValues.toArray());
+                //sqlg.createVertexLabeledIndex(Vertex.DEFAULT_LABEL, keyValues.toArray());
             } else {
-                sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
+                //This is not working yet in Sqlg
+                //sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
             }
         }
 
