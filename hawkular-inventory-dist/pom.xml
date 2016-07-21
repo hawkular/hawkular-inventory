@@ -400,22 +400,29 @@
   <profiles>
     <profile>
       <id>sql</id>
+      <!-- NOTE: This assumes that the inventory feature-pack module will also be built with the "sql" profile.
+           Only then will we end up with an inventory distribution that can use SQL backends. -->
       <properties>
         <res.dir>sql</res.dir>
       </properties>
 
       <dependencies>
-        <!--
-        NOTE THAT THE SQL PROVIDER BUNDLED BY DEFAULT (AND SHOULD NOT BE OUTSIDE OF DEV TESTING). IN ADDITION
-        TO BUILDING THIS MODULE WITH WITH -Psql, YOU HAVE TO MODIFY THE hawkular-inventory-feature-pack TO
-        INCLUDE THE DATASOURCE DEFINITION (OR DEFINE IT YOURSELF) AND PASS SOME SYSTEM PROPS TO HAWKULAR SERVER
-        STARTUP. SEE
-        hawkular-inventory-feature-pack/src/main/resources/subsystem-templates/hawkular-inventory-datasources.xsl
-        FILE FOR MORE DETAILS. -->
         <dependency>
           <groupId>org.hawkular.inventory</groupId>
           <artifactId>hawkular-inventory-impl-tinkerpop-sql-provider</artifactId>
           <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.umlg</groupId>
+          <artifactId>sqlg-hsqldb</artifactId>
+          <version>${version.org.umlg}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.umlg</groupId>
+          <artifactId>sqlg-postgres</artifactId>
+          <version>${version.org.umlg}</version>
         </dependency>
       </dependencies>
     </profile>
