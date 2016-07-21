@@ -1512,8 +1512,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .getAll(RelationWith.propertyValue("adult", false)).anyExists());
         Assert.assertTrue(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
                 .getAll(RelationWith.propertyValues("adult", false, true)).anyExists());
-        Assert.assertFalse(inventory.tenants().get("com.example.tenant").environments().get("test").relationships()
-                .getAll(RelationWith.propertyValues("adult", false, "true")).anyExists());
     }
 
     @Test

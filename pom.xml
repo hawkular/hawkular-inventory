@@ -65,6 +65,7 @@
     <version.com.thinkaurelius.titan>1.1.0-SNAPSHOT</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
     <version.org.apache.tinkerpop>3.2.0-incubating</version.org.apache.tinkerpop>
+    <version.org.umlg>1.2.0-SNAPSHOT</version.org.umlg>
 
     <version.org.antlr>4.5.3</version.org.antlr>
 
@@ -86,8 +87,10 @@
     <!-- keep in sync with the WF module modules/system/layers/base/javax/mail/api/main/ -->
     <version.javax.mail>1.5.3</version.javax.mail>
     <version.javaee.spec>7.0</version.javaee.spec>
-    <!-- keep in sync with the WF module modules/system/layers/base/com/h2database/h2/main -->
-    <version.com.h2database>1.3.173</version.com.h2database>
+
+    <version.org.postgresql>9.4.1208</version.org.postgresql>
+    <version.org.hsqldb>2.3.4</version.org.hsqldb>
+
     <!-- keep in sync with the WF module modules/system/layers/base/org/codehaus/jettison/main/ -->
     <version.org.codehaus.jettison>1.3.3</version.org.codehaus.jettison>
 
