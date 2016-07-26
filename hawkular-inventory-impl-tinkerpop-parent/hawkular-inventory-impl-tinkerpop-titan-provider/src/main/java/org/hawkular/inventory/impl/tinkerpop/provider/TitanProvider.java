@@ -39,6 +39,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.SchemaViolationException;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
@@ -247,5 +248,18 @@ public class TitanProvider implements GraphProvider {
             }
         }
         return inputException;
+    }
+
+    @Override public boolean requiresRollbackAfterFailure(Throwable t) {
+        while (t != null) {
+            if (t instanceof TitanException
+                    && "Could not commit transaction due to exception during persistence".equals(t.getMessage())) {
+                return false;
+            }
+
+            t = t.getCause();
+        }
+
+        return true;
     }
 }

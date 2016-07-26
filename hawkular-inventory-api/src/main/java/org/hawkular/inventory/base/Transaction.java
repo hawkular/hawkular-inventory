@@ -152,6 +152,17 @@ public interface Transaction<E> {
 
     void updateIdentityHash(E entity, String identityHash);
 
+    /**
+     * Checks the exception thrown during the commit and returns true if the backend requires explicit rollback after
+     * such failure occured or false if the failure caused the transaction to close itself automatically.
+     *
+     * @param t the exception thrown during commit
+     * @return true to explictly roll back or false if the exception already caused the transaction to close
+     */
+    default boolean requiresRollbackAfterFailure(Throwable t) {
+        return true;
+    }
+
     interface PreCommit<E> {
         /**
          * This is always to be called AFTER a transaction is committed and therefore after {@link #getActions()} is

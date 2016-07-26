@@ -240,4 +240,8 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     public void close() throws Exception {
         backend.close();
     }
+
+    @Override public boolean requiresRollbackAfterFailure(Throwable t) {
+        return backend.requiresRollbackAfterFailure(t);
+    }
 }

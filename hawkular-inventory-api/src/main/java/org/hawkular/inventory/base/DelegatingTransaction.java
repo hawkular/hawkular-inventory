@@ -195,4 +195,8 @@ public class DelegatingTransaction<E> implements Transaction<E> {
     @Override public void updateIdentityHash(E entity, String identityHash) {
         tx.updateIdentityHash(entity, identityHash);
     }
+
+    @Override public boolean requiresRollbackAfterFailure(Throwable t) {
+        return tx.requiresRollbackAfterFailure(t);
+    }
 }
