@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-security-parent</artifactId>
-    <version>0.18.0.Final-SNAPSHOT</version>
+    <version>0.17.3.Final</version>
   </parent>
 
   <artifactId>hawkular-inventory-security-permissive</artifactId>
