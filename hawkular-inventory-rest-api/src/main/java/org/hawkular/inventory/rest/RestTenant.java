@@ -63,7 +63,7 @@ public class RestTenant extends RestBase {
     @GET
     @Path("/relationships")
     public Response getRelationships(@Context UriInfo uriInfo) {
-        Traverser traverser = getTraverserForTenant(uriInfo);
+        Traverser traverser = getTraverser(uriInfo);
         Query q = traverser.navigate(getPath(uriInfo));
 
         @SuppressWarnings("unchecked")

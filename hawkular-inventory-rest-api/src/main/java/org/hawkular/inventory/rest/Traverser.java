@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -87,9 +88,7 @@ public final class Traverser {
         HawkularInventoryGetUriParser parser = new HawkularInventoryGetUriParser(tokens);
         parser.setErrorHandler(new BailErrorStrategy());
 
-        Query.Builder copy = queryPrefix.build().asBuilder();
-
-        ParseListener listener = new ParseListener(copy);
+        ParseListener listener = new ParseListener(queryPrefix);
 
         try {
             UriContext ctx = parser.uri();
@@ -118,9 +117,13 @@ public final class Traverser {
     private class ParseListener extends HawkularInventoryGetUriBaseListener {
         private Query.Builder query;
         private Query.Builder recurseBuilder;
+        private boolean first = true;
+        private final boolean prefixEmpty;
 
         private ParseListener(Query.Builder query) {
-            this.query = query;
+            Query q = query.build();
+            this.query = q.asBuilder();
+            this.prefixEmpty = q.getFragments().length == 0;
         }
 
         Query getParsedQuery() {
@@ -129,6 +132,11 @@ public final class Traverser {
                 query.filter().with(new RecurseFilter(recurseCondition));
             }
             return query.build();
+        }
+
+        @Override public void exitEveryRule(ParserRuleContext ctx) {
+            super.exitEveryRule(ctx);
+            first = false;
         }
 
         @Override
@@ -146,6 +154,13 @@ public final class Traverser {
 
         @SuppressWarnings("Duplicates")
         @Override public void enterPathContinuation(PathContinuationContext ctx) {
+            //the query prefix ends on an entity and we're continuing with another entity or filter. We should never
+            //directly filter the prefix entity, so implicitly add a contains to filter on the direct children of the
+            //query prefix.
+            if (first && !prefixEmpty) {
+                query.with(Related.by(contains));
+            }
+
             EntityTypeContext entityTypeCtx = ctx.entityType();
             IdContext idCtx = ctx.id();
             List<FilterSpecContext> filterSpecCtxs = ctx.filterSpec();

@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.rest;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.path;
 import static org.hawkular.inventory.rest.Utils.createUnder;
 
@@ -35,7 +34,6 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.TransactionFrame;
-import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.json.DetypedPathDeserializer;
@@ -161,15 +159,6 @@ public class RestBase {
     }
 
     protected Traverser getTraverser(UriInfo ctx) {
-        Query.Builder queryPrefix = Query.builder().path().with(
-                path(CanonicalPath.of().tenant(getTenantId()).get()),
-                Related.by(contains));
-
-        return new Traverser(ctx.getBaseUri().getPath().length() + pathLength, queryPrefix,
-                str -> CanonicalPath.fromPartiallyUntypedString(str, getTenantPath(), (SegmentType) null));
-    }
-
-    protected Traverser getTraverserForTenant(UriInfo ctx) {
         Query.Builder queryPrefix = Query.builder().path().with(
                 path(CanonicalPath.of().tenant(getTenantId()).get()));
 
