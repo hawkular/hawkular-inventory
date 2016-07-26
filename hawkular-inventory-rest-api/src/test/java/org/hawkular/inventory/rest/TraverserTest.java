@@ -110,9 +110,7 @@ public class TraverserTest {
 
     @Test
     public void testQueryPrefixUsedForURIsStartingWithEntity() throws Exception {
-        //this query is invalid, but that doesn't matter here... Query is untyped and doesn't enforce correctness
-        //The real REST API prefixes it with something meaningful
-        testVariant("/r;id/entities", path().with(id("eee"))
+        testVariant("/r;id/entities", path().with(id("eee"), Related.by(contains))
                 .path().with(type(Resource.class), id("id")).get(), Query.builder().path().with(id("eee")));
     }
 
@@ -308,6 +306,13 @@ public class TraverserTest {
         testVariant("/r;id/identical/name=Kachna/rl;contains/m;id", Query.path()
                 .with(type(r), id("id"), With.sameIdentityHash())
                 .filter().with(name("Kachna")).path().with(Related.by(contains), type(m), id("id")).get());
+    }
+
+    @Test
+    public void testRecursiveReturnsAllChildrenOfPrefix() throws Exception {
+        testVariant("/recursive",
+                Query.path().with(id("prefix"), RecurseFilter.builder().addChain(Related.by(contains)).build()).get(),
+                Query.path().with(id("prefix")).rawQueryBuilder());
     }
 
     private void testVariant(String uri, Query expected) throws Exception {
