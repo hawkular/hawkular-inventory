@@ -1070,6 +1070,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         context.getGraph().shutdown();
     }
 
+    @Override public boolean requiresRollbackAfterFailure(Throwable t) {
+        return context.requiresRollbackAfterFailure(t);
+    }
+
     private StructuredData loadStructuredData(Vertex owner, Relationships.WellKnown owningEdge) {
         Iterator<Vertex> it = owner.getVertices(Direction.OUT, owningEdge.name()).iterator();
         if (!it.hasNext()) {

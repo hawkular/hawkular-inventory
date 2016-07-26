@@ -117,7 +117,9 @@ final class Util {
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    tx.rollback();
+                    if (tx.requiresRollbackAfterFailure(t)) {
+                        tx.rollback();
+                    }
                     throw t;
                 }
             } catch (CommitFailureException e) {

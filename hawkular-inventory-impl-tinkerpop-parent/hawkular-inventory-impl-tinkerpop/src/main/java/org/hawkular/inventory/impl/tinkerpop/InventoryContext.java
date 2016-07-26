@@ -78,4 +78,9 @@ final class InventoryContext {
     public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
         return graphProvider.translateException(inputException, affectedPath);
     }
+
+    public boolean requiresRollbackAfterFailure(Throwable t) {
+        return graphProvider.requiresRollbackAfterFailure(t);
+    }
+
 }

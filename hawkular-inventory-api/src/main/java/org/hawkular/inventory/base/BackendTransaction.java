@@ -199,4 +199,7 @@ public class BackendTransaction<E> implements Transaction<E> {
         backend.updateIdentityHash(entity, identityHash);
     }
 
+    @Override public boolean requiresRollbackAfterFailure(Throwable t) {
+        return backend.requiresRollbackAfterFailure(t);
+    }
 }
