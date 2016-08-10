@@ -77,72 +77,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * @return the created entity
      */
     protected final E doCreate(B blueprint) {
-        ResultWithNofifications<E, BE> result = inTxWithNotifications(tx -> {
-            String id = getProposedId(tx, blueprint);
-
-            if (!tx.isUniqueIndexSupported()) {
-                //poor man's way of ensuring uniqueness of CPs
-                Query existenceCheck = context.hop().filter().with(id(id)).get();
-
-                Page<BE> results = tx.query(existenceCheck, Pager.single());
-
-                if (results.hasNext()) {
-                    throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
-                }
-            }
-
-            preCreate(blueprint, tx);
-
-            BE parent = getParent(tx);
-            CanonicalPath parentCanonicalPath = parent == null ? null : tx.extractCanonicalPath(parent);
-
-            EntityAndPendingNotifications<BE, E> newEntity;
-            BE containsRel = null;
-
-            CanonicalPath entityPath;
-            if (parent == null) {
-                if (context.entityClass == Tenant.class) {
-                    entityPath = CanonicalPath.of().tenant(id).get();
-                } else {
-                    throw new IllegalStateException("Could not find the parent of the entity to be created," +
-                            "yet the entity is not a tenant: " + blueprint);
-                }
-            } else {
-                entityPath = parentCanonicalPath.extend(AbstractElement.segmentTypeFromType(context.entityClass), id)
-                        .get();
-            }
-
-            BE entityObject = tx.persist(entityPath, blueprint);
-
-            if (parentCanonicalPath != null) {
-                //no need to check for contains rules - we're connecting a newly created entity
-                containsRel = tx.relate(parent, entityObject, contains.name(), Collections.emptyMap());
-                Relationship rel = tx.convert(containsRel, Relationship.class);
-                tx.getPreCommit().addNotifications(
-                        new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
-            }
-
-            newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, tx);
-
-            if (blueprint instanceof Entity.Blueprint) {
-                Entity.Blueprint b = (Entity.Blueprint) blueprint;
-                createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(), tx);
-                createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(), tx);
-            }
-
-            postCreate(entityObject, newEntity.getEntity(), tx);
-
-            List<Notification<?, ?>> notifs = new ArrayList<>(newEntity.getNotifications());
-            notifs.add(new Notification<>(newEntity.getEntity(), newEntity.getEntity(), Action.created()));
-
-            EntityAndPendingNotifications<BE, E> pending =
-                    new EntityAndPendingNotifications<>(newEntity.getEntityRepresentation(), newEntity.getEntity(),
-                            notifs);
-
-            tx.getPreCommit().addNotifications(pending);
-
-            return newEntity.getEntity();
-        });
+        ResultWithNofifications<E, BE> result = inTxWithNotifications(tx -> doCreate(blueprint, tx).getEntity());
 
         E entity = result.getResult();
 
@@ -169,6 +104,84 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         }
 
         return entity;
+    }
+
+    /**
+     * Creates the entity specified by the provided blueprint using the provided transaction.
+     *
+     * <p>Note that all the notifications and actions ARE fed into the transaction by this method so there's no need
+     * to that once this method returns. The returned object can be used to obtain either the created entity or its
+     * backend representation though.
+     *
+     * @param blueprint the blueprint of the entity to create
+     * @param tx the transaction in which to operate
+     * @return the entity object and its backend representation. Ignore the notifications, they've been handled.
+     */
+    EntityAndPendingNotifications<BE, E> doCreate(B blueprint, Transaction<BE> tx) {
+        String id = getProposedId(tx, blueprint);
+
+        if (!tx.isUniqueIndexSupported()) {
+            //poor man's way of ensuring uniqueness of CPs
+            Query existenceCheck = context.hop().filter().with(id(id)).get();
+
+            Page<BE> results = tx.query(existenceCheck, Pager.single());
+
+            if (results.hasNext()) {
+                throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
+            }
+        }
+
+        preCreate(blueprint, tx);
+
+        BE parent = getParent(tx);
+        CanonicalPath parentCanonicalPath = parent == null ? null : tx.extractCanonicalPath(parent);
+
+        EntityAndPendingNotifications<BE, E> newEntity;
+        BE containsRel = null;
+
+        CanonicalPath entityPath;
+        if (parent == null) {
+            if (context.entityClass == Tenant.class) {
+                entityPath = CanonicalPath.of().tenant(id).get();
+            } else {
+                throw new IllegalStateException("Could not find the parent of the entity to be created," +
+                        "yet the entity is not a tenant: " + blueprint);
+            }
+        } else {
+            entityPath = parentCanonicalPath.extend(AbstractElement.segmentTypeFromType(context.entityClass), id)
+                    .get();
+        }
+
+        BE entityObject = tx.persist(entityPath, blueprint);
+
+        if (parentCanonicalPath != null) {
+            //no need to check for contains rules - we're connecting a newly created entity
+            containsRel = tx.relate(parent, entityObject, contains.name(), Collections.emptyMap());
+            Relationship rel = tx.convert(containsRel, Relationship.class);
+            tx.getPreCommit().addNotifications(
+                    new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
+        }
+
+        newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, tx);
+
+        if (blueprint instanceof Entity.Blueprint) {
+            Entity.Blueprint b = (Entity.Blueprint) blueprint;
+            createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(), tx);
+            createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(), tx);
+        }
+
+        postCreate(entityObject, newEntity.getEntity(), tx);
+
+        List<Notification<?, ?>> notifs = new ArrayList<>(newEntity.getNotifications());
+        notifs.add(new Notification<>(newEntity.getEntity(), newEntity.getEntity(), Action.created()));
+
+        EntityAndPendingNotifications<BE, E> pending =
+                new EntityAndPendingNotifications<>(newEntity.getEntityRepresentation(), newEntity.getEntity(),
+                        notifs);
+
+        tx.getPreCommit().addNotifications(pending);
+
+        return newEntity;
     }
 
     public final void update(Id id, U update) throws EntityNotFoundException {

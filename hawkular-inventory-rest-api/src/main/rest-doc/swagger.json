@@ -340,7 +340,7 @@
           "in" : "path",
           "required" : true,
           "type": "string",
-          "description": "The canonical path to the synced entity."
+          "description": "The canonical path to the synced root entity. This does not have to exist in inventory prior to the request."
         }, {
           "name" : "structure",
           "in" : "body",

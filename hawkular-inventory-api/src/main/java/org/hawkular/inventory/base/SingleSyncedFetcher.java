@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -41,16 +42,17 @@ import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Synced;
+import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.IdentityHashable;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -58,8 +60,10 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.Syncable;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -68,7 +72,7 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.15.0
  */
-abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & IdentityHashable, B extends Entity.Blueprint,
+abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B extends Entity.Blueprint,
         U extends Entity.Update>
         extends SingleEntityFetcher<BE, E, U>
         implements Synced.SingleWithRelationships<E, B, U> {
@@ -81,15 +85,18 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & IdentityHashable
         inTx(tx -> {
             BE root = tx.querySingle(context.select().get());
 
+            boolean rootFullyInitialized = true;
             if (root == null) {
-                throw new IllegalArgumentException("The root element must exist before its inventory structure can be" +
-                        " synchronized.");
+                Mutator<BE, E, B, U, String> mutator = createMutator(tx);
+                EntityAndPendingNotifications<BE, E> res = mutator.doCreate(newStructure.getRoot(), tx);
+                root = res.getEntityRepresentation();
+                rootFullyInitialized = false;
             }
 
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
 
             //getting the whole tree is not the most efficient thing but it makes things so much simpler ;)
-            SyncHash.Tree currentTree = treeHash(tx);
+            SyncHash.Tree currentTree = rootFullyInitialized ? treeHash(tx) : SyncHash.Tree.builder().build();
             SyncHash.Tree newTree = SyncHash.treeOf(newStructure, tx.extractCanonicalPath(root));
 
             syncTrees(tx, rootPath, root, currentTree, newTree, newStructure);
@@ -106,7 +113,7 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & IdentityHashable
     private void syncTrees(Transaction<BE> tx, CanonicalPath root, BE oldElement, SyncHash.Tree oldTree,
                            SyncHash.Tree newTree, InventoryStructure<?> newStructure) {
 
-        if (!oldTree.getHash().equals(newTree.getHash())) {
+        if (!Objects.equals(oldTree.getHash(), newTree.getHash())) {
             //we only need to do something if the hashes don't match. If they do, it means this entity and its whole
             //subtree is equivalent. But it isn't because the hashes differ, so...
             Blueprint newState = newStructure.get(newTree.getPath());
@@ -391,5 +398,105 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & IdentityHashable
         });
 
         return ret;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Mutator<BE, E, B, U, String> createMutator(Transaction<BE> tx) {
+        return (Mutator<BE, E, B, U, String>) ElementTypeVisitor.accept(
+                Inventory.types().byElement(context.entityClass).getSegmentType(),
+                new ElementTypeVisitor<Mutator<BE, ?, ?, ?, String>, Void>() {
+                    @Override public Mutator<BE, ?, ?, ?, String> visitTenant(Void parameter) {
+                        return new BaseTenants.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitEnvironment(Void parameter) {
+                        return new BaseEnvironments.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitFeed(Void parameter) {
+                        return new BaseFeeds.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitMetric(Void parameter) {
+                        return new BaseMetrics.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitMetricType(Void parameter) {
+                        return new BaseMetricTypes.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitResource(Void parameter) {
+                        return new BaseResources.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitResourceType(Void parameter) {
+                        return new BaseResourceTypes.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitRelationship(Void parameter) {
+                        throw new IllegalArgumentException(
+                                "Cannot synchronize relationships. This codepath should have never been allowed and" +
+                                        " is a bug.");
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitData(Void parameter) {
+                        BE parent = tx.querySingle(context.previous.sourcePath);
+                        if (parent == null) {
+                            throw new EntityNotFoundException(Query.filters(context.previous.sourcePath));
+                        }
+
+                        Class parentType = tx.extractType(parent);
+
+                        return new BaseData.ReadWrite(context.previous, dataRoleType(parentType),
+                                dataModificationChecks(parentType));
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitOperationType(Void parameter) {
+                        return new BaseOperationTypes.ReadWrite(context.previous);
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitMetadataPack(Void parameter) {
+                        throw new IllegalStateException(
+                                "Cannot synchronize metadata packs. This codepath should have never been allowed and" +
+                                        " is a bug.");
+                    }
+
+                    @Override public Mutator<BE, ?, ?, ?, String> visitUnknown(Void parameter) {
+                        throw new IllegalStateException(
+                                "This is a bug! Unhandled type of entity for synchronization: " + context.entityClass);
+                    }
+
+                    private <E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update>
+                    Class<? extends DataRole> dataRoleType(Class<E> parentType) {
+                        SegmentType st = Inventory.types().byElement(parentType).getSegmentType();
+                        switch (st) {
+                            case r:
+                                return DataRole.Resource.class;
+                            case rt:
+                                return DataRole.ResourceType.class;
+                            case ot:
+                                return DataRole.OperationType.class;
+                            default:
+                                throw new IllegalStateException("This is a bug! Unhandled data role class" +
+                                        " for type " + context.entityClass);
+                        }
+                    }
+
+                    private <E extends AbstractElement<B, U>, B extends Blueprint, U extends AbstractElement.Update>
+                    BaseData.DataModificationChecks<BE> dataModificationChecks(Class<E> parentType) {
+                        SegmentType st = Inventory.types().byElement(parentType).getSegmentType();
+                        switch (st) {
+                            case r:
+                                return BaseData.DataModificationChecks.none();
+                            case rt:
+                                return new BaseResourceTypes.ResourceTypeDataModificationChecks<>(context.previous);
+                            case ot:
+                                return new BaseOperationTypes.OperationTypeDataModificationChecks<>(context.previous);
+                            default:
+                                throw new IllegalStateException("This is a bug! Unhandled data modification checks" +
+                                        " for type " + context.entityClass);
+                        }
+                    }
+                }, null);
     }
 }
