@@ -55,6 +55,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -63,6 +64,7 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Pager;
@@ -569,6 +571,46 @@ public class SerializationTest {
                 .build();
 
         test(s);
+    }
+
+    @Test
+    public void testIdentityHashTree() throws Exception {
+        InventoryStructure<?> s = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId("feed").build())
+                .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                .addChild(MetricType.Blueprint.builder(GAUGE).withId("metricType").withUnit(MetricUnit.NONE)
+                        .withInterval(0L).build())
+                .addChild(Metric.Blueprint.builder().withId("metrics").withMetricTypePath("metricType").withInterval
+                        (0L).build())
+                .startChild(
+                        Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build())
+                .addChild(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../.resourceType")
+                        .build())
+                .end()
+                .build();
+
+        IdentityHash.Tree t = IdentityHash.treeOf(s);
+
+        test(t);
+    }
+
+    @Test
+    public void testSyncHashTree() throws Exception {
+        InventoryStructure<?> s = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId("feed").build())
+                .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                .addChild(MetricType.Blueprint.builder(GAUGE).withId("metricType").withUnit(MetricUnit.NONE)
+                        .withInterval(0L).build())
+                .addChild(Metric.Blueprint.builder().withId("metrics").withMetricTypePath("metricType").withInterval
+                        (0L).build())
+                .startChild(
+                        Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType").build())
+                .addChild(Resource.Blueprint.builder().withId("childResource").withResourceTypePath("../.resourceType")
+                        .build())
+                .end()
+                .build();
+
+        SyncHash.Tree t = SyncHash.treeOf(s, CanonicalPath.of().tenant("tnt").feed("feed").get());
+
+        test(t);
     }
 
     private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {
