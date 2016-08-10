@@ -29,7 +29,6 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
@@ -39,6 +38,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -153,7 +153,7 @@ public class EmptyInventory implements Inventory {
             throw entityNotFound(entityType);
         }
 
-        public IdentityHash.Tree treeHash() {
+        public SyncHash.Tree treeHash() {
             throw new UnsupportedOperationException();
         }
     }
@@ -1434,7 +1434,7 @@ public class EmptyInventory implements Inventory {
         @Override public void synchronize(InventoryStructure<DataEntity.Blueprint<?>> newStructure) {
         }
 
-        @Override public IdentityHash.Tree treeHash() {
+        @Override public SyncHash.Tree treeHash() {
             throw new UnsupportedOperationException();
         }
     }
@@ -1521,7 +1521,7 @@ public class EmptyInventory implements Inventory {
         @Override public void synchronize(InventoryStructure<OperationType.Blueprint> newStructure) {
         }
 
-        @Override public IdentityHash.Tree treeHash() {
+        @Override public SyncHash.Tree treeHash() {
             throw new UnsupportedOperationException();
         }
     }

@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModel;
  * @since 0.0.1
  */
 @ApiModel(description = "Defines the basic properties of all entity types in inventory",
-        subTypes = {Environment.class, IdentityHashedEntity.class, MetadataPack.class, Tenant.class})
+        subTypes = {Environment.class, SyncedEntity.class, MetadataPack.class, Tenant.class})
 public abstract class Entity<B extends Blueprint, U extends Entity.Update> extends AbstractElement<B, U> {
 
     public static Class<?> typeFromSegmentType(SegmentType segmentType) {

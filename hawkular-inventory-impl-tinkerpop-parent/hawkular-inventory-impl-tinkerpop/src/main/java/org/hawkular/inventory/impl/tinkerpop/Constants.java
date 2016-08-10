@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__contentHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__identityHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_interval;
@@ -26,6 +27,7 @@ import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structu
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataKey;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataType;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue;
+import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__syncHash;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
 import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
@@ -145,7 +147,11 @@ final class Constants {
 
         __identityHash,
 
-        __targetIdentityHash;
+        __targetIdentityHash,
+
+        __contentHash,
+
+        __syncHash;
 
         private final String sortName;
 
@@ -195,13 +201,19 @@ final class Constants {
      * The type of entities known to Hawkular.
      */
     enum Type {
-        tenant(Tenant.class, name), environment(Environment.class, name), feed(Feed.class, name),
-        resourceType(ResourceType.class, name, __identityHash),
-        metricType(MetricType.class, name, __unit, __metric_data_type, __metric_interval, __identityHash),
-        operationType(OperationType.class, name), resource(Resource.class, name),
-        metric(Metric.class, name, __metric_interval), metadatapack(MetadataPack.class, name),
+        tenant(Tenant.class, name, __contentHash),
+        environment(Environment.class, name, __contentHash),
+        feed(Feed.class, name, __identityHash, __contentHash, __syncHash),
+        resourceType(ResourceType.class, name, __identityHash, __contentHash, __syncHash),
+        metricType(MetricType.class, name, __unit, __metric_data_type, __metric_interval, __identityHash, __contentHash,
+                __syncHash),
+        operationType(OperationType.class, name, __identityHash, __contentHash, __syncHash),
+        resource(Resource.class, name, __identityHash, __contentHash, __syncHash),
+        metric(Metric.class, name, __metric_interval, __identityHash, __contentHash, __syncHash),
+        metadatapack(MetadataPack.class, name),
         relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
-        dataEntity(DataEntity.class, name), structuredData(StructuredData.class, __structuredDataType,
+        dataEntity(DataEntity.class, name, __identityHash, __contentHash, __syncHash),
+        structuredData(StructuredData.class, __structuredDataType,
                 __structuredDataValue, __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;

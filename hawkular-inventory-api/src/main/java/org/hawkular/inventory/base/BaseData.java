@@ -132,7 +132,7 @@ public final class BaseData {
             tx.relate(entity, value, hasData.name(), null);
 
             DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue(), null,
-                    blueprint.getProperties());
+                    null, null, blueprint.getProperties());
 
             return new EntityAndPendingNotifications<>(entity, data, emptyList());
         }
@@ -230,8 +230,8 @@ public final class BaseData {
         }
     }
 
-    public static final class Single<BE> extends SingleIdentityHashedFetcher<BE, DataEntity, DataEntity.Blueprint<?>,
-            DataEntity.Update> implements Data.Single {
+    public static final class Single<BE> extends SingleSyncedFetcher<BE, DataEntity, DataEntity.Blueprint<?>,
+                DataEntity.Update> implements Data.Single {
 
         private final DataModificationChecks<BE> checks;
 

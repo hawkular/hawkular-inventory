@@ -65,7 +65,7 @@ public final class BaseOperationTypes {
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new OperationType(blueprint.getName(),
                     parentPath.extend(OperationType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
-                    blueprint.getProperties()), emptyList());
+                    null, null, blueprint.getProperties()), emptyList());
         }
 
         @Override public OperationTypes.Multiple getAll(Filter[][] filters) {
@@ -123,8 +123,8 @@ public final class BaseOperationTypes {
         }
     }
 
-    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, OperationType, OperationType.Blueprint,
-            OperationType.Update> implements OperationTypes.Single {
+    public static class Single<BE> extends SingleSyncedFetcher<BE, OperationType, OperationType.Blueprint,
+                OperationType.Update> implements OperationTypes.Single {
 
         public Single(TraversalContext<BE, OperationType> context) {
             super(context);

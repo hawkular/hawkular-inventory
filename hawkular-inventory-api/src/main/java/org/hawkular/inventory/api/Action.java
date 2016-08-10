@@ -17,9 +17,11 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.ContentHashable;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.IdentityHashable;
+import org.hawkular.inventory.api.model.Syncable;
 
 /**
  * @author Lukas Krejci
@@ -32,7 +34,9 @@ public final class Action<C, E> {
     private static final Action<?, ?> _DELETED = new Action<>();
     private static final Action<EnvironmentCopy, Environment> _COPIED = new Action<>();
     private static final Action<Feed, Feed> _REGISTERED = new Action<>();
+    private static final Action<?, ?> _SYNC_HASH_CHANGED = new Action<>();
     private static final Action<?, ?> _IDENTITY_HASH_CHANGED = new Action<>();
+    private static final Action<?, ?> _CONTENT_HASH_CHANGED = new Action<>();
 
     public static <E> Action<E, E> created() {
         return (Action<E, E>) _CREATED;
@@ -55,8 +59,16 @@ public final class Action<C, E> {
         return _REGISTERED;
     }
 
+    public static <E extends Syncable> Action<E, E> syncHashChanged() {
+        return (Action<E, E>) _SYNC_HASH_CHANGED;
+    }
+
     public static <E extends IdentityHashable> Action<E, E> identityHashChanged() {
         return (Action<E, E>) _IDENTITY_HASH_CHANGED;
+    }
+
+    public static <E extends ContentHashable> Action<E, E> contentHashChanged() {
+        return (Action<E, E>) _CONTENT_HASH_CHANGED;
     }
 
     private Action() {
@@ -74,7 +86,8 @@ public final class Action<C, E> {
 
     public enum Enumerated {
         CREATED(_CREATED), UPDATED(_UPDATED), DELETED(_DELETED), COPIED(_COPIED), REGISTERED(_REGISTERED),
-        IDENTITY_HASH_CHANGED(_IDENTITY_HASH_CHANGED);
+        SYNC_HASH_CHANGED(_SYNC_HASH_CHANGED), IDENTITY_HASH_CHANGED(_IDENTITY_HASH_CHANGED),
+        CONTENT_HASH_CHANGED(_CONTENT_HASH_CHANGED);
 
         private final Action<?, ?> action;
 

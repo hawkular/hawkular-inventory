@@ -17,8 +17,8 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
+import org.hawkular.inventory.api.model.SyncHash;
 
 /**
  * These interfaces are extended by accessor interfaces for {@link org.hawkular.inventory.api.model.IdentityHashable}
@@ -27,9 +27,9 @@ import org.hawkular.inventory.api.model.InventoryStructure;
  * @author Lukas Krejci
  * @since 0.15.0
  */
-public final class IdentityHashed {
+public final class Synced {
 
-    private IdentityHashed() {
+    private Synced() {
 
     }
 
@@ -44,7 +44,7 @@ public final class IdentityHashed {
          * This is useful for figuring out what changed about the structure of the entity
          * @return the hash of the entity together with the hashes of all contained entities
          */
-        IdentityHash.Tree treeHash();
+        SyncHash.Tree treeHash();
 
         /**
          * Synchronizes the entity and any of its children. The structure is considered to be complete - i.e.

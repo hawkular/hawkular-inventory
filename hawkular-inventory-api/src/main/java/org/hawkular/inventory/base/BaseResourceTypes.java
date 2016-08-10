@@ -78,7 +78,7 @@ public final class BaseResourceTypes {
             tx.update(entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
-                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
+                    parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
                     blueprint.getProperties());
 
             return new EntityAndPendingNotifications<>(entity, resourceType, emptyList());
@@ -155,8 +155,8 @@ public final class BaseResourceTypes {
         }
     }
 
-    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, ResourceType, ResourceType.Blueprint,
-            ResourceType.Update> implements ResourceTypes.Single {
+    public static class Single<BE> extends SingleSyncedFetcher<BE, ResourceType, ResourceType.Blueprint,
+                ResourceType.Update> implements ResourceTypes.Single {
 
         public Single(TraversalContext<BE, ResourceType> context) {
             super(context);

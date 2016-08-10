@@ -36,8 +36,8 @@ import io.swagger.annotations.ApiModel;
  */
 @ApiModel(description = "Metric type defines the unit and data type of a metric. It also specifies the default " +
         " collection interval as a guideline for the feed on how often to collect the metric values.",
-        parent = IdentityHashedEntity.class)
-public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint, MetricType.Update> {
+        parent = SyncedEntity.class)
+public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.mt;
 
@@ -57,26 +57,31 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
         collectionInterval = null;
     }
 
-    public MetricType(CanonicalPath path, String identityHash) {
-        this(path, identityHash, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
+    public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash) {
+        this(path, identityHash, contentHash, syncHash, MetricUnit.NONE, MetricDataType.GAUGE, null, null);
     }
 
-    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
-        this(path, identityHash, unit, type, null, null);
+    public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricUnit unit,
+                      MetricDataType type) {
+        this(path, identityHash, contentHash, syncHash, unit, type, null, null);
     }
 
-    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
+    public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricUnit unit,
+                      MetricDataType type,
                       Long collectionInterval) {
-        this(path, identityHash, unit, type, null, collectionInterval);
+        this(path, identityHash, contentHash, syncHash, unit, type, null, collectionInterval);
     }
 
-    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type) {
-        this(name, path, identityHash, unit, type, null, null);
+    public MetricType(String name, CanonicalPath path, String identityHash, String contentHash,
+                      java.lang.String syncHash,
+                      MetricUnit unit,
+                      MetricDataType type) {
+        this(name, path, identityHash, contentHash, syncHash, unit, type, null, null);
     }
 
-    public MetricType(CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
-                      Map<String, Object> properties, Long collectionInterval) {
-        super(path, identityHash, properties);
+    public MetricType(CanonicalPath path, String identityHash, java.lang.String contentHash, java.lang.String syncHash,
+                      MetricUnit unit, MetricDataType type, Map<String, Object> properties, Long collectionInterval) {
+        super(null, path, identityHash, contentHash, syncHash, properties);
         if (type == null) {
             throw new IllegalArgumentException("metricDataType == null");
         }
@@ -85,9 +90,10 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
         this.collectionInterval = collectionInterval;
     }
 
-    public MetricType(String name, CanonicalPath path, String identityHash, MetricUnit unit, MetricDataType type,
+    public MetricType(String name, CanonicalPath path, String identityHash, java.lang.String contentHash,
+                      java.lang.String syncHash, MetricUnit unit, MetricDataType type,
                       Map<String, Object> properties, Long collectionInterval) {
-        super(name, path, identityHash, properties);
+        super(name, path, identityHash, contentHash, syncHash, properties);
         this.type = type;
         this.unit = unit;
         this.collectionInterval = collectionInterval;
@@ -107,8 +113,8 @@ public final class MetricType extends IdentityHashedEntity<MetricType.Blueprint,
 
     @Override
     public Updater<Update, MetricType> update() {
-        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(),
-                valueOrDefault(u.unit, this.unit), type, u.getProperties(),
+        return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
+                getSyncHash(), valueOrDefault(u.unit, this.unit), type, u.getProperties(),
                 valueOrDefault(u.getCollectionInterval(), collectionInterval)));
     }
 

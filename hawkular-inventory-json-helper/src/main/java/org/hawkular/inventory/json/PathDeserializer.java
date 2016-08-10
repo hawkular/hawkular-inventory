@@ -19,6 +19,7 @@ package org.hawkular.inventory.json;
 import java.io.IOException;
 
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -31,6 +32,10 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 public final class PathDeserializer extends JsonDeserializer<Path> {
     @Override
     public Path deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+        String val = jp.getValueAsString();
+        if (val.isEmpty()) {
+            return RelativePath.empty().get();
+        }
         return Path.fromString(jp.getValueAsString());
     }
 }

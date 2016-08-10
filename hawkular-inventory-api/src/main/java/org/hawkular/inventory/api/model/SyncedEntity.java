@@ -23,45 +23,67 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import io.swagger.annotations.ApiModel;
 
 /**
+ * Abstract base class for all syncable entities.
+ *
  * @author Lukas Krejci
- * @since 0.11.0
+ * @since 0.18.0
  */
 @ApiModel(description = "A super type of all entities that support identity hashing",
         subTypes = {Feed.class, MetricType.class, Metric.class, Resource.class, DataEntity.class, OperationType.class,
         ResourceType.class}, parent = Entity.class)
-public abstract class IdentityHashedEntity<B extends Entity.Blueprint, U extends Entity.Update> extends Entity<B, U>
-    implements IdentityHashable {
+public abstract class SyncedEntity<B extends Entity.Blueprint, U extends Entity.Update> extends Entity<B, U>
+    implements Syncable {
 
     private final String identityHash;
+    private final String contentHash;
+    private final String syncHash;
 
-    @SuppressWarnings("unused")
-    IdentityHashedEntity() {
+    @SuppressWarnings("unused") SyncedEntity() {
         identityHash = null;
+        contentHash = null;
+        syncHash = null;
     }
 
-    IdentityHashedEntity(String name, CanonicalPath path, String identityHash) {
+    SyncedEntity(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash) {
         super(name, path);
         this.identityHash = identityHash;
+        this.contentHash = contentHash;
+        this.syncHash = syncHash;
     }
 
-    IdentityHashedEntity(String name, CanonicalPath path,
-                         String identityHash, Map<String, Object> properties) {
+    SyncedEntity(String name, CanonicalPath path,
+                 String identityHash, String contentHash, String syncHash, Map<String, Object> properties) {
         super(name, path, properties);
         this.identityHash = identityHash;
+        this.contentHash = contentHash;
+        this.syncHash = syncHash;
     }
 
-    IdentityHashedEntity(CanonicalPath path, String identityHash) {
+    SyncedEntity(CanonicalPath path, String identityHash, String contentHash, String syncHash) {
         super(path);
         this.identityHash = identityHash;
+        this.contentHash = contentHash;
+        this.syncHash = syncHash;
     }
 
-    IdentityHashedEntity(CanonicalPath path, String identityHash, Map<String, Object> properties) {
+    SyncedEntity(CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                 Map<String, Object> properties) {
         super(path, properties);
         this.identityHash = identityHash;
+        this.contentHash = contentHash;
+        this.syncHash = syncHash;
     }
 
     @Override
     public String getIdentityHash() {
         return identityHash;
+    }
+
+    @Override public String getContentHash() {
+        return contentHash;
+    }
+
+    @Override public String getSyncHash() {
+        return syncHash;
     }
 }

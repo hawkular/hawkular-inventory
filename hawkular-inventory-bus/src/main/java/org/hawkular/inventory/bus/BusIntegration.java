@@ -16,6 +16,10 @@
  */
 package org.hawkular.inventory.bus;
 
+import static org.hawkular.inventory.api.Action.contentHashChanged;
+import static org.hawkular.inventory.api.Action.identityHashChanged;
+import static org.hawkular.inventory.api.Action.syncHashChanged;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,6 +35,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -87,15 +92,22 @@ public final class BusIntegration {
     }
 
     private void install() {
-        install(inventory, subscriptions, Tenant.class, messageSender);
-        install(inventory, subscriptions, ResourceType.class, messageSender, Action.identityHashChanged());
-        install(inventory, subscriptions, MetricType.class, messageSender, Action.identityHashChanged());
-        install(inventory, subscriptions, Environment.class, messageSender, Action.copied());
-        install(inventory, subscriptions, Feed.class, messageSender, Action.registered(), Action.identityHashChanged());
-        install(inventory, subscriptions, Resource.class, messageSender, Action.identityHashChanged());
-        install(inventory, subscriptions, Metric.class, messageSender, Action.identityHashChanged());
+        install(inventory, subscriptions, Tenant.class, messageSender, contentHashChanged());
+        install(inventory, subscriptions, MetadataPack.class, messageSender);
+        install(inventory, subscriptions, ResourceType.class, messageSender, syncHashChanged(), identityHashChanged(),
+                contentHashChanged());
+        install(inventory, subscriptions, MetricType.class, messageSender, syncHashChanged(), identityHashChanged(),
+                contentHashChanged());
+        install(inventory, subscriptions, Environment.class, messageSender, Action.copied(), contentHashChanged());
+        install(inventory, subscriptions, Feed.class, messageSender, Action.registered(), syncHashChanged(),
+                identityHashChanged(), contentHashChanged());
+        install(inventory, subscriptions, Resource.class, messageSender, syncHashChanged(), identityHashChanged(),
+                contentHashChanged());
+        install(inventory, subscriptions, Metric.class, messageSender, syncHashChanged(), identityHashChanged(),
+                contentHashChanged());
         install(inventory, subscriptions, Relationship.class, messageSender);
-        install(inventory, subscriptions, DataEntity.class, messageSender, Action.identityHashChanged());
+        install(inventory, subscriptions, DataEntity.class, messageSender, syncHashChanged(), identityHashChanged(),
+                contentHashChanged());
     }
 
     private void uninstall() {
@@ -125,14 +137,15 @@ public final class BusIntegration {
             Tenant t;
             if (c instanceof AbstractElement) {
                 if (c instanceof Relationship) {
-                    t = new Tenant(((Relationship) c).getSource().getRoot());
+                    t = new Tenant(((Relationship) c).getSource().getRoot(), null);
                 } else {
-                    t = new Tenant(((AbstractElement) c).getPath().getRoot());
+                    t = new Tenant(((AbstractElement) c).getPath().getRoot(), null);
                 }
             } else if (c instanceof Action.EnvironmentCopy) {
-                t = new Tenant(((Action.EnvironmentCopy) c).getSource().getPath().getRoot());
+                t = new Tenant(((Action.EnvironmentCopy) c).getSource().getPath().getRoot(), null);
             } else if (c instanceof Action.Update) {
-                t = new Tenant(((AbstractElement) ((Action.Update) c).getOriginalEntity()).getPath().getRoot());
+                t = new Tenant(((AbstractElement) ((Action.Update) c).getOriginalEntity()).getPath().getRoot(),
+                        null);
             } else {
                 throw new IllegalArgumentException("Unknown event type: " + c.getClass().getName());
             }

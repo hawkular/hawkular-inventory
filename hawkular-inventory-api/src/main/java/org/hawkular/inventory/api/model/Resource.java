@@ -34,8 +34,8 @@ import io.swagger.annotations.ApiModel;
  * @author Lukas Krejci
  */
 @ApiModel(description = "A resource has a type, can have configuration and connection configuration and can" +
-        " incorporate metrics.", parent = IdentityHashedEntity.class)
-public final class Resource extends IdentityHashedEntity<Resource.Blueprint, Resource.Update> {
+        " incorporate metrics.", parent = SyncedEntity.class)
+public final class Resource extends SyncedEntity<Resource.Blueprint, Resource.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.r;
 
@@ -49,28 +49,32 @@ public final class Resource extends IdentityHashedEntity<Resource.Blueprint, Res
         type = null;
     }
 
-    public Resource(CanonicalPath path, String identityHash, ResourceType type) {
-        this(path, identityHash, type, null);
+    public Resource(CanonicalPath path, String identityHash, String contentHash, String syncHash, ResourceType type) {
+        this(path, identityHash, contentHash, syncHash, type, null);
     }
 
-    public Resource(String name, CanonicalPath path, String identityHash, ResourceType type) {
-        this(name, path, identityHash, type, null);
+    public Resource(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                    ResourceType type) {
+        this(name, path, identityHash, contentHash, syncHash, type, null);
     }
 
-    public Resource(CanonicalPath path, String identityHash, ResourceType type, Map<String, Object> properties) {
-        super(path, identityHash, properties);
+    public Resource(CanonicalPath path, String identityHash, String contentHash, String syncHash, ResourceType type,
+                    Map<String, Object> properties) {
+        super(path, identityHash, contentHash, syncHash, properties);
         this.type = type;
     }
 
-    public Resource(String name, CanonicalPath path, String identityHash, ResourceType type,
+    public Resource(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                    ResourceType type,
                     Map<String, Object> properties) {
-        super(name, path, identityHash, properties);
+        super(name, path, identityHash, contentHash, syncHash, properties);
         this.type = type;
     }
 
     @Override
     public Updater<Update, Resource> update() {
-        return new Updater<>((u) -> new Resource(u.getName(), getPath(), getIdentityHash(), getType(),
+        return new Updater<>((u) -> new Resource(u.getName(), getPath(), getIdentityHash(), getContentHash(),
+                getSyncHash(), getType(),
                 u.getProperties()));
     }
 
