@@ -36,8 +36,8 @@ import io.swagger.annotations.ApiModel;
 @ApiModel(description = "A metric represents a monitored \"quality\". Its metric type specifies the unit in which" +
         " the metric reports its values and the collection interval specifies how often the feed should be collecting" +
         " the metric for changes in value.",
-        parent = IdentityHashedEntity.class)
-public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.Update> {
+        parent = SyncedEntity.class)
+public final class Metric extends SyncedEntity<Metric.Blueprint, Metric.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.m;
 
@@ -53,33 +53,36 @@ public final class Metric extends IdentityHashedEntity<Metric.Blueprint, Metric.
         collectionInterval = null;
     }
 
-    public Metric(CanonicalPath path, String identityHash, MetricType type) {
-        this(null, path, identityHash, type, null, null);
+    public Metric(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricType type) {
+        this(null, path, identityHash, contentHash, syncHash, type, null, null);
     }
 
-    public Metric(String name, CanonicalPath path, String identityHash, MetricType type) {
-        this(name, path, identityHash, type, null ,null);
+    public Metric(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                  MetricType type) {
+        this(name, path, identityHash, contentHash, syncHash, type, null ,null);
     }
 
-    public Metric(CanonicalPath path, String identityHash, MetricType type, Long collectionInterval) {
-        this(null, path, identityHash, type, collectionInterval, null);
+    public Metric(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricType type,
+                  Long collectionInterval) {
+        this(null, path, identityHash, contentHash, syncHash, type, collectionInterval, null);
     }
 
-    public Metric(CanonicalPath path, String identityHash, MetricType type, Map<String, Object> properties) {
-        this(null, path, identityHash, type, null, properties);
-    }
-
-    public Metric(String name, CanonicalPath path, String identityHash, MetricType type, Long collectionInterval,
+    public Metric(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricType type,
                   Map<String, Object> properties) {
-        super(name, path, identityHash, properties);
+        this(null, path, identityHash, contentHash, syncHash, type, null, properties);
+    }
+
+    public Metric(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                  MetricType type, Long collectionInterval, Map<String, Object> properties) {
+        super(name, path, identityHash, contentHash, syncHash, properties);
         this.type = type;
         this.collectionInterval = collectionInterval;
     }
 
     @Override
     public Updater<Update, Metric> update() {
-        return new Updater<>((u) -> new Metric(u.getName(), getPath(), getIdentityHash(), getType(),
-                u.getCollectionInterval(), u.getProperties()));
+        return new Updater<>((u) -> new Metric(u.getName(), getPath(), getIdentityHash(), getContentHash(),
+                getSyncHash(), getType(), u.getCollectionInterval(), u.getProperties()));
     }
 
     public MetricType getType() {

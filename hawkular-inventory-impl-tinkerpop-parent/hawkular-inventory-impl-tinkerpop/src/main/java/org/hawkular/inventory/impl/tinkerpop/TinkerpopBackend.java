@@ -67,6 +67,7 @@ import org.hawkular.inventory.api.model.ElementVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
@@ -427,8 +428,21 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return entityRepresentation.getProperty(Constants.Property.__identityHash.name());
     }
 
-    @Override
-    public void updateIdentityHash(Element entity, String identityHash) {
+    public String extractContentHash(Element entityRepresentation) {
+        return entityRepresentation.getProperty(Constants.Property.__contentHash.name());
+    }
+
+    public String extractSyncHash(Element entityRepresentation) {
+        return entityRepresentation.getProperty(Constants.Property.__syncHash.name());
+    }
+
+    @Override public void updateHashes(Element entity, Hashes hashes) {
+        setNonNullProperty(entity, Constants.Property.__contentHash.name(), hashes.getContentHash());
+        setNonNullProperty(entity, Constants.Property.__syncHash.name(), hashes.getSyncHash());
+        updateIdentityHash(entity, hashes.getIdentityHash());
+    }
+
+    private void updateIdentityHash(Element entity, String identityHash) {
         Objects.requireNonNull(entity, "entity == null");
 
         if (!(entity instanceof Vertex)) {
@@ -442,7 +456,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         }
 
         entity.setProperty(Constants.Property.__identityHash.name(), identityHash);
-
 
         Vertex vertex = (Vertex) entity;
 
@@ -533,20 +546,23 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             Iterator<Vertex> it;
             switch (type) {
                 case environment:
-                    e = new Environment(extractCanonicalPath(v));
+                    e = new Environment(extractCanonicalPath(v), extractContentHash(v));
                     break;
                 case feed:
-                    e = new Feed(extractCanonicalPath(v), extractIdentityHash(v));
+                    e = new Feed(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
+                            extractSyncHash(v));
                     break;
                 case metric:
                     it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
                     Vertex mdv = closeAfter(it, it::next);
                     MetricType md = convert(mdv, MetricType.class);
-                    e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), md,
+                    e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
+                            extractSyncHash(v), md,
                             v.<Long>getProperty(Constants.Property.__metric_interval.name()));
                     break;
                 case metricType:
                     e = new MetricType(extractCanonicalPath(v), extractIdentityHash(v),
+                            extractContentHash(v), extractSyncHash(v),
                             MetricUnit.fromDisplayName(v.getProperty(Constants.Property.__unit.name())),
                             MetricDataType.fromDisplayName(v.getProperty(Constants.Property.__metric_data_type.name())),
                             v.getProperty(Constants.Property.__metric_interval.name()));
@@ -555,13 +571,15 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     it = v.getVertices(Direction.IN, Relationships.WellKnown.defines.name()).iterator();
                     Vertex rtv = closeAfter(it, it::next);
                     ResourceType rt = convert(rtv, ResourceType.class);
-                    e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), rt);
+                    e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
+                            extractSyncHash(v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractCanonicalPath(v), extractIdentityHash(v));
+                    e = new ResourceType(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
+                            extractSyncHash(v));
                     break;
                 case tenant:
-                    e = new Tenant(extractCanonicalPath(v));
+                    e = new Tenant(extractCanonicalPath(v), extractContentHash(v));
                     break;
                 case structuredData:
                     e = loadStructuredData(v, StructuredData.class.equals(entityType));
@@ -570,10 +588,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     CanonicalPath cp = extractCanonicalPath(v);
                     String identityHash = extractIdentityHash(v);
                     e = new DataEntity(cp.up(), DataRole.valueOf(cp.getSegment().getElementId()),
-                            loadStructuredData(v, hasData), identityHash);
+                            loadStructuredData(v, hasData), identityHash, extractContentHash(v), extractSyncHash(v));
                     break;
                 case operationType:
-                    e = new OperationType(extractCanonicalPath(v), extractIdentityHash(v));
+                    e = new OperationType(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
+                            extractSyncHash(v));
                     break;
                 case metadatapack:
                     e = new MetadataPack(extractCanonicalPath(v));

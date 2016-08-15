@@ -70,7 +70,7 @@ public final class BaseTenants {
 
             return new EntityAndPendingNotifications<>(entity,
                     new Tenant(blueprint.getName(), CanonicalPath.of()
-                    .tenant(tx.extractId(entity)).get(), blueprint.getProperties()), emptyList());
+                    .tenant(tx.extractId(entity)).get(), null, blueprint.getProperties()), emptyList());
         }
 
         @Override

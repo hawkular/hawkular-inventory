@@ -27,6 +27,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -231,6 +232,10 @@ public interface InventoryBackend<E> extends AutoCloseable {
      */
     String extractIdentityHash(E entityRepresentation);
 
+    String extractContentHash(E entityRepresentation);
+
+    String extractSyncHash(E entityRepresentation);
+
     /**
      * Converts the provided representation object to an inventory element of provided type.
      *
@@ -296,12 +301,11 @@ public interface InventoryBackend<E> extends AutoCloseable {
     void update(E entity, AbstractElement.Update update);
 
     /**
-     * Updates the identity hash of the entity.
-     *
-     * @param entity the entity to update
-     * @param identityHash the identity hash to set
+     * Updates the various hashes on the entity
+     * @param entity the entity to update the hashes of
+     * @param hashes the hashes to update
      */
-    void updateIdentityHash(E entity, String identityHash);
+    void updateHashes(E entity, Hashes hashes);
 
     /**
      * Simply deletes the entity from the storage.

@@ -73,7 +73,7 @@ public final class BaseFeeds {
                     .extend(Feed.SEGMENT_TYPE, blueprint.getId()).get();
 
             return context.configuration.getFeedIdStrategy().generate(context.inventory.keepTransaction(tx),
-                    new Feed(feedPath, null));
+                    new Feed(feedPath, null, null, null));
         }
 
         @Override
@@ -82,7 +82,7 @@ public final class BaseFeeds {
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
                     parentPath.extend(Feed.SEGMENT_TYPE, transaction.extractId(entity)).get(), null,
-                    blueprint.getProperties()), emptyList());
+                    null, null, blueprint.getProperties()), emptyList());
         }
 
         @Override
@@ -152,7 +152,7 @@ public final class BaseFeeds {
         }
     }
 
-    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Feed, Feed.Blueprint, Feed.Update>
+    public static class Single<BE> extends SingleSyncedFetcher<BE, Feed, Feed.Blueprint, Feed.Update>
             implements Feeds.Single {
 
         public Single(TraversalContext<BE, Feed> context) {

@@ -35,13 +35,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.hawkular.inventory.api.IdentityHashed;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
+import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 
@@ -65,13 +65,13 @@ public class RestEntity extends RestBase {
     @GET
     @Path("{path:.+}/treeHash")
     @SuppressWarnings("unchecked")
-    public IdentityHash.Tree getTreeHash(@Context UriInfo uriInfo)
+    public SyncHash.Tree getTreeHash(@Context UriInfo uriInfo)
             throws Exception {
 
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(getPath(uriInfo, "/treeHash".length()),
                 getTenantPath(), AbstractElement.class);
 
-        return inventory.inspect(path, IdentityHashed.Single.class).treeHash();
+        return inventory.inspect(path, Synced.Single.class).treeHash();
     }
 
     @GET

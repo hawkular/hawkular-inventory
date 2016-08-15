@@ -38,7 +38,7 @@ import io.swagger.annotations.ApiModel;
  */
 @ApiModel(description = "Environment can incorporate feeds and can contain resources and metrics.",
         parent = Entity.class)
-public final class Environment extends Entity<Environment.Blueprint, Environment.Update> {
+public final class Environment extends ContentHashedEntity<Environment.Blueprint, Environment.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.e;
 
@@ -46,25 +46,25 @@ public final class Environment extends Entity<Environment.Blueprint, Environment
     private Environment() {
     }
 
-    public Environment(CanonicalPath path) {
-        this(path, null);
+    public Environment(CanonicalPath path, String contentHash) {
+        super(path, contentHash);
     }
 
-    public Environment(String name, CanonicalPath path) {
-        super(name, path);
+    public Environment(String name, CanonicalPath path, String contentHash) {
+        super(name, path, contentHash);
     }
 
-    public Environment(CanonicalPath path, Map<String, Object> properties) {
-        this(null, path, properties);
+    public Environment(CanonicalPath path, String contentHash, Map<String, Object> properties) {
+        this(null, path, contentHash, properties);
     }
 
-    public Environment(String name, CanonicalPath path, Map<String, Object> properties) {
-        super(name, path, properties);
+    public Environment(String name, CanonicalPath path, String contentHash, Map<String, Object> properties) {
+        super(name, path, contentHash, properties);
     }
 
     @Override
     public Updater<Update, Environment> update() {
-        return new Updater<>((u) -> new Environment(u.getName(), getPath(), u.getProperties()));
+        return new Updater<>((u) -> new Environment(u.getName(), getPath(), getContentHash(), u.getProperties()));
     }
 
     @Override

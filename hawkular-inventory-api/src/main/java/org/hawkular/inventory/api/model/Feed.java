@@ -36,8 +36,8 @@ import io.swagger.annotations.ApiModel;
  * @since 0.1.0
  */
 @ApiModel(description = "A feed represents a remote \"agent\" that is reporting its data to Hawkular.",
-        parent = IdentityHashedEntity.class)
-public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update> {
+        parent = SyncedEntity.class)
+public final class Feed extends SyncedEntity<Feed.Blueprint, Feed.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.f;
 
@@ -48,25 +48,28 @@ public final class Feed extends IdentityHashedEntity<Feed.Blueprint, Feed.Update
     private Feed() {
     }
 
-    public Feed(CanonicalPath path, String identityHash) {
-        this(path, identityHash, null);
+    public Feed(CanonicalPath path, String identityHash, String contentHash, String syncHash) {
+        this(path, identityHash, contentHash, syncHash, null);
     }
 
-    public Feed(String name, CanonicalPath path, String identityHash) {
-        super(name, path, identityHash);
+    public Feed(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash) {
+        super(name, path, identityHash, contentHash, syncHash);
     }
 
-    public Feed(CanonicalPath path, String identityHash, Map<String, Object> properties) {
-        super(path, identityHash, properties);
+    public Feed(CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                Map<String, Object> properties) {
+        super(path, identityHash, contentHash, syncHash, properties);
     }
 
-    public Feed(String name, CanonicalPath path, String identityHash, Map<String, Object> properties) {
-        super(name, path, identityHash, properties);
+    public Feed(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                Map<String, Object> properties) {
+        super(name, path, identityHash, contentHash, syncHash, properties);
     }
 
     @Override
     public Updater<Update, Feed> update() {
-        return new Updater<>((u) -> new Feed(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
+        return new Updater<>((u) -> new Feed(u.getName(), getPath(), getIdentityHash(), getContentHash(), getSyncHash(),
+                u.getProperties()));
     }
 
     @Override

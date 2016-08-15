@@ -30,12 +30,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
-import org.hawkular.inventory.api.IdentityHashed;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.MetricTypes;
@@ -44,12 +44,12 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
+import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.IdentityHashable;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
@@ -57,6 +57,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
@@ -67,16 +68,16 @@ import org.hawkular.inventory.paths.SegmentType;
  * @author Lukas Krejci
  * @since 0.15.0
  */
-abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & IdentityHashable, B extends Entity.Blueprint,
+abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & IdentityHashable, B extends Entity.Blueprint,
         U extends Entity.Update>
         extends SingleEntityFetcher<BE, E, U>
-        implements IdentityHashed.SingleWithRelationships<E, B, U> {
+        implements Synced.SingleWithRelationships<E, B, U> {
 
-    public SingleIdentityHashedFetcher(TraversalContext<BE, E> context) {
+    SingleSyncedFetcher(TraversalContext<BE, E> context) {
         super(context);
     }
 
-    @Override public void synchronize(InventoryStructure newStructure) {
+    @Override public void synchronize(InventoryStructure<B> newStructure) {
         inTx(tx -> {
             BE root = tx.querySingle(context.select().get());
 
@@ -88,8 +89,8 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
 
             //getting the whole tree is not the most efficient thing but it makes things so much simpler ;)
-            IdentityHash.Tree currentTree = treeHash(tx);
-            IdentityHash.Tree newTree = IdentityHash.treeOf(newStructure);
+            SyncHash.Tree currentTree = treeHash(tx);
+            SyncHash.Tree newTree = SyncHash.treeOf(newStructure, tx.extractCanonicalPath(root));
 
             syncTrees(tx, rootPath, root, currentTree, newTree, newStructure);
 
@@ -97,13 +98,13 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
         });
     }
 
-    @Override public IdentityHash.Tree treeHash() {
+    @Override public SyncHash.Tree treeHash() {
         return inTx(this::treeHash);
     }
 
     @SuppressWarnings("unchecked")
-    private void syncTrees(Transaction<BE> tx, CanonicalPath root, BE oldElement, IdentityHash.Tree oldTree,
-                           IdentityHash.Tree newTree, InventoryStructure newStructure) {
+    private void syncTrees(Transaction<BE> tx, CanonicalPath root, BE oldElement, SyncHash.Tree oldTree,
+                           SyncHash.Tree newTree, InventoryStructure<?> newStructure) {
 
         if (!oldTree.getHash().equals(newTree.getHash())) {
             //we only need to do something if the hashes don't match. If they do, it means this entity and its whole
@@ -117,22 +118,24 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             inv.inspect(tx.extractCanonicalPath(oldElement), ResolvableToSingle.class).update(entityUpdate);
 
             //now look through the old and new children and make old match new
-            Set<IdentityHash.Tree> unprocessedChildren = new HashSet<>(newTree.getChildren());
-            Map<IdentityHash.Tree, IdentityHash.Tree> updates = new HashMap<>();
-
             //it is important to make sure that resource or metric types are create prior to resources or metrics
             //we can exploit the InventoryStructure.EntityType enum which is ordered with this in mind.
-            Map<InventoryStructure.EntityType, Set<IdentityHash.Tree>> childrenByType = splitByType(oldTree
+            Set<SyncHash.Tree> unprocessedChildren = sortByType(newTree.getChildren());
+
+            Map<SyncHash.Tree, SyncHash.Tree> updates = new HashMap<>();
+
+            //again, it is important to create types before to resources or metrics, etc.
+            Map<InventoryStructure.EntityType, Set<SyncHash.Tree>> childrenByType = splitByType(oldTree
                     .getChildren());
 
             for (InventoryStructure.EntityType type : InventoryStructure.EntityType.values()) {
-                Set<IdentityHash.Tree> oldChildren = childrenByType.get(type);
+                Set<SyncHash.Tree> oldChildren = childrenByType.get(type);
                 if (oldChildren == null) {
                     continue;
                 }
 
-                for (IdentityHash.Tree oldChild : oldChildren) {
-                    IdentityHash.Tree newChild = newTree.getChild(oldChild.getPath().getSegment());
+                for (SyncHash.Tree oldChild : oldChildren) {
+                    SyncHash.Tree newChild = newTree.getChild(oldChild.getPath().getSegment());
 
                     if (newChild == null) {
                         //ok, this entity is no longer in the new structure
@@ -158,9 +161,9 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             unprocessedChildren.forEach(c -> create(tx, root, c, newStructure));
 
             //and finally updates...
-            for (Map.Entry<IdentityHash.Tree, IdentityHash.Tree> e : updates.entrySet()) {
-                IdentityHash.Tree oldChild = e.getKey();
-                IdentityHash.Tree update = e.getValue();
+            for (Map.Entry<SyncHash.Tree, SyncHash.Tree> e : updates.entrySet()) {
+                SyncHash.Tree oldChild = e.getKey();
+                SyncHash.Tree update = e.getValue();
                 CanonicalPath childCp = update.getPath().applyTo(root);
                 try {
                     BE child = tx.find(childCp);
@@ -174,8 +177,30 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
         }
     }
 
+    private Set<SyncHash.Tree> sortByType(Collection<SyncHash.Tree> col) {
+        Set<SyncHash.Tree> set = new TreeSet<>((a, b) -> {
+            InventoryStructure.EntityType aType =
+                    InventoryStructure.EntityType.of(a.getPath().getSegment().getElementType());
+            InventoryStructure.EntityType bType =
+                    InventoryStructure.EntityType.of(b.getPath().getSegment().getElementType());
+
+            int ret = aType.ordinal() - bType.ordinal();
+
+            if (ret == 0) {
+                //this is actually not important.. we only need to make sure we have a total ordering and that
+                //the entities are sorted by their type..
+                ret = a.getHash().compareTo(b.getHash());
+            }
+
+            return ret;
+        });
+        set.addAll(col);
+
+        return set;
+    }
+
     @SuppressWarnings("unchecked")
-    private void create(Transaction<BE> tx, CanonicalPath root, IdentityHash.Tree tree,
+    private void create(Transaction<BE> tx, CanonicalPath root, SyncHash.Tree tree,
                         InventoryStructure<?> newStructure) {
         Inventory inv = context.inventory.keepTransaction(tx);
         CanonicalPath childCp = tree.getPath().applyTo(root);
@@ -221,6 +246,8 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
                         .create((ResourceType.Blueprint) blueprint);
                 return null;
             }
+
+            @SuppressWarnings("rawtypes")
             @Override public Void visitData(Void parameter) {
                 ((Data.Container<Data.ReadWrite>) parentAccess).data()
                         .create((DataEntity.Blueprint<?>) blueprint);
@@ -234,7 +261,7 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             }
         }, null);
 
-        for (IdentityHash.Tree child : tree.getChildren()) {
+        for (SyncHash.Tree child : tree.getChildren()) {
             create(tx, root, child, newStructure);
         }
     }
@@ -280,47 +307,48 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
         }, null);
     }
 
-    private IdentityHash.Tree treeHash(Transaction<BE> tx) {
+    private SyncHash.Tree treeHash(Transaction<BE> tx) {
         BE root = tx.querySingle(context.select().get());
         //the closure is returned in a breadth-first manner
         Iterator<BE> closure = tx.getTransitiveClosureOver(root, outgoing, contains.name());
 
-        IdentityHash.Tree.Builder bld = IdentityHash.Tree.builder();
-        bld.withPath(RelativePath.empty().get()).withHash(tx.extractIdentityHash(root));
+        SyncHash.Tree.Builder bld = SyncHash.Tree.builder();
+        bld.withPath(RelativePath.empty().get()).withHash(tx.extractSyncHash(root));
 
         if (closure.hasNext()) {
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
-            List<IdentityHash.Tree.ChildBuilder> children = new ArrayList<>();
-            buildChildTree(tx, rootPath, new ArrayList<>(singletonList(bld)), children, closure.next(), closure);
+            List<SyncHash.Tree.ChildBuilder<?>> children = new ArrayList<>();
+            buildChildTree(tx, rootPath, singletonList(bld), children, closure.next(), closure);
         }
 
         return bld.build();
     }
 
     @SuppressWarnings("unchecked")
-    private <P extends IdentityHash.Tree.AbstractBuilder<P>>
-    void buildChildTree(Transaction<BE> tx, CanonicalPath root, List<P> possibleParents,
-                        List<IdentityHash.Tree.ChildBuilder> currentRow, BE currentElement, Iterator<BE> nextElements) {
+    private void buildChildTree(Transaction<BE> tx, CanonicalPath root,
+                                List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleParents,
+                        List<SyncHash.Tree.ChildBuilder<?>> currentRow,
+                        BE currentElement, Iterator<BE> nextElements) {
 
         Consumer<BE> decider = e -> {
             CanonicalPath currentPath = tx.extractCanonicalPath(e);
             RelativePath relativeCurrentPath = currentPath.relativeTo(root);
-            IdentityHash.Tree.AbstractBuilder<?> parent = findParent(possibleParents, relativeCurrentPath);
+            SyncHash.Tree.AbstractBuilder<?> parent = findParent(possibleParents, relativeCurrentPath);
             if (parent == null) {
                 //ok, our parents don't have this child. Seems like we need to start a new row.
 
                 //first end our parents
                 possibleParents.forEach(p -> {
-                    if (p instanceof IdentityHash.Tree.ChildBuilder) {
-                        ((IdentityHash.Tree.ChildBuilder) p).endChild();
+                    if (p instanceof SyncHash.Tree.ChildBuilder) {
+                        ((SyncHash.Tree.ChildBuilder<?>) p).endChild();
                     }
                 });
 
                 //and start processing the next row
                 buildChildTree(tx, root, currentRow, new ArrayList<>(), e, nextElements);
             } else {
-                IdentityHash.Tree.ChildBuilder childBuilder = parent.startChild();
-                childBuilder.withHash(tx.extractIdentityHash(e));
+                SyncHash.Tree.ChildBuilder<?> childBuilder = parent.startChild();
+                childBuilder.withHash(tx.extractSyncHash(e));
                 childBuilder.withPath(relativeCurrentPath);
                 currentRow.add(childBuilder);
             }
@@ -331,27 +359,29 @@ abstract class SingleIdentityHashedFetcher<BE, E extends Entity<B, U> & Identity
             decider.accept(nextElements.next());
         }
 
-        currentRow.forEach(IdentityHash.Tree.ChildBuilder::endChild);
+        for (SyncHash.Tree.ChildBuilder<?> cb : currentRow) {
+            cb.endChild();
+        }
     }
 
-    private IdentityHash.Tree.AbstractBuilder<?>
-    findParent(List<? extends IdentityHash.Tree.AbstractBuilder<?>> possibleParents, RelativePath childPath) {
+    private SyncHash.Tree.AbstractBuilder<?>
+    findParent(List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleParents, RelativePath childPath) {
         return possibleParents.stream()
                 .filter(p -> p.getPath().isParentOf(childPath) && p.getPath().getDepth() == childPath.getDepth() - 1)
                 .findAny()
                 .orElse(null);
     }
 
-    private static Map<InventoryStructure.EntityType, Set<IdentityHash.Tree>>
-    splitByType(Collection<IdentityHash.Tree> group) {
+    private static Map<InventoryStructure.EntityType, Set<SyncHash.Tree>>
+    splitByType(Collection<SyncHash.Tree> group) {
 
-        EnumMap<InventoryStructure.EntityType, Set<IdentityHash.Tree>> ret =
+        EnumMap<InventoryStructure.EntityType, Set<SyncHash.Tree>> ret =
                 new EnumMap<>(InventoryStructure.EntityType.class);
 
         group.forEach(t -> {
             SegmentType elementType = t.getPath().getSegment().getElementType();
             InventoryStructure.EntityType entityType = InventoryStructure.EntityType.of(elementType);
-            Set<IdentityHash.Tree> siblings = ret.get(entityType);
+            Set<SyncHash.Tree> siblings = ret.get(entityType);
             if (siblings == null) {
                 siblings = new HashSet<>();
                 ret.put(entityType, siblings);

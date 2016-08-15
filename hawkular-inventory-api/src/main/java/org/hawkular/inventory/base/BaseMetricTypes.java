@@ -67,7 +67,7 @@ public final class BaseMetricTypes {
             tx.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
-                    parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
+                    parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
                     blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
 
@@ -209,8 +209,8 @@ public final class BaseMetricTypes {
         }
     }
 
-    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, MetricType, MetricType.Blueprint,
-            MetricType.Update> implements MetricTypes.Single {
+    public static class Single<BE> extends SingleSyncedFetcher<BE, MetricType, MetricType.Blueprint,
+                MetricType.Update> implements MetricTypes.Single {
 
         public Single(TraversalContext<BE, MetricType> context) {
             super(context);

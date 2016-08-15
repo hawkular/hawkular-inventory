@@ -31,8 +31,8 @@ import io.swagger.annotations.ApiModel;
 @ApiModel(description = "Defines an type of operation that can be executed on resources of a resource type" +
         " that contains this operation type. The operation type contains \"returnType\" and \"parameterTypes\"" +
         " data entities which correspond to JSON schemas of values expected during the operation execution.",
-        parent = IdentityHashedEntity.class)
-public final class OperationType extends IdentityHashedEntity<OperationType.Blueprint, OperationType.Update> {
+        parent = SyncedEntity.class)
+public final class OperationType extends SyncedEntity<OperationType.Blueprint, OperationType.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.ot;
 
@@ -40,20 +40,22 @@ public final class OperationType extends IdentityHashedEntity<OperationType.Blue
     private OperationType() {
     }
 
-    public OperationType(CanonicalPath path, String identityHash) {
-        super(path, identityHash);
+    public OperationType(CanonicalPath path, String identityHash, String contentHash, String syncHash) {
+        super(path, identityHash, contentHash, syncHash);
     }
 
-    public OperationType(String name, CanonicalPath path, String identityHash) {
-        super(name, path, identityHash);
+    public OperationType(String name, CanonicalPath path, String identityHash, String contentHash, String syncHash) {
+        super(name, path, identityHash, contentHash, syncHash);
     }
 
-    public OperationType(CanonicalPath path, String identityHash, Map<String, Object> properties) {
-        super(path, identityHash, properties);
+    public OperationType(CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                         Map<String, Object> properties) {
+        super(path, identityHash, contentHash, syncHash, properties);
     }
 
-    public OperationType(String name, CanonicalPath path, String identityHash, Map<String, Object> properties) {
-        super(name, path, identityHash, properties);
+    public OperationType(String name, CanonicalPath path, String identityHash, String contentHash,
+                         String syncHash, Map<String, Object> properties) {
+        super(name, path, identityHash, contentHash, syncHash, properties);
     }
 
     @Override
@@ -63,7 +65,8 @@ public final class OperationType extends IdentityHashedEntity<OperationType.Blue
 
     @Override
     public Updater<Update, OperationType> update() {
-        return new Updater<>((u) -> new OperationType(u.getName(), getPath(), getIdentityHash(), u.getProperties()));
+        return new Updater<>((u) -> new OperationType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
+                getSyncHash(), u.getProperties()));
     }
 
     @ApiModel("OperationTypeBlueprint")

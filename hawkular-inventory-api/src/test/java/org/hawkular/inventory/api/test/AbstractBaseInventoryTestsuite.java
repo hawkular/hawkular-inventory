@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.deleted;
-import static org.hawkular.inventory.api.Action.identityHashChanged;
+import static org.hawkular.inventory.api.Action.syncHashChanged;
 import static org.hawkular.inventory.api.Action.updated;
 import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
@@ -112,6 +112,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
@@ -459,21 +460,22 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         CanonicalPath environmentPath = tenantPath.extend(Environment.SEGMENT_TYPE, "test").get();
 
         try {
-            Tenant t = new Tenant(tenantPath);
-            Environment e = new Environment(environmentPath);
-            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get(), null);
+            Tenant t = new Tenant(tenantPath, null);
+            Environment e = new Environment(environmentPath, null);
+            MetricType sizeType = new MetricType(tenantPath.extend(MetricType.SEGMENT_TYPE, "Size").get(), null,
+                    null, null);
             ResourceType playRoomType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Playroom").get(),
-                    null);
+                    null, null, null);
             ResourceType kachnaType = new ResourceType(tenantPath.extend(ResourceType.SEGMENT_TYPE, "Kachna").get(),
-                    null);
+                    null, null, null);
             Resource playroom1 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom1").get(), null,
-                    playRoomType);
+                    null, null, playRoomType);
             Resource playroom2 = new Resource(environmentPath.extend(Resource.SEGMENT_TYPE, "playroom2").get(), null,
-                    playRoomType);
+                    null, null, playRoomType);
             Metric playroom1Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom1_size").get(), null,
-                    sizeType);
+                    null, null, sizeType);
             Metric playroom2Size = new Metric(environmentPath.extend(Metric.SEGMENT_TYPE, "playroom2_size").get(), null,
-                    sizeType);
+                    null, null, sizeType);
 
             //when an association is deleted, it should not be possible to access the target entity through the same
             //traversal again
@@ -2174,28 +2176,28 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Resource resource = f.resources().get("resource").entity();
             Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
 
-            IdentityHash.Tree feedTreeHash = f.treeHash();
+            SyncHash.Tree feedTreeHash = f.treeHash();
 
             Assert.assertEquals(4, feedTreeHash.getChildren().size());
-            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
-            Assert.assertEquals(rt.getIdentityHash(),
+            Assert.assertEquals(f.entity().getSyncHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
-            Assert.assertEquals(mt.getIdentityHash(),
+            Assert.assertEquals(mt.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
-            Assert.assertEquals(resource.getIdentityHash(),
+            Assert.assertEquals(resource.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
-            Assert.assertEquals(feedMetric.getIdentityHash(),
+            Assert.assertEquals(feedMetric.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
 
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
 
-            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            SyncHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
             Assert.assertEquals(2, resourceTreeHash.getChildren().size());
-            Assert.assertEquals(resourceMetric.getIdentityHash(),
+            Assert.assertEquals(resourceMetric.getSyncHash(),
                     resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
-            Assert.assertEquals(childResource.getIdentityHash(),
+            Assert.assertEquals(childResource.getSyncHash(),
                     resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
 
             Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
@@ -2222,7 +2224,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .startChild(Resource.Blueprint.builder().withId("resource").withResourceTypePath("resourceType")
                             .build())
                     /**/.addChild(Resource.Blueprint.builder().withId("childResource")
-                    /**/.withResourceTypePath("../resourceType").build())
+                    /**/.withResourceTypePath("../resourceType").withProperty("a", "b").build())
                     /**/.addChild(Metric.Blueprint.builder().withId("metric").withInterval(0L)
                     /**/.withMetricTypePath("../metricType").build())
                     .end()
@@ -2232,7 +2234,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             f.synchronize(structure);
 
-            IdentityHash.Tree feedTreeHash = f.treeHash();
+            SyncHash.Tree feedTreeHash = f.treeHash();
 
             ResourceType rt = f.resourceTypes().get("resourceType").entity();
             MetricType mt = f.metricTypes().get("metricType").entity();
@@ -2242,29 +2244,33 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Resource childResource = f.resources().get("resource").resources().get("childResource").entity();
 
             Assert.assertEquals(4, feedTreeHash.getChildren().size());
-            Assert.assertEquals(f.entity().getIdentityHash(), feedTreeHash.getHash());
-            Assert.assertEquals(rt.getIdentityHash(),
+            Assert.assertEquals(f.entity().getSyncHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
-            Assert.assertEquals(mt.getIdentityHash(),
+            Assert.assertEquals(mt.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getHash());
-            Assert.assertEquals(resource.getIdentityHash(),
+            Assert.assertEquals(resource.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("r;resource")).getHash());
-            Assert.assertEquals(feedMetric.getIdentityHash(),
+            Assert.assertEquals(feedMetric.getSyncHash(),
                     feedTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
 
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("mt;metricType")).getChildren().isEmpty());
             Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
 
-            IdentityHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
+            SyncHash.Tree resourceTreeHash = feedTreeHash.getChild(Path.Segment.from("r;resource"));
             Assert.assertEquals(2, resourceTreeHash.getChildren().size());
-            Assert.assertEquals(resourceMetric.getIdentityHash(),
+            Assert.assertEquals(resourceMetric.getSyncHash(),
                     resourceTreeHash.getChild(Path.Segment.from("m;metric")).getHash());
-            Assert.assertEquals(childResource.getIdentityHash(),
+            Assert.assertEquals(childResource.getSyncHash(),
                     resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getHash());
+            Assert.assertEquals("b", childResource.getProperties().get("a"));
 
             Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("m;metric")).getChildren().isEmpty());
             Assert.assertTrue(resourceTreeHash.getChild(Path.Segment.from("r;childResource")).getChildren().isEmpty());
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
         } finally {
             if (inventory.tenants().get(tenantId).exists()) {
                 inventory.tenants().get(tenantId).delete();
@@ -2303,7 +2309,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     .entity();
 
             f.metrics()
-                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType").build())
+                    .create(Metric.Blueprint.builder().withId("metric").withMetricTypePath("metricType")
+                            .withProperty("a", "b").withProperty("b", "c").withName("Metric Name").build())
                     .entity();
 
             //just create an association so that we can check that the association doesn't affect the tree hash
@@ -2319,6 +2326,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             structureBuiler.getChild(Path.Segment.from("mt;metricType")).replace(MetricType.Blueprint.builder(
                     MetricDataType.GAUGE).withId("metricType").withInterval(0L).withUnit(MetricUnit.BYTES).build());
 
+            structureBuiler.getChild(Path.Segment.from("m;metric")).replace(Metric.Blueprint.builder().withId("metric")
+                    .withMetricTypePath("metricType").withProperty("a", "c").withProperty("c", "d")
+                    .withName("Name Of Metric").build());
+
             structureBuiler.getChild(Path.Segment.from("r;resource")).remove();
 
             InventoryStructure<Feed.Blueprint> structure = structureBuiler.build();
@@ -2326,6 +2337,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             f.synchronize(structure);
 
             Assert.assertTrue(f.metricTypes().get("metricType").exists());
+            Assert.assertEquals("c", f.metrics().get("metric").entity().getProperties().get("a"));
+            Assert.assertEquals("d", f.metrics().get("metric").entity().getProperties().get("c"));
+            Assert.assertEquals("Name Of Metric", f.metrics().get("metric").entity().getName());
+            Assert.assertFalse(f.metrics().get("metric").entity().getProperties().containsKey("b"));
             Assert.assertFalse(f.resources().get("resource").exists());
             Assert.assertFalse(f.resources().get("resource").resources().get("childResource").exists());
             Assert.assertFalse(f.resources().get("resource").metrics().get("metrics").exists());
@@ -2510,7 +2525,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testObserveIdentityHashChangedOnParentOfChangedEntity() throws Exception {
         String tenantId = "testObserveIdentityHashChangedOnParentOfChangedEntity";
-        testIdentityHashObservation(tenantId, updateCounts -> {
+        testSyncHashObservation(tenantId, updateCounts -> {
             //now update the unit of the metric type
             inventory.tenants().get(tenantId).feeds().get("feed").metricTypes().get("metricType").update(MetricType
                     .Update.builder().withUnit(MetricUnit.BYTES).build());
@@ -2523,9 +2538,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    public void testObserveIdentityHashChangedOnParentOfCreatedEntity() throws Exception {
-        String tenantId = "testObserveIdentityHashChangedOnParentOfCreatedEntity";
-        testIdentityHashObservation(tenantId, updateCounts -> {
+    public void testObserveSyncHashChangedOnParentOfCreatedEntity() throws Exception {
+        String tenantId = "testObserveSyncHashChangedOnParentOfCreatedEntity";
+        testSyncHashObservation(tenantId, updateCounts -> {
             //now create some new grandchild of the feed, let's say new sub-resource
             inventory.tenants().get(tenantId).feeds().get("feed").resources().get("resource").resources()
                     .create(Resource.Blueprint.builder().withId("childResource").withResourceTypePath
@@ -2541,7 +2556,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     @Test
     public void testObserveIdentityHashChangedOnParentOfDeletedEntity() throws Exception {
         String tenantId = "testObserveIdentityHashChangedOnParentOfDeletedEntity";
-        testIdentityHashObservation(tenantId, updateCounts -> {
+        testSyncHashObservation(tenantId, updateCounts -> {
             //now delete the return type of the operation type
             inventory.tenants().get(tenantId).feeds().get("feed").resourceTypes().get("resourceType")
                     .operationTypes().get("operationType").data().delete(returnType);
@@ -2554,21 +2569,21 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         });
     }
 
-    private void testIdentityHashObservation(String tenantId, Consumer<Map<Class<?>, Integer>> test) throws Exception {
+    private void testSyncHashObservation(String tenantId, Consumer<Map<Class<?>, Integer>> test) throws Exception {
         Subscription subs = null;
         try {
-            createInventoryForIdentityHashChangeObservations(tenantId);
+            createInventoryForSyncHashChangeObservations(tenantId);
 
             Map<Class<?>, Integer> updateCounts = new HashMap<>();
 
             subs = Observable.merge(
-                    inventory.observable(Interest.in(Feed.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(ResourceType.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(MetricType.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(OperationType.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(Resource.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(Metric.class).having(identityHashChanged())),
-                    inventory.observable(Interest.in(DataEntity.class).having(identityHashChanged()))
+                    inventory.observable(Interest.in(Feed.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(ResourceType.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(MetricType.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(OperationType.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(Resource.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(Metric.class).having(syncHashChanged())),
+                    inventory.observable(Interest.in(DataEntity.class).having(syncHashChanged()))
             ).subscribe(e ->
                     updateCounts.put(e.getClass(), updateCounts.getOrDefault(e.getClass(), 0) + 1));
 
@@ -2583,7 +2598,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
-    private void createInventoryForIdentityHashChangeObservations(String tenantId) throws Exception {
+    private void createInventoryForSyncHashChangeObservations(String tenantId) throws Exception {
         Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
                 .feeds().create(Feed.Blueprint.builder().withId("feed").build());
 

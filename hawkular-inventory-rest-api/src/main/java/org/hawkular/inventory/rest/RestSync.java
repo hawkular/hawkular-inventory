@@ -29,7 +29,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 
-import org.hawkular.inventory.api.IdentityHashed;
+import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
@@ -73,7 +73,7 @@ public class RestSync extends RestBase {
                     + " are not synchronizable.");
         }
 
-        inventory.inspect(cp, IdentityHashed.SingleWithRelationships.class).synchronize(structure);
+        inventory.inspect(cp, Synced.SingleWithRelationships.class).synchronize(structure);
 
         return Response.noContent().build();
     }

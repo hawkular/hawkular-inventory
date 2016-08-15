@@ -35,8 +35,8 @@ import io.swagger.annotations.ApiModel;
  * @since 0.3.0
  */
 @ApiModel(description = "Data entity contains JSON data and serves a certain \"role\" in the entity it is contained in",
-        parent = IdentityHashedEntity.class)
-public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
+        parent = SyncedEntity.class)
+public final class DataEntity extends SyncedEntity<DataEntity.Blueprint<?>, DataEntity.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.d;
 
@@ -47,19 +47,22 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         this.value = null;
     }
 
-    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, String identityHash) {
-        super(null, owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash);
+    public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, String identityHash, String contentHash,
+                      String syncHash) {
+        super(null, owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash, contentHash, syncHash);
         this.value = value;
     }
 
     public DataEntity(CanonicalPath owner, DataRole role, StructuredData value, String identityHash,
-                      Map<String, Object> properties) {
-        super(owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash, properties);
+                      String contentHash, String syncHash, Map<String, Object> properties) {
+        super(owner.extend(DataEntity.SEGMENT_TYPE, role.name()).get(), identityHash, contentHash, syncHash, properties);
         this.value = value;
     }
 
-    public DataEntity(CanonicalPath path, StructuredData value, String identityHash, Map<String, Object> properties) {
-        this(path.up(), DataRole.valueOf(path.getSegment().getElementId()), value, identityHash, properties);
+    public DataEntity(CanonicalPath path, StructuredData value, String identityHash, String contentHash,
+                      String syncHash, Map<String, Object> properties) {
+        this(path.up(), DataRole.valueOf(path.getSegment().getElementId()), value, identityHash, contentHash, syncHash,
+                properties);
     }
 
     @Override
@@ -91,7 +94,8 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
                 InventoryStructure<DataEntity.Blueprint> structure = InventoryStructure.of(updateBlueprint).build();
                 identityHash = IdentityHash.of(structure);
             }
-            return new DataEntity(this.getPath().up(), this.getRole(), newValue, identityHash, u.getProperties());
+            return new DataEntity(this.getPath().up(), this.getRole(), newValue, identityHash, getContentHash(),
+                    getSyncHash(), u.getProperties());
         });
     }
 
@@ -135,6 +139,15 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         @SuppressWarnings("unchecked")
         public DR getRole() {
             return (role == null) ? (DR) DataRole.valueOf(getId()) : role;
+        }
+
+        /**
+         * This effectively calls {@code getRole().name()}.
+         *
+         * @return data entities don't really have a name - they derive it from their roles.
+         */
+        @Override public String getName() {
+            return getRole().name();
         }
 
         @Override
@@ -187,6 +200,7 @@ public final class DataEntity extends IdentityHashedEntity<DataEntity.Blueprint<
         }
 
         // this is needed for Jackson deserialization
+        @SuppressWarnings("unused")
         private Update() {
             this(null, null);
         }

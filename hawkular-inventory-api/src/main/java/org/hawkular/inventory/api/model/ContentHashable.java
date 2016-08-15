@@ -14,28 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api.test;
-
-import org.hawkular.inventory.api.model.Environment;
-import org.hawkular.inventory.paths.CanonicalPath;
-import org.junit.Assert;
-import org.junit.Test;
+package org.hawkular.inventory.api.model;
 
 /**
+ * Interface of entities with a content hash.
+ *
  * @author Lukas Krejci
- * @since 0.2.0
+ * @since 0.18.0
  */
-public class CanonicalPathTest {
+public interface ContentHashable {
 
-    @Test
-    public void testEntityInstantiationWithWrongPath() throws Exception {
-        try {
-            new Environment(CanonicalPath.of().tenant("t").get(), null);
-            Assert.fail("Creating an entity with a path pointing to a different entity type should not be possible.");
-        } catch (IllegalArgumentException e) {
-            //good
-        }
-    }
-
-    // other tests moved to org.hawkular.inventory.paths.CanonicalPathTest
+    String getContentHash();
 }

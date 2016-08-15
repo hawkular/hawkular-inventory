@@ -31,9 +31,12 @@ import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -130,7 +133,7 @@ public class SerializationTest {
 
     @Test
     public void testTenant() throws Exception {
-        Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), new HashMap<String, Object>() {{
+        Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), "contentHash", new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -141,7 +144,7 @@ public class SerializationTest {
     public void testDetypedTenant() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(null);
 
-        Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), new HashMap<String, Object>() {{
+        Tenant t = new Tenant(CanonicalPath.fromString("/t;c"), "contentHash", new HashMap<String, Object>() {{
             put("a", "b");
         }});
         String ser = "{\"path\":\"/c\",\"properties\":{\"a\":\"b\"}}";
@@ -151,9 +154,10 @@ public class SerializationTest {
 
     @Test
     public void testEnvironment() throws Exception {
-        Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), new HashMap<String, Object>() {{
-            put("a", "b");
-        }});
+        Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), "contentHash",
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
 
         test(env);
     }
@@ -162,9 +166,10 @@ public class SerializationTest {
     public void testDetypedEnvironment() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), new HashMap<String, Object>() {{
-            put("a", "b");
-        }});
+        Environment env = new Environment(CanonicalPath.fromString("/t;t/e;c"), "contentHash",
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
 
         testDetyped(env, "{\"path\":\"/e;c\",\"properties\":{\"a\":\"b\"}}");
         testDetyped(env, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
@@ -173,9 +178,10 @@ public class SerializationTest {
 
     @Test
     public void testResourceType() throws Exception {
-        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), "a", new HashMap<String, Object>() {{
-            put("a", "b");
-        }});
+        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), "a", "b", "c",
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
 
         test(rt);
     }
@@ -184,9 +190,10 @@ public class SerializationTest {
     public void testDetypedResourceType() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), null, new HashMap<String, Object>() {{
-            put("a", "b");
-        }});
+        ResourceType rt = new ResourceType(CanonicalPath.fromString("/t;t/rt;c"), null, null, null,
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
 
         testDetyped(rt, "{\"path\":\"/t;t/rt;c\",\"properties\":{\"a\":\"b\"}}");
         testDetyped(rt, "{\"path\":\"/t;t/c\",\"properties\":{\"a\":\"b\"}}");
@@ -195,7 +202,7 @@ public class SerializationTest {
 
     @Test
     public void testMetricType() throws Exception {
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), null, MetricUnit.BYTES, GAUGE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), null, null, null, MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }}, 0L);
@@ -207,7 +214,7 @@ public class SerializationTest {
     public void testDetypedMetricType() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), null, MetricUnit.BYTES, GAUGE,
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), null, null, null, MetricUnit.BYTES, GAUGE,
                 new HashMap<String, Object>() {{
                     put("a", "b");
                 }}, 0L);
@@ -222,7 +229,7 @@ public class SerializationTest {
 
     @Test
     public void testFeed() throws Exception {
-        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, new HashMap<String, Object>() {{
+        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, null, null, new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -233,7 +240,7 @@ public class SerializationTest {
     public void testDetypedFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, new HashMap<String, Object>() {{
+        Feed f = new Feed(CanonicalPath.fromString("/t;t/f;c"), null, null, null, new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -244,10 +251,11 @@ public class SerializationTest {
 
     @Test
     public void testResourceInEnvironment() throws Exception {
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), null, new ResourceType(
-                CanonicalPath.fromString("/t;t/rt;k"), null), new HashMap<String, Object>() {{
-            put("a", "b");
-        }});
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), null, null, null, new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k"), null, null, null),
+                new HashMap<String, Object>() {{
+                    put("a", "b");
+                }});
 
         test(r);
     }
@@ -256,8 +264,8 @@ public class SerializationTest {
     public void testDetypedResourceInEvironment() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), null, new ResourceType(
-                CanonicalPath.fromString("/t;t/rt;k"), null), new HashMap<String, Object>() {{
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/e;e/r;c"), null, null, null, new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -267,8 +275,8 @@ public class SerializationTest {
 
     @Test
     public void testMetricInEnvironment() throws Exception {
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), null, new MetricType(
-                CanonicalPath.fromString("/t;t/mt;k"), null), new HashMap<String, Object>() {{
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), null, null, null, new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -279,8 +287,8 @@ public class SerializationTest {
     public void testDetypedMetricInEnvironment() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), null, new MetricType(
-                CanonicalPath.fromString("/t;t/mt;k"), null), new HashMap<String, Object>() {{
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/e;e/m;c"), null, null, null, new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -290,8 +298,8 @@ public class SerializationTest {
 
     @Test
     public void testResourceInFeed() throws Exception {
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), null, new ResourceType(
-                CanonicalPath.fromString("/t;t/rt;k"), null), new HashMap<String, Object>() {{
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), null, null, null, new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -302,8 +310,8 @@ public class SerializationTest {
     public void testDetypedResourceInFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), null, new ResourceType(
-                CanonicalPath.fromString("/t;t/rt;k"), null), new HashMap<String, Object>() {{
+        Resource r = new Resource(CanonicalPath.fromString("/t;t/f;f/r;c"), null, null, null, new ResourceType(
+                CanonicalPath.fromString("/t;t/rt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -313,8 +321,8 @@ public class SerializationTest {
 
     @Test
     public void testMetricInFeed() throws Exception {
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), null, new MetricType(
-                CanonicalPath.fromString("/t;t/mt;k"), null), new HashMap<String, Object>() {{
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), null, null, null, new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -325,8 +333,8 @@ public class SerializationTest {
     public void testDetypedMetricInFeed() throws Exception {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.fromString("/t;t"));
 
-        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), null, new MetricType(
-                CanonicalPath.fromString("/t;t/mt;k"), null), new HashMap<String, Object>() {{
+        Metric m = new Metric(CanonicalPath.fromString("/t;t/f;f/m;c"), null, null, null, new MetricType(
+                CanonicalPath.fromString("/t;t/mt;k"), null, null, null), new HashMap<String, Object>() {{
             put("a", "b");
         }});
 
@@ -336,7 +344,7 @@ public class SerializationTest {
 
     @Test
     public void testOperationType() throws Exception {
-        OperationType ot = new OperationType(CanonicalPath.fromString("/t;t/rt;rt/ot;ot"), null);
+        OperationType ot = new OperationType(CanonicalPath.fromString("/t;t/rt;rt/ot;ot"), null, null, null);
 
         test(ot);
     }
@@ -358,7 +366,7 @@ public class SerializationTest {
     public void testDataEntity() throws Exception {
         test(new DataEntity(CanonicalPath.of().tenant("t").environment("e").resource("r").get(),
                 DataRole.Resource.connectionConfiguration,
-                StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null));
+                StructuredData.get().list().addIntegral(1).addIntegral(2).build(), null, null, null));
     }
 
     @Test
@@ -637,6 +645,29 @@ public class SerializationTest {
                 Object bVal = Array.get(b, i);
 
                 if (!isEqual(aVal, bVal)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } else if (a instanceof Collection) {
+            // do a piecewise comparison ourselves. Mainly because Collections.UnmodifiableCollection doesn't implement
+            // this as expected. See {@link Collections#unmodifiableCollection(Collection)}
+            Collection<?> as = (Collection<?>) a;
+            Collection<?> bs = (Collection<?>) b;
+
+            if (as.size() != bs.size()) {
+                return false;
+            }
+
+            Iterator<?> ai = as.iterator();
+            Iterator<?> bi = bs.iterator();
+
+            while (ai.hasNext()) {
+                Object ao = ai.next();
+                Object bo = bi.next();
+
+                if (!Objects.equals(ao, bo)) {
                     return false;
                 }
             }

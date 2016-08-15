@@ -39,32 +39,32 @@ import io.swagger.annotations.ApiModel;
 @ApiModel(description = "The tenants partition the data in the inventory graph." +
         " No relationships between entities from 2 different tenants can exist.",
         parent = Entity.class)
-public final class Tenant extends Entity<Tenant.Blueprint, Tenant.Update> {
+public final class Tenant extends ContentHashedEntity<Tenant.Blueprint, Tenant.Update> {
 
     public static final SegmentType SEGMENT_TYPE = SegmentType.t;
 
     private Tenant() {
     }
 
-    public Tenant(CanonicalPath path) {
-        this(path, null);
+    public Tenant(CanonicalPath path, String contentHash) {
+        super(path, contentHash);
     }
 
-    public Tenant(String name, CanonicalPath path) {
-        super(name, path);
+    public Tenant(String name, CanonicalPath path, String contentHash) {
+        super(name, path, contentHash);
     }
 
-    public Tenant(CanonicalPath path, Map<String, Object> properties) {
-        super(path, properties);
+    public Tenant(CanonicalPath path, String contentHash, Map<String, Object> properties) {
+        super(path, contentHash, properties);
     }
 
-    public Tenant(String name, CanonicalPath path, Map<String, Object> properties) {
-        super(name, path, properties);
+    public Tenant(String name, CanonicalPath path, String contentHash, Map<String, Object> properties) {
+        super(name, path, contentHash, properties);
     }
 
     @Override
     public Updater<Update, Tenant> update() {
-        return new Updater<>((u) -> new Tenant(u.getName(), getPath(), u.getProperties()));
+        return new Updater<>((u) -> new Tenant(u.getName(), getPath(), getContentHash(), u.getProperties()));
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -87,6 +88,14 @@ public class BackendTransaction<E> implements Transaction<E> {
 
     @Override public String extractIdentityHash(E entityRepresentation) {
         return backend.extractIdentityHash(entityRepresentation);
+    }
+
+    @Override public String extractContentHash(E entityRepresentation) {
+        return backend.extractContentHash(entityRepresentation);
+    }
+
+    @Override public String extractSyncHash(E entityRepresentation) {
+        return backend.extractSyncHash(entityRepresentation);
     }
 
     @Override public String extractRelationshipName(E relationship) {
@@ -195,8 +204,8 @@ public class BackendTransaction<E> implements Transaction<E> {
         backend.update(entity, update);
     }
 
-    @Override public void updateIdentityHash(E entity, String identityHash) {
-        backend.updateIdentityHash(entity, identityHash);
+    @Override public void updateHashes(E entity, Hashes hashes) {
+        backend.updateHashes(entity, hashes);
     }
 
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {

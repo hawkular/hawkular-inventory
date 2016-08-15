@@ -23,6 +23,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,6 +42,7 @@ import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -55,9 +58,6 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
-        //just so that we avoid additional logic that we would need to mock
-        when(backend.isUniqueIndexSupported()).thenReturn(true);
-
         //holders for counters that we are going to be modifying in inner classes
         int[] payloadsExecuted = new int[1];
         PrecommitTracker pct = new PrecommitTracker();
@@ -67,6 +67,9 @@ public class PreCommitActionsTest {
             Assert.assertEquals(0, pct.actionsObtained);
             return backend;
         });
+        when(backend.persist(any(), any())).thenAnswer((args) -> args.getArguments()[0].toString());
+
+        commonBackendMocks(backend);
 
         doAnswer((args) -> {
             Assert.assertEquals(1, payloadsExecuted[0]);
@@ -91,9 +94,6 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
-        //just so that we avoid additional logic that we would need to mock
-        when(backend.isUniqueIndexSupported()).thenReturn(true);
-        when(backend.isPreferringBigTransactions()).thenReturn(true);
         when(backend.startTransaction()).thenReturn(backend);
 
         //holders for counters that we are going to be modifying in inner classes
@@ -111,8 +111,8 @@ public class PreCommitActionsTest {
             dataPersisted[0]++;
             return args.getArguments()[0].toString();
         });
-        when(backend.extractId(any())).thenAnswer((args) -> CanonicalPath.fromString(args.getArguments()[0]
-                .toString()).getSegment().getElementId());
+
+        commonBackendMocks(backend);
 
         //simulate the commit and check for correct behavior
         //noinspection Duplicates
@@ -148,8 +148,6 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
-        //just so that we avoid additional logic that we would need to mock
-        when(backend.isUniqueIndexSupported()).thenReturn(true);
         when(backend.startTransaction()).thenReturn(backend);
 
         //holders for counters that we are going to be modifying in inner classes
@@ -183,8 +181,8 @@ public class PreCommitActionsTest {
             dataPersisted[0]++;
             return args.getArguments()[0].toString();
         });
-        when(backend.extractId(any())).thenAnswer((args) -> CanonicalPath.fromString(args.getArguments()[0]
-                .toString()).getSegment().getElementId());
+
+        commonBackendMocks(backend);
 
         inv.initialize(new Configuration(null, null, Collections.emptyMap()));
 
@@ -200,9 +198,6 @@ public class PreCommitActionsTest {
         @SuppressWarnings("unchecked")
         InventoryBackend<String> backend = Mockito.mock(InventoryBackend.class);
 
-        //just so that we avoid additional logic that we would need to mock
-        when(backend.isUniqueIndexSupported()).thenReturn(true);
-        when(backend.isPreferringBigTransactions()).thenReturn(true);
         when(backend.startTransaction()).thenReturn(backend);
 
         //holders for counters that we are going to be modifying in inner classes
@@ -236,8 +231,8 @@ public class PreCommitActionsTest {
             dataPersisted[0]++;
             return args.getArguments()[0].toString();
         });
-        when(backend.extractId(any())).thenAnswer((args) -> CanonicalPath.fromString(args.getArguments()[0]
-                .toString()).getSegment().getElementId());
+
+        commonBackendMocks(backend);
 
         inv.initialize(new Configuration(null, null, Collections.emptyMap()));
 
@@ -256,6 +251,45 @@ public class PreCommitActionsTest {
 
         //check that we had exactly 3 commit attemps
         verify(backend, times(3)).commit();
+    }
+
+    private void commonBackendMocks(InventoryBackend<String> backend) throws Exception {
+        when(backend.isUniqueIndexSupported()).thenReturn(true);
+        when(backend.isPreferringBigTransactions()).thenReturn(true);
+
+        when(backend.extractId(any())).thenAnswer((args) -> CanonicalPath.fromString(args.getArguments()[0]
+                .toString()).getSegment().getElementId());
+
+        when(backend.extractType(any())).thenAnswer(args -> {
+            SegmentType t = CanonicalPath.fromString(args.getArgumentAt(0, String.class)).getSegment().getElementType();
+
+            return Inventory.types().bySegment(t).getElementType();
+        });
+
+        when(backend.find(any())).thenAnswer(args -> args.getArgumentAt(0, CanonicalPath.class).toString());
+
+        when(backend.convert(any(), any())).thenAnswer(args -> {
+            Class<?> type = args.getArgumentAt(1, Class.class);
+            String path = args.getArgumentAt(0, String.class);
+
+            Constructor<?> ctor = type.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Object entity = ctor.newInstance();
+            Field pathF = null;
+            while (true) {
+                try {
+                    pathF = type.getDeclaredField("path");
+                    break;
+                } catch (NoSuchFieldException e) {
+                    type = type.getSuperclass();
+                }
+            }
+
+            pathF.setAccessible(true);
+            pathF.set(entity, CanonicalPath.fromString(path));
+
+            return entity;
+        });
     }
 
     private static final class PrecommitTracker implements Function<Transaction.PreCommit<String>,

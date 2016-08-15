@@ -86,7 +86,8 @@ public final class BaseResources {
                 resourceTypeObject = tx.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
-                        " when resolved to '" + resourceTypePath + "'.");
+                        " when resolved to '" + resourceTypePath + "' while trying to wire up new resource on path '" +
+                        parentPath.extend(SegmentType.r, blueprint.getId()) + "'.");
             }
 
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
@@ -100,7 +101,7 @@ public final class BaseResources {
             ResourceType resourceType = tx.convert(resourceTypeObject, ResourceType.class);
 
             Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.SEGMENT_TYPE,
-                    tx.extractId(entity)).get(), null, resourceType, blueprint.getProperties());
+                    tx.extractId(entity)).get(), null, null, null, resourceType, blueprint.getProperties());
 
             Relationship definesRel = new Relationship(tx.extractId(r), defines.name(), resourceTypePath,
                     entityPath);
@@ -201,8 +202,8 @@ public final class BaseResources {
         }
     }
 
-    public static class Single<BE> extends SingleIdentityHashedFetcher<BE, Resource, Resource.Blueprint,
-            Resource.Update> implements Resources.Single {
+    public static class Single<BE> extends SingleSyncedFetcher<BE, Resource, Resource.Blueprint,
+                Resource.Update> implements Resources.Single {
 
         public Single(TraversalContext<BE, Resource> context) {
             super(context);

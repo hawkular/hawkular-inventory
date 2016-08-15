@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -89,6 +90,10 @@ public interface Transaction<E> {
     String extractId(E entityRepresentation);
 
     String extractIdentityHash(E entityRepresentation);
+
+    String extractContentHash(E entityRepresentation);
+
+    String extractSyncHash(E entityRepresentation);
 
     String extractRelationshipName(E relationship);
 
@@ -150,7 +155,7 @@ public interface Transaction<E> {
 
     void update(E entity, AbstractElement.Update update);
 
-    void updateIdentityHash(E entity, String identityHash);
+    void updateHashes(E entity, Hashes hashes);
 
     /**
      * Checks the exception thrown during the commit and returns true if the backend requires explicit rollback after

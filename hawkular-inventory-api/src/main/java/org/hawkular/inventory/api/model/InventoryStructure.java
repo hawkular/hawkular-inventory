@@ -76,7 +76,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     static <E extends Entity<B, ?>, B extends Entity.Blueprint>
     InventoryStructure<B> of(E rootEntity, Inventory inventory) {
         return new InventoryStructure<B>() {
-            B root = asBlueprint(rootEntity);
+            B root = ComputeHash.asBlueprint(rootEntity, inventory);
 
             @Override public B getRoot() {
                 return root;
@@ -228,7 +228,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                         Spliterator<X> sit = Spliterators.spliterator(it, Long.MAX_VALUE, Spliterator.DISTINCT &
                                 Spliterator.IMMUTABLE & Spliterator.NONNULL);
 
-                        return StreamSupport.stream(sit, false).map(e -> (BB) asBlueprint(e)).onClose(it::close);
+                        return StreamSupport.stream(sit, false).map(e -> (BB) ComputeHash.asBlueprint(e, inventory))
+                                .onClose(it::close);
                     }
                 }, null);
             }
@@ -240,100 +241,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 Entity<?, ?> entity = (Entity<?, ?>) inventory.inspect(pathToElement, ResolvableToSingle.class)
                         .entity();
 
-                return asBlueprint(entity);
-            }
-
-            @SuppressWarnings("unchecked")
-            private <BB extends Blueprint> BB asBlueprint(Entity<BB, ?> entity) {
-                if (entity == null) {
-                    return null;
-                }
-                return entity.accept(new ElementVisitor<BB, Void>() {
-
-                    @Override public BB visitData(DataEntity data, Void parameter) {
-                        return (BB) fillCommon(data, new DataEntity.Blueprint.Builder<>()).withRole(data.getRole())
-                                .withValue(data.getValue()).build();
-                    }
-
-                    @Override public BB visitTenant(Tenant tenant, Void parameter) {
-                        return (BB) fillCommon(tenant, new Tenant.Blueprint.Builder()).build();
-                    }
-
-                    @Override public BB visitEnvironment(Environment environment, Void parameter) {
-                        return (BB) fillCommon(environment, new Environment.Blueprint.Builder()).build();
-                    }
-
-                    @Override public BB visitFeed(Feed feed, Void parameter) {
-                        return (BB) fillCommon(feed, Feed.Blueprint.builder()).build();
-                    }
-
-                    @Override public BB visitMetric(Metric metric, Void parameter) {
-                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use
-                        //a relative path
-                        RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
-
-                        return (BB) fillCommon(metric, Metric.Blueprint.builder())
-                                .withInterval(metric.getCollectionInterval())
-                                .withMetricTypePath(metricTypePath.toString()).build();
-                    }
-
-                    @Override public BB visitMetricType(MetricType type, Void parameter) {
-                        return (BB) fillCommon(type, MetricType.Blueprint.builder(type.getType()))
-                                .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
-                    }
-
-                    @Override public BB visitOperationType(OperationType operationType, Void parameter) {
-                        return (BB) fillCommon(operationType, OperationType.Blueprint.builder()).build();
-                    }
-
-                    @Override public BB visitMetadataPack(MetadataPack metadataPack, Void parameter) {
-                        MetadataPack.Blueprint.Builder bld = MetadataPack.Blueprint.builder()
-                                .withName(metadataPack.getName()).withProperties(metadataPack.getProperties());
-
-                        try (Page<MetricType> p = inventory.inspect(metadataPack).metricTypes().getAll()
-                                .entities(Pager.none())) {
-                            p.forEachRemaining(e -> bld.withMember(e.getPath()));
-                        }
-
-                        try (Page<ResourceType> p = inventory.inspect(metadataPack).resourceTypes().getAll()
-                                .entities(Pager.none())) {
-                            p.forEachRemaining(e -> bld.withMember(e.getPath()));
-                        }
-
-                        return (BB) bld.build();
-                    }
-
-                    @Override public BB visitUnknown(Object entity, Void parameter) {
-                        throw new IllegalStateException("Unhandled entity type during conversion to blueprint: " +
-                                entity.getClass());
-                    }
-
-                    @Override public BB visitResource(Resource resource, Void parameter) {
-                        //we don't want to have tenant ID and all that jazz influencing the hash, so always use
-                        //a relative path
-                        RelativePath resourceTypePath = resource.getType().getPath().relativeTo(resource.getPath());
-
-                        return (BB) fillCommon(resource, Resource.Blueprint.builder())
-                                .withResourceTypePath(resourceTypePath.toString()).build();
-                    }
-
-                    @Override public BB visitResourceType(ResourceType type, Void parameter) {
-                        return (BB) fillCommon(type, ResourceType.Blueprint.builder()).build();
-                    }
-
-                    @Override public BB visitRelationship(org.hawkular.inventory.api.model.Relationship relationship,
-                                                          Void parameter) {
-                        throw new IllegalArgumentException("Inventory structure blueprint conversion does not handle " +
-                                "relationships.");
-                    }
-
-                    private <X extends Entity<? extends XB, ?>, XB extends Entity.Blueprint,
-                            XBB extends Entity.Blueprint.Builder<XB, XBB>>
-                    XBB fillCommon(X entity, XBB bld) {
-                        return bld.withId(entity.getId()).withName(entity.getName())
-                                .withProperties(entity.getProperties());
-                    }
-                }, null);
+                return ComputeHash.asBlueprint(entity, inventory);
             }
         };
     }

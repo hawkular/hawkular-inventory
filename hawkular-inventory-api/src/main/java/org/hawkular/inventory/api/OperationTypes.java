@@ -49,7 +49,7 @@ public final class OperationTypes {
     }
 
     public interface Single
-            extends IdentityHashed.SingleWithRelationships<OperationType, OperationType.Blueprint,
+            extends Synced.SingleWithRelationships<OperationType, OperationType.Blueprint,
             OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
 
     }

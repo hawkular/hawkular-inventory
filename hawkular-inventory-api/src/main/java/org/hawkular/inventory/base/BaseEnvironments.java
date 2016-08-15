@@ -129,7 +129,7 @@ public final class BaseEnvironments {
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
                     parentPath.extend(Environment.SEGMENT_TYPE, tx.extractId(entity)).get(),
-                    blueprint.getProperties()), emptyList());
+                    null, blueprint.getProperties()), emptyList());
         }
 
         @Override
