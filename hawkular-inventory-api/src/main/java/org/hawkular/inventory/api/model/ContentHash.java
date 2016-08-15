@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.model;
 
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
@@ -37,7 +38,7 @@ public final class ContentHash {
     public static String of(Entity<? extends Entity.Blueprint, ?> entity) {
         //the only entity that requires the inventory to convert to its blueprint is the metadatapack.
         //but metadatapacks do not have a content hash, so we're good passing in null here.
-        Entity.Blueprint bl = ComputeHash.asBlueprint(entity, null);
+        Entity.Blueprint bl = Inventory.asBlueprint(entity);
         return of(bl, entity.getPath());
     }
 

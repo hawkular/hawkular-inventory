@@ -29,7 +29,6 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -39,6 +38,7 @@ import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -401,7 +401,7 @@ public class EmptyInventory implements Inventory {
             return new ResourceTypesRead();
         }
 
-        @Override public void synchronize(InventoryStructure<ResourceType.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<ResourceType.Blueprint> syncRequest) {
         }
     }
 
@@ -586,7 +586,7 @@ public class EmptyInventory implements Inventory {
             return new MetricTypesRead();
         }
 
-        @Override public void synchronize(InventoryStructure<MetricType.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<MetricType.Blueprint> syncRequest) {
         }
     }
 
@@ -992,7 +992,7 @@ public class EmptyInventory implements Inventory {
             return new RelationshipsReadWrite();
         }
 
-        @Override public void synchronize(InventoryStructure<Feed.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<Feed.Blueprint> syncRequest) {
         }
     }
 
@@ -1144,7 +1144,7 @@ public class EmptyInventory implements Inventory {
             return new RelationshipsReadWrite();
         }
 
-        @Override public void synchronize(InventoryStructure<Metric.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<Metric.Blueprint> syncRequest) {
         }
     }
 
@@ -1277,7 +1277,7 @@ public class EmptyInventory implements Inventory {
             return new DataReadWrite<>();
         }
 
-        @Override public void synchronize(InventoryStructure<Resource.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<Resource.Blueprint> syncRequest) {
         }
     }
 
@@ -1431,7 +1431,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void synchronize(InventoryStructure<DataEntity.Blueprint<?>> newStructure) {
+        @Override public void synchronize(SyncRequest<DataEntity.Blueprint<?>> syncRequest) {
         }
 
         @Override public SyncHash.Tree treeHash() {
@@ -1518,7 +1518,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void synchronize(InventoryStructure<OperationType.Blueprint> newStructure) {
+        @Override public void synchronize(SyncRequest<OperationType.Blueprint> syncRequest) {
         }
 
         @Override public SyncHash.Tree treeHash() {

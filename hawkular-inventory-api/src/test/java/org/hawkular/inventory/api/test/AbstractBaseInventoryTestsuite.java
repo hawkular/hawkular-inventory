@@ -112,7 +112,9 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.SyncConfiguration;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
@@ -2232,7 +2234,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                             .withInterval(0L).build())
                     .build();
 
-            f.synchronize(structure);
+            f.synchronize(SyncRequest.syncEverything(structure));
 
             SyncHash.Tree feedTreeHash = f.treeHash();
 
@@ -2290,7 +2292,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
                     .feeds().get("feed");
 
-            f.synchronize(structure);
+            f.synchronize(SyncRequest.syncEverything(structure));
 
             SyncHash.Tree feedTreeHash = f.treeHash();
 
@@ -2327,7 +2329,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             Data.Single d = rt.data().get(configurationSchema);
 
-            d.synchronize((InventoryStructure) structure);
+            d.synchronize(SyncRequest.syncEverything((InventoryStructure) structure));
 
             SyncHash.Tree dataTreeHash = d.treeHash();
 
@@ -2400,7 +2402,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryStructure<Feed.Blueprint> structure = structureBuiler.build();
 
-            f.synchronize(structure);
+            f.synchronize(SyncRequest.syncEverything(structure));
 
             Assert.assertTrue(f.metricTypes().get("metricType").exists());
             Assert.assertEquals("c", f.metrics().get("metric").entity().getProperties().get("a"));
@@ -2413,6 +2415,132 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         } finally {
             if (inventory.tenants().get(tenantId).exists()) {
                 inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    private static InventoryStructure<Feed.Blueprint> getSyncConfigStructure() {
+        return InventoryStructure
+                .of(Feed.Blueprint.builder().withId("feed").build())
+                .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                .addChild(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId("metricType").withInterval(0L)
+                        .withUnit(MetricUnit.NONE).build())
+                .startChild(Resource.Blueprint.builder().withResourceTypePath("resourceType").withId("resource1")
+                        .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../metricType").withId("metric1")
+                        .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../metricType").withId("metric2")
+                        .withInterval(0L).build())
+                .end()
+                .startChild(Resource.Blueprint.builder().withResourceTypePath("resourceType").withId("resource2")
+                        .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../metricType").withId("metric3")
+                        .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../metricType").withId("metric4")
+                        .withInterval(0L).build())
+                    /**/.addChild(Resource.Blueprint.builder().withId("resource3")
+                        .withResourceTypePath("../resourceType").build())
+                .end()
+                .addChild(Metric.Blueprint.builder().withMetricTypePath("metricType").withId("metric5")
+                        .withInterval(0L).build())
+                .addChild(Metric.Blueprint.builder().withMetricTypePath("metricType").withId("metric6")
+                        .withInterval(0L).build())
+                .build();
+    }
+
+    @Test
+    public void testSyncConfig_limitTypes_shallow() throws Exception {
+        String tenantId = "testSyncConfig_limitTypes_shallow";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            InventoryStructure<Feed.Blueprint> fullStructure = getSyncConfigStructure();
+
+            f.synchronize(SyncRequest.syncEverything(fullStructure));
+
+            //k, now let's just update metrics... resource3 gets created, too, because of metric8
+            InventoryStructure<Feed.Blueprint> updateStructure = InventoryStructure
+                    .of(Feed.Blueprint.builder().withId("feed").build())
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath("metricType").withId("metric6")
+                            .withInterval(0L).build())
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath("metricType").withId("metric7")
+                            .withInterval(0L).build())
+                    .startChild(Resource.Blueprint.builder().withResourceTypePath("resourceType").withId("resource4")
+                            .build())
+                        /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../metricType").withId("metric8")
+                            .withInterval(0L).build())
+                    .end()
+                    .build();
+
+            f.synchronize(new SyncRequest<>(SyncConfiguration.builder().withType(SegmentType.m).build(),
+                    updateStructure));
+
+            //check the new stuff got added
+            Assert.assertTrue(f.resources().get("resource4").exists());
+            Assert.assertTrue(f.resources().get("resource4").metrics().get("metric8").exists());
+            Assert.assertTrue(f.metrics().get("metric7").exists());
+
+            //check that stuff that should not be there isn't
+            Assert.assertFalse(f.metrics().get("metric5").exists());
+
+            //check that the rest of the inventory is still there
+            Assert.assertTrue(f.resourceTypes().get("resourceType").exists());
+            Assert.assertTrue(f.metricTypes().get("metricType").exists());
+            Assert.assertTrue(f.resources().get("resource1").exists());
+            Assert.assertTrue(f.resources().get("resource2").exists());
+            Assert.assertTrue(f.resources().get("resource1").metrics().get("metric1").exists());
+            Assert.assertTrue(f.resources().get("resource1").metrics().get("metric2").exists());
+            Assert.assertTrue(f.resources().get("resource2").metrics().get("metric3").exists());
+            Assert.assertTrue(f.resources().get("resource2").metrics().get("metric4").exists());
+            Assert.assertTrue(f.resources().get("resource2").resources().get("resource3").exists());
+        } catch (Exception t) {
+            t.printStackTrace();
+            throw t;
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
+    public void testSyncConfig_limitTypes_deep() throws Exception {
+        String tenantId = "testSyncConfig_limitTypes_deep";
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            InventoryStructure<Feed.Blueprint> fullStructure = getSyncConfigStructure();
+
+            f.synchronize(SyncRequest.syncEverything(fullStructure));
+
+            //and now try to remove all metrics from everywhere using a deep search
+            InventoryStructure<Feed.Blueprint> deleteMetricsStructure = InventoryStructure
+                    .of(Feed.Blueprint.builder().withId("feed").build()).build();
+
+            f.synchronize(
+                    new SyncRequest<>(SyncConfiguration.builder().withType(SegmentType.m).withDeepSearch(true).build(),
+                            deleteMetricsStructure));
+
+            //check that everything but the metrics exists
+            Assert.assertFalse(f.metrics().get("metric5").exists());
+            Assert.assertFalse(f.metrics().get("metric6").exists());
+            Assert.assertTrue(f.resourceTypes().get("resourceType").exists());
+            Assert.assertTrue(f.metricTypes().get("metricType").exists());
+            Assert.assertTrue(f.resources().get("resource1").exists());
+            Assert.assertTrue(f.resources().get("resource2").exists());
+            Assert.assertFalse(f.resources().get("resource1").metrics().get("metric1").exists());
+            Assert.assertFalse(f.resources().get("resource1").metrics().get("metric2").exists());
+            Assert.assertFalse(f.resources().get("resource2").metrics().get("metric3").exists());
+            Assert.assertFalse(f.resources().get("resource2").metrics().get("metric4").exists());
+            Assert.assertTrue(f.resources().get("resource2").resources().get("resource3").exists());
+        } catch (Exception t) {
+            t.printStackTrace();
+            throw t;
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
             }
         }
     }

@@ -76,7 +76,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     static <E extends Entity<B, ?>, B extends Entity.Blueprint>
     InventoryStructure<B> of(E rootEntity, Inventory inventory) {
         return new InventoryStructure<B>() {
-            B root = ComputeHash.asBlueprint(rootEntity, inventory);
+            B root = Inventory.asBlueprint(rootEntity);
 
             @Override public B getRoot() {
                 return root;
@@ -228,7 +228,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                         Spliterator<X> sit = Spliterators.spliterator(it, Long.MAX_VALUE, Spliterator.DISTINCT &
                                 Spliterator.IMMUTABLE & Spliterator.NONNULL);
 
-                        return StreamSupport.stream(sit, false).map(e -> (BB) ComputeHash.asBlueprint(e, inventory))
+                        return StreamSupport.stream(sit, false).map(e -> (BB) Inventory.asBlueprint(e))
                                 .onClose(it::close);
                     }
                 }, null);
@@ -241,7 +241,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 Entity<?, ?> entity = (Entity<?, ?>) inventory.inspect(pathToElement, ResolvableToSingle.class)
                         .entity();
 
-                return ComputeHash.asBlueprint(entity, inventory);
+                return Inventory.asBlueprint(entity);
             }
         };
     }
@@ -299,7 +299,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 .extend(parent.getPath());
 
         for (SegmentType st : SegmentType.values()) {
-            if (st != SegmentType.rl && st.isAllowedInCanonical() && check.canExtendTo(st)) {
+            if (st != SegmentType.rl && EntityType.supports(st) && check.canExtendTo(st)) {
                 //streams are a pain..
                 //we need to ensure that the children are evaluated 1 by one - 1 that no 2 queries run
                 //in parallel... in here we do not know if we are loading directly from a backend store
@@ -465,7 +465,12 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                                         entities.put(cp, childChildren);
                                     }
 
-                                    ElementTypeVisitor.accept(childSeg, this, childPath);
+                                    for (SegmentType childChildSeg : SegmentType.values()) {
+                                        if (childPath.canExtendTo(childChildSeg)
+                                                && EntityType.supports(childChildSeg)) {
+                                            ElementTypeVisitor.accept(childChildSeg, this, childPath);
+                                        }
+                                    }
                                 });
                             }
                         }
@@ -499,6 +504,11 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                 blueprints.put(entityPath, entity.entity);
 
                 RelativePath parent = entityPath.up();
+                if (parent.equals(entityPath)) {
+                    //if we can no longer go up, don't add this entity as a child of its parent. It would add itself
+                    //as its own child...
+                    continue;
+                }
                 EntityType entityType = EntityType.of(Blueprint.getEntityTypeOf(entity.entity));
 
                 Map<EntityType, Set<Entity.Blueprint>> childrenByType = children.get(parent);
@@ -524,8 +534,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
          *
          * @return a builder seeded with this inventory structure
          */
-        public InventoryStructure.Offline.Builder<Root> asBuilder() {
-            return new InventoryStructure.Offline.Builder<>(root, RelativePath.empty().get(), entities, children);
+        public InventoryStructure.Builder<Root> asBuilder() {
+            return new InventoryStructure.Builder<>(root, RelativePath.empty().get(), entities, children);
         }
 
         public static <R extends Entity.Blueprint> Builder<R> of(R root) {
@@ -618,6 +628,14 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             return new ChildBuilder<>(castThis(), childPath, blueprints, children);
         }
 
+        public RelativePath getPath() {
+            return myPath;
+        }
+
+        public Entity.Blueprint getBlueprint() {
+            return blueprints.get(myPath);
+        }
+
         /**
          * Returns a child builder of a pre-existing child.
          * @param childPath the path to the child
@@ -634,8 +652,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             return childrenOfType.stream().filter(child -> child.getId().equals(childPath.getElementId()))
                     .findAny().map(child -> {
-                        RelativePath cp = myPath.modified().extend(childPath).get();
-                        return new ChildBuilder<>(castThis(), cp, blueprints, children);
+                        RelativePath rp = myPath.modified().extend(childPath).get();
+                        return new ChildBuilder<>(castThis(), rp, blueprints, children);
                     }).orElse(null);
         }
 
@@ -713,6 +731,78 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
          */
         public This addChild(Entity.Blueprint child) {
             startChild(child).end();
+            return castThis();
+        }
+
+        public This addChild(InventoryStructure<?> structure, boolean overwrite) {
+            return addChild(Offline.copy(structure).asBuilder(), overwrite);
+        }
+
+        public This addChild(AbstractBuilder<?> structure, boolean overwrite) {
+            RelativePath structureRoot = structure.getPath();
+            for (Map.Entry<RelativePath, Entity.Blueprint> e : structure.blueprints.entrySet()) {
+                RelativePath structurePath = e.getKey();
+
+                //only copy subpaths of the structure
+                if (!structureRoot.equals(structurePath) && !structureRoot.isParentOf(structurePath)) {
+                    continue;
+                }
+
+                RelativePath strippedStructurePath = structurePath.slide(structureRoot.getDepth(), 0);
+                RelativePath newStructurePath = myPath.modified().extend(strippedStructurePath.getPath()).get();
+
+                //add the blueprint to the list of my blueprints
+                if (overwrite || !blueprints.containsKey(newStructurePath)) {
+                    blueprints.put(newStructurePath, e.getValue());
+                }
+
+                //need to make sure that the current structure is listed in my children list
+                RelativePath parentPath = newStructurePath.up();
+                Map<EntityType, Set<Entity.Blueprint>> parentChildren = children.get(parentPath);
+                if (parentChildren == null) {
+                    parentChildren = new HashMap<>();
+                    this.children.put(parentPath, parentChildren);
+                }
+
+                EntityType structureType = EntityType.of(newStructurePath.getSegment().getElementType());
+
+                Set<Entity.Blueprint> childrenOfType = parentChildren.get(structureType);
+                if (childrenOfType == null) {
+                    childrenOfType = new HashSet<>();
+                    parentChildren.put(structureType, childrenOfType);
+                }
+
+                childrenOfType.add(e.getValue());
+
+                //and now, quickly make sure that all the structure's relevant children are added to my children list
+                Map<EntityType, Set<Entity.Blueprint>> structureChildren = structure.children.get(structurePath);
+                if (structureChildren == null || structureChildren.isEmpty()) {
+                    continue;
+                }
+
+                Map<EntityType, Set<Entity.Blueprint>> currentChildren = children.get(newStructurePath);
+                if (currentChildren == null) {
+                    currentChildren = new EnumMap<>(EntityType.class);
+                    children.put(newStructurePath, currentChildren);
+                }
+
+                for (Map.Entry<EntityType, Set<Entity.Blueprint>> ee : structureChildren.entrySet()) {
+                    EntityType entityType = ee.getKey();
+                    Set<Entity.Blueprint> structureBlueprints = ee.getValue();
+
+                    Set<Entity.Blueprint> currentBlueprints = currentChildren.get(entityType);
+                    if (currentBlueprints == null) {
+                        currentBlueprints = new HashSet<>();
+                        currentChildren.put(entityType, currentBlueprints);
+                    }
+
+                    for (Entity.Blueprint structureBlueprint : structureBlueprints) {
+                        if (overwrite || !currentBlueprints.contains(structureBlueprint)) {
+                            currentBlueprints.add(structureBlueprint);
+                        }
+                    }
+                }
+            }
             return castThis();
         }
 
