@@ -100,7 +100,7 @@ final class Constants {
         /**
          * Property used on metric type to distinguish type of metric e.g. gauge, counter...
          */
-        __metric_data_type,
+        __metric_data_type("metricDataType"),
 
         /**
          * Property used to store interval in seconds at which metrics are collected
@@ -145,13 +145,13 @@ final class Constants {
 
         __targetEid,
 
-        __identityHash,
+        __identityHash("identityHash"),
 
         __targetIdentityHash,
 
-        __contentHash,
+        __contentHash("contentHash"),
 
-        __syncHash;
+        __syncHash("syncHash");
 
         private final String sortName;
 
