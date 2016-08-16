@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -31,8 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -59,12 +64,15 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SyncConfiguration;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.api.model.Syncable;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
@@ -81,23 +89,36 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
         super(context);
     }
 
-    @Override public void synchronize(InventoryStructure<B> newStructure) {
+    @Override public void synchronize(SyncRequest<B> syncRequest) {
         inTx(tx -> {
             BE root = tx.querySingle(context.select().get());
 
             boolean rootFullyInitialized = true;
             if (root == null) {
                 Mutator<BE, E, B, U, String> mutator = createMutator(tx);
-                EntityAndPendingNotifications<BE, E> res = mutator.doCreate(newStructure.getRoot(), tx);
+                EntityAndPendingNotifications<BE, E> res =
+                        mutator.doCreate(syncRequest.getInventoryStructure().getRoot(), tx);
                 root = res.getEntityRepresentation();
                 rootFullyInitialized = false;
             }
 
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
 
-            //getting the whole tree is not the most efficient thing but it makes things so much simpler ;)
-            SyncHash.Tree currentTree = rootFullyInitialized ? treeHash(tx) : SyncHash.Tree.builder().build();
-            SyncHash.Tree newTree = SyncHash.treeOf(newStructure, tx.extractCanonicalPath(root));
+            Map.Entry<InventoryStructure<B>, SyncHash.Tree> structAndTree;
+            if (rootFullyInitialized) {
+                 structAndTree = treeHashAndStructure(tx);
+            } else {
+                structAndTree = new SimpleImmutableEntry<>(
+                        InventoryStructure.of(syncRequest.getInventoryStructure().getRoot()).build(),
+                        SyncHash.Tree.builder().build());
+            }
+
+            SyncHash.Tree currentTree = structAndTree.getValue();
+            InventoryStructure<B> currentStructure = structAndTree.getKey();
+            InventoryStructure<B> newStructure =
+                    mergeTree(currentStructure, syncRequest.getInventoryStructure(), syncRequest.getConfiguration());
+
+            SyncHash.Tree newTree = SyncHash.treeOf(newStructure, rootPath);
 
             syncTrees(tx, rootPath, root, currentTree, newTree, newStructure);
 
@@ -106,7 +127,64 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
     }
 
     @Override public SyncHash.Tree treeHash() {
-        return inTx(this::treeHash);
+        return inTx(tx -> treeHashAndStructure(tx).getValue());
+    }
+
+    private InventoryStructure<B> mergeTree(InventoryStructure<B> currentTree, InventoryStructure<B> newTree,
+                                    SyncConfiguration configuration) {
+        if (configuration.isDeepSearch()) {
+            return mergeDeepTree(InventoryStructure.Offline.copy(currentTree).asBuilder(),
+                    InventoryStructure.Offline.copy(newTree).asBuilder(), configuration.getSyncedTypes()).build();
+        } else {
+            return mergeShallowTree(InventoryStructure.Offline.copy(currentTree).asBuilder(),
+                    InventoryStructure.Offline.copy(newTree).asBuilder(), configuration.getSyncedTypes()).build();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private InventoryStructure.Builder<B> mergeShallowTree(InventoryStructure.AbstractBuilder<?> currentTree,
+                                                           InventoryStructure.AbstractBuilder<?> newTree,
+                                                           Set<SegmentType> mergedTypes) {
+
+        Set<Path.Segment> currentChildPaths = currentTree.getChildrenPaths();
+        Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+
+        for (Path.Segment ccp : currentChildPaths) {
+            if (newChildPaths.contains(ccp)) {
+                mergeShallowTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
+            } else if (!mergedTypes.contains(ccp.getElementType())) {
+                newTree.addChild(currentTree.getChild(ccp), true);
+            }
+        }
+
+        if (newTree instanceof InventoryStructure.Builder) {
+            return (InventoryStructure.Builder<B>) newTree;
+        } else {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private InventoryStructure.Builder<B> mergeDeepTree(InventoryStructure.AbstractBuilder<?> currentTree,
+                                                        InventoryStructure.AbstractBuilder<?> newTree,
+                                                        Set<SegmentType> mergedTypes) {
+        Set<Path.Segment> currentChildPaths = currentTree.getChildrenPaths();
+        Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+
+        for (Path.Segment ccp : currentChildPaths) {
+            if (newChildPaths.contains(ccp)) {
+                mergeDeepTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
+            } else if (!mergedTypes.contains(ccp.getElementType())) {
+                newTree.addChild(currentTree.getChild(ccp).getBlueprint());
+                mergeDeepTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
+            }
+        }
+
+        if (newTree instanceof InventoryStructure.Builder) {
+            return (InventoryStructure.Builder<B>) newTree;
+        } else {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -314,50 +392,84 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
         }, null);
     }
 
-    private SyncHash.Tree treeHash(Transaction<BE> tx) {
+    private Map.Entry<InventoryStructure<B>, SyncHash.Tree> treeHashAndStructure(Transaction<BE> tx) {
         BE root = tx.querySingle(context.select().get());
+        E entity = tx.convert(root, context.entityClass);
+
+        SyncHash.Tree.Builder bld = SyncHash.Tree.builder();
+        InventoryStructure.Builder<B> structBld = InventoryStructure.of(Inventory.asBlueprint(entity));
+
+        bld.withPath(RelativePath.empty().get()).withHash(entity.getSyncHash());
+
         //the closure is returned in a breadth-first manner
         Iterator<BE> closure = tx.getTransitiveClosureOver(root, outgoing, contains.name());
 
-        SyncHash.Tree.Builder bld = SyncHash.Tree.builder();
-        bld.withPath(RelativePath.empty().get()).withHash(tx.extractSyncHash(root));
-
         if (closure.hasNext()) {
-            CanonicalPath rootPath = tx.extractCanonicalPath(root);
-            List<SyncHash.Tree.ChildBuilder<?>> children = new ArrayList<>();
-            buildChildTree(tx, rootPath, singletonList(bld), children, closure.next(), closure);
+            Function<BE, Entity<? extends Entity.Blueprint, ?>> convert =
+                    e -> (Entity<Entity.Blueprint, ?>) tx.convert(e, tx.extractType(e));
+            Stream<BE> st = StreamSupport.stream(Spliterators.spliteratorUnknownSize(closure, 0), false);
+            Iterator<Entity<? extends Entity.Blueprint, ?>> entities = st.map(convert).iterator();
+
+            buildChildTree(tx, entity.getPath(), singletonList(bld), singletonList(structBld), new ArrayList<>(),
+                    new ArrayList<>(), entities.next(), entities);
         }
 
-        return bld.build();
+        return new SimpleImmutableEntry<>(structBld.build(), bld.build());
     }
 
     @SuppressWarnings("unchecked")
     private void buildChildTree(Transaction<BE> tx, CanonicalPath root,
-                                List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleParents,
-                        List<SyncHash.Tree.ChildBuilder<?>> currentRow,
-                        BE currentElement, Iterator<BE> nextElements) {
+                                List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleTreeParents,
+                                List<? extends InventoryStructure.AbstractBuilder<?>> possibleStructParents,
+                                List<SyncHash.Tree.ChildBuilder<?>> currentTreeRow,
+                                List<InventoryStructure.ChildBuilder<?>> currentStructRow,
+                                Entity<? extends Entity.Blueprint, ?> currentElement,
+                                Iterator<Entity<? extends Entity.Blueprint, ?>> nextElements) {
 
-        Consumer<BE> decider = e -> {
-            CanonicalPath currentPath = tx.extractCanonicalPath(e);
+        Consumer<Entity<? extends Entity.Blueprint, ?>> decider = e -> {
+            if (!(e instanceof Syncable)) {
+                return;
+            }
+
+            CanonicalPath currentPath = e.getPath();
             RelativePath relativeCurrentPath = currentPath.relativeTo(root);
-            SyncHash.Tree.AbstractBuilder<?> parent = findParent(possibleParents, relativeCurrentPath);
-            if (parent == null) {
+            SyncHash.Tree.AbstractBuilder<?> treeParent = findTreeParent(possibleTreeParents, relativeCurrentPath);
+            InventoryStructure.AbstractBuilder<?> structParent = findStructParent(possibleStructParents, relativeCurrentPath);
+
+            if ((treeParent == null && structParent != null) || (treeParent != null && structParent == null)) {
+                throw new IllegalStateException(
+                        "Inconsistent tree hash and inventory structure builders while computing the child tree of" +
+                                " entity " + root + ". This is a bug.");
+            }
+
+            if (treeParent == null) {
                 //ok, our parents don't have this child. Seems like we need to start a new row.
 
                 //first end our parents
-                possibleParents.forEach(p -> {
+                possibleTreeParents.forEach(p -> {
                     if (p instanceof SyncHash.Tree.ChildBuilder) {
                         ((SyncHash.Tree.ChildBuilder<?>) p).endChild();
                     }
                 });
 
+                possibleStructParents.forEach(p -> {
+                    if (p instanceof InventoryStructure.ChildBuilder) {
+                        ((InventoryStructure.ChildBuilder<?>) p).end();
+                    }
+                });
+
                 //and start processing the next row
-                buildChildTree(tx, root, currentRow, new ArrayList<>(), e, nextElements);
+                buildChildTree(tx, root, currentTreeRow, currentStructRow, new ArrayList<>(), new ArrayList<>(), e,
+                        nextElements);
             } else {
-                SyncHash.Tree.ChildBuilder<?> childBuilder = parent.startChild();
-                childBuilder.withHash(tx.extractSyncHash(e));
-                childBuilder.withPath(relativeCurrentPath);
-                currentRow.add(childBuilder);
+                SyncHash.Tree.ChildBuilder<?> childTreeBuilder = treeParent.startChild();
+                childTreeBuilder.withHash(((Syncable) e).getSyncHash());
+                childTreeBuilder.withPath(relativeCurrentPath);
+                currentTreeRow.add(childTreeBuilder);
+
+                InventoryStructure.ChildBuilder<?> childStructBuilder =
+                        structParent.startChild(Inventory.asBlueprint(e));
+                currentStructRow.add(childStructBuilder);
             }
         };
 
@@ -366,13 +478,25 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
             decider.accept(nextElements.next());
         }
 
-        for (SyncHash.Tree.ChildBuilder<?> cb : currentRow) {
+        for (SyncHash.Tree.ChildBuilder<?> cb : currentTreeRow) {
             cb.endChild();
+        }
+
+        for (InventoryStructure.ChildBuilder<?> cb : currentStructRow) {
+            cb.end();
         }
     }
 
-    private SyncHash.Tree.AbstractBuilder<?>
-    findParent(List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleParents, RelativePath childPath) {
+    private static SyncHash.Tree.AbstractBuilder<?>
+    findTreeParent(List<? extends SyncHash.Tree.AbstractBuilder<?>> possibleParents, RelativePath childPath) {
+        return possibleParents.stream()
+                .filter(p -> p.getPath().isParentOf(childPath) && p.getPath().getDepth() == childPath.getDepth() - 1)
+                .findAny()
+                .orElse(null);
+    }
+
+    private static InventoryStructure.AbstractBuilder<?>
+    findStructParent(List<? extends InventoryStructure.AbstractBuilder<?>> possibleParents, RelativePath childPath) {
         return possibleParents.stream()
                 .filter(p -> p.getPath().isParentOf(childPath) && p.getPath().getDepth() == childPath.getDepth() - 1)
                 .findAny()

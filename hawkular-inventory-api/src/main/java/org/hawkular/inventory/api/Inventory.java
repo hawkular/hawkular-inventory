@@ -514,6 +514,94 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
     }
 
     /**
+     * Converts the provided entity to a blueprint that would create the same entity.
+     *
+     * @param <B> the type of the blueprint
+     * @param entity the entity to convert to blueprint
+     * @return the blueprint of the entity
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static <B extends Blueprint> B asBlueprint(Entity<B, ?> entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return entity.accept(new ElementVisitor<B, Void>() {
+
+            @Override public B visitData(DataEntity data, Void parameter) {
+                return (B) fillCommon(data, new DataEntity.Blueprint.Builder<>()).withRole(data.getRole())
+                        .withValue(data.getValue()).build();
+            }
+
+            @Override public B visitTenant(Tenant tenant, Void parameter) {
+                return (B) fillCommon(tenant, new Tenant.Blueprint.Builder()).build();
+            }
+
+            @Override public B visitEnvironment(Environment environment, Void parameter) {
+                return (B) fillCommon(environment, new Environment.Blueprint.Builder()).build();
+            }
+
+            @Override public B visitFeed(Feed feed, Void parameter) {
+                return (B) fillCommon(feed, Feed.Blueprint.builder()).build();
+            }
+
+            @Override public B visitMetric(Metric metric, Void parameter) {
+                //we don't want to have tenant ID and all that jazz influencing the hash, so always use
+                //a relative path
+                RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
+
+                return (B) fillCommon(metric, Metric.Blueprint.builder())
+                        .withInterval(metric.getCollectionInterval())
+                        .withMetricTypePath(metricTypePath.toString()).build();
+            }
+
+            @Override public B visitMetricType(MetricType type, Void parameter) {
+                return (B) fillCommon(type, MetricType.Blueprint.builder(type.getType()))
+                        .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
+            }
+
+            @Override public B visitOperationType(OperationType operationType, Void parameter) {
+                return (B) fillCommon(operationType, OperationType.Blueprint.builder()).build();
+            }
+
+            @Override public B visitMetadataPack(MetadataPack metadataPack, Void parameter) {
+                throw new IllegalStateException("Computing a blueprint of a metadatapack is not supported.");
+            }
+
+            @Override public B visitUnknown(Object entity1, Void parameter) {
+                throw new IllegalStateException("Unhandled entity type during conversion to blueprint: " +
+                        entity1.getClass());
+            }
+
+            @Override public B visitResource(Resource resource, Void parameter) {
+                //we don't want to have tenant ID and all that jazz influencing the hash, so always use
+                //a relative path
+                RelativePath resourceTypePath = resource.getType().getPath().relativeTo(resource.getPath());
+
+                return (B) fillCommon(resource, Resource.Blueprint.builder())
+                        .withResourceTypePath(resourceTypePath.toString()).build();
+            }
+
+            @Override public B visitResourceType(ResourceType type, Void parameter) {
+                return (B) fillCommon(type, ResourceType.Blueprint.builder()).build();
+            }
+
+            @Override public B visitRelationship(Relationship relationship,
+                                                 Void parameter) {
+                throw new IllegalArgumentException("Inventory structure blueprint conversion does not handle " +
+                        "relationships.");
+            }
+
+            private <X extends Entity<? extends XB, ?>, XB extends Entity.Blueprint,
+                    XBB extends Entity.Blueprint.Builder<XB, XBB>>
+            XBB fillCommon(X e, XBB bld) {
+                return bld.withId(e.getId()).withName(e.getName())
+                        .withProperties(e.getProperties());
+            }
+        }, null);
+    }
+
+    /**
      * @return a registry of various types associated with entities
      */
     static Types types() {

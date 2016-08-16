@@ -49,8 +49,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.paging.Page;
-import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.Path;
@@ -495,99 +493,6 @@ final class ComputeHash {
 //                .map(sortTargets)
 //                .sorted(sortRelationships)
 //                .forEach(append);
-    }
-
-    @SuppressWarnings("unchecked")
-    static <B extends Blueprint> B asBlueprint(Entity<B, ?> entity, Inventory inventory) {
-        if (entity == null) {
-            return null;
-        }
-        return entity.accept(new ElementVisitor<B, Void>() {
-
-            @Override public B visitData(DataEntity data, Void parameter) {
-                return (B) fillCommon(data, new DataEntity.Blueprint.Builder<>()).withRole(data.getRole())
-                        .withValue(data.getValue()).build();
-            }
-
-            @Override public B visitTenant(Tenant tenant, Void parameter) {
-                return (B) fillCommon(tenant, new Tenant.Blueprint.Builder()).build();
-            }
-
-            @Override public B visitEnvironment(Environment environment, Void parameter) {
-                return (B) fillCommon(environment, new Environment.Blueprint.Builder()).build();
-            }
-
-            @Override public B visitFeed(Feed feed, Void parameter) {
-                return (B) fillCommon(feed, Feed.Blueprint.builder()).build();
-            }
-
-            @Override public B visitMetric(Metric metric, Void parameter) {
-                //we don't want to have tenant ID and all that jazz influencing the hash, so always use
-                //a relative path
-                RelativePath metricTypePath = metric.getType().getPath().relativeTo(metric.getPath());
-
-                return (B) fillCommon(metric, Metric.Blueprint.builder())
-                        .withInterval(metric.getCollectionInterval())
-                        .withMetricTypePath(metricTypePath.toString()).build();
-            }
-
-            @Override public B visitMetricType(MetricType type, Void parameter) {
-                return (B) fillCommon(type, MetricType.Blueprint.builder(type.getType()))
-                        .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
-            }
-
-            @Override public B visitOperationType(OperationType operationType, Void parameter) {
-                return (B) fillCommon(operationType, OperationType.Blueprint.builder()).build();
-            }
-
-            @Override public B visitMetadataPack(MetadataPack metadataPack, Void parameter) {
-                MetadataPack.Blueprint.Builder bld = MetadataPack.Blueprint.builder()
-                        .withName(metadataPack.getName()).withProperties(metadataPack.getProperties());
-
-                try (Page<MetricType> p = inventory.inspect(metadataPack).metricTypes().getAll()
-                        .entities(Pager.none())) {
-                    p.forEachRemaining(e -> bld.withMember(e.getPath()));
-                }
-
-                try (Page<ResourceType> p = inventory.inspect(metadataPack).resourceTypes().getAll()
-                        .entities(Pager.none())) {
-                    p.forEachRemaining(e -> bld.withMember(e.getPath()));
-                }
-
-                return (B) bld.build();
-            }
-
-            @Override public B visitUnknown(Object entity1, Void parameter) {
-                throw new IllegalStateException("Unhandled entity type during conversion to blueprint: " +
-                        entity1.getClass());
-            }
-
-            @Override public B visitResource(Resource resource, Void parameter) {
-                //we don't want to have tenant ID and all that jazz influencing the hash, so always use
-                //a relative path
-                RelativePath resourceTypePath = resource.getType().getPath().relativeTo(resource.getPath());
-
-                return (B) fillCommon(resource, Resource.Blueprint.builder())
-                        .withResourceTypePath(resourceTypePath.toString()).build();
-            }
-
-            @Override public B visitResourceType(ResourceType type, Void parameter) {
-                return (B) fillCommon(type, ResourceType.Blueprint.builder()).build();
-            }
-
-            @Override public B visitRelationship(Relationship relationship,
-                                                 Void parameter) {
-                throw new IllegalArgumentException("Inventory structure blueprint conversion does not handle " +
-                        "relationships.");
-            }
-
-            private <X extends Entity<? extends XB, ?>, XB extends Entity.Blueprint,
-                    XBB extends Entity.Blueprint.Builder<XB, XBB>>
-            XBB fillCommon(X entity1, XBB bld) {
-                return bld.withId(entity1.getId()).withName(entity1.getName())
-                        .withProperties(entity1.getProperties());
-            }
-        }, null);
     }
 
     interface HashableView {

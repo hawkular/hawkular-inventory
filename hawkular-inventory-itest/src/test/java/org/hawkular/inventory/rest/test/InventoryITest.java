@@ -1373,7 +1373,7 @@ public class InventoryITest extends AbstractTestBase {
 
     @Test
     public void testSync() throws Throwable {
-        String structure = "{"//
+        String structure = "{ \"structure\": {"//
                 + "\"type\": \"feed\","//
                 + "\"data\": {"//
                 + "    \"id\": \"sync-feed\""//
@@ -1426,7 +1426,7 @@ public class InventoryITest extends AbstractTestBase {
                 + "        }"//
                 + "    ]"//
                 + "}"//
-                + "}";
+                + "}}";
 
         try {
             Response response = post(basePath + "/entity/feed", "{\"id\": \"sync-feed\"}");

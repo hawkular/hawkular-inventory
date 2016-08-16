@@ -17,8 +17,8 @@
 package org.hawkular.inventory.api;
 
 import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.SyncRequest;
 
 /**
  * These interfaces are extended by accessor interfaces for {@link org.hawkular.inventory.api.model.IdentityHashable}
@@ -47,12 +47,15 @@ public final class Synced {
         SyncHash.Tree treeHash();
 
         /**
-         * Synchronizes the entity and any of its children. The structure is considered to be complete - i.e.
+         * Synchronizes the entity and any of its children. By default the structure is considered to be complete - i.e.
          * any contained entity currently present in inventory that is not present in the supplied structure will be
          * deleted from the inventory.
          *
-         * @param newStructure the new structure of the entity and all its contained entities.
+         * <p>For partial synchronizations please consult the {@link org.hawkular.inventory.api.model.SyncConfiguration}
+         * class and its properties.
+         *
+         * @param syncRequest the synchronization request with configuration and actual data.
          */
-        void synchronize(InventoryStructure<B> newStructure);
+        void synchronize(SyncRequest<B> syncRequest);
     }
 }

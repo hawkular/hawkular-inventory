@@ -346,7 +346,7 @@
           "in" : "body",
           "required" : true,
           "schema" : {
-            "$ref" : "#/definitions/InventoryStructure"
+            "$ref" : "#/definitions/SyncRequest"
           }
         } ],
         "responses" : {
@@ -1112,6 +1112,38 @@
         }
       },
       "required": ["data"]
+    },
+    "SyncRequest" : {
+      "type" : "object",
+      "properties" : {
+        "configuration" : {
+          "$ref" : "#/definitions/SyncConfiguration"
+        },
+        "structure" : {
+          "$ref" : "#/definitions/InventoryStructure"
+        }
+      },
+      "required" : ["structure"]
+    },
+    "SyncConfiguration" : {
+      "type" : "object",
+      "properties" : {
+        "deepSearch" : {
+          "type" : "boolean",
+          "default" : false,
+          "required" : false
+        },
+        "syncedTypes" : {
+          "type" : "array",
+          "minItems" : 1,
+          "uniqueItems" : true,
+          "description" : "The values can be one of: \"f\", \"rt\", \"mt\", \"ot\", \"r\", \"m\", \"d\" that represent the entity types to be synced.",
+          "items" : {
+            "type" : "string",
+            "enum" : ["f", "rt", "mt", "ot", "r", "m", "d"]
+          }
+        }
+      }
     }
   }
 }

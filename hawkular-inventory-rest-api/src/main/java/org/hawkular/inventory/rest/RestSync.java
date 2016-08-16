@@ -31,6 +31,7 @@ import javax.ws.rs.core.Response;
 
 import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.InventoryStructure;
+import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.rest.json.ApiError;
 
@@ -65,7 +66,7 @@ public class RestSync extends RestBase {
             @ApiResponse(code = 500, message = "Internal server error", response = ApiError.class)
     })
     @SuppressWarnings("unchecked")
-    public Response sync(@Encoded @PathParam("path") List<PathSegment> path, InventoryStructure.Offline<?> structure) {
+    public Response sync(@Encoded @PathParam("path") List<PathSegment> path, SyncRequest<?> req) {
         CanonicalPath cp = parsePath(path);
 
         if (!InventoryStructure.EntityType.supports(cp.getSegment().getElementType())) {
@@ -73,7 +74,7 @@ public class RestSync extends RestBase {
                     + " are not synchronizable.");
         }
 
-        inventory.inspect(cp, Synced.SingleWithRelationships.class).synchronize(structure);
+        inventory.inspect(cp, Synced.SingleWithRelationships.class).synchronize(req);
 
         return Response.noContent().build();
     }
