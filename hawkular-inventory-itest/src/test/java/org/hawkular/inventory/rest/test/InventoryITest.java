@@ -51,7 +51,10 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.PathSegmentCodec;
 import org.hawkular.inventory.paths.SegmentType;
 import org.junit.AfterClass;
@@ -62,6 +65,7 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.okhttp.Response;
 
 /**
@@ -1460,6 +1464,31 @@ public class InventoryITest extends AbstractTestBase {
                 delete(basePath + "/entity/f;sync-feed");
             }
         }
+    }
+
+    @Test
+    public void testTreeHash() throws Throwable {
+        Response response = get(basePath + "/entity/e;" + environmentId + "/r;" + room1ResourceId + "/treeHash");
+        assertEquals(200, response.code());
+
+        ObjectMapper mapper = new ObjectMapper();
+        InventoryJacksonConfig.configure(mapper);
+
+        SyncHash.Tree tree = mapper.readValue(response.body().string(), SyncHash.Tree.class);
+
+        Resource room1Resource = readAs("/entity/e;" + environmentId + "/r;" + room1ResourceId, mapper, Resource.class);
+        Resource table = readAs("/entity/e;" + environmentId + "/r;" + room1ResourceId + "/r;table", mapper,
+                Resource.class);
+
+        assertEquals(tree.getHash(), room1Resource.getSyncHash());
+        assertEquals(tree.getChild(Path.Segment.from("r;table")).getHash(), table.getSyncHash());
+    }
+
+    private <T> T readAs(String path, ObjectMapper mapper, Class<T> type) throws Throwable {
+        Response response = get(basePath + path);
+        assertEquals(200, response.code());
+
+        return mapper.readValue(response.body().string(), type);
     }
 
     protected static void assertEntityExists(String path, String cp) throws Throwable {

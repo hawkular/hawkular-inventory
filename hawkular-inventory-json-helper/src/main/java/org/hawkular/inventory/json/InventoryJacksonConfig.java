@@ -32,6 +32,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -40,6 +41,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.PageContext;
@@ -60,6 +62,7 @@ import org.hawkular.inventory.json.mixins.model.DataEntityMixin;
 import org.hawkular.inventory.json.mixins.model.EntityBlueprintMixin;
 import org.hawkular.inventory.json.mixins.model.EnvironmentMixin;
 import org.hawkular.inventory.json.mixins.model.FeedMixin;
+import org.hawkular.inventory.json.mixins.model.IdentityHashTreeMixin;
 import org.hawkular.inventory.json.mixins.model.InventoryStructureMixin;
 import org.hawkular.inventory.json.mixins.model.MetricMixin;
 import org.hawkular.inventory.json.mixins.model.MetricTypeMixin;
@@ -69,6 +72,7 @@ import org.hawkular.inventory.json.mixins.model.RelativePathMixin;
 import org.hawkular.inventory.json.mixins.model.ResourceMixin;
 import org.hawkular.inventory.json.mixins.model.ResourceTypeMixin;
 import org.hawkular.inventory.json.mixins.model.StructuredDataMixin;
+import org.hawkular.inventory.json.mixins.model.SyncHashTreeMixin;
 import org.hawkular.inventory.json.mixins.model.TenantMixin;
 import org.hawkular.inventory.json.mixins.model.TenantlessCanonicalPathMixin;
 import org.hawkular.inventory.json.mixins.model.TenantlessRelativePathMixin;
@@ -130,6 +134,8 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(OperationType.class, OperationTypeMixin.class);
         objectMapper.addMixIn(Entity.Blueprint.class, EntityBlueprintMixin.class);
         objectMapper.addMixIn(InventoryStructure.class, InventoryStructureMixin.class);
+        objectMapper.addMixIn(IdentityHash.Tree.class, IdentityHashTreeMixin.class);
+        objectMapper.addMixIn(SyncHash.Tree.class, SyncHashTreeMixin.class);
 
         /**
          * Query
