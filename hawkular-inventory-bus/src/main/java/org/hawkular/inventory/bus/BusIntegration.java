@@ -20,6 +20,7 @@ import static org.hawkular.inventory.api.Action.contentHashChanged;
 import static org.hawkular.inventory.api.Action.identityHashChanged;
 import static org.hawkular.inventory.api.Action.syncHashChanged;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -79,16 +80,15 @@ public final class BusIntegration {
 
         install();
 
-        /**
-         * Query listener
-         */
         this.queryListener = new QueryListener(inventory, connectionFactory, configuration.getQueryQueueName());
     }
 
-    public void stop() throws NamingException {
+    public void stop() throws NamingException, IOException {
         uninstall();
         namingContext.close();
         namingContext = null;
+        queryListener.close();
+        queryListener = null;
     }
 
     private void install() {

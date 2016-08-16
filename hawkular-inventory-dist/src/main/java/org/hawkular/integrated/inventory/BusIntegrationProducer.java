@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.integrated.inventory;
 
+import java.io.IOException;
 import java.util.IdentityHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -48,7 +49,7 @@ public class BusIntegrationProducer {
         }
     }
 
-    public void close(@Observes DisposingInventory event) throws NamingException {
+    public void close(@Observes DisposingInventory event) throws NamingException, IOException {
         BusIntegration integration = integrations.remove(event.getInventory());
         if (integration != null) {
             integration.stop();

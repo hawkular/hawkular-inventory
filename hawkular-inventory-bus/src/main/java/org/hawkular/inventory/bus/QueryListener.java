@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.bus;
 
+import java.io.IOException;
+
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
@@ -39,22 +41,22 @@ public class QueryListener extends
         RPCBasicMessageListener<InventoryQueryRequestMessage, InventoryQueryResponseMessage<?>> {
 
     private final Inventory inventory;
-    private final ConnectionFactory contextFactory;
-    private final String queueName;
-
+    private final ConsumerConnectionContext connectionContext;
 
     public QueryListener(Inventory inventory, ConnectionFactory contextFactory, String queName)
             throws JMSException {
         this.inventory = inventory;
-        this.contextFactory = contextFactory;
-        this.queueName = queName;
 
         ConnectionContextFactory factory = new ConnectionContextFactory(contextFactory);
         Endpoint endpoint = new Endpoint(Endpoint.Type.QUEUE, queName);
-        ConsumerConnectionContext consumerConnectionContext = factory.createConsumerConnectionContext(endpoint);
+        connectionContext = factory.createConsumerConnectionContext(endpoint);
 
         MessageProcessor processor = new MessageProcessor();
-        processor.listen(consumerConnectionContext, this);
+        processor.listen(connectionContext, this);
+    }
+
+    public void close() throws IOException {
+        connectionContext.close();
     }
 
     @Override
