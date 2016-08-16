@@ -2279,6 +2279,72 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
+    public void testSynchronizeNonExistent() throws Exception {
+        String tenantId = "testSynchronizeNonExistent";
+        try {
+            InventoryStructure<Feed.Blueprint> structure = InventoryStructure.Offline
+                    .of(Feed.Blueprint.builder().withId("feed").build())
+                    .addChild(ResourceType.Blueprint.builder().withId("resourceType").build())
+                    .build();
+
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().get("feed");
+
+            f.synchronize(structure);
+
+            SyncHash.Tree feedTreeHash = f.treeHash();
+
+            ResourceType rt = f.resourceTypes().get("resourceType").entity();
+
+            Assert.assertEquals(1, feedTreeHash.getChildren().size());
+            Assert.assertEquals(f.entity().getSyncHash(), feedTreeHash.getHash());
+            Assert.assertEquals(rt.getSyncHash(),
+                    feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getHash());
+
+            Assert.assertTrue(feedTreeHash.getChild(Path.Segment.from("rt;resourceType")).getChildren().isEmpty());
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testSyncNonExistentData() throws Exception {
+        //this is a special case, because we need to do some internal magic for this to work, so an extra test is
+        //worth it.
+        String tenantId = "testSyncNonExistentData";
+        try {
+            InventoryStructure<DataEntity.Blueprint<DataRole>> structure = InventoryStructure.Offline
+                    .of(DataEntity.Blueprint.builder().withRole(configurationSchema).build())
+                    .build();
+
+            ResourceTypes.Single rt = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .resourceTypes().create(ResourceType.Blueprint.builder().withId("resourceType").build());
+
+            Data.Single d = rt.data().get(configurationSchema);
+
+            d.synchronize((InventoryStructure) structure);
+
+            SyncHash.Tree dataTreeHash = d.treeHash();
+
+            DataEntity de = d.entity();
+
+            Assert.assertEquals(de.getSyncHash(), dataTreeHash.getHash());
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
     public void testSynchronizeUpdate() throws Exception {
         String tenantId = "testSynchronizeUpdate";
         try {

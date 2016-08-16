@@ -236,7 +236,7 @@ public final class BaseResourceTypes {
     }
 
 
-    private static class ResourceTypeDataModificationChecks<BE> implements BaseData.DataModificationChecks<BE> {
+    static class ResourceTypeDataModificationChecks<BE> implements BaseData.DataModificationChecks<BE> {
         private final TraversalContext<BE, ?> context;
 
         public ResourceTypeDataModificationChecks(TraversalContext<BE, ?> context) {

@@ -158,10 +158,10 @@ public final class BaseOperationTypes {
     }
 
 
-    private static class OperationTypeDataModificationChecks<BE> implements BaseData.DataModificationChecks<BE> {
+    static class OperationTypeDataModificationChecks<BE> implements BaseData.DataModificationChecks<BE> {
         private final TraversalContext<BE, ?> context;
 
-        private OperationTypeDataModificationChecks(TraversalContext<BE, ?> context) {
+        OperationTypeDataModificationChecks(TraversalContext<BE, ?> context) {
             this.context = context;
         }
 
