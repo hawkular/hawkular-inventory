@@ -57,7 +57,7 @@ public class IdentityHashTest {
 
         String blueprintHash = IdentityHash.of(structure);
 
-        String expectedHash = digest(mtb.getId() + mtb.getType() + mtb.getUnit());
+        String expectedHash = digest(mtb.getId() + mtb.getMetricDataType() + mtb.getUnit());
 
         Assert.assertEquals(expectedHash, blueprintHash);
     }

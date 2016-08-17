@@ -74,7 +74,8 @@ public class InventoryStructureDeserializer extends JsonDeserializer<InventorySt
                     + " but got '" + typeName + "'.", JsonLocation.NA);
         }
 
-        Entity.Blueprint root = deserializationContext.readValue(prepareTraverse(tree.get("data")), type.blueprintType);
+        Entity.Blueprint root = deserializationContext.readValue(
+                prepareTraverse(tree.get("data"), deserializationContext), type.blueprintType);
 
         InventoryStructure.Builder bld = InventoryStructure.Offline.of(root);
         parseChildren(tree, bld, deserializationContext);
@@ -115,7 +116,8 @@ public class InventoryStructureDeserializer extends JsonDeserializer<InventorySt
                 while (childrenNodes.hasNext()) {
                     JsonNode childNode = childrenNodes.next();
 
-                    Entity.Blueprint bl = mapper.readValue(prepareTraverse(childNode.get("data")), type.blueprintType);
+                    Entity.Blueprint bl = mapper.readValue(prepareTraverse(childNode.get("data"), mapper),
+                            type.blueprintType);
 
                     InventoryStructure.ChildBuilder<?> childBld = bld.startChild(bl);
 
@@ -127,8 +129,8 @@ public class InventoryStructureDeserializer extends JsonDeserializer<InventorySt
         }
     }
 
-    private static JsonParser prepareTraverse(JsonNode node) throws IOException {
-        JsonParser parser = node.traverse();
+    private static JsonParser prepareTraverse(JsonNode node, DeserializationContext ctx) throws IOException {
+        JsonParser parser = node.traverse(ctx.getParser().getCodec());
         parser.nextToken();
         return parser;
     }

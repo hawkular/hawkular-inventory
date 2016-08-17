@@ -196,12 +196,12 @@ final class ComputeHash {
                 return wrap(mt, ctx, (childContext) -> {
                     if (computeIdentity) {
                         appendIdentity(mt.getId(), childContext);
-                        appendIdentity(mt.getType().name(), childContext);
+                        appendIdentity(mt.getMetricDataType().name(), childContext);
                         appendIdentity(mt.getUnit().name(), childContext);
                     }
 
                     if (computeContent) {
-                        appendContent(mt.getType().name(), childContext);
+                        appendContent(mt.getMetricDataType().name(), childContext);
                         appendContent(mt.getUnit().name(), childContext);
                         appendContent(Objects.toString(mt.getCollectionInterval(), ""), childContext);
                         appendCommonContent(mt, childContext);

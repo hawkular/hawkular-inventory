@@ -1938,7 +1938,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         String expectedContentHash = IdentityHash.of(MetadataPack.Members.builder()
                 .with(MetricType.Blueprint
-                        .builder(mt.getType())
+                        .builder(mt.getMetricDataType())
                         .withUnit(mt.getUnit())
                         .withInterval(0L)
                         .withId(mt.getId()).build())

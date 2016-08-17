@@ -451,7 +451,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
             @Override public Entity<?, ?> visitMetricType(MetricType type, Void parameter) {
                 return new MetricType(type.getName(), type.getPath(), hashes.getIdentityHash(), hashes.getContentHash(),
-                        hashes.getSyncHash(), type.getUnit(), type.getType(), type.getProperties(),
+                        hashes.getSyncHash(), type.getUnit(), type.getMetricDataType(), type.getProperties(),
                         type.getCollectionInterval());
             }
 
