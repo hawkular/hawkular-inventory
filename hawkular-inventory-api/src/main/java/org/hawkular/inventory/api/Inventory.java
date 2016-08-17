@@ -556,7 +556,7 @@ public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.Read
             }
 
             @Override public B visitMetricType(MetricType type, Void parameter) {
-                return (B) fillCommon(type, MetricType.Blueprint.builder(type.getType()))
+                return (B) fillCommon(type, MetricType.Blueprint.builder(type.getMetricDataType()))
                         .withInterval(type.getCollectionInterval()).withUnit(type.getUnit()).build();
             }
 

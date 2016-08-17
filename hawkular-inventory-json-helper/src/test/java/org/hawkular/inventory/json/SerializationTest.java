@@ -23,6 +23,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.Related.by;
 import static org.hawkular.inventory.api.filters.With.id;
 import static org.hawkular.inventory.api.filters.With.type;
+import static org.hawkular.inventory.api.model.MetricDataType.COUNTER;
 import static org.hawkular.inventory.api.model.MetricDataType.GAUGE;
 
 import java.beans.BeanInfo;
@@ -204,8 +205,8 @@ public class SerializationTest {
 
     @Test
     public void testMetricType() throws Exception {
-        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), null, null, null, MetricUnit.BYTES, GAUGE,
-                new HashMap<String, Object>() {{
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), "a", null, null, MetricUnit.BYTES,
+                COUNTER, new HashMap<String, Object>() {{
                     put("a", "b");
                 }}, 0L);
 
@@ -626,11 +627,13 @@ public class SerializationTest {
         @SuppressWarnings("unchecked")
         T dbl = (T) deserialize(ser, bl.getClass());
 
-        Assert.assertEquals(bl.getId(), dbl.getId());
-        Assert.assertEquals(bl.getIncomingRelationships(), dbl.getIncomingRelationships());
-        Assert.assertEquals(bl.getOutgoingRelationships(), dbl.getOutgoingRelationships());
-        Assert.assertEquals(bl.getName(), dbl.getName());
-        Assert.assertEquals(bl.getProperties(), dbl.getProperties());
+        BeanInfo beanInfo = Introspector.getBeanInfo(bl.getClass());
+        for (PropertyDescriptor prop : beanInfo.getPropertyDescriptors()) {
+            Object origValue = prop.getReadMethod().invoke(bl);
+            Object newValue = prop.getReadMethod().invoke(dbl);
+            Assert.assertTrue("Unexpected value of property '" + prop.getName() + "' on class " + bl.getClass(),
+                    isEqual(origValue, newValue));
+        }
 
         if (additionalTests != null) {
             additionalTests.accept(bl, dbl);
@@ -662,8 +665,8 @@ public class SerializationTest {
         for (PropertyDescriptor prop : beanInfo.getPropertyDescriptors()) {
             Object origValue = prop.getReadMethod().invoke(o);
             Object newValue = prop.getReadMethod().invoke(o2);
-            Assert.assertTrue("Unexpected value of property '" + prop.getName() + "' on class " + cls, isEqual
-                    (origValue, newValue));
+            Assert.assertTrue("Unexpected value of property '" + prop.getName() + "' on class " + cls,
+                    isEqual(origValue, newValue));
         }
     }
 

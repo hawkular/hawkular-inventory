@@ -773,7 +773,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             public Element visitMetricType(MetricType.Blueprint type, Void parameter) {
                 Element entity = common(path, type.getName(), type.getProperties(), MetricType.class);
 
-                entity.setProperty(Constants.Property.__metric_data_type.name(), type.getType().getDisplayName());
+                entity.setProperty(Constants.Property.__metric_data_type.name(), type.getMetricDataType().getDisplayName());
                 entity.setProperty(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
 
                 return entity;

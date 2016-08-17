@@ -68,7 +68,7 @@ public final class BaseMetricTypes {
 
             MetricType metricType = new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
-                    blueprint.getUnit(), blueprint.getType(), blueprint.getProperties(),
+                    blueprint.getUnit(), blueprint.getMetricDataType(), blueprint.getProperties(),
                     blueprint.getCollectionInterval());
 
             return new EntityAndPendingNotifications<>(entity, metricType, emptyList());
@@ -87,7 +87,7 @@ public final class BaseMetricTypes {
         @Override
         public MetricTypes.Single create(MetricType.Blueprint blueprint, boolean cache)
                 throws EntityAlreadyExistsException {
-            if (blueprint.getType() == null ||
+            if (blueprint.getMetricDataType() == null ||
                 blueprint.getUnit() == null ||
                 blueprint.getCollectionInterval() == null) {
 
@@ -146,7 +146,7 @@ public final class BaseMetricTypes {
             String msg;
             if (blueprint.getCollectionInterval() == null) {
                 msg = "Interval (\"collectionInterval\" in JSON)";
-            } else if (blueprint.getType() == null) {
+            } else if (blueprint.getMetricDataType() == null) {
                 msg = "Data type (\"type\" in JSON)";
             } else {
                 msg = "Metric unit (\"unit\" in JSON)";

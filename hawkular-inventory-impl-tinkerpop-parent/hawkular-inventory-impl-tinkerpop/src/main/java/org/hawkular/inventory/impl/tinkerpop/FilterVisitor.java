@@ -317,14 +317,15 @@ class FilterVisitor {
 
     @SuppressWarnings("unchecked")
     private void applyPropertyFilter(HawkularPipeline<?, ?> query, String propertyName, Object... values) {
+        String mappedName = Constants.Property.mapUserDefined(propertyName);
         if (values.length == 0) {
-            query.has(propertyName);
+            query.has(mappedName);
         } else if (values.length == 1) {
-            query.has(propertyName, values[0]);
+            query.has(mappedName, values[0]);
         } else {
             Pipe[] checks = new Pipe[values.length];
 
-            Arrays.setAll(checks, i -> new PropertyFilterPipe<Element, String>(propertyName, Compare.EQUAL, values[i]));
+            Arrays.setAll(checks, i -> new PropertyFilterPipe<Element, String>(mappedName, Compare.EQUAL, values[i]));
 
             query.or(checks);
         }

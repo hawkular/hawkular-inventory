@@ -43,7 +43,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
 
     private final MetricUnit unit;
 
-    private final MetricDataType type;
+    private final MetricDataType metricDataType;
 
     private final Long collectionInterval;
 
@@ -53,7 +53,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     @SuppressWarnings("unused")
     private MetricType() {
         unit = null;
-        type = null;
+        metricDataType = null;
         collectionInterval = null;
     }
 
@@ -62,39 +62,40 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     }
 
     public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricUnit unit,
-                      MetricDataType type) {
-        this(path, identityHash, contentHash, syncHash, unit, type, null, null);
+                      MetricDataType metricDataType) {
+        this(path, identityHash, contentHash, syncHash, unit, metricDataType, null, null);
     }
 
     public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash, MetricUnit unit,
-                      MetricDataType type,
+                      MetricDataType metricDataType,
                       Long collectionInterval) {
-        this(path, identityHash, contentHash, syncHash, unit, type, null, collectionInterval);
+        this(path, identityHash, contentHash, syncHash, unit, metricDataType, null, collectionInterval);
     }
 
     public MetricType(String name, CanonicalPath path, String identityHash, String contentHash,
                       java.lang.String syncHash,
                       MetricUnit unit,
-                      MetricDataType type) {
-        this(name, path, identityHash, contentHash, syncHash, unit, type, null, null);
+                      MetricDataType metricDataType) {
+        this(name, path, identityHash, contentHash, syncHash, unit, metricDataType, null, null);
     }
 
-    public MetricType(CanonicalPath path, String identityHash, java.lang.String contentHash, java.lang.String syncHash,
-                      MetricUnit unit, MetricDataType type, Map<String, Object> properties, Long collectionInterval) {
+    public MetricType(CanonicalPath path, String identityHash, String contentHash, String syncHash,
+                      MetricUnit unit, MetricDataType metricDataType, Map<String, Object> properties,
+                      Long collectionInterval) {
         super(null, path, identityHash, contentHash, syncHash, properties);
-        if (type == null) {
+        if (metricDataType == null) {
             throw new IllegalArgumentException("metricDataType == null");
         }
         this.unit = unit;
-        this.type = type;
+        this.metricDataType = metricDataType;
         this.collectionInterval = collectionInterval;
     }
 
     public MetricType(String name, CanonicalPath path, String identityHash, java.lang.String contentHash,
-                      java.lang.String syncHash, MetricUnit unit, MetricDataType type,
+                      java.lang.String syncHash, MetricUnit unit, MetricDataType metricDataType,
                       Map<String, Object> properties, Long collectionInterval) {
         super(name, path, identityHash, contentHash, syncHash, properties);
-        this.type = type;
+        this.metricDataType = metricDataType;
         this.unit = unit;
         this.collectionInterval = collectionInterval;
     }
@@ -103,8 +104,22 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
         return unit;
     }
 
-    public MetricDataType getType() {
-        return type;
+    public MetricDataType getMetricDataType() {
+        return metricDataType;
+    }
+
+    /**
+     * This is here to keep the serialization of a property called "type" with the upper case representation of the
+     * {@link MetricDataType} enum.
+     *
+     * <p>This will disappear in due time.
+     *
+     * @deprecated use {@link #getMetricDataType()}
+     * @return the metric data type
+     */
+    @Deprecated
+    public String getType() {
+        return getMetricDataType().name();
     }
 
     public Long getCollectionInterval() {
@@ -114,7 +129,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     @Override
     public Updater<Update, MetricType> update() {
         return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
-                getSyncHash(), valueOrDefault(u.unit, this.unit), type, u.getProperties(),
+                getSyncHash(), valueOrDefault(u.unit, this.unit), metricDataType, u.getProperties(),
                 valueOrDefault(u.getCollectionInterval(), collectionInterval)));
     }
 
@@ -139,7 +154,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     @ApiModel("MetricTypeBlueprint")
     public static final class Blueprint extends Entity.Blueprint {
         private final MetricUnit unit;
-        private final MetricDataType type;
+        private final MetricDataType metricDataType;
         private final Long collectionInterval;
 
         public static Builder builder(MetricDataType type) {
@@ -152,38 +167,38 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
         @SuppressWarnings("unused")
         private Blueprint() {
             unit = null;
-            type = null;
+            metricDataType = null;
             collectionInterval = null;
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type, Long collectionInterval) {
-            this(id, unit, type, Collections.emptyMap(), collectionInterval);
+        public Blueprint(String id, MetricUnit unit, MetricDataType metricDataType, Long collectionInterval) {
+            this(id, unit, metricDataType, Collections.emptyMap(), collectionInterval);
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+        public Blueprint(String id, MetricUnit unit, MetricDataType metricDataType, Map<String, Object> properties,
                          Long collectionInterval) {
             super(id, properties);
             this.unit = unit == null ? MetricUnit.NONE : unit;
-            this.type = type;
+            this.metricDataType = metricDataType;
             this.collectionInterval = collectionInterval;
         }
 
-        public Blueprint(String id, MetricUnit unit, MetricDataType type, Long collectionInterval,
+        public Blueprint(String id, MetricUnit unit, MetricDataType metricDataType, Long collectionInterval,
                          Map<String, Object> properties,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(id, properties, outgoing, incoming);
-            this.type = type;
+            this.metricDataType = metricDataType;
             this.unit = unit;
             this.collectionInterval = collectionInterval;
         }
 
-        public Blueprint(String id, String name, MetricUnit unit, MetricDataType type, Map<String, Object> properties,
+        public Blueprint(String id, String name, MetricUnit unit, MetricDataType metricDataType, Map<String, Object> properties,
                          Long collectionInterval,
                          Map<String, Set<CanonicalPath>> outgoing,
                          Map<String, Set<CanonicalPath>> incoming) {
             super(id, name, properties, outgoing, incoming);
-            this.type = type;
+            this.metricDataType = metricDataType;
             this.unit = unit;
             this.collectionInterval = collectionInterval;
         }
@@ -197,13 +212,13 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
             return unit;
         }
 
-        public MetricDataType getType() {
+        public MetricDataType getMetricDataType() {
             //this is so that we throw a meaningful exception when processing blueprints created by deserialization
             //from user data.
-            if (type == null) {
+            if (metricDataType == null) {
                 throw new IllegalStateException("Data type of metric type cannot be null.");
             }
-            return type;
+            return metricDataType;
         }
 
         public Long getCollectionInterval() {
@@ -217,11 +232,11 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
 
         public static final class Builder extends Entity.Blueprint.Builder<Blueprint, Builder> {
             private MetricUnit unit;
-            private MetricDataType type;
+            private MetricDataType metricDataType;
             private Long collectionInterval;
 
-            public Builder(MetricDataType type) {
-                this.type = type;
+            public Builder(MetricDataType metricDataType) {
+                this.metricDataType = metricDataType;
             }
 
             public Builder withUnit(MetricUnit unit) {
@@ -229,8 +244,8 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
                 return this;
             }
 
-            public Builder withType(MetricDataType type) {
-                this.type = type;
+            public Builder withMetridDataType(MetricDataType type) {
+                this.metricDataType = type;
                 return this;
             }
 
@@ -241,7 +256,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
 
             @Override
             public Blueprint build() {
-                return new Blueprint(id, name, unit, type, properties, collectionInterval, outgoing, incoming);
+                return new Blueprint(id, name, unit, metricDataType, properties, collectionInterval, outgoing, incoming);
             }
         }
     }
