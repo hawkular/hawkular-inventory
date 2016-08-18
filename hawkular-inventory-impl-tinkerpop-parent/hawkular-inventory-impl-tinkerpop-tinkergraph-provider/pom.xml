@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>0.18.0.Final-SNAPSHOT</version>
+    <version>0.18.0.Final</version>
   </parent>
 
   <artifactId>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</artifactId>
