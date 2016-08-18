@@ -82,6 +82,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -211,6 +212,46 @@ public class SerializationTest {
                 }}, 0L);
 
         test(mt);
+    }
+
+    @Test
+    @Deprecated
+    public void testMetricTypeIncludesDeprecatedFields() throws Exception {
+        MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), "a", null, null, MetricUnit.BYTES,
+                COUNTER, new HashMap<String, Object>() {{
+            put("a", "b");
+        }}, 0L);
+
+        String ser = serialize(mt);
+
+        JsonNode json = mapper.readTree(ser);
+
+        Assert.assertTrue(json.isObject());
+
+        Assert.assertTrue(json.has("type"));
+        Assert.assertTrue(json.has("metricDataType"));
+        Assert.assertEquals(COUNTER.name(), json.get("type").textValue());
+        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
+    }
+
+    @Test
+    @Deprecated
+    public void testMetricTypeBlueprintIncludesDeprecatedFields() throws Exception {
+        MetricType.Blueprint mt = MetricType.Blueprint.builder(COUNTER).withId("c").withInterval(0L)
+                .withUnit(MetricUnit.BYTES).withProperties(new HashMap<String, Object>() {{
+                    put("a", "b");
+                }}).build();
+
+        String ser = serialize(mt);
+
+        JsonNode json = mapper.readTree(ser);
+
+        Assert.assertTrue(json.isObject());
+
+        Assert.assertTrue(json.has("type"));
+        Assert.assertTrue(json.has("metricDataType"));
+        Assert.assertEquals(COUNTER.name(), json.get("type").textValue());
+        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
     }
 
     @Test

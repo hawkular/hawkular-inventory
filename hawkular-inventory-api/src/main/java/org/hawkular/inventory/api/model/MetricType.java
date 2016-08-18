@@ -23,6 +23,9 @@ import java.util.Set;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import io.swagger.annotations.ApiModel;
 
 
@@ -109,17 +112,15 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     }
 
     /**
-     * This is here to keep the serialization of a property called "type" with the upper case representation of the
-     * {@link MetricDataType} enum.
+     * This will disappear in due time.
      *
-     * <p>This will disappear in due time.
-     *
-     * @deprecated use {@link #getMetricDataType()}
+     * @deprecated use {@link #getMetricDataType()} insteads
      * @return the metric data type
      */
     @Deprecated
-    public String getType() {
-        return getMetricDataType().name();
+    @JsonSerialize(using = ToStringSerializer.class)
+    public MetricDataType getType() {
+        return getMetricDataType();
     }
 
     public Long getCollectionInterval() {
@@ -221,6 +222,15 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
             return metricDataType;
         }
 
+        /**
+         * @deprecated use {@link #getMetricDataType()}
+         */
+        @Deprecated
+        @JsonSerialize(using = ToStringSerializer.class)
+        public MetricDataType getType() {
+            return getMetricDataType();
+        }
+
         public Long getCollectionInterval() {
             return collectionInterval;
         }
@@ -244,7 +254,11 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
                 return this;
             }
 
-            public Builder withMetridDataType(MetricDataType type) {
+            /**
+             * @deprecated don't use this. Use the constructor instead.
+             */
+            @Deprecated
+            public Builder withType(MetricDataType type) {
                 this.metricDataType = type;
                 return this;
             }

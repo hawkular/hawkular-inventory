@@ -32,10 +32,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Remove this mix-in once we drop the support for the old way of serializing the metric data type.
@@ -45,34 +42,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * @deprecated since inception :)
  */
 @Deprecated
-@JsonSerialize(using = MetricTypeBlueprintMixin.Serializer.class)
 @JsonDeserialize(using = MetricTypeBlueprintMixin.Deserializer.class)
 public final class MetricTypeBlueprintMixin {
-
-    /**
-     * @deprecated don't use this once "type" does not need to be in the JSON
-     */
-    @Deprecated
-    public static final class Serializer extends JsonSerializer<MetricType.Blueprint> {
-        @Override public void serialize(MetricType.Blueprint value, JsonGenerator gen, SerializerProvider serializers)
-                throws IOException {
-            gen.writeStartObject();
-            gen.writeStringField("id", value.getId());
-            gen.writeStringField("name", value.getName());
-            if (value.getCollectionInterval() != null) {
-                gen.writeNumberField("collectionInterval", value.getCollectionInterval());
-            } else {
-                gen.writeNullField("collectionInterval");
-            }
-            gen.writeStringField("type", value.getMetricDataType().name());
-            gen.writeStringField("metricDataType", value.getMetricDataType().getDisplayName());
-            gen.writeStringField("unit", value.getUnit().name());
-            writeNonEmpty(value.getProperties(), "properties", gen);
-            writeNonEmpty(value.getIncomingRelationships(), "incoming", gen);
-            writeNonEmpty(value.getOutgoingRelationships(), "outgoing", gen);
-            gen.writeEndObject();
-        }
-    }
 
     /**
      * @deprecated don't use this once "type" does not need to be in the JSON
