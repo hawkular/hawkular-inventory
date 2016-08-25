@@ -185,12 +185,7 @@ class FilterVisitor {
             return;
         }
 
-        GraphTraversal[] nameChecks = new GraphTraversal[names.getNames().length];
-
-        Arrays.setAll(nameChecks,
-                i -> __.has(prop, names.getNames()[i]));
-
-        query.or(nameChecks);
+        query.has(prop, P.within(names.getNames()));
     }
 
     @SuppressWarnings("unchecked")
@@ -200,11 +195,7 @@ class FilterVisitor {
             return;
         }
 
-        GraphTraversal<?, ?>[] idChecks = new GraphTraversal<?, ?>[ids.getIds().length];
-
-        Arrays.setAll(idChecks, i -> __.has(__eid.name(), ids.getIds()[i]));
-
-        query.or((Traversal<?, ?>[]) idChecks);
+        query.has(__eid.name(), P.within(ids.getIds()));
     }
 
     public void visit(GraphTraversal<?, ?> query, RelationWith.PropertyValues properties,
@@ -349,14 +340,10 @@ class FilterVisitor {
 
         if (filter.getPaths().length == 1) {
             query.has(prop, filter.getPaths()[0].toString());
-            return;
+        } else {
+            String[] paths = Stream.of(filter.getPaths()).map(Object::toString).toArray(String[]::new);
+            query.has(prop, P.within(paths));
         }
-
-        GraphTraversal<?, ?>[] idChecks = new GraphTraversal<?, ?>[filter.getPaths().length];
-
-        Arrays.setAll(idChecks, i -> __.has(prop, filter.getPaths()[i].toString()));
-
-        query.or((GraphTraversal<?, ?>[]) idChecks);
 
         goBackFromEdges(query, state);
     }
@@ -487,15 +474,10 @@ class FilterVisitor {
         goBackFromEdges(query, state);
         if (dataTypes.getTypes().length == 1) {
             query.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[0].name());
-            return;
+        } else {
+            String[] types = Stream.of(dataTypes.getTypes()).map(StructuredData.Type::name).toArray(String[]::new);
+            query.has(Constants.Property.__structuredDataType.name(), P.within(types));
         }
-
-        GraphTraversal<?, ?>[] pipes = new GraphTraversal<?, ?>[dataTypes.getTypes().length];
-        for (int i = 0; i < pipes.length; ++i) {
-            pipes[i] = __.has(Constants.Property.__structuredDataType.name(), dataTypes.getTypes()[i].name());
-        }
-
-        query.or((Traversal<?, ?>[]) pipes);
     }
 
     @SuppressWarnings("unchecked")
