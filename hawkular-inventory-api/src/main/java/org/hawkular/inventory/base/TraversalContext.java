@@ -121,7 +121,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     private static int getTransactionRetries(Configuration configuration) {
-        String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "5");
+        String retries = configuration.getProperty(BaseInventory.TRANSACTION_RETRIES, "10");
         return Integer.parseInt(retries);
     }
 

@@ -96,8 +96,9 @@ final class Util {
         int failures = 0;
         Exception lastException;
 
-        //this could be configurable, but let's just start with the hardcoded 100ms as the first retry wait time.
-        int waitTime = 100;
+        //this could be configurable, but let's just start with the hardcoded 300ms + a random bit
+        //as the first retry wait time.
+        int waitTime = 300 + rand.nextInt(150);
 
         do {
             try {
@@ -146,7 +147,7 @@ final class Util {
                     //takes a long time to complete, it probably is going to be really long.
                     //We randomize the value a little bit so that competing transactions started at roughly same time
                     //don't knock each other out easily.
-                    waitTime = waitTime * 2 + rand.nextInt(waitTime / 10);
+                    waitTime = waitTime * 2 + rand.nextInt(waitTime / 2);
                 }
             } catch (RuntimeException e) {
                 throw e;
