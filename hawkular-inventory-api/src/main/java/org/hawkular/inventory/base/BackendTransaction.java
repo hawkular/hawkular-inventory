@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -62,20 +63,24 @@ public class BackendTransaction<E> implements Transaction<E> {
         return preCommit;
     }
 
-    @Override public <T> T convert(E entityRepresentation, Class<T> entityType) {
-        return backend.convert(entityRepresentation, entityType);
+    @Override public <T> T convert(Discriminator discriminator, E entityRepresentation, Class<T> entityType) {
+        return backend.convert(discriminator, entityRepresentation, entityType);
     }
 
-    @Override public void delete(E entity) {
-        backend.delete(entity);
+    @Override public void markDeleted(Discriminator discriminator, E entity) {
+        backend.markDeleted(discriminator, entity);
     }
 
     @Override public void deleteStructuredData(E dataRepresentation) {
         backend.deleteStructuredData(dataRepresentation);
     }
 
-    @Override public E descendToData(E dataEntityRepresentation, RelativePath dataPath) {
-        return backend.descendToData(dataEntityRepresentation, dataPath);
+    @Override public E descendToData(Discriminator discriminator, E dataEntityRepresentation, RelativePath dataPath) {
+        return backend.descendToData(discriminator, dataEntityRepresentation, dataPath);
+    }
+
+    @Override public void eradicate(E entityRepresentation) {
+        backend.eradicate(entityRepresentation);
     }
 
     @Override public CanonicalPath extractCanonicalPath(E entityRepresentation) {
@@ -86,16 +91,16 @@ public class BackendTransaction<E> implements Transaction<E> {
         return backend.extractId(entityRepresentation);
     }
 
-    @Override public String extractIdentityHash(E entityRepresentation) {
-        return backend.extractIdentityHash(entityRepresentation);
+    @Override public String extractIdentityHash(Discriminator discriminator, E entityRepresentation) {
+        return backend.extractIdentityHash(discriminator, entityRepresentation);
     }
 
-    @Override public String extractContentHash(E entityRepresentation) {
-        return backend.extractContentHash(entityRepresentation);
+    @Override public String extractContentHash(Discriminator discriminator, E entityRepresentation) {
+        return backend.extractContentHash(discriminator, entityRepresentation);
     }
 
-    @Override public String extractSyncHash(E entityRepresentation) {
-        return backend.extractSyncHash(entityRepresentation);
+    @Override public String extractSyncHash(Discriminator discriminator, E entityRepresentation) {
+        return backend.extractSyncHash(discriminator, entityRepresentation);
     }
 
     @Override public String extractRelationshipName(E relationship) {
@@ -106,51 +111,51 @@ public class BackendTransaction<E> implements Transaction<E> {
         return backend.extractType(entityRepresentation);
     }
 
-    @Override public E find(CanonicalPath element) throws ElementNotFoundException {
-        return backend.find(element);
+    @Override public E find(Discriminator discriminator, CanonicalPath element) throws ElementNotFoundException {
+        return backend.find(discriminator, element);
     }
 
-    @Override public InputStream getGraphSON(String tenantId) {
-        return backend.getGraphSON(tenantId);
+    @Override public InputStream getGraphSON(Discriminator discriminator, String tenantId) {
+        return backend.getGraphSON(discriminator, tenantId);
     }
 
-    @Override public E getRelationship(E source, E target, String relationshipName) throws ElementNotFoundException {
-        return backend.getRelationship(source, target, relationshipName);
+    @Override public E getRelationship(Discriminator discriminator, E source, E target, String relationshipName) throws ElementNotFoundException {
+        return backend.getRelationship(discriminator, source, target, relationshipName);
     }
 
-    @Override public Set<E> getRelationships(E entity, Relationships.Direction direction,
+    @Override public Set<E> getRelationships(Discriminator discriminator, E entity, Relationships.Direction direction,
                                              String... names) {
-        return backend.getRelationships(entity, direction, names);
+        return backend.getRelationships(discriminator, entity, direction, names);
     }
 
-    @Override public E getRelationshipSource(E relationship) {
-        return backend.getRelationshipSource(relationship);
+    @Override public E getRelationshipSource(Discriminator discriminator, E relationship) {
+        return backend.getRelationshipSource(discriminator, relationship);
     }
 
-    @Override public E getRelationshipTarget(E relationship) {
-        return backend.getRelationshipTarget(relationship);
+    @Override public E getRelationshipTarget(Discriminator discriminator, E relationship) {
+        return backend.getRelationshipTarget(discriminator, relationship);
     }
 
     @Override public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(
-            CanonicalPath startingPoint,
+            Discriminator discriminator, CanonicalPath startingPoint,
             Relationships.Direction direction, Class<T> clazz,
             String... relationshipNames) {
-        return backend.getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        return backend.getTransitiveClosureOver(discriminator, startingPoint, direction, clazz, relationshipNames);
     }
 
-    @Override public Iterator<E> getTransitiveClosureOver(E startingPoint,
+    @Override public Iterator<E> getTransitiveClosureOver(Discriminator discriminator, E startingPoint,
                                                           Relationships.Direction direction,
                                                           String... relationshipNames) {
-        return backend.getTransitiveClosureOver(startingPoint, direction, relationshipNames);
+        return backend.getTransitiveClosureOver(discriminator, startingPoint, direction, relationshipNames);
     }
 
-    @Override public boolean hasRelationship(E entity, Relationships.Direction direction,
+    @Override public boolean hasRelationship(Discriminator discriminator, E entity, Relationships.Direction direction,
                                              String relationshipName) {
-        return backend.hasRelationship(entity, direction, relationshipName);
+        return backend.hasRelationship(discriminator, entity, direction, relationshipName);
     }
 
-    @Override public boolean hasRelationship(E source, E target, String relationshipName) {
-        return backend.hasRelationship(source, target, relationshipName);
+    @Override public boolean hasRelationship(Discriminator discriminator, E source, E target, String relationshipName) {
+        return backend.hasRelationship(discriminator, source, target, relationshipName);
     }
 
     @Override public boolean isBackendInternal(E element) {
@@ -170,42 +175,42 @@ public class BackendTransaction<E> implements Transaction<E> {
         return backend.persist(structuredData);
     }
 
-    @Override public Page<E> query(Query query,
+    @Override public Page<E> query(Discriminator discriminator, Query query,
                                    Pager pager) {
-        return backend.query(query, pager);
+        return backend.query(discriminator, query, pager);
     }
 
-    @Override public <T> Page<T> query(Query query,
+    @Override public <T> Page<T> query(Discriminator discriminator, Query query,
                                        Pager pager,
                                        Function<E, T> conversion,
                                        Function<T, Boolean> filter) {
-        return backend.query(query, pager, conversion, filter);
+        return backend.query(discriminator, query, pager, conversion, filter);
     }
 
-    @Override public E querySingle(Query query) {
-        return backend.querySingle(query);
+    @Override public E querySingle(Discriminator discriminator, Query query) {
+        return backend.querySingle(discriminator, query);
     }
 
-    @Override public E relate(E sourceEntity, E targetEntity, String name,
+    @Override public E relate(Discriminator discriminator, E sourceEntity, E targetEntity, String name,
                               Map<String, Object> properties) {
-        return backend.relate(sourceEntity, targetEntity, name, properties);
+        return backend.relate(discriminator, sourceEntity, targetEntity, name, properties);
     }
 
-    @Override public Page<E> traverse(E startingPoint, Query query,
+    @Override public Page<E> traverse(Discriminator discriminator, E startingPoint, Query query,
                                       Pager pager) {
-        return backend.traverse(startingPoint, query, pager);
+        return backend.traverse(discriminator, startingPoint, query, pager);
     }
 
-    @Override public E traverseToSingle(E startingPoint, Query query) {
-        return backend.traverseToSingle(startingPoint, query);
+    @Override public E traverseToSingle(Discriminator discriminator, E startingPoint, Query query) {
+        return backend.traverseToSingle(discriminator, startingPoint, query);
     }
 
-    @Override public void update(E entity, AbstractElement.Update update) {
-        backend.update(entity, update);
+    @Override public void update(Discriminator discriminator, E entity, AbstractElement.Update update) {
+        backend.update(discriminator, entity, update);
     }
 
-    @Override public void updateHashes(E entity, Hashes hashes) {
-        backend.updateHashes(entity, hashes);
+    @Override public void updateHashes(Discriminator discriminator, E entity, Hashes hashes) {
+        backend.updateHashes(discriminator, entity, hashes);
     }
 
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {

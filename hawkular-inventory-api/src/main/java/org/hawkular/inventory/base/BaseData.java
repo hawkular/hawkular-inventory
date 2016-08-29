@@ -28,13 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.hawkular.inventory.api.Data;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.Log;
 import org.hawkular.inventory.api.Query;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ValidationException;
 import org.hawkular.inventory.api.ValidationException.ValidationMessage;
 import org.hawkular.inventory.api.filters.Filter;
@@ -44,6 +41,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -123,13 +121,13 @@ public final class BaseData {
                                                                                 DataEntity.Blueprint<R> blueprint,
                                                                                 CanonicalPath parentPath, BE parent,
                                                                                 Transaction<BE> tx) {
-            Validator.validate(tx, blueprint.getValue(), entity);
+            Validator.validate(context.discriminator(), tx, blueprint.getValue(), entity);
             BE value = tx.persist(blueprint.getValue());
 
             //don't report this relationship, it is implicit
             //also, don't run the RelationshipRules checks - we're in the "privileged code" that is allowed to do
             //this
-            tx.relate(entity, value, hasData.name(), null);
+            tx.relate(context.discriminator(), entity, value, hasData.name(), null);
 
             DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue(), null,
                     null, null, blueprint.getProperties());
@@ -154,7 +152,7 @@ public final class BaseData {
 
         @Override
         protected void preDelete(R role, BE entityRepresentation, Transaction<BE> transaction) {
-            preDelete(checks, entityRepresentation, transaction);
+            preDelete(context.discriminator(), checks, entityRepresentation, transaction);
         }
 
         @Override protected void postDelete(BE entityRepresentation, Transaction<BE> transaction) {
@@ -164,7 +162,7 @@ public final class BaseData {
         @Override
         protected void preUpdate(R role, BE entityRepresentation, DataEntity.Update update,
                                  Transaction<BE> transaction) {
-            preUpdate(checks, entityRepresentation, update, transaction);
+            preUpdate(context.discriminator(), checks, entityRepresentation, update, transaction);
         }
 
         @Override
@@ -193,10 +191,10 @@ public final class BaseData {
             checks.postCreate(entity, transaction);
         }
 
-        private static <BE> void preUpdate(DataModificationChecks<BE> checks, BE entityRepresentation,
+        private static <BE> void preUpdate(Discriminator discriminator, DataModificationChecks<BE> checks, BE entityRepresentation,
                                            DataEntity.Update update, Transaction<BE> transaction) {
             checks.preUpdate(entityRepresentation, update, transaction);
-            Validator.validate(transaction, update.getValue(), entityRepresentation);
+            Validator.validate(discriminator, transaction, update.getValue(), entityRepresentation);
         }
 
         private static <BE> void postUpdate(DataModificationChecks<BE> checks, BE entity,
@@ -204,23 +202,25 @@ public final class BaseData {
             checks.postCreate(entity, transaction);
         }
 
-        private static <BE> void preDelete(DataModificationChecks<BE> checks, BE entityRepresentation,
+        private static <BE> void preDelete(Discriminator discriminator, DataModificationChecks<BE> checks, BE entityRepresentation,
                                            Transaction<BE> tx) {
             checks.preDelete(entityRepresentation, tx);
 
-            Set<BE> rels = tx.getRelationships(entityRepresentation, Relationships.Direction.outgoing,
-                    hasData.name());
-
-            if (rels.isEmpty()) {
-                Log.LOGGER.wNoDataAssociatedWithEntity(tx.extractCanonicalPath(entityRepresentation));
-                return;
-            }
-
-            BE dataRel = rels.iterator().next();
-
-            BE structuredData = tx.getRelationshipTarget(dataRel);
-
-            tx.deleteStructuredData(structuredData);
+// This is pre-versioning code - all this is only invoked during eradicate now...
+//            Set<BE> rels = tx.getRelationships(discriminator, entityRepresentation, Relationships.Direction.outgoing,
+//                    hasData.name());
+//
+//            if (rels.isEmpty()) {
+//                Log.LOGGER.wNoDataAssociatedWithEntity(tx.extractCanonicalPath(entityRepresentation));
+//                return;
+//            }
+//
+//            BE dataRel = rels.iterator().next();
+//
+//            BE structuredData = tx.getRelationshipTarget(discriminator, dataRel);
+//
+//            tx.deleteStructuredData(structuredData);
+//            tx.markDeleted(discriminator, dataRel);
         }
 
         private static <BE> void postDelete(DataModificationChecks<BE> checks, BE entity,
@@ -244,23 +244,23 @@ public final class BaseData {
             //doing this in 2 queries might seem inefficient but this I think needs to be done to be able to
             //do the filtering
             return loadEntity((b, e, tx) -> {
-                BE dataEntity = tx.descendToData(b, dataPath);
-                return dataEntity == null ? null : tx.convert(dataEntity, StructuredData.class);
+                BE dataEntity = tx.descendToData(context.discriminator(), b, dataPath);
+                return dataEntity == null ? null : tx.convert(context.discriminator(), dataEntity, StructuredData.class);
             });
         }
 
         @Override
         public StructuredData flatData(RelativePath dataPath) {
             return loadEntity((b, e, tx) -> {
-                BE dataEntity = tx.descendToData(b, dataPath);
-                return dataEntity == null ? null : tx.convert(dataEntity, ShallowStructuredData.class)
+                BE dataEntity = tx.descendToData(context.discriminator(), b, dataPath);
+                return dataEntity == null ? null : tx.convert(context.discriminator(), dataEntity, ShallowStructuredData.class)
                         .getData();
             });
         }
 
         @Override
         protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
-            ReadWrite.preDelete(checks, deletedEntity, transaction);
+            ReadWrite.preDelete(context.discriminator(), checks, deletedEntity, transaction);
         }
 
         @Override
@@ -270,7 +270,7 @@ public final class BaseData {
 
         @Override
         protected void preUpdate(BE updatedEntity, DataEntity.Update update, Transaction<BE> t) {
-            ReadWrite.preUpdate(checks, updatedEntity, update, t);
+            ReadWrite.preUpdate(context.discriminator(), checks, updatedEntity, update, t);
         }
 
         @Override
@@ -290,16 +290,16 @@ public final class BaseData {
         @Override
         public Page<StructuredData> data(RelativePath dataPath, Pager pager) {
             return loadEntities(pager, (b, e, tx) -> {
-                BE dataEntity = tx.descendToData(b, dataPath);
-                return tx.convert(dataEntity, StructuredData.class);
+                BE dataEntity = tx.descendToData(context.discriminator(), b, dataPath);
+                return tx.convert(context.discriminator(), dataEntity, StructuredData.class);
             });
         }
 
         @Override
         public Page<StructuredData> flatData(RelativePath dataPath, Pager pager) {
             return loadEntities(pager, (b, e, tx) -> {
-                BE dataEntity = tx.descendToData(b, dataPath);
-                return tx.convert(dataEntity, ShallowStructuredData.class).getData();
+                BE dataEntity = tx.descendToData(context.discriminator(), b, dataPath);
+                return tx.convert(context.discriminator(), dataEntity, ShallowStructuredData.class).getData();
             });
         }
     }
@@ -338,7 +338,7 @@ public final class BaseData {
             }
         }
 
-        public static <BE> void validate(Transaction<BE> tx, StructuredData data, BE dataEntity) {
+        public static <BE> void validate(Discriminator discriminator, Transaction<BE> tx, StructuredData data, BE dataEntity) {
             CanonicalPath path = tx.extractCanonicalPath(dataEntity);
 
             DataRole role = DataRole.valueOf(path.ids().getDataRole());
@@ -355,20 +355,20 @@ public final class BaseData {
                     throw new IllegalStateException("Could not load the embedded JSON Schema meta-schema.");
                 }
             } else {
-                validateIfSchemaFound(tx, data, dataEntity, Query.path().with(navigateToSchema(role)).get());
+                validateIfSchemaFound(discriminator, tx, data, dataEntity, Query.path().with(navigateToSchema(role)).get());
             }
         }
 
-        private static <BE> void validateIfSchemaFound(Transaction<BE> tx, StructuredData data,
+        private static <BE> void validateIfSchemaFound(Discriminator discriminator, Transaction<BE> tx, StructuredData data,
                 BE dataEntity, Query query) {
 
-            BE possibleSchema = tx.traverseToSingle(dataEntity, query);
+            BE possibleSchema = tx.traverseToSingle(discriminator, dataEntity, query);
             if (possibleSchema == null) {
                 //no schema means anything is OK
                 return;
             }
 
-            DataEntity schemaEntity = tx.convert(possibleSchema, DataEntity.class);
+            DataEntity schemaEntity = tx.convert(discriminator, possibleSchema, DataEntity.class);
 
             CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
 

@@ -34,6 +34,7 @@ import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.Path;
 
@@ -261,6 +262,10 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     TraversalContext<BE, E> at(Instant time) {
         return new TraversalContext<>(inventory, time, sourcePath, Query.empty(), backend, entityClass, configuration,
                 observableContext, transactionRetries, this, null, transactionConstructor);
+    }
+
+    Discriminator discriminator() {
+        return Discriminator.time(now);
     }
 
     /**

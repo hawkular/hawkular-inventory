@@ -23,6 +23,7 @@ import static org.hawkular.inventory.api.Action.created;
 import static org.hawkular.inventory.api.Action.identityHashChanged;
 import static org.hawkular.inventory.api.Action.syncHashChanged;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Syncable;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -253,7 +255,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         @SuppressWarnings("unchecked")
         Entity<? extends Entity.Blueprint, ?> e = (Entity<? extends Entity.Blueprint, ?>) changedEntity.element;
         addHashChangeNotifications(changedEntity.element, hashes, changedEntity.notifications);
-        tx.updateHashes(changedEntity.representation, hashes);
+        tx.updateHashes(Discriminator.time(Instant.now()), changedEntity.representation, hashes);
         correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
                 changedEntity.representation, e, changedEntity.notifications));
 
@@ -283,7 +285,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             }
 
             //now also actually update the element in inventory with the new hashes
-            tx.updateHashes(changesTree.representation, treeHash.getHash());
+            tx.updateHashes(Discriminator.time(Instant.now()), changesTree.representation, treeHash.getHash());
         }
 
         //set the notifications to emit
@@ -532,11 +534,12 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {
             if (element == null || loadingTx != tx) {
                 loadingTx = tx;
-                representation = tx.find(cp);
+                Discriminator disc = Discriminator.time(Instant.now());
+                representation = tx.find(disc, cp);
                 @SuppressWarnings("unchecked")
                 Class<? extends AbstractElement<?, ?>> type = (Class<? extends AbstractElement<?, ?>>)
                         tx.extractType(representation);
-                element = tx.convert(representation, type);
+                element = tx.convert(disc, representation, type);
             }
         }
 

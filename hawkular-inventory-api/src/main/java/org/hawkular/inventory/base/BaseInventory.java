@@ -230,16 +230,16 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public InputStream getGraphSON(String tenantId) {
-        return getBackend().getGraphSON(tenantId);
+        return getBackend().getGraphSON(tenantContext.discriminator(), tenantId);
     }
 
     @Override
     public AbstractElement<?, ?> getElement(CanonicalPath path) {
         try {
-            E element = getBackend().find(path);
+            E element = getBackend().find(tenantContext.discriminator(), path);
             Class<?> type = getBackend().extractType(element);
 
-            return (AbstractElement<?, ?>) getBackend().convert(element, type);
+            return (AbstractElement<?, ?>) getBackend().convert(tenantContext.discriminator(), element, type);
         } catch (ElementNotFoundException e) {
             throw new EntityNotFoundException("No element found on path: " + path.toString());
         }
@@ -250,7 +250,8 @@ public abstract class BaseInventory<E> implements Inventory {
                                                                     Relationships.Direction direction, Class<T> clazz,
                                                                     String... relationshipNames) {
 
-        return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        return getBackend().getTransitiveClosureOver(tenantContext.discriminator(), startingPoint, direction, clazz,
+                relationshipNames);
     }
 
     @Override
@@ -262,7 +263,8 @@ public abstract class BaseInventory<E> implements Inventory {
     public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
         InventoryBackend<E> tx = getBackend().startTransaction();
         try {
-            return new TransformingPage<T, T>(tx.query(query, pager, e -> backend.convert(e, requestedEntity), null),
+            return new TransformingPage<T, T>(tx.query(tenantContext.discriminator(), query, pager,
+                    e -> backend.convert(tenantContext.discriminator(), e, requestedEntity), null),
                     Function.identity()) {
                 @Override public void close() {
                     tx.rollback();

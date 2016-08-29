@@ -24,7 +24,7 @@ import org.hawkular.inventory.paths.RelativePath;
  * doesn't contain the potential children (see for example
  * {@link org.hawkular.inventory.api.Data.Single#flatData(RelativePath)}).
  *
- * <p>When calling {@link InventoryBackend#convert(Object, Class)}, with {@link StructuredData}, the whole structured
+ * <p>When calling {@link InventoryBackend#convert(Discriminator, Object, Class)}, with {@link StructuredData}, the whole structured
  * data is loaded. On the other hand calling it with {@code ShallowStructuredData} will make the convert method not load
  * the potential children of the structured data.
  *

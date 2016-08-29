@@ -74,38 +74,21 @@ public interface ResolvableToSingle<Entity extends AbstractElement<?, ?>, Update
     /**
      * Deletes the entity.
      *
-     * <p>Note that this doesn't actually delete the entity from the inventory. It merely records its removal at this
-     * point in time.
-     *
-     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
-     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
-     */
-    default void delete() {
-        delete(Instant.now());
-    }
-
-    /**
-     * Deletes the entity.
-     *
      * <p>Note that this doesn't actually delete the entity from the inventory. It merely records its removal at the
      * provided point in time.
-     *
-     * @param time the time from which the entity should be marked as deleted
      *
      * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
      * @throws RelationNotFoundException if there is no relation corresponding to the traversal
      * @throws IllegalArgumentException  if there were changes to the entity already made after the provided time of
      * deletion
-     *
-     * @see #delete()
      */
-    void delete(Instant time);
+    void delete();
 
     /**
      * This removes the entity and all its history from the inventory. After this call, it looks like the entity never
      * existed in the inventory.
      *
-     * <p>Usually, you don't want to use this method. Use {@link #delete(Instant)} instead which preserves the history
+     * <p>Usually, you don't want to use this method. Use {@link #delete()} instead which preserves the history
      * of the entity.
      */
     void eradicate();
@@ -113,7 +96,9 @@ public interface ResolvableToSingle<Entity extends AbstractElement<?, ?>, Update
     /**
      * The list of the changes is sorted in the ascending order by the time of the change.
      *
+     * @param from the date from which to retrieve history or null for not limiting the age of the changes
+     * @param to the date to which to retrieve history or null for not limiting the age of the changes
      * @return the list of changes made to the entity so far.
      */
-    List<Change<Entity, ?>> history();
+    List<Change<Entity, ?>> history(Instant from, Instant to);
 }

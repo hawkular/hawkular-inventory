@@ -156,7 +156,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(Instant time) {
+        public void delete() {
             throw entityNotFound(entityType);
         }
 
@@ -168,7 +168,7 @@ public class EmptyInventory implements Inventory {
             throw entityNotFound(entityType);
         }
 
-        @Override public List<Change<E, ?>> history() {
+        @Override public List<Change<E, ?>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -846,7 +846,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(Instant time) {
+        public void delete() {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
@@ -854,7 +854,7 @@ public class EmptyInventory implements Inventory {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
         }
 
-        @Override public List<Change<Relationship, ?>> history() {
+        @Override public List<Change<Relationship, ?>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -1482,7 +1482,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(Instant time) {
+        public void delete() {
             throw new UnsupportedOperationException();
         }
 
@@ -1497,7 +1497,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public List<Change<DataEntity, ?>> history() {
+        @Override public List<Change<DataEntity, ?>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -1666,7 +1666,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete(Instant time) {
+        @Override public void delete() {
             throw new UnsupportedOperationException();
         }
 
@@ -1674,7 +1674,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public List<Change<MetadataPack, ?>> history() {
+        @Override public List<Change<MetadataPack, ?>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }

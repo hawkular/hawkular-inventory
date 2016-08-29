@@ -43,6 +43,7 @@ import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSc
 import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.io.FileInputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,6 +121,7 @@ import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -571,6 +573,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
      */
     protected abstract BaseInventory<E> getInventoryForTest();
 
+    protected static Discriminator now() {
+        return Discriminator.time(Instant.now());
+    }
+
     @Before
     public final void setupData() throws Exception {
         inventory = getInventoryForTest();
@@ -584,7 +590,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<E> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+                Page<E> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(results.hasNext());
 
@@ -610,7 +616,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Page<E> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+            Page<E> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
             Assert.assertTrue(results.hasNext());
             results.next();
@@ -637,12 +643,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
 
-                    Page<E> parents = inTx.apply(b -> b.query(Query.path().with(type(parentType)).get(),
+                    Page<E> parents = inTx.apply(b -> b.query(now(), Query.path().with(type(parentType)).get(),
                             Pager.unlimited(Order.unspecified())));
 
                     List<E> parentsList = parents.toList();
 
-                    Page<E> children = inTx.apply(b -> b.query(Query.path().with(type(parentType),
+                    Page<E> children = inTx.apply(b -> b.query(now(), Query.path().with(type(parentType),
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified())));
 
                     List<E> childrenList = children.toList();
@@ -904,11 +910,11 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<E> envs = bcknd.query(q, Pager.unlimited(Order.unspecified()));
+                Page<E> envs = bcknd.query(now(), q, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(envs.hasNext());
 
-                env = inventory.getBackend().convert(envs.next(), Environment.class);
+                env = bcknd.convert(now(), envs.next(), Environment.class);
                 Assert.assertTrue(!envs.hasNext());
                 Assert.assertEquals(id, env.getId());
             } finally {
@@ -926,7 +932,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(2, bcknd.query(q, Pager.unlimited(Order.unspecified())).toList().size());
+            Assert.assertEquals(2, bcknd.query(now(), q, Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
             bcknd.rollback();
         }
@@ -941,7 +947,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<?> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+                Page<?> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(results.hasNext());
             } finally {
@@ -962,7 +968,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Query query = Query.path().with(type(ResourceType.class)).get();
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(6, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+            Assert.assertEquals(6, bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).toList()
                     .size());
         } finally {
             bcknd.rollback();
@@ -978,7 +984,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                assert bcknd.query(query, Pager.unlimited(Order.unspecified())).hasNext();
+                assert bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).hasNext();
             } finally {
                 bcknd.rollback();
             }
@@ -995,7 +1001,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Query query = Query.path().with(type(MetricType.class)).get();
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(4, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+            Assert.assertEquals(4, bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).toList()
                     .size());
         } finally {
             bcknd.rollback();
@@ -1012,7 +1018,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                assert bcknd.query(q, Pager.unlimited(Order.unspecified())).hasNext();
+                assert bcknd.query(now(), q, Pager.unlimited(Order.unspecified())).hasNext();
             } finally {
                 bcknd.rollback();
             }
@@ -1051,7 +1057,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(5, bcknd.query(Query.path().with(type(Metric.class)).get(),
+            Assert.assertEquals(5, bcknd.query(now(), Query.path().with(type(Metric.class)).get(),
                     Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
             bcknd.rollback();
@@ -1078,7 +1084,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(
+            Assert.assertEquals(15, inventory.getBackend().query(now(), Query.path().with(type(
                     Resource.class)).get(),
                     Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
@@ -2861,56 +2867,56 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
 
-            E entity = backend.find(tenantPath);
-            Tenant tenant = backend.convert(entity, Tenant.class);
+            E entity = backend.find(now(), tenantPath);
+            Tenant tenant = backend.convert(now(), entity, Tenant.class);
             Assert.assertEquals("com.acme.tenant", tenant.getId());
 
             CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
-            entity = backend.find(envPath);
-            Environment env = backend.convert(entity, Environment.class);
+            entity = backend.find(now(), envPath);
+            Environment env = backend.convert(now(), entity, Environment.class);
             Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
             Assert.assertEquals("production", env.getId());
 
-            entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
-            Resource r = backend.convert(entity, Resource.class);
+            entity = backend.find(now(), envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
+            Resource r = backend.convert(now(), entity, Resource.class);
             Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
             Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
             Assert.assertNull(r.getPath().ids().getFeedId());
             Assert.assertEquals("host1", r.getId());
 
-            entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
-            Metric m = backend.convert(entity, Metric.class);
+            entity = backend.find(now(), envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
+            Metric m = backend.convert(now(), entity, Metric.class);
             Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
             Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
             Assert.assertNull(m.getPath().ids().getFeedId());
             Assert.assertEquals("host1_ping_response", m.getId());
 
             CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
-            entity = backend.find(feedPath);
-            Feed f = backend.convert(entity, Feed.class);
+            entity = backend.find(now(), feedPath);
+            Feed f = backend.convert(now(), entity, Feed.class);
             Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", f.getId());
 
-            entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
-            r = backend.convert(entity, Resource.class);
+            entity = backend.find(now(), feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
+            r = backend.convert(now(), entity, Resource.class);
             Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
             Assert.assertEquals("feedResource1", r.getId());
 
-            entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
-            m = backend.convert(entity, Metric.class);
+            entity = backend.find(now(), feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
+            m = backend.convert(now(), entity, Metric.class);
             Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
             Assert.assertEquals("feedMetric1", m.getId());
 
-            entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
+            entity = backend.find(now(), tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
             ResourceType
-                    rt = backend.convert(entity, ResourceType.class);
+                    rt = backend.convert(now(), entity, ResourceType.class);
             Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
             Assert.assertEquals("URL", rt.getId());
 
-            entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
-            MetricType mt = backend.convert(entity, MetricType.class);
+            entity = backend.find(now(), tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
+            MetricType mt = backend.convert(now(), entity, MetricType.class);
             Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
             Assert.assertEquals("ResponseTime", mt.getId());
         } finally {
@@ -2923,11 +2929,11 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
-            E environment = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-            E r = backend.getRelationship(tenant, environment, contains.name());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").get());
+            E environment = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E r = backend.getRelationship(now(), tenant, environment, contains.name());
 
-            Relationship rel = backend.convert(r, Relationship.class);
+            Relationship rel = backend.convert(now(), r, Relationship.class);
 
             Assert.assertEquals("com.acme.tenant", rel.getSource().getSegment().getElementId());
             Assert.assertEquals("production", rel.getTarget().getSegment().getElementId());
@@ -2942,12 +2948,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
+            E entity = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").get());
             Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
-            Set<E> rels = backend.getRelationships(entity, both);
+            Set<E> rels = backend.getRelationships(now(), entity, both);
             Assert.assertEquals(8, rels.size());
 
-            Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
+            Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(now(), e,
                     Relationship.class));
 
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
@@ -2966,10 +2972,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "feed1".equals(r.getTarget().getSegment().getElementId())));
 
-            rels = backend.getRelationships(entity, incoming);
+            rels = backend.getRelationships(now(), entity, incoming);
             Assert.assertTrue(rels.isEmpty());
 
-            rels = backend.getRelationships(entity, outgoing);
+            rels = backend.getRelationships(now(), entity, outgoing);
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "production".equals(r.getTarget().getSegment().getElementId())));
@@ -2980,17 +2986,17 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
 
-            entity = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            entity = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
             Assert.assertEquals("test", backend.extractId(entity));
 
-            rels = backend.getRelationships(entity, incoming);
+            rels = backend.getRelationships(now(), entity, incoming);
             Assert.assertEquals(2, rels.size());
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "contains".equals(r.getName()) &&
                     "com.example.tenant".equals(r.getSource().getSegment().getElementId())));
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "yourMom".equals(r.getName()) &&
                     "playroom2_size".equals(r.getSource().getSegment().getElementId())));
 
-            rels = backend.getRelationships(entity, outgoing, "IamYourFather");
+            rels = backend.getRelationships(now(), entity, outgoing, "IamYourFather");
             Assert.assertEquals(1, rels.size());
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "IamYourFather".equals(r.getName()) &&
                     "playroom2_size".equals(r.getTarget().getSegment().getElementId())));
@@ -3006,14 +3012,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             TriFunction<E, Relationships.Direction, String[], Stream<? extends Entity<?, ?>>> test =
                     (start, direction, name) -> {
-                        Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
+                        Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(now(), start, direction, name);
                         return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
-                                false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
+                                false).map((e) -> (Entity<?, ?>) backend.convert(now(), e, backend.extractType(e)));
                     };
 
-            E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-            E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
-                    .get());
+            E env = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E feed = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").feed("feed1").get());
 
             Assert.assertEquals(8, test.apply(feed, outgoing, new String[]{"contains"}).count());
             Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
@@ -3044,16 +3049,16 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").get());
 
-            Assert.assertTrue(backend.hasRelationship(tenant, outgoing, "contains"));
-            Assert.assertFalse(backend.hasRelationship(tenant, incoming, "contains"));
-            Assert.assertTrue(backend.hasRelationship(tenant, both, "contains"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, outgoing, "contains"));
+            Assert.assertFalse(backend.hasRelationship(now(), tenant, incoming, "contains"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, both, "contains"));
 
-            E env = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            E env = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
 
-            Assert.assertTrue(backend.hasRelationship(tenant, env, "contains"));
-            Assert.assertFalse(backend.hasRelationship(tenant, env, "e-kachny"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, env, "contains"));
+            Assert.assertFalse(backend.hasRelationship(now(), tenant, env, "e-kachny"));
         } finally {
             backend.rollback();
         }
@@ -3064,7 +3069,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").get());
 
             Assert.assertEquals("com.example.tenant", backend.extractId(tenant));
         } finally {
@@ -3079,33 +3084,33 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
 
-            E entity = backend.find(tenantPath);
+            E entity = backend.find(now(), tenantPath);
             Assert.assertEquals(Tenant.class, backend.extractType(entity));
 
             CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
-            entity = backend.find(envPath);
+            entity = backend.find(now(), envPath);
             Assert.assertEquals(Environment.class, backend.extractType(entity));
 
-            entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
+            entity = backend.find(now(), envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
             Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-            entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
+            entity = backend.find(now(), envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
             Assert.assertEquals(Metric.class, backend.extractType(entity));
 
             CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
-            entity = backend.find(feedPath);
+            entity = backend.find(now(), feedPath);
             Assert.assertEquals(Feed.class, backend.extractType(entity));
 
-            entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
+            entity = backend.find(now(), feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
             Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-            entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
+            entity = backend.find(now(), feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
             Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-            entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
+            entity = backend.find(now(), tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
             Assert.assertEquals(ResourceType.class, backend.extractType(entity));
 
-            entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
+            entity = backend.find(now(), tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
             Assert.assertEquals(MetricType.class, backend.extractType(entity));
         } finally {
             backend.rollback();
@@ -3120,14 +3125,14 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Pager unlimited = Pager.unlimited(Order.unspecified());
 
             Query q = Query.path().with(type(Tenant.class), id("com.acme.tenant")).get();
-            Page<E> results = backend.query(q, unlimited);
+            Page<E> results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("com.acme.tenant", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());
 
             q = Query.path().with(type(Tenant.class), id("com.acme.tenant"), Related.by("contains"),
                     type(Environment.class), id("production")).get();
-            results = backend.query(q, unlimited);
+            results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("production", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());
@@ -3137,7 +3142,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(
                     ResourceType.class),
                     id("URL")).path().with(Related.by("contains"), type(Environment.class)).get();
-            results = backend.query(q, unlimited);
+            results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("production", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());

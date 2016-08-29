@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -98,6 +99,7 @@ import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
@@ -132,7 +134,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element find(CanonicalPath path) throws ElementNotFoundException {
+    public Element find(Discriminator discriminator, CanonicalPath path) throws ElementNotFoundException {
         Iterator<? extends Element> it;
         if (SegmentType.rl.equals(path.getSegment().getElementType())) {
             //__eid is globally unique for relationships
@@ -149,7 +151,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Page<Element> traverse(Element startingPoint, Query query, Pager pager) {
+    public Page<Element> traverse(Discriminator discriminator, Element startingPoint, Query query, Pager pager) {
         GraphTraversal<?, ? extends Element> q = translate(startingPoint, query);
 
         Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
@@ -157,7 +159,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return page(q, pager, Function.identity());
     }
 
-    @Override public Element traverseToSingle(Element startingPoint, Query query) {
+    @Override public Element traverseToSingle(Discriminator discriminator, Element startingPoint, Query query) {
         GraphTraversal<?, ? extends Element> q = translate(startingPoint, query);
         Log.LOG.debugf("Query execution (starting at %s):\nquery:\n%s\n\npipeline:\n%s", startingPoint, query, q);
         return drainAfter(q, () -> {
@@ -169,12 +171,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Page<Element> query(Query query, Pager pager) {
-        return traverse(null, query, pager);
+    public Page<Element> query(Discriminator discriminator, Query query, Pager pager) {
+        return traverse(discriminator, null, query, pager);
     }
 
-    @Override public Element querySingle(Query query) {
-        return traverseToSingle(null, query);
+    @Override public Element querySingle(Discriminator discriminator, Query query) {
+        return traverseToSingle(discriminator, null, query);
     }
 
     private GraphTraversal<?, ? extends Element> translate(Element startingPoint, Query query) {
@@ -206,8 +208,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public <T> Page<T> query(Query query, Pager pager,
-            Function<Element, T> conversion, Function<T, Boolean> filter) {
+    public <T> Page<T> query(Discriminator discriminator, Query query, Pager pager,
+                             Function<Element, T> conversion, Function<T, Boolean> filter) {
 
         GraphTraversal<?, ? extends Element> q = translate(null, query);
 
@@ -231,25 +233,27 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Iterator<Element> getTransitiveClosureOver(Element startingPoint, Relationships.Direction direction,
+    public Iterator<Element> getTransitiveClosureOver(Discriminator discriminator, Element startingPoint,
+                                                      Relationships.Direction direction,
                                                       String... relationshipNames) {
 
         return getTransitiveClosureOverImpl(startingPoint, direction, relationshipNames).iterator();
     }
 
     @Override
-    public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+    public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(Discriminator discriminator,
+                                                                         CanonicalPath startingPoint,
                                                                          Relationships.Direction direction,
                                                                          Class<T> clazz,
                                                                          String... relationshipNames) {
         try {
-            Element startingElement = find(startingPoint);
+            Element startingElement = find(discriminator, startingPoint);
             if (!(startingElement instanceof Vertex)) {
                 return Collections.emptyIterator();
             }
 
             return getTransitiveClosureOverImpl(startingElement, direction, relationshipNames).stream()
-                    .map(vertex -> convert(vertex, clazz)).iterator();
+                    .map(vertex -> convert(discriminator, vertex, clazz)).iterator();
 
         } catch (ElementNotFoundException e) {
             throw new EntityNotFoundException(clazz, null);
@@ -286,7 +290,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public boolean hasRelationship(Element entity, Relationships.Direction direction, String relationshipName) {
+    public boolean hasRelationship(Discriminator discriminator, Element entity, Relationships.Direction direction,
+                                   String relationshipName) {
         if (!(entity instanceof Vertex)) {
             return false;
         }
@@ -297,7 +302,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public boolean hasRelationship(Element source, Element target, String relationshipName) {
+    public boolean hasRelationship(Discriminator discriminator, Element source, Element target, String relationshipName) {
         if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
             return false;
         }
@@ -316,7 +321,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element getRelationship(Element source, Element target, String relationshipName)
+    public Element getRelationship(Discriminator discriminator, Element source, Element target, String relationshipName)
             throws ElementNotFoundException {
 
         if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
@@ -344,7 +349,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Set<Element> getRelationships(Element entity, Relationships.Direction direction, String... names) {
+    public Set<Element> getRelationships(Discriminator discriminator, Element entity, Relationships.Direction direction,
+                                         String... names) {
         if (!(entity instanceof Vertex)) {
             return Collections.emptySet();
         }
@@ -378,12 +384,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element getRelationshipSource(Element relationship) {
+    public Element getRelationshipSource(Discriminator discriminator, Element relationship) {
         return ((Edge) relationship).outVertex();
     }
 
     @Override
-    public Element getRelationshipTarget(Element relationship) {
+    public Element getRelationshipTarget(Discriminator discriminator, Element relationship) {
         return ((Edge) relationship).inVertex();
     }
 
@@ -413,32 +419,32 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public String extractIdentityHash(Element entityRepresentation) {
+    public String extractIdentityHash(Discriminator discriminator, Element entityRepresentation) {
         return entityRepresentation.<String>property(Constants.Property.__identityHash.name()).orElse(null);
     }
 
-    public String extractContentHash(Element entityRepresentation) {
+    public String extractContentHash(Discriminator discriminator, Element entityRepresentation) {
         return entityRepresentation.<String>property(Constants.Property.__contentHash.name()).orElse(null);
     }
 
-    public String extractSyncHash(Element entityRepresentation) {
+    public String extractSyncHash(Discriminator discriminator, Element entityRepresentation) {
         return entityRepresentation.<String>property(Constants.Property.__syncHash.name()).orElse(null);
     }
 
-    @Override public void updateHashes(Element entity, Hashes hashes) {
+    @Override public void updateHashes(Discriminator discriminator, Element entity, Hashes hashes) {
         setNonNullProperty(entity, Constants.Property.__contentHash.name(), hashes.getContentHash());
         setNonNullProperty(entity, Constants.Property.__syncHash.name(), hashes.getSyncHash());
-        updateIdentityHash(entity, hashes.getIdentityHash());
+        updateIdentityHash(discriminator, entity, hashes.getIdentityHash());
     }
 
-    private void updateIdentityHash(Element entity, String identityHash) {
+    private void updateIdentityHash(Discriminator discriminator, Element entity, String identityHash) {
         Objects.requireNonNull(entity, "entity == null");
 
         if (!(entity instanceof Vertex)) {
             return;
         }
 
-        String oldIdentityHash = extractIdentityHash(entity);
+        String oldIdentityHash = extractIdentityHash(discriminator, entity);
 
         if (Objects.equals(oldIdentityHash, identityHash)) {
             return;
@@ -516,7 +522,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public <T> T convert(Element entityRepresentation, Class<T> entityType) {
+    public <T> T convert(Discriminator discriminator, Element entityRepresentation, Class<T> entityType) {
         Constants.Type type = Constants.Type.of(extractType(entityRepresentation));
 
         Object e;
@@ -535,54 +541,59 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             Iterator<Vertex> it;
             switch (type) {
                 case environment:
-                    e = new Environment(extractCanonicalPath(v), extractContentHash(v));
+                    e = new Environment(extractCanonicalPath(v), extractContentHash(discriminator, v));
                     break;
                 case feed:
-                    e = new Feed(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
-                            extractSyncHash(v));
+                    e = new Feed(extractCanonicalPath(v), extractIdentityHash(discriminator, v), extractContentHash(
+                            discriminator, v),
+                            extractSyncHash(discriminator, v));
                     break;
                 case metric:
                     it = v.vertices(Direction.IN, Relationships.WellKnown.defines.name());
                     Vertex mdv = closeAfter(it, it::next);
-                    MetricType md = convert(mdv, MetricType.class);
-                    e = new Metric(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
-                            extractSyncHash(v), md,
-                            (Long) v.property(Constants.Property.__metric_interval.name()).orElse(null));
+                    MetricType md = convert(discriminator, mdv, MetricType.class);
+                    e = new Metric(extractCanonicalPath(v), extractIdentityHash(discriminator, v),
+                            extractContentHash(discriminator, v),
+                            extractSyncHash(discriminator, v), md,
+                            v.<Long>property(Constants.Property.__metric_interval.name()).orElse(null));
                     break;
                 case metricType:
-                    e = new MetricType(extractCanonicalPath(v), extractIdentityHash(v),
-                            extractContentHash(v), extractSyncHash(v),
-                            MetricUnit.fromDisplayName((String) v.property(Constants.Property.__unit.name()).value()),
-                            MetricDataType.fromDisplayName(
-                                    (String) v.property(Constants.Property.__metric_data_type.name()).value()),
-                            (Long) v.property(Constants.Property.__metric_interval.name()).orElse(null));
+                    e = new MetricType(extractCanonicalPath(v), extractIdentityHash(discriminator, v),
+                            extractContentHash(discriminator, v), extractSyncHash(discriminator, v),
+                            MetricUnit.fromDisplayName(v.<String>property(Constants.Property.__unit.name()).value()),
+                            MetricDataType.fromDisplayName(v.<String>property(Constants.Property.__metric_data_type.name()).value()),
+                            v.<Long>property(Constants.Property.__metric_interval.name()).orElse(null));
                     break;
                 case resource:
                     it = v.vertices(Direction.IN, Relationships.WellKnown.defines.name());
                     Vertex rtv = closeAfter(it, it::next);
-                    ResourceType rt = convert(rtv, ResourceType.class);
-                    e = new Resource(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
-                            extractSyncHash(v), rt);
+                    ResourceType rt = convert(discriminator, rtv, ResourceType.class);
+                    e = new Resource(extractCanonicalPath(v), extractIdentityHash(discriminator, v), extractContentHash(
+                            discriminator, v),
+                            extractSyncHash(discriminator, v), rt);
                     break;
                 case resourceType:
-                    e = new ResourceType(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
-                            extractSyncHash(v));
+                    e = new ResourceType(extractCanonicalPath(v), extractIdentityHash(discriminator, v), extractContentHash(
+                            discriminator, v),
+                            extractSyncHash(discriminator, v));
                     break;
                 case tenant:
-                    e = new Tenant(extractCanonicalPath(v), extractContentHash(v));
+                    e = new Tenant(extractCanonicalPath(v), extractContentHash(discriminator, v));
                     break;
                 case structuredData:
                     e = loadStructuredData(v, StructuredData.class.equals(entityType));
                     break;
                 case dataEntity:
                     CanonicalPath cp = extractCanonicalPath(v);
-                    String identityHash = extractIdentityHash(v);
+                    String identityHash = extractIdentityHash(discriminator, v);
                     e = new DataEntity(cp.up(), DataRole.valueOf(cp.getSegment().getElementId()),
-                            loadStructuredData(v, hasData), identityHash, extractContentHash(v), extractSyncHash(v));
+                            loadStructuredData(v, hasData), identityHash, extractContentHash(discriminator, v), extractSyncHash(
+                            discriminator, v));
                     break;
                 case operationType:
-                    e = new OperationType(extractCanonicalPath(v), extractIdentityHash(v), extractContentHash(v),
-                            extractSyncHash(v));
+                    e = new OperationType(extractCanonicalPath(v), extractIdentityHash(discriminator, v), extractContentHash(
+                            discriminator, v),
+                            extractSyncHash(discriminator, v));
                     break;
                 case metadatapack:
                     e = new MetadataPack(extractCanonicalPath(v));
@@ -677,7 +688,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element descendToData(Element dataEntityRepresentation, RelativePath dataPath) {
+    public Element descendToData(Discriminator discriminator, Element dataEntityRepresentation, RelativePath dataPath) {
         Query q = Query.path().with(With.dataAt(dataPath)).get();
 
         GraphTraversal<Element, Element> pipeline = __(dataEntityRepresentation);
@@ -694,7 +705,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public Element relate(Element sourceEntity, Element targetEntity, String name, Map<String, Object> properties) {
+    public Element relate(Discriminator discriminator, Element sourceEntity, Element targetEntity, String name,
+                          Map<String, Object> properties) {
         if (name == null) {
             throw new IllegalArgumentException("name == null");
         }
@@ -919,8 +931,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             private void relateToParent() {
                 if (parentAndCurrent.first != null) {
-                    relate(parentAndCurrent.first, parentAndCurrent.second, Relationships.WellKnown.contains.name(),
-                            null);
+                    relate(Discriminator.time(Instant.now()), parentAndCurrent.first, parentAndCurrent.second,
+                            Relationships.WellKnown.contains.name(), null);
                 }
             }
         }, structuredData);
@@ -929,7 +941,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void update(Element entity, AbstractElement.Update update) {
+    public void update(Discriminator discriminator, Element entity, AbstractElement.Update update) {
         update.accept(new ElementUpdateVisitor.Simple<Void, Void>() {
             @Override
             public Void visitTenant(Tenant.Update tenant, Void parameter) {
@@ -998,7 +1010,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Vertex dataVertex = v.vertices(Direction.OUT, Relationships.WellKnown.hasData.name())
                         .next();
 
-                Iterator<Element> children = getTransitiveClosureOver(dataVertex,
+                Iterator<Element> children = getTransitiveClosureOver(discriminator, dataVertex,
                         Relationships.Direction.outgoing, Relationships.WellKnown.contains.name());
 
                 while (children.hasNext()) {
@@ -1013,7 +1025,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 }
                 Element newData = persist(dataValue);
 
-                relate(v, newData, Relationships.WellKnown.hasData.name(), null);
+                relate(discriminator, v, newData, Relationships.WellKnown.hasData.name(), null);
                 return null;
             }
 
@@ -1039,7 +1051,15 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public void delete(Element entity) {
+    public void markDeleted(Discriminator discriminator, Element entity) {
+        if (entity instanceof Vertex) {
+            removeHashNodeOf((Vertex) entity);
+        }
+        entity.remove();
+    }
+
+    @Override
+    public void eradicate(Element entity) {
         if (entity instanceof Vertex) {
             removeHashNodeOf((Vertex) entity);
         }
@@ -1052,15 +1072,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             throw new IllegalArgumentException("The supplied element is not a data entity's data.");
         }
 
-        Iterator<Element> dataElements = getTransitiveClosureOver(dataRepresentation, outgoing, contains.name());
+        Iterator<Element> dataElements = getTransitiveClosureOverImpl(dataRepresentation, outgoing, contains.name())
+                .iterator();
 
         closeAfter(dataElements, () -> {
             // we know the closure is constructed eagerly in this impl, so this loop is OK.
             while (dataElements.hasNext()) {
-                delete(dataElements.next());
+                eradicate(dataElements.next());
             }
 
-            delete(dataRepresentation);
+            eradicate(dataRepresentation);
             return null;
         });
     }
@@ -1320,7 +1341,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 : Direction.BOTH);
     }
 
-    public InputStream getGraphSON(String tenantId) {
+    public InputStream getGraphSON(Discriminator discriminator, String tenantId) {
         PipedInputStream in = new PipedInputStream();
         new Thread(() -> {
             try (PipedOutputStream out = new PipedOutputStream(in)) {

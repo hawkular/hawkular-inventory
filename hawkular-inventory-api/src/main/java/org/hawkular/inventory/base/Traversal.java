@@ -60,7 +60,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @throws EntityNotFoundException if the query doesn't return any results
      */
     protected BE getSingle(Query query, SegmentType entityType) {
-        return inTx(tx -> Util.getSingle(tx, query, entityType));
+        return inTx(tx -> Util.getSingle(context.discriminator(), tx, query, entityType));
     }
 
     /**

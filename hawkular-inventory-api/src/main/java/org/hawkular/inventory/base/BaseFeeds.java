@@ -62,7 +62,7 @@ public final class BaseFeeds {
 
         @Override
         protected String getProposedId(Transaction<BE> tx, Feed.Blueprint blueprint) {
-            BE tenant = tx.querySingle(context.sourcePath.extend().filter()
+            BE tenant = tx.querySingle(context.discriminator(), context.sourcePath.extend().filter()
                     .with(type(Tenant.class)).get());
 
             if (tenant == null) {

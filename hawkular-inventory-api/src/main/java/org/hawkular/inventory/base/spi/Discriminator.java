@@ -14,19 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.api;
+package org.hawkular.inventory.base.spi;
 
-import org.hawkular.inventory.api.model.AbstractElement;
+import java.time.Instant;
 
 /**
- * Base interface of all browser interfaces over a single entity that can have relations.
- *
- * @param <Entity> the type of the entity being browsed
+ * A discriminator is basically a global filter on any request to an inventory backend.
  *
  * @author Lukas Krejci
- * @author Jirka Kremser
- * @since 0.0.1
+ * @since 0.19.0
  */
-public interface ResolvableToSingleWithRelationships<Entity extends AbstractElement<?, ?>, Update>
-        extends ResolvableToSingle<Entity, Update>, Relatable<Relationships.ReadWrite> {
+public final class Discriminator {
+    private final Instant time;
+
+    public static Discriminator time(Instant time) {
+        return new Discriminator(time);
+    }
+
+    private Discriminator(Instant time) {
+        this.time = time;
+    }
+
+    public Instant getTime() {
+        return time;
+    }
 }

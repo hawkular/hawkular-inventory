@@ -68,109 +68,125 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Tries to find an element at given canonical path.
      *
+     *
+     * @param discriminator the discriminator to apply on the query for the element
      * @param element the canonical path of the element to find
      * @return the element
      * @throws ElementNotFoundException if the element is not found
      */
-    E find(CanonicalPath element) throws ElementNotFoundException;
+    E find(Discriminator discriminator, CanonicalPath element) throws ElementNotFoundException;
 
     /**
      * Translates the query to the backend-specific representation and runs it, returning a correct page of results
      * as prescribed by the provided pager object.
      *
-     * <p>The difference between this method and {@link #traverse(Object, Query, Pager)} is that this method performs
+     * <p>The difference between this method and {@link #traverse(Discriminator, Object, Query, Pager)} is that this method performs
      * a graph-wide query, while traverse starts from a single element.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param query the query to execute
      * @param pager the page to return
      * @return a page of results corresponding to the parameters, possibly empty, never null.
      */
-    Page<E> query(Query query, Pager pager);
+    Page<E> query(Discriminator discriminator, Query query, Pager pager);
 
-    E querySingle(Query query);
+    E querySingle(Discriminator discriminator, Query query);
 
     /**
      * Translates the query to the backend-specific representation and runs it, returning a correct page of results
      * as prescribed by the provided pager object.
      *
+     *
+     * @param discriminator the discriminator to apply on the query
      * @param startingPoint the element which should be the starting point of the traversal
      * @param query         the query to perform
      * @param pager         pager to limit the number of results with
      * @return the page of results, possibly empty, never null
      */
-    Page<E> traverse(E startingPoint, Query query, Pager pager);
+    Page<E> traverse(Discriminator discriminator, E startingPoint, Query query, Pager pager);
 
-    E traverseToSingle(E startingPoint, Query query);
+    E traverseToSingle(Discriminator discriminator, E startingPoint, Query query);
 
     /**
-     * A variant of the {@link #query(Query, Pager)} method which in addition to querying also converts the results
+     * A variant of the {@link #query(Discriminator, Query, Pager)} method which in addition to querying also converts the results
      * using the provided conversion function and, more importantly, filters the results using the provided (possibly
      * null) filter function PRIOR TO paging is applied.
      *
      * <p>Because the total count and the paging is dependent on the filtering it needs to be applied during the
      * querying process and not only after the fact be the caller.
      *
+     * @param <T>        the type of the returned elements
+     * @param discriminator the discriminator to apply on the query
      * @param query      the query to perform
      * @param pager      the page to retrieve
      * @param conversion a conversion function to apply on the elements, never null
-     * @param filter     possibly null filter to filter the results with
-     * @param <T>        the type of the returned elements
-     * @return the page of results according to the supplied parameters
+     * @param filter     possibly null filter to filter the results with     @return the page of results according to the supplied parameters
      */
-    <T> Page<T> query(Query query, Pager pager, Function<E, T> conversion, Function<T, Boolean> filter);
+    <T> Page<T> query(Discriminator discriminator, Query query, Pager pager, Function<E, T> conversion,
+                      Function<T, Boolean> filter);
 
     /**
      * Going from the starting poing, this will return an iterator over all elements that are connected to the starting
      * point using relationships with provided name and recursively down to the elements connected in the same way to
      * them.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param startingPoint    the starting element
      * @param direction        any of the valid directions including
      *                         {@link Relationships.Direction#both}.
      * @param relationshipNames the names of the relationships to follow when composing the transitive closure
      * @return an iterator over the transitive closure, may be "lazy" and evaluate the closure on demand.
      */
-    Iterator<E> getTransitiveClosureOver(E startingPoint, Relationships.Direction direction,
-            String... relationshipNames);
+    Iterator<E> getTransitiveClosureOver(Discriminator discriminator, E startingPoint,
+                                         Relationships.Direction direction,
+                                         String... relationshipNames);
 
     /**
      * Checks whether there exists any relationship in given direction relative to the given entity with given name.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param entity           the entity in question
      * @param direction        the direction the relationship should have relative to the entity (
-     *                         {@link org.hawkular.inventory.api.Relationships.Direction#both} means "any" in this
+     *                         {@link Relationships.Direction#both} means "any" in this
      *                         context).
      * @param relationshipName the name of the relationship to seek
      * @return true if there is such relationship, false otherwise
-     * @see #getRelationships(Object, Relationships.Direction, String...)
+     * @see #getRelationships(Discriminator, Object, Relationships.Direction, String...)
      */
-    boolean hasRelationship(E entity, Relationships.Direction direction, String relationshipName);
+    boolean hasRelationship(Discriminator discriminator, E entity, Relationships.Direction direction,
+                            String relationshipName);
 
     /**
      * Checks whether there exists a relationship with given name between the provided entities.
      *
+     *
+     * @param discriminator
      * @param source           the source of the relationship
      * @param target           the target of the relationship
      * @param relationshipName the name of the relationship
      * @return true, if such relationship exists, false otherwise
      */
-    boolean hasRelationship(E source, E target, String relationshipName);
+    boolean hasRelationship(Discriminator discriminator, E source, E target, String relationshipName);
 
     /**
-     * Similar to {@link #hasRelationship(Object, Relationships.Direction, String)} but this method actually returns
+     * Similar to {@link #hasRelationship(Discriminator, Object, Relationships.Direction, String)} but this method actually returns
      * the relationship objects.
      *
+     *
+     * @param discriminator
      * @param entity    the entity in question
      * @param direction the direction in which the relationships should be going
      * @param names     the names of the relationships to return
      * @return the possibly empty set of the relationships, never null
-     * @see #hasRelationship(Object, Relationships.Direction, String)
+     * @see #hasRelationship(Discriminator, Object, Relationships.Direction, String)
      */
-    Set<E> getRelationships(E entity, Relationships.Direction direction, String... names);
+    Set<E> getRelationships(Discriminator discriminator, E entity, Relationships.Direction direction, String... names);
 
     /**
      * Get a single relationship with the provided name between the source and target.
      *
+     *
+     * @param discriminator
      * @param source           the source of the relationship
      * @param target           the target of the relationship
      * @param relationshipName the name of the relationship
@@ -178,19 +194,23 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @throws ElementNotFoundException if the relationship is not found
      * @throws IllegalArgumentException if source or target are not entities or relationship name is null
      */
-    E getRelationship(E source, E target, String relationshipName) throws ElementNotFoundException;
+    E getRelationship(Discriminator discriminator, E source, E target, String relationshipName) throws ElementNotFoundException;
 
     /**
+     *
+     * @param discriminator the discriminator to apply on the query
      * @param relationship the relationship in question
      * @return the source of the relationship
      */
-    E getRelationshipSource(E relationship);
+    E getRelationshipSource(Discriminator discriminator, E relationship);
 
     /**
+     *
+     * @param discriminator
      * @param relationship the relationship in question
      * @return the target of the relationship
      */
-    E getRelationshipTarget(E relationship);
+    E getRelationshipTarget(Discriminator discriminator, E relationship);
 
     /**
      * @param relationship the relationship in question
@@ -227,14 +247,16 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Extracts the identity hash from the provided entity.
      *
+     *
+     * @param discriminator the discriminator to apply on the query
      * @param entityRepresentation the representation object
      * @return the identity hash of the entity or null if not supported for that type of entity
      */
-    String extractIdentityHash(E entityRepresentation);
+    String extractIdentityHash(Discriminator discriminator, E entityRepresentation);
 
-    String extractContentHash(E entityRepresentation);
+    String extractContentHash(Discriminator discriminator, E entityRepresentation);
 
-    String extractSyncHash(E entityRepresentation);
+    String extractSyncHash(Discriminator discriminator, E entityRepresentation);
 
     /**
      * Converts the provided representation object to an inventory element of provided type.
@@ -242,28 +264,31 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * <p>This must support all the concrete subclasses of {@link AbstractElement}, {@link StructuredData} <b>and</b>
      * {@link ShallowStructuredData}.
      *
-     * @param entityRepresentation the object representing the element
-     * @param entityType           the desired type of the element
      * @param <T>                  the desired type of the element
-     * @return the converted inventory element
+     * @param discriminator
+     *@param entityRepresentation the object representing the element
+     * @param entityType           the desired type of the element   @return the converted inventory element
      * @throws ClassCastException if the representation object doesn't correspond to the provided type
      */
-    <T> T convert(E entityRepresentation, Class<T> entityType);
+    <T> T convert(Discriminator discriminator, E entityRepresentation, Class<T> entityType);
 
     /**
      * Given the representation of the data entity, this will return the representation of a structured data element
      * on the given path "inside" the data entity.
      *
+     *
+     * @param discriminator
      * @param dataEntityRepresentation the representation of the {@link org.hawkular.inventory.api.model.DataEntity}
      *                                 instance
      * @param dataPath                 the path in the data to descend to.
      * @see org.hawkular.inventory.api.Data.Single#data(RelativePath)
      */
-    E descendToData(E dataEntityRepresentation, RelativePath dataPath);
+    E descendToData(Discriminator discriminator, E dataEntityRepresentation, RelativePath dataPath);
 
     /**
      * Creates a new relationship from source to target with given name and properties.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param sourceEntity the source of the relationship
      * @param targetEntity the target of the relationship
      * @param name         the name of the relationship
@@ -271,7 +296,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
      * @return the representation of the newly created relationship
      * @throws IllegalArgumentException if source or target are relationships themselves or if name is null
      */
-    E relate(E sourceEntity, E targetEntity, String name, Map<String, Object> properties);
+    E relate(Discriminator discriminator, E sourceEntity, E targetEntity, String name, Map<String, Object> properties);
 
     /**
      * Persists a new entity with the provided assigned path.
@@ -294,25 +319,36 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Updates given entity with the data provided in the update object.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param entity the entity to update
      * @param update the update object
      * @throws IllegalArgumentException if the entity is of different type than the update
      */
-    void update(E entity, AbstractElement.Update update);
+    void update(Discriminator discriminator, E entity, AbstractElement.Update update);
 
     /**
      * Updates the various hashes on the entity
+     *
+     * @param discriminator the discriminator to apply on the query
      * @param entity the entity to update the hashes of
      * @param hashes the hashes to update
      */
-    void updateHashes(E entity, Hashes hashes);
+    void updateHashes(Discriminator discriminator, E entity, Hashes hashes);
 
     /**
-     * Simply deletes the entity from the storage.
+     * Simply marks the entity as deleted.
      *
+     * @param discriminator the discriminator to apply on the query
      * @param entity the entity to delete
      */
-    void delete(E entity);
+    void markDeleted(Discriminator discriminator, E entity);
+
+    /**
+     * Conmpletely removes the entity and all its contained entities from storage.
+     *
+     * @param entity the entity to remove
+     */
+    void eradicate(E entity);
 
     /**
      * Deletes the structured data represented by the provided object.
@@ -342,9 +378,10 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * See the javadoc in {@link org.hawkular.inventory.api.Inventory#getGraphSON(String)}
      */
-    InputStream getGraphSON(String tenantId);
+    InputStream getGraphSON(Discriminator discriminator, String tenantId);
 
-    <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(CanonicalPath startingPoint,
+    <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(Discriminator discriminator,
+                                                                  CanonicalPath startingPoint,
                                                                   Relationships.Direction direction, Class<T> clazz,
                                                                   String... relationshipNames);
 

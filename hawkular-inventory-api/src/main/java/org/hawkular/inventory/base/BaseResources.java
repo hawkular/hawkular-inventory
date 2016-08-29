@@ -83,7 +83,7 @@ public final class BaseResources {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 resourceTypePath = Util.canonicalize(blueprint.getResourceTypePath(), tenant,
                         parentPath, ResourceType.SEGMENT_TYPE);
-                resourceTypeObject = tx.find(resourceTypePath);
+                resourceTypeObject = tx.find(context.discriminator(), resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
                         " when resolved to '" + resourceTypePath + "' while trying to wire up a new resource on path '"
@@ -93,12 +93,12 @@ public final class BaseResources {
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
             //here we "know what we are doing" and need to create the defines relationship to capture the
             //contract of the resource.
-            BE r = tx.relate(resourceTypeObject, entity, defines.name(), null);
+            BE r = tx.relate(context.discriminator(), resourceTypeObject, entity, defines.name(), null);
 
             CanonicalPath entityPath = tx.extractCanonicalPath(entity);
             resourceTypePath = tx.extractCanonicalPath(resourceTypeObject);
 
-            ResourceType resourceType = tx.convert(resourceTypeObject, ResourceType.class);
+            ResourceType resourceType = tx.convert(context.discriminator(), resourceTypeObject, ResourceType.class);
 
             Resource ret = new Resource(blueprint.getName(), parentPath.extend(Resource.SEGMENT_TYPE,
                     tx.extractId(entity)).get(), null, null, null, resourceType, blueprint.getProperties());
@@ -114,8 +114,8 @@ public final class BaseResources {
                 //in here, we do use the relationship rules to check if the hierarchy we're introducing by this call
                 //conforms to the rules.
                 String relationshipName = isParentOf.name();
-                RelationshipRules.checkCreate(tx, parent, outgoing, relationshipName, entity);
-                r = tx.relate(parent, entity, relationshipName, null);
+                RelationshipRules.checkCreate(context.discriminator(), tx, parent, outgoing, relationshipName, entity);
+                r = tx.relate(context.discriminator(), parent, entity, relationshipName, null);
 
                 Relationship parentRel = new Relationship(tx.extractId(r), isParentOf.name(),
                         parentPath, entityPath);

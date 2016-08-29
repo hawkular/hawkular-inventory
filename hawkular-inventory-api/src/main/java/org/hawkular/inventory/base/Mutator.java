@@ -125,7 +125,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
             //poor man's way of ensuring uniqueness of CPs
             Query existenceCheck = context.hop().filter().with(id(id)).get();
 
-            Page<BE> results = tx.query(existenceCheck, Pager.single());
+            Page<BE> results = tx.query(context.discriminator(), existenceCheck, Pager.single());
 
             if (results.hasNext()) {
                 throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
@@ -157,8 +157,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
 
         if (parentCanonicalPath != null) {
             //no need to check for contains rules - we're connecting a newly created entity
-            containsRel = tx.relate(parent, entityObject, contains.name(), Collections.emptyMap());
-            Relationship rel = tx.convert(containsRel, Relationship.class);
+            containsRel = tx.relate(context.discriminator(), parent, entityObject, contains.name(), Collections.emptyMap());
+            Relationship rel = tx.convert(context.discriminator(), containsRel, Relationship.class);
             tx.getPreCommit().addNotifications(
                     new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
         }
@@ -188,7 +188,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     public final void update(Id id, U update) throws EntityNotFoundException {
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-            Util.update(context.entityClass, tx, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate);
+            Util.update(context.discriminator(), context.entityClass, tx, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate
+            );
             return null;
         });
     }
@@ -197,7 +198,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         //TODO implement
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-            Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+            Util.delete(context.discriminator(), context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
             return null;
         });
     }
@@ -205,7 +206,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     public final void eradicate(Id id) throws EntityNotFoundException {
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-            Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+            Util.delete(context.discriminator(), context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
             return null;
         });
     }
@@ -260,7 +261,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                     @SuppressWarnings("unchecked")
                     @Override
                     protected BE defaultAction(SegmentType elementType, Void parameter) {
-                        BE res = tx.querySingle(context.sourcePath);
+                        BE res = tx.querySingle(context.discriminator(), context.sourcePath);
 
                         if (res == null) {
                             throw new EntityNotFoundException(context.previous.entityClass,
@@ -301,13 +302,13 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                                            Transaction<BE> tx) {
         otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
             try {
-                BE endObject = tx.find(end);
+                BE endObject = tx.find(context.discriminator(), end);
 
                 BE from = direction == outgoing ? entity : endObject;
                 BE to = direction == outgoing ? endObject : entity;
 
-                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociation(tx, from,
-                        name, to, null);
+                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociation(context.discriminator(),
+                        tx, from, name, to, null);
 
                 tx.getPreCommit().addNotifications(res);
             } catch (ElementNotFoundException e) {
