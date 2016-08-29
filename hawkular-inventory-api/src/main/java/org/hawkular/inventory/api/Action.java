@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api;
 
+import java.util.IdentityHashMap;
+
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.ContentHashable;
 import org.hawkular.inventory.api.model.Environment;
@@ -89,6 +91,14 @@ public final class Action<C, E> {
         SYNC_HASH_CHANGED(_SYNC_HASH_CHANGED), IDENTITY_HASH_CHANGED(_IDENTITY_HASH_CHANGED),
         CONTENT_HASH_CHANGED(_CONTENT_HASH_CHANGED);
 
+        private static final IdentityHashMap<Action<?, ?>, Enumerated> map;
+        static {
+            map = new IdentityHashMap<>();
+            for (Enumerated e : values()) {
+                map.put(e.action, e);
+            }
+        }
+
         private final Action<?, ?> action;
 
         Enumerated(Action<?, ?> action) {
@@ -96,13 +106,12 @@ public final class Action<C, E> {
         }
 
         public static Enumerated from(Action<?, ?> action) {
-            for (Enumerated e : values()) {
-                if (e.action == action) {
-                    return e;
-                }
+            Enumerated ret = map.get(action);
+            if (ret == null) {
+                throw new AssertionError("Unknown action");
+            } else {
+                return ret;
             }
-
-            throw new AssertionError("Unknown action");
         }
 
         public Action<?, ?> getAction() {

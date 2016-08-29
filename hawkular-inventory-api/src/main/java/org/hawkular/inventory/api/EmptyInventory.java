@@ -17,14 +17,17 @@
 package org.hawkular.inventory.api;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -57,6 +60,10 @@ import rx.Observable;
  * @since 0.0.2
  */
 public class EmptyInventory implements Inventory {
+    @Override public Inventory at(Instant time) {
+        return this;
+    }
+
     @Override
     public void initialize(Configuration configuration) {
     }
@@ -149,12 +156,20 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete() {
+        public void delete(Instant time) {
             throw entityNotFound(entityType);
         }
 
         public SyncHash.Tree treeHash() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate() {
+            throw entityNotFound(entityType);
+        }
+
+        @Override public List<Change<E, ?>> history() {
+            return Collections.emptyList();
         }
     }
 
@@ -194,7 +209,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -353,7 +372,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -497,7 +520,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -643,7 +670,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -815,8 +846,16 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete() {
+        public void delete(Instant time) {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override public void eradicate() {
+            throw new RelationNotFoundException((String) null, (Filter[]) null);
+        }
+
+        @Override public List<Change<Relationship, ?>> history() {
+            return Collections.emptyList();
         }
     }
 
@@ -931,7 +970,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -943,6 +982,10 @@ public class EmptyInventory implements Inventory {
         @Override
         public Feeds.Single get(String id) throws EntityNotFoundException {
             return new FeedsSingle();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -1093,7 +1136,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -1215,7 +1262,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id) throws EntityNotFoundException {
+        public void delete(String id, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -1400,7 +1451,11 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(Role ignored) throws EntityNotFoundException {
+        public void delete(Role ignored, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(Role s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -1427,7 +1482,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete() {
+        public void delete(Instant time) {
             throw new UnsupportedOperationException();
         }
 
@@ -1436,6 +1491,14 @@ public class EmptyInventory implements Inventory {
 
         @Override public SyncHash.Tree treeHash() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public List<Change<DataEntity, ?>> history() {
+            return Collections.emptyList();
         }
     }
 
@@ -1486,12 +1549,22 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete(String s) throws EntityNotFoundException {
+        @Override public void delete(String s, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
 
-    public static class OperationTypesSingle implements OperationTypes.Single {
+    public static class OperationTypesSingle
+            extends SingleBase<OperationType, OperationType.Blueprint, OperationType.Update>
+            implements OperationTypes.Single {
+
+        public OperationTypesSingle() {
+            super(OperationType.class);
+        }
 
         @Override public Data.ReadWrite<DataRole.OperationType> data() {
             return new DataReadWrite<>();
@@ -1505,24 +1578,7 @@ public class EmptyInventory implements Inventory {
             return new RelationshipsReadWrite();
         }
 
-        @Override public OperationType entity() throws EntityNotFoundException, RelationNotFoundException {
-            throw entityNotFound(OperationType.class);
-        }
-
-        @Override public void update(OperationType.Update update)
-                throws EntityNotFoundException, RelationNotFoundException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public void delete() {
-            throw new UnsupportedOperationException();
-        }
-
         @Override public void synchronize(SyncRequest<OperationType.Blueprint> syncRequest) {
-        }
-
-        @Override public SyncHash.Tree treeHash() {
-            throw new UnsupportedOperationException();
         }
     }
 
@@ -1574,7 +1630,11 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete(String s) throws EntityNotFoundException {
+        @Override public void delete(String s, Instant time) throws EntityNotFoundException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
     }
@@ -1606,8 +1666,16 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete() {
+        @Override public void delete(Instant time) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override public void eradicate() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public List<Change<MetadataPack, ?>> history() {
+            return Collections.emptyList();
         }
     }
 

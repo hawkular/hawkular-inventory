@@ -22,6 +22,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.filters.With.id;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -192,7 +193,16 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
         });
     }
 
-    public final void delete(Id id) throws EntityNotFoundException {
+    public final void delete(Id id, Instant time) throws EntityNotFoundException {
+        //TODO implement
+        inTx(tx -> {
+            Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+            Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+            return null;
+        });
+    }
+
+    public final void eradicate(Id id) throws EntityNotFoundException {
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
             Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);

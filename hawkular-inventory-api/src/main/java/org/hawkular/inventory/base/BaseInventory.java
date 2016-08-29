@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -90,12 +91,12 @@ public abstract class BaseInventory<E> implements Inventory {
         this.transactionConstructor = transactionConstructor == null
                 ? orig.transactionConstructor : transactionConstructor;
 
-        tenantContext = new TraversalContext<>(this, Query.empty(),
+        tenantContext = new TraversalContext<>(this, Instant.now(), Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), this.backend, Tenant.class, configuration,
                 observableContext, this.transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), this.backend,
-                Relationship.class, configuration, observableContext, this.transactionConstructor);
+        relationshipContext = new TraversalContext<>(this, Instant.now(), Query.empty(), Query.path().get(),
+                this.backend, Relationship.class, configuration, observableContext, this.transactionConstructor);
     }
 
     protected BaseInventory() {
@@ -136,11 +137,11 @@ public abstract class BaseInventory<E> implements Inventory {
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
 
-        tenantContext = new TraversalContext<>(this, Query.empty(),
+        tenantContext = new TraversalContext<>(this, Instant.now(), Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext, transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
+        relationshipContext = new TraversalContext<>(this, Instant.now(), Query.empty(), Query.path().get(), backend,
                 Relationship.class, configuration, observableContext, transactionConstructor);
         this.configuration = configuration;
     }
@@ -181,6 +182,13 @@ public abstract class BaseInventory<E> implements Inventory {
      * @return a backend implementation that will be used to access the backend store of the inventory
      */
     protected abstract InventoryBackend<E> doInitialize(Configuration configuration);
+
+    @Override public BaseInventory<E> at(Instant time) {
+        BaseInventory<E> copy = cloneWith(transactionConstructor);
+        copy.tenantContext = tenantContext.at(time);
+        copy.relationshipContext = relationshipContext.at(time);
+        return copy;
+    }
 
     @Override
     public final void close() throws Exception {

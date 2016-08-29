@@ -17,6 +17,7 @@
 package org.hawkular.inventory.rest.cdi;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Iterator;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -67,6 +68,10 @@ public class AutoTenantInventoryProducer {
 
         private AutotenantInventory(Inventory inventory) {
             this.inventory = inventory;
+        }
+
+        @Override public AutotenantInventory at(Instant time) {
+            return new AutotenantInventory(inventory.at(time));
         }
 
         @Override
@@ -166,8 +171,12 @@ public class AutoTenantInventoryProducer {
                 }
 
                 @Override
-                public void delete(String id) throws EntityNotFoundException {
-                    actual.delete(id);
+                public void delete(String id, Instant time) throws EntityNotFoundException {
+                    actual.delete(id, time);
+                }
+
+                @Override public void eradicate(String id) throws EntityNotFoundException {
+                    actual.eradicate(id);
                 }
             };
         }

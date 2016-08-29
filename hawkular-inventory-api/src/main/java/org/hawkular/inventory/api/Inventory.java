@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -107,6 +108,14 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.0.1
  */
 public interface Inventory extends AutoCloseable, Tenants.Container<Tenants.ReadWrite> {
+
+    /**
+     * Defines the "view" on the inventory as it existed at given point in time.
+     *
+     * @param time the time the inventory existed at
+     * @return a new inventory instance set up to query data as it existed at the given time
+     */
+    Inventory at(Instant time);
 
     /**
      * Initializes the inventory from the provided configuration object.

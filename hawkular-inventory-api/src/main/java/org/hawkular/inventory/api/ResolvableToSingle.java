@@ -16,6 +16,12 @@
  */
 package org.hawkular.inventory.api;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Change;
+
 /**
  * Base interface for all browser interfaces over a single entity.
  *
@@ -24,7 +30,7 @@ package org.hawkular.inventory.api;
  * @author Lukas Krejci
  * @since 1.0
  */
-public interface ResolvableToSingle<Entity, Update> {
+public interface ResolvableToSingle<Entity extends AbstractElement<?, ?>, Update> {
 
     /**
      * Resolves the entity and returns it.
@@ -68,8 +74,46 @@ public interface ResolvableToSingle<Entity, Update> {
     /**
      * Deletes the entity.
      *
+     * <p>Note that this doesn't actually delete the entity from the inventory. It merely records its removal at this
+     * point in time.
+     *
      * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
      * @throws RelationNotFoundException if there is no relation corresponding to the traversal
      */
-    void delete();
+    default void delete() {
+        delete(Instant.now());
+    }
+
+    /**
+     * Deletes the entity.
+     *
+     * <p>Note that this doesn't actually delete the entity from the inventory. It merely records its removal at the
+     * provided point in time.
+     *
+     * @param time the time from which the entity should be marked as deleted
+     *
+     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
+     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
+     * @throws IllegalArgumentException  if there were changes to the entity already made after the provided time of
+     * deletion
+     *
+     * @see #delete()
+     */
+    void delete(Instant time);
+
+    /**
+     * This removes the entity and all its history from the inventory. After this call, it looks like the entity never
+     * existed in the inventory.
+     *
+     * <p>Usually, you don't want to use this method. Use {@link #delete(Instant)} instead which preserves the history
+     * of the entity.
+     */
+    void eradicate();
+
+    /**
+     * The list of the changes is sorted in the ascending order by the time of the change.
+     *
+     * @return the list of changes made to the entity so far.
+     */
+    List<Change<Entity, ?>> history();
 }
