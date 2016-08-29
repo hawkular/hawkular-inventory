@@ -86,8 +86,8 @@ public final class BaseResources {
                 resourceTypeObject = tx.find(resourceTypePath);
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("Resource type '" + blueprint.getResourceTypePath() + "' not found" +
-                        " when resolved to '" + resourceTypePath + "' while trying to wire up new resource on path '" +
-                        parentPath.extend(SegmentType.r, blueprint.getId()) + "'.");
+                        " when resolved to '" + resourceTypePath + "' while trying to wire up a new resource on path '"
+                        + parentPath.extend(SegmentType.r, blueprint.getId()).get() + "'.");
             }
 
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
