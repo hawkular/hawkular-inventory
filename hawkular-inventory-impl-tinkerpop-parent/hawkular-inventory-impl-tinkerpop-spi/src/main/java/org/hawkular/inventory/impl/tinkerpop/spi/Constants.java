@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -161,7 +162,15 @@ public final class Constants {
 
         __contentHash("contentHash", String.class),
 
-        __syncHash("syncHash", String.class);
+        __syncHash("syncHash", String.class),
+
+        __from(Long.class),
+
+        __to(Long.class),
+
+        __deleted(Boolean.class)
+
+        ;
 
         private final String sortName;
         private final Class<?> propertyType;
@@ -236,9 +245,13 @@ public final class Constants {
         private final String[] mappedProperties;
         private final Class<?> entityType;
 
+        private static final List<String> identityVertexProperties =
+                Arrays.asList(Property.__type.name(), Property.__eid.name(), Property.__cp.name(),
+                        Property.__deleted.name());
+
         Type(Class<?> entityType, Property... mappedProperties) {
             this.entityType = entityType;
-            this.mappedProperties = new String[mappedProperties.length + 3];
+            this.mappedProperties = new String[mappedProperties.length + 6];
             Arrays.setAll(this.mappedProperties, i -> {
                 switch (i) {
                     case 0:
@@ -247,8 +260,14 @@ public final class Constants {
                         return Property.__eid.name();
                     case 2:
                         return Property.__cp.name();
+                    case 3:
+                        return Property.__from.name();
+                    case 4:
+                        return Property.__to.name();
+                    case 5:
+                        return Property.__deleted.name();
                     default:
-                        return mappedProperties[i - 3].name();
+                        return mappedProperties[i - 6].name();
                 }
             });
         }
@@ -398,10 +417,14 @@ public final class Constants {
         public String[] getMappedProperties() {
             return mappedProperties;
         }
+
+        public static List<String> getIdentityVertexProperties() {
+            return identityVertexProperties;
+        }
     }
 
     public enum InternalEdge {
-        __withIdentityHash, __containsIdentityHash
+        __withIdentityHash, __containsIdentityHash, __inState
     }
 
     public enum InternalType {

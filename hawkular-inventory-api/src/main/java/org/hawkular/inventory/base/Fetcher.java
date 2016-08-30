@@ -92,14 +92,19 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
     @Override
     public void delete() {
-        //TODO implement
+        inTx(tx -> {
+            Util.delete(context.discriminator(), context.entityClass, tx, context.select().get(), this::preDelete,
+                    this::postDelete, false);
+            return null;
+        });
         useCachedEntity = false;
         context.setCreatedEntity(null);
     }
 
     @Override public void eradicate() {
         inTx(tx -> {
-            Util.delete(context.discriminator(), context.entityClass, tx, context.select().get(), this::preDelete, this::postDelete);
+            Util.delete(context.discriminator(), context.entityClass, tx, context.select().get(), this::preDelete,
+                    this::postDelete, true);
             return null;
         });
         useCachedEntity = false;

@@ -47,6 +47,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InconsistenStateException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
@@ -119,12 +120,12 @@ final class Util {
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    if (tx.requiresRollbackAfterFailure(t)) {
+                    if (t instanceof InconsistenStateException || tx.requiresRollbackAfterFailure(t)) {
                         tx.rollback();
                     }
                     throw t;
                 }
-            } catch (CommitFailureException e) {
+            } catch (CommitFailureException | InconsistenStateException e) {
                 failures++;
 
                 //if the backend fails the commit, we can retry
@@ -321,7 +322,7 @@ final class Util {
     public static <BE, E extends AbstractElement<?, ?>>
     void delete(Discriminator discriminator, Class<E> entityClass, Transaction<BE> tx, Query entityQuery,
                 BiConsumer<BE, Transaction<BE>> cleanupFunction,
-                BiConsumer<BE, Transaction<BE>> postDelete) {
+                BiConsumer<BE, Transaction<BE>> postDelete, boolean eradicate) {
 
         BE entity = tx.querySingle(discriminator, entityQuery);
         if (entity == null) {
@@ -374,7 +375,11 @@ final class Util {
 
         //k, now we can delete them all... the order is not important anymore
         for (BE e : deleted) {
-            tx.markDeleted(discriminator, e);
+            if (eradicate) {
+                tx.eradicate(e);
+            } else {
+                tx.markDeleted(discriminator, e);
+            }
         }
 
         for (BE e : verticesToDeleteThatDefineSomething) {
@@ -382,24 +387,25 @@ final class Util {
                 //we avoid the convert() function here because it assumes the containing entities of the passed in
                 //entity exist. This might not be true during the delete because the transitive closure "walks" the
                 //entities from the "top" down the containment chain and the entities are immediately deleted.
-                String rootId = tx.extractId(entity);
-                String definingId = tx.extractId(e);
-                String rootType = entityClass.getSimpleName();
-                String definingType = tx.extractType(e).getSimpleName();
+                CanonicalPath rootPath = tx.extractCanonicalPath(entity);
+                CanonicalPath definingPath = tx.extractCanonicalPath(e);
 
-                String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
-                String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
-
-                throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                        definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
+                throw new IllegalArgumentException("Could not delete entity '" + rootPath + "'. The entity '" +
+                        definingPath + "', which it (indirectly) contains, acts as a definition for some " +
                         "entities that are not deleted along with it, which would leave them without a " +
                         "definition. This is illegal.");
             } else {
-                tx.markDeleted(discriminator, e);
+                if (eradicate) {
+                    tx.eradicate(e);
+                } else {
+                    tx.markDeleted(discriminator, e);
+                }
             }
         }
 
-        dataToBeDeleted.forEach(tx::deleteStructuredData);
+        if (eradicate) {
+            dataToBeDeleted.forEach(tx::deleteStructuredData);
+        }
 
         if (postDelete != null) {
             postDelete.accept(entity, tx);

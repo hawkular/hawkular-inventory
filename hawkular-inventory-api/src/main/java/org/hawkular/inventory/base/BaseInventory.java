@@ -91,12 +91,13 @@ public abstract class BaseInventory<E> implements Inventory {
         this.transactionConstructor = transactionConstructor == null
                 ? orig.transactionConstructor : transactionConstructor;
 
-        tenantContext = new TraversalContext<>(this, Instant.now(), Query.empty(),
+        tenantContext = new TraversalContext<>(this, orig.tenantContext.discriminator().getTime(), Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), this.backend, Tenant.class, configuration,
                 observableContext, this.transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Instant.now(), Query.empty(), Query.path().get(),
-                this.backend, Relationship.class, configuration, observableContext, this.transactionConstructor);
+        relationshipContext = new TraversalContext<>(this, orig.relationshipContext.discriminator().getTime(),
+                Query.empty(), Query.path().get(), this.backend, Relationship.class, configuration, observableContext,
+                this.transactionConstructor);
     }
 
     protected BaseInventory() {

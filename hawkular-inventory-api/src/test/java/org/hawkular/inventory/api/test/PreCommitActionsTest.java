@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,7 +40,6 @@ import org.hawkular.inventory.base.EntityAndPendingNotifications;
 import org.hawkular.inventory.base.Transaction;
 import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.CommitFailureException;
-import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -268,11 +266,11 @@ public class PreCommitActionsTest {
             return Inventory.types().bySegment(t).getElementType();
         });
 
-        when(backend.find(now(), any())).thenAnswer(args -> args.getArgumentAt(0, CanonicalPath.class).toString());
+        when(backend.find(any(), any())).thenAnswer(args -> args.getArgumentAt(1, CanonicalPath.class).toString());
 
-        when(backend.convert(now(), any(), any())).thenAnswer(args -> {
-            Class<?> type = args.getArgumentAt(1, Class.class);
-            String path = args.getArgumentAt(0, String.class);
+        when(backend.convert(any(), any(), any())).thenAnswer(args -> {
+            Class<?> type = args.getArgumentAt(2, Class.class);
+            String path = args.getArgumentAt(1, String.class);
 
             Constructor<?> ctor = type.getDeclaredConstructor();
             ctor.setAccessible(true);
@@ -382,9 +380,5 @@ public class PreCommitActionsTest {
         @Override protected InventoryBackend<String> doInitialize(Configuration configuration) {
             return backend;
         }
-    }
-
-    private static Discriminator now() {
-        return Discriminator.time(Instant.now());
     }
 }

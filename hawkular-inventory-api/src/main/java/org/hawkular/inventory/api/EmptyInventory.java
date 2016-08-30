@@ -209,7 +209,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -372,7 +372,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -520,7 +520,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -670,7 +670,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -970,7 +970,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -1136,7 +1136,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -1262,7 +1262,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(String id, Instant time) throws EntityNotFoundException {
+        public void delete(String id) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -1451,7 +1451,7 @@ public class EmptyInventory implements Inventory {
         }
 
         @Override
-        public void delete(Role ignored, Instant time) throws EntityNotFoundException {
+        public void delete(Role ignored) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -1549,7 +1549,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete(String s, Instant time) throws EntityNotFoundException {
+        @Override public void delete(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 
@@ -1630,7 +1630,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void delete(String s, Instant time) throws EntityNotFoundException {
+        @Override public void delete(String s) throws EntityNotFoundException {
             throw new UnsupportedOperationException();
         }
 

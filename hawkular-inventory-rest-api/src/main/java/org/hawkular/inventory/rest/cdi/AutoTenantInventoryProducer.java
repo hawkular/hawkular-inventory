@@ -171,8 +171,8 @@ public class AutoTenantInventoryProducer {
                 }
 
                 @Override
-                public void delete(String id, Instant time) throws EntityNotFoundException {
-                    actual.delete(id, time);
+                public void delete(String id) throws EntityNotFoundException {
+                    actual.delete(id);
                 }
 
                 @Override public void eradicate(String id) throws EntityNotFoundException {
