@@ -46,6 +46,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InconsistentStateException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
@@ -118,12 +119,12 @@ final class Util {
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    if (tx.requiresRollbackAfterFailure(t)) {
+                    if (t instanceof InconsistentStateException || tx.requiresRollbackAfterFailure(t)) {
                         tx.rollback();
                     }
                     throw t;
                 }
-            } catch (CommitFailureException e) {
+            } catch (CommitFailureException | InconsistentStateException e) {
                 failures++;
 
                 //if the backend fails the commit, we can retry
