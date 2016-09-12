@@ -38,9 +38,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-core</artifactId>
-      <version>${version.com.tinkerpop.gremlin}</version>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-core</artifactId>
+      <version>${version.org.apache.tinkerpop}</version>
     </dependency>
 
     <dependency>

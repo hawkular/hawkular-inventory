@@ -16,10 +16,9 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.paths.CanonicalPath;
-
-import com.tinkerpop.blueprints.TransactionalGraph;
 
 /**
  * Data needed by various services. Mostly coming from configuration.
@@ -29,17 +28,17 @@ import com.tinkerpop.blueprints.TransactionalGraph;
  */
 final class InventoryContext {
 
-    private final TransactionalGraph graph;
+    private final Graph graph;
     private final TinkerpopInventory inventory;
     private final GraphProvider graphProvider;
 
-    public InventoryContext(TinkerpopInventory inventory, TransactionalGraph graph, GraphProvider graphProvider) {
+    public InventoryContext(TinkerpopInventory inventory, Graph graph, GraphProvider graphProvider) {
         this.inventory = inventory;
         this.graph = graph;
         this.graphProvider = graphProvider;
     }
 
-    public InventoryContext cloneWith(TransactionalGraph graph) {
+    public InventoryContext cloneWith(Graph graph) {
         return new InventoryContext(inventory, graph, graphProvider);
     }
 
@@ -47,11 +46,11 @@ final class InventoryContext {
         return inventory;
     }
 
-    public TransactionalGraph getGraph() {
+    public Graph getGraph() {
         return graph;
     }
 
-    public TransactionalGraph startTransaction() {
+    public Graph startTransaction() {
         return graphProvider.startTransaction(graph);
     }
 
