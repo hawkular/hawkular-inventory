@@ -26,6 +26,7 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.TransactionConstructor;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 

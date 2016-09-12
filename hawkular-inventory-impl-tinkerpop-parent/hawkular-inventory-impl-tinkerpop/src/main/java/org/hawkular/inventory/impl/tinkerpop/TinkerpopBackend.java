@@ -24,16 +24,16 @@ import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__cp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__eid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__type;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Type.relationship;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__cp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__eid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__type;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Type.relationship;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,6 +101,7 @@ import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
+import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 import org.hawkular.inventory.paths.RelativePath;
@@ -1267,7 +1268,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
      * Updates the properties of the element, disregarding any changes of the disallowed properties
      *
      * <p> The list of the disallowed properties will usually come from
-     * {@link org.hawkular.inventory.impl.tinkerpop.Constants.Type#getMappedProperties()}.
+     * {@link Constants.Type#getMappedProperties()}.
      *
      * @param e                    the element to update properties of
      * @param properties           the properties to update

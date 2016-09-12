@@ -26,11 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -47,13 +50,12 @@ import org.umlg.sqlg.structure.SqlgGraph;
  * @since 0.13.0
  */
 public class SqlGraphProvider implements GraphProvider {
-
     @Override public boolean isPreferringBigTransactions() {
         return false;
     }
 
     @Override public boolean isUniqueIndexSupported() {
-        return false;
+        return true;
     }
 
     @Override public boolean needsDraining() {
@@ -82,6 +84,10 @@ public class SqlGraphProvider implements GraphProvider {
 
         ArrayList<IndexSpec> specs = new ArrayList<>(Arrays.asList(indexSpecs));
 
+        String[] entityLabels =
+                Stream.of(Constants.Type.values()).filter(t -> Entity.class.isAssignableFrom(t.getEntityType()))
+                        .map(Enum::name).toArray(String[]::new);
+
         sqlg.tx().open();
 
         Iterator<IndexSpec> it = specs.iterator();
@@ -97,12 +103,19 @@ public class SqlGraphProvider implements GraphProvider {
 
             ArrayList<Object> keyValues = new ArrayList<>(is.getProperties().size() * 2);
             for (IndexSpec.Property p : is.getProperties()) {
-                keyValues.add(" ");
                 keyValues.add(p.getName());
+                keyValues.add(sampleValue(p.getType()));
             }
 
             if (Vertex.class.equals(is.getElementType())) {
-                //sqlg.createVertexLabeledIndex(Vertex.DEFAULT_LABEL, keyValues.toArray());
+                for (Constants.Type t : Constants.Type.values()) {
+                    if (Entity.class.isAssignableFrom(t.getEntityType())) {
+                        sqlg.createVertexLabeledIndex(t.name(), keyValues.toArray());
+                    }
+                }
+
+                is.getProperties().stream().filter(IndexSpec.Property::isUnique)
+                        .forEach(p -> sqlg.createVertexUniqueConstraint(p.getName(), entityLabels));
             } else {
                 //This is not working yet in Sqlg
                 //sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
@@ -122,5 +135,13 @@ public class SqlGraphProvider implements GraphProvider {
                 return Collections.singletonList((String) e.getKey());
             }
         }).collect(Collectors.toSet());
+    }
+
+    private static Object sampleValue(Class<?> type) {
+        if (type == String.class) {
+            return "a";
+        } else {
+            throw new IllegalArgumentException("Unhandled type of property: " + type);
+        }
     }
 }

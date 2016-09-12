@@ -18,16 +18,16 @@ package org.hawkular.inventory.impl.tinkerpop;
 
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.InternalEdge.__withIdentityHash;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__cp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__eid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__type;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__withIdentityHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__cp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__eid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__type;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,6 +54,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.base.spi.NoopFilter;
+import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
@@ -321,7 +322,11 @@ class FilterVisitor {
                 query.hasId(values);
                 break;
             case "label":
-                query.hasLabel(Stream.of(values).map(Object::toString).toArray(String[]::new));
+                if (values.length == 1) {
+                    query.hasLabel(values[0]);
+                } else {
+                    query.hasLabel(values[0], Arrays.copyOfRange(values, 1, values.length));
+                }
                 break;
             default:
                 if (values.length == 0) {
