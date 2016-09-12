@@ -37,7 +37,6 @@ import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.hawkular.inventory.paths.CanonicalPath;
 
-import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import com.thinkaurelius.titan.core.TitanException;
@@ -96,7 +95,7 @@ public class TitanProvider implements GraphProvider {
     }
 
     @Override public boolean isUniqueIndexSupported() {
-        return true;
+        return false;
     }
 
     @Override public boolean needsDraining() {
@@ -153,9 +152,12 @@ public class TitanProvider implements GraphProvider {
 //                        .multiplicity(Multiplicity.SIMPLE)
 //                        .make());
 //            }
-            if (p.isUnique()) {
-                propertyKeyMaker.cardinality(Cardinality.SINGLE);
-            }
+// XXX just don't create unique indices even if Titan supports it. They are not performant enough in concurrent
+// scenarios
+//
+//            if (p.isUnique()) {
+//                propertyKeyMaker.cardinality(Cardinality.SINGLE);
+//            }
             PropertyKey key = propertyKeyMaker.make();
             definedPropertyKeys.put(p.getName(), key);
         }

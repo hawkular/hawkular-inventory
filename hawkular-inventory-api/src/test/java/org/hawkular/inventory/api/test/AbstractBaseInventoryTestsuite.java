@@ -128,7 +128,6 @@ import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Observable;
@@ -799,7 +798,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    @Ignore //temporarily, until sqlg gets its act together
     public void testRelationshipServiceGetAllFilters() throws Exception {
         Set<Relationship> rels = inventory.tenants().get("com.example.tenant").environments().get("test")
                 .relationships(outgoing).getAll(RelationWith.name("contains")).entities();
@@ -840,7 +838,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    @Ignore //temporarily, until sqlg gets its act together
     public void testRelationshipServiceGetAllFiltersWithSubsequentCalls() throws Exception {
         Metric metric = inventory.tenants().getAll().relationships().named
                 (contains).environments().getAll().relationships().getAll(RelationWith
@@ -3203,7 +3200,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    @Ignore //temporarily, until sqlg gets its act together
     public void testFilteringByData() throws Exception {
         Data.Read<DataRole.Resource> configs = inventory.tenants().getAll().environments().getAll().resources()
                 .getAll().data();
@@ -3304,18 +3300,23 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testCreateWithRelationships() throws Exception {
-        inventory.tenants().get("com.acme.tenant").environments().create(Environment.Blueprint.builder()
-                .withId("env-with-rel")
-                .addOutgoingRelationship("kachna", CanonicalPath.of().tenant("com.acme.tenant").get())
-                .addIncomingRelationship("duck", CanonicalPath.of().tenant("com.acme.tenant").get())
-                .build());
-        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(incoming).named("kachna")
-                .anyExists());
-        Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(outgoing).named("duck")
-                .anyExists());
-
-        //clean up
-        inventory.tenants().get("com.acme.tenant").environments().delete("env-with-rel");
+        try {
+            inventory.tenants().get("com.acme.tenant").environments().create(Environment.Blueprint.builder()
+                    .withId("env-with-rel")
+                    .addOutgoingRelationship("kachna", CanonicalPath.of().tenant("com.acme.tenant").get())
+                    .addIncomingRelationship("duck", CanonicalPath.of().tenant("com.acme.tenant").get())
+                    .build());
+            Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(incoming).named("kachna")
+                    .anyExists());
+            Assert.assertTrue(inventory.tenants().get("com.acme.tenant").relationships(outgoing).named("duck")
+                    .anyExists());
+        } finally {
+            //clean up
+            Environments.Single env = inventory.tenants().get("com.acme.tenant").environments().get("env-with-rel");
+            if (env.exists()) {
+                env.delete();
+            }
+        }
     }
 
     @Test

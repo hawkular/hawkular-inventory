@@ -64,8 +64,8 @@
     <version.com.github.fge>2.2.6</version.com.github.fge>
     <version.com.thinkaurelius.titan>1.1.0-SNAPSHOT</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
-    <version.org.apache.tinkerpop>3.2.0-incubating</version.org.apache.tinkerpop>
-    <version.org.umlg>1.2.1-SNAPSHOT</version.org.umlg>
+    <version.org.apache.tinkerpop>3.2.2</version.org.apache.tinkerpop>
+    <version.org.umlg>1.3.0-SRC-revision-3884cecdf31415988c43af8058e73f648b8e9679</version.org.umlg>
 
     <version.org.antlr>4.5.3</version.org.antlr>
 
@@ -230,6 +230,27 @@
           <excludes combine.children="append">
             <exclude>**/travis_wait_*.log</exclude>
           </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.l2x6.maven.srcdeps</groupId>
+        <artifactId>srcdeps-maven-plugin</artifactId>
+        <version>${version.srcdeps-maven-plugin}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <repositories>
+            <repository>
+              <id>sqlg</id>
+              <selectors>
+                <selector>org.umlg</selector>
+              </selectors>
+              <url>scm:git:https://github.com/pietermartin/sqlg.git</url>
+              <buildArgs>
+                <!-- the tests take a loooong time -->
+                <buildArg>-DskipTests</buildArg>
+              </buildArgs>
+            </repository>
+          </repositories>
         </configuration>
       </plugin>
     </plugins>
