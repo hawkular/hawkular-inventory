@@ -35,7 +35,9 @@
     <module>hawkular-inventory-impl-tinkerpop</module>
     <module>hawkular-inventory-impl-tinkerpop-spi</module>
     <module>hawkular-inventory-impl-tinkerpop-tinkergraph-provider</module>
-    <module>hawkular-inventory-impl-tinkerpop-titan-provider</module>
+    <!-- don't build Titan provider. This requires a non-released Titan with code from its PR 1312
+         https://github.com/thinkaurelius/titan/pull/1312 -->
+    <!--<module>hawkular-inventory-impl-tinkerpop-titan-provider</module>-->
     <module>hawkular-inventory-impl-tinkerpop-sql-provider</module>
   </modules>
 

@@ -248,6 +248,8 @@
               <buildArgs>
                 <!-- the tests take a loooong time -->
                 <buildArg>-DskipTests</buildArg>
+                <buildArg>-Dsqlg.version=${version.org.umlg}</buildArg>
+                <buildArg>-Dtinkerpop.version=${version.org.apache.tinkerpop}</buildArg>
               </buildArgs>
             </repository>
           </repositories>

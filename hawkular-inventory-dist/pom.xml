@@ -43,7 +43,7 @@
   </scm>
 
   <properties>
-    <res.dir>titan</res.dir>
+    <res.dir>sql</res.dir>
   </properties>
 
   <dependencies>
@@ -129,6 +129,31 @@
       </exclusions>
     </dependency>
 
+    <!-- By default we build with SQL backend -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-impl-tinkerpop-sql-provider</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-hsqldb</artifactId>
+      <version>${version.org.umlg}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-postgres</artifactId>
+      <version>${version.org.umlg}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-h2</artifactId>
+      <version>${version.org.umlg}</version>
+    </dependency>
+
     <!-- Logging -->
     <dependency>
       <groupId>org.jboss.logging</groupId>
@@ -190,34 +215,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>sql</id>
-      <!-- NOTE: This assumes that the inventory feature-pack module will also be built with the "sql" profile.
-           Only then will we end up with an inventory distribution that can use SQL backends. -->
-      <properties>
-        <res.dir>sql</res.dir>
-      </properties>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.hawkular.inventory</groupId>
-          <artifactId>hawkular-inventory-impl-tinkerpop-sql-provider</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-          <groupId>org.umlg</groupId>
-          <artifactId>sqlg-hsqldb</artifactId>
-          <version>${version.org.umlg}</version>
-        </dependency>
-
-        <dependency>
-          <groupId>org.umlg</groupId>
-          <artifactId>sqlg-postgres</artifactId>
-          <version>${version.org.umlg}</version>
-        </dependency>
-      </dependencies>
-    </profile>
     <profile>
       <id>titan</id>
 
