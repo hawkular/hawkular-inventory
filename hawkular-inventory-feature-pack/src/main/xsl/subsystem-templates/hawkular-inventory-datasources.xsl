@@ -49,6 +49,18 @@
         </security>
       </datasource>
 
+      <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_h2" pool-name="HawkularInventoryDS_h2"
+                  enabled="true" use-java-context="true">
+        <connection-url>
+          jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072
+        </connection-url>
+        <driver>h2</driver>
+        <security>
+          <user-name>sa</user-name>
+          <password>sa</password>
+        </security>
+      </datasource>
+
       <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_postgres"
                   pool-name="HawkularInventoryDS_postgres" enabled="true" use-java-context="true">
         <connection-url>
