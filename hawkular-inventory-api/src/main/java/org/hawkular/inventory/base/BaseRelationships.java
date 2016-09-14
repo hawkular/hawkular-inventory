@@ -37,7 +37,6 @@ import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
-import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -85,7 +84,7 @@ public final class BaseRelationships {
 
         @Override
         public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return new Single<>(context.proceed().where(With.id(id)).get());
+            return new Single<>(context.proceed().where(RelationWith.id(id)).get());
         }
 
         @Override

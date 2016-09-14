@@ -1304,8 +1304,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         inventory.tenants().get("com.acme.tenant").relationships().update(r.getId(),
                 Relationship.Update.builder().withProperty("ducks", "many").withProperty("hammer", "nails").build());
 
-        r = inventory.tenants().get("com.acme.tenant").relationships()
-                .getAll(RelationWith.name("contains")).entities().iterator().next();
+        r = inventory.tenants().get("com.acme.tenant").relationships().get(r.getId()).entity();
 
         Assert.assertEquals(2, r.getProperties().size());
         Assert.assertEquals("many", r.getProperties().get("ducks"));
@@ -1314,8 +1313,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         //reset the change we made back...
         inventory.tenants().get("com.acme.tenant").relationships().update(r.getId(), new Relationship.Update(null));
 
-        r = inventory.tenants().get("com.acme.tenant").relationships()
-                .getAll(RelationWith.name("contains")).entities().iterator().next();
+        r = inventory.tenants().get("com.acme.tenant").relationships().get(r.getId()).entity();
 
         Assert.assertEquals(2, r.getProperties().size());
     }
@@ -1329,8 +1327,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         inventory.tenants().get(tenantName).relationships().update(r.getId(),
                 Relationship.Update.builder().withProperty("ducks", "many").withProperty("hammer", "nails").build());
 
-        r = inventory.tenants().get(tenantName).relationships()
-                .getAll(RelationWith.name("contains")).entities().iterator().next();
+        r = inventory.tenants().get(tenantName).relationships().get(r.getId()).entity();
 
         Assert.assertEquals(2, r.getProperties().size());
         Assert.assertEquals("many", r.getProperties().get("ducks"));
@@ -1338,10 +1335,9 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         //reset the change we made back...
         inventory.tenants().get(tenantName).relationships().update(r.getId(),
-                new Relationship.Update(new HashMap<String, Object>()));
+                new Relationship.Update(new HashMap<>()));
 
-        r = inventory.tenants().get(tenantName).relationships()
-                .getAll(RelationWith.name("contains")).entities().iterator().next();
+        r = inventory.tenants().get(tenantName).relationships().get(r.getId()).entity();
 
         Assert.assertEquals(0, r.getProperties().size());
     }
