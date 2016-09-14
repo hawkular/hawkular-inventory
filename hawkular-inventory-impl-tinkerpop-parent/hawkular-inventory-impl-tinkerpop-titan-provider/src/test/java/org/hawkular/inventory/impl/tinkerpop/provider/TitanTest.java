@@ -19,6 +19,7 @@ package org.hawkular.inventory.impl.tinkerpop.provider;
 import java.net.URL;
 
 import org.apache.cassandra.service.CassandraDaemon;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
@@ -28,8 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-
-import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci

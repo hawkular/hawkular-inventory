@@ -63,9 +63,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.tinkerpop.gremlin</groupId>
-      <artifactId>gremlin-java</artifactId>
-      <version>${version.com.tinkerpop.gremlin}</version>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-core</artifactId>
+      <version>${version.org.apache.tinkerpop}</version>
     </dependency>
 
     <!-- test deps -->

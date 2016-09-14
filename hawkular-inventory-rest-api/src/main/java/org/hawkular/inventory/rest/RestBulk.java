@@ -380,6 +380,8 @@ public class RestBulk extends RestBase {
 
                 CanonicalPath parentPath = canonicalize(e.getKey(), rootPath);
 
+                RestApiLogger.LOGGER.tracef("Bulk creating under %s", parentPath);
+
                 @SuppressWarnings("unchecked")
                 ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single = binv.inspect(parentPath,
                         ResolvableToSingle.class);
@@ -397,6 +399,8 @@ public class RestBulk extends RestBase {
                         bulkCreateEntity(statuses, idExtractor, parentPath, single, elementType, blueprints);
                     }
                 }
+
+                RestApiLogger.LOGGER.tracef("Done bulk creating under %s", parentPath);
             }
             transaction.commit();
             return statuses;
@@ -425,6 +429,8 @@ public class RestBulk extends RestBase {
                                   ResolvableToSingle<? extends AbstractElement<?, ?>, ?> single,
                                   ElementType elementType, List<Blueprint> blueprints) {
         if (!parentPath.modified().canExtendTo(elementType.segmentType)) {
+            RestApiLogger.LOGGER.debugf("Element type %s cannot be created under parent %s. Aborting bulk create.",
+                    elementType.segmentType, parentPath);
             putStatus(statuses, elementType, parentPath, BAD_REQUEST.getStatusCode());
             return;
         }
@@ -447,6 +453,8 @@ public class RestBulk extends RestBase {
                     .get();
             boolean hasBeenProcessed = hasBeenProcessed(statuses, elementType, provisionalChildPath);
             if (hasBeenProcessed) {
+                RestApiLogger.LOGGER.tracef("Skipping creation of %s. It seems to have been processed already",
+                        provisionalChildPath);
                 // this entity has it's own record in the list with statuses so let's move to another one
                 continue;
             }
@@ -456,8 +464,11 @@ public class RestBulk extends RestBase {
 
                 CanonicalPath childPath = parentPath.extend(elementType.segmentType, childId).get();
 
+                RestApiLogger.LOGGER.tracef("Created %s", childPath);
+
                 putStatus(statuses, elementType, childPath, CREATED.getStatusCode());
             } catch (EntityAlreadyExistsException ex) {
+                RestApiLogger.LOGGER.tracef("Entity already exists during bulk create: " + provisionalChildPath);
                 putStatus(statuses, elementType, provisionalChildPath, CONFLICT.getStatusCode());
             } catch (Exception ex) {
                 RestApiLogger.LOGGER.failedToCreateBulkEntity(provisionalChildPath, ex);

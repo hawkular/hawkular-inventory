@@ -17,26 +17,34 @@
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.apache.commons.configuration.MapConfiguration;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.util.AbstractTransaction;
+import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
-
-import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import com.tinkerpop.blueprints.util.wrappers.wrapped.WrappedGraph;
 
 /**
  * @author Lukas Krejci
  * @since 0.0.1
  */
 public final class TinkerGraphProvider implements GraphProvider {
-
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final boolean prefersBigTxs;
 
@@ -67,51 +75,163 @@ public final class TinkerGraphProvider implements GraphProvider {
     }
 
     @Override
-    public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
+    public void ensureIndices(Graph graph, IndexSpec... indexSpecs) {
         //don't bother with this for a demo graph
     }
 
-    @Override
-    public TransactionalGraph startTransaction(TransactionalGraph graph) {
-        GraphProvider.super.startTransaction(graph);
-        lock.writeLock().lock();
-        return graph;
-    }
+    private static final class WrappedTinkerGraph implements Graph, WrappedGraph<TinkerGraph> {
 
-    @Override
-    public void commit(TransactionalGraph graph) {
-        GraphProvider.super.commit(graph);
-        lock.writeLock().unlock();
-    }
+        private final TinkerGraph graph;
+        private final AtomicBoolean inTx = new AtomicBoolean(false);
 
-    @Override
-    public void rollback(TransactionalGraph graph) {
-        GraphProvider.super.rollback(graph);
-        lock.writeLock().unlock();
-    }
-
-    public static final class WrappedTinkerGraph extends WrappedGraph<TinkerGraph> implements
-            ThreadedTransactionalGraph {
-
-        public WrappedTinkerGraph(org.apache.commons.configuration.Configuration configuration) {
-            super(new TinkerGraph(configuration));
+        WrappedTinkerGraph(org.apache.commons.configuration.Configuration configuration) {
+            graph = TinkerGraph.open(configuration);
         }
 
-        @Override public TransactionalGraph newTransaction() {
-            return this;
+        @Override public TinkerGraph getBaseGraph() {
+            return graph;
         }
 
-        @Override
-        @SuppressWarnings("deprecation")
-        public void stopTransaction(Conclusion conclusion) {
+        public <E extends Element> void createIndex(String key,
+                                                    Class<E> elementClass) {
+            graph.createIndex(key, elementClass);
         }
 
-        @Override
-        public void commit() {
+        public <E extends Element> void dropIndex(String key,
+                                                  Class<E> elementClass) {
+            graph.dropIndex(key, elementClass);
         }
 
-        @Override
-        public void rollback() {
+        public static TinkerGraph open() {
+            return TinkerGraph.open();
+        }
+
+        public void clear() {
+            graph.clear();
+        }
+
+        public static TinkerGraph open(org.apache.commons.configuration.Configuration configuration) {
+            return TinkerGraph.open(configuration);
+        }
+
+        public <E extends Element> Set<String> getIndexedKeys(
+                Class<E> elementClass) {
+            return graph.getIndexedKeys(elementClass);
+        }
+
+        @Override public Vertex addVertex(Object... keyValues) {
+            return graph.addVertex(keyValues);
+        }
+
+        @Override public void close() {
+            graph.close();
+        }
+
+        @Override public GraphComputer compute() {
+            return graph.compute();
+        }
+
+        @Override public <C extends GraphComputer> C compute(
+                Class<C> graphComputerClass) {
+            return graph.compute(graphComputerClass);
+        }
+
+        @Override public org.apache.commons.configuration.Configuration configuration() {
+            return graph.configuration();
+        }
+
+        @Override public Iterator<Edge> edges(Object... edgeIds) {
+            return graph.edges(edgeIds);
+        }
+
+        @Override public Features features() {
+            return graph.features();
+        }
+
+        @Override public String toString() {
+            return graph.toString();
+        }
+
+        @Override public Transaction tx() {
+            return new AbstractTransaction(this) {
+                @Override protected void doOpen() {
+                    if (!inTx.compareAndSet(false, true)) {
+                        throw new IllegalStateException("Nested transaction detected");
+                    }
+                }
+
+                @Override protected void doCommit() throws TransactionException {
+                    if (!inTx.compareAndSet(true, false)) {
+                        throw new IllegalStateException("No transaction active");
+                    }
+                }
+
+                @Override protected void doRollback() throws TransactionException {
+                    if (!inTx.compareAndSet(true, false)) {
+                        throw new IllegalStateException("No transaction active");
+                    }
+                }
+
+                @Override protected void doClose() {
+                    inTx.set(false);
+                }
+
+                @Override protected void doReadWrite() {
+                }
+
+                @Override protected void fireOnCommit() {
+                }
+
+                @Override protected void fireOnRollback() {
+                }
+
+                @Override public Transaction onReadWrite(Consumer<Transaction> consumer) {
+                    return this;
+                }
+
+                @Override public Transaction onClose(Consumer<Transaction> consumer) {
+                    return this;
+                }
+
+                @Override public void addTransactionListener(Consumer<Status> listener) {
+                }
+
+                @Override public void removeTransactionListener(Consumer<Status> listener) {
+                }
+
+                @Override public void clearTransactionListeners() {
+                }
+
+                @Override public boolean isOpen() {
+                    return inTx.get();
+                }
+            };
+        }
+
+        @Override public Variables variables() {
+            return graph.variables();
+        }
+
+        @Override public Iterator<Vertex> vertices(Object... vertexIds) {
+            return graph.vertices(vertexIds);
+        }
+
+        @Override public Vertex addVertex(String label) {
+            return graph.addVertex(label);
+        }
+
+        @Override public <I extends Io> I io(
+                Io.Builder<I> builder) {
+            return graph.io(builder);
+        }
+
+        @Override public GraphTraversalSource traversal() {
+            return graph.traversal();
+        }
+
+        @Override public <C extends TraversalSource> C traversal(
+                TraversalSource.Builder<C> sourceBuilder) {
+            return graph.traversal(sourceBuilder);
         }
     }
 

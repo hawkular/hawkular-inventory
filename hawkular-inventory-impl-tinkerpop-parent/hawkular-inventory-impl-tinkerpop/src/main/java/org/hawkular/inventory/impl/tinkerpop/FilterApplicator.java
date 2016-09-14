@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import static com.tinkerpop.gremlin.java.GremlinFluentUtility.optimizePipelineForQuery;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -26,6 +24,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.hawkular.inventory.api.FilterFragment;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.QueryFragment;
@@ -40,13 +44,6 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.base.spi.NoopFilter;
-
-import com.tinkerpop.pipes.Pipe;
-import com.tinkerpop.pipes.filter.IntervalFilterPipe;
-import com.tinkerpop.pipes.filter.PropertyFilterPipe;
-import com.tinkerpop.pipes.filter.RangeFilterPipe;
-import com.tinkerpop.pipes.transform.VertexQueryPipe;
-import com.tinkerpop.pipes.transform.VerticesEdgesPipe;
 
 /**
  * A filter applicator applies a filter to a Gremlin query.
@@ -129,16 +126,14 @@ abstract class FilterApplicator<T extends Filter> {
      * @param <S>        type of the source of the query
      * @param <E>        type of the output of the query
      */
-    public static <S, E> void applyAll(Query filterTree, HawkularPipeline<S, E> q) {
+    public static <S, E> void applyAll(Query filterTree, GraphTraversal<S, E> q) {
         if (filterTree == null) {
             return;
         }
 
         QueryTranslationState state = new QueryTranslationState();
 
-        if (applyAll(filterTree, q, false, state)) {
-            q.recall();
-        }
+        applyAll(filterTree, q, false, state);
     }
 
     /**
@@ -156,12 +151,12 @@ abstract class FilterApplicator<T extends Filter> {
      * state.
      */
     @SuppressWarnings("unchecked")
-    private static <S, E> boolean applyAll(Query query, HawkularPipeline<S, E> pipeline, boolean isFilter,
+    private static <S, E> boolean applyAll(Query query, GraphTraversal<S, E> pipeline, boolean isFilter,
                                            QueryTranslationState state) {
 
         QueryTranslationState origState = state.clone();
 
-        HawkularPipeline<S, E> workingPipeline = new HawkularPipeline<>();
+        GraphTraversal<E, E> workingPipeline = __.start();
 
         for (QueryFragment qf : query.getFragments()) {
             boolean thisIsFilter = qf instanceof FilterFragment;
@@ -171,36 +166,33 @@ abstract class FilterApplicator<T extends Filter> {
                 if (thisIsFilter) {
                     //add the path progressions we had
                     finishPipeline(workingPipeline, state, origState);
-                    workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+                    GraphTraversal.Admin<S, E> admin = pipeline.asAdmin();
+                    workingPipeline.asAdmin().getSteps().forEach(admin::addStep);
                 } else {
                     if (needsRememberingPosition(workingPipeline)) {
                         finishPipeline(workingPipeline, state, origState);
-                        pipeline.remember();
-
-                        //add the path progressions we had
-                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
-
-                        pipeline.recall();
+                        pipeline.where(workingPipeline);
                     } else {
                         //add the path progressions we had
                         //finishPipeline(workingPipeline, state, origState);
-                        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
+                        GraphTraversal.Admin<S, E> admin = pipeline.asAdmin();
+                        workingPipeline.asAdmin().getSteps().forEach(admin::addStep);
                     }
                 }
-                workingPipeline = new HawkularPipeline<>();
+                workingPipeline = __.start();
             }
 
             FilterApplicator.of(qf.getFilter()).applyTo(workingPipeline, state);
         }
 
+        finishPipeline(workingPipeline, state, origState);
         boolean remember = isFilter && needsRememberingPosition(workingPipeline);
         if (remember) {
-            pipeline.remember();
+            pipeline.where(workingPipeline);
+        } else {
+            GraphTraversal.Admin<S, E> admin = pipeline.asAdmin();
+            workingPipeline.asAdmin().getSteps().forEach(admin::addStep);
         }
-
-        //empty the working pipeline into the true pipeline
-        workingPipeline.getPipes().forEach((p) -> addOptimized(pipeline, p));
-        finishPipeline(pipeline, state, origState);
 
         if (query.getSubTrees().isEmpty()) {
             return remember;
@@ -209,38 +201,25 @@ abstract class FilterApplicator<T extends Filter> {
         if (query.getSubTrees().size() == 1) {
             return applyAll(query.getSubTrees().get(0), pipeline, isFilter, state);
         } else {
-            List<HawkularPipeline<E, ?>> branches = new ArrayList<>();
+            List<GraphTraversal<E, ?>> branches = new ArrayList<>();
             Iterator<Query> it = query.getSubTrees().iterator();
 
             // apply the first branch - in here, we know there are at least 2 actually
-            HawkularPipeline<E, ?> branch = new HawkularPipeline<>();
+            GraphTraversal<E, ?> branch = __.start();
 
             // the branch is a brand new pipeline, so it doesn't make sense for it to inherit
             // our current filter state.
-            boolean newIsFilter = applyAll(it.next(), branch, false, state.clone());
-            // close the filter in the branch, if needed
-            if (newIsFilter) {
-                branch.recall();
-            }
+            applyAll(it.next(), branch, false, state.clone());
             branches.add(branch);
 
             while (it.hasNext()) {
-                branch = new HawkularPipeline<>();
-                boolean nextIsFilter = applyAll(it.next(), branch, false, state.clone());
-                // close the filter in the branch, if needed
-                if (nextIsFilter) {
-                    branch.recall();
-                }
-                if (nextIsFilter != newIsFilter) {
-                    // this shouldn't normally be the case because the base impl extends the query tree
-                    // symmetrically, but here we can't be sure of that.
-                    throw new IllegalArgumentException("The branches of the query [" + query + "] don't change" +
-                            " the path/filter state consistently.");
-                }
+                branch = __.start();
+                applyAll(it.next(), branch, false, state.clone());
                 branches.add(branch);
             }
 
-            pipeline.copySplit(branches.toArray(new HawkularPipeline[branches.size()])).exhaustMerge();
+
+            pipeline.union(branches.toArray(new GraphTraversal[branches.size()]));
 
             finishPipeline(pipeline, state, origState);
 
@@ -248,7 +227,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
     }
 
-    static <S, E> void finishPipeline(HawkularPipeline<S, E> pipeline, QueryTranslationState state,
+    static <S, E> void finishPipeline(GraphTraversal<S, E> pipeline, QueryTranslationState state,
                                               QueryTranslationState originalState) {
         if (state.isExplicitChange()) {
             return;
@@ -284,24 +263,14 @@ abstract class FilterApplicator<T extends Filter> {
         state.setComingFrom(originalState.getComingFrom());
     }
 
-    private static boolean needsRememberingPosition(HawkularPipeline<?, ?> pipeline) {
-        for (Pipe<?, ?> p : pipeline.getPipes()) {
-            if (p instanceof VertexQueryPipe || p instanceof VerticesEdgesPipe) {
+    private static boolean needsRememberingPosition(GraphTraversal<?, ?> pipeline) {
+        for (Step<?, ?> p : pipeline.asAdmin().getSteps()) {
+            if (p instanceof VertexStep || p instanceof EdgeVertexStep || p instanceof EdgeOtherVertexStep) {
                 return true;
             }
         }
 
         return false;
-    }
-
-    private static void addOptimized(HawkularPipeline<?, ?> pipeline, Pipe<?, ?> pipe) {
-        if (pipe instanceof PropertyFilterPipe
-                || pipe instanceof IntervalFilterPipe
-                || pipe instanceof RangeFilterPipe) {
-            optimizePipelineForQuery(pipeline, pipe);
-        } else {
-            pipeline.add(pipe);
-        }
     }
 
     /**
@@ -310,7 +279,7 @@ abstract class FilterApplicator<T extends Filter> {
      *
      * @param query the query to update with filter
      */
-    public abstract void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state);
+    public abstract void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state);
 
     public Filter filter() {
         return filter;
@@ -327,7 +296,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -337,7 +306,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -347,7 +316,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -357,7 +326,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -368,7 +337,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -380,7 +349,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -392,7 +361,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
 
@@ -404,7 +373,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -414,7 +383,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -424,7 +393,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -436,7 +405,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -448,7 +417,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -460,7 +429,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -472,7 +441,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -484,7 +453,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -496,7 +465,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -508,7 +477,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -520,7 +489,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -532,7 +501,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -543,7 +512,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(names);
         }
 
-        @Override public void applyTo(HawkularPipeline<?, ?> query, QueryTranslationState state) {
+        @Override public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }

@@ -14,25 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop;
+package org.hawkular.inventory.impl.tinkerpop.spi;
 
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__contentHash;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__identityHash;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_data_type;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__metric_interval;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__sourceType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataIndex;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataKey;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__structuredDataValue;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__syncHash;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetCp;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetEid;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__targetType;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.__unit;
-import static org.hawkular.inventory.impl.tinkerpop.Constants.Property.name;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__contentHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__identityHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__metric_data_type;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__metric_interval;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataIndex;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataKey;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataValue_b;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataValue_f;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataValue_i;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__structuredDataValue_s;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__syncHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetCp;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetEid;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__unit;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.name;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,7 +64,7 @@ import org.hawkular.inventory.paths.ElementTypeVisitor;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-final class Constants {
+public final class Constants {
 
     private Constants() {
         //no instances, thank you
@@ -72,7 +75,7 @@ final class Constants {
      * chance of collision with any user defined properties. However, for sorting purposes it's quite cumbersome to use
      * it directly, so the property can have also the user-friendly name (sortName).
      */
-    enum Property {
+    public enum Property {
         /**
          * The user-defined human-readable name of the entity. We don't use the "__" prefix here as with the rest of
          * the properties, because this is not really hidden.
@@ -131,7 +134,13 @@ final class Constants {
          * The name of the property on the structured data vertex that holds the primitive value of that vertex.
          * List and maps don't hold the value directly but instead have edges going out to the child vertices.
          */
-        __structuredDataValue,
+        __structuredDataValue_b,
+
+        __structuredDataValue_i,
+
+        __structuredDataValue_f,
+
+        __structuredDataValue_s,
 
         __sourceType("sourceType"),
 
@@ -200,7 +209,7 @@ final class Constants {
     /**
      * The type of entities known to Hawkular.
      */
-    enum Type {
+    public enum Type {
         tenant(Tenant.class, name, __contentHash),
         environment(Environment.class, name, __contentHash),
         feed(Feed.class, name, __identityHash, __contentHash, __syncHash),
@@ -214,7 +223,8 @@ final class Constants {
         relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
         dataEntity(DataEntity.class, name, __identityHash, __contentHash, __syncHash),
         structuredData(StructuredData.class, __structuredDataType,
-                __structuredDataValue, __structuredDataIndex, __structuredDataKey);
+                __structuredDataValue_b, __structuredDataValue_i, __structuredDataValue_f, __structuredDataValue_s,
+                __structuredDataIndex, __structuredDataKey);
 
         private final String[] mappedProperties;
         private final Class<?> entityType;
@@ -379,11 +389,11 @@ final class Constants {
         }
     }
 
-    enum InternalEdge {
+    public enum InternalEdge {
         __withIdentityHash, __containsIdentityHash
     }
 
-    enum InternalType {
+    public enum InternalType {
         __identityHash
     }
 }
