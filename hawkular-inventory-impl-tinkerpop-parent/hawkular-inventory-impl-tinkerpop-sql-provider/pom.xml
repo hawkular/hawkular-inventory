@@ -95,7 +95,7 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-h2</artifactId>
+      <artifactId>sqlg-hsqldb</artifactId>
       <version>${version.org.umlg}</version>
       <scope>test</scope>
     </dependency>
