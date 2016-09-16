@@ -32,10 +32,12 @@ import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 /**
@@ -143,5 +145,17 @@ public class SqlGraphProvider implements GraphProvider {
         } else {
             throw new IllegalArgumentException("Unhandled type of property: " + type);
         }
+    }
+
+    @Override public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
+        // Sqlg sends IllegalArgumentException when unique constraint is violated
+        // See SqlgElement.updateRow
+        if (inputException instanceof IllegalArgumentException
+                && inputException.getMessage() != null
+                && inputException.getMessage().contains("Unique value")
+                && inputException.getMessage().contains("already exists")) {
+            return new EntityAlreadyExistsException(inputException, affectedPath);
+        }
+        return inputException;
     }
 }

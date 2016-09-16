@@ -529,7 +529,6 @@ public class InventoryITest extends AbstractTestBase {
                 response.headers().get("Location"));
     }
 
-
     @AfterClass
     public static void deleteEverything() throws IOException {
         /* the following would delete all data of the present user. We cannot do that as long as we do not have
@@ -555,7 +554,6 @@ public class InventoryITest extends AbstractTestBase {
             }
         }
     }
-
 
     @Test
     public void ping() throws Throwable {
@@ -904,7 +902,7 @@ public class InventoryITest extends AbstractTestBase {
     }
 
     @Test
-    public void ttestRelationshipFiltering() throws Throwable {
+    public void testRelationshipFiltering() throws Throwable {
         assertRelationshipExists("traversal/e;" + environmentId +"/r;" + host2ResourceId
                 + "/relationships;propertyName=from;propertyValue=2000-01-01",
                 CanonicalPath.of().tenant(tenantId).environment(environmentId).resource(host2ResourceId).get(),
