@@ -59,6 +59,7 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
+import org.hawkular.inventory.paths.SegmentType;
 
 /**
  * @author Lukas Krejci
@@ -311,7 +312,11 @@ public final class Constants {
         }
 
         public static Type of(Class<?> ec) {
-            return ElementTypeVisitor.accept(AbstractElement.segmentTypeFromType(ec),
+            return of(AbstractElement.segmentTypeFromType(ec));
+        }
+
+        public static Type of(SegmentType st) {
+            return ElementTypeVisitor.accept(st,
                     new ElementTypeVisitor<Type, Void>() {
                         @Override
                         public Type visitTenant(Void parameter) {
@@ -369,10 +374,10 @@ public final class Constants {
 
                         @Override
                         public Type visitUnknown(Void parameter) {
-                            if (StructuredData.class.equals(ec)) {
+                            if (st == SegmentType.sd) {
                                 return structuredData;
                             }
-                            throw new IllegalArgumentException("Unsupported entity class " + ec);
+                            throw new IllegalArgumentException("Unsupported entity type " + st);
                         }
                     }, null);
         }

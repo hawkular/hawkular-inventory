@@ -30,8 +30,6 @@ import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__tar
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__type;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -340,9 +338,22 @@ class FilterVisitor {
         String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
 
         if (filter.getPaths().length == 1) {
+            //this only works if we are on vertices, so check for that
+            if (prop.equals(__cp.name())) {
+                query.has(T.label, Constants.Type.of(filter.getPaths()[0].getSegment().getElementType()).name());
+            }
+
             query.has(prop, filter.getPaths()[0].toString());
         } else {
+            if (prop.equals(__cp.name())) {
+                String[] labels = Stream.of(filter.getPaths()).map(p -> p.getSegment().getElementType())
+                        .toArray(String[]::new);
+
+                query.has(T.label, P.within(labels));
+            }
+
             String[] paths = Stream.of(filter.getPaths()).map(Object::toString).toArray(String[]::new);
+
             query.has(prop, P.within(paths));
         }
 
@@ -354,8 +365,6 @@ class FilterVisitor {
         goBackFromEdges(query, state);
 
         String originLabel = filter.getMarkerLabel();
-
-        Set<E> seen = new HashSet<>();
 
         if (filter.getPaths().length == 1) {
             if (originLabel != null) {
