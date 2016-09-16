@@ -33,8 +33,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -314,8 +312,6 @@ class FilterVisitor {
     @SuppressWarnings("unchecked")
     private void applyPropertyFilter(GraphTraversal<?, ?> query, String propertyName, Object... values) {
         String mappedName = Constants.Property.mapUserDefined(propertyName);
-        Consumer<GraphTraversal<?, ?>> propertyCheck = (t) -> t.has(mappedName);
-        BiConsumer<GraphTraversal<?, ?>, Object> valueCheck = (t, v) -> t.has(mappedName, v);
 
         switch (propertyName) {
             case "id":

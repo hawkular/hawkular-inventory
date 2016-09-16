@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,5 +42,10 @@ public interface Log {
     @LogMessage(level = Logger.Level.INFO)
     @Message(id = 1502, value = "Waiting for the index '%s' to become registered.")
     void iWaitingForIndexRegistration(String indexName);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 1503, value = "Unique indices are not performant in Titan and are ignored by this implementation." +
+            " You might run into data consistency problems even if inventory tries to handle some of it.")
+    void wUniqueIndicesIgnored();
 }
 

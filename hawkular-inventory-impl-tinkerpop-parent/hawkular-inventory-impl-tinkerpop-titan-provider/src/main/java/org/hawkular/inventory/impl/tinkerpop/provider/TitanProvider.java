@@ -152,12 +152,14 @@ public class TitanProvider implements GraphProvider {
 //                        .multiplicity(Multiplicity.SIMPLE)
 //                        .make());
 //            }
+
 // XXX just don't create unique indices even if Titan supports it. They are not performant enough in concurrent
 // scenarios
 //
-//            if (p.isUnique()) {
-//                propertyKeyMaker.cardinality(Cardinality.SINGLE);
-//            }
+            if (p.isUnique()) {
+                Log.LOG.wUniqueIndicesIgnored();
+                //propertyKeyMaker.cardinality(Cardinality.SINGLE);
+            }
             PropertyKey key = propertyKeyMaker.make();
             definedPropertyKeys.put(p.getName(), key);
         }

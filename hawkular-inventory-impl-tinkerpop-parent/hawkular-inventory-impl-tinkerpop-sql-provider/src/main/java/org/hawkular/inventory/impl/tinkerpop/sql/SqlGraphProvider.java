@@ -111,14 +111,12 @@ public class SqlGraphProvider implements GraphProvider {
             }
 
             if (Vertex.class.equals(is.getElementType())) {
-                for (Constants.Type t : Constants.Type.values()) {
-                    if (Entity.class.isAssignableFrom(t.getEntityType())) {
-                        sqlg.createVertexLabeledIndex(t.name(), keyValues.toArray());
-                    }
+                for (String l : entityLabels) {
+                    sqlg.createVertexLabeledIndex(l, keyValues.toArray());
                 }
 
                 is.getProperties().stream().filter(IndexSpec.Property::isUnique)
-                        .forEach(p -> sqlg.createVertexUniqueConstraint(p.getName(), entityLabels));
+                        .findAny().ifPresent(p -> sqlg.createVertexUniqueConstraint(p.getName(), entityLabels));
             } else {
                 //This is not working yet in Sqlg
                 //sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());

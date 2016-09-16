@@ -1394,7 +1394,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private <S, E> GraphTraversal<S, E> applyOrdering(GraphTraversal<S, E> traversal, Pager pager) {
-        boolean specific = pager.getOrder().stream().filter(Order::isSpecific).map(o -> true).findFirst().orElse(false);
+        boolean specific = pager.getOrder().stream().anyMatch(Order::isSpecific);
 
         if (!specific) {
             return traversal;
