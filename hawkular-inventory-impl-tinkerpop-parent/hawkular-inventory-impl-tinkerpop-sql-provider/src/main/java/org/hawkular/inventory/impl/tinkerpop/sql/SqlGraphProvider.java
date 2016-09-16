@@ -38,6 +38,7 @@ import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 /**
@@ -148,12 +149,7 @@ public class SqlGraphProvider implements GraphProvider {
     }
 
     @Override public RuntimeException translateException(RuntimeException inputException, CanonicalPath affectedPath) {
-        // Sqlg sends IllegalArgumentException when unique constraint is violated
-        // See SqlgElement.updateRow
-        if (inputException instanceof IllegalArgumentException
-                && inputException.getMessage() != null
-                && inputException.getMessage().contains("Unique value")
-                && inputException.getMessage().contains("already exists")) {
+        if (inputException instanceof SqlgExceptions.UniqueConstraintViolationException) {
             return new EntityAlreadyExistsException(inputException, affectedPath);
         }
         return inputException;
