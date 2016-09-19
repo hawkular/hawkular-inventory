@@ -46,6 +46,7 @@ import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InconsistentStateException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
@@ -96,9 +97,11 @@ final class Util {
         int failures = 0;
         Exception lastException;
 
-        //this could be configurable, but let's just start with the hardcoded 300ms + a random bit
-        //as the first retry wait time.
-        int waitTime = 300 + rand.nextInt(150);
+        //this could be configurable, but let's just start with the hardcoded 100ms + a double spread.
+        //what we are trying to do here is to have a possibility of low pauses between retries if the rand bit gets
+        //close to 0 while also have a large room for the "spread" so that we minimize the probability of the retries
+        //in different threads to coincide in time.
+        int waitTime = 100 + rand.nextInt(200);
 
         do {
             try {
@@ -118,12 +121,12 @@ final class Util {
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    if (tx.requiresRollbackAfterFailure(t)) {
+                    if (t instanceof InconsistentStateException || tx.requiresRollbackAfterFailure(t)) {
                         tx.rollback();
                     }
                     throw t;
                 }
-            } catch (CommitFailureException e) {
+            } catch (CommitFailureException | InconsistentStateException e) {
                 failures++;
 
                 //if the backend fails the commit, we can retry
@@ -143,11 +146,9 @@ final class Util {
                         break;
                     }
 
-                    //double the wait time for the next attempt - the assumption is that if the competing transaction
-                    //takes a long time to complete, it probably is going to be really long.
-                    //We randomize the value a little bit so that competing transactions started at roughly same time
-                    //don't knock each other out easily.
-                    waitTime = waitTime * 2 + rand.nextInt(waitTime / 2);
+                    //again, here we're aiming for the possibility of short interval between a retry while also
+                    //keeping the door open for a larger interval.
+                    waitTime = (int) (waitTime * 1.1 + rand.nextInt(waitTime * 2));
                 }
             } catch (RuntimeException e) {
                 throw e;

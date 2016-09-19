@@ -99,6 +99,7 @@ import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InconsistentStateException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.ShallowStructuredData;
 import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
@@ -488,7 +489,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Edge hashNodeEdge = hashNodeEdgeIt.next();
 
                 if (hashNodeEdgeIt.hasNext()) {
-                    throw new IllegalStateException(
+                    throw new InconsistentStateException(
                             "Entity with path: " + extractCanonicalPath(vertex) + " was associated " +
                                     "with more than 1 hash node. That is a bug.");
                 }
