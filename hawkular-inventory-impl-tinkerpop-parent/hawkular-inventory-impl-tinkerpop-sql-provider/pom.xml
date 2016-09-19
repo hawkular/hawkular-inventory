@@ -42,6 +42,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-core</artifactId>
+      <version>${version.org.apache.tinkerpop}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-core</artifactId>
+      <version>${version.org.umlg}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
       <scope>provided</scope>
@@ -67,13 +79,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-test</artifactId>
-      <version>${version.com.tinkerpop.gremlin}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-impl-tinkerpop</artifactId>
       <version>${project.parent.version}</version>
@@ -89,8 +94,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
+      <groupId>org.umlg</groupId>
+      <artifactId>sqlg-hsqldb</artifactId>
+      <version>${version.org.umlg}</version>
       <scope>test</scope>
     </dependency>
 
@@ -99,16 +105,16 @@
       <artifactId>javax.mail-api</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.3.173</version> <!-- in sync with WF10 -->
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

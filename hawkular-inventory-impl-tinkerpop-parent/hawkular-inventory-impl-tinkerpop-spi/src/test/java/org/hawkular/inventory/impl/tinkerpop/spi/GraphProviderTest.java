@@ -16,18 +16,19 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Features;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 
 /**
  * @author Lukas Krejci
@@ -45,7 +46,7 @@ public class GraphProviderTest {
         boolean[] statuses = new boolean[2];
 
         GraphProvider gp = new DummyGraphProvider();
-        TransactionalGraph g = gp.instantiateGraph(null);
+        Graph g = gp.instantiateGraph(null);
 
         Consumer<Integer> payload = (idx) -> {
             gp.startTransaction(g);
@@ -80,7 +81,7 @@ public class GraphProviderTest {
     @Test(expected = IllegalStateException.class)
     public void testNestedTransactionsDisallowed() throws Exception {
         GraphProvider gp = new DummyGraphProvider();
-        TransactionalGraph g = gp.instantiateGraph(null);
+        Graph g = gp.instantiateGraph(null);
 
         gp.startTransaction(g);
 
@@ -101,17 +102,56 @@ public class GraphProviderTest {
             return false;
         }
 
-        @Override public TransactionalGraph instantiateGraph(Configuration configuration) {
-            return new DummyTransactionalGraph();
+        @Override public Graph instantiateGraph(Configuration configuration) {
+            return new DummyGraph();
         }
 
-        @Override public void ensureIndices(TransactionalGraph graph, IndexSpec... indexSpecs) {
+        @Override public void ensureIndices(Graph graph, IndexSpec... indexSpecs) {
         }
     }
 
-    private static class DummyTransactionalGraph implements TransactionalGraph {
+    private static class DummyGraph implements Graph {
 
-        @Override public void stopTransaction(Conclusion conclusion) {
+        @Override public Vertex addVertex(Object... keyValues) {
+            return null;
+        }
+
+        @Override public <C extends GraphComputer> C compute(Class<C> graphComputerClass)
+                throws IllegalArgumentException {
+            return null;
+        }
+
+        @Override public GraphComputer compute() throws IllegalArgumentException {
+            return null;
+        }
+
+        @Override public Iterator<Vertex> vertices(Object... vertexIds) {
+            return null;
+        }
+
+        @Override public Iterator<Edge> edges(Object... edgeIds) {
+            return null;
+        }
+
+        @Override public Transaction tx() {
+            return new DummyTx();
+        }
+
+        @Override public void close() throws Exception {
+        }
+
+        @Override public Variables variables() {
+            return null;
+        }
+
+        @Override public org.apache.commons.configuration.Configuration configuration() {
+            return null;
+        }
+    }
+
+    private static class DummyTx implements Transaction {
+
+        @Override public void open() {
         }
 
         @Override public void commit() {
@@ -120,53 +160,39 @@ public class GraphProviderTest {
         @Override public void rollback() {
         }
 
-        @Override public Features getFeatures() {
+        @Override public <R> Workload<R> submit(Function<Graph, R> work) {
             return null;
         }
 
-        @Override public Vertex addVertex(Object id) {
+        @Override public <G extends Graph> G createThreadedTx() {
             return null;
         }
 
-        @Override public Vertex getVertex(Object id) {
+        @Override public boolean isOpen() {
+            return false;
+        }
+
+        @Override public void readWrite() {
+        }
+
+        @Override public void close() {
+        }
+
+        @Override public Transaction onReadWrite(Consumer<Transaction> consumer) {
             return null;
         }
 
-        @Override public void removeVertex(Vertex vertex) {
-        }
-
-        @Override public Iterable<Vertex> getVertices() {
+        @Override public Transaction onClose(Consumer<Transaction> consumer) {
             return null;
         }
 
-        @Override public Iterable<Vertex> getVertices(String key, Object value) {
-            return null;
+        @Override public void addTransactionListener(Consumer<Status> listener) {
         }
 
-        @Override public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-            return null;
+        @Override public void removeTransactionListener(Consumer<Status> listener) {
         }
 
-        @Override public Edge getEdge(Object id) {
-            return null;
-        }
-
-        @Override public void removeEdge(Edge edge) {
-        }
-
-        @Override public Iterable<Edge> getEdges() {
-            return null;
-        }
-
-        @Override public Iterable<Edge> getEdges(String key, Object value) {
-            return null;
-        }
-
-        @Override public GraphQuery query() {
-            return null;
-        }
-
-        @Override public void shutdown() {
+        @Override public void clearTransactionListeners() {
         }
     }
 }

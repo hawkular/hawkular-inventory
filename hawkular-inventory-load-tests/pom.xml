@@ -96,7 +96,8 @@
         <hawkular.log.nest>INFO</hawkular.log.nest>
         <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
         <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
-        <sql.datasource.jndi>java:/jboss/datasources/HawkularInventoryDS</sql.datasource.jndi>
+        <hawkular.backend>embedded_cassandra</hawkular.backend>
+        <hawkular-inventory.conf></hawkular-inventory.conf>
       </properties>
 
       <build>
@@ -170,7 +171,8 @@
                 <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                 <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
                 <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
-                <javaOpt>-Dsql.datasource.jndi=${sql.datasource.jndi}</javaOpt>
+                <javaOpt>-Dhawkular.backend=${hawkular.backend}</javaOpt>
+                <javaOpt>-Dhawkular-inventory.conf=${hawkular-inventory.conf}</javaOpt>
                 <!--<javaOpt>-Xdebug</javaOpt>-->
                 <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
               </javaOpts>

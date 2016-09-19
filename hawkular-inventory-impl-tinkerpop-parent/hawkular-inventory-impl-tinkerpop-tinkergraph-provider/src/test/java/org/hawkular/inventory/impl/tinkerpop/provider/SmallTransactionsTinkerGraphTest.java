@@ -16,12 +16,11 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import com.tinkerpop.blueprints.Element;
 
 /**
  * @author Lukas Krejci
