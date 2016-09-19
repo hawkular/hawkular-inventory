@@ -251,4 +251,30 @@
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>server-provisioning</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.wildfly.build</groupId>
+            <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>server-provisioning</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <config-file>server-provisioning.xml</config-file>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
