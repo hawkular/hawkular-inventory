@@ -170,6 +170,8 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     protected static <E> void setupData(BaseInventory<E> inventory) throws Exception {
+        inventory.tenants().getAll().entities().forEach(t -> inventory.inspect(t).delete());
+
         //noinspection AssertWithSideEffects
         assert inventory.tenants()
                 .create(Tenant.Blueprint.builder().withId("com.acme.tenant").withProperty("kachny", "moc").build())
