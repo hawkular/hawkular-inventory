@@ -260,6 +260,22 @@
 
   <profiles>
     <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.l2x6.maven.srcdeps</groupId>
+            <artifactId>srcdeps-maven-plugin</artifactId>
+            <version>${version.srcdeps-maven-plugin}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>api-check</id>
       <activation>
         <activeByDefault>true</activeByDefault>
