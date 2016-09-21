@@ -77,6 +77,8 @@
     <version.commons-io>2.4</version.commons-io>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/lang/main/ -->
     <version.commons-lang>2.6</version.commons-lang>
+    <!-- keep in sync with the required version in sqlg -->
+    <version.commons-lang3>3.3.1</version.commons-lang3>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/logging/main/ -->
     <version.commons-logging>1.1.1</version.commons-logging>
     <!-- keep in sync with the WF module modules/system/layers/base/org/apache/commons/pool/main/ -->
