@@ -81,100 +81,106 @@ public final class Constants {
          * The user-defined human-readable name of the entity. We don't use the "__" prefix here as with the rest of
          * the properties, because this is not really hidden.
          */
-        name,
+        name(String.class),
 
         /**
          * This is the name of the property that we use to store the type of the entity represented by the vertex
          */
-        __type("type"),
+        __type("type", String.class),
 
         /**
          * This is the name of the property that we use to store the user-defined ID of the entity represented by the
          * vertex. These ID are required to be unique only amongst their "siblings" as determined by the "contains"
          * hierarchy.
          */
-        __eid("id"),
+        __eid("id", String.class),
 
         /**
          * Present on metric type, this is the name of the propety that we use to store the unit of the metric type
          * represented by the vertex.
          */
-        __unit("unit"),
+        __unit("unit", String.class),
 
         /**
          * Property used on metric type to distinguish type of metric e.g. gauge, counter...
          */
-        __metric_data_type("metricDataType"),
+        __metric_data_type("metricDataType", String.class),
 
         /**
          * Property used to store interval in seconds at which metrics are collected
          */
-        __metric_interval("collectionInterval"),
+        __metric_interval("collectionInterval", Long.class),
 
         /**
          * Property used to store the canonical path of an element.
          */
-        __cp("path"),
+        __cp("path", String.class),
 
         /**
          * The type of the data stored by the structured data vertex
          */
-        __structuredDataType,
+        __structuredDataType(String.class),
 
         /**
          * The key using which a structured data value is stored in a map.
          */
-        __structuredDataKey,
+        __structuredDataKey(String.class),
 
         /**
          * The index on which a structured data value is stored in a list.
          */
-        __structuredDataIndex,
+        __structuredDataIndex(Integer.class),
 
         /**
          * The name of the property on the structured data vertex that holds the primitive value of that vertex.
          * List and maps don't hold the value directly but instead have edges going out to the child vertices.
          */
-        __structuredDataValue_b,
+        __structuredDataValue_b(Boolean.class),
 
-        __structuredDataValue_i,
+        __structuredDataValue_i(Long.class),
 
-        __structuredDataValue_f,
+        __structuredDataValue_f(Double.class),
 
-        __structuredDataValue_s,
+        __structuredDataValue_s(String.class),
 
-        __sourceType("sourceType"),
+        __sourceType("sourceType", String.class),
 
-        __targetType("targetType"),
+        __targetType("targetType", String.class),
 
-        __sourceCp("source"),
+        __sourceCp("source", String.class),
 
-        __targetCp("target"),
+        __targetCp("target", String.class),
 
-        __sourceEid,
+        __sourceEid(String.class),
 
-        __targetEid,
+        __targetEid(String.class),
 
-        __identityHash("identityHash"),
+        __identityHash("identityHash", String.class),
 
-        __targetIdentityHash,
+        __targetIdentityHash(String.class),
 
-        __contentHash("contentHash"),
+        __contentHash("contentHash", String.class),
 
-        __syncHash("syncHash");
+        __syncHash("syncHash", String.class);
 
         private final String sortName;
+        private final Class<?> propertyType;
 
-        Property() {
-            this(null);
+        Property(Class<?> type) {
+            this(null, type);
         }
 
-        Property(String sortName) {
+        Property(String sortName, Class<?> type) {
             this.sortName = sortName;
+            this.propertyType = type;
         }
 
         public String getSortName() {
             return sortName;
+        }
+
+        public Class<?> getPropertyType() {
+            return propertyType;
         }
 
         private static final HashSet<String> MIRRORED_PROPERTIES = new HashSet<>(Arrays.asList(__type.name(),
