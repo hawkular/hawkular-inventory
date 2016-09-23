@@ -63,9 +63,10 @@ public final class BaseMetricTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, MetricType>
-        wireUpNewEntity(BE entity, MetricType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, MetricType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
-            tx.update(context.discriminator(), entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
+            tx.update(discriminator, entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
 
             MetricType metricType = new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,

@@ -301,11 +301,13 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Persists a new entity with the provided assigned path.
      *
+     *
+     * @param discriminator
      * @param path      the canonical path to the entity
      * @param blueprint the blueprint of the entity
      * @return the representation object of the newly created entity
      */
-    E persist(CanonicalPath path, Blueprint blueprint);
+    E persist(Discriminator discriminator, CanonicalPath path, Blueprint blueprint);
 
     /**
      * Persists the structured data and returns a reference to it. It is the responsibility of the caller to wire it up

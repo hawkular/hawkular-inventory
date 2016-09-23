@@ -30,23 +30,31 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.BulkSet;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalExplanation;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -58,7 +66,7 @@ import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
  * @author Lukas Krejci
  * @since 0.20.0
  */
-public class HawkularTraversal<S, E> implements GraphTraversal<S, E> {
+public class HawkularTraversal<S, E> implements GraphTraversal<S, E>, GraphTraversal.Admin<S, E> {
 
     private final GraphTraversal<S, E> delegate;
 
@@ -87,8 +95,9 @@ public class HawkularTraversal<S, E> implements GraphTraversal<S, E> {
         return this.has(Constants.Property.__from.name(), P.lte(time)).has(Constants.Property.__to.name(), P.gt(time));
     }
 
+    @SuppressWarnings("unchecked")
     private <A, B> HawkularTraversal<A, B> castThis(GraphTraversal<A, B> that) {
-        return (HawkularTraversal<A, B>) that;
+        return (HawkularTraversal<A, B>) this;
     }
 
     ////// DELEGATED methods
@@ -865,5 +874,121 @@ public class HawkularTraversal<S, E> implements GraphTraversal<S, E> {
 
     @Override public void remove() {
         delegate.remove();
+    }
+
+    @Override public Admin<S, E> clone() {
+        return ((Admin<S, E>) delegate).clone();
+    }
+
+    @Override public Bytecode getBytecode() {
+        return ((Admin<S, E>) delegate).getBytecode();
+    }
+
+    @Override public List<Step> getSteps() {
+        return ((Admin<S, E>) delegate).getSteps();
+    }
+
+    @Override public <S2, E2> Traversal.Admin<S2, E2> addStep(int index, Step<?, ?> step) throws IllegalStateException {
+        return ((Admin<S, E>) delegate).addStep(index, step);
+    }
+
+    @Override public <S2, E2> Traversal.Admin<S2, E2> removeStep(int index) throws IllegalStateException {
+        return ((Admin<S, E>) delegate).removeStep(index);
+    }
+
+    @Override public void applyStrategies() throws IllegalStateException {
+        ((Admin<S, E>) delegate).applyStrategies();
+    }
+
+    @Override public TraverserGenerator getTraverserGenerator() {
+        return ((Admin<S, E>) delegate).getTraverserGenerator();
+    }
+
+    @Override public Set<TraverserRequirement> getTraverserRequirements() {
+        return ((Admin<S, E>) delegate).getTraverserRequirements();
+    }
+
+    @Override public void setSideEffects(TraversalSideEffects sideEffects) {
+        ((Admin<S, E>) delegate).setSideEffects(sideEffects);
+    }
+
+    @Override public TraversalSideEffects getSideEffects() {
+        return ((Admin<S, E>) delegate).getSideEffects();
+    }
+
+    @Override public void setStrategies(TraversalStrategies strategies) {
+        ((Admin<S, E>) delegate).setStrategies(strategies);
+    }
+
+    @Override public TraversalStrategies getStrategies() {
+        return ((Admin<S, E>) delegate).getStrategies();
+    }
+
+    @Override public void setParent(TraversalParent step) {
+        ((Admin<S, E>) delegate).setParent(step);
+    }
+
+    @Override public TraversalParent getParent() {
+        return ((Admin<S, E>) delegate).getParent();
+    }
+
+    @Override public boolean isLocked() {
+        return ((Admin<S, E>) delegate).isLocked();
+    }
+
+    @Override public Optional<Graph> getGraph() {
+        return ((Admin<S, E>) delegate).getGraph();
+    }
+
+    @Override public void setGraph(Graph graph) {
+        ((Admin<S, E>) delegate).setGraph(graph);
+    }
+
+    @Override public <E2> Admin<S, E2> addStep(Step<?, E2> step) {
+        return ((Admin<S, E>) delegate).addStep(step);
+    }
+
+    @Override public void addStarts(Iterator<Traverser.Admin<S>> starts) {
+        ((Admin<S, E>) delegate).addStarts(starts);
+    }
+
+    @Override public void addStart(Traverser.Admin<S> start) {
+        ((Admin<S, E>) delegate).addStart(start);
+    }
+
+    @Override public <S2, E2> Traversal.Admin<S2, E2> removeStep(Step<?, ?> step) throws IllegalStateException {
+        return ((Admin<S, E>) delegate).removeStep(step);
+    }
+
+    @Override public Step<S, ?> getStartStep() {
+        return ((Admin<S, E>) delegate).getStartStep();
+    }
+
+    @Override public Step<?, E> getEndStep() {
+        return ((Admin<S, E>) delegate).getEndStep();
+    }
+
+    @Override public void reset() {
+        ((Admin<S, E>) delegate).reset();
+    }
+
+    @Override public boolean equals(Object obj) {
+        return delegate.equals(obj);
+    }
+
+    @Override public boolean equals(Traversal.Admin<S, E> other) {
+        return ((Admin<S, E>) delegate).equals(other);
+    }
+
+    @Override public int hashCode() {
+        return delegate.hashCode();
+    }
+
+    @Override public Traverser.Admin<E> nextTraverser() {
+        return ((Admin<S, E>) delegate).nextTraverser();
+    }
+
+    @Override public String toString() {
+        return delegate.toString();
     }
 }

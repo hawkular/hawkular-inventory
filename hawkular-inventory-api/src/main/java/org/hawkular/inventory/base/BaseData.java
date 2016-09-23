@@ -117,17 +117,17 @@ public final class BaseData {
         }
 
         @Override
-        protected EntityAndPendingNotifications<BE, DataEntity> wireUpNewEntity(BE entity,
+        protected EntityAndPendingNotifications<BE, DataEntity> wireUpNewEntity(Discriminator discriminator, BE entity,
                                                                                 DataEntity.Blueprint<R> blueprint,
                                                                                 CanonicalPath parentPath, BE parent,
                                                                                 Transaction<BE> tx) {
-            Validator.validate(context.discriminator(), tx, blueprint.getValue(), entity);
+            Validator.validate(discriminator, tx, blueprint.getValue(), entity);
             BE value = tx.persist(blueprint.getValue());
 
             //don't report this relationship, it is implicit
             //also, don't run the RelationshipRules checks - we're in the "privileged code" that is allowed to do
             //this
-            tx.relate(context.discriminator(), entity, value, hasData.name(), null);
+            tx.relate(discriminator, entity, value, hasData.name(), null);
 
             DataEntity data = new DataEntity(parentPath, blueprint.getRole(), blueprint.getValue(), null,
                     null, null, blueprint.getProperties());

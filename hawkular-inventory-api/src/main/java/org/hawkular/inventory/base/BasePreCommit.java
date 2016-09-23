@@ -96,15 +96,17 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private Inventory inventory;
     private Transaction<BE> tx;
+    private Instant txStart;
 
     /**
      * Pre-commit actions that reset the identity hash
      */
     private Consumer<Transaction<BE>> correctiveAction;
 
-    @Override public void initialize(Inventory inventory, Transaction<BE> tx) {
+    @Override public void initialize(Inventory inventory, Transaction<BE> tx, Instant txStart) {
         this.inventory = inventory;
         this.tx = tx;
+        this.txStart = txStart;
     }
 
     @Override public void reset() {
@@ -496,7 +498,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         return new Notification(context, value, notif.getAction());
     }
 
-    private static class ProcessingTree<BE> {
+    private class ProcessingTree<BE> {
         //keep it small, we're not going to have many children usually
         final Set<ProcessingTree<BE>> children = new HashSet<>(2);
         final Path.Segment path;
@@ -505,6 +507,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         AbstractElement<?, ?> element;
         BE representation;
         private Transaction<BE> loadingTx;
+        private boolean isDelete;
 
         ProcessingTree() {
             this(null, null);
@@ -523,7 +526,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             children.clear();
         }
 
-        private static boolean canBeIdentityRoot(SegmentType segmentType) {
+        private boolean canBeIdentityRoot(SegmentType segmentType) {
             return IdentityHashable.class.isAssignableFrom(Inventory.types().bySegment(segmentType).getElementType());
         }
 
@@ -534,7 +537,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {
             if (element == null || loadingTx != tx) {
                 loadingTx = tx;
-                Discriminator disc = Discriminator.time(Instant.now());
+                Discriminator disc = Discriminator.time(/*isDelete ? txStart :*/ Instant.now());
                 representation = tx.find(disc, cp);
                 @SuppressWarnings("unchecked")
                 Class<? extends AbstractElement<?, ?>> type = (Class<? extends AbstractElement<?, ?>>)
@@ -553,6 +556,9 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             found.representation = entity.getEntityRepresentation();
             found.element = entity.getEntity();
             found.notifications.addAll(entity.getNotifications());
+            found.isDelete = found.notifications.stream()
+                    .anyMatch(n -> n.getAction() == Action.deleted()
+                            && ((AbstractElement<?, ?>) n.getValue()).getPath().equals(found.cp));
         }
 
         private ProcessingTree<BE> extendTreeTo(CanonicalPath entityPath) {

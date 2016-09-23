@@ -38,6 +38,7 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 
@@ -64,7 +65,8 @@ public final class BaseTenants {
         }
 
         @Override
-        protected EntityAndPendingNotifications<BE, Tenant> wireUpNewEntity(BE entity, Tenant.Blueprint blueprint,
+        protected EntityAndPendingNotifications<BE, Tenant> wireUpNewEntity(Discriminator discriminator, BE entity,
+                                                                            Tenant.Blueprint blueprint,
                                                                             CanonicalPath parentPath, BE parent,
                                                                             Transaction<BE> tx) {
 

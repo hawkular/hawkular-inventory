@@ -62,7 +62,8 @@ public final class BaseOperationTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, OperationType>
-        wireUpNewEntity(BE entity, OperationType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, OperationType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new OperationType(blueprint.getName(),
                     parentPath.extend(OperationType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,

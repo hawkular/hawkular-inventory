@@ -23,6 +23,8 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Parents;
@@ -265,7 +267,26 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     Discriminator discriminator() {
-        return Discriminator.time(now);
+        return Discriminator.time(now());
+    }
+
+    /**
+     * If this context was explicitly set up to operate at a certain point in time, return that, otherwise just return
+     * the "true" current time.
+     *
+     * @return a "now"
+     */
+    Instant now() {
+        return now == null ? Instant.now() : now;
+    }
+
+    /**
+     * Returns the point in time to operate at or null if no such time was set up.
+     *
+     * @return a "now"
+     */
+    @Nullable  Instant declaredNow() {
+        return now;
     }
 
     /**
@@ -356,7 +377,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     Transaction<BE> startTransaction(Transaction.PreCommit<BE> preCommit) {
         Transaction<BE> tx = transactionConstructor.construct(backend, preCommit);
-        tx.getPreCommit().initialize(inventory.keepTransaction(tx), tx);
+        tx.getPreCommit().initialize(inventory.keepTransaction(tx), tx, now);
         return tx;
     }
 

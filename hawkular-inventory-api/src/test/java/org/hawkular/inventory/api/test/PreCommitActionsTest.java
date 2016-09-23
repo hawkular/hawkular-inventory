@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -67,7 +68,7 @@ public class PreCommitActionsTest {
             Assert.assertEquals(0, pct.actionsObtained);
             return backend;
         });
-        when(backend.persist(any(), any())).thenAnswer((args) -> args.getArguments()[0].toString());
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> args.getArguments()[1].toString());
 
         commonBackendMocks(backend);
 
@@ -107,9 +108,9 @@ public class PreCommitActionsTest {
 
         //this way we check that the backend is actually contacted twice to persist the tenants, which would normally
         //cause 2 transactions to be committed.
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -177,9 +178,9 @@ public class PreCommitActionsTest {
             return null;
         }).when(backend).commit();
 
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -227,9 +228,9 @@ public class PreCommitActionsTest {
             return null;
         }).when(backend).commit();
 
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -307,11 +308,11 @@ public class PreCommitActionsTest {
                     return pc.getFinalNotifications();
                 }
 
-                @Override public void initialize(Inventory inventory, Transaction<String> tx) {
+                @Override public void initialize(Inventory inventory, Transaction<String> tx, Instant txStart) {
                     if (this.getClass() != pc.getClass()) {
                         initialized++;
                     }
-                    pc.initialize(inventory, tx);
+                    pc.initialize(inventory, tx, txStart);
                 }
 
                 @Override public void reset() {

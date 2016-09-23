@@ -159,9 +159,9 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         return tx.isUniqueIndexSupported();
     }
 
-    @Override public E persist(CanonicalPath path,
+    @Override public E persist(Discriminator discriminator, CanonicalPath path,
                                Blueprint blueprint) {
-        return tx.persist(path, blueprint);
+        return tx.persist(discriminator, path, blueprint);
     }
 
     @Override public E persist(StructuredData structuredData) {

@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.impl.tinkerpop.HawkularTraversal.hwk__;
@@ -162,6 +161,8 @@ class FilterVisitor {
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
             query.has(prop, type.name());
+            goBackFromEdges(query, state);
+            checkNotDeleted(query);
             return;
         }
 
@@ -207,7 +208,7 @@ class FilterVisitor {
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query,
                       RelationWith.PropertyValues properties, QueryTranslationState state) {
         query.discriminate(discriminator);
-        applyPropertyFilter(discriminator, query, properties.getProperty(), properties.getValues());
+        applyPropertyFilter(discriminator, query, state, properties.getProperty(), properties.getValues());
     }
 
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, RelationWith.SourceOfType types,
@@ -258,7 +259,7 @@ class FilterVisitor {
         }
     }
 
-    public void visit(HawkularTraversal<?, ?> query, SwitchElementType filter, QueryTranslationState state) {
+    public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, SwitchElementType filter, QueryTranslationState state) {
         final boolean jumpFromEdge = filter.isFromEdge();
         switch (filter.getDirection()) {
             case incoming:
@@ -269,7 +270,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.IN);
-                    query.inE();
+                    query.inE().discriminate(discriminator);
                 }
                 break;
             case outgoing:
@@ -280,7 +281,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.OUT);
-                    query.outE();
+                    query.outE().discriminate(discriminator);
                 }
                 break;
             case both:
@@ -291,7 +292,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.BOTH);
-                    query.bothE();
+                    query.bothE().discriminate(discriminator);
                 }
                 break;
         }
@@ -312,7 +313,7 @@ class FilterVisitor {
             checkNotDeleted(query);
         }
 
-        applyPropertyFilter(discriminator, query, filter.getName(), filter.getValues());
+        applyPropertyFilter(discriminator, query, state, filter.getName(), filter.getValues());
 
         if (propertyMirrored) {
             goBackFromEdges(query, state);
@@ -321,10 +322,11 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    private void applyPropertyFilter(Discriminator discriminator, HawkularTraversal<?, ?> query, String propertyName, Object... values) {
+    private void applyPropertyFilter(Discriminator discriminator, HawkularTraversal<?, ?> query,
+                                     QueryTranslationState state, String propertyName, Object... values) {
         String mappedName = Constants.Property.mapUserDefined(propertyName);
 
-        boolean checkStateVertex = !Constants.Type.getIdentityVertexProperties().contains(mappedName);
+        boolean checkStateVertex = !state.isInEdges() && !Constants.Type.getIdentityVertexProperties().contains(mappedName);
 
         HawkularTraversal<?, ?> check = query;
 
@@ -332,12 +334,24 @@ class FilterVisitor {
             check = hwk__().outE(__inState.name()).discriminate(discriminator).inV();
         }
 
+        boolean checkLabel = state.isInEdges() && "label".equals(mappedName);
+
         if (values.length == 0) {
-            check.has(mappedName);
+            if (!checkLabel) {
+                check.has(mappedName);
+            }
         } else if (values.length == 1) {
-            check.has(mappedName, values[0]);
+            if (checkLabel) {
+                check.hasLabel(values[0]);
+            } else {
+                check.has(mappedName, values[0]);
+            }
         } else {
-            check.has(mappedName, P.within(values()));
+            if (checkLabel) {
+                check.hasLabel(P.within(values));
+            } else {
+                check.has(mappedName, P.within(values));
+            }
         }
 
         if (checkStateVertex) {

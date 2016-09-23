@@ -128,12 +128,14 @@ abstract class FilterApplicator<T extends Filter> {
      * @param <S>        type of the source of the query
      * @param <E>        type of the output of the query
      */
-    public static <S, E> void applyAll(Discriminator discriminator, Query filterTree, HawkularTraversal<S, E> q) {
+    public static <S, E> void applyAll(Discriminator discriminator, Query filterTree, HawkularTraversal<S, E> q,
+                                       boolean inEdges) {
         if (filterTree == null) {
             return;
         }
 
         QueryTranslationState state = new QueryTranslationState();
+        state.setInEdges(inEdges);
 
         applyAll(discriminator, filterTree, q, false, state);
     }
@@ -388,7 +390,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 

@@ -187,9 +187,9 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
     }
 
     @Override
-    public E persist(CanonicalPath path,
+    public E persist(Discriminator discriminator, CanonicalPath path,
                      Blueprint blueprint) {
-        return backend.persist(path, blueprint);
+        return backend.persist(discriminator, path, blueprint);
     }
 
     @Override

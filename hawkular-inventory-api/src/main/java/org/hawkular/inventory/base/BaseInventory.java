@@ -91,11 +91,11 @@ public abstract class BaseInventory<E> implements Inventory {
         this.transactionConstructor = transactionConstructor == null
                 ? orig.transactionConstructor : transactionConstructor;
 
-        tenantContext = new TraversalContext<>(this, orig.tenantContext.discriminator().getTime(), Query.empty(),
+        tenantContext = new TraversalContext<>(this, orig.tenantContext.declaredNow(), Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), this.backend, Tenant.class, configuration,
                 observableContext, this.transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, orig.relationshipContext.discriminator().getTime(),
+        relationshipContext = new TraversalContext<>(this, orig.relationshipContext.declaredNow(),
                 Query.empty(), Query.path().get(), this.backend, Relationship.class, configuration, observableContext,
                 this.transactionConstructor);
     }
@@ -138,11 +138,11 @@ public abstract class BaseInventory<E> implements Inventory {
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
 
-        tenantContext = new TraversalContext<>(this, Instant.now(), Query.empty(),
+        tenantContext = new TraversalContext<>(this, null, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext, transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Instant.now(), Query.empty(), Query.path().get(), backend,
+        relationshipContext = new TraversalContext<>(this, null, Query.empty(), Query.path().get(), backend,
                 Relationship.class, configuration, observableContext, transactionConstructor);
         this.configuration = configuration;
     }
@@ -360,7 +360,7 @@ public abstract class BaseInventory<E> implements Inventory {
                             adaptTransactionConstructor(fakeTxCtor)
                                     .construct(activeBackend, new BasePreCommit<>())),
                     (TransactionPayload.Committing<Void, E>) tx -> {
-                        activePrecommit.initialize(boundInventory(), tx);
+                        activePrecommit.initialize(boundInventory(), tx, tenantContext.now());
                         activePrecommit.getActions().forEach(a -> a.accept(tx));
                         activeBackend.commit();
                         activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
@@ -375,12 +375,12 @@ public abstract class BaseInventory<E> implements Inventory {
                             //those for each of them
                             Transaction<E> fakeTx = fakeTxCtor.construct(activeBackend,
                                     new Transaction.PreCommit.Simple<>());
-                            fakeTx.getPreCommit().initialize(boundInventory(), fakeTx);
+                            fakeTx.getPreCommit().initialize(boundInventory(), fakeTx, tenantContext.now());
 
                             p.run(fakeTx);
                         }
 
-                        activePrecommit.initialize(boundInventory(), tx);
+                        activePrecommit.initialize(boundInventory(), tx, tenantContext.now());
                         activePrecommit.getActions().forEach(a -> a.accept(tx));
                         activeBackend.commit();
                         activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
@@ -428,7 +428,7 @@ public abstract class BaseInventory<E> implements Inventory {
             Transaction<E> tx = null;
             try {
                 tx = tenantContext.startTransaction();
-                activePrecommit.initialize(BaseInventory.this.keepTransaction(tx), tx);
+                activePrecommit.initialize(BaseInventory.this.keepTransaction(tx), tx, tenantContext.now());
 
                 for(Consumer<Transaction<E>> action : activePrecommit.getActions()) {
                     action.accept(tx);

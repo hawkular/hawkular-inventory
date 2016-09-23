@@ -166,9 +166,9 @@ public class BackendTransaction<E> implements Transaction<E> {
         return backend.isUniqueIndexSupported();
     }
 
-    @Override public E persist(CanonicalPath path,
+    @Override public E persist(Discriminator discriminator, CanonicalPath path,
                                Blueprint blueprint) {
-        return backend.persist(path, blueprint);
+        return backend.persist(discriminator, path, blueprint);
     }
 
     @Override public E persist(StructuredData structuredData) {

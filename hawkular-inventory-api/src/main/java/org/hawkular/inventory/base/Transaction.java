@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -133,7 +134,7 @@ public interface Transaction<E> {
 
     boolean isUniqueIndexSupported();
 
-    E persist(CanonicalPath path,
+    E persist(Discriminator discriminator, CanonicalPath path,
               Blueprint blueprint);
 
     E persist(StructuredData structuredData);
@@ -185,8 +186,9 @@ public interface Transaction<E> {
          *
          * @param inventory the inventory to use, it is bound to the provided transaction
          * @param tx the transaction for which this pre-commit is defined
+         * @param txStart the time the transaction has started
          */
-        void initialize(Inventory inventory, Transaction<E> tx);
+        void initialize(Inventory inventory, Transaction<E> tx, Instant txStart);
 
         /**
          * Resets all the internal structures as to the initialized state.
@@ -231,10 +233,12 @@ public interface Transaction<E> {
             private List<Consumer<Transaction<E>>> actions = new ArrayList<>();
             protected Transaction<E> transaction;
             protected Inventory inventory;
+            protected Instant txStart;
 
-            @Override public void initialize(Inventory inventory, Transaction<E> tx) {
+            @Override public void initialize(Inventory inventory, Transaction<E> tx, Instant txStart) {
                 this.inventory = inventory;
                 this.transaction = tx;
+                this.txStart = txStart;
             }
 
             @Override public void reset() {

@@ -73,10 +73,9 @@ public final class BaseResourceTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, ResourceType>
-        wireUpNewEntity(BE entity, ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, ResourceType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
-
-            tx.update(context.discriminator(), entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
                     parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
