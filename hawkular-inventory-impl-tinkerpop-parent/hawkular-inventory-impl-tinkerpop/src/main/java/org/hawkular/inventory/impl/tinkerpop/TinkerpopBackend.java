@@ -130,6 +130,90 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         this.context = context;
     }
 
+    /**
+     * If the properties map contains a key from the disallowed properties, throw an exception.
+     *
+     * @param properties           the properties to check
+     * @param disallowedProperties the list of property names that cannot appear in the provided map
+     * @throws IllegalArgumentException if the map contains one or more disallowed keys
+     */
+    static void checkProperties(Map<String, Object> properties, String[] disallowedProperties) {
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+
+        HashSet<String> disallowed = new HashSet<>(properties.keySet());
+        disallowed.retainAll(Arrays.asList(disallowedProperties));
+
+        if (!disallowed.isEmpty()) {
+            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
+                    + Arrays.asList(disallowedProperties));
+        }
+    }
+
+    /**
+     * Updates the properties of the element, disregarding any changes of the disallowed properties
+     * <p>
+     * <p> The list of the disallowed properties will usually come from
+     * {@link Constants.Type#getMappedProperties()}.
+     *
+     * @param e                    the element to update properties of
+     * @param properties           the properties to update
+     * @param disallowedProperties the list of properties that are not allowed to change.
+     */
+    static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
+        if (properties == null) {
+            return;
+        }
+
+        Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
+
+        //remove all non-mapped properties, that are not in the update
+        Spliterator<Property<?>> sp = Spliterators.spliteratorUnknownSize(e.properties(),
+                Spliterator.NONNULL & Spliterator.IMMUTABLE);
+        Property<?>[] toRemove = StreamSupport.stream(sp, false)
+                .filter((p) -> !disallowed.contains(p.key()) && !properties.containsKey(p.key()))
+                .toArray(Property[]::new);
+
+        for (Property<?> p : toRemove) {
+            p.remove();
+        }
+
+        //update and add new the properties
+        properties.forEach((p, v) -> {
+            if (!disallowed.contains(p)) {
+                e.property(p, v);
+            }
+        });
+    }
+
+    /**
+     * Gets the type of the entity that the provided vertex represents.
+     */
+    static Constants.Type getType(Vertex v) {
+        return Constants.Type.valueOf((String) v.property(__type.name()).value());
+    }
+
+    static Direction toNative(Relationships.Direction direction) {
+        return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
+    }
+
+    static Direction asDirection(Related.EntityRole role) {
+        return role == Related.EntityRole.SOURCE ? Direction.OUT : (role == Related.EntityRole.TARGET ? Direction.IN
+                : Direction.BOTH);
+    }
+
+    private static org.apache.tinkerpop.gremlin.process.traversal.Order toTinkerpopOrder(Order.Direction direction) {
+        switch (direction) {
+            case ASCENDING:
+                return org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+            case DESCENDING:
+                return org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
+            default:
+                throw new IllegalStateException("Unsupported order direction: " + direction);
+        }
+    }
+
     @Override public boolean isUniqueIndexSupported() {
         return context.isUniqueIndexSupported();
     }
@@ -194,7 +278,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private HawkularTraversal<?, ? extends Element> translate(Discriminator discriminator, Element startingPoint,
-                                                           Query query) {
+                                                              Query query) {
         GraphTraversal<?, ? extends Element> q;
 
         boolean inEdges = false;
@@ -325,7 +409,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @Override
-    public boolean hasRelationship(Discriminator discriminator, Element source, Element target, String relationshipName) {
+    public boolean hasRelationship(Discriminator discriminator, Element source, Element target,
+                                   String relationshipName) {
         if (!(source instanceof Vertex) || !(target instanceof Vertex)) {
             return false;
         }
@@ -391,7 +476,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 q.outE(names).discriminate(discriminator);
                 break;
             case both:
-                q.bothE( names).discriminate(discriminator);
+                q.bothE(names).discriminate(discriminator);
                 break;
             default:
                 throw new AssertionError("Invalid relationship direction specified: " + direction);
@@ -875,7 +960,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private Pair<Vertex, Vertex> common(org.hawkular.inventory.paths.CanonicalPath path, String name,
-                                  Map<String, Object> properties, Class<? extends Entity<?, ?>> cls) {
+                                                Map<String, Object> properties, Class<? extends Entity<?, ?>> cls) {
                 try {
                     Constants.Type type = Constants.Type.of(cls);
 
@@ -1096,7 +1181,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Element newData = persist(dataValue);
 
                 //update the existing hasData relationship to have an explicit end time
-                Edge hasData = hwk__(entity).outE(Relationships.WellKnown.hasData.name()).has(__to.name(), Long.MAX_VALUE).next();
+                Edge hasData =
+                        hwk__(entity).outE(Relationships.WellKnown.hasData.name()).has(__to.name(), Long.MAX_VALUE)
+                                .next();
 
                 hasData.property(__to.name(), discriminator.getTime().toEpochMilli());
 
@@ -1112,7 +1199,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             private Vertex common(String name, Map<String, Object> properties,
-                                Class<? extends AbstractElement<?, ?>> entityType) {
+                                  Class<? extends AbstractElement<?, ?>> entityType) {
                 Class<?> actualType = extractType(entity);
                 if (!actualType.equals(entityType)) {
                     throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the" +
@@ -1237,7 +1324,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return context.requiresRollbackAfterFailure(t);
     }
 
-    private StructuredData loadStructuredData(Discriminator discriminator, Vertex owner, Relationships.WellKnown owningEdge) {
+    private StructuredData loadStructuredData(Discriminator discriminator, Vertex owner,
+                                              Relationships.WellKnown owningEdge) {
         Iterator<Vertex> it = hwk__(owner).outE(owningEdge.name()).discriminate(discriminator).inV();
         if (!it.hasNext()) {
             closeIfNeeded(it);
@@ -1260,7 +1348,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                         .integral((Long) root.property(Constants.Property.__structuredDataValue_i.name()).value());
             case floatingPoint:
                 return StructuredData.get()
-                        .floatingPoint((Double) root.property(Constants.Property.__structuredDataValue_f.name()).value());
+                        .floatingPoint(
+                                (Double) root.property(Constants.Property.__structuredDataValue_f.name()).value());
             case undefined:
                 return StructuredData.get().undefined();
             case string:
@@ -1381,79 +1470,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         }
     }
 
-    /**
-     * If the properties map contains a key from the disallowed properties, throw an exception.
-     *
-     * @param properties           the properties to check
-     * @param disallowedProperties the list of property names that cannot appear in the provided map
-     * @throws IllegalArgumentException if the map contains one or more disallowed keys
-     */
-    static void checkProperties(Map<String, Object> properties, String[] disallowedProperties) {
-        if (properties == null || properties.isEmpty()) {
-            return;
-        }
-
-        HashSet<String> disallowed = new HashSet<>(properties.keySet());
-        disallowed.retainAll(Arrays.asList(disallowedProperties));
-
-        if (!disallowed.isEmpty()) {
-            throw new IllegalArgumentException("The following properties are reserved for this type of entity: "
-                    + Arrays.asList(disallowedProperties));
-        }
-    }
-
-    /**
-     * Updates the properties of the element, disregarding any changes of the disallowed properties
-     *
-     * <p> The list of the disallowed properties will usually come from
-     * {@link Constants.Type#getMappedProperties()}.
-     *
-     * @param e                    the element to update properties of
-     * @param properties           the properties to update
-     * @param disallowedProperties the list of properties that are not allowed to change.
-     */
-    static void updateProperties(Element e, Map<String, Object> properties, String[] disallowedProperties) {
-        if (properties == null) {
-            return;
-        }
-
-        Set<String> disallowed = new HashSet<>(Arrays.asList(disallowedProperties));
-
-        //remove all non-mapped properties, that are not in the update
-        Spliterator<Property<?>> sp = Spliterators.spliteratorUnknownSize(e.properties(),
-                Spliterator.NONNULL & Spliterator.IMMUTABLE);
-        Property<?>[] toRemove = StreamSupport.stream(sp, false)
-                .filter((p) -> !disallowed.contains(p.key()) && !properties.containsKey(p.key()))
-                .toArray(Property[]::new);
-
-        for (Property<?> p : toRemove) {
-            p.remove();
-        }
-
-        //update and add new the properties
-        properties.forEach((p, v) -> {
-            if (!disallowed.contains(p)) {
-                e.property(p, v);
-            }
-        });
-    }
-
-    /**
-     * Gets the type of the entity that the provided vertex represents.
-     */
-    static Constants.Type getType(Vertex v) {
-        return Constants.Type.valueOf((String) v.property(__type.name()).value());
-    }
-
-    static Direction toNative(Relationships.Direction direction) {
-        return direction == incoming ? Direction.IN : (direction == outgoing ? Direction.OUT : Direction.BOTH);
-    }
-
-    static Direction asDirection(Related.EntityRole role) {
-        return role == Related.EntityRole.SOURCE ? Direction.OUT : (role == Related.EntityRole.TARGET ? Direction.IN
-                : Direction.BOTH);
-    }
-
     public InputStream getGraphSON(Discriminator discriminator, String tenantId) {
         PipedInputStream in = new PipedInputStream();
         new Thread(() -> {
@@ -1492,16 +1508,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         R ret = payload.get();
         drainIfNeeded(pipeline);
         return ret;
-    }
-
-    private static final class Pair<F, S> {
-        public F first;
-        public S second;
-
-        public Pair(F first, S second) {
-            this.first = first;
-            this.second = second;
-        }
     }
 
     private <T, U> Page<U> page(GraphTraversal<?, ? extends T> traversal, Pager pager, Function<T, U> transform) {
@@ -1543,14 +1549,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return traversal;
     }
 
-    private static org.apache.tinkerpop.gremlin.process.traversal.Order toTinkerpopOrder(Order.Direction direction) {
-        switch (direction) {
-            case ASCENDING:
-                return org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
-            case DESCENDING:
-                return org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
-            default:
-                throw new IllegalStateException("Unsupported order direction: " + direction);
+    private static final class Pair<F, S> {
+        public F first;
+        public S second;
+
+        public Pair(F first, S second) {
+            this.first = first;
+            this.second = second;
         }
     }
 }
