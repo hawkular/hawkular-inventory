@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -131,7 +132,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
     public Updater<Update, MetricType> update() {
         return new Updater<>((u) -> new MetricType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
                 getSyncHash(), valueOrDefault(u.unit, this.unit), metricDataType, u.getProperties(),
-                valueOrDefault(u.getCollectionInterval(), collectionInterval)));
+                valueOrDefault(u.getCollectionInterval(), collectionInterval)), this, Update.builder());
     }
 
     @Override
@@ -316,7 +317,7 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
             return visitor.visitMetricType(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<MetricType, Update, Builder> {
             private MetricUnit unit;
             private Long collectionInterval;
 
@@ -333,6 +334,17 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
             @Override
             public Update build() {
                 return new Update(name, properties, unit, collectionInterval);
+            }
+
+            @Override public Builder withDifference(MetricType original, MetricType updated) {
+                if (!Objects.equals(original.getUnit(), updated.getUnit())) {
+                    withUnit(updated.getUnit());
+                }
+
+                if (!Objects.equals(original.getCollectionInterval(), updated.getCollectionInterval())) {
+                    withInterval(updated.getCollectionInterval());
+                }
+                return super.withDifference(original, updated);
             }
         }
     }

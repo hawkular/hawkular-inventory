@@ -168,7 +168,9 @@ public final class Constants {
 
         __to(Long.class),
 
-        __deleted(Boolean.class)
+        __deleted(Boolean.class),
+
+        __changeKind(int.class)
 
         ;
 

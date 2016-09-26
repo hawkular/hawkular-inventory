@@ -60,7 +60,7 @@ public final class Tenants {
     /**
      * Interface for accessing a single tenant in a writable manner.
      */
-    public interface Single extends ResolvableToSingleWithRelationships<Tenant, Tenant.Update>,
+    public interface Single extends ResolvableToSingleEntity<Tenant, Tenant.Update>,
             BrowserBase<ResourceTypes.ReadWrite, MetricTypes.ReadWrite, Environments.ReadWrite, Feeds.ReadWrite,
                     MetadataPacks.ReadWrite> {
     }

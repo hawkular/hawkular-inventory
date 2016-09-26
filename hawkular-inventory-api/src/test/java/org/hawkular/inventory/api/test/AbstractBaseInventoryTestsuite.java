@@ -98,6 +98,7 @@ import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -2004,7 +2005,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
-    void testUpdate(T entity, Entity.Update.Builder<U, ?> update) {
+    void testUpdate(T entity, Entity.Update.Builder<T, U, ?> update) {
         @SuppressWarnings("unchecked")
         Class<ResolvableToSingle<T, U>> cls = (Class<ResolvableToSingle<T, U>>) (Class) ResolvableToSingle.class;
         inventory.inspect(entity, cls).update(update.withName("updated").build());
@@ -3697,6 +3698,59 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         res = inventory.execute(elementTypeSwitchingQuery2, (Class) AbstractElement.class, Pager.none());
         result = res.toList();
         Assert.assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testEradicate() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testHistory() throws Exception {
+        String tenantId = "testHistory";
+        try {
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Tenant beforeDelete = ts.entity();
+
+            ts.delete();
+
+            Thread.sleep(10);
+
+            inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Tenant.Update update = Tenant.Update.builder().withProperty("key", "value2").withName("kachny").build();
+
+            ts.update(update);
+
+            List<Change<Tenant, ?>> cs = ts.history();
+
+            Assert.assertEquals(4, cs.size());
+
+            Assert.assertEquals(Action.created(), cs.get(0).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(0).getElement());
+            Assert.assertEquals(Action.deleted(), cs.get(1).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(1).getElement());
+            Assert.assertEquals(Action.created(), cs.get(2).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(2).getElement());
+            Assert.assertEquals(Action.updated(), cs.get(3).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(3).getElement());
+            Tenant.Update historyUpdate = ((Action.Update<Tenant, Tenant.Update>) cs.get(3).getActionContext())
+                    .getUpdate();
+            Assert.assertEquals(update.getName(), historyUpdate.getName());
+            Assert.assertEquals(update.getProperties(), historyUpdate.getProperties());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testTimeSnapshots() throws Exception {
+        //TODO implement
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

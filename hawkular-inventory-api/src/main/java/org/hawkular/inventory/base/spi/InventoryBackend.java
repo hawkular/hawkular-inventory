@@ -17,7 +17,9 @@
 package org.hawkular.inventory.base.spi;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -397,4 +399,14 @@ public interface InventoryBackend<E> extends AutoCloseable {
     default boolean requiresRollbackAfterFailure(Throwable t) {
         return true;
     }
+
+    /**
+     * Lists the changes of the entity. Note that this is not supported for edges...
+     *
+     * @param from from when to return the changes
+     * @param to to when to return the changes
+     * @return a sorted map keyed by the time of the changes occurrences, where values are the converted entities
+     */
+    <T extends Entity<?, U>, U extends Entity.Update>
+    List<EntityStateChange<T>> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
 }

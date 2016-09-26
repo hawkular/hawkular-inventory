@@ -24,7 +24,7 @@ import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.ResolvableToSingle;
-import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
+import org.hawkular.inventory.api.ResolvableToSingleEntity;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
@@ -142,8 +142,8 @@ public final class Utils {
                 }
                 break;
             case rl:
-                if (access instanceof ResolvableToSingleWithRelationships) {
-                    return createRelationship((ResolvableToSingleWithRelationships<?, ?>) access, childBlueprint);
+                if (access instanceof ResolvableToSingleEntity) {
+                    return createRelationship((ResolvableToSingleEntity<?, ?>) access, childBlueprint);
                 }
                 break;
             case rt:
@@ -158,7 +158,7 @@ public final class Utils {
                 + parent + "'.");
     }
 
-    private static Relationship createRelationship(ResolvableToSingleWithRelationships<?, ?> access,
+    private static Relationship createRelationship(ResolvableToSingleEntity<?, ?> access,
                                                    Object blueprint) {
 
         Relationship.Blueprint bl = (Relationship.Blueprint) blueprint;

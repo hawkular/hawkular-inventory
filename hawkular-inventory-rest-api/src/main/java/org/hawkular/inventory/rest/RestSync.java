@@ -74,7 +74,7 @@ public class RestSync extends RestBase {
                     + " are not synchronizable.");
         }
 
-        inventory.inspect(cp, Synced.SingleWithRelationships.class).synchronize(req);
+        inventory.inspect(cp, Synced.SingleEntity.class).synchronize(req);
 
         return Response.noContent().build();
     }

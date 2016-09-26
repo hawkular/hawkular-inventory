@@ -17,7 +17,9 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -34,6 +36,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.EntityStateChange;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
@@ -256,5 +259,10 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
 
     @Override public void eradicate(E entity) {
         backend.eradicate(entity);
+    }
+
+    @Override public <T extends Entity<?, U>, U extends Entity.Update>
+    List<EntityStateChange<T>> getHistory(E entity, Class<T> entityType, Instant from, Instant to) {
+        return backend.getHistory(entity, entityType, from, to);
     }
 }

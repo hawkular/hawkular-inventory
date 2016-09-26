@@ -16,17 +16,18 @@
  */
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Entity;
 
 /**
  * Base interface of all browser interfaces over a single entity that can have relations.
  *
- * @param <Entity> the type of the entity being browsed
+ * @param <E> the type of the entity being browsed
  *
  * @author Lukas Krejci
  * @author Jirka Kremser
  * @since 0.0.1
  */
-public interface ResolvableToSingleWithRelationships<Entity extends AbstractElement<?, ?>, Update>
-        extends ResolvableToSingle<Entity, Update>, Relatable<Relationships.ReadWrite> {
+public interface ResolvableToSingleEntity<E extends Entity<?, U>, U extends Entity.Update>
+        extends ResolvableToSingle<E, U>, Relatable<Relationships.ReadWrite>, Versioned<E> {
+
 }

@@ -16,11 +16,7 @@
  */
 package org.hawkular.inventory.api;
 
-import java.time.Instant;
-import java.util.List;
-
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.Change;
 
 /**
  * Base interface for all browser interfaces over a single entity.
@@ -92,13 +88,4 @@ public interface ResolvableToSingle<Entity extends AbstractElement<?, ?>, Update
      * of the entity.
      */
     void eradicate();
-
-    /**
-     * The list of the changes is sorted in the ascending order by the time of the change.
-     *
-     * @param from the date from which to retrieve history or null for not limiting the age of the changes
-     * @param to the date to which to retrieve history or null for not limiting the age of the changes
-     * @return the list of changes made to the entity so far.
-     */
-    List<Change<Entity, ?>> history(Instant from, Instant to);
 }

@@ -83,7 +83,7 @@ import org.hawkular.inventory.paths.SegmentType;
 abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B extends Entity.Blueprint,
         U extends Entity.Update>
         extends SingleEntityFetcher<BE, E, U>
-        implements Synced.SingleWithRelationships<E, B, U> {
+        implements Synced.SingleEntity<E, B, U> {
 
     SingleSyncedFetcher(TraversalContext<BE, E> context) {
         super(context);
@@ -382,7 +382,8 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
                 return fillCommon(ResourceType.Update.builder(), type).build();
             }
 
-            private <UU extends Entity.Update, Bld extends Entity.Update.Builder<UU, Bld>>
+            private <EE extends Entity<?, UU>, UU extends Entity.Update,
+                    Bld extends Entity.Update.Builder<EE, UU, Bld>>
             Bld fillCommon(Bld bld, Entity.Blueprint bl) {
                 if (bl.getProperties() != null) {
                     bld.withProperties(bl.getProperties());

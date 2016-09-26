@@ -50,7 +50,7 @@ import org.hawkular.inventory.api.OperationTypes;
 import org.hawkular.inventory.api.RelationAlreadyExistsException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
-import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
+import org.hawkular.inventory.api.ResolvableToSingleEntity;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
@@ -394,7 +394,7 @@ public class RestBulk extends RestBase {
 
                     if (elementType == ElementType.relationship) {
                         bulkCreateRelationships(statuses, parentPath,
-                                (ResolvableToSingleWithRelationships<?, ?>) single, elementType, blueprints);
+                                (ResolvableToSingleEntity<?, ?>) single, elementType, blueprints);
                     } else {
                         bulkCreateEntity(statuses, idExtractor, parentPath, single, elementType, blueprints);
                     }
@@ -478,7 +478,7 @@ public class RestBulk extends RestBase {
     }
 
     private void bulkCreateRelationships(Map<ElementType, Map<CanonicalPath, Integer>> statuses,
-                                         CanonicalPath parentPath, ResolvableToSingleWithRelationships<?, ?> single,
+                                         CanonicalPath parentPath, ResolvableToSingleEntity<?, ?> single,
                                          ElementType elementType, List<Blueprint> blueprints) {
         if (!hasBeenCreatedInBulk(parentPath, statuses)) {
             if (!security.canAssociateFrom(parentPath)) {

@@ -46,7 +46,7 @@ public final class MetadataPacks {
         MetricTypes.Read metricTypes();
     }
 
-    public interface Single extends ResolvableToSingleWithRelationships<MetadataPack, MetadataPack.Update>,
+    public interface Single extends ResolvableToSingleEntity<MetadataPack, MetadataPack.Update>,
             BrowserBase {
     }
 

@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Function;
 
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -27,7 +24,6 @@ import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
@@ -109,11 +105,6 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
         });
         useCachedEntity = false;
         context.setCreatedEntity(null);
-    }
-
-    @Override public List<Change<E, ?>> history(Instant from, Instant to) {
-        //TODO implement
-        return Collections.emptyList();
     }
 
     @Override

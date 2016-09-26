@@ -80,7 +80,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
 
     @Override
     public Updater<Update, MetadataPack> update() {
-        return new Updater<>((u) -> new MetadataPack(getPath(), u.getProperties()));
+        return new Updater<>((u) -> new MetadataPack(getPath(), u.getProperties()), this, Update.builder());
     }
 
     /**
@@ -363,7 +363,7 @@ public final class MetadataPack extends Entity<MetadataPack.Blueprint, MetadataP
             return visitor.visitMetadataPack(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<MetadataPack, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(properties);

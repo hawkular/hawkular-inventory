@@ -168,7 +168,7 @@ public class EmptyInventory implements Inventory {
             throw entityNotFound(entityType);
         }
 
-        @Override public List<Change<E, ?>> history(Instant from, Instant to) {
+        public List<Change<E, ?>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -852,10 +852,6 @@ public class EmptyInventory implements Inventory {
 
         @Override public void eradicate() {
             throw new RelationNotFoundException((String) null, (Filter[]) null);
-        }
-
-        @Override public List<Change<Relationship, ?>> history(Instant from, Instant to) {
-            return Collections.emptyList();
         }
     }
 

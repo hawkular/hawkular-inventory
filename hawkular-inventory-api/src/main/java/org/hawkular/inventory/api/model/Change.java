@@ -24,9 +24,10 @@ import org.hawkular.inventory.api.Action;
  * Represents a change made to an entity at some point in time.
  *
  * @author Lukas Krejci
- * @since 0.19.0
+ * @since 0.20.0
  */
-public final class Change<Element extends AbstractElement<?, ?>, Context> implements Comparable<Change<?, ?>> {
+public final class Change<Element extends Entity<?, ?>, Context>
+        implements Comparable<Change<?, ?>> {
     private final Instant time;
     private final Action<Context, Element> action;
     private final Context actionContext;
@@ -66,7 +67,7 @@ public final class Change<Element extends AbstractElement<?, ?>, Context> implem
             return diff;
         }
 
-        return element.getId().compareTo(o.element.getId());
+        return element.getPath().toString().compareTo(o.element.getPath().toString());
     }
 
     @Override public boolean equals(Object o) {

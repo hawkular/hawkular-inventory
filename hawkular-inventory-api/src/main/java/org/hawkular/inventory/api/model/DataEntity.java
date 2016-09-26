@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.model;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -85,18 +86,13 @@ public final class DataEntity extends SyncedEntity<DataEntity.Blueprint<?>, Data
 
     @Override
     public Updater<Update, DataEntity> update() {
-        return new Updater<>((u) -> {
-            StructuredData newValue = valueOrDefault(u.getValue(), getValue());
-            String identityHash = getIdentityHash();
-            if (u.getValue() != null) {
-                DataEntity.Blueprint updateBlueprint = DataEntity.Blueprint.builder().withRole(getRole())
-                        .withValue(u.getValue()).build();
-                InventoryStructure<DataEntity.Blueprint> structure = InventoryStructure.of(updateBlueprint).build();
-                identityHash = IdentityHash.of(structure);
-            }
-            return new DataEntity(this.getPath().up(), this.getRole(), newValue, identityHash, getContentHash(),
-                    getSyncHash(), u.getProperties());
-        });
+        return new Updater<>(
+                (u) -> {
+                    StructuredData newValue = valueOrDefault(u.getValue(), getValue());
+                    return new DataEntity(this.getPath().up(), this.getRole(), newValue, getIdentityHash(),
+                            getContentHash(),
+                            getSyncHash(), u.getProperties());
+                }, this, Update.builder());
     }
 
     @ApiModel("DataEntityBlueprint")
@@ -214,13 +210,21 @@ public final class DataEntity extends SyncedEntity<DataEntity.Blueprint<?>, Data
             return visitor.visitData(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<DataEntity, Update, Builder> {
 
             private StructuredData value;
 
             public Builder withValue(StructuredData value) {
                 this.value = value;
                 return this;
+            }
+
+            @Override
+            public Builder withDifference(DataEntity original, DataEntity updated) {
+                if (!Objects.equals(original.getValue(), updated.getValue())) {
+                    withValue(updated.getValue());
+                }
+                return super.withDifference(original, updated);
             }
 
             @Override

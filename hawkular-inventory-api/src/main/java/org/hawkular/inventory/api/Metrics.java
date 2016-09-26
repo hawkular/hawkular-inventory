@@ -42,7 +42,7 @@ public final class Metrics {
     /**
      * Interface for accessing a single metric in a writable manner.
      */
-    public interface Single extends Synced.SingleWithRelationships<Metric, Metric.Blueprint, Metric.Update> {}
+    public interface Single extends Synced.SingleEntity<Metric, Metric.Blueprint, Metric.Update> {}
 
     /**
      * Interface for traversing over a set of metrics.

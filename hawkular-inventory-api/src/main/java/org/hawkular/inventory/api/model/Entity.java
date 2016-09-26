@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -304,14 +305,22 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
             return name;
         }
 
-        public abstract static class Builder<U extends Update, This extends Builder<U, This>>
-                extends AbstractElement.Update.Builder<U, This> {
+        public abstract static class Builder<E extends Entity<?, U>, U extends Update, This extends Builder<E, U, This>>
+                extends AbstractElement.Update.Builder<E, U, This> {
 
             protected String name;
 
             public This withName(String name) {
                 this.name = name;
                 return castThis();
+            }
+
+            @Override public This withDifference(E original, E updated) {
+                if (!Objects.equals(original.getName(), updated.getName())) {
+                    withName(updated.getName());
+                }
+
+                return super.withDifference(original, updated);
             }
         }
     }

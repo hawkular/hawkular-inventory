@@ -36,7 +36,7 @@ import javax.ws.rs.ext.Providers;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
-import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
+import org.hawkular.inventory.api.ResolvableToSingleEntity;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
@@ -125,9 +125,9 @@ public class RestPath extends RestBase {
         Pager pager = extractPaging(uriInfo);
 
         @SuppressWarnings("unchecked")
-        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
-                (ResolvableToSingleWithRelationships<Relationship, Relationship.Update>) inventory.inspect(path,
-                        ResolvableToSingleWithRelationships.class);
+        ResolvableToSingleEntity<?, ?> resolvable =
+                (ResolvableToSingleEntity<?, ?>) inventory.inspect(path,
+                        ResolvableToSingleEntity.class);
         Page<Relationship> relations =
                 resolvable.relationships(Relationships.Direction.valueOf(direction)).getAll(filters).entities(pager);
 

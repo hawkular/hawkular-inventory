@@ -66,7 +66,7 @@ public final class OperationType extends SyncedEntity<OperationType.Blueprint, O
     @Override
     public Updater<Update, OperationType> update() {
         return new Updater<>((u) -> new OperationType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
-                getSyncHash(), u.getProperties()));
+                getSyncHash(), u.getProperties()), this, Update.builder());
     }
 
     @ApiModel("OperationTypeBlueprint")
@@ -140,7 +140,7 @@ public final class OperationType extends SyncedEntity<OperationType.Blueprint, O
             return visitor.visitOperationType(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<OperationType, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(name, properties);
