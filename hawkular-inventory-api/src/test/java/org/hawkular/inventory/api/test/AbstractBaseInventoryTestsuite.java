@@ -91,6 +91,7 @@ import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.RecurseFilter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
@@ -3041,6 +3042,19 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     "com.acme.tenant".equals(e.getId())));
         } finally {
             backend.rollback();
+        }
+    }
+
+    @Test
+    public void testRecurseFilter() throws Exception {
+        Query q = Query.path()
+                .with(With.path(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1").get()))
+                .with(RecurseFilter.builder().addChain(Related.by(contains)).build())
+                .with(With.type(Metric.class))
+                .get();
+
+        try (Page<Metric> results = inventory.execute(q, Metric.class, Pager.none())) {
+            Assert.assertEquals(2, results.getTotalSize());
         }
     }
 

@@ -536,7 +536,7 @@ class FilterVisitor {
 
             for (Filter f : recurseFilter.getLoopChains()[0]) {
                 FilterApplicator<?> applicator = FilterApplicator.of(f);
-                applicator.applyTo(discriminator, descend, state);
+                applicator.applyTo(discriminator, descend, descendState);
             }
 
             goBackFromEdges(descend, descendState);
