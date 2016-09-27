@@ -3702,7 +3702,36 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
     @Test
     public void testEradicate() throws Exception {
-        //TODO implement
+        String tenantId = "testEradicate";
+        try {
+            Instant beforeCreate = Instant.now();
+
+            Thread.sleep(10); //make sure before and after timestamps differ even if create was done in
+                              //under a millisecond...
+
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Instant afterCreate = Instant.now();
+
+            Thread.sleep(10); //make sure before and after eradicate timestamps differ even if eradicate was done in
+                              //under a millisecond...
+
+            ts.eradicate();
+
+            Instant afterDelete = Instant.now();
+
+            //check that at no point in time can we find our tenant... eradicate will just delete all reference
+            //to it...
+
+            Assert.assertFalse(inventory.at(beforeCreate).tenants().get(tenantId).exists());
+            Assert.assertFalse(inventory.at(afterCreate).tenants().get(tenantId).exists());
+            Assert.assertFalse(inventory.at(afterDelete).tenants().get(tenantId).exists());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
     }
 
     @Test
@@ -3749,8 +3778,134 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
-    public void testTimeSnapshots() throws Exception {
-        //TODO implement
+    public void testTimeSnapshots_API() throws Exception {
+        String tenantId = "testTimeSnapshots_API";
+        try {
+            Instant beforeCreate = Instant.now();
+            Thread.sleep(10);
+
+            Feeds.Single fs = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            fs.resourceTypes()
+                    .create(ResourceType.Blueprint.builder().withId("resourceType").build()).entity();
+
+            Instant beforeR1 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r1").withResourceTypePath("resourceType").build());
+
+            Instant beforeR2 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r2").withResourceTypePath("resourceType").build());
+
+            Instant beforeR3 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r3").withResourceTypePath("resourceType").build());
+
+            Instant afterR3 = Instant.now();
+
+            Set<Resource> beforeCreateResources = inventory.at(beforeCreate).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR1Resources = inventory.at(beforeR1).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR2Resources = inventory.at(beforeR2).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR3Resources = inventory.at(beforeR3).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> afterR3Resources = inventory.at(afterR3).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+
+            Assert.assertTrue(beforeCreateResources.isEmpty());
+            Assert.assertTrue(beforeR1Resources.isEmpty());
+            Assert.assertEquals(1, beforeR2Resources.size());
+            Assert.assertEquals(2, beforeR3Resources.size());
+            Assert.assertEquals(3, afterR3Resources.size());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
+    public void testTimeSnapshots_Query() throws Exception {
+        String tenantId = "testTimeSnapshots_Query";
+        try {
+            Instant beforeCreate = Instant.now();
+            Thread.sleep(10);
+
+            Feeds.Single fs = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            fs.resourceTypes()
+                    .create(ResourceType.Blueprint.builder().withId("resourceType").build()).entity();
+
+            Instant beforeR1 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r1").withResourceTypePath("resourceType").build());
+
+            Instant beforeR2 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r2").withResourceTypePath("resourceType").build());
+
+            Instant beforeR3 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r3").withResourceTypePath("resourceType").build());
+
+            Instant afterR3 = Instant.now();
+
+            Query q = Query.path().with(With.path(CanonicalPath.of().tenant(tenantId).feed("feed").get()))
+                    .with(Related.by(contains))
+                    .with(With.type(Resource.class)).get();
+
+            try (Page<Resource> beforeCreateResources = inventory.at(beforeCreate).execute(q, Resource.class,
+                    Pager.none())) {
+                Assert.assertEquals(0, beforeCreateResources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR1Resources = inventory.at(beforeR1).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(0, beforeR1Resources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR2Resources = inventory.at(beforeR2).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(1, beforeR2Resources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR3Resources = inventory.at(beforeR3).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(2, beforeR3Resources.getTotalSize());
+            }
+
+            try (Page<Resource> afterR3Resources = inventory.at(afterR3).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(3, afterR3Resources.getTotalSize());
+            }
+
+            //k, now something more radical - all resources everywhere
+            try (Page<Resource> allResources = inventory.at(Instant.ofEpochMilli(0))
+                    .execute(Query.filter().with(With.type(Resource.class)).get(), Resource.class, Pager.none())) {
+                Assert.assertEquals(0, allResources.getTotalSize());
+            }
+
+            try (Page<Resource> allResources = inventory.at(beforeCreate)
+                    .execute(Query.filter().with(With.type(Resource.class)).get(), Resource.class, Pager.none())) {
+                Assert.assertEquals(15, allResources.getTotalSize());
+            }
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
