@@ -1482,6 +1482,12 @@ public class InventoryITest extends AbstractTestBase {
         assertEquals(tree.getChild(Path.Segment.from("r;table")).getHash(), table.getSyncHash());
     }
 
+    @Test
+    public void testInvalidTreeHash() throws Throwable {
+        Response response = get(basePath + "/entity/e;" + environmentId + "/treeHash");
+        assertEquals(400, response.code());
+    }
+
     private <T> T readAs(String path, ObjectMapper mapper, Class<T> type) throws Throwable {
         Response response = get(basePath + path);
         assertEquals(200, response.code());

@@ -44,6 +44,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+import org.jboss.resteasy.spi.BadRequestException;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -71,6 +72,9 @@ public class RestEntity extends RestBase {
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(getPath(uriInfo, "/treeHash".length()),
                 getTenantPath(), AbstractElement.class);
 
+        if (path.getSegment().getElementType() == SegmentType.e) {
+            throw new BadRequestException("Cannot get treeHash for environment");
+        }
         return inventory.inspect(path, Synced.Single.class).treeHash();
     }
 
