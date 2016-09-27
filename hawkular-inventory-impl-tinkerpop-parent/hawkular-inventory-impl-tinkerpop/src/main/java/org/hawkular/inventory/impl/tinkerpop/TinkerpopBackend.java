@@ -31,7 +31,6 @@ import static org.hawkular.inventory.impl.tinkerpop.HawkularTraversal.hwk__;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__inState;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__changeKind;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__cp;
-import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__deleted;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__eid;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__from;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceCp;
@@ -73,6 +72,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TrueTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -239,12 +239,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         if (SegmentType.rl.equals(path.getSegment().getElementType())) {
             //__eid is globally unique for relationships
             it = hwk(context.getGraph().traversal().E()).has(__eid.name(), path.getSegment().getElementId())
-                    .discriminate(discriminator);
+                    .restrictTo(discriminator);
         } else {
             it = hwk(context.getGraph().traversal().V())
                     .hasLabel(Constants.Type.of(path.getSegment().getElementType()).name())
                     .has(__cp.name(), path.toString())
-                    .hasNot(__deleted.name());
+                    .existsAt(discriminator);
         }
 
         if (!it.hasNext()) {
@@ -349,7 +349,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                                                       Relationships.Direction direction,
                                                       String... relationshipNames) {
 
-        return getTransitiveClosureOverImpl(startingPoint, direction, relationshipNames).iterator();
+        return getTransitiveClosureOverImpl(discriminator, startingPoint, direction, relationshipNames).iterator();
     }
 
     @Override
@@ -364,7 +364,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 return Collections.emptyIterator();
             }
 
-            return getTransitiveClosureOverImpl(startingElement, direction, relationshipNames).stream()
+            return getTransitiveClosureOverImpl(discriminator, startingElement, direction, relationshipNames).stream()
                     .map(vertex -> convert(discriminator, vertex, clazz)).iterator();
 
         } catch (ElementNotFoundException e) {
@@ -373,8 +373,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Element> getTransitiveClosureOverImpl(Element startingPoint, Relationships.Direction direction,
-                                                       String... relationshipNames) {
+    private List<Element> getTransitiveClosureOverImpl(Discriminator discriminator, Element startingPoint,
+                                                       Relationships.Direction direction, String... relationshipNames) {
         if (!(startingPoint instanceof Vertex)) {
             return emptyList();
         } else {
@@ -394,10 +394,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     throw new IllegalStateException("Unhandled traversal direction: " + direction);
             }
 
+            Traversal<?, ?> emitCondition = discriminator == null
+                    ? TrueTraversal.instance()
+                    : hwk__().existsAt(discriminator);
+
             //toList() is important as it ensures eager evaluation of the closure - the callers might modify the
             //conditions for the evaluation during the iteration which would skew the results.
             return (List<Element>) (List) __((Vertex) startingPoint).repeat((Traversal<?, Vertex>) loop)
-                    .emit(__.hasNot(__deleted.name()))
+                    .emit(emitCondition)
                     .toList();
         }
     }
@@ -409,7 +413,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        Iterator<Edge> it = hwk__(entity).toE(toNative(direction), relationshipName).discriminate(discriminator);
+        Iterator<Edge> it = hwk__(entity).toE(toNative(direction), relationshipName).restrictTo(discriminator);
 
         return closeAfter(it, it::hasNext);
     }
@@ -421,7 +425,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        Iterator<Vertex> targets = hwk(__(source)).outE(relationshipName).discriminate(discriminator).inV();
+        Iterator<Vertex> targets = hwk(__(source)).outE(relationshipName).restrictTo(discriminator).inV();
 
         return closeAfter(targets, () -> {
             while (targets.hasNext()) {
@@ -450,7 +454,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
 
         Iterator<Edge> it = hwk(__(source)).outE(relationshipName)
-                .discriminate(discriminator).has(__targetCp.name(), t.property(__cp.name()).value());
+                .restrictTo(discriminator).has(__targetCp.name(), t.property(__cp.name()).value());
 
         try {
             if (!it.hasNext()) {
@@ -476,13 +480,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         switch (direction) {
             case incoming:
-                q.inE(names).discriminate(discriminator);
+                q.inE(names).restrictTo(discriminator);
                 break;
             case outgoing:
-                q.outE(names).discriminate(discriminator);
+                q.outE(names).restrictTo(discriminator);
                 break;
             case both:
-                q.bothE(names).discriminate(discriminator);
+                q.bothE(names).restrictTo(discriminator);
                 break;
             default:
                 throw new AssertionError("Invalid relationship direction specified: " + direction);
@@ -651,7 +655,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     }
 
     private Vertex getStateOf(Element identityVertex, Discriminator discriminator) {
-        HawkularTraversal<?, Vertex> q = hwk__(identityVertex).outE(__inState.name()).discriminate(discriminator)
+        HawkularTraversal<?, Vertex> q = hwk__(identityVertex).outE(__inState.name()).restrictTo(discriminator)
                 .inV();
 
         return closeAfter(q, () -> {
@@ -695,7 +699,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             _extractSyncHash(state));
                     break;
                 case metric:
-                    it = hwk__(v).inE(defines.name()).discriminate(discriminator).outV();
+                    it = hwk__(v).inE(defines.name()).restrictTo(discriminator).outV();
                     Vertex mdv = closeAfter(it, it::next);
                     MetricType md = convert(discriminator, mdv, MetricType.class);
                     e = new Metric(extractCanonicalPath(v), _extractIdentityHash(state), _extractContentHash(state),
@@ -712,7 +716,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             state.<Long>property(Constants.Property.__metric_interval.name()).value());
                     break;
                 case resource:
-                    it = hwk__(v).inE(defines.name()).discriminate(discriminator).outV();
+                    it = hwk__(v).inE(defines.name()).restrictTo(discriminator).outV();
                     Vertex rtv = closeAfter(it, it::next);
                     ResourceType rt = convert(discriminator, rtv, ResourceType.class);
                     e = new Resource(extractCanonicalPath(v), _extractIdentityHash(state), _extractContentHash(state),
@@ -973,16 +977,14 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     checkProperties(properties, type.getMappedProperties());
 
                     //check that there is no deleted vertex on our path...
-                    Iterator<Vertex> check = context.getGraph().traversal().V()
+                    Iterator<Vertex> check = hwk(context.getGraph().traversal().V())
                             .hasLabel(type.name())
                             .has(__cp.name(), path.toString())
-                            .has(__deleted.name(), true);
+                            .doesntExistAt(discriminator);
 
                     Vertex identity = closeAfter(check, () -> {
                         if (check.hasNext()) {
-                            Vertex ret = check.next();
-                            ret.property(__deleted.name()).remove();
-                            return ret;
+                            return check.next();
                         } else {
                             Vertex ret = context.getGraph().addVertex(type.name());
                             ret.property(__cp.name(), path.toString());
@@ -1248,7 +1250,6 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public void markDeleted(Discriminator discriminator, Element entity) {
         long time = discriminator.getTime().toEpochMilli();
         if (entity instanceof Vertex) {
-            entity.property(__deleted.name(), true);
             Iterator<Edge> es = hwk__(entity).bothE().has(__to.name(), Long.MAX_VALUE);
 
             while (es.hasNext()) {
@@ -1278,8 +1279,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             throw new IllegalArgumentException("The supplied element is not a data entity's data.");
         }
 
-        Iterator<Element> dataElements = getTransitiveClosureOverImpl(dataRepresentation, outgoing, contains.name())
-                .iterator();
+        Iterator<Element> dataElements =
+                getTransitiveClosureOverImpl(null, dataRepresentation, outgoing, contains.name()).iterator();
 
         closeAfter(dataElements, () -> {
             // we know the closure is constructed eagerly in this impl, so this loop is OK.
@@ -1376,7 +1377,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     private StructuredData loadStructuredData(Discriminator discriminator, Vertex owner,
                                               Relationships.WellKnown owningEdge) {
-        Iterator<Vertex> it = hwk__(owner).outE(owningEdge.name()).discriminate(discriminator).inV();
+        Iterator<Vertex> it = hwk__(owner).outE(owningEdge.name()).restrictTo(discriminator).inV();
         if (!it.hasNext()) {
             closeIfNeeded(it);
             return null;

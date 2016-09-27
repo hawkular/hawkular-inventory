@@ -22,7 +22,6 @@ import static org.hawkular.inventory.impl.tinkerpop.HawkularTraversal.hwk__;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__inState;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__withIdentityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__cp;
-import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__deleted;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__eid;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceCp;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__sourceEid;
@@ -89,7 +88,7 @@ class FilterVisitor {
                 if (null != related.getRelationshipName()) {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.IN);
-                    query.inE(related.getRelationshipName()).discriminate(discriminator);
+                    query.inE(related.getRelationshipName()).restrictTo(discriminator);
                     applied = true;
                 }
                 if (null != related.getRelationshipId()) {
@@ -99,14 +98,14 @@ class FilterVisitor {
                     } else {
                         query.inE().has(__eid.name(), related.getRelationshipId());
                     }
-                    query.discriminate(discriminator);
+                    query.restrictTo(discriminator);
                 }
                 break;
             case SOURCE:
                 if (null != related.getRelationshipName()) {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.OUT);
-                    query.outE(related.getRelationshipName()).discriminate(discriminator);
+                    query.outE(related.getRelationshipName()).restrictTo(discriminator);
                     applied = true;
                 }
                 if (null != related.getRelationshipId()) {
@@ -116,17 +115,17 @@ class FilterVisitor {
                     } else {
                         query.outE().has(__eid.name(), related.getRelationshipId());
                     }
-                    query.discriminate(discriminator);
+                    query.restrictTo(discriminator);
                 }
                 break;
             case ANY:
                 // TODO properties-on-edges optimization not implemented for direction "both"
                 if (null != related.getRelationshipName()) {
-                    query.bothE(related.getRelationshipName()).discriminate(discriminator).bothV();
+                    query.bothE(related.getRelationshipName()).restrictTo(discriminator).bothV();
                 }
                 if (null != related.getRelationshipId()) {
                     // TODO test
-                    query.bothE().discriminate(discriminator).has(__eid.name(), related.getRelationshipId()).bothV();
+                    query.bothE().restrictTo(discriminator).has(__eid.name(), related.getRelationshipId()).bothV();
                 }
         }
 
@@ -150,7 +149,7 @@ class FilterVisitor {
         query.has(prop, P.within(ids.getIds()));
 
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
     }
 
     @SuppressWarnings("unchecked")
@@ -162,7 +161,7 @@ class FilterVisitor {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
             query.has(prop, type.name());
             goBackFromEdges(query, state);
-            checkNotDeleted(query);
+            query.existsAt(discriminator);
             return;
         }
 
@@ -171,18 +170,18 @@ class FilterVisitor {
         query.has(prop, P.within(typeNames));
 
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
     }
 
     @SuppressWarnings("unchecked")
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, With.Names names,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
 
         String prop = Constants.Property.name.name();
 
-        HawkularTraversal<?, ?> nameCheck = hwk__().outE(__inState.name()).discriminate(discriminator).inV();
+        HawkularTraversal<?, ?> nameCheck = hwk__().outE(__inState.name()).restrictTo(discriminator).inV();
 
         if (names.getNames().length == 1) {
             nameCheck.has(prop, names.getNames()[0]);
@@ -196,7 +195,7 @@ class FilterVisitor {
     @SuppressWarnings("unchecked")
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, RelationWith.Ids ids,
                       QueryTranslationState state) {
-        query.discriminate(discriminator);
+        query.restrictTo(discriminator);
 
         if (ids.getIds().length == 1) {
             query.has(__eid.name(), ids.getIds()[0]);
@@ -207,7 +206,7 @@ class FilterVisitor {
 
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query,
                       RelationWith.PropertyValues properties, QueryTranslationState state) {
-        query.discriminate(discriminator);
+        query.restrictTo(discriminator);
         applyPropertyFilter(discriminator, query, state, properties.getProperty(), properties.getValues());
     }
 
@@ -232,7 +231,7 @@ class FilterVisitor {
                        RelationWith.SourceOrTargetOfType types, Boolean source, QueryTranslationState state) {
 
         HawkularTraversal<?, ?> origQuery = query;
-        origQuery.discriminate(discriminator);
+        origQuery.restrictTo(discriminator);
 
         String prop;
         if (source == null) {
@@ -270,7 +269,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.IN);
-                    query.inE().discriminate(discriminator);
+                    query.inE().restrictTo(discriminator);
                 }
                 break;
             case outgoing:
@@ -281,7 +280,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.OUT);
-                    query.outE().discriminate(discriminator);
+                    query.outE().restrictTo(discriminator);
                 }
                 break;
             case both:
@@ -292,7 +291,7 @@ class FilterVisitor {
                 } else {
                     state.setInEdges(true);
                     state.setComingFrom(Direction.BOTH);
-                    query.bothE().discriminate(discriminator);
+                    query.bothE().restrictTo(discriminator);
                 }
                 break;
         }
@@ -310,14 +309,14 @@ class FilterVisitor {
         boolean propertyMirrored = Constants.Property.isMirroredInEdges(filter.getName());
         if (!propertyMirrored) {
             goBackFromEdges(query, state);
-            checkNotDeleted(query);
+            query.existsAt(discriminator);
         }
 
         applyPropertyFilter(discriminator, query, state, filter.getName(), filter.getValues());
 
         if (propertyMirrored) {
             goBackFromEdges(query, state);
-            checkNotDeleted(query);
+            query.existsAt(discriminator);
         }
     }
 
@@ -331,7 +330,7 @@ class FilterVisitor {
         HawkularTraversal<?, ?> check = query;
 
         if (checkStateVertex) {
-            check = hwk__().outE(__inState.name()).discriminate(discriminator).inV();
+            check = hwk__().outE(__inState.name()).restrictTo(discriminator).inV();
         }
 
         boolean checkLabel = state.isInEdges() && "label".equals(mappedName);
@@ -360,7 +359,8 @@ class FilterVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public void visit(HawkularTraversal<?, ?> query, With.CanonicalPaths filter, QueryTranslationState state) {
+    public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, With.CanonicalPaths filter,
+                      QueryTranslationState state) {
         String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
 
         if (filter.getPaths().length == 1) {
@@ -384,14 +384,14 @@ class FilterVisitor {
         }
 
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
     }
 
     @SuppressWarnings("unchecked")
     public <E> void visit(Discriminator discriminator, HawkularTraversal<?, E> query, With.RelativePaths filter,
                           QueryTranslationState state) {
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
 
         String originLabel = filter.getMarkerLabel();
 
@@ -399,7 +399,7 @@ class FilterVisitor {
             if (originLabel != null) {
                 //progress our main query down to the candidates from which we will select the results
                 apply(filter.getPaths()[0].getSegment(), query);
-                checkNotDeleted(query);
+                query.existsAt(discriminator);
                 String candidateLabel = nextRandomLabel();
                 query.as(candidateLabel);
 
@@ -449,9 +449,10 @@ class FilterVisitor {
         }
     }
 
-    public void visit(HawkularTraversal<?, ?> query, Marker filter, QueryTranslationState state) {
+    public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, Marker filter,
+                      QueryTranslationState state) {
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
         query.as(filter.getLabel());
     }
 
@@ -459,8 +460,8 @@ class FilterVisitor {
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, With.DataAt dataPos,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
-        query.outE(hasData.name()).discriminate(discriminator).inV();
+        query.existsAt(discriminator);
+        query.outE(hasData.name()).restrictTo(discriminator).inV();
 
         for (Path.Segment seg : dataPos.getDataPath().getPath()) {
             if (SegmentType.up.equals(seg.getElementType())) {
@@ -527,7 +528,7 @@ class FilterVisitor {
     @SuppressWarnings("unchecked")
     public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query, RecurseFilter recurseFilter, QueryTranslationState state) {
         goBackFromEdges(query, state);
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
 
         HawkularTraversal<?, ?> descend = hwk__();
 
@@ -557,24 +558,25 @@ class FilterVisitor {
         query.repeat((Traversal) descend).emit();
     }
 
-    public void visit(HawkularTraversal<?, ?> query, @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
+    public void visit(Discriminator discriminator, HawkularTraversal<?, ?> query,
+                      @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
         query.out(__withIdentityHash.name()).in(__withIdentityHash.name());
-        checkNotDeleted(query);
+        query.existsAt(discriminator);
     }
 
     private void convertToPipeline(Discriminator discriminator, RelativePath path, HawkularTraversal<?, ?> pipeline) {
         for (Path.Segment s : path.getPath()) {
             if (SegmentType.up.equals(s.getElementType())) {
-                pipeline.inE(contains.name()).discriminate(discriminator).outV();
-                checkNotDeleted(pipeline);
+                pipeline.inE(contains.name()).restrictTo(discriminator).outV();
+                pipeline.existsAt(discriminator);
             } else {
-                pipeline.outE(contains.name()).discriminate(discriminator)
+                pipeline.outE(contains.name()).restrictTo(discriminator)
                         .has(__targetType.name(),
                                 Constants.Type.of(Entity.typeFromSegmentType(s.getElementType())).name())
                         .has(__targetEid.name(), s.getElementId()).inV();
-                checkNotDeleted(pipeline);
+                pipeline.existsAt(discriminator);
             }
         }
     }
@@ -659,9 +661,5 @@ class FilterVisitor {
 
     private static String nextRandomLabel() {
         return "label-" + CNT.getAndIncrement();
-    }
-
-    private static void checkNotDeleted(HawkularTraversal<?, ?> pipeline) {
-        pipeline.hasNot(__deleted.name());
     }
 }

@@ -424,7 +424,7 @@ abstract class FilterApplicator<T extends Filter> {
 
         @Override
         public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -448,7 +448,7 @@ abstract class FilterApplicator<T extends Filter> {
 
         @Override
         public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -508,7 +508,7 @@ abstract class FilterApplicator<T extends Filter> {
 
         @Override
         public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 

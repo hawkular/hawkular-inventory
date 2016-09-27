@@ -168,8 +168,6 @@ public final class Constants {
 
         __to(Long.class),
 
-        __deleted(Boolean.class),
-
         __changeKind(int.class)
 
         ;
@@ -248,12 +246,11 @@ public final class Constants {
         private final Class<?> entityType;
 
         private static final List<String> identityVertexProperties =
-                Arrays.asList(Property.__type.name(), Property.__eid.name(), Property.__cp.name(),
-                        Property.__deleted.name());
+                Arrays.asList(Property.__type.name(), Property.__eid.name(), Property.__cp.name());
 
         Type(Class<?> entityType, Property... mappedProperties) {
             this.entityType = entityType;
-            this.mappedProperties = new String[mappedProperties.length + 6];
+            this.mappedProperties = new String[mappedProperties.length + 5];
             Arrays.setAll(this.mappedProperties, i -> {
                 switch (i) {
                     case 0:
@@ -266,10 +263,8 @@ public final class Constants {
                         return Property.__from.name();
                     case 4:
                         return Property.__to.name();
-                    case 5:
-                        return Property.__deleted.name();
                     default:
-                        return mappedProperties[i - 6].name();
+                        return mappedProperties[i - 5].name();
                 }
             });
         }

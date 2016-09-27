@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__from;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -86,13 +88,33 @@ public class HawkularTraversal<S, E> implements GraphTraversal<S, E>, GraphTrave
         this.delegate = delegate;
     }
 
-    public HawkularTraversal<S, E> discriminate(Discriminator discriminator) {
+    @SuppressWarnings("unchecked")
+    public HawkularTraversal<Edge, Edge> restrictTo(Discriminator discriminator) {
         if (discriminator == null || discriminator.getTime() == null) {
-            return this;
+            return (HawkularTraversal<Edge, Edge>) this;
         }
 
         long time = discriminator.getTime().toEpochMilli();
-        return this.has(Constants.Property.__from.name(), P.lte(time)).has(Constants.Property.__to.name(), P.gt(time));
+        return (HawkularTraversal<Edge, Edge>) this.has(__from.name(), P.lte(time))
+                .has(Constants.Property.__to.name(), P.gt(time));
+    }
+
+    @SuppressWarnings("unchecked")
+    public HawkularTraversal<Vertex, Vertex> existsAt(Discriminator discriminator) {
+        return (HawkularTraversal<Vertex, Vertex>) where(hwk__().outE(Constants.InternalEdge.__inState.name())
+                .restrictTo(discriminator));
+    }
+
+    @SuppressWarnings("unchecked")
+    public HawkularTraversal<Vertex, Vertex> doesntExistAt(Discriminator discriminator) {
+        if (discriminator == null || discriminator.getTime() == null) {
+            return (HawkularTraversal<Vertex, Vertex>) this;
+        }
+
+        GraphTraversal<?, Edge> check = __.not(
+                hwk__().outE(Constants.InternalEdge.__inState.name()).restrictTo(discriminator));
+
+        return (HawkularTraversal<Vertex, Vertex>) where(check);
     }
 
     @SuppressWarnings("unchecked")
