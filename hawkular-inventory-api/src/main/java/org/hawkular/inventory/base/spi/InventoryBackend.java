@@ -342,8 +342,11 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Simply marks the entity as deleted.
      *
+     * <p>Must fail if there was any update to the entity after the time specified by the discriminator.
+     *
      * @param discriminator the discriminator to apply on the query
      * @param entity the entity to delete
+     * @throws IllegalArgumentException if there was an update after the designated time
      */
     void markDeleted(Discriminator discriminator, E entity);
 

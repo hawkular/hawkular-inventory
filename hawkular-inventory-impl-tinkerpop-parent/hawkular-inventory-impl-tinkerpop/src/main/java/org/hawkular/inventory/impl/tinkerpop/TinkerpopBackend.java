@@ -1209,6 +1209,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             private Vertex common(String name, Map<String, Object> properties,
                                   Class<? extends AbstractElement<?, ?>> entityType) {
+
+                checkNoUpdatesAfter(discriminator, entity);
+
                 Class<?> actualType = extractType(entity);
                 if (!actualType.equals(entityType)) {
                     throw new IllegalArgumentException("Update object doesn't correspond to the actual type of the" +
@@ -1250,6 +1253,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public void markDeleted(Discriminator discriminator, Element entity) {
         long time = discriminator.getTime().toEpochMilli();
         if (entity instanceof Vertex) {
+            checkNoUpdatesAfter(discriminator, entity);
+
             Iterator<Edge> es = hwk__(entity).bothE().has(__to.name(), Long.MAX_VALUE);
 
             while (es.hasNext()) {
@@ -1262,6 +1267,19 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
         } else {
             entity.property(__to.name(), time);
+        }
+    }
+
+    private void checkNoUpdatesAfter(Discriminator discriminator, Element entity) {
+        //fail if there has been an update AFTER the discriminator time on the vertex
+        if (discriminator.getTime().toEpochMilli() < Long.MAX_VALUE) {
+            Iterator<Edge> check = hwk__(entity).outE(__inState.name()).has(__to.name(),
+                    P.inside(discriminator.getTime().toEpochMilli(), Long.MAX_VALUE));
+            if (check.hasNext()) {
+                throw new IllegalArgumentException(
+                        "The element has been updated after the designated time of deletion: " +
+                                discriminator.getTime());
+            }
         }
     }
 

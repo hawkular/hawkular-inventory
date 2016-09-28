@@ -3908,6 +3908,38 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         }
     }
 
+    @Test
+    public void testDeleteAtPointInTime() throws Exception {
+        String tenantId = "testDeleteAtPointInTime";
+        try {
+            Tenants.Single t = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build());
+
+            Instant afterCreate = Instant.now();
+            Thread.sleep(10);
+
+            t.update(Tenant.Update.builder().withName("kachny").build());
+
+            //now try to delete at afterCreate time
+
+            try {
+                inventory.at(afterCreate).tenants().delete(tenantId);
+                Assert.fail("Delete before an update should fail.");
+            } catch (IllegalArgumentException e) {
+                //good
+            }
+
+            //a delete at "now" should work fine
+            t.delete();
+
+            //eradicate only works if the entity exists
+            inventory.at(afterCreate).tenants().eradicate(tenantId);
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>
     void runObserverTest(Class<T> entityClass, int nofCreatedRelationships, int nofDeletedRelationships,
                          Runnable payload) {
