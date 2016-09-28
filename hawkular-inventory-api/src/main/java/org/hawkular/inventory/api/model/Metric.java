@@ -232,6 +232,23 @@ public final class Metric extends SyncedEntity<Metric.Blueprint, Metric.Update> 
             return visitor.visitMetric(this, parameter);
         }
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+            if (!super.equals(o)) return false;
+
+            Update update = (Update) o;
+
+            return collectionInterval != null ? collectionInterval.equals(update.collectionInterval) :
+                    update.collectionInterval == null;
+        }
+
+        @Override public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (collectionInterval != null ? collectionInterval.hashCode() : 0);
+            return result;
+        }
+
         public static final class Builder extends Entity.Update.Builder<Metric, Update, Builder> {
             private Long collectionInterval;
 

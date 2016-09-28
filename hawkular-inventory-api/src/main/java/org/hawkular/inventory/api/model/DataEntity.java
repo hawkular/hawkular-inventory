@@ -210,6 +210,23 @@ public final class DataEntity extends SyncedEntity<DataEntity.Blueprint<?>, Data
             return visitor.visitData(this, parameter);
         }
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+            if (!super.equals(o)) return false;
+
+            Update update = (Update) o;
+
+            return value != null ? value.equals(update.value) : update.value == null;
+
+        }
+
+        @Override public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (value != null ? value.hashCode() : 0);
+            return result;
+        }
+
         public static final class Builder extends Entity.Update.Builder<DataEntity, Update, Builder> {
 
             private StructuredData value;

@@ -305,6 +305,22 @@ public abstract class Entity<B extends Blueprint, U extends Entity.Update> exten
             return name;
         }
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+            if (!super.equals(o)) return false;
+
+            Update update = (Update) o;
+
+            return name != null ? name.equals(update.name) : update.name == null;
+        }
+
+        @Override public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (name != null ? name.hashCode() : 0);
+            return result;
+        }
+
         public abstract static class Builder<E extends Entity<?, U>, U extends Update, This extends Builder<E, U, This>>
                 extends AbstractElement.Update.Builder<E, U, This> {
 

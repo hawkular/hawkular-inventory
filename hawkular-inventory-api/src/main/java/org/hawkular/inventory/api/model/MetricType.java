@@ -317,6 +317,25 @@ public final class MetricType extends SyncedEntity<MetricType.Blueprint, MetricT
             return visitor.visitMetricType(this, parameter);
         }
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+            if (!super.equals(o)) return false;
+
+            Update update = (Update) o;
+
+            if (unit != update.unit) return false;
+            return collectionInterval != null ? collectionInterval.equals(update.collectionInterval) :
+                    update.collectionInterval == null;
+        }
+
+        @Override public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (unit != null ? unit.hashCode() : 0);
+            result = 31 * result + (collectionInterval != null ? collectionInterval.hashCode() : 0);
+            return result;
+        }
+
         public static final class Builder extends Entity.Update.Builder<MetricType, Update, Builder> {
             private MetricUnit unit;
             private Long collectionInterval;

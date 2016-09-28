@@ -155,5 +155,22 @@ public final class Action<C, E> {
         public U getUpdate() {
             return update;
         }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Update<?, ?> update1 = (Update<?, ?>) o;
+
+            if (!originalEntity.equals(update1.originalEntity)) return false;
+            return update.equals(update1.update);
+
+        }
+
+        @Override public int hashCode() {
+            int result = originalEntity.hashCode();
+            result = 31 * result + update.hashCode();
+            return result;
+        }
     }
 }

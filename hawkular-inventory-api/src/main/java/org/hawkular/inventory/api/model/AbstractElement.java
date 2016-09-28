@@ -213,6 +213,20 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
 
         public abstract <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter);
 
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+
+            Update update = (Update) o;
+
+            return properties != null ? properties.equals(update.properties) : update.properties == null;
+
+        }
+
+        @Override public int hashCode() {
+            return properties != null ? properties.hashCode() : 0;
+        }
+
         public abstract static class Builder<E extends AbstractElement<?, U>, U extends Update,
                 This extends Builder<E, U, This>> {
 
