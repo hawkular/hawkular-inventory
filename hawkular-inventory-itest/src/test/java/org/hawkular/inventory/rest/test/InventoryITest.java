@@ -1487,6 +1487,30 @@ public class InventoryITest extends AbstractTestBase {
         Response response = get(basePath + "/entity/e;" + environmentId + "/treeHash");
         assertEquals(400, response.code());
     }
+    
+    public void testHistory_onEntity() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testHistory_onTenant() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testTimeConstraint_onEntity() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testTimeConstraint_onTraversal() throws Exception {
+        //TODO implement
+    }
+
+    @Test
+    public void testTimeConstraint_onTenant() throws Exception {
+        //TODO implement
+    }
 
     private <T> T readAs(String path, ObjectMapper mapper, Class<T> type) throws Throwable {
         Response response = get(basePath + path);

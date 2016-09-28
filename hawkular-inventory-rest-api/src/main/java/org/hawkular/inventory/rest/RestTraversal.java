@@ -55,7 +55,7 @@ public class RestTraversal extends RestBase {
         Pager pager = RequestUtil.extractPaging(uriInfo);
 
         @SuppressWarnings("unchecked")
-        Page<AbstractElement<?, ?>> results = inventory.execute(q, (Class) AbstractElement.class, pager);
+        Page<AbstractElement<?, ?>> results = inventory(uriInfo).execute(q, (Class) AbstractElement.class, pager);
 
         return pagedResponse(Response.ok(), uriInfo, results).build();
     }

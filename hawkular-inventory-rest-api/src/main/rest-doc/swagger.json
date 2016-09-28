@@ -65,6 +65,11 @@
               }
             }
           }
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Specifies the time to mark the entity as having been created. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "201" : {
@@ -87,6 +92,11 @@
           "required": true,
           "type": "string",
           "description": "See the documentation above for the format of the path."
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Look at the entity as it looked at the provided time. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "200" : {
@@ -116,10 +126,18 @@
           "required" : true,
           "type": "string",
           "description" : "See the documentation above for the format of the path."
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Specifies the time to mark the entity as having been deleted. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "204" : {
             "description" : "Entity deleted."
+          },
+          "400" : {
+            "description" : "There has been an update to the entity since the time it is requested to be deleted."
           },
           "404" : {
             "description" : "No entity found on given traversal URI."
@@ -149,13 +167,18 @@
           "schema" : {
             "$ref" : "#/definitions/AbstractElementUpdate"
           }
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Specifies the time to mark the entity as having been updated. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "204" : {
             "description" : "Entity updated."
           },
           "400" : {
-            "description" : "Data in wrong format"
+            "description" : "Data in wrong format or update requested at a time, after which the entity was already changed"
           },
           "403" : {
             "description" : "Unauthorized access"
@@ -197,6 +220,11 @@
           "schema" : {
             "$ref" : "#/definitions/AbstractElementBlueprint"
           }
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Specifies the time to mark the entity as having been created at. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "201" : {
@@ -234,6 +262,11 @@
           "required" : true,
           "type": "string",
           "description" : "See the documentation above for the format of the path."
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Look at the entity as it looked at the provided time. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "200" : {
@@ -244,6 +277,47 @@
           },
           "400" : {
             "description" : "The entity doesn't support identity hashing."
+          },
+          "404" : {
+            "description" : "No entity found on given traversal URI."
+          },
+          "500" : {
+            "description" : "Internal server error"
+          }
+        }
+      }
+    },
+    "/entity/{path}/history" : {
+      "get" : {
+        "tags" : [ "Single Entity" ],
+        "summary" : "Obtains the history of the entity.",
+        "description" : "",
+        "operationId" : "getHistory",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "path",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the path."
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "description" : "Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "description" : "Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "History returned.",
+            "schema" : {
+              "$ref" : "#/definitions/History"
+            }
           },
           "404" : {
             "description" : "No entity found on given traversal URI."
@@ -348,6 +422,11 @@
           "schema" : {
             "$ref" : "#/definitions/SyncRequest"
           }
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "The time at which to mark the creates/updates/deletes as having occured. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "204" : {
@@ -380,6 +459,12 @@
         "summary" : "Retrieves the details of the current tenant.",
         "description" : "",
         "operationId" : "getTenant",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Look at the tenant as it looked at the provided time. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        }],
         "responses" : {
           "200" : {
             "description" : "Tenant obtained",
@@ -413,6 +498,11 @@
           "schema" : {
             "$ref" : "#/definitions/TenantUpdate"
           }
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "The time to mark the update as having occured at. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "204" : {
@@ -439,6 +529,12 @@
         "summary" : "Creates new relationship(s) on a tenant",
         "description" : "As all POSTs, this can also accept an array of blueprints to create more than 1 relationship at a time.",
         "operationId" : "createRelationships",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "at",
+          "description" : "The time to mark the relationship as having been created at. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        }],
         "responses" : {
           "201" : {
             "description" : "Relationship(s) created.",
@@ -467,6 +563,12 @@
         "summary" : "Retrieves tenant's relationships",
         "description" : "By default, all the outgoing relationships are returned. This can be modified using the same techniques as in the entity graph traversal.",
         "operationId" : "getRelationships",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Look at the relationships as they were at the provided time. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        }],
         "responses" : {
           "200" : {
             "description" : "Relationships returned",
@@ -492,6 +594,44 @@
         }
       }
     },
+    "/tenant/history" : {
+      "get" : {
+        "tags" : [ "Tenant information" ],
+        "summary" : "Obtains the history of the updates to the tenant.",
+        "description" : "",
+        "operationId" : "getTenantHistory",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "path",
+          "in" : "path",
+          "required" : true,
+          "type": "string",
+          "description" : "See the documentation above for the format of the path."
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "description" : "Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "description" : "Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "History returned.",
+            "schema" : {
+              "$ref" : "#/definitions/History"
+            }
+          },
+          "500" : {
+            "description" : "Internal server error"
+          }
+        }
+      }
+    },
     "/traversal/{traversal}" : {
       "get" : {
         "tags" : [ "Entity Graph Traversal" ],
@@ -506,6 +646,11 @@
           "required" : true,
           "type": "string",
           "description" : "See the documentation above for the format of the traversal."
+        }, {
+          "in" : "query",
+          "name" : "at",
+          "description" : "Look at the entities and relationships as they existed at the provided time. Either a Unix epoch timestamp in milliseconds, or an ISO-8601 formatted date and time in UTC timezone.",
+          "required" : false
         } ],
         "responses" : {
           "200" : {
@@ -1142,6 +1287,46 @@
             "type" : "string",
             "enum" : ["f", "rt", "mt", "ot", "r", "m", "d"]
           }
+        }
+      }
+    },
+    "History" : {
+      "type" : "array",
+      "items" : {
+        "type" : "Change"
+      }
+    },
+    "Change" : {
+      "type" : "object",
+      "properties" : {
+        "time" : {
+          "type" : "integer",
+          "description" : "A Unix epoch timestamp in milliseconds."
+        },
+        "action" : {
+          "type" : "string",
+          "enum" : ["created", "updated", "deleted"]
+        },
+        "context" : {
+          "anyOf" : [
+            {
+              "$ref" : "#/definitions/Entity"
+            },
+            {
+              "$ref" : "#definitions/ActionUpdate"
+            }
+          ]
+        }
+      }
+    },
+    "ActionUpdate": {
+      "type" : "object",
+      "properties" : {
+        "originalEntity" : {
+          "$ref" : "#/definitions/Entity"
+        },
+        "update" : {
+          "$ref" : "#/definitions/EntityUpdate"
         }
       }
     }

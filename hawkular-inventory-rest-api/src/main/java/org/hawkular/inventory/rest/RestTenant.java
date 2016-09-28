@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.URISyntaxException;
 import java.util.Collection;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -33,6 +34,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -50,13 +52,13 @@ public class RestTenant extends RestBase {
     }
 
     @GET
-    public Tenant get() {
-        return inventory.tenants().get(getTenantId()).entity();
+    public Tenant get(@Context UriInfo uriInfo) {
+        return inventory(uriInfo).tenants().get(getTenantId()).entity();
     }
 
     @PUT
-    public Response put(Tenant.Update update) {
-        inventory.tenants().get(getTenantId()).update(update);
+    public Response put(Tenant.Update update, @Context UriInfo uriInfo) {
+        inventory(uriInfo).tenants().get(getTenantId()).update(update);
         return Response.noContent().build();
     }
 
@@ -67,10 +69,16 @@ public class RestTenant extends RestBase {
         Query q = traverser.navigate(getPath(uriInfo));
 
         @SuppressWarnings("unchecked")
-        Page<AbstractElement<?, ?>> results = inventory.execute(q, (Class) AbstractElement.class,
+        Page<AbstractElement<?, ?>> results = inventory(uriInfo).execute(q, (Class) AbstractElement.class,
                 extractPaging(uriInfo));
 
         return pagedResponse(Response.ok(), uriInfo, results).build();
+    }
+
+    @GET
+    @Path("/history")
+    public List<Change<?>> getHistory(@Context UriInfo uriInfo) {
+        return getHistory(uriInfo, getTenantPath());
     }
 
     @POST
@@ -80,7 +88,7 @@ public class RestTenant extends RestBase {
             throws IOException, URISyntaxException {
         CanonicalPath tenant = getTenantPath();
 
-        Object toReport = create(tenant, SegmentType.rl, input);
+        Object toReport = create(tenant, SegmentType.rl, uriInfo, input);
         if (toReport instanceof Collection) {
             return ResponseUtil.created((Collection<? extends AbstractElement<?, ?>>) toReport, uriInfo).build();
         } else {
