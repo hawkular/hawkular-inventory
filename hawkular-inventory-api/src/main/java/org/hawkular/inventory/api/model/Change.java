@@ -26,37 +26,39 @@ import org.hawkular.inventory.api.Action;
  * @author Lukas Krejci
  * @since 0.20.0
  */
-public final class Change<Element extends Entity<?, ?>, Context>
-        implements Comparable<Change<?, ?>> {
+public final class Change<Element extends Entity<?, ?>> implements Comparable<Change<?>> {
     private final Instant time;
-    private final Action<Context, Element> action;
-    private final Context actionContext;
-    private final Element element;
+    private final Action<?, Element> action;
+    private final Object actionContext;
 
-    public Change(Instant time, Action<Context, Element> action, Context actionContext, Element element) {
+    public <C> Change(Instant time, Action<C, Element> action, C actionContext) {
         this.time = time;
         this.action = action;
         this.actionContext = actionContext;
-        this.element = element;
     }
 
     public Instant getTime() {
         return time;
     }
 
-    public Action<Context, Element> getAction() {
+    public Action<?, Element> getAction() {
         return action;
     }
 
-    public Context getActionContext() {
+    public Object getActionContext() {
         return actionContext;
     }
 
+    @SuppressWarnings("unchecked")
     public Element getElement() {
-        return element;
+        if (action.asEnum() == Action.updated().asEnum()) {
+            return ((Action.Update<Element, ?>) actionContext).getOriginalEntity();
+        } else {
+            return (Element) actionContext;
+        }
     }
 
-    @Override public int compareTo(Change<?, ?> o) {
+    @Override public int compareTo(Change<?> o) {
         int diff = time.compareTo(o.time);
         if (diff != 0) {
             return diff;
@@ -67,23 +69,23 @@ public final class Change<Element extends Entity<?, ?>, Context>
             return diff;
         }
 
-        return element.getPath().toString().compareTo(o.element.getPath().toString());
+        return getElement().getPath().toString().compareTo(o.getElement().getPath().toString());
     }
 
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Change<?, ?> change = (Change<?, ?>) o;
+        Change<?> change = (Change<?>) o;
 
-        return time.equals(change.time) && action.equals(change.action) && element.equals(change.element);
+        return time.equals(change.time) && action.equals(change.action) && getElement().equals(change.getElement());
 
     }
 
     @Override public int hashCode() {
         int result = time.hashCode();
         result = 31 * result + action.hashCode();
-        result = 31 * result + element.hashCode();
+        result = 31 * result + actionContext.hashCode();
         return result;
     }
 }

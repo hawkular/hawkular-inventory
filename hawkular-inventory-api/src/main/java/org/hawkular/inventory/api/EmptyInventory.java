@@ -168,7 +168,7 @@ public class EmptyInventory implements Inventory {
             throw entityNotFound(entityType);
         }
 
-        public List<Change<E, ?>> history(Instant from, Instant to) {
+        public List<Change<E>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -1493,7 +1493,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public List<Change<DataEntity, ?>> history(Instant from, Instant to) {
+        @Override public List<Change<DataEntity>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }
@@ -1670,7 +1670,7 @@ public class EmptyInventory implements Inventory {
             throw new UnsupportedOperationException();
         }
 
-        @Override public List<Change<MetadataPack, ?>> history(Instant from, Instant to) {
+        @Override public List<Change<MetadataPack>> history(Instant from, Instant to) {
             return Collections.emptyList();
         }
     }

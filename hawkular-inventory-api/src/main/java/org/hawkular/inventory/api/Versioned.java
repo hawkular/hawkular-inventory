@@ -34,9 +34,9 @@ public interface Versioned<E extends Entity<?, ?>> {
      * @param to the date to which to retrieve history or null for not limiting the age of the changes
      * @return the list of changes made to the entity so far.
      */
-    List<Change<E, ?>> history(Instant from, Instant to);
+    List<Change<E>> history(Instant from, Instant to);
 
-    default List<Change<E, ?>> history() {
+    default List<Change<E>> history() {
         return history(Instant.ofEpochMilli(0), Instant.ofEpochMilli(Long.MAX_VALUE));
     }
 }

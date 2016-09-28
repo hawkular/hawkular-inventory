@@ -3754,7 +3754,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             ts.update(update);
 
-            List<Change<Tenant, ?>> cs = ts.history();
+            List<Change<Tenant>> cs = ts.history();
 
             Assert.assertEquals(4, cs.size());
 

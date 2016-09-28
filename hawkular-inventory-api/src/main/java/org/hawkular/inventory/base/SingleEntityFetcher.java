@@ -41,14 +41,14 @@ class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends Entity.Update>
     }
 
 
-    public List<Change<E, ?>> history(Instant from, Instant to) {
+    public List<Change<E>> history(Instant from, Instant to) {
         List<EntityStateChange<E>> changes = inTx(tx -> {
             BE myEntity = tx.querySingle(context.discriminator(), context.select().get());
 
             return tx.getHistory(myEntity, context.entityClass, from, to);
         });
 
-        List<Change<E, ?>> ret = new ArrayList<>(changes.size());
+        List<Change<E>> ret = new ArrayList<>(changes.size());
 
         boolean first = true;
         int processed = 0;
@@ -64,7 +64,7 @@ class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends Entity.Update>
                         || changes.size() > processed && changes.get(processed).getAction().asEnum() == deleted)) {
                     //the backend actually might represent a create immediatelly followed by delete as an update
                     //followed by delete.
-                    ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity(), ch.getEntity()));
+                    ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity()));
                 } else {
                     //k, ordinary update... we need to compute the update object from the previous and current state
                     E previous = changes.get(processed - 1).getEntity();
@@ -74,15 +74,15 @@ class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends Entity.Update>
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     U update = (U) ((Entity.Updater) previous.update()).to(current);
 
-                    ret.add(new Change<E, Action.Update<E, U>>(ch.getOccurrenceTime(), Action.updated(),
-                            new Action.Update<>(previous, update), previous));
+                    ret.add(new Change<E>(ch.getOccurrenceTime(), Action.updated(),
+                            new Action.Update<>(previous, update)));
                 }
                 first = false;
             } else if (chAction == created) {
-                ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity(), ch.getEntity()));
+                ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity()));
                 first = false;
             } else {
-                ret.add(new Change<>(ch.getOccurrenceTime(), Action.deleted(), ch.getEntity(), ch.getEntity()));
+                ret.add(new Change<>(ch.getOccurrenceTime(), Action.deleted(), ch.getEntity()));
                 first = true; //the next change will be understood as a create, i.e. the first state in that
                               //incarnation of the entity
             }
