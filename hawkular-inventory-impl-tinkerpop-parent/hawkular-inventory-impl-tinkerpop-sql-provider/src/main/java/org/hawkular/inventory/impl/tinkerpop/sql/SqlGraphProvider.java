@@ -23,6 +23,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__containsIdentityHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__inState;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__withIdentityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__identityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__type;
@@ -157,7 +158,8 @@ public class SqlGraphProvider implements GraphProvider {
             Object[] props = Stream.of(t.getMappedProperties())
                     .flatMap(p -> Stream.of(p, propertySampleValue.apply(p))).toArray();
 
-            graph.getSchemaManager().ensureVertexTableExist(schema, t.name(), props);
+            graph.getSchemaManager().ensureVertexTableExist(schema, t.identityVertexLabel(), props);
+            graph.getSchemaManager().ensureVertexTableExist(schema, t.stateVertexLabel(), props);
         }
 
         //table for the identity hash storage
@@ -168,16 +170,27 @@ public class SqlGraphProvider implements GraphProvider {
 
         graph.tx().commit();
 
-        SchemaTable tenant = SchemaTable.from(graph, Constants.Type.tenant.name(), schema);
-        SchemaTable feed = SchemaTable.from(graph, Constants.Type.feed.name(), schema);
-        SchemaTable environment = SchemaTable.from(graph, Constants.Type.environment.name(), schema);
-        SchemaTable resourceType = SchemaTable.from(graph, Constants.Type.resourceType.name(), schema);
-        SchemaTable metricType = SchemaTable.from(graph, Constants.Type.metricType.name(), schema);
-        SchemaTable operationType = SchemaTable.from(graph, Constants.Type.operationType.name(), schema);
-        SchemaTable metadataPack = SchemaTable.from(graph, Constants.Type.metadatapack.name(), schema);
-        SchemaTable resource = SchemaTable.from(graph, Constants.Type.resource.name(), schema);
-        SchemaTable metric = SchemaTable.from(graph, Constants.Type.metric.name(), schema);
-        SchemaTable data = SchemaTable.from(graph, Constants.Type.dataEntity.name(), schema);
+        SchemaTable tenant = SchemaTable.from(graph, Constants.Type.tenant.identityVertexLabel(), schema);
+        SchemaTable tenantState = SchemaTable.from(graph, Constants.Type.tenant.stateVertexLabel(), schema);
+        SchemaTable feed = SchemaTable.from(graph, Constants.Type.feed.identityVertexLabel(), schema);
+        SchemaTable feedState = SchemaTable.from(graph, Constants.Type.feed.stateVertexLabel(), schema);
+        SchemaTable environment = SchemaTable.from(graph, Constants.Type.environment.identityVertexLabel(), schema);
+        SchemaTable environmentState = SchemaTable.from(graph, Constants.Type.environment.stateVertexLabel(), schema);
+        SchemaTable resourceType = SchemaTable.from(graph, Constants.Type.resourceType.identityVertexLabel(), schema);
+        SchemaTable resourceTypeState = SchemaTable.from(graph, Constants.Type.resourceType.stateVertexLabel(), schema);
+        SchemaTable metricType = SchemaTable.from(graph, Constants.Type.metricType.identityVertexLabel(), schema);
+        SchemaTable metricTypeState = SchemaTable.from(graph, Constants.Type.metricType.stateVertexLabel(), schema);
+        SchemaTable operationType = SchemaTable.from(graph, Constants.Type.operationType.identityVertexLabel(), schema);
+        SchemaTable operationTypeState = SchemaTable.from(graph, Constants.Type.operationType.stateVertexLabel(),
+                schema);
+        SchemaTable metadataPack = SchemaTable.from(graph, Constants.Type.metadatapack.identityVertexLabel(), schema);
+        SchemaTable metadataPackState = SchemaTable.from(graph, Constants.Type.metadatapack.stateVertexLabel(), schema);
+        SchemaTable resource = SchemaTable.from(graph, Constants.Type.resource.identityVertexLabel(), schema);
+        SchemaTable resourceState = SchemaTable.from(graph, Constants.Type.resource.stateVertexLabel(), schema);
+        SchemaTable metric = SchemaTable.from(graph, Constants.Type.metric.identityVertexLabel(), schema);
+        SchemaTable metricState = SchemaTable.from(graph, Constants.Type.metric.stateVertexLabel(), schema);
+        SchemaTable data = SchemaTable.from(graph, Constants.Type.dataEntity.identityVertexLabel(), schema);
+        SchemaTable dataState = SchemaTable.from(graph, Constants.Type.dataEntity.stateVertexLabel(), schema);
         SchemaTable structuredData = SchemaTable.from(graph, Constants.Type.structuredData.name(), schema);
         SchemaTable identityHash = SchemaTable.from(graph, Constants.InternalType.__identityHash.name(), schema);
 
@@ -197,11 +210,13 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(tenant, contains, resourceType);
         edges.add(tenant, contains, metricType);
         edges.add(tenant, __containsIdentityHash, identityHash);
+        edges.add(tenant, __inState, tenantState);
 
         //environment relationships
         edges.add(environment, contains, resource);
         edges.add(environment, contains, metric);
         edges.add(environment, incorporates, feed);
+        edges.add(environment, __inState, environmentState);
 
         //feed relationships
         edges.add(feed, contains, resourceType);
@@ -209,23 +224,28 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(feed, contains, resource);
         edges.add(feed, contains, metric);
         edges.add(feed, __withIdentityHash, identityHash);
+        edges.add(feed, __inState, feedState);
 
         //resource type relationships
         edges.add(resourceType, contains, operationType);
         edges.add(resourceType, contains, data);
         edges.add(resourceType, defines, resource);
         edges.add(resourceType, __withIdentityHash, identityHash);
+        edges.add(resourceType, __inState, resourceTypeState);
 
         //metric type relationships
         edges.add(metricType, __withIdentityHash, identityHash);
+        edges.add(metricType, __inState, metricTypeState);
 
         //operation type relationships
         edges.add(operationType, contains, data);
         edges.add(operationType, __withIdentityHash, identityHash);
+        edges.add(operationType, __inState, operationTypeState);
 
         //metadata pack relationships
         edges.add(metadataPack, incorporates, resourceType);
         edges.add(metadataPack, incorporates, metricType);
+        edges.add(metadataPack, __inState, metadataPackState);
 
         //resource relationships
         edges.add(resource, contains, resource);
@@ -233,13 +253,16 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(resource, contains, metric);
         edges.add(resource, incorporates, metric);
         edges.add(resource, __withIdentityHash, identityHash);
+        edges.add(resource, __inState, resourceState);
 
         //metric relationships
         edges.add(metric, __withIdentityHash, identityHash);
+        edges.add(metric, __inState, metricState);
 
         //data entity relationships
         edges.add(data, hasData, structuredData);
         edges.add(data, __withIdentityHash, identityHash);
+        edges.add(data, __inState, dataState);
 
         //structured data relationships
         edges.add(structuredData, contains, structuredData);
