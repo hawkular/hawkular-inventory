@@ -995,7 +995,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                         }
                     });
 
-                    Vertex state = context.getGraph().addVertex(type.name() + "_state");
+                    Vertex state = context.getGraph().addVertex(type.stateVertexLabel());
                     setNonNullProperty(state, Constants.Property.name.name(), name);
 
                     if (properties != null) {
@@ -1233,7 +1233,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 Vertex oldState = lastStateEdge.inVertex();
 
-                Vertex state = context.getGraph().addVertex(Constants.Type.of(actualType).name() + "_state");
+                Vertex state = context.getGraph().addVertex(Constants.Type.of(actualType).stateVertexLabel());
                 ElementHelper.propertyValueMap(oldState).forEach(state::property);
 
                 setNonNullProperty(state, Constants.Property.name.name(), name);

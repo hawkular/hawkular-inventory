@@ -366,13 +366,15 @@ class FilterVisitor {
         if (filter.getPaths().length == 1) {
             //this only works if we are on vertices, so check for that
             if (prop.equals(__cp.name())) {
-                query.has(T.label, Constants.Type.of(filter.getPaths()[0].getSegment().getElementType()).name());
+                query.has(T.label, Constants.Type.of(filter.getPaths()[0].getSegment().getElementType())
+                        .identityVertexLabel());
             }
 
             query.has(prop, filter.getPaths()[0].toString());
         } else {
             if (prop.equals(__cp.name())) {
-                String[] labels = Stream.of(filter.getPaths()).map(p -> p.getSegment().getElementType())
+                String[] labels = Stream.of(filter.getPaths())
+                        .map(p -> Constants.Type.of(p.getSegment().getElementType()).identityVertexLabel())
                         .toArray(String[]::new);
 
                 query.has(T.label, P.within(labels));
@@ -572,10 +574,11 @@ class FilterVisitor {
                 pipeline.inE(contains.name()).restrictTo(discriminator).outV();
                 pipeline.existsAt(discriminator);
             } else {
+                Constants.Type targetType = Constants.Type.of(s.getElementType());
                 pipeline.outE(contains.name()).restrictTo(discriminator)
-                        .has(__targetType.name(),
-                                Constants.Type.of(Entity.typeFromSegmentType(s.getElementType())).name())
-                        .has(__targetEid.name(), s.getElementId()).inV();
+                        .has(__targetType.name(), targetType.name())
+                        .has(__targetEid.name(), s.getElementId()).inV()
+                        .hasLabel(targetType.identityVertexLabel());
                 pipeline.existsAt(discriminator);
             }
         }

@@ -415,6 +415,14 @@ public final class Constants {
             return mappedProperties;
         }
 
+        public String identityVertexLabel() {
+            return name();
+        }
+
+        public String stateVertexLabel() {
+            return identityVertexLabel() + "_state";
+        }
+
         public static List<String> getIdentityVertexProperties() {
             return identityVertexProperties;
         }
