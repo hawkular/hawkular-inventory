@@ -360,7 +360,7 @@ public abstract class BaseInventory<E> implements Inventory {
                             adaptTransactionConstructor(fakeTxCtor)
                                     .construct(activeBackend, new BasePreCommit<>())),
                     (TransactionPayload.Committing<Void, E>) tx -> {
-                        activePrecommit.initialize(boundInventory(), tx, tenantContext.now());
+                        activePrecommit.initialize(boundInventory(), tx);
                         activePrecommit.getActions().forEach(a -> a.accept(tx));
                         activeBackend.commit();
                         activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
@@ -375,12 +375,12 @@ public abstract class BaseInventory<E> implements Inventory {
                             //those for each of them
                             Transaction<E> fakeTx = fakeTxCtor.construct(activeBackend,
                                     new Transaction.PreCommit.Simple<>());
-                            fakeTx.getPreCommit().initialize(boundInventory(), fakeTx, tenantContext.now());
+                            fakeTx.getPreCommit().initialize(boundInventory(), fakeTx);
 
                             p.run(fakeTx);
                         }
 
-                        activePrecommit.initialize(boundInventory(), tx, tenantContext.now());
+                        activePrecommit.initialize(boundInventory(), tx);
                         activePrecommit.getActions().forEach(a -> a.accept(tx));
                         activeBackend.commit();
                         activePrecommit.getFinalNotifications().forEach(tenantContext::notifyAll);
@@ -428,7 +428,7 @@ public abstract class BaseInventory<E> implements Inventory {
             Transaction<E> tx = null;
             try {
                 tx = tenantContext.startTransaction();
-                activePrecommit.initialize(BaseInventory.this.keepTransaction(tx), tx, tenantContext.now());
+                activePrecommit.initialize(BaseInventory.this.keepTransaction(tx), tx);
 
                 for(Consumer<Transaction<E>> action : activePrecommit.getActions()) {
                     action.accept(tx);

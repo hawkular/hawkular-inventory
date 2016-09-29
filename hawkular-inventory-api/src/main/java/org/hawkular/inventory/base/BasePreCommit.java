@@ -96,17 +96,15 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private Inventory inventory;
     private Transaction<BE> tx;
-    private Instant txStart;
 
     /**
      * Pre-commit actions that reset the identity hash
      */
     private Consumer<Transaction<BE>> correctiveAction;
 
-    @Override public void initialize(Inventory inventory, Transaction<BE> tx, Instant txStart) {
+    @Override public void initialize(Inventory inventory, Transaction<BE> tx) {
         this.inventory = inventory;
         this.tx = tx;
-        this.txStart = txStart;
     }
 
     @Override public void reset() {
@@ -537,7 +535,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         void loadFrom(Transaction<BE> tx) throws ElementNotFoundException {
             if (element == null || loadingTx != tx) {
                 loadingTx = tx;
-                Discriminator disc = Discriminator.time(/*isDelete ? txStart :*/ Instant.now());
+                Discriminator disc = Discriminator.time(Instant.now());
                 representation = tx.find(disc, cp);
                 @SuppressWarnings("unchecked")
                 Class<? extends AbstractElement<?, ?>> type = (Class<? extends AbstractElement<?, ?>>)

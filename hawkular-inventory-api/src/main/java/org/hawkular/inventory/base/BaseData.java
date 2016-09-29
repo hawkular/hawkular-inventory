@@ -205,22 +205,6 @@ public final class BaseData {
         private static <BE> void preDelete(Discriminator discriminator, DataModificationChecks<BE> checks, BE entityRepresentation,
                                            Transaction<BE> tx) {
             checks.preDelete(entityRepresentation, tx);
-
-// This is pre-versioning code - all this is only invoked during eradicate now...
-//            Set<BE> rels = tx.getRelationships(discriminator, entityRepresentation, Relationships.Direction.outgoing,
-//                    hasData.name());
-//
-//            if (rels.isEmpty()) {
-//                Log.LOGGER.wNoDataAssociatedWithEntity(tx.extractCanonicalPath(entityRepresentation));
-//                return;
-//            }
-//
-//            BE dataRel = rels.iterator().next();
-//
-//            BE structuredData = tx.getRelationshipTarget(discriminator, dataRel);
-//
-//            tx.deleteStructuredData(structuredData);
-//            tx.markDeleted(discriminator, dataRel);
         }
 
         private static <BE> void postDelete(DataModificationChecks<BE> checks, BE entity,

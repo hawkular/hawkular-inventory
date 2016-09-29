@@ -17,6 +17,7 @@
 package org.hawkular.inventory.api.model;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import org.hawkular.inventory.api.Action;
 
@@ -32,6 +33,9 @@ public final class Change<Element extends Entity<?, ?>> implements Comparable<Ch
     private final Object actionContext;
 
     public <C> Change(Instant time, Action<C, Element> action, C actionContext) {
+        time = Objects.requireNonNull(time, "time == null");
+        action = Objects.requireNonNull(action, "action == null");
+        actionContext = Objects.requireNonNull(actionContext, "actionContext == null");
         this.time = time;
         this.action = action;
         this.actionContext = actionContext;

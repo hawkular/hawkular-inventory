@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -308,11 +307,11 @@ public class PreCommitActionsTest {
                     return pc.getFinalNotifications();
                 }
 
-                @Override public void initialize(Inventory inventory, Transaction<String> tx, Instant txStart) {
+                @Override public void initialize(Inventory inventory, Transaction<String> tx) {
                     if (this.getClass() != pc.getClass()) {
                         initialized++;
                     }
-                    pc.initialize(inventory, tx, txStart);
+                    pc.initialize(inventory, tx);
                 }
 
                 @Override public void reset() {

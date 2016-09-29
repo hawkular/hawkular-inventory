@@ -187,12 +187,10 @@ public interface Transaction<E> {
 
         /**
          * Initializes this pre-commit using the inventory and/or the backend.
-         *
-         * @param inventory the inventory to use, it is bound to the provided transaction
+         *  @param inventory the inventory to use, it is bound to the provided transaction
          * @param tx the transaction for which this pre-commit is defined
-         * @param txStart the time the transaction has started
          */
-        void initialize(Inventory inventory, Transaction<E> tx, Instant txStart);
+        void initialize(Inventory inventory, Transaction<E> tx);
 
         /**
          * Resets all the internal structures as to the initialized state.
@@ -237,12 +235,10 @@ public interface Transaction<E> {
             private List<Consumer<Transaction<E>>> actions = new ArrayList<>();
             protected Transaction<E> transaction;
             protected Inventory inventory;
-            protected Instant txStart;
 
-            @Override public void initialize(Inventory inventory, Transaction<E> tx, Instant txStart) {
+            @Override public void initialize(Inventory inventory, Transaction<E> tx) {
                 this.inventory = inventory;
                 this.transaction = tx;
-                this.txStart = txStart;
             }
 
             @Override public void reset() {
