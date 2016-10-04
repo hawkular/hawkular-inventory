@@ -930,6 +930,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 created.second.property(Constants.Property.__metric_data_type.name(), type.getMetricDataType()
                         .getDisplayName());
                 created.second.property(Constants.Property.__metric_interval.name(), type.getCollectionInterval());
+                created.second.property(Constants.Property.__unit.name(), type.getUnit().getDisplayName());
 
                 return created.first;
             }

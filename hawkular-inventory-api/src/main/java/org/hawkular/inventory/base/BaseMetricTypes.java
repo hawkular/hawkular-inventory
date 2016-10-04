@@ -66,8 +66,6 @@ public final class BaseMetricTypes {
         wireUpNewEntity(Discriminator discriminator, BE entity, MetricType.Blueprint blueprint,
                         CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
-            tx.update(discriminator, entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
-
             MetricType metricType = new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
                     blueprint.getUnit(), blueprint.getMetricDataType(), blueprint.getProperties(),
