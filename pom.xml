@@ -101,6 +101,9 @@
 
     <!-- integration tests distribution properties -->
     <test-dist-version.org.hawkular.commons>${version.org.hawkular.commons}</test-dist-version.org.hawkular.commons> <!-- C* -->
+
+    <!-- tests -->
+    <version.org.powermock>1.6.5</version.org.powermock>
   </properties>
 
 
@@ -211,6 +214,17 @@
         <type>zip</type>
       </dependency>
 
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-module-junit4</artifactId>
+        <version>${version.org.powermock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-api-mockito</artifactId>
+        <version>${version.org.powermock}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
