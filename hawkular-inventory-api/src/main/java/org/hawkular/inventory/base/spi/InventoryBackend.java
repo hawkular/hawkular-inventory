@@ -19,7 +19,6 @@ package org.hawkular.inventory.base.spi;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -408,8 +407,8 @@ public interface InventoryBackend<E> extends AutoCloseable {
      *
      * @param from from when to return the changes
      * @param to to when to return the changes
-     * @return a sorted map keyed by the time of the changes occurrences, where values are the converted entities
+     * @return a history object containing the changes made to the entity in the given time-frame.
      */
     <T extends Entity<?, U>, U extends Entity.Update>
-    List<EntityStateChange<T>> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
+    EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
 }

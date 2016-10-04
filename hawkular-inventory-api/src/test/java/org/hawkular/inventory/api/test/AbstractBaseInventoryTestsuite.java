@@ -3750,13 +3750,21 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             inventory.tenants()
                     .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
 
+            Thread.sleep(10);
+
             Tenant.Update update = Tenant.Update.builder().withProperty("key", "value2").withName("kachny").build();
 
             ts.update(update);
 
+            Tenant beforeFinalDelete = beforeDelete.update().with(update);
+            Thread.sleep(10);
+
+            ts.delete();
+
+            //getting history of an entity that no longer exists should work
             List<Change<Tenant>> cs = ts.history();
 
-            Assert.assertEquals(4, cs.size());
+            Assert.assertEquals(5, cs.size());
 
             Assert.assertEquals(Action.created(), cs.get(0).getAction());
             Assert.assertEquals(beforeDelete, cs.get(0).getElement());
@@ -3764,12 +3772,83 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Assert.assertEquals(beforeDelete, cs.get(1).getElement());
             Assert.assertEquals(Action.created(), cs.get(2).getAction());
             Assert.assertEquals(beforeDelete, cs.get(2).getElement());
-            Assert.assertEquals(Action.updated(), cs.get(3).getAction());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(3).getAction().asEnum());
             Assert.assertEquals(beforeDelete, cs.get(3).getElement());
             Tenant.Update historyUpdate = ((Action.Update<Tenant, Tenant.Update>) cs.get(3).getActionContext())
                     .getUpdate();
             Assert.assertEquals(update.getName(), historyUpdate.getName());
             Assert.assertEquals(update.getProperties(), historyUpdate.getProperties());
+            Assert.assertEquals(Action.deleted(), cs.get(4).getAction());
+            Assert.assertEquals(beforeFinalDelete, cs.get(4).getElement());
+
+            //getting history of an entity that never existed should throw
+            try {
+                inventory.tenants().get(UUID.randomUUID().toString()).history(null, null);
+                Assert.fail("It should not be possible to get history of entity that never existed.");
+            } catch (EntityNotFoundException e) {
+                //good
+            }
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testHistory_constrained() throws Exception {
+        String tenantId = "testHistory_constrained";
+        try {
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).build());
+
+            Tenant afterCreateTenant = ts.entity();
+            Thread.sleep(10);
+            Instant afterCreate = Instant.now();
+
+            Tenant.Update update = Tenant.Update.builder().withName("kachny").build();
+            ts.update(update);
+
+            Tenant beforeDeleteTenant = afterCreateTenant.update().with(update);
+            Instant beforeDelete = Instant.now();
+            Thread.sleep(10);
+
+            ts.delete();
+
+            Instant past = Instant.ofEpochMilli(0);
+
+            List<Change<Tenant>> cs = ts.history(past, afterCreate);
+            Assert.assertEquals(1, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+
+            cs = ts.history(past, beforeDelete);
+            Assert.assertEquals(2, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
+
+            cs = ts.history(past, Instant.now());
+            Assert.assertEquals(3, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(2).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(2).getElement());
+
+            cs = ts.history(beforeDelete, Instant.now());
+            Assert.assertEquals(1, cs.size());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(0).getElement());
+
+            cs = ts.history(afterCreate, Instant.now());
+            Assert.assertEquals(2, cs.size());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
         } finally {
             if (inventory.tenants().get(tenantId).exists()) {
                 inventory.tenants().get(tenantId).delete();

@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.__;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -115,6 +116,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.EntityHistory;
 import org.hawkular.inventory.base.spi.EntityStateChange;
 import org.hawkular.inventory.base.spi.InconsistenStateException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
@@ -1006,7 +1008,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                     Edge stateEdge = identity.addEdge(__inState.name(), state);
                     stateEdge.property(__from.name(), discriminator.getTime().toEpochMilli());
                     stateEdge.property(__to.name(), Long.MAX_VALUE);
-                    stateEdge.property(__changeKind.name(), Action.created().asEnum().ordinal());
+                    stateEdge.property(__changeKind.name(), ChangeKind.create.ordinal());
 
                     return new Pair<>(identity, state);
                 } catch (RuntimeException e) {
@@ -1262,7 +1264,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Edge e = es.next();
 
                 if (e.label().equals(__inState.name())) {
-                    e.property(__changeKind.name(), Action.deleted().asEnum().ordinal());
+                    ChangeKind priorState = ChangeKind.values()[e.<Integer>property(__changeKind.name()).value()];
+                    e.property(__changeKind.name(), ChangeKind.deleteOf(priorState).ordinal());
                 }
                 e.property(__to.name(), time);
             }
@@ -1359,22 +1362,39 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public <T extends Entity<?, U>, U extends Entity.Update>
-    List<EntityStateChange<T>> getHistory(Element entity, Class<T> entityType, Instant from, Instant to) {
+    EntityHistory<T> getHistory(Element entity, Class<T> entityType, Instant from, Instant to) {
         if (entity instanceof Edge) {
             throw new IllegalArgumentException("History not supported for relationships.");
         }
 
+        long toTimestamp = to.toEpochMilli();
+        long fromTimestamp = from.toEpochMilli();
+
+        GraphTraversal<Edge, Edge> nonDeleteCheck = has(__from.name(), P.gte(fromTimestamp));
+        if (toTimestamp < Long.MAX_VALUE) {
+            nonDeleteCheck.has(__from.name(), P.lt(toTimestamp));
+        }
+
+        GraphTraversal<Edge, Edge> deleteCheck = __.<Edge>has(__changeKind.name(), P.within(
+                ChangeKind.delete_after_create.ordinal(), ChangeKind.delete_after_update.ordinal()))
+                .has(__to.name(), P.gte(fromTimestamp));
+        if (toTimestamp < Long.MAX_VALUE) {
+            deleteCheck.has(__to.name(), P.lt(toTimestamp));
+        }
+
+        GraphTraversal<Edge, Edge> initialStateCheck = __.or(
+                __.has(__from.name(), P.lt(fromTimestamp)).has(__to.name(), P.gte(fromTimestamp)),
+                __.has(__from.name(), P.eq(fromTimestamp)).has(__to.name(), P.eq(fromTimestamp))
+        );
+
         GraphTraversal<?, Edge> q = context.getGraph().traversal().V(entity)
                 .outE(__inState.name())
-                .has(__from.name(), P.gte(from.toEpochMilli()));
-        if (to.toEpochMilli() < Long.MAX_VALUE) {
-            q.has(__to.name(), P.lt(to.toEpochMilli()));
-        }
+                .or(nonDeleteCheck, deleteCheck, initialStateCheck);
 
         List<Edge> results = q.toList();
 
-        return results.stream().flatMap(e -> {
-            int changeKind = e.<Integer>property(__changeKind.name()).value();
+        List<EntityStateChange<T>> changes = results.stream().flatMap(e -> {
+            ChangeKind changeKind = ChangeKind.values()[e.<Integer>property(__changeKind.name()).value()];
 
             long st = e.<Long>property(__from.name()).value();
             Instant start = Instant.ofEpochMilli(st);
@@ -1382,16 +1402,44 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             T ent = convert(Discriminator.time(start), entity, entityType);
 
-            if (changeKind == Action.Enumerated.CREATED.ordinal()) {
+            if (changeKind == ChangeKind.create) {
                 return Stream.of(new EntityStateChange<>(Action.created(), ent, start));
-            } else if (changeKind == Action.Enumerated.UPDATED.ordinal()) {
+            } else if (changeKind == ChangeKind.update) {
                 return Stream.of(new EntityStateChange<T>(Action.updated(), ent, start));
+            } else if (end < toTimestamp) {
+                if (st >= fromTimestamp) {
+                    EntityStateChange<T> incomingChange;
+                    if (changeKind == ChangeKind.delete_after_create) {
+                        incomingChange = new EntityStateChange<>(Action.created(), ent, start);
+                    } else {
+                        incomingChange = new EntityStateChange<T>(Action.updated(), ent, start);
+                    }
+                    return Stream.of(incomingChange,
+                            new EntityStateChange<>(Action.deleted(), ent, Instant.ofEpochMilli(end)));
+                } else {
+                    return Stream.of(
+                            new EntityStateChange<>(Action.deleted(), ent, Instant.ofEpochMilli(end)));
+                }
             } else {
-                return Stream.of(
-                        new EntityStateChange<T>(Action.updated(), ent, start),
-                        new EntityStateChange<>(Action.deleted(), ent, Instant.ofEpochMilli(end)));
+                return Stream.of(new EntityStateChange<T>(Action.updated(), ent, start));
             }
         }).sorted().collect(toList());
+
+        T initialState;
+
+        if (changes.isEmpty()) {
+            initialState = null;
+        } else {
+            EntityStateChange<T> first = changes.get(0);
+            if (from.compareTo(first.getOccurrenceTime()) > 0) {
+                changes.remove(0);
+                initialState = first.getEntity();
+            } else {
+                initialState = null;
+            }
+        }
+
+        return new EntityHistory<T>(changes, initialState);
     }
 
     private StructuredData loadStructuredData(Discriminator discriminator, Vertex owner,

@@ -39,7 +39,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
-import org.hawkular.inventory.base.spi.EntityStateChange;
+import org.hawkular.inventory.base.spi.EntityHistory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
@@ -174,7 +174,7 @@ public interface Transaction<E> {
     }
 
     <T extends Entity<?, U>, U extends Entity.Update>
-    List<EntityStateChange<T>> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
+    EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
 
     interface PreCommit<E> {
         /**

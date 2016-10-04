@@ -23,9 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hawkular.inventory.api.Action;
+import org.hawkular.inventory.api.EntityNotFoundException;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.base.spi.EntityHistory;
 import org.hawkular.inventory.base.spi.EntityStateChange;
 
 /**
@@ -42,49 +45,50 @@ class SingleEntityFetcher<BE, E extends Entity<?, U>, U extends Entity.Update>
 
 
     public List<Change<E>> history(Instant from, Instant to) {
-        List<EntityStateChange<E>> changes = inTx(tx -> {
-            BE myEntity = tx.querySingle(context.discriminator(), context.select().get());
+        EntityHistory<E> history = inTx(tx -> {
+            //the null discriminator is here intentionally - we need to find the entity whenever it existed in time..
+            BE myEntity = tx.querySingle(null, context.select().get());
 
-            return tx.getHistory(myEntity, context.entityClass, from, to);
+            if (myEntity == null) {
+                throw new EntityNotFoundException(Query.filters(context.select().get()));
+            }
+
+            Instant f = from == null ? Instant.ofEpochMilli(0) : from;
+            Instant t = to == null ? Instant.ofEpochMilli(Long.MAX_VALUE) : to;
+
+            return tx.getHistory(myEntity, context.entityClass, f, t);
         });
 
-        List<Change<E>> ret = new ArrayList<>(changes.size());
+        List<Change<E>> ret = new ArrayList<>(history.getChanges().size());
 
-        boolean first = true;
         int processed = 0;
         Action.Enumerated created = Action.Enumerated.CREATED;
         Action.Enumerated updated = Action.Enumerated.UPDATED;
-        Action.Enumerated deleted = Action.Enumerated.DELETED;
 
-        for (EntityStateChange<E> ch : changes) {
+        for (EntityStateChange<E> ch : history.getChanges()) {
             Action.Enumerated chAction = ch.getAction().asEnum();
 
             if (chAction == updated) {
-                if (first && (processed == 0
-                        || changes.size() > processed && changes.get(processed).getAction().asEnum() == deleted)) {
-                    //the backend actually might represent a create immediatelly followed by delete as an update
-                    //followed by delete.
-                    ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity()));
+                E previous;
+                //we need to compute the update object from the previous and current state
+                if (processed == 0) {
+                    previous = history.getInitialState();
                 } else {
-                    //k, ordinary update... we need to compute the update object from the previous and current state
-                    E previous = changes.get(processed - 1).getEntity();
-                    E current = ch.getEntity();
-
-                    //casting fun to overcome the imperfect typing of the update() method
-                    @SuppressWarnings({"unchecked", "rawtypes"})
-                    U update = (U) ((Entity.Updater) previous.update()).to(current);
-
-                    ret.add(new Change<E>(ch.getOccurrenceTime(), Action.updated(),
-                            new Action.Update<>(previous, update)));
+                    previous = history.getChanges().get(processed - 1).getEntity();
                 }
-                first = false;
+
+                E current = ch.getEntity();
+
+                //casting fun to overcome the imperfect typing of the update() method
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                U update = (U) ((Entity.Updater) previous.update()).to(current);
+
+                ret.add(new Change<E>(ch.getOccurrenceTime(), Action.updated(),
+                        new Action.Update<>(previous, update)));
             } else if (chAction == created) {
                 ret.add(new Change<>(ch.getOccurrenceTime(), Action.created(), ch.getEntity()));
-                first = false;
             } else {
                 ret.add(new Change<>(ch.getOccurrenceTime(), Action.deleted(), ch.getEntity()));
-                first = true; //the next change will be understood as a create, i.e. the first state in that
-                              //incarnation of the entity
             }
             processed++;
         }
