@@ -267,17 +267,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     Discriminator discriminator() {
-        return Discriminator.time(now());
-    }
-
-    /**
-     * If this context was explicitly set up to operate at a certain point in time, return that, otherwise just return
-     * the "true" current time.
-     *
-     * @return a "now"
-     */
-    Instant now() {
-        return now == null ? Instant.now() : now;
+        return now == null ? Discriminator.latest() : Discriminator.time(now);
     }
 
     /**
@@ -285,7 +275,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      *
      * @return a "now"
      */
-    @Nullable  Instant declaredNow() {
+    @Nullable Instant declaredNow() {
         return now;
     }
 

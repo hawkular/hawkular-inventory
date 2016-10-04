@@ -27,9 +27,14 @@ import java.time.Instant;
 public final class Discriminator {
     private final Instant time;
     private final boolean preferExistence;
+    private final boolean queryLatest;
 
     public static Discriminator time(Instant time) {
         return new Discriminator(time, true);
+    }
+
+    public static Discriminator latest() {
+        return new Discriminator(null, true);
     }
 
     public static Discriminator timeExcludingMillisecondDeletes(Instant time) {
@@ -37,12 +42,17 @@ public final class Discriminator {
     }
 
     private Discriminator(Instant time, boolean preferExistence) {
-        this.time = time;
+        this.time = time == null ? Instant.now() : time;
         this.preferExistence = preferExistence;
+        this.queryLatest = time == null;
     }
 
     public Instant getTime() {
         return time;
+    }
+
+    public boolean isQueryLatest() {
+        return queryLatest;
     }
 
     /**
