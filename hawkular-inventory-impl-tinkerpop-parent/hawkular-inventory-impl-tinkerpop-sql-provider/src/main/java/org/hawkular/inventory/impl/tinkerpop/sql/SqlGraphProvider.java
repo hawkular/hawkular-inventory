@@ -79,7 +79,7 @@ public class SqlGraphProvider implements GraphProvider {
     @Override public SqlgGraph instantiateGraph(Configuration configuration) {
         try {
             Map<String, String> conf = configuration.prefixedWith("sql.")
-                    .getImplementationConfiguration(sysPropsAsProperties());
+                    .getImplementationConfiguration(allProperties());
 
             //Sqlg doesn't use any common prefix to the configuration properties it expects. We want that though, so
             //let's just remove the "sql." prefix from all the props and pass it to sqlg.
@@ -247,16 +247,21 @@ public class SqlGraphProvider implements GraphProvider {
         graph.tx().commit();
     }
 
-    private static Set<Configuration.Property> sysPropsAsProperties() {
-        return System.getProperties().entrySet().stream().map(e -> new Configuration.Property() {
-            @Override public String getPropertyName() {
-                return (String) e.getKey();
-            }
+    private static Set<Configuration.Property> allProperties() {
+        Stream<Configuration.Property> predefined = Stream.of(PropertyKeys.values());
 
-            @Override public List<String> getSystemPropertyNames() {
-                return Collections.singletonList((String) e.getKey());
-            }
-        }).collect(Collectors.toSet());
+        Stream<Configuration.Property> sysProps = System.getProperties().entrySet().stream()
+                .map(e -> new Configuration.Property() {
+                    @Override public String getPropertyName() {
+                        return (String) e.getKey();
+                    }
+
+                    @Override public List<String> getSystemPropertyNames() {
+                        return Collections.singletonList((String) e.getKey());
+                    }
+                });
+
+        return Stream.concat(predefined, sysProps).collect(Collectors.toSet());
     }
 
     private static Object sampleValue(Class<?> type) {
@@ -293,5 +298,39 @@ public class SqlGraphProvider implements GraphProvider {
     @FunctionalInterface
     private interface AddEdgeHelper<T, U, V> {
         void add(T t, U u, V v);
+    }
+
+    private enum PropertyKeys implements Configuration.Property {
+        JDBC_URL("sql.jdbc.url", "hawkular.inventory.sql.jdbc.url", "HAWKULAR_INVENTORY_SQL_JDBC_URL"),
+        JDBC_USERNAME("sql.jdbc.username", "hawkular.inventory.sql.jdbc.username",
+                "HAWKULAR_INVENTORY_SQL_JDBC_USERNAME"),
+        JDBC_PASSWORD("sql.jdbc.password", "hawkular.inventory.sql.jdbc.password",
+                "HAWKULAR_INVENTORY_SQL_JDBC_PASSWORD");
+
+        private final String propertyName;
+        private final List<String> systemPropertyNames;
+        private final List<String> envVars;
+
+        PropertyKeys(String propertyName, String sysProp, String envVar) {
+            this.propertyName = propertyName;
+            systemPropertyNames = sysProp == null
+                    ? Collections.emptyList()
+                    : Collections.singletonList(sysProp);
+            envVars = envVar == null
+                    ? Collections.emptyList()
+                    : Collections.singletonList(envVar);
+        }
+
+        @Override public String getPropertyName() {
+            return propertyName;
+        }
+
+        @Override public List<String> getSystemPropertyNames() {
+            return systemPropertyNames;
+        }
+
+        @Override public List<String> getEnvironmentVariableNames() {
+            return envVars;
+        }
     }
 }
