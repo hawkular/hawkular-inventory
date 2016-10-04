@@ -42,8 +42,10 @@ import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.Syncable;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
+import org.jboss.resteasy.spi.BadRequestException;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -71,6 +73,10 @@ public class RestEntity extends RestBase {
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(getPath(uriInfo, "/treeHash".length()),
                 getTenantPath(), AbstractElement.class);
 
+        Class<?> eltType = Inventory.types().byPath(path).getElementType();
+        if (!Syncable.class.isAssignableFrom(eltType)) {
+            throw new BadRequestException("Element not syncable - cannot get treeHash for path " + path);
+        }
         return inventory.inspect(path, Synced.Single.class).treeHash();
     }
 
