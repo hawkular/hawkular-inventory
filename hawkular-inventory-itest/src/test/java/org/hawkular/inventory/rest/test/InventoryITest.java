@@ -1487,7 +1487,7 @@ public class InventoryITest extends AbstractTestBase {
         Response response = get(basePath + "/entity/e;" + environmentId + "/treeHash");
         assertEquals(400, response.code());
     }
-    
+
     public void testHistory_onEntity() throws Exception {
         //TODO implement
     }

@@ -3818,9 +3818,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             Instant past = Instant.ofEpochMilli(0);
 
-            System.out.println("testHistory_constrained times: past=" + past.toEpochMilli() + ", afterCreate = "
-                    + afterCreate.toEpochMilli() + ", beforeDelete = " + beforeDelete.toEpochMilli());
-
             List<Change<Tenant>> cs = ts.history(past, afterCreate);
             Assert.assertEquals(1, cs.size());
             Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
