@@ -343,6 +343,8 @@ final class Util {
         Set<BE> deleted = new HashSet<>();
         Set<BE> deletedRels = new HashSet<>();
 
+        Discriminator excludingFastDeletes = discriminator.excludeDeletedInMillisecond();
+
         Consumer<BE> categorizer = (e) -> {
             if (tx.hasRelationship(discriminator, e, outgoing, defines.name())) {
                 verticesToDeleteThatDefineSomething.add(e);
@@ -350,15 +352,15 @@ final class Util {
                 deleted.add(e);
             }
             //not only the entity, but also its relationships are going to disappear
-            deletedRels.addAll(tx.getRelationships(discriminator, e, both));
+            deletedRels.addAll(tx.getRelationships(excludingFastDeletes, e, both));
 
-            tx.getRelationships(discriminator, e, outgoing, hasData.name()).forEach(rel -> {
+            tx.getRelationships(excludingFastDeletes, e, outgoing, hasData.name()).forEach(rel -> {
                 dataToBeDeleted.add(tx.getRelationshipTarget(discriminator, rel));
             });
         };
 
         categorizer.accept(entity);
-        tx.getTransitiveClosureOver(discriminator, entity, outgoing, contains.name())
+        tx.getTransitiveClosureOver(excludingFastDeletes, entity, outgoing, contains.name())
                 .forEachRemaining(categorizer::accept);
 
         //we've gathered all entities to be deleted. Now record the notifications to be sent out when the transaction

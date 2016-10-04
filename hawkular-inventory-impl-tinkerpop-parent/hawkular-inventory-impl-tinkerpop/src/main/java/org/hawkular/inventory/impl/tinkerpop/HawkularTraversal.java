@@ -97,22 +97,33 @@ public class HawkularTraversal<S, E> implements GraphTraversal<S, E>, GraphTrave
         long time = discriminator.getTime().toEpochMilli();
 
         if (inInterval) {
-            t.or(
-                    __.has(__from.name(), P.lte(time)).has(__to.name(), P.gt(time)),
-                    __.has(__from.name(), P.eq(time)).has(__to.name(), P.eq(time))
-            );
+            if (discriminator.isPreferExistence()) {
+                t.or(
+                        __.has(__from.name(), P.lte(time)).has(__to.name(), P.gt(time)),
+                        __.has(__from.name(), P.eq(time)).has(__to.name(), P.eq(time))
+                );
+            } else {
+                t.has(__from.name(), P.lte(time)).has(__to.name(), P.gt(time));
+            }
         } else {
             //negation of the above
-            t.and(
-                    __.or(
-                            __.has(__from.name(), P.gt(time)),
-                            __.has(__to.name(), P.lte(time))
-                    ),
-                    __.or(
-                            __.has(__from.name(), P.neq(time)),
-                            __.has(__to.name(), P.neq(time))
-                    )
-            );
+            if (discriminator.isPreferExistence()) {
+                t.and(
+                        __.or(
+                                __.has(__from.name(), P.gt(time)),
+                                __.has(__to.name(), P.lte(time))
+                        ),
+                        __.or(
+                                __.has(__from.name(), P.neq(time)),
+                                __.has(__to.name(), P.neq(time))
+                        )
+                );
+            } else {
+                t.or(
+                        __.has(__from.name(), P.gt(time)),
+                        __.has(__to.name(), P.lte(time))
+                );
+            }
         }
     }
 

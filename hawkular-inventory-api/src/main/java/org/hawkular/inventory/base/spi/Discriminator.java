@@ -26,16 +26,36 @@ import java.time.Instant;
  */
 public final class Discriminator {
     private final Instant time;
+    private final boolean preferExistence;
 
     public static Discriminator time(Instant time) {
-        return new Discriminator(time);
+        return new Discriminator(time, true);
     }
 
-    private Discriminator(Instant time) {
+    public static Discriminator timeExcludingMillisecondDeletes(Instant time) {
+        return new Discriminator(time, false);
+    }
+
+    private Discriminator(Instant time, boolean preferExistence) {
         this.time = time;
+        this.preferExistence = preferExistence;
     }
 
     public Instant getTime() {
         return time;
+    }
+
+    /**
+     * Depending on situation, once may want to include states that were created and ended within a millisecond in some
+     * sort of results or not.
+     *
+     * @return whether to include sub-millisecond changes in results (true) or not (false).
+     */
+    public boolean isPreferExistence() {
+        return preferExistence;
+    }
+
+    public Discriminator excludeDeletedInMillisecond() {
+        return new Discriminator(time, false);
     }
 }

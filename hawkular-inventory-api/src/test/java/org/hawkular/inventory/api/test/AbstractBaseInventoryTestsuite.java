@@ -3801,21 +3801,25 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             Tenants.Single ts = inventory.tenants()
                     .create(Tenant.Blueprint.builder().withId(tenantId).build());
+            Thread.sleep(10);
 
             Tenant afterCreateTenant = ts.entity();
-            Thread.sleep(10);
             Instant afterCreate = Instant.now();
 
             Tenant.Update update = Tenant.Update.builder().withName("kachny").build();
             ts.update(update);
+            Thread.sleep(10);
 
             Tenant beforeDeleteTenant = afterCreateTenant.update().with(update);
             Instant beforeDelete = Instant.now();
-            Thread.sleep(10);
 
             ts.delete();
+            Thread.sleep(10);
 
             Instant past = Instant.ofEpochMilli(0);
+
+            System.out.println("testHistory_constrained times: past=" + past.toEpochMilli() + ", afterCreate = "
+                    + afterCreate.toEpochMilli() + ", beforeDelete = " + beforeDelete.toEpochMilli());
 
             List<Change<Tenant>> cs = ts.history(past, afterCreate);
             Assert.assertEquals(1, cs.size());

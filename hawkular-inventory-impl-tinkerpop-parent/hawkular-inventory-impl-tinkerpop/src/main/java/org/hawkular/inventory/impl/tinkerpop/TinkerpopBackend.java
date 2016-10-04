@@ -979,10 +979,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                     checkProperties(properties, type.getMappedProperties());
 
+                    String cp = path.toString();
+
                     //check that there is no deleted vertex on our path...
                     Iterator<Vertex> check = hwk(context.getGraph().traversal().V())
                             .hasLabel(type.name())
-                            .has(__cp.name(), path.toString())
+                            .has(__cp.name(), cp)
                             .doesntExistAt(discriminator);
 
                     Vertex identity = closeAfter(check, () -> {
@@ -990,7 +992,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                             return check.next();
                         } else {
                             Vertex ret = context.getGraph().addVertex(type.name());
-                            ret.property(__cp.name(), path.toString());
+                            ret.property(__cp.name(), cp);
                             ret.property(__type.name(), Constants.Type.of(cls).name());
                             ret.property(__eid.name(), path.getSegment().getElementId());
 
@@ -1232,7 +1234,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 }
 
                 Edge lastStateEdge = lastStateEdgeIt.next();
-                lastStateEdge.property(__to.name(), discriminator.getTime().toEpochMilli());
+
+                long time = discriminator.getTime().toEpochMilli();
+
+                lastStateEdge.property(__to.name(), time);
 
                 Vertex oldState = lastStateEdge.inVertex();
 
@@ -1243,7 +1248,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 updateProperties(state, properties, disallowedProperties);
 
                 Edge newStateEdge = ((Vertex) entity).addEdge(__inState.name(), state);
-                newStateEdge.property(__from.name(), discriminator.getTime().toEpochMilli());
+                newStateEdge.property(__from.name(), time);
                 newStateEdge.property(__to.name(), Long.MAX_VALUE);
                 newStateEdge.property(__changeKind.name(), Action.updated().asEnum().ordinal());
 
