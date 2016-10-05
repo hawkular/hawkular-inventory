@@ -143,10 +143,9 @@ class FilterVisitor {
 
         if (ids.getIds().length == 1) {
             query.has(prop, ids.getIds()[0]);
-            return;
+        } else {
+            query.has(prop, P.within(ids.getIds()));
         }
-
-        query.has(prop, P.within(ids.getIds()));
 
         goBackFromEdges(query, state);
         query.existsAt(discriminator);
