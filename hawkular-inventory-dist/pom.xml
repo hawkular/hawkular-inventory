@@ -148,11 +148,14 @@
       <version>${version.org.umlg}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.umlg</groupId>
-      <artifactId>sqlg-h2-dialect</artifactId>
-      <version>${version.org.umlg}</version>
-    </dependency>
+    <!-- Commenting this out because we're shipping with HSQLDB as our embedded solution for now.
+         If you want to re-enable H2 support, don't forget to uncomment the datasource definition in the inventory
+         feature-pack. -->
+    <!--<dependency>-->
+      <!--<groupId>org.umlg</groupId>-->
+      <!--<artifactId>sqlg-h2-dialect</artifactId>-->
+      <!--<version>${version.org.umlg}</version>-->
+    <!--</dependency>-->
 
     <!-- Logging -->
     <dependency>
