@@ -65,7 +65,7 @@
     <version.com.thinkaurelius.titan>1.1.0-SNAPSHOT</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
     <version.org.apache.tinkerpop>3.2.2</version.org.apache.tinkerpop>
-    <version.org.umlg>1.3.0-SRC-revision-46e6886ee1136bc275c25b164a27a457218e11ea</version.org.umlg>
+    <version.org.umlg>1.3.2-SRC-revision-d14c6e762591f09f75972c0d207893c62decb0bc</version.org.umlg>
 
     <version.org.antlr>4.5.3</version.org.antlr>
 

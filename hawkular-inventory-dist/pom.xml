@@ -138,48 +138,24 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-hsqldb</artifactId>
+      <artifactId>sqlg-hsqldb-dialect</artifactId>
       <version>${version.org.umlg}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-postgres</artifactId>
+      <artifactId>sqlg-postgres-dialect</artifactId>
       <version>${version.org.umlg}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>org.umlg</groupId>
-      <artifactId>sqlg-h2</artifactId>
-      <version>${version.org.umlg}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- This dependency is necessary due to exclusion of gremlin-groovy,
-    since sqlg-core uses commons-lang3 which is included by transitivity
-    in gremlin-groovy -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>${version.commons-lang3}</version>
-    </dependency>
+    <!-- Commenting this out because we're shipping with HSQLDB as our embedded solution for now.
+         If you want to re-enable H2 support, don't forget to uncomment the datasource definition in the inventory
+         feature-pack. -->
+    <!--<dependency>-->
+      <!--<groupId>org.umlg</groupId>-->
+      <!--<artifactId>sqlg-h2-dialect</artifactId>-->
+      <!--<version>${version.org.umlg}</version>-->
+    <!--</dependency>-->
 
     <!-- Logging -->
     <dependency>
