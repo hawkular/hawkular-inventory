@@ -41,6 +41,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.ElementTypeVisitor;
@@ -120,11 +121,13 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     EntityAndPendingNotifications<BE, E> doCreate(B blueprint, Transaction<BE> tx) {
         String id = getProposedId(tx, blueprint);
 
+        Discriminator now = context.discriminator();
+
         if (!tx.isUniqueIndexSupported()) {
             //poor man's way of ensuring uniqueness of CPs
             Query existenceCheck = context.hop().filter().with(id(id)).get();
 
-            Page<BE> results = tx.query(existenceCheck, Pager.single());
+            Page<BE> results = tx.query(now, existenceCheck, Pager.single());
 
             if (results.hasNext()) {
                 throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
@@ -152,22 +155,22 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                     .get();
         }
 
-        BE entityObject = tx.persist(entityPath, blueprint);
+        BE entityObject = tx.persist(now, entityPath, blueprint);
 
         if (parentCanonicalPath != null) {
             //no need to check for contains rules - we're connecting a newly created entity
-            containsRel = tx.relate(parent, entityObject, contains.name(), Collections.emptyMap());
-            Relationship rel = tx.convert(containsRel, Relationship.class);
+            containsRel = tx.relate(now, parent, entityObject, contains.name(), Collections.emptyMap());
+            Relationship rel = tx.convert(now, containsRel, Relationship.class);
             tx.getPreCommit().addNotifications(
                     new EntityAndPendingNotifications<>(containsRel, rel, new Notification<>(rel, rel, created())));
         }
 
-        newEntity = wireUpNewEntity(entityObject, blueprint, parentCanonicalPath, parent, tx);
+        newEntity = wireUpNewEntity(now, entityObject, blueprint, parentCanonicalPath, parent, tx);
 
         if (blueprint instanceof Entity.Blueprint) {
             Entity.Blueprint b = (Entity.Blueprint) blueprint;
-            createCustomRelationships(entityObject, outgoing, b.getOutgoingRelationships(), tx);
-            createCustomRelationships(entityObject, incoming, b.getIncomingRelationships(), tx);
+            createCustomRelationships(now, entityObject, outgoing, b.getOutgoingRelationships(), tx);
+            createCustomRelationships(now, entityObject, incoming, b.getIncomingRelationships(), tx);
         }
 
         postCreate(entityObject, newEntity.getEntity(), tx);
@@ -187,7 +190,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     public final void update(Id id, U update) throws EntityNotFoundException {
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-            Util.update(context.entityClass, tx, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate);
+            Util.update(context.discriminator(), context.entityClass, tx, q, update, (e, u, t) -> preUpdate(id, e, u, t), this::postUpdate
+            );
             return null;
         });
     }
@@ -195,7 +199,17 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     public final void delete(Id id) throws EntityNotFoundException {
         inTx(tx -> {
             Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
-            Util.delete(context.entityClass, tx, q, (e, t) -> preDelete(id, e, t), this::postDelete);
+            Util.delete(context.discriminator(), context.entityClass, tx, q, (e, t) -> preDelete(id, e, t),
+                    this::postDelete, false);
+            return null;
+        });
+    }
+
+    public final void eradicate(Id id) throws EntityNotFoundException {
+        inTx(tx -> {
+            Query q = id == null ? context.select().get() : context.select().with(id(id.toString())).get();
+            Util.delete(context.discriminator(), context.entityClass, tx, q, (e, t) -> preDelete(id, e, t),
+                    this::postDelete, true);
             return null;
         });
     }
@@ -250,7 +264,7 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
                     @SuppressWarnings("unchecked")
                     @Override
                     protected BE defaultAction(SegmentType elementType, Void parameter) {
-                        BE res = tx.querySingle(context.sourcePath);
+                        BE res = tx.querySingle(context.discriminator(), context.sourcePath);
 
                         if (res == null) {
                             throw new EntityNotFoundException(context.previous.entityClass,
@@ -274,6 +288,8 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * <p>The wiring up might result in new relationships being created or other "notifiable" actions - the returned
      * object needs to reflect that so that the notification can correctly be emitted.
      *
+     *
+     * @param discriminator the discriminator specifying the time at which the entity was created
      * @param entity     the freshly created, uninitialized entity
      * @param blueprint  the blueprint that it prescribes how the entity should be initialized
      * @param parentPath the path to the parent entity
@@ -283,21 +299,21 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
      * out
      */
     protected abstract EntityAndPendingNotifications<BE, E>
-    wireUpNewEntity(BE entity, B blueprint, CanonicalPath parentPath, BE parent,
+    wireUpNewEntity(Discriminator discriminator, BE entity, B blueprint, CanonicalPath parentPath, BE parent,
                     Transaction<BE> transaction);
 
-    private void createCustomRelationships(BE entity, Relationships.Direction direction,
+    private void createCustomRelationships(Discriminator discriminator, BE entity, Relationships.Direction direction,
                                            Map<String, Set<CanonicalPath>> otherEnds,
                                            Transaction<BE> tx) {
         otherEnds.forEach((name, ends) -> ends.forEach((end) -> {
             try {
-                BE endObject = tx.find(end);
+                BE endObject = tx.find(discriminator, end);
 
                 BE from = direction == outgoing ? entity : endObject;
                 BE to = direction == outgoing ? endObject : entity;
 
-                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociation(tx, from,
-                        name, to, null);
+                EntityAndPendingNotifications<BE, Relationship> res = Util.createAssociation(discriminator,
+                        tx, from, name, to, null);
 
                 tx.getPreCommit().addNotifications(res);
             } catch (ElementNotFoundException e) {

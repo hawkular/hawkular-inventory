@@ -64,7 +64,8 @@ public final class Environment extends ContentHashedEntity<Environment.Blueprint
 
     @Override
     public Updater<Update, Environment> update() {
-        return new Updater<>((u) -> new Environment(u.getName(), getPath(), getContentHash(), u.getProperties()));
+        return new Updater<>((u) -> new Environment(u.getName(), getPath(), getContentHash(), u.getProperties()),
+                this, Update.builder());
     }
 
     @Override
@@ -143,7 +144,7 @@ public final class Environment extends ContentHashedEntity<Environment.Blueprint
             return visitor.visitEnvironment(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Environment, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(name, properties);

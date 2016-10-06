@@ -20,8 +20,13 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +44,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Inventory;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -52,6 +59,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.SyncHash;
+import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -1486,6 +1494,242 @@ public class InventoryITest extends AbstractTestBase {
     public void testInvalidTreeHash() throws Throwable {
         Response response = get(basePath + "/entity/e;" + environmentId + "/treeHash");
         assertEquals(400, response.code());
+    }
+
+    @Test
+    public void testHistory_onEntity() throws Throwable {
+
+        Instant beforeCreate = Instant.now();
+
+        Response response = post(basePath + "/entity/environment",
+                mapper.writeValueAsString(Environment.Blueprint.builder().withId("testHistory_onEntity").build()));
+        assertEquals(201, response.code());
+        Thread.sleep(10);
+        Instant afterCreate = Instant.now();
+
+        //do 2 updates
+        response = put(basePath + "/entity/e;testHistory_onEntity",
+                Environment.Update.builder().withName("My Env").build());
+        assertEquals(204, response.code());
+        Thread.sleep(10);
+        Instant afterFirstUpdate = Instant.now();
+
+        response = put(basePath + "/entity/e;testHistory_onEntity",
+                Environment.Update.builder().withName("My Env, like").build());
+        assertEquals(204, response.code());
+        Thread.sleep(10);
+        Instant afterSecondUpdate = Instant.now();
+
+        response = client.newCall(newAuthRequest().url(baseURI + basePath + "/entity/e;testHistory_onEntity").delete()
+                .build()).execute();
+        assertEquals(204, response.code());
+        Thread.sleep(10);
+        Instant afterDelete = Instant.now();
+
+        response = get(basePath + "/entity/e;testHistory_onEntity/history");
+        assertEquals(200, response.code());
+        List<Change<?>> changes = mapper.readValue(response.body().byteStream(),
+                new TypeReference<List<Change<?>>>() {});
+
+        assertEquals(4, changes.size());
+        Change<?> createChange = changes.get(0);
+        Change<?> firstUpdateChange = changes.get(1);
+        Change<?> secondUpdateChange = changes.get(2);
+        Change<?> deleteChange = changes.get(3);
+
+        assertEquals(Action.created().asEnum(), createChange.getAction().asEnum());
+        assertTrue(createChange.getTime().compareTo(beforeCreate) > 0);
+        assertTrue(createChange.getTime().compareTo(afterCreate) < 0);
+        assertEquals("testHistory_onEntity", ((Environment) createChange.getActionContext()).getId());
+
+        assertEquals(Action.updated().asEnum(), firstUpdateChange.getAction().asEnum());
+        assertTrue(firstUpdateChange.getTime().compareTo(afterCreate) > 0);
+        assertTrue(firstUpdateChange.getTime().compareTo(afterFirstUpdate) < 0);
+        assertEquals("testHistory_onEntity",
+                ((Action.Update<Environment, Environment.Update>) firstUpdateChange.getActionContext())
+                        .getOriginalEntity().getId());
+        assertNull(((Action.Update<Environment, Environment.Update>) firstUpdateChange.getActionContext())
+                .getOriginalEntity().getName());
+        assertEquals("My Env", ((Action.Update<Environment, Environment.Update>) firstUpdateChange.getActionContext())
+                .getUpdate().getName());
+
+        assertEquals(Action.updated().asEnum(), secondUpdateChange.getAction().asEnum());
+        assertTrue(secondUpdateChange.getTime().compareTo(afterFirstUpdate) > 0);
+        assertTrue(secondUpdateChange.getTime().compareTo(afterSecondUpdate) < 0);
+        assertEquals("testHistory_onEntity", ((Action.Update<Environment, Environment.Update>) firstUpdateChange.getActionContext())
+                .getOriginalEntity().getId());
+        assertEquals("My Env", ((Action.Update<Environment, Environment.Update>) secondUpdateChange.getActionContext())
+                .getOriginalEntity().getName());
+        assertEquals("My Env, like", ((Action.Update<Environment, Environment.Update>) secondUpdateChange
+                .getActionContext()).getUpdate().getName());
+
+        assertEquals(Action.deleted().asEnum(), deleteChange.getAction().asEnum());
+        assertTrue(deleteChange.getTime().compareTo(afterSecondUpdate) > 0);
+        assertTrue(deleteChange.getTime().compareTo(afterDelete) < 0);
+        assertEquals("testHistory_onEntity", ((Environment) createChange.getActionContext()).getId());
+        assertEquals("My Env, like", ((Environment) deleteChange.getActionContext()).getName());
+
+        response = get(basePath + "/entity/e;testHistory_onEntity/history",
+                "to", Long.toString(afterFirstUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        changes = mapper.readValue(response.body().byteStream(), new TypeReference<List<Change<?>>>() {});
+        assertEquals(2, changes.size());
+        assertEquals(Action.created().asEnum(), changes.get(0).getAction().asEnum());
+        assertEquals(Action.updated().asEnum(), changes.get(1).getAction().asEnum());
+
+        response = get(basePath + "/entity/e;testHistory_onEntity/history",
+                "from", Long.toString(afterSecondUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        changes = mapper.readValue(response.body().byteStream(), new TypeReference<List<Change<?>>>() {});
+        assertEquals(1, changes.size());
+        assertEquals(Action.deleted().asEnum(), changes.get(0).getAction().asEnum());
+
+        response = get(basePath + "/entity/e;testHistory_onEntity/history",
+                "from", Long.toString(afterCreate.toEpochMilli()),
+                "to", Long.toString(afterSecondUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        changes = mapper.readValue(response.body().byteStream(), new TypeReference<List<Change<?>>>() {});
+        assertEquals(2, changes.size());
+        assertEquals(Action.updated().asEnum(), changes.get(0).getAction().asEnum());
+        assertEquals(Action.updated().asEnum(), changes.get(0).getAction().asEnum());
+    }
+
+    @Test
+    public void testHistory_onTenant() throws Throwable {
+        Instant beforeUpdate = Instant.now();
+
+        //do 2 updates
+        Response response = put(basePath + "/tenant",
+                Tenant.Update.builder().withName("My Tenant").build());
+        assertEquals(204, response.code());
+        Instant afterFirstUpdate = Instant.now();
+
+        response = put(basePath + "/tenant",
+                Tenant.Update.builder().withName("My Tenant, like").build());
+        assertEquals(204, response.code());
+        Instant afterSecondUpdate = Instant.now();
+
+        response = get(basePath + "/tenant/history");
+        assertEquals(200, response.code());
+        List<Change<?>> changes = mapper.readValue(response.body().byteStream(),
+                new TypeReference<List<Change<?>>>() {});
+
+        //we need to have at least 3 changes - 1 create and two of our updates. There might be other if other tests
+        //changed the tenant, too.
+        assertTrue(changes.size() > 2);
+        //first is the initial create... we don't care about it here
+        Change<?> firstUpdateChange = changes.get(changes.size() - 2);
+        Change<?> secondUpdateChange = changes.get(changes.size() - 1);
+
+        assertEquals(Action.updated().asEnum(), firstUpdateChange.getAction().asEnum());
+        assertTrue(firstUpdateChange.getTime().compareTo(beforeUpdate) > 0);
+        assertTrue(firstUpdateChange.getTime().compareTo(afterFirstUpdate) < 0);
+        assertEquals(tenantId,
+                ((Action.Update<Tenant, Tenant.Update>) firstUpdateChange.getActionContext())
+                        .getOriginalEntity().getId());
+        assertNull(((Action.Update<Tenant, Tenant.Update>) firstUpdateChange.getActionContext())
+                .getOriginalEntity().getName());
+        assertEquals("My Tenant", ((Action.Update<Tenant, Tenant.Update>) firstUpdateChange.getActionContext())
+                .getUpdate().getName());
+
+        assertEquals(Action.updated().asEnum(), secondUpdateChange.getAction().asEnum());
+        assertTrue(secondUpdateChange.getTime().compareTo(afterFirstUpdate) > 0);
+        assertTrue(secondUpdateChange.getTime().compareTo(afterSecondUpdate) < 0);
+        assertEquals(tenantId, ((Action.Update<Tenant, Tenant.Update>) firstUpdateChange.getActionContext())
+                .getOriginalEntity().getId());
+        assertEquals("My Tenant", ((Action.Update<Tenant, Tenant.Update>) secondUpdateChange.getActionContext())
+                .getOriginalEntity().getName());
+        assertEquals("My Tenant, like", ((Action.Update<Tenant, Tenant.Update>) secondUpdateChange
+                .getActionContext()).getUpdate().getName());
+
+        response = get(basePath + "/tenant/history",
+                "to", Long.toString(afterFirstUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        changes = mapper.readValue(response.body().byteStream(), new TypeReference<List<Change<?>>>() {});
+        assertTrue(changes.size() > 1);
+        //again, the first one is the create
+        assertEquals(Action.updated().asEnum(), changes.get(changes.size() - 1).getAction().asEnum());
+
+        response = get(basePath + "/tenant/history",
+                "from", Long.toString(beforeUpdate.toEpochMilli()),
+                "to", Long.toString(afterSecondUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        changes = mapper.readValue(response.body().byteStream(), new TypeReference<List<Change<?>>>() {});
+        assertEquals(2, changes.size());
+        assertEquals(Action.updated().asEnum(), changes.get(0).getAction().asEnum());
+        assertEquals(Action.updated().asEnum(), changes.get(1).getAction().asEnum());
+    }
+
+    @Test
+    public void testTimeConstraint_onEntity() throws Throwable {
+        Response response = get(basePath + "/entity/rt;" + urlTypeId, "at", "0");
+        assertEquals(404, response.code());
+
+        Instant beforeUpdate = Instant.now();
+
+        response = put(basePath + "/entity/rt;" + urlTypeId, ResourceType.Update.builder().withName("Changed name")
+                .build());
+        assertEquals(204, response.code());
+
+        Instant afterUpdate = Instant.now();
+
+        response = get(basePath + "/entity/rt;" + urlTypeId, "at", Long.toString(beforeUpdate.toEpochMilli()));
+        assertEquals(200, response.code());
+        ResourceType rt = mapper.readValue(response.body().byteStream(), ResourceType.class);
+        assertNotEquals("Changed name", rt.getName());
+
+        //try passing the time as a string instead of a numeric timestamp
+        response = get(basePath + "/entity/rt;" + urlTypeId, "at", afterUpdate.toString());
+        assertEquals(200, response.code());
+        rt = mapper.readValue(response.body().byteStream(), ResourceType.class);
+        assertEquals("Changed name", rt.getName());
+
+        //check the current state without any time specification
+        response = get(basePath + "/entity/rt;" + urlTypeId);
+        assertEquals(200, response.code());
+        rt = mapper.readValue(response.body().byteStream(), ResourceType.class);
+        assertEquals("Changed name", rt.getName());
+    }
+
+    @Test
+    public void testTimeConstraint_onTraversal() throws Throwable {
+        Response response = get(basePath + "/traversal/type=rt", "at", "0");
+        assertEquals(200, response.code());
+        List<ResourceType> res = mapper.readValue(response.body().byteStream(),
+                new TypeReference<List<ResourceType>>() {});
+        assertTrue(res.isEmpty());
+
+        response = get(basePath + "/traversal/type=rt", "at", Instant.now().toString());
+        assertEquals(200, response.code());
+        res = mapper.readValue(response.body().byteStream(),
+                new TypeReference<List<ResourceType>>() {});
+        assertFalse(res.isEmpty());
+    }
+
+    @Test
+    public void testTimeConstraint_onTenant() throws Throwable {
+        Response response = get(basePath + "/tenant");
+        assertEquals(200, response.code());
+
+        Tenant origTenant = mapper.readValue(response.body().byteStream(), Tenant.class);
+
+        Instant beforeUpdate = Instant.now();
+
+        response = put(basePath + "/tenant", Tenant.Update.builder().withName(UUID.randomUUID().toString()).build());
+        assertEquals(204, response.code());
+
+        response = get(basePath + "/tenant");
+        assertEquals(200, response.code());
+
+        Tenant newTenant = mapper.readValue(response.body().byteStream(), Tenant.class);
+
+        assertNotEquals(newTenant.getName(), origTenant.getName());
+
+        response = get(basePath + "/tenant", "at", beforeUpdate.toString());
+        assertEquals(200, response.code());
+        Tenant checkTenant = mapper.readValue(response.body().byteStream(), Tenant.class);
+
+        assertEquals(origTenant.getName(), checkTenant.getName());
     }
 
     private <T> T readAs(String path, ObjectMapper mapper, Class<T> type) throws Throwable {

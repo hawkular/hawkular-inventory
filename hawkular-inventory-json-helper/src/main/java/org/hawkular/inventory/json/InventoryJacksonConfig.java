@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.json;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.FilterFragment;
 import org.hawkular.inventory.api.PathFragment;
 import org.hawkular.inventory.api.QueryFragment;
@@ -28,6 +29,7 @@ import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -58,7 +60,9 @@ import org.hawkular.inventory.json.mixins.filters.RelationWithMixin;
 import org.hawkular.inventory.json.mixins.filters.SwitchElementTypeMixin;
 import org.hawkular.inventory.json.mixins.filters.WithMixin;
 import org.hawkular.inventory.json.mixins.model.AbstractElementMixin;
+import org.hawkular.inventory.json.mixins.model.ActionUpdateMixin;
 import org.hawkular.inventory.json.mixins.model.CanonicalPathMixin;
+import org.hawkular.inventory.json.mixins.model.ChangeMixin;
 import org.hawkular.inventory.json.mixins.model.DataEntityMixin;
 import org.hawkular.inventory.json.mixins.model.EntityBlueprintMixin;
 import org.hawkular.inventory.json.mixins.model.EnvironmentMixin;
@@ -141,6 +145,8 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(IdentityHash.Tree.class, IdentityHashTreeMixin.class);
         objectMapper.addMixIn(SyncHash.Tree.class, SyncHashTreeMixin.class);
         objectMapper.addMixIn(MetricType.Blueprint.class, MetricTypeBlueprintMixin.class);
+        objectMapper.addMixIn(Change.class, ChangeMixin.class);
+        objectMapper.addMixIn(Action.Update.class, ActionUpdateMixin.class);
 
         /**
          * Query

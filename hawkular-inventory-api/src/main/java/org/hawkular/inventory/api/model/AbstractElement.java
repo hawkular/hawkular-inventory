@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -212,7 +213,23 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
 
         public abstract <R, P> R accept(ElementUpdateVisitor<R, P> visitor, P parameter);
 
-        public abstract static class Builder<U extends Update, This extends Builder<U, This>> {
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+
+            Update update = (Update) o;
+
+            return properties != null ? properties.equals(update.properties) : update.properties == null;
+
+        }
+
+        @Override public int hashCode() {
+            return properties != null ? properties.hashCode() : 0;
+        }
+
+        public abstract static class Builder<E extends AbstractElement<?, U>, U extends Update,
+                This extends Builder<E, U, This>> {
+
             protected Map<String, Object> properties;
 
             private Map<String, Object> getProperties() {
@@ -233,6 +250,14 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
                 return castThis();
             }
 
+            public This withDifference(E original, E updated) {
+                if (!Objects.equals(original.getProperties(), updated.getProperties())) {
+                    withProperties(updated.getProperties());
+                }
+
+                return castThis();
+            }
+
             public abstract U build();
 
             @SuppressWarnings("unchecked")
@@ -244,13 +269,21 @@ public abstract class AbstractElement<B extends org.hawkular.inventory.api.model
 
     public static final class Updater<U extends Update, E extends AbstractElement<?, U>> {
         private final Function<U, E> updater;
+        private final E original;
+        private final Update.Builder<E, U, ?> bld;
 
-        Updater(Function<U, E> updater) {
+        Updater(Function<U, E> updater, E original, Update.Builder<E, U, ?> bld) {
             this.updater = updater;
+            this.original = original;
+            this.bld = bld;
         }
 
         public E with(U update) {
             return updater.apply(update);
+        }
+
+        public U to(E entity) {
+            return bld.withDifference(original, entity).build();
         }
     }
 

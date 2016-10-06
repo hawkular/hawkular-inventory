@@ -33,6 +33,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.SegmentType;
@@ -62,10 +63,9 @@ public final class BaseMetricTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, MetricType>
-        wireUpNewEntity(BE entity, MetricType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, MetricType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
-            tx.update(entity, MetricType.Update.builder().withUnit(blueprint.getUnit()).build());
-
             MetricType metricType = new MetricType(blueprint.getName(),
                     parentPath.extend(MetricType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
                     blueprint.getUnit(), blueprint.getMetricDataType(), blueprint.getProperties(),
@@ -100,7 +100,7 @@ public final class BaseMetricTypes {
 
         @Override
         protected void preDelete(String s, BE entityRepresentation, Transaction<BE> transaction) {
-            preDelete(entityRepresentation, transaction);
+            preDelete(entityRepresentation, context.discriminator(), transaction);
         }
 
         @Override
@@ -113,21 +113,21 @@ public final class BaseMetricTypes {
             postUpdate(context, entityRepresentation, transaction);
         }
 
-        private static <BE> void preDelete(BE deletedEntity, Transaction<BE> tx) {
-            if (isInMetadataPack(deletedEntity, tx)) {
+        private static <BE> void preDelete(BE deletedEntity, Discriminator discriminator, Transaction<BE> tx) {
+            if (isInMetadataPack(deletedEntity, discriminator, tx)) {
                 throw new IllegalArgumentException("Cannot delete a metric type that is a part of metadata pack.");
             }
         }
 
         private static <BE> void preUpdate(TraversalContext<BE, ?> context, BE entity, MetricType.Update update,
                                            Transaction<BE> tx) {
-            MetricType mt = tx.convert(entity, MetricType.class);
+            MetricType mt = tx.convert(context.discriminator(), entity, MetricType.class);
             if (mt.getUnit() == update.getUnit()) {
                 //k, this is the only updatable thing that influences metadata packs, so if it is equal, we're ok.
                 return;
             }
 
-            if (isInMetadataPack(entity, tx)) {
+            if (isInMetadataPack(entity, context.discriminator(), tx)) {
                 throw new IllegalArgumentException("Cannot update a metric type that is a part of metadata pack.");
             }
         }
@@ -136,8 +136,8 @@ public final class BaseMetricTypes {
                                             Transaction<BE> tx) {
         }
 
-        private static <BE> boolean isInMetadataPack(BE metricType, Transaction<BE> tx) {
-            return tx.traverseToSingle(metricType, Query.path().with(Related.asTargetBy(incorporates),
+        private static <BE> boolean isInMetadataPack(BE metricType, Discriminator discriminator, Transaction<BE> tx) {
+            return tx.traverseToSingle(discriminator, metricType, Query.path().with(Related.asTargetBy(incorporates),
                     With.type(MetadataPack.class)).get()) != null;
 
         }
@@ -228,7 +228,7 @@ public final class BaseMetricTypes {
 
         @Override
         protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
-            ReadWrite.preDelete(deletedEntity, transaction);
+            ReadWrite.preDelete(deletedEntity, context.discriminator(), transaction);
         }
 
         @Override

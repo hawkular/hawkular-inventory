@@ -33,6 +33,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.OperationType;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -61,7 +62,8 @@ public final class BaseOperationTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, OperationType>
-        wireUpNewEntity(BE entity, OperationType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, OperationType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new OperationType(blueprint.getName(),
                     parentPath.extend(OperationType.SEGMENT_TYPE, tx.extractId(entity)).get(), null,
@@ -83,7 +85,7 @@ public final class BaseOperationTypes {
 
         @Override protected void preCreate(OperationType.Blueprint blueprint, Transaction<BE> tx) {
             //disallow this if the parent resource type is a part of a metadata pack
-            if (tx.traverseToSingle(getParent(tx), Query.path().with(asTargetBy(incorporates),
+            if (tx.traverseToSingle(context.discriminator(), getParent(tx), Query.path().with(asTargetBy(incorporates),
                     With.type(MetadataPack.class)).get()) != null) {
                 throw new IllegalArgumentException("Cannot create an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
@@ -93,14 +95,14 @@ public final class BaseOperationTypes {
 
         @Override
         protected void preDelete(String s, BE entityRepresentation, Transaction<BE> tx) {
-            if (isResourceTypeInMetadataPack(entityRepresentation, tx)) {
+            if (isResourceTypeInMetadataPack(entityRepresentation, context.discriminator(), tx)) {
                 throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
             }
         }
 
-        private static <BE> boolean isResourceTypeInMetadataPack(BE operationType, Transaction<BE> tx) {
-            return tx.traverseToSingle(operationType, Query.path().with(asTargetBy(contains),
+        private static <BE> boolean isResourceTypeInMetadataPack(BE operationType, Discriminator discriminator, Transaction<BE> tx) {
+            return tx.traverseToSingle(discriminator, operationType, Query.path().with(asTargetBy(contains),
                     asTargetBy(incorporates), With.type(MetadataPack.class)).get()) != null;
         }
     }
@@ -136,7 +138,7 @@ public final class BaseOperationTypes {
         }
 
         @Override protected void preDelete(BE deletedEntity, Transaction<BE> transaction) {
-            if (ReadWrite.isResourceTypeInMetadataPack(deletedEntity, transaction)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(deletedEntity, context.discriminator(), transaction)) {
                 throw new IllegalArgumentException("Cannot delete an operation type of resource type included in " +
                         "a meta data pack. This would invalidate the metadata pack's identity.");
             }
@@ -167,11 +169,11 @@ public final class BaseOperationTypes {
 
         @Override
         public void preCreate(DataEntity.Blueprint blueprint, Transaction<BE> transaction) {
-            BE mp = transaction.querySingle(context.select().path().with(asTargetBy(contains),
+            BE mp = transaction.querySingle(context.discriminator(), context.select().path().with(asTargetBy(contains),
                     asTargetBy(incorporates), With.type(MetadataPack.class)).get());
 
             if (mp != null) {
-                BE ot = transaction.querySingle(context.select().get());
+                BE ot = transaction.querySingle(context.discriminator(), context.select().get());
                 throw new IllegalArgumentException(
                         "Data '" + blueprint.getId() + "' cannot be created" +
                                 " under operation type " + transaction.extractCanonicalPath(ot) +
@@ -186,7 +188,7 @@ public final class BaseOperationTypes {
                 return;
             }
 
-            BE mp = tx.traverseToSingle(dataEntity, Query.path().with(
+            BE mp = tx.traverseToSingle(context.discriminator(), dataEntity, Query.path().with(
                     asTargetBy(contains), //up to operation type
                     asTargetBy(contains), //up to resource type
                     asTargetBy(incorporates), With.type(MetadataPack.class) // up to the pack
@@ -211,12 +213,12 @@ public final class BaseOperationTypes {
             CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
             BE ot = null;
             try {
-                ot = tx.find(dataPath.up());
+                ot = tx.find(context.discriminator(), dataPath.up());
             } catch (ElementNotFoundException e) {
                 Fetcher.throwNotFoundException(context);
             }
 
-            if (ReadWrite.isResourceTypeInMetadataPack(ot, tx)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(ot, context.discriminator(), tx)) {
                 throw new IllegalArgumentException(
                         "Data '" + dataPath.getSegment().getElementId() + "' cannot be deleted" +
                                 " under operation type " + dataPath.up() +

@@ -56,7 +56,7 @@ public final class MetricTypes {
      * Interface for accessing a single metric type in a writable manner.
      */
     public interface Single
-            extends Synced.SingleWithRelationships<MetricType, MetricType.Blueprint, MetricType.Update>,
+            extends Synced.SingleEntity<MetricType, MetricType.Blueprint, MetricType.Update>,
             BrowserBase {
     }
 

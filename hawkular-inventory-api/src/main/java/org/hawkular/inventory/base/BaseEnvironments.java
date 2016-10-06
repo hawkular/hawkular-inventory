@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 
@@ -125,7 +126,8 @@ public final class BaseEnvironments {
 
         @Override
         protected EntityAndPendingNotifications<BE, Environment>
-        wireUpNewEntity(BE entity, Environment.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, Environment.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             return new EntityAndPendingNotifications<>(entity, new Environment(blueprint.getName(),
                     parentPath.extend(Environment.SEGMENT_TYPE, tx.extractId(entity)).get(),

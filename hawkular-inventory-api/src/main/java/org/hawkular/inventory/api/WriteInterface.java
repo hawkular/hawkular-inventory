@@ -72,12 +72,27 @@ public interface WriteInterface<U, B extends Blueprint, Single, Id> {
     void update(Id id, U update) throws EntityNotFoundException;
 
     /**
-     * Deletes an entity with the provided id from the current position in the inventory traversal.
+     * Deletes the entity.
+     *
+     * <p>Note that this doesn't actually delete the entity from the inventory. It merely records its removal at the
+     * provided point in time.
      *
      * @param id the id of the entity to delete
-     * @throws EntityNotFoundException if an entity with given ID doesn't exist on the current position in the inventory
-     *                                 traversal
-     * @throws java.lang.IllegalArgumentException if the supplied entity could not be deleted for some reason
+     * @throws EntityNotFoundException   if there is no entity corresponding to the traversal
+     * @throws RelationNotFoundException if there is no relation corresponding to the traversal
+     * @throws IllegalArgumentException  if there were changes to the entity already made after the provided time of
+     * deletion
+     *
+     * @see #delete(Object)
      */
-    void delete(Id id) throws EntityNotFoundException;
+    void delete(Id id);
+
+    /**
+     * This removes the entity and all its history from the inventory. After this call, it looks like the entity never
+     * existed in the inventory.
+     *
+     * <p>Usually, you don't want to use this method. Use {@link #delete(Object)} instead which preserves the
+     * history of the entity.
+     */
+    void eradicate(Id id) throws EntityNotFoundException;
 }

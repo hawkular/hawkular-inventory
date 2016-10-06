@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,9 @@ import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.EntityHistory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
@@ -47,24 +50,28 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         this.tx = tx;
     }
 
-    @Override public <T> T convert(E entityRepresentation, Class<T> entityType) {
-        return tx.convert(entityRepresentation, entityType);
+    @Override public <T> T convert(Discriminator discriminator, E entityRepresentation, Class<T> entityType) {
+        return tx.convert(discriminator, entityRepresentation, entityType);
     }
 
-    @Override public void delete(E entity) {
-        tx.delete(entity);
+    @Override public void markDeleted(Discriminator discriminator, E entity) {
+        tx.markDeleted(discriminator, entity);
     }
 
     @Override public void deleteStructuredData(E dataRepresentation) {
         tx.deleteStructuredData(dataRepresentation);
     }
 
-    @Override public E descendToData(E dataEntityRepresentation, RelativePath dataPath) {
-        return tx.descendToData(dataEntityRepresentation, dataPath);
+    @Override public E descendToData(Discriminator discriminator, E dataEntityRepresentation, RelativePath dataPath) {
+        return tx.descendToData(discriminator, dataEntityRepresentation, dataPath);
     }
 
     @Override public InventoryBackend<E> directAccess() {
         return tx.directAccess();
+    }
+
+    @Override public void eradicate(E entityRepresentation) {
+        tx.eradicate(entityRepresentation);
     }
 
     @Override public CanonicalPath extractCanonicalPath(E entityRepresentation) {
@@ -75,16 +82,16 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         return tx.extractId(entityRepresentation);
     }
 
-    @Override public String extractIdentityHash(E entityRepresentation) {
-        return tx.extractIdentityHash(entityRepresentation);
+    @Override public String extractIdentityHash(Discriminator discriminator, E entityRepresentation) {
+        return tx.extractIdentityHash(discriminator, entityRepresentation);
     }
 
-    @Override public String extractContentHash(E entityRepresentation) {
-        return tx.extractContentHash(entityRepresentation);
+    @Override public String extractContentHash(Discriminator discriminator, E entityRepresentation) {
+        return tx.extractContentHash(discriminator, entityRepresentation);
     }
 
-    @Override public String extractSyncHash(E entityRepresentation) {
-        return tx.extractSyncHash(entityRepresentation);
+    @Override public String extractSyncHash(Discriminator discriminator, E entityRepresentation) {
+        return tx.extractSyncHash(discriminator, entityRepresentation);
     }
 
     @Override public String extractRelationshipName(E relationship) {
@@ -95,55 +102,55 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         return tx.extractType(entityRepresentation);
     }
 
-    @Override public E find(CanonicalPath element) throws ElementNotFoundException {
-        return tx.find(element);
+    @Override public E find(Discriminator discriminator, CanonicalPath element) throws ElementNotFoundException {
+        return tx.find(discriminator, element);
     }
 
-    @Override public InputStream getGraphSON(String tenantId) {
-        return tx.getGraphSON(tenantId);
+    @Override public InputStream getGraphSON(Discriminator discriminator, String tenantId) {
+        return tx.getGraphSON(discriminator, tenantId);
     }
 
     @Override public PreCommit<E> getPreCommit() {
         return tx.getPreCommit();
     }
 
-    @Override public E getRelationship(E source, E target, String relationshipName) throws ElementNotFoundException {
-        return tx.getRelationship(source, target, relationshipName);
+    @Override public E getRelationship(Discriminator discriminator, E source, E target, String relationshipName) throws ElementNotFoundException {
+        return tx.getRelationship(discriminator, source, target, relationshipName);
     }
 
-    @Override public Set<E> getRelationships(E entity, Relationships.Direction direction,
+    @Override public Set<E> getRelationships(Discriminator discriminator, E entity, Relationships.Direction direction,
                                              String... names) {
-        return tx.getRelationships(entity, direction, names);
+        return tx.getRelationships(discriminator, entity, direction, names);
     }
 
-    @Override public E getRelationshipSource(E relationship) {
-        return tx.getRelationshipSource(relationship);
+    @Override public E getRelationshipSource(Discriminator discriminator, E relationship) {
+        return tx.getRelationshipSource(discriminator, relationship);
     }
 
-    @Override public E getRelationshipTarget(E relationship) {
-        return tx.getRelationshipTarget(relationship);
+    @Override public E getRelationshipTarget(Discriminator discriminator, E relationship) {
+        return tx.getRelationshipTarget(discriminator, relationship);
     }
 
     @Override public <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(
-            CanonicalPath startingPoint,
+            Discriminator discriminator, CanonicalPath startingPoint,
             Relationships.Direction direction, Class<T> clazz,
             String... relationshipNames) {
-        return tx.getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        return tx.getTransitiveClosureOver(discriminator, startingPoint, direction, clazz, relationshipNames);
     }
 
-    @Override public Iterator<E> getTransitiveClosureOver(E startingPoint,
+    @Override public Iterator<E> getTransitiveClosureOver(Discriminator discriminator, E startingPoint,
                                                           Relationships.Direction direction,
                                                           String... relationshipNames) {
-        return tx.getTransitiveClosureOver(startingPoint, direction, relationshipNames);
+        return tx.getTransitiveClosureOver(discriminator, startingPoint, direction, relationshipNames);
     }
 
-    @Override public boolean hasRelationship(E entity, Relationships.Direction direction,
+    @Override public boolean hasRelationship(Discriminator discriminator, E entity, Relationships.Direction direction,
                                              String relationshipName) {
-        return tx.hasRelationship(entity, direction, relationshipName);
+        return tx.hasRelationship(discriminator, entity, direction, relationshipName);
     }
 
-    @Override public boolean hasRelationship(E source, E target, String relationshipName) {
-        return tx.hasRelationship(source, target, relationshipName);
+    @Override public boolean hasRelationship(Discriminator discriminator, E source, E target, String relationshipName) {
+        return tx.hasRelationship(discriminator, source, target, relationshipName);
     }
 
     @Override public boolean isBackendInternal(E element) {
@@ -154,58 +161,63 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         return tx.isUniqueIndexSupported();
     }
 
-    @Override public E persist(CanonicalPath path,
+    @Override public E persist(Discriminator discriminator, CanonicalPath path,
                                Blueprint blueprint) {
-        return tx.persist(path, blueprint);
+        return tx.persist(discriminator, path, blueprint);
     }
 
     @Override public E persist(StructuredData structuredData) {
         return tx.persist(structuredData);
     }
 
-    @Override public Page<E> query(Query query,
+    @Override public Page<E> query(Discriminator discriminator, Query query,
                                    Pager pager) {
-        return tx.query(query, pager);
+        return tx.query(discriminator, query, pager);
     }
 
-    @Override public <T> Page<T> query(Query query,
+    @Override public <T> Page<T> query(Discriminator discriminator, Query query,
                                        Pager pager,
                                        Function<E, T> conversion,
                                        Function<T, Boolean> filter) {
-        return tx.query(query, pager, conversion, filter);
+        return tx.query(discriminator, query, pager, conversion, filter);
     }
 
-    @Override public E querySingle(Query query) {
-        return tx.querySingle(query);
+    @Override public E querySingle(Discriminator discriminator, Query query) {
+        return tx.querySingle(discriminator, query);
     }
 
     @Override public void registerCommittedPayload(TransactionPayload.Committing<?, E> committedPayload) {
         tx.registerCommittedPayload(committedPayload);
     }
 
-    @Override public E relate(E sourceEntity, E targetEntity, String name,
+    @Override public E relate(Discriminator discriminator, E sourceEntity, E targetEntity, String name,
                               Map<String, Object> properties) {
-        return tx.relate(sourceEntity, targetEntity, name, properties);
+        return tx.relate(discriminator, sourceEntity, targetEntity, name, properties);
     }
 
-    @Override public Page<E> traverse(E startingPoint, Query query,
+    @Override public Page<E> traverse(Discriminator discriminator, E startingPoint, Query query,
                                       Pager pager) {
-        return tx.traverse(startingPoint, query, pager);
+        return tx.traverse(discriminator, startingPoint, query, pager);
     }
 
-    @Override public E traverseToSingle(E startingPoint, Query query) {
-        return tx.traverseToSingle(startingPoint, query);
+    @Override public E traverseToSingle(Discriminator discriminator, E startingPoint, Query query) {
+        return tx.traverseToSingle(discriminator, startingPoint, query);
     }
 
-    @Override public void update(E entity, AbstractElement.Update update) {
-        tx.update(entity, update);
+    @Override public void update(Discriminator discriminator, E entity, AbstractElement.Update update) {
+        tx.update(discriminator, entity, update);
     }
 
-    @Override public void updateHashes(E entity, Hashes hashes) {
-        tx.updateHashes(entity, hashes);
+    @Override public void updateHashes(Discriminator discriminator, E entity, Hashes hashes) {
+        tx.updateHashes(discriminator, entity, hashes);
     }
 
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {
         return tx.requiresRollbackAfterFailure(t);
+    }
+
+    @Override public <T extends Entity<?, U>, U extends Entity.Update>
+    EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to) {
+        return tx.getHistory(entity, entityType, from, to);
     }
 }

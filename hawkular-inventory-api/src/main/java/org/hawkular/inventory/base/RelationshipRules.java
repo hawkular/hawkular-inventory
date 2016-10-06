@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.MetadataPack;
+import org.hawkular.inventory.base.spi.Discriminator;
 
 /**
  * Some well-known relationships have certain semantic rules that need to be checked for when creating/deleting them.
@@ -72,11 +73,11 @@ public final class RelationshipRules {
         DELETE_RULES.put(contains, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(defines, Collections.singletonList(RelationshipRules::disallowDelete));
         DELETE_RULES.put(isParentOf, Collections.singletonList(
-                (b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(b, o, d, r, t, "This would mean that a" +
+                (i, b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(i, b, o, d, r, t, "This would mean that a" +
                         " sub-resource would no longer be considered a child of the parent resource, which doesn't " +
                         " make  sense.")));
         DELETE_RULES.put(incorporates, Collections.singletonList(
-                (b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(b, o, d, r, t, "When an entity is contained" +
+                (i, b, o, d, r, t) -> disallowDeleteWhenTheresContainsToo(i, b, o, d, r, t, "When an entity is contained" +
                         " within another, it implies it is also incorporated. It would be illegal to delete only the" +
                         " 'incorporates' relationship.")));
         DELETE_RULES.put(hasData, Collections.singletonList(RelationshipRules::disallowDelete));
@@ -86,48 +87,40 @@ public final class RelationshipRules {
     private RelationshipRules() {
     }
 
-    public static <E> void checkCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
-                                       Relationships.WellKnown relationship, E target) {
-
-        check(backend, origin, direction, relationship.name(), target, CheckType.CREATE);
-    }
-
-    public static <E> void checkCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
+    public static <E> void checkCreate(Discriminator discriminator, Transaction<E> backend, E origin,
+                                       Relationships.Direction direction,
                                        String relationship, E target) {
 
-        check(backend, origin, direction, relationship, target, CheckType.CREATE);
+        check(discriminator, backend, origin, direction, relationship, target, CheckType.CREATE);
     }
 
-    public static <E> void checkDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
-                                       Relationships.WellKnown relationship, E target) {
-
-        check(backend, origin, direction, relationship.name(), target, CheckType.DELETE);
-    }
-
-    public static <E> void checkDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
+    public static <E> void checkDelete(Discriminator discriminator, Transaction<E> backend, E origin,
+                                       Relationships.Direction direction,
                                        String relationship, E target) {
 
-        check(backend, origin, direction, relationship, target, CheckType.DELETE);
+        check(discriminator, backend, origin, direction, relationship, target, CheckType.DELETE);
     }
 
     @SuppressWarnings("unchecked")
-    private static <E> void check(Transaction<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void check(Discriminator discriminator, Transaction<E> backend, E origin,
+                                  Relationships.Direction direction,
                                   String relationship, E target, CheckType checkType) {
 
         List<RuleCheck<?>> rules = checkType.getRuleChecks(relationship);
 
-        rules.forEach((r) -> ((RuleCheck<E>) r).check(backend, origin, direction, relationship, target));
+        rules.forEach((r) -> ((RuleCheck<E>) r).check(discriminator, backend, origin, direction, relationship, target));
     }
 
-    private static <E> void checkDiamonds(Transaction<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void checkDiamonds(Discriminator discriminator, Transaction<E> backend, E origin,
+                                          Relationships.Direction direction,
             String relationship, E target) {
-        if (direction == outgoing && backend.hasRelationship(target, Relationships.Direction.incoming,
+        if (direction == outgoing && backend.hasRelationship(discriminator, target, Relationships.Direction.incoming,
                 relationship)) {
             throw new IllegalArgumentException("The target is already connected with another entity using the" +
                     " relationship: '" + relationship + "'. It is illegal for such relationships to form" +
                     " diamonds.");
         } else if (direction == Relationships.Direction.incoming) {
-            if (backend.hasRelationship(origin, Relationships.Direction.incoming, relationship)) {
+            if (backend.hasRelationship(discriminator, origin, Relationships.Direction.incoming, relationship)) {
                 throw new IllegalArgumentException("The source is already connected with another entity using the" +
                         " relationship: '" + relationship + "'. It is illegal for such relationships to form" +
                         " diamonds.");
@@ -135,7 +128,7 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void checkLoops(Transaction<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void checkLoops(Discriminator discriminator, Transaction<E> backend, E origin, Relationships.Direction direction,
             String relationship, E target) {
         if (direction == Relationships.Direction.both) {
             throw new IllegalArgumentException("Relationship '" + relationship + "' cannot form a loop" +
@@ -148,7 +141,7 @@ public final class RelationshipRules {
         }
 
         if (direction == Relationships.Direction.incoming) {
-            Iterator<E> closure = backend.getTransitiveClosureOver(origin, outgoing, relationship);
+            Iterator<E> closure = backend.getTransitiveClosureOver(discriminator, origin, outgoing, relationship);
 
             while (closure.hasNext()) {
                 E e = closure.next();
@@ -159,7 +152,7 @@ public final class RelationshipRules {
                 }
             }
         } else if (direction == outgoing) {
-            Iterator<E> closure = backend.getTransitiveClosureOver(origin, incoming, relationship);
+            Iterator<E> closure = backend.getTransitiveClosureOver(discriminator, origin, incoming, relationship);
 
             while (closure.hasNext()) {
                 E e = closure.next();
@@ -172,17 +165,17 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowDelete(Transaction<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void disallowDelete(Discriminator discriminator, Transaction<E> backend, E origin, Relationships.Direction direction,
                                            String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly deleted.");
     }
 
-    private static <E> void disallowCreate(Transaction<E> backend, E origin, Relationships.Direction direction,
+    private static <E> void disallowCreate(Discriminator discriminator, Transaction<E> backend, E origin, Relationships.Direction direction,
                                            String relationship, E target) {
         throw new IllegalArgumentException("Relationship '" + relationship + "' cannot be explicitly created.");
     }
 
-    private static <E> void disallowWhenMetadataPackIsSource(Transaction<E> backend, E origin,
+    private static <E> void disallowWhenMetadataPackIsSource(Discriminator discriminator, Transaction<E> backend, E origin,
                                                              Relationships.Direction direction, String relationship,
                                                              E target) {
         String message = "Manual manipulation of the 'incorporates' relationships where the" +
@@ -199,17 +192,17 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowDeleteWhenTheresContainsToo(Transaction<E> backend, E origin,
+    private static <E> void disallowDeleteWhenTheresContainsToo(Discriminator discriminator, Transaction<E> backend, E origin,
                                                                 Relationships.Direction direction, String relationship,
                                                                 E target, String errorDetails) {
-        if (backend.hasRelationship(origin, target, contains.name())) {
+        if (backend.hasRelationship(discriminator, origin, target, contains.name())) {
             throw new IllegalArgumentException("'" + relationship + "' relationship cannot be deleted if there is" +
                     " also a '" + contains + "' relationship between the same two entities. " + errorDetails);
         }
     }
 
     private static <E>
-    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(Transaction<E> backend,
+    void disallowCreateOfIfFeedAlreadyIncorporatedInAnotherEnvironment(Discriminator discriminator, Transaction<E> backend,
                                                                        E origin, Relationships.Direction direction,
                                                                        String relationship, E target) {
         if (!incorporates.name().equals(relationship)) {
@@ -219,7 +212,8 @@ public final class RelationshipRules {
         Class<?> originType = backend.extractType(origin);
         Class<?> targetType = backend.extractType(target);
 
-        if (Environment.class.equals(originType) && Feed.class.equals(targetType) && backend.hasRelationship(target,
+        if (Environment.class.equals(originType) && Feed.class.equals(targetType) && backend.hasRelationship(
+                discriminator, target,
                 incoming, relationship)) {
             throw new IllegalArgumentException("Relationship '" + relationship + "' between "
                     + originType.getSimpleName() + " and " + targetType.getSimpleName() + " is 1:N." +
@@ -228,7 +222,7 @@ public final class RelationshipRules {
         }
     }
 
-    private static <E> void disallowCreateAcrossTenants(Transaction<E> backend, E origin,
+    private static <E> void disallowCreateAcrossTenants(Discriminator discriminator, Transaction<E> backend, E origin,
                                                         Relationships.Direction direction, String relationship,
                                                         E target) {
 
@@ -236,7 +230,7 @@ public final class RelationshipRules {
 
     @FunctionalInterface
     private interface RuleCheck<E> {
-        void check(Transaction<E> backend, E origin, Relationships.Direction direction,
+        void check(Discriminator discriminator, Transaction<E> backend, E origin, Relationships.Direction direction,
                    String relationship, E target);
     }
 

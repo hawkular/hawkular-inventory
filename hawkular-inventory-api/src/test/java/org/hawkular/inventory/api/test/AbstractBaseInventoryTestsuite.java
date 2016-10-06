@@ -43,6 +43,7 @@ import static org.hawkular.inventory.paths.DataRole.ResourceType.configurationSc
 import static org.hawkular.inventory.paths.DataRole.ResourceType.connectionConfigurationSchema;
 
 import java.io.FileInputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -90,12 +91,14 @@ import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
 import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.filters.Defined;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.RecurseFilter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Blueprint;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -120,6 +123,7 @@ import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -571,6 +575,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
      */
     protected abstract BaseInventory<E> getInventoryForTest();
 
+    protected static Discriminator now() {
+        return Discriminator.time(Instant.now());
+    }
+
     @Before
     public final void setupData() throws Exception {
         inventory = getInventoryForTest();
@@ -584,7 +592,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<E> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+                Page<E> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(results.hasNext());
 
@@ -610,7 +618,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Page<E> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+            Page<E> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
             Assert.assertTrue(results.hasNext());
             results.next();
@@ -637,12 +645,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 testHelper = (numberOfParents -> parentType -> edgeLabel -> numberOfKids -> childType ->
                 multipleParents -> multipleChildren -> {
 
-                    Page<E> parents = inTx.apply(b -> b.query(Query.path().with(type(parentType)).get(),
+                    Page<E> parents = inTx.apply(b -> b.query(now(), Query.path().with(type(parentType)).get(),
                             Pager.unlimited(Order.unspecified())));
 
                     List<E> parentsList = parents.toList();
 
-                    Page<E> children = inTx.apply(b -> b.query(Query.path().with(type(parentType),
+                    Page<E> children = inTx.apply(b -> b.query(now(), Query.path().with(type(parentType),
                             by(edgeLabel), type(childType)).get(), Pager.unlimited(Order.unspecified())));
 
                     List<E> childrenList = children.toList();
@@ -904,11 +912,11 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<E> envs = bcknd.query(q, Pager.unlimited(Order.unspecified()));
+                Page<E> envs = bcknd.query(now(), q, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(envs.hasNext());
 
-                env = inventory.getBackend().convert(envs.next(), Environment.class);
+                env = bcknd.convert(now(), envs.next(), Environment.class);
                 Assert.assertTrue(!envs.hasNext());
                 Assert.assertEquals(id, env.getId());
             } finally {
@@ -926,7 +934,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(2, bcknd.query(q, Pager.unlimited(Order.unspecified())).toList().size());
+            Assert.assertEquals(2, bcknd.query(now(), q, Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
             bcknd.rollback();
         }
@@ -941,7 +949,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                Page<?> results = bcknd.query(query, Pager.unlimited(Order.unspecified()));
+                Page<?> results = bcknd.query(now(), query, Pager.unlimited(Order.unspecified()));
 
                 Assert.assertTrue(results.hasNext());
             } finally {
@@ -962,7 +970,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Query query = Query.path().with(type(ResourceType.class)).get();
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(6, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+            Assert.assertEquals(6, bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).toList()
                     .size());
         } finally {
             bcknd.rollback();
@@ -978,7 +986,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                assert bcknd.query(query, Pager.unlimited(Order.unspecified())).hasNext();
+                assert bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).hasNext();
             } finally {
                 bcknd.rollback();
             }
@@ -995,7 +1003,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         Query query = Query.path().with(type(MetricType.class)).get();
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(4, bcknd.query(query, Pager.unlimited(Order.unspecified())).toList()
+            Assert.assertEquals(4, bcknd.query(now(), query, Pager.unlimited(Order.unspecified())).toList()
                     .size());
         } finally {
             bcknd.rollback();
@@ -1012,7 +1020,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
             InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
             try {
-                assert bcknd.query(q, Pager.unlimited(Order.unspecified())).hasNext();
+                assert bcknd.query(now(), q, Pager.unlimited(Order.unspecified())).hasNext();
             } finally {
                 bcknd.rollback();
             }
@@ -1051,7 +1059,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(5, bcknd.query(Query.path().with(type(Metric.class)).get(),
+            Assert.assertEquals(5, bcknd.query(now(), Query.path().with(type(Metric.class)).get(),
                     Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
             bcknd.rollback();
@@ -1078,7 +1086,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
 
         InventoryBackend<E> bcknd = inventory.getBackend().startTransaction();
         try {
-            Assert.assertEquals(15, inventory.getBackend().query(Query.path().with(type(
+            Assert.assertEquals(15, inventory.getBackend().query(now(), Query.path().with(type(
                     Resource.class)).get(),
                     Pager.unlimited(Order.unspecified())).toList().size());
         } finally {
@@ -1997,7 +2005,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>
-    void testUpdate(T entity, Entity.Update.Builder<U, ?> update) {
+    void testUpdate(T entity, Entity.Update.Builder<T, U, ?> update) {
         @SuppressWarnings("unchecked")
         Class<ResolvableToSingle<T, U>> cls = (Class<ResolvableToSingle<T, U>>) (Class) ResolvableToSingle.class;
         inventory.inspect(entity, cls).update(update.withName("updated").build());
@@ -2861,56 +2869,56 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
 
-            E entity = backend.find(tenantPath);
-            Tenant tenant = backend.convert(entity, Tenant.class);
+            E entity = backend.find(now(), tenantPath);
+            Tenant tenant = backend.convert(now(), entity, Tenant.class);
             Assert.assertEquals("com.acme.tenant", tenant.getId());
 
             CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
-            entity = backend.find(envPath);
-            Environment env = backend.convert(entity, Environment.class);
+            entity = backend.find(now(), envPath);
+            Environment env = backend.convert(now(), entity, Environment.class);
             Assert.assertEquals("com.acme.tenant", env.getPath().ids().getTenantId());
             Assert.assertEquals("production", env.getId());
 
-            entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
-            Resource r = backend.convert(entity, Resource.class);
+            entity = backend.find(now(), envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
+            Resource r = backend.convert(now(), entity, Resource.class);
             Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
             Assert.assertEquals("production", r.getPath().ids().getEnvironmentId());
             Assert.assertNull(r.getPath().ids().getFeedId());
             Assert.assertEquals("host1", r.getId());
 
-            entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
-            Metric m = backend.convert(entity, Metric.class);
+            entity = backend.find(now(), envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
+            Metric m = backend.convert(now(), entity, Metric.class);
             Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
             Assert.assertEquals("production", m.getPath().ids().getEnvironmentId());
             Assert.assertNull(m.getPath().ids().getFeedId());
             Assert.assertEquals("host1_ping_response", m.getId());
 
             CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
-            entity = backend.find(feedPath);
-            Feed f = backend.convert(entity, Feed.class);
+            entity = backend.find(now(), feedPath);
+            Feed f = backend.convert(now(), entity, Feed.class);
             Assert.assertEquals("com.acme.tenant", f.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", f.getId());
 
-            entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
-            r = backend.convert(entity, Resource.class);
+            entity = backend.find(now(), feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
+            r = backend.convert(now(), entity, Resource.class);
             Assert.assertEquals("com.acme.tenant", r.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", r.getPath().ids().getFeedId());
             Assert.assertEquals("feedResource1", r.getId());
 
-            entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
-            m = backend.convert(entity, Metric.class);
+            entity = backend.find(now(), feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
+            m = backend.convert(now(), entity, Metric.class);
             Assert.assertEquals("com.acme.tenant", m.getPath().ids().getTenantId());
             Assert.assertEquals("feed1", m.getPath().ids().getFeedId());
             Assert.assertEquals("feedMetric1", m.getId());
 
-            entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
+            entity = backend.find(now(), tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
             ResourceType
-                    rt = backend.convert(entity, ResourceType.class);
+                    rt = backend.convert(now(), entity, ResourceType.class);
             Assert.assertEquals("com.acme.tenant", rt.getPath().ids().getTenantId());
             Assert.assertEquals("URL", rt.getId());
 
-            entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
-            MetricType mt = backend.convert(entity, MetricType.class);
+            entity = backend.find(now(), tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
+            MetricType mt = backend.convert(now(), entity, MetricType.class);
             Assert.assertEquals("com.acme.tenant", mt.getPath().ids().getTenantId());
             Assert.assertEquals("ResponseTime", mt.getId());
         } finally {
@@ -2923,11 +2931,11 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
-            E environment = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-            E r = backend.getRelationship(tenant, environment, contains.name());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").get());
+            E environment = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E r = backend.getRelationship(now(), tenant, environment, contains.name());
 
-            Relationship rel = backend.convert(r, Relationship.class);
+            Relationship rel = backend.convert(now(), r, Relationship.class);
 
             Assert.assertEquals("com.acme.tenant", rel.getSource().getSegment().getElementId());
             Assert.assertEquals("production", rel.getTarget().getSegment().getElementId());
@@ -2942,12 +2950,12 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E entity = backend.find(CanonicalPath.of().tenant("com.acme.tenant").get());
+            E entity = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").get());
             Assert.assertEquals("com.acme.tenant", backend.extractId(entity));
-            Set<E> rels = backend.getRelationships(entity, both);
+            Set<E> rels = backend.getRelationships(now(), entity, both);
             Assert.assertEquals(8, rels.size());
 
-            Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(e,
+            Function<Set<E>, Stream<Relationship>> checks = (es) -> es.stream().map((e) -> backend.convert(now(), e,
                     Relationship.class));
 
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
@@ -2966,10 +2974,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "feed1".equals(r.getTarget().getSegment().getElementId())));
 
-            rels = backend.getRelationships(entity, incoming);
+            rels = backend.getRelationships(now(), entity, incoming);
             Assert.assertTrue(rels.isEmpty());
 
-            rels = backend.getRelationships(entity, outgoing);
+            rels = backend.getRelationships(now(), entity, outgoing);
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> contains.name().equals(r.getName()) &&
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "production".equals(r.getTarget().getSegment().getElementId())));
@@ -2980,17 +2988,17 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                     "com.acme.tenant".equals(r.getSource().getSegment().getElementId()) &&
                     "ResponseTime".equals(r.getTarget().getSegment().getElementId())));
 
-            entity = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            entity = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
             Assert.assertEquals("test", backend.extractId(entity));
 
-            rels = backend.getRelationships(entity, incoming);
+            rels = backend.getRelationships(now(), entity, incoming);
             Assert.assertEquals(2, rels.size());
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "contains".equals(r.getName()) &&
                     "com.example.tenant".equals(r.getSource().getSegment().getElementId())));
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "yourMom".equals(r.getName()) &&
                     "playroom2_size".equals(r.getSource().getSegment().getElementId())));
 
-            rels = backend.getRelationships(entity, outgoing, "IamYourFather");
+            rels = backend.getRelationships(now(), entity, outgoing, "IamYourFather");
             Assert.assertEquals(1, rels.size());
             Assert.assertTrue(checks.apply(rels).anyMatch((r) -> "IamYourFather".equals(r.getName()) &&
                     "playroom2_size".equals(r.getTarget().getSegment().getElementId())));
@@ -3006,14 +3014,13 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             TriFunction<E, Relationships.Direction, String[], Stream<? extends Entity<?, ?>>> test =
                     (start, direction, name) -> {
-                        Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(start, direction, name);
+                        Iterator<E> transitiveClosure = backend.getTransitiveClosureOver(now(), start, direction, name);
                         return StreamSupport.stream(Spliterators.spliterator(transitiveClosure, Integer.MAX_VALUE, 0),
-                                false).map((e) -> (Entity<?, ?>) backend.convert(e, backend.extractType(e)));
+                                false).map((e) -> (Entity<?, ?>) backend.convert(now(), e, backend.extractType(e)));
                     };
 
-            E env = backend.find(CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
-            E feed = backend.find(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1")
-                    .get());
+            E env = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").environment("production").get());
+            E feed = backend.find(now(), CanonicalPath.of().tenant("com.acme.tenant").feed("feed1").get());
 
             Assert.assertEquals(8, test.apply(feed, outgoing, new String[]{"contains"}).count());
             Assert.assertFalse(test.apply(feed, outgoing, new String[]{"contains"}).anyMatch((e) -> e instanceof Feed &&
@@ -3040,20 +3047,33 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
+    public void testRecurseFilter() throws Exception {
+        Query q = Query.path()
+                .with(With.path(CanonicalPath.of().tenant("com.acme.tenant").feed("feed1").get()))
+                .with(RecurseFilter.builder().addChain(Related.by(contains)).build())
+                .with(With.type(Metric.class))
+                .get();
+
+        try (Page<Metric> results = inventory.execute(q, Metric.class, Pager.none())) {
+            Assert.assertEquals(2, results.getTotalSize());
+        }
+    }
+
+    @Test
     public void testBackendHasRelationship() throws Exception {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").get());
 
-            Assert.assertTrue(backend.hasRelationship(tenant, outgoing, "contains"));
-            Assert.assertFalse(backend.hasRelationship(tenant, incoming, "contains"));
-            Assert.assertTrue(backend.hasRelationship(tenant, both, "contains"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, outgoing, "contains"));
+            Assert.assertFalse(backend.hasRelationship(now(), tenant, incoming, "contains"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, both, "contains"));
 
-            E env = backend.find(CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
+            E env = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").environment("test").get());
 
-            Assert.assertTrue(backend.hasRelationship(tenant, env, "contains"));
-            Assert.assertFalse(backend.hasRelationship(tenant, env, "e-kachny"));
+            Assert.assertTrue(backend.hasRelationship(now(), tenant, env, "contains"));
+            Assert.assertFalse(backend.hasRelationship(now(), tenant, env, "e-kachny"));
         } finally {
             backend.rollback();
         }
@@ -3064,7 +3084,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         InventoryBackend<E> backend = inventory.getBackend().startTransaction();
 
         try {
-            E tenant = backend.find(CanonicalPath.of().tenant("com.example.tenant").get());
+            E tenant = backend.find(now(), CanonicalPath.of().tenant("com.example.tenant").get());
 
             Assert.assertEquals("com.example.tenant", backend.extractId(tenant));
         } finally {
@@ -3079,33 +3099,33 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         try {
             CanonicalPath tenantPath = CanonicalPath.of().tenant("com.acme.tenant").get();
 
-            E entity = backend.find(tenantPath);
+            E entity = backend.find(now(), tenantPath);
             Assert.assertEquals(Tenant.class, backend.extractType(entity));
 
             CanonicalPath envPath = tenantPath.extend(Environment.SEGMENT_TYPE, "production").get();
-            entity = backend.find(envPath);
+            entity = backend.find(now(), envPath);
             Assert.assertEquals(Environment.class, backend.extractType(entity));
 
-            entity = backend.find(envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
+            entity = backend.find(now(), envPath.extend(Resource.SEGMENT_TYPE, "host1").get());
             Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-            entity = backend.find(envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
+            entity = backend.find(now(), envPath.extend(Metric.SEGMENT_TYPE, "host1_ping_response").get());
             Assert.assertEquals(Metric.class, backend.extractType(entity));
 
             CanonicalPath feedPath = tenantPath.extend(Feed.SEGMENT_TYPE, "feed1").get();
-            entity = backend.find(feedPath);
+            entity = backend.find(now(), feedPath);
             Assert.assertEquals(Feed.class, backend.extractType(entity));
 
-            entity = backend.find(feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
+            entity = backend.find(now(), feedPath.extend(Resource.SEGMENT_TYPE, "feedResource1").get());
             Assert.assertEquals(Resource.class, backend.extractType(entity));
 
-            entity = backend.find(feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
+            entity = backend.find(now(), feedPath.extend(Metric.SEGMENT_TYPE, "feedMetric1").get());
             Assert.assertEquals(Metric.class, backend.extractType(entity));
 
-            entity = backend.find(tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
+            entity = backend.find(now(), tenantPath.extend(ResourceType.SEGMENT_TYPE, "URL").get());
             Assert.assertEquals(ResourceType.class, backend.extractType(entity));
 
-            entity = backend.find(tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
+            entity = backend.find(now(), tenantPath.extend(MetricType.SEGMENT_TYPE, "ResponseTime").get());
             Assert.assertEquals(MetricType.class, backend.extractType(entity));
         } finally {
             backend.rollback();
@@ -3120,14 +3140,14 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             Pager unlimited = Pager.unlimited(Order.unspecified());
 
             Query q = Query.path().with(type(Tenant.class), id("com.acme.tenant")).get();
-            Page<E> results = backend.query(q, unlimited);
+            Page<E> results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("com.acme.tenant", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());
 
             q = Query.path().with(type(Tenant.class), id("com.acme.tenant"), Related.by("contains"),
                     type(Environment.class), id("production")).get();
-            results = backend.query(q, unlimited);
+            results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("production", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());
@@ -3137,7 +3157,7 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
             q = Query.path().with(type(Tenant.class)).filter().with(Related.by("contains"), type(
                     ResourceType.class),
                     id("URL")).path().with(Related.by("contains"), type(Environment.class)).get();
-            results = backend.query(q, unlimited);
+            results = backend.query(now(), q, unlimited);
             Assert.assertTrue(results.hasNext());
             Assert.assertEquals("production", backend.extractId(results.next()));
             Assert.assertTrue(!results.hasNext());
@@ -3678,6 +3698,326 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         res = inventory.execute(elementTypeSwitchingQuery2, (Class) AbstractElement.class, Pager.none());
         result = res.toList();
         Assert.assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testEradicate() throws Exception {
+        String tenantId = "testEradicate";
+        try {
+            Instant beforeCreate = Instant.now();
+
+            Thread.sleep(10); //make sure before and after timestamps differ even if create was done in
+                              //under a millisecond...
+
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Instant afterCreate = Instant.now();
+
+            Thread.sleep(10); //make sure before and after eradicate timestamps differ even if eradicate was done in
+                              //under a millisecond...
+
+            ts.eradicate();
+
+            Instant afterDelete = Instant.now();
+
+            //check that at no point in time can we find our tenant... eradicate will just delete all reference
+            //to it...
+
+            Assert.assertFalse(inventory.at(beforeCreate).tenants().get(tenantId).exists());
+            Assert.assertFalse(inventory.at(afterCreate).tenants().get(tenantId).exists());
+            Assert.assertFalse(inventory.at(afterDelete).tenants().get(tenantId).exists());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
+    public void testHistory() throws Exception {
+        String tenantId = "testHistory";
+        try {
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Tenant beforeDelete = ts.entity();
+
+            ts.delete();
+
+            Thread.sleep(10);
+
+            inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).withProperty("key", "value").build());
+
+            Thread.sleep(10);
+
+            Tenant.Update update = Tenant.Update.builder().withProperty("key", "value2").withName("kachny").build();
+
+            ts.update(update);
+
+            Tenant beforeFinalDelete = beforeDelete.update().with(update);
+            Thread.sleep(10);
+
+            ts.delete();
+
+            //getting history of an entity that no longer exists should work
+            List<Change<Tenant>> cs = ts.history();
+
+            Assert.assertEquals(5, cs.size());
+
+            Assert.assertEquals(Action.created(), cs.get(0).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(0).getElement());
+            Assert.assertEquals(Action.deleted(), cs.get(1).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(1).getElement());
+            Assert.assertEquals(Action.created(), cs.get(2).getAction());
+            Assert.assertEquals(beforeDelete, cs.get(2).getElement());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(3).getAction().asEnum());
+            Assert.assertEquals(beforeDelete, cs.get(3).getElement());
+            Tenant.Update historyUpdate = ((Action.Update<Tenant, Tenant.Update>) cs.get(3).getActionContext())
+                    .getUpdate();
+            Assert.assertEquals(update.getName(), historyUpdate.getName());
+            Assert.assertEquals(update.getProperties(), historyUpdate.getProperties());
+            Assert.assertEquals(Action.deleted(), cs.get(4).getAction());
+            Assert.assertEquals(beforeFinalDelete, cs.get(4).getElement());
+
+            //getting history of an entity that never existed should throw
+            try {
+                inventory.tenants().get(UUID.randomUUID().toString()).history(null, null);
+                Assert.fail("It should not be possible to get history of entity that never existed.");
+            } catch (EntityNotFoundException e) {
+                //good
+            }
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testHistory_constrained() throws Exception {
+        String tenantId = "testHistory_constrained";
+        try {
+            Tenants.Single ts = inventory.tenants()
+                    .create(Tenant.Blueprint.builder().withId(tenantId).build());
+            Thread.sleep(10);
+
+            Tenant afterCreateTenant = ts.entity();
+            Instant afterCreate = Instant.now();
+
+            Tenant.Update update = Tenant.Update.builder().withName("kachny").build();
+            ts.update(update);
+            Thread.sleep(10);
+
+            Tenant beforeDeleteTenant = afterCreateTenant.update().with(update);
+            Instant beforeDelete = Instant.now();
+
+            ts.delete();
+            Thread.sleep(10);
+
+            Instant past = Instant.ofEpochMilli(0);
+
+            List<Change<Tenant>> cs = ts.history(past, afterCreate);
+            Assert.assertEquals(1, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+
+            cs = ts.history(past, beforeDelete);
+            Assert.assertEquals(2, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
+
+            cs = ts.history(past, Instant.now());
+            Assert.assertEquals(3, cs.size());
+            Assert.assertEquals(Action.created().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(afterCreateTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(2).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(2).getElement());
+
+            cs = ts.history(beforeDelete, Instant.now());
+            Assert.assertEquals(1, cs.size());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(0).getElement());
+
+            cs = ts.history(afterCreate, Instant.now());
+            Assert.assertEquals(2, cs.size());
+            Assert.assertEquals(Action.updated().asEnum(), cs.get(0).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(0).getElement());
+            Assert.assertEquals(Action.deleted().asEnum(), cs.get(1).getAction().asEnum());
+            Assert.assertEquals(beforeDeleteTenant, cs.get(1).getElement());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().get(tenantId).delete();
+            }
+        }
+    }
+
+    @Test
+    public void testTimeSnapshots_API() throws Exception {
+        String tenantId = "testTimeSnapshots_API";
+        try {
+            Instant beforeCreate = Instant.now();
+            Thread.sleep(10);
+
+            Feeds.Single fs = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            fs.resourceTypes()
+                    .create(ResourceType.Blueprint.builder().withId("resourceType").build()).entity();
+
+            Instant beforeR1 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r1").withResourceTypePath("resourceType").build());
+
+            Instant beforeR2 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r2").withResourceTypePath("resourceType").build());
+
+            Instant beforeR3 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r3").withResourceTypePath("resourceType").build());
+
+            Instant afterR3 = Instant.now();
+
+            Set<Resource> beforeCreateResources = inventory.at(beforeCreate).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR1Resources = inventory.at(beforeR1).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR2Resources = inventory.at(beforeR2).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> beforeR3Resources = inventory.at(beforeR3).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+            Set<Resource> afterR3Resources = inventory.at(afterR3).tenants().get(tenantId).feeds().get("feed")
+                    .resources().getAll().entities();
+
+            Assert.assertTrue(beforeCreateResources.isEmpty());
+            Assert.assertTrue(beforeR1Resources.isEmpty());
+            Assert.assertEquals(1, beforeR2Resources.size());
+            Assert.assertEquals(2, beforeR3Resources.size());
+            Assert.assertEquals(3, afterR3Resources.size());
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
+    public void testTimeSnapshots_Query() throws Exception {
+        String tenantId = "testTimeSnapshots_Query";
+        try {
+            Instant beforeCreate = Instant.now();
+            Thread.sleep(10);
+
+            Feeds.Single fs = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId("feed").build());
+
+            fs.resourceTypes()
+                    .create(ResourceType.Blueprint.builder().withId("resourceType").build()).entity();
+
+            Instant beforeR1 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r1").withResourceTypePath("resourceType").build());
+
+            Instant beforeR2 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r2").withResourceTypePath("resourceType").build());
+
+            Instant beforeR3 = Instant.now();
+            Thread.sleep(10);
+
+            fs.resources()
+                    .create(Resource.Blueprint.builder().withId("r3").withResourceTypePath("resourceType").build());
+
+            Instant afterR3 = Instant.now();
+
+            Query q = Query.path().with(With.path(CanonicalPath.of().tenant(tenantId).feed("feed").get()))
+                    .with(Related.by(contains))
+                    .with(With.type(Resource.class)).get();
+
+            try (Page<Resource> beforeCreateResources = inventory.at(beforeCreate).execute(q, Resource.class,
+                    Pager.none())) {
+                Assert.assertEquals(0, beforeCreateResources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR1Resources = inventory.at(beforeR1).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(0, beforeR1Resources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR2Resources = inventory.at(beforeR2).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(1, beforeR2Resources.getTotalSize());
+            }
+
+            try (Page<Resource> beforeR3Resources = inventory.at(beforeR3).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(2, beforeR3Resources.getTotalSize());
+            }
+
+            try (Page<Resource> afterR3Resources = inventory.at(afterR3).execute(q, Resource.class, Pager.none())) {
+                Assert.assertEquals(3, afterR3Resources.getTotalSize());
+            }
+
+            //k, now something more radical - all resources everywhere
+            try (Page<Resource> allResources = inventory.at(Instant.ofEpochMilli(0))
+                    .execute(Query.filter().with(With.type(Resource.class)).get(), Resource.class, Pager.none())) {
+                Assert.assertEquals(0, allResources.getTotalSize());
+            }
+
+            try (Page<Resource> allResources = inventory.at(beforeCreate)
+                    .execute(Query.filter().with(With.type(Resource.class)).get(), Resource.class, Pager.none())) {
+                Assert.assertEquals(15, allResources.getTotalSize());
+            }
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
+    public void testDeleteAtPointInTime() throws Exception {
+        String tenantId = "testDeleteAtPointInTime";
+        try {
+            Tenants.Single t = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build());
+
+            Instant afterCreate = Instant.now();
+            Thread.sleep(10);
+
+            t.update(Tenant.Update.builder().withName("kachny").build());
+
+            //now try to delete at afterCreate time
+
+            try {
+                inventory.at(afterCreate).tenants().delete(tenantId);
+                Assert.fail("Delete before an update should fail.");
+            } catch (IllegalArgumentException e) {
+                //good
+            }
+
+            //a delete at "now" should work fine
+            t.delete();
+
+            //eradicate only works if the entity exists
+            inventory.at(afterCreate).tenants().eradicate(tenantId);
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
     }
 
     private <T extends AbstractElement<?, U>, U extends AbstractElement.Update>

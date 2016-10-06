@@ -49,8 +49,8 @@ public final class OperationTypes {
     }
 
     public interface Single
-            extends Synced.SingleWithRelationships<OperationType, OperationType.Blueprint,
-            OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
+            extends Synced.SingleEntity<OperationType, OperationType.Blueprint,
+                        OperationType.Update>, BrowserBase<Data.ReadWrite<DataRole.OperationType>> {
 
     }
 

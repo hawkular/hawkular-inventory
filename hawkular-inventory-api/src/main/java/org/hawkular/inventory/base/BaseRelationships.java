@@ -46,6 +46,7 @@ import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -107,30 +108,31 @@ public final class BaseRelationships {
 
             return inTx(tx -> {
                 BE incidenceObject;
-                incidenceObject = Util.find(tx, context.sourcePath, targetOrSource);
+                incidenceObject = Util.find(context.discriminator(), tx, context.sourcePath, targetOrSource);
 
-                BE origin = tx.querySingle(context.sourcePath);
+                BE origin = tx.querySingle(context.discriminator(), context.sourcePath);
                 if (origin == null) {
                     throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
                 }
 
                 // if this is a well-known relationship, there might be some semantic checks for it...
-                RelationshipRules.checkCreate(tx, origin, direction, name, incidenceObject);
+                RelationshipRules.checkCreate(context.discriminator(), tx, origin, direction, name, incidenceObject);
 
                 EntityAndPendingNotifications<BE, Relationship> relationshipObject;
                 EntityAndPendingNotifications<BE, Relationship> relationshipObject2 = null;
 
+                Discriminator disc = context.discriminator();
                 switch (direction) {
                     case incoming:
-                        relationshipObject = Util.createAssociation(tx, incidenceObject, name, origin, properties);
+                        relationshipObject = Util.createAssociation(disc, tx, incidenceObject, name, origin, properties);
                         break;
                     case outgoing:
-                        relationshipObject = Util.createAssociation(tx, origin, name, incidenceObject, properties);
+                        relationshipObject = Util.createAssociation(disc, tx, origin, name, incidenceObject, properties);
                         break;
                     case both:
-                        relationshipObject2 = Util.createAssociation(tx, origin, name, incidenceObject, properties);
+                        relationshipObject2 = Util.createAssociation(disc, tx, origin, name, incidenceObject, properties);
 
-                        relationshipObject = Util.createAssociation(tx, incidenceObject, name, origin, properties);
+                        relationshipObject = Util.createAssociation(disc, tx, incidenceObject, name, origin, properties);
 
                         break;
                     default:
@@ -152,11 +154,11 @@ public final class BaseRelationships {
             //TODO this doesn't respect the current position in the graph
             inTx(tx -> {
                 try {
-                    BE relationshipObject = tx.find(CanonicalPath.of().relationship(id)
+                    BE relationshipObject = tx.find(context.discriminator(), CanonicalPath.of().relationship(id)
                             .get());
-                    tx.update(relationshipObject, update);
+                    tx.update(context.discriminator(), relationshipObject, update);
 
-                    Relationship r = tx.convert(relationshipObject, Relationship.class);
+                    Relationship r = tx.convert(context.discriminator(), relationshipObject, Relationship.class);
 
                     tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(relationshipObject, r,
                             new Notification<>(new Action.Update<>(r, update), r, updated())));
@@ -174,18 +176,18 @@ public final class BaseRelationships {
             //TODO this doesn't respect the current position in the graph
             inTx((tx) -> {
                 try {
-                    BE relationshipObject = tx.find(CanonicalPath.of().relationship(id).get());
+                    BE relationshipObject = tx.find(context.discriminator(), CanonicalPath.of().relationship(id).get());
 
-                    BE source = tx.getRelationshipSource(relationshipObject);
-                    BE target = tx.getRelationshipTarget(relationshipObject);
+                    BE source = tx.getRelationshipSource(context.discriminator(), relationshipObject);
+                    BE target = tx.getRelationshipTarget(context.discriminator(), relationshipObject);
                     String relationshipName = tx.extractRelationshipName(relationshipObject);
 
-                    RelationshipRules.checkDelete(tx, source, Relationships.Direction.outgoing,
+                    RelationshipRules.checkDelete(context.discriminator(), tx, source, Relationships.Direction.outgoing,
                             relationshipName, target);
 
-                    Relationship r = tx.convert(relationshipObject, Relationship.class);
+                    Relationship r = tx.convert(context.discriminator(), relationshipObject, Relationship.class);
 
-                    tx.delete(relationshipObject);
+                    tx.markDeleted(context.discriminator(), relationshipObject);
 
                     tx.getPreCommit().addNotifications(
                             new EntityAndPendingNotifications<>(relationshipObject, r, deleted()));

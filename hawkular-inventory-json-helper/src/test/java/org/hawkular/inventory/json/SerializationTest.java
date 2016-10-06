@@ -32,6 +32,7 @@ import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.FilterFragment;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.filters.Contained;
@@ -52,6 +54,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
@@ -653,6 +656,21 @@ public class SerializationTest {
         SyncHash.Tree t = SyncHash.treeOf(s, CanonicalPath.of().tenant("tnt").feed("feed").get());
 
         test(t);
+    }
+
+    @Test
+    public void testChange() throws Exception {
+        Tenant t = new Tenant("tenant", CanonicalPath.of().tenant("tnt").get(), "contentHash");
+
+        Change<Tenant> c = new Change<>(Instant.now(), Action.created(), t);
+        test(c);
+
+        c = new Change<Tenant>(Instant.now(), Action.updated(),
+                new Action.Update<>(t, Tenant.Update.builder().withName("kachna").build()));
+        test(c);
+
+        c = new Change<>(Instant.now(), Action.deleted(), t);
+        test(c);
     }
 
     private void testDetyped(Entity<?, ?> orig, String serialized) throws Exception {

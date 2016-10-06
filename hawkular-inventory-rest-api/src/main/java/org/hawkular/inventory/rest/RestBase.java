@@ -21,11 +21,14 @@ import static org.hawkular.inventory.rest.Utils.createUnder;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -33,7 +36,9 @@ import javax.ws.rs.core.UriInfo;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Query;
+import org.hawkular.inventory.api.ResolvableToSingleEntity;
 import org.hawkular.inventory.api.TransactionFrame;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.json.DetypedPathDeserializer;
@@ -57,8 +62,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @GZIP
 public class RestBase {
 
+    /**
+     * @deprecated this will be made private. Use {@link #inventory(UriInfo)} instead.
+     */
     @Inject
     @AutoTenant
+    @Deprecated
     protected Inventory inventory;
 
     @Inject
@@ -179,7 +188,7 @@ public class RestBase {
         return chopped;
     }
 
-    protected Object create(CanonicalPath parentPath, SegmentType elementType, Reader input)
+    protected Object create(CanonicalPath parentPath, SegmentType elementType, UriInfo uriInfo, Reader input)
             throws IOException {
         Class<?> blueprintType = Inventory.types().bySegment(elementType).getBlueprintType();
 
@@ -188,7 +197,7 @@ public class RestBase {
         setupMapper(parentPath);
 
         if (data.isArray()) {
-            TransactionFrame frame = inventory.newTransactionFrame();
+            TransactionFrame frame = inventory(uriInfo).newTransactionFrame();
 
             Inventory inv = frame.boundInventory();
             try {
@@ -208,7 +217,7 @@ public class RestBase {
             }
         } else {
             Object blueprint = getMapper().reader().forType(blueprintType).readValue(data);
-            return createUnder(inventory, parentPath, elementType, blueprint);
+            return createUnder(inventory(uriInfo), parentPath, elementType, blueprint);
         }
     }
 
@@ -228,5 +237,37 @@ public class RestBase {
         DetypedPathDeserializer.setCurrentCanonicalOrigin(getTenantPath());
         DetypedPathDeserializer.setCurrentRelativePathOrigin(relativePathOrigin);
         DetypedPathDeserializer.setCurrentEntityType(null);
+    }
+
+    protected Inventory inventory(UriInfo uriInfo) {
+        String atStr = uriInfo.getQueryParameters().getFirst("at");
+        Instant time = parseTime(atStr).orElse(null);
+
+        return time == null
+                ? inventory
+                : inventory.at(time);
+    }
+
+    protected Optional<Instant> parseTime(String timestampOrDateTime) {
+        if (timestampOrDateTime == null) {
+            return Optional.empty();
+        }
+        try {
+            long timestamp = Long.parseLong(timestampOrDateTime);
+            return Optional.of(Instant.ofEpochMilli(timestamp));
+        } catch (NumberFormatException ignored) {
+            return Optional.of(Instant.parse(timestampOrDateTime));
+        }
+    }
+
+    protected List<Change<?>> getHistory(@Context UriInfo uriInfo, CanonicalPath path) {
+        String fromStr = uriInfo.getQueryParameters().getFirst("from");
+        String toStr = uriInfo.getQueryParameters().getFirst("to");
+        String atStr = uriInfo.getQueryParameters().getFirst("at");
+
+        Instant from = parseTime(fromStr).orElse(Instant.ofEpochMilli(0));
+        Instant to = parseTime(toStr).orElseGet(() -> parseTime(atStr).orElse(Instant.ofEpochMilli(Long.MAX_VALUE)));
+
+        return inventory(uriInfo).inspect(path, ResolvableToSingleEntity.class).history(from, to);
     }
 }

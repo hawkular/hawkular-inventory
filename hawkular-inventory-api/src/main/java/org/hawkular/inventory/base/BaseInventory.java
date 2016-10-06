@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -90,12 +91,13 @@ public abstract class BaseInventory<E> implements Inventory {
         this.transactionConstructor = transactionConstructor == null
                 ? orig.transactionConstructor : transactionConstructor;
 
-        tenantContext = new TraversalContext<>(this, Query.empty(),
+        tenantContext = new TraversalContext<>(this, orig.tenantContext.declaredNow(), Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), this.backend, Tenant.class, configuration,
                 observableContext, this.transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), this.backend,
-                Relationship.class, configuration, observableContext, this.transactionConstructor);
+        relationshipContext = new TraversalContext<>(this, orig.relationshipContext.declaredNow(),
+                Query.empty(), Query.path().get(), this.backend, Relationship.class, configuration, observableContext,
+                this.transactionConstructor);
     }
 
     protected BaseInventory() {
@@ -136,11 +138,11 @@ public abstract class BaseInventory<E> implements Inventory {
     public final void initialize(Configuration configuration) {
         this.backend = doInitialize(configuration);
 
-        tenantContext = new TraversalContext<>(this, Query.empty(),
+        tenantContext = new TraversalContext<>(this, null, Query.empty(),
                 Query.path().with(With.type(Tenant.class)).get(), backend, Tenant.class, configuration,
                 observableContext, transactionConstructor);
 
-        relationshipContext = new TraversalContext<>(this, Query.empty(), Query.path().get(), backend,
+        relationshipContext = new TraversalContext<>(this, null, Query.empty(), Query.path().get(), backend,
                 Relationship.class, configuration, observableContext, transactionConstructor);
         this.configuration = configuration;
     }
@@ -182,6 +184,13 @@ public abstract class BaseInventory<E> implements Inventory {
      */
     protected abstract InventoryBackend<E> doInitialize(Configuration configuration);
 
+    @Override public BaseInventory<E> at(Instant time) {
+        BaseInventory<E> copy = cloneWith(transactionConstructor);
+        copy.tenantContext = tenantContext.at(time);
+        copy.relationshipContext = relationshipContext.at(time);
+        return copy;
+    }
+
     @Override
     public final void close() throws Exception {
         if (backend != null) {
@@ -222,16 +231,16 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public InputStream getGraphSON(String tenantId) {
-        return getBackend().getGraphSON(tenantId);
+        return getBackend().getGraphSON(tenantContext.discriminator(), tenantId);
     }
 
     @Override
     public AbstractElement<?, ?> getElement(CanonicalPath path) {
         try {
-            E element = getBackend().find(path);
+            E element = getBackend().find(tenantContext.discriminator(), path);
             Class<?> type = getBackend().extractType(element);
 
-            return (AbstractElement<?, ?>) getBackend().convert(element, type);
+            return (AbstractElement<?, ?>) getBackend().convert(tenantContext.discriminator(), element, type);
         } catch (ElementNotFoundException e) {
             throw new EntityNotFoundException("No element found on path: " + path.toString());
         }
@@ -242,7 +251,8 @@ public abstract class BaseInventory<E> implements Inventory {
                                                                     Relationships.Direction direction, Class<T> clazz,
                                                                     String... relationshipNames) {
 
-        return getBackend().getTransitiveClosureOver(startingPoint, direction, clazz, relationshipNames);
+        return getBackend().getTransitiveClosureOver(tenantContext.discriminator(), startingPoint, direction, clazz,
+                relationshipNames);
     }
 
     @Override
@@ -254,7 +264,8 @@ public abstract class BaseInventory<E> implements Inventory {
     public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
         InventoryBackend<E> tx = getBackend().startTransaction();
         try {
-            return new TransformingPage<T, T>(tx.query(query, pager, e -> backend.convert(e, requestedEntity), null),
+            return new TransformingPage<T, T>(tx.query(tenantContext.discriminator(), query, pager,
+                    e -> backend.convert(tenantContext.discriminator(), e, requestedEntity), null),
                     Function.identity()) {
                 @Override public void close() {
                     tx.rollback();

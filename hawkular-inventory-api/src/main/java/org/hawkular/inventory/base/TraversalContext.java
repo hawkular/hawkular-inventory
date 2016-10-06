@@ -18,9 +18,12 @@ package org.hawkular.inventory.base;
 
 import static org.hawkular.inventory.api.filters.With.type;
 
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
+
+import javax.annotation.Nullable;
 
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
@@ -33,6 +36,7 @@ import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.Path;
 
@@ -84,6 +88,8 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     private final int transactionRetries;
 
+    private final Instant now;
+
     /**
      * Optimization for quickly retrieving the entity that has been just created. We have all the data ready at the
      * creation time so it seems silly to load it from backend as soon as the caller requires to see the results of the
@@ -93,20 +99,21 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
 
     private final TransactionConstructor<BE> transactionConstructor;
 
-    TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
+    TraversalContext(BaseInventory<BE> inventory, Instant now, Query sourcePath, Query selectCandidates,
                      InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                      ObservableContext observableContext, TransactionConstructor<BE> transactionConstructor) {
-        this(inventory, sourcePath, selectCandidates, backend, entityClass, configuration, observableContext,
+        this(inventory, now, sourcePath, selectCandidates, backend, entityClass, configuration, observableContext,
                 getTransactionRetries(configuration), null, null, transactionConstructor);
     }
 
-    private TraversalContext(BaseInventory<BE> inventory, Query sourcePath, Query selectCandidates,
+    private TraversalContext(BaseInventory<BE> inventory, Instant now, Query sourcePath, Query selectCandidates,
                              InventoryBackend<BE> backend, Class<E> entityClass, Configuration configuration,
                              ObservableContext observableContext, int transactionRetries,
                              TraversalContext<BE, ?> previous, E createdEntity,
                              TransactionConstructor<BE> transactionConstructor) {
 
         this.inventory = inventory;
+        this.now = now;
         this.sourcePath = sourcePath;
         this.selectCandidates = selectCandidates;
         this.backend = backend;
@@ -250,6 +257,29 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
     }
 
     /**
+     * Constructs a new traversal context with given time as its "now".
+     * @param time the time of now
+     * @return a new traversal context
+     */
+    TraversalContext<BE, E> at(Instant time) {
+        return new TraversalContext<>(inventory, time, sourcePath, Query.empty(), backend, entityClass, configuration,
+                observableContext, transactionRetries, this, null, transactionConstructor);
+    }
+
+    Discriminator discriminator() {
+        return now == null ? Discriminator.latest() : Discriminator.time(now);
+    }
+
+    /**
+     * Returns the point in time to operate at or null if no such time was set up.
+     *
+     * @return a "now"
+     */
+    @Nullable Instant declaredNow() {
+        return now;
+    }
+
+    /**
      * Constructs a new traversal context by replacing the source path with the provided query and clearing out the
      * selected candidates.
      *
@@ -258,12 +288,12 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      * identical to this one.
      */
     TraversalContext<BE, E> replacePath(Query path) {
-        return new TraversalContext<>(inventory, path, Query.empty(), backend, entityClass, configuration,
+        return new TraversalContext<>(inventory, now, path, Query.empty(), backend, entityClass, configuration,
                 observableContext, transactionRetries, this, null, transactionConstructor);
     }
 
     TraversalContext<BE, E> toCreatedEntity(E entity, boolean cache) {
-        return new TraversalContext<>(inventory, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
+        return new TraversalContext<>(inventory, now, Query.to(entity.getPath()), Query.empty(), backend, entityClass,
                 configuration, observableContext, transactionRetries, this, cache ? entity : null, null);
     }
 
@@ -434,9 +464,10 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
          * @return a new traversal context set up using this builder
          */
         TraversalContext<BE, E> get() {
-            return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
-                    sourceContext.backend, entityClass, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext, null, sourceContext.transactionConstructor);
+            return new TraversalContext<>(sourceContext.inventory, sourceContext.now, pathExtender.get(),
+                    selectExtender.get(), sourceContext.backend, entityClass, sourceContext.configuration,
+                    sourceContext.observableContext, sourceContext.transactionRetries, sourceContext, null,
+                    sourceContext.transactionConstructor);
         }
 
         /**
@@ -447,9 +478,9 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
          * @return a new traversal context set up using this builder and querying for entities of the provided type
          */
         <T extends AbstractElement<?, ?>> TraversalContext<BE, T> getting(Class<T> entityType) {
-            return new TraversalContext<>(sourceContext.inventory, pathExtender.get(), selectExtender.get(),
-                    sourceContext.backend, entityType, sourceContext.configuration, sourceContext.observableContext,
-                    sourceContext.transactionRetries, sourceContext, null, null);
+            return new TraversalContext<>(sourceContext.inventory, sourceContext.now, pathExtender.get(),
+                    selectExtender.get(), sourceContext.backend, entityType, sourceContext.configuration,
+                    sourceContext.observableContext, sourceContext.transactionRetries, sourceContext, null, null);
         }
     }
 }

@@ -70,13 +70,13 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             throws EntityNotFoundException, RelationNotFoundException {
 
         return inTx(tx -> {
-            BE result = tx.querySingle(context.select().get());
+            BE result = tx.querySingle(context.discriminator(), context.select().get());
 
             if (result == null) {
                 throwNotFoundException();
             }
 
-            E entity = tx.convert(result, context.entityClass);
+            E entity = tx.convert(context.discriminator(), result, context.entityClass);
 
             if (!isApplicable(entity)) {
                 throwNotFoundException();
@@ -89,7 +89,18 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     @Override
     public void delete() {
         inTx(tx -> {
-            Util.delete(context.entityClass, tx, context.select().get(), this::preDelete, this::postDelete);
+            Util.delete(context.discriminator(), context.entityClass, tx, context.select().get(), this::preDelete,
+                    this::postDelete, false);
+            return null;
+        });
+        useCachedEntity = false;
+        context.setCreatedEntity(null);
+    }
+
+    @Override public void eradicate() {
+        inTx(tx -> {
+            Util.delete(context.discriminator(), context.entityClass, tx, context.select().get(), this::preDelete,
+                    this::postDelete, true);
             return null;
         });
         useCachedEntity = false;
@@ -99,7 +110,8 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     @Override
     public void update(U u) throws EntityNotFoundException, RelationNotFoundException {
         inTx(tx -> {
-            Util.update(context.entityClass, tx, context.select().get(), u, this::preUpdate, this::postUpdate);
+            Util.update(context.discriminator(), context.entityClass, tx, context.select().get(), u, this::preUpdate, this::postUpdate
+            );
             return null;
         });
 
@@ -170,13 +182,13 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     protected <T> Page<T> loadEntities(Pager pager, EntityConvertor<BE, E, T> conversionFunction) {
         return inCommittableTx(tx -> {
             Function<BE, Pair<BE, E>> conversion =
-                    (e) -> new Pair<>(e, tx.convert(e, context.entityClass));
+                    (e) -> new Pair<>(e, tx.convert(context.discriminator(), e, context.entityClass));
 
             Function<Pair<BE, E>, Boolean> filter = context.configuration.getResultFilter() == null ? null :
                     (p) -> context.configuration.getResultFilter().isApplicable(p.second);
 
             Page<Pair<BE, E>> intermediate =
-                    tx.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
+                    tx.<Pair<BE, E>>query(context.discriminator(), context.select().get(), pager, conversion, filter);
 
             return new TransformingPage<Pair<BE, E>, T>(intermediate,
                     (p) -> conversionFunction.convert(p.first, p.second, tx)) {

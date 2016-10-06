@@ -23,6 +23,7 @@ import static org.hawkular.inventory.rest.Utils.getSegmentTypeFromSimpleName;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -40,6 +41,7 @@ import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.Synced;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.Change;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.SyncHash;
 import org.hawkular.inventory.api.model.Syncable;
@@ -77,7 +79,7 @@ public class RestEntity extends RestBase {
         if (!Syncable.class.isAssignableFrom(eltType)) {
             throw new BadRequestException("Element not syncable - cannot get treeHash for path " + path);
         }
-        return inventory.inspect(path, Synced.Single.class).treeHash();
+        return inventory(uriInfo).inspect(path, Synced.Single.class).treeHash();
     }
 
     @GET
@@ -89,9 +91,18 @@ public class RestEntity extends RestBase {
         CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(getPath(uriInfo), getTenantPath(),
                 AbstractElement.class);
 
-        return inventory.inspect(path, ResolvableToSingle.class).entity();
+        return inventory(uriInfo).inspect(path, ResolvableToSingle.class).entity();
     }
 
+    @GET
+    @Path("{path:.+}/history")
+    @SuppressWarnings("unchecked")
+    public List<Change<?>> getHistory(@Context UriInfo uriInfo) {
+        CanonicalPath path = CanonicalPath.fromPartiallyUntypedString(getPath(uriInfo, "/history".length()),
+                getTenantPath(), AbstractElement.class);
+
+        return getHistory(uriInfo, path);
+    }
 
     @POST
     @Path("{path:.+}")
@@ -123,7 +134,7 @@ public class RestEntity extends RestBase {
             }
         }
 
-        Object toReport = create(parentPath, st, input);
+        Object toReport = create(parentPath, st, uriInfo, input);
         if (toReport instanceof Collection) {
             return ResponseUtil.created((Collection<? extends AbstractElement<?, ?>>) toReport, uriInfo).build();
         } else {
@@ -145,7 +156,7 @@ public class RestEntity extends RestBase {
 
         Class<? extends AbstractElement.Update> updateType = Inventory.types().byPath(entityPath).getUpdateType();
 
-        doPut(entityPath, updateType, input);
+        doPut(entityPath, updateType, uriInfo, input);
 
         return Response.noContent().build();
     }
@@ -164,6 +175,8 @@ public class RestEntity extends RestBase {
         CanonicalPath entityPath = CanonicalPath.fromPartiallyUntypedString(path, getTenantPath(),
                 AbstractElement.class);
 
+        Inventory inventory = inventory(uriInfo);
+
         if (entityPath.getSegment().getElementType() == SegmentType.rl) {
             Relationship rl = inventory.inspect(entityPath, Relationships.Single.class).entity();
             if (!security.canAssociateFrom(rl.getSource())) {
@@ -180,10 +193,11 @@ public class RestEntity extends RestBase {
         return Response.noContent().build();
     }
 
-    private <U extends AbstractElement.Update> void doPut(CanonicalPath path, Class<U> updateType, Reader data)
-            throws IOException {
+    private <U extends AbstractElement.Update> void doPut(CanonicalPath path, Class<U> updateType, UriInfo uriInfo,
+                                                          Reader data) throws IOException {
         setupMapper(path);
         U update = getMapper().reader().forType(updateType).readValue(data);
-        inventory.inspect(path, Inventory.types().byUpdate(updateType).getSingleAccessorType()).update(update);
+        inventory(uriInfo).inspect(path, Inventory.types().byUpdate(updateType).getSingleAccessorType()).update(update);
     }
+
 }

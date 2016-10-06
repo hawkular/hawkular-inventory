@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.impl.tinkerpop;
 
+import static org.hawkular.inventory.impl.tinkerpop.HawkularTraversal.hwk__;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -26,7 +28,6 @@ import java.util.Map;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -43,6 +44,7 @@ import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.filters.SwitchElementType;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.NoopFilter;
 
 /**
@@ -126,14 +128,16 @@ abstract class FilterApplicator<T extends Filter> {
      * @param <S>        type of the source of the query
      * @param <E>        type of the output of the query
      */
-    public static <S, E> void applyAll(Query filterTree, GraphTraversal<S, E> q) {
+    public static <S, E> void applyAll(Discriminator discriminator, Query filterTree, HawkularTraversal<S, E> q,
+                                       boolean inEdges) {
         if (filterTree == null) {
             return;
         }
 
         QueryTranslationState state = new QueryTranslationState();
+        state.setInEdges(inEdges);
 
-        applyAll(filterTree, q, false, state);
+        applyAll(discriminator, filterTree, q, false, state);
     }
 
     /**
@@ -142,21 +146,21 @@ abstract class FilterApplicator<T extends Filter> {
      * next positions in the inventory traversal or a filter ({@code isFilter == true}) which merely trims down the
      * number of the elements at the current "tail" of the traversal by applying filters to them.
      *
-     * @param query    the query
-     * @param pipeline the Gremlin pipeline that the query gets translated to
-     * @param isFilter whether we are currently processing filters as filters or path elements
      * @param <S>      the start element type of the pipeline
      * @param <E>      the end element type of the pipeline
-     * @return true if after applying the filters, we're the filtering state or false if we are in path-progression
+     * @param discriminator
+     * @param query    the query
+     * @param pipeline the Gremlin pipeline that the query gets translated to
+     * @param isFilter whether we are currently processing filters as filters or path elements    @return true if after applying the filters, we're the filtering state or false if we are in path-progression
      * state.
      */
     @SuppressWarnings("unchecked")
-    private static <S, E> boolean applyAll(Query query, GraphTraversal<S, E> pipeline, boolean isFilter,
-                                           QueryTranslationState state) {
+    private static <S, E> boolean applyAll(Discriminator discriminator, Query query, HawkularTraversal<S, E> pipeline,
+                                           boolean isFilter, QueryTranslationState state) {
 
         QueryTranslationState origState = state.clone();
 
-        GraphTraversal<E, E> workingPipeline = __.start();
+        HawkularTraversal<E, E> workingPipeline = hwk__();
 
         for (QueryFragment qf : query.getFragments()) {
             boolean thisIsFilter = qf instanceof FilterFragment;
@@ -179,10 +183,10 @@ abstract class FilterApplicator<T extends Filter> {
                         workingPipeline.asAdmin().getSteps().forEach(admin::addStep);
                     }
                 }
-                workingPipeline = __.start();
+                workingPipeline = hwk__();
             }
 
-            FilterApplicator.of(qf.getFilter()).applyTo(workingPipeline, state);
+            FilterApplicator.of(qf.getFilter()).applyTo(discriminator, workingPipeline, state);
         }
 
         finishPipeline(workingPipeline, state, origState);
@@ -199,22 +203,22 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         if (query.getSubTrees().size() == 1) {
-            return applyAll(query.getSubTrees().get(0), pipeline, isFilter, state);
+            return applyAll(discriminator, query.getSubTrees().get(0), pipeline, isFilter, state);
         } else {
             List<GraphTraversal<E, ?>> branches = new ArrayList<>();
             Iterator<Query> it = query.getSubTrees().iterator();
 
             // apply the first branch - in here, we know there are at least 2 actually
-            GraphTraversal<E, ?> branch = __.start();
+            HawkularTraversal<E, ?> branch = hwk__();
 
             // the branch is a brand new pipeline, so it doesn't make sense for it to inherit
             // our current filter state.
-            applyAll(it.next(), branch, false, state.clone());
+            applyAll(discriminator, it.next(), branch, false, state.clone());
             branches.add(branch);
 
             while (it.hasNext()) {
-                branch = __.start();
-                applyAll(it.next(), branch, false, state.clone());
+                branch = hwk__();
+                applyAll(discriminator, it.next(), branch, false, state.clone());
                 branches.add(branch);
             }
 
@@ -276,10 +280,12 @@ abstract class FilterApplicator<T extends Filter> {
     /**
      * To be implemented by inheritors, this applies the filter this applicator holds to the provided query taking into
      * the account the type of the filter.
-     *
+     *  @param discriminator the discriminator to apply to the query
      * @param query the query to update with filter
+     * @param state the query traversal translation state
      */
-    public abstract void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state);
+    public abstract void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query,
+                                 QueryTranslationState state);
 
     public Filter filter() {
         return filter;
@@ -296,8 +302,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -306,8 +312,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -316,8 +322,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -326,8 +332,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -337,8 +343,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -349,8 +355,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -361,8 +367,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
 
     }
@@ -373,8 +379,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -383,8 +389,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -393,7 +399,7 @@ abstract class FilterApplicator<T extends Filter> {
             super(filter);
         }
 
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -405,8 +411,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -417,8 +423,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -429,8 +435,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -441,8 +447,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -453,8 +459,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -465,7 +471,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -477,7 +483,7 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
             visitor.visit(query, filter, state);
         }
     }
@@ -489,8 +495,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -501,8 +507,8 @@ abstract class FilterApplicator<T extends Filter> {
         }
 
         @Override
-        public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 
@@ -512,8 +518,8 @@ abstract class FilterApplicator<T extends Filter> {
             super(names);
         }
 
-        @Override public void applyTo(GraphTraversal<?, ?> query, QueryTranslationState state) {
-            visitor.visit(query, filter, state);
+        @Override public void applyTo(Discriminator discriminator, HawkularTraversal<?, ?> query, QueryTranslationState state) {
+            visitor.visit(discriminator, query, filter, state);
         }
     }
 }

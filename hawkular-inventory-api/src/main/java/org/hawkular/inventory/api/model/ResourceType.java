@@ -67,7 +67,7 @@ public final class ResourceType extends SyncedEntity<ResourceType.Blueprint, Res
     @Override
     public Updater<Update, ResourceType> update() {
         return new Updater<>((u) -> new ResourceType(u.getName(), getPath(), getIdentityHash(), getContentHash(),
-                getSyncHash(), u.getProperties()));
+                getSyncHash(), u.getProperties()), this, Update.builder());
     }
 
     @Override
@@ -154,7 +154,7 @@ public final class ResourceType extends SyncedEntity<ResourceType.Blueprint, Res
             return visitor.visitResourceType(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<ResourceType, Update, Builder> {
 
             @Override
             public Update build() {

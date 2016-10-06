@@ -19,8 +19,12 @@ package org.hawkular.inventory.impl.tinkerpop.provider;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 /**
  * @author Lukas Krejci
@@ -28,6 +32,8 @@ import org.junit.BeforeClass;
  */
 public class SmallTransactionsTinkerGraphTest extends AbstractTinkerGraphTest {
     private static TinkerpopInventory INVENTORY;
+
+    @Rule public TestName name = new TestName();
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -43,6 +49,16 @@ public class SmallTransactionsTinkerGraphTest extends AbstractTinkerGraphTest {
     public static void teardownData() throws Exception {
         teardownData(INVENTORY);
         teardown(INVENTORY);
+    }
+
+    @Before
+    public void reportStart() {
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>> " + name.getMethodName());
+    }
+
+    @After
+    public void reportEnd() {
+        System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<< " + name.getMethodName());
     }
 
     @Override

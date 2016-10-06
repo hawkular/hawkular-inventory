@@ -45,7 +45,9 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.base.spi.CommitFailureException;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.InconsistenStateException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
@@ -118,12 +120,12 @@ final class Util {
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());
-                    if (tx.requiresRollbackAfterFailure(t)) {
+                    if (t instanceof InconsistenStateException || tx.requiresRollbackAfterFailure(t)) {
                         tx.rollback();
                     }
                     throw t;
                 }
-            } catch (CommitFailureException e) {
+            } catch (CommitFailureException | InconsistenStateException e) {
                 failures++;
 
                 //if the backend fails the commit, we can retry
@@ -160,9 +162,9 @@ final class Util {
         throw new TransactionFailureException(lastException, failures);
     }
 
-    public static <BE> BE getSingle(Transaction<BE> backend, Query query,
+    public static <BE> BE getSingle(Discriminator discriminator, Transaction<BE> backend, Query query,
                                     SegmentType entityType) {
-        BE result = backend.querySingle(query);
+        BE result = backend.querySingle(discriminator, query);
         if (result == null) {
             throw new EntityNotFoundException(entityType, Query.filters(query));
         }
@@ -171,66 +173,66 @@ final class Util {
     }
 
     public static <BE> EntityAndPendingNotifications<BE, Relationship>
-    createAssociation(Transaction<BE> tx, BE source, String relationship, BE target, Map<String, Object> properties) {
+    createAssociation(Discriminator discriminator, Transaction<BE> tx, BE source, String relationship, BE target, Map<String, Object> properties) {
 
-        if (tx.hasRelationship(source, target, relationship)) {
+        if (tx.hasRelationship(discriminator, source, target, relationship)) {
             throw new RelationAlreadyExistsException(relationship, Query.filters(Query.to(tx.extractCanonicalPath
                     (source))));
         }
 
-        RelationshipRules.checkCreate(tx, source, Relationships.Direction.outgoing, relationship,
+        RelationshipRules.checkCreate(discriminator, tx, source, Relationships.Direction.outgoing, relationship,
                 target);
-        BE relationshipObject = tx.relate(source, target, relationship, properties);
+        BE relationshipObject = tx.relate(discriminator, source, target, relationship, properties);
 
-        Relationship ret = tx.convert(relationshipObject, Relationship.class);
+        Relationship ret = tx.convert(discriminator, relationshipObject, Relationship.class);
 
         return new EntityAndPendingNotifications<>(relationshipObject, ret,
                 new Notification<>(ret, ret, created()));
     }
 
     public static <BE> EntityAndPendingNotifications<BE, Relationship>
-    deleteAssociation(Transaction<BE> tx, Query sourceQuery, SegmentType sourceType,
+    deleteAssociation(Discriminator discriminator, Transaction<BE> tx, Query sourceQuery, SegmentType sourceType,
                       String relationship, BE target) {
 
-        BE source = getSingle(tx, sourceQuery, sourceType);
+        BE source = getSingle(discriminator, tx, sourceQuery, sourceType);
 
         BE relationshipObject;
 
         try {
-            relationshipObject = tx.getRelationship(source, target, relationship);
+            relationshipObject = tx.getRelationship(discriminator, source, target, relationship);
         } catch (ElementNotFoundException e) {
             throw new RelationNotFoundException(sourceType, relationship, Query.filters(sourceQuery),
                     null, e);
         }
 
-        RelationshipRules.checkDelete(tx, source, Relationships.Direction.outgoing, relationship,
+        RelationshipRules.checkDelete(discriminator, tx, source, Relationships.Direction.outgoing, relationship,
                 target);
 
-        Relationship ret = tx.convert(relationshipObject, Relationship.class);
+        Relationship ret = tx.convert(discriminator, relationshipObject, Relationship.class);
 
-        tx.delete(relationshipObject);
+        tx.markDeleted(discriminator, relationshipObject);
 
         return new EntityAndPendingNotifications<>(relationshipObject, ret,
                 new Notification<>(ret, ret, deleted()));
     }
 
-    public static <BE> Relationship getAssociation(Transaction<BE> tx, Query sourceQuery,
+    public static <BE> Relationship getAssociation(Discriminator discriminator, Transaction<BE> tx, Query sourceQuery,
                                                    SegmentType sourceType, Query targetQuery,
                                                    SegmentType targetType,
                                                    String rel) {
 
-        BE source = getSingle(tx, sourceQuery, sourceType);
-        BE target = getSingle(tx, targetQuery, targetType);
+        BE source = getSingle(discriminator, tx, sourceQuery, sourceType);
+        BE target = getSingle(discriminator, tx, targetQuery, targetType);
 
         BE relationship;
         try {
-            relationship = tx.getRelationship(source, target, rel);
+            relationship = tx.getRelationship(discriminator, source, target, rel);
         } catch (ElementNotFoundException e) {
             throw new RelationNotFoundException(sourceType, rel, Query.filters(sourceQuery),
                     null, null);
         }
 
-        return tx.convert(relationship, Relationship.class);
+        return tx.convert(discriminator, relationship, Relationship.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -255,18 +257,18 @@ final class Util {
      * @throws ElementNotFoundException if the element is not found
      */
     @SuppressWarnings("unchecked")
-    public static <BE> BE find(Transaction<BE> tx, Query sourcePath, Path path) throws
+    public static <BE> BE find(Discriminator discriminator, Transaction<BE> tx, Query sourcePath, Path path) throws
             EntityNotFoundException {
         BE element;
         if (path.isCanonical()) {
             try {
-                element = tx.find(path.toCanonicalPath());
+                element = tx.find(discriminator, path.toCanonicalPath());
             } catch (ElementNotFoundException e) {
                 throw new EntityNotFoundException("Entity not found on path: " + path);
             }
         } else {
             Query query = queryTo(sourcePath, path);
-            element = getSingle(tx, query, null);
+            element = getSingle(discriminator, tx, query, null);
         }
         return element;
     }
@@ -284,12 +286,12 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, U>, U extends AbstractElement.Update> void update(
-            Class<E> entityClass,
+            Discriminator discriminator, Class<E> entityClass,
             Transaction<BE> tx, Query entityQuery, U update,
             TransactionParticipant<BE, U> preUpdateCheck,
             BiConsumer<BE, Transaction<BE>> postUpdateCheck) {
 
-        BE entity = tx.querySingle(entityQuery);
+        BE entity = tx.querySingle(discriminator, entityQuery);
         if (entity == null) {
             if (update instanceof Relationship.Update) {
                 throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
@@ -302,15 +304,15 @@ final class Util {
             preUpdateCheck.execute(entity, update, tx);
         }
 
-        E orig = tx.convert(entity, entityClass);
+        E orig = tx.convert(discriminator, entity, entityClass);
 
-        tx.update(entity, update);
+        tx.update(discriminator, entity, update);
 
         if (postUpdateCheck != null) {
             postUpdateCheck.accept(entity, tx);
         }
 
-        E updated = tx.convert(entity, entityClass);
+        E updated = tx.convert(discriminator, entity, entityClass);
 
         tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(entity, updated,
                 new Action.Update<>(orig, update), Action.updated()));
@@ -318,11 +320,11 @@ final class Util {
 
     @SuppressWarnings("unchecked")
     public static <BE, E extends AbstractElement<?, ?>>
-    void delete(Class<E> entityClass, Transaction<BE> tx, Query entityQuery,
+    void delete(Discriminator discriminator, Class<E> entityClass, Transaction<BE> tx, Query entityQuery,
                 BiConsumer<BE, Transaction<BE>> cleanupFunction,
-                BiConsumer<BE, Transaction<BE>> postDelete) {
+                BiConsumer<BE, Transaction<BE>> postDelete, boolean eradicate) {
 
-        BE entity = tx.querySingle(entityQuery);
+        BE entity = tx.querySingle(discriminator, entityQuery);
         if (entity == null) {
             if (entityClass.equals(Relationship.class)) {
                 throw new RelationNotFoundException((String) null, Query.filters(entityQuery));
@@ -341,28 +343,30 @@ final class Util {
         Set<BE> deleted = new HashSet<>();
         Set<BE> deletedRels = new HashSet<>();
 
+        Discriminator excludingFastDeletes = discriminator.excludeDeletedInMillisecond();
+
         Consumer<BE> categorizer = (e) -> {
-            if (tx.hasRelationship(e, outgoing, defines.name())) {
+            if (tx.hasRelationship(discriminator, e, outgoing, defines.name())) {
                 verticesToDeleteThatDefineSomething.add(e);
             } else {
                 deleted.add(e);
             }
             //not only the entity, but also its relationships are going to disappear
-            deletedRels.addAll(tx.getRelationships(e, both));
+            deletedRels.addAll(tx.getRelationships(excludingFastDeletes, e, both));
 
-            tx.getRelationships(e, outgoing, hasData.name()).forEach(rel -> {
-                dataToBeDeleted.add(tx.getRelationshipTarget(rel));
+            tx.getRelationships(excludingFastDeletes, e, outgoing, hasData.name()).forEach(rel -> {
+                dataToBeDeleted.add(tx.getRelationshipTarget(discriminator, rel));
             });
         };
 
         categorizer.accept(entity);
-        tx.getTransitiveClosureOver(entity, outgoing, contains.name())
+        tx.getTransitiveClosureOver(excludingFastDeletes, entity, outgoing, contains.name())
                 .forEachRemaining(categorizer::accept);
 
         //we've gathered all entities to be deleted. Now record the notifications to be sent out when the transaction
         //commits.
         Consumer<BE> addNotification = be -> {
-            AbstractElement<?, ?> e = tx.convert(be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
+            AbstractElement<?, ?> e = tx.convert(discriminator, be, (Class<AbstractElement<?, ?>>) tx.extractType(be));
             tx.getPreCommit().addNotifications(new EntityAndPendingNotifications<>(be, e, deleted()));
         };
 
@@ -373,32 +377,37 @@ final class Util {
 
         //k, now we can delete them all... the order is not important anymore
         for (BE e : deleted) {
-            tx.delete(e);
-        }
-
-        for (BE e : verticesToDeleteThatDefineSomething) {
-            if (tx.hasRelationship(e, outgoing, defines.name())) {
-                //we avoid the convert() function here because it assumes the containing entities of the passed in
-                //entity exist. This might not be true during the delete because the transitive closure "walks" the
-                //entities from the "top" down the containment chain and the entities are immediately deleted.
-                String rootId = tx.extractId(entity);
-                String definingId = tx.extractId(e);
-                String rootType = entityClass.getSimpleName();
-                String definingType = tx.extractType(e).getSimpleName();
-
-                String rootEntity = "Entity[id=" + rootId + ", type=" + rootType + "]";
-                String definingEntity = "Entity[id=" + definingId + ", type=" + definingType + "]";
-
-                throw new IllegalArgumentException("Could not delete entity " + rootEntity + ". The entity " +
-                        definingEntity + ", which it (indirectly) contains, acts as a definition for some " +
-                        "entities that are not deleted along with it, which would leave them without a " +
-                        "definition. This is illegal.");
+            if (eradicate) {
+                tx.eradicate(e);
             } else {
-                tx.delete(e);
+                tx.markDeleted(discriminator, e);
             }
         }
 
-        dataToBeDeleted.forEach(tx::deleteStructuredData);
+        for (BE e : verticesToDeleteThatDefineSomething) {
+            if (tx.hasRelationship(discriminator, e, outgoing, defines.name())) {
+                //we avoid the convert() function here because it assumes the containing entities of the passed in
+                //entity exist. This might not be true during the delete because the transitive closure "walks" the
+                //entities from the "top" down the containment chain and the entities are immediately deleted.
+                CanonicalPath rootPath = tx.extractCanonicalPath(entity);
+                CanonicalPath definingPath = tx.extractCanonicalPath(e);
+
+                throw new IllegalArgumentException("Could not delete entity '" + rootPath + "'. The entity '" +
+                        definingPath + "', which it (indirectly) contains, acts as a definition for some " +
+                        "entities that are not deleted along with it, which would leave them without a " +
+                        "definition. This is illegal.");
+            } else {
+                if (eradicate) {
+                    tx.eradicate(e);
+                } else {
+                    tx.markDeleted(discriminator, e);
+                }
+            }
+        }
+
+        if (eradicate) {
+            dataToBeDeleted.forEach(tx::deleteStructuredData);
+        }
 
         if (postDelete != null) {
             postDelete.accept(entity, tx);

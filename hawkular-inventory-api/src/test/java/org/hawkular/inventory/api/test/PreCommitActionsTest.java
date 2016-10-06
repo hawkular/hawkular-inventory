@@ -67,7 +67,7 @@ public class PreCommitActionsTest {
             Assert.assertEquals(0, pct.actionsObtained);
             return backend;
         });
-        when(backend.persist(any(), any())).thenAnswer((args) -> args.getArguments()[0].toString());
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> args.getArguments()[1].toString());
 
         commonBackendMocks(backend);
 
@@ -107,9 +107,9 @@ public class PreCommitActionsTest {
 
         //this way we check that the backend is actually contacted twice to persist the tenants, which would normally
         //cause 2 transactions to be committed.
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -177,9 +177,9 @@ public class PreCommitActionsTest {
             return null;
         }).when(backend).commit();
 
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -227,9 +227,9 @@ public class PreCommitActionsTest {
             return null;
         }).when(backend).commit();
 
-        when(backend.persist(any(), any())).thenAnswer((args) -> {
+        when(backend.persist(any(), any(), any())).thenAnswer((args) -> {
             dataPersisted[0]++;
-            return args.getArguments()[0].toString();
+            return args.getArguments()[1].toString();
         });
 
         commonBackendMocks(backend);
@@ -266,11 +266,11 @@ public class PreCommitActionsTest {
             return Inventory.types().bySegment(t).getElementType();
         });
 
-        when(backend.find(any())).thenAnswer(args -> args.getArgumentAt(0, CanonicalPath.class).toString());
+        when(backend.find(any(), any())).thenAnswer(args -> args.getArgumentAt(1, CanonicalPath.class).toString());
 
-        when(backend.convert(any(), any())).thenAnswer(args -> {
-            Class<?> type = args.getArgumentAt(1, Class.class);
-            String path = args.getArgumentAt(0, String.class);
+        when(backend.convert(any(), any(), any())).thenAnswer(args -> {
+            Class<?> type = args.getArgumentAt(2, Class.class);
+            String path = args.getArgumentAt(1, String.class);
 
             Constructor<?> ctor = type.getDeclaredConstructor();
             ctor.setAccessible(true);

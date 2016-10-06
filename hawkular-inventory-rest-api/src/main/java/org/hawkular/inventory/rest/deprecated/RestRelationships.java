@@ -45,10 +45,9 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.ResolvableToSingleWithRelationships;
+import org.hawkular.inventory.api.ResolvableToSingleEntity;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
-import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -133,7 +132,7 @@ public class RestRelationships extends RestBase {
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
-        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+        ResolvableToSingleEntity<?, ?> resolvable =
                 getResolvableFromCanonicalPath(cPath);
         Pager pager = extractPaging(uriInfo);
         RelationFilter[] filters = extractFilters(propertyName, propertyValue, named, sourceType,
@@ -183,7 +182,7 @@ public class RestRelationships extends RestBase {
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
-        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+        ResolvableToSingleEntity<?, ?> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 
         // delete the relationship
@@ -216,7 +215,7 @@ public class RestRelationships extends RestBase {
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
-        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+        ResolvableToSingleEntity<?, ?> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 
         Relationships.Direction directed;
@@ -266,7 +265,7 @@ public class RestRelationships extends RestBase {
         if (!cPath.isDefined()) {
             return Response.status(NOT_FOUND).build();
         }
-        ResolvableToSingleWithRelationships<Relationship, Relationship.Update> resolvable =
+        ResolvableToSingleEntity<?, ?> resolvable =
                 getResolvableFromCanonicalPath(cPath);
 
         // update the relationship
@@ -286,9 +285,9 @@ public class RestRelationships extends RestBase {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends AbstractElement<?, U>, U extends AbstractElement.Update>
-    ResolvableToSingleWithRelationships<E, U> getResolvableFromCanonicalPath(CanonicalPath cPath) {
-        return inventory.inspect(cPath, ResolvableToSingleWithRelationships.class);
+    private <E extends Entity<?, U>, U extends Entity.Update>
+    ResolvableToSingleEntity<E, U> getResolvableFromCanonicalPath(CanonicalPath cPath) {
+        return inventory.inspect(cPath, ResolvableToSingleEntity.class);
     }
 
     public static RelationFilter[] extractFilters(String propertyName,

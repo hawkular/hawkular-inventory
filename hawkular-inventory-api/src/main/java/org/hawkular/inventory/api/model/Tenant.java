@@ -64,7 +64,8 @@ public final class Tenant extends ContentHashedEntity<Tenant.Blueprint, Tenant.U
 
     @Override
     public Updater<Update, Tenant> update() {
-        return new Updater<>((u) -> new Tenant(u.getName(), getPath(), getContentHash(), u.getProperties()));
+        return new Updater<>((u) -> new Tenant(u.getName(), getPath(), getContentHash(), u.getProperties()),
+                this, Update.builder());
     }
 
     @Override
@@ -144,7 +145,7 @@ public final class Tenant extends ContentHashedEntity<Tenant.Blueprint, Tenant.U
             return visitor.visitTenant(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Tenant, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(name, properties);

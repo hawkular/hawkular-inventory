@@ -73,7 +73,7 @@ public final class ResourceTypes {
      * Interface for accessing a single resource type in a writable manner.
      */
     public interface Single
-            extends Synced.SingleWithRelationships<ResourceType, ResourceType.Blueprint, ResourceType.Update>,
+            extends Synced.SingleEntity<ResourceType, ResourceType.Blueprint, ResourceType.Update>,
             BrowserBase<Resources.Read, MetricTypes.ReadAssociate, OperationTypes.ReadWrite,
                     Data.ReadWrite<DataRole.ResourceType>> {
     }

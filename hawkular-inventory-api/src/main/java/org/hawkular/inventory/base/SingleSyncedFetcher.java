@@ -83,7 +83,7 @@ import org.hawkular.inventory.paths.SegmentType;
 abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B extends Entity.Blueprint,
         U extends Entity.Update>
         extends SingleEntityFetcher<BE, E, U>
-        implements Synced.SingleWithRelationships<E, B, U> {
+        implements Synced.SingleEntity<E, B, U> {
 
     SingleSyncedFetcher(TraversalContext<BE, E> context) {
         super(context);
@@ -91,7 +91,7 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
 
     @Override public void synchronize(SyncRequest<B> syncRequest) {
         inTx(tx -> {
-            BE root = tx.querySingle(context.select().get());
+            BE root = tx.querySingle(context.discriminator(), context.select().get());
 
             boolean rootFullyInitialized = true;
             if (root == null) {
@@ -251,7 +251,7 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
                 SyncHash.Tree update = e.getValue();
                 CanonicalPath childCp = update.getPath().applyTo(root);
                 try {
-                    BE child = tx.find(childCp);
+                    BE child = tx.find(context.discriminator(), childCp);
                     syncTrees(tx, root, child, oldChild, update, newStructure);
                 } catch (ElementNotFoundException ex) {
                     Log.LOGGER.debug("Failed to find entity on " + childCp + " that we thought was there. Never mind " +
@@ -382,7 +382,8 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
                 return fillCommon(ResourceType.Update.builder(), type).build();
             }
 
-            private <UU extends Entity.Update, Bld extends Entity.Update.Builder<UU, Bld>>
+            private <EE extends Entity<?, UU>, UU extends Entity.Update,
+                    Bld extends Entity.Update.Builder<EE, UU, Bld>>
             Bld fillCommon(Bld bld, Entity.Blueprint bl) {
                 if (bl.getProperties() != null) {
                     bld.withProperties(bl.getProperties());
@@ -393,8 +394,8 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
     }
 
     private Map.Entry<InventoryStructure<B>, SyncHash.Tree> treeHashAndStructure(Transaction<BE> tx) {
-        BE root = tx.querySingle(context.select().get());
-        E entity = tx.convert(root, context.entityClass);
+        BE root = tx.querySingle(context.discriminator(), context.select().get());
+        E entity = tx.convert(context.discriminator(), root, context.entityClass);
 
         SyncHash.Tree.Builder bld = SyncHash.Tree.builder();
         InventoryStructure.Builder<B> structBld = InventoryStructure.of(Inventory.asBlueprint(entity));
@@ -402,11 +403,11 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
         bld.withPath(RelativePath.empty().get()).withHash(entity.getSyncHash());
 
         //the closure is returned in a breadth-first manner
-        Iterator<BE> closure = tx.getTransitiveClosureOver(root, outgoing, contains.name());
+        Iterator<BE> closure = tx.getTransitiveClosureOver(context.discriminator(), root, outgoing, contains.name());
 
         if (closure.hasNext()) {
             Function<BE, Entity<? extends Entity.Blueprint, ?>> convert =
-                    e -> (Entity<Entity.Blueprint, ?>) tx.convert(e, tx.extractType(e));
+                    e -> (Entity<Entity.Blueprint, ?>) tx.convert(context.discriminator(), e, tx.extractType(e));
             Stream<BE> st = StreamSupport.stream(Spliterators.spliteratorUnknownSize(closure, 0), false);
             Iterator<Entity<? extends Entity.Blueprint, ?>> entities = st.map(convert).iterator();
 
@@ -564,7 +565,7 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
                     }
 
                     @Override public Mutator<BE, ?, ?, ?, String> visitData(Void parameter) {
-                        BE parent = tx.querySingle(context.previous.sourcePath);
+                        BE parent = tx.querySingle(context.discriminator(), context.previous.sourcePath);
                         if (parent == null) {
                             throw new EntityNotFoundException(Query.filters(context.previous.sourcePath));
                         }

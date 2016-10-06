@@ -18,6 +18,7 @@ package org.hawkular.inventory.api.model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -82,7 +83,7 @@ public final class Metric extends SyncedEntity<Metric.Blueprint, Metric.Update> 
     @Override
     public Updater<Update, Metric> update() {
         return new Updater<>((u) -> new Metric(u.getName(), getPath(), getIdentityHash(), getContentHash(),
-                getSyncHash(), getType(), u.getCollectionInterval(), u.getProperties()));
+                getSyncHash(), getType(), u.getCollectionInterval(), u.getProperties()), this, Update.builder());
     }
 
     public MetricType getType() {
@@ -231,7 +232,24 @@ public final class Metric extends SyncedEntity<Metric.Blueprint, Metric.Update> 
             return visitor.visitMetric(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Update)) return false;
+            if (!super.equals(o)) return false;
+
+            Update update = (Update) o;
+
+            return collectionInterval != null ? collectionInterval.equals(update.collectionInterval) :
+                    update.collectionInterval == null;
+        }
+
+        @Override public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (collectionInterval != null ? collectionInterval.hashCode() : 0);
+            return result;
+        }
+
+        public static final class Builder extends Entity.Update.Builder<Metric, Update, Builder> {
             private Long collectionInterval;
 
             public Builder withInterval(Long interval) {
@@ -242,6 +260,13 @@ public final class Metric extends SyncedEntity<Metric.Blueprint, Metric.Update> 
             @Override
             public Update build() {
                 return new Update(name, properties, collectionInterval);
+            }
+
+            @Override public Builder withDifference(Metric original, Metric updated) {
+                if (!Objects.equals(original.getCollectionInterval(), updated.getCollectionInterval())) {
+                    withInterval(updated.getCollectionInterval());
+                }
+                return super.withDifference(original, updated);
             }
         }
     }

@@ -42,6 +42,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -72,10 +73,9 @@ public final class BaseResourceTypes {
 
         @Override
         protected EntityAndPendingNotifications<BE, ResourceType>
-        wireUpNewEntity(BE entity, ResourceType.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, ResourceType.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
-
-            tx.update(entity, ResourceType.Update.builder().build());
 
             ResourceType resourceType = new ResourceType(blueprint.getName(),
                     parentPath.extend(ResourceType.SEGMENT_TYPE, tx.extractId(entity)).get(), null, null, null,
@@ -101,7 +101,7 @@ public final class BaseResourceTypes {
 
         @Override
         protected void preDelete(String s, BE entityRepresentation, Transaction<BE> tx) {
-            if (isResourceTypeInMetadataPack(entityRepresentation, tx)) {
+            if (isResourceTypeInMetadataPack(entityRepresentation, context.discriminator(), tx)) {
                 throw new IllegalArgumentException("Cannot delete a resource type that is part of a metadata pack. " +
                         "This would invalidate the meta data pack's identity.");
             }
@@ -114,8 +114,8 @@ public final class BaseResourceTypes {
             //because resource types contain no such updatable data, this is a no-op.
         }
 
-        private static <BE> boolean isResourceTypeInMetadataPack(BE resourceType, Transaction<BE> tx) {
-            return tx.traverseToSingle(resourceType, Query.path()
+        private static <BE> boolean isResourceTypeInMetadataPack(BE resourceType, Discriminator disc, Transaction<BE> tx) {
+            return tx.traverseToSingle(disc, resourceType, Query.path()
                     .with(asTargetBy(incorporates), type(MetadataPack.class)).get()) != null;
         }
     }
@@ -179,7 +179,7 @@ public final class BaseResourceTypes {
 
         @Override
         protected void preDelete(BE deletedEntity, Transaction<BE> tx) {
-            if (ReadWrite.isResourceTypeInMetadataPack(deletedEntity, tx)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(deletedEntity, context.discriminator(), tx)) {
                 throw new IllegalArgumentException("Cannot delete a resource type that is part of a metadata pack. " +
                         "This would invalidate the meta data pack's identity.");
             }
@@ -245,11 +245,11 @@ public final class BaseResourceTypes {
 
         @Override
         public void preCreate(DataEntity.Blueprint blueprint, Transaction<BE> tx) {
-            BE pack = tx.querySingle(context.select().path().with(Related
+            BE pack = tx.querySingle(context.discriminator(), context.select().path().with(Related
                     .asTargetBy(incorporates), With.type(MetadataPack.class)).get());
 
             if (pack != null) {
-                BE rt = tx.querySingle(context.select().get());
+                BE rt = tx.querySingle(context.discriminator(), context.select().get());
                 throw new IllegalArgumentException(
                         "Data '" + blueprint.getId() + "' cannot be created" +
                                 " under resource type " + tx.extractCanonicalPath(rt) +
@@ -268,7 +268,7 @@ public final class BaseResourceTypes {
                 return;
             }
 
-            BE mp = tx.traverseToSingle(dataEntity, Query.path().with(
+            BE mp = tx.traverseToSingle(context.discriminator(), dataEntity, Query.path().with(
                     Related.asTargetBy(contains), //up to resource type
                     Related.asTargetBy(incorporates), With.type(MetadataPack.class) // up to the pack
             ).get());
@@ -292,12 +292,12 @@ public final class BaseResourceTypes {
             CanonicalPath dataPath = tx.extractCanonicalPath(dataEntity);
             BE rt = null;
             try {
-                rt = tx.find(dataPath.up());
+                rt = tx.find(context.discriminator(), dataPath.up());
             } catch (ElementNotFoundException e) {
                 Fetcher.throwNotFoundException(context);
             }
 
-            if (ReadWrite.isResourceTypeInMetadataPack(rt, tx)) {
+            if (ReadWrite.isResourceTypeInMetadataPack(rt, context.discriminator(), tx)) {
                 throw new IllegalArgumentException(
                         "Data '" + dataPath.getSegment().getElementId() + "' cannot be deleted" +
                                 " under resource type " + dataPath.up() +

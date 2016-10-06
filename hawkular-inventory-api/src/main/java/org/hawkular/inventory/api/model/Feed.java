@@ -69,7 +69,7 @@ public final class Feed extends SyncedEntity<Feed.Blueprint, Feed.Update> {
     @Override
     public Updater<Update, Feed> update() {
         return new Updater<>((u) -> new Feed(u.getName(), getPath(), getIdentityHash(), getContentHash(), getSyncHash(),
-                u.getProperties()));
+                u.getProperties()), this, Update.builder());
     }
 
     @Override
@@ -154,7 +154,7 @@ public final class Feed extends SyncedEntity<Feed.Blueprint, Feed.Update> {
             return visitor.visitFeed(this, parameter);
         }
 
-        public static final class Builder extends Entity.Update.Builder<Update, Builder> {
+        public static final class Builder extends Entity.Update.Builder<Feed, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(name, properties);

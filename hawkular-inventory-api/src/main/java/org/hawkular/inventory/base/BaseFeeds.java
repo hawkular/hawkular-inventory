@@ -39,6 +39,7 @@ import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.SegmentType;
@@ -62,7 +63,7 @@ public final class BaseFeeds {
 
         @Override
         protected String getProposedId(Transaction<BE> tx, Feed.Blueprint blueprint) {
-            BE tenant = tx.querySingle(context.sourcePath.extend().filter()
+            BE tenant = tx.querySingle(context.discriminator(), context.sourcePath.extend().filter()
                     .with(type(Tenant.class)).get());
 
             if (tenant == null) {
@@ -78,7 +79,8 @@ public final class BaseFeeds {
 
         @Override
         protected EntityAndPendingNotifications<BE, Feed>
-        wireUpNewEntity(BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, Feed.Blueprint blueprint, CanonicalPath parentPath,
+                        BE parent,
                         Transaction<BE> transaction) {
             return new EntityAndPendingNotifications<>(entity, new Feed(blueprint.getName(),
                     parentPath.extend(Feed.SEGMENT_TYPE, transaction.extractId(entity)).get(), null,

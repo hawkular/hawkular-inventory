@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>hawkular-inventory-parent</artifactId>
-  <version>0.19.4.Final-SNAPSHOT</version>
+  <version>0.20.0.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>

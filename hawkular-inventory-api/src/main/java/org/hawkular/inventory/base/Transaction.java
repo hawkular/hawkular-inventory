@@ -17,6 +17,7 @@
 package org.hawkular.inventory.base;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -36,7 +37,9 @@ import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
+import org.hawkular.inventory.base.spi.EntityHistory;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
@@ -77,85 +80,87 @@ public interface Transaction<E> {
 
     PreCommit<E> getPreCommit();
 
-    <T> T convert(E entityRepresentation, Class<T> entityType);
+    <T> T convert(Discriminator discriminator, E entityRepresentation, Class<T> entityType);
 
-    void delete(E entity);
+    void markDeleted(Discriminator discriminator, E entity);
 
     void deleteStructuredData(E dataRepresentation);
 
-    E descendToData(E dataEntityRepresentation, RelativePath dataPath);
+    E descendToData(Discriminator discriminator, E dataEntityRepresentation, RelativePath dataPath);
+
+    void eradicate(E entityRepresentation);
 
     CanonicalPath extractCanonicalPath(E entityRepresentation);
 
     String extractId(E entityRepresentation);
 
-    String extractIdentityHash(E entityRepresentation);
+    String extractIdentityHash(Discriminator discriminator, E entityRepresentation);
 
-    String extractContentHash(E entityRepresentation);
+    String extractContentHash(Discriminator discriminator, E entityRepresentation);
 
-    String extractSyncHash(E entityRepresentation);
+    String extractSyncHash(Discriminator discriminator, E entityRepresentation);
 
     String extractRelationshipName(E relationship);
 
     Class<?> extractType(E entityRepresentation);
 
-    E find(CanonicalPath element) throws ElementNotFoundException;
+    E find(Discriminator discriminator, CanonicalPath element) throws ElementNotFoundException;
 
-    InputStream getGraphSON(String tenantId);
+    InputStream getGraphSON(Discriminator discriminator, String tenantId);
 
-    E getRelationship(E source, E target, String relationshipName) throws ElementNotFoundException;
+    E getRelationship(Discriminator discriminator, E source, E target, String relationshipName) throws ElementNotFoundException;
 
-    Set<E> getRelationships(E entity, Relationships.Direction direction,
+    Set<E> getRelationships(Discriminator discriminator, E entity, Relationships.Direction direction,
                             String... names);
 
-    E getRelationshipSource(E relationship);
+    E getRelationshipSource(Discriminator discriminator, E relationship);
 
-    E getRelationshipTarget(E relationship);
+    E getRelationshipTarget(Discriminator discriminator, E relationship);
 
     <T extends Entity<?, ?>> Iterator<T> getTransitiveClosureOver(
-            CanonicalPath startingPoint,
+            Discriminator discriminator, CanonicalPath startingPoint,
             Relationships.Direction direction, Class<T> clazz,
             String... relationshipNames);
 
-    Iterator<E> getTransitiveClosureOver(E startingPoint,
+    Iterator<E> getTransitiveClosureOver(Discriminator discriminator, E startingPoint,
                                          Relationships.Direction direction,
                                          String... relationshipNames);
 
-    boolean hasRelationship(E entity, Relationships.Direction direction,
+    boolean hasRelationship(Discriminator discriminator, E entity, Relationships.Direction direction,
                             String relationshipName);
 
-    boolean hasRelationship(E source, E target, String relationshipName);
+    boolean hasRelationship(Discriminator discriminator, E source, E target, String relationshipName);
 
     boolean isBackendInternal(E element);
 
     boolean isUniqueIndexSupported();
 
-    E persist(CanonicalPath path,
+    E persist(Discriminator discriminator, CanonicalPath path,
               Blueprint blueprint);
 
     E persist(StructuredData structuredData);
 
-    Page<E> query(Query query,
+    Page<E> query(Discriminator discriminator, Query query,
                   Pager pager);
 
-    <T> Page<T> query(Query query,
+    <T> Page<T> query(Discriminator discriminator, Query query,
                       Pager pager,
                       Function<E, T> conversion,
                       Function<T, Boolean> filter);
 
-    E querySingle(Query query);
+    E querySingle(Discriminator discriminator, Query query);
 
-    E relate(E sourceEntity, E targetEntity, String name,
+    E relate(Discriminator discriminator, E sourceEntity, E targetEntity, String name,
              Map<String, Object> properties);
 
-    Page<E> traverse(E startingPoint, Query query,
+    Page<E> traverse(Discriminator discriminator, E startingPoint, Query query,
                      Pager pager);
 
-    E traverseToSingle(E startingPoint, Query query);
+    E traverseToSingle(Discriminator discriminator, E startingPoint, Query query);
 
-    void update(E entity, AbstractElement.Update update);
+    void update(Discriminator discriminator, E entity, AbstractElement.Update update);
 
-    void updateHashes(E entity, Hashes hashes);
+    void updateHashes(Discriminator discriminator, E entity, Hashes hashes);
 
     /**
      * Checks the exception thrown during the commit and returns true if the backend requires explicit rollback after
@@ -168,6 +173,9 @@ public interface Transaction<E> {
         return true;
     }
 
+    <T extends Entity<?, U>, U extends Entity.Update>
+    EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
+
     interface PreCommit<E> {
         /**
          * This is always to be called AFTER a transaction is committed and therefore after {@link #getActions()} is
@@ -179,8 +187,7 @@ public interface Transaction<E> {
 
         /**
          * Initializes this pre-commit using the inventory and/or the backend.
-         *
-         * @param inventory the inventory to use, it is bound to the provided transaction
+         *  @param inventory the inventory to use, it is bound to the provided transaction
          * @param tx the transaction for which this pre-commit is defined
          */
         void initialize(Inventory inventory, Transaction<E> tx);

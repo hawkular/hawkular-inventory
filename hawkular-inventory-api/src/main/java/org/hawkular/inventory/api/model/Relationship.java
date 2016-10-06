@@ -74,7 +74,8 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
 
     @Override
     public Updater<Update, Relationship> update() {
-        return new Updater<>((u) -> new Relationship(getId(), getName(), getSource(), getTarget(), u.getProperties()));
+        return new Updater<>((u) -> new Relationship(getId(), getName(), getSource(), getTarget(), u.getProperties()),
+                this, Update.builder());
     }
 
     @Override
@@ -128,7 +129,7 @@ public final class Relationship extends AbstractElement<Relationship.Blueprint, 
             return visitor.visitRelationship(this, parameter);
         }
 
-        public static final class Builder extends AbstractElement.Update.Builder<Update, Builder> {
+        public static final class Builder extends AbstractElement.Update.Builder<Relationship, Update, Builder> {
             @Override
             public Update build() {
                 return new Update(properties);

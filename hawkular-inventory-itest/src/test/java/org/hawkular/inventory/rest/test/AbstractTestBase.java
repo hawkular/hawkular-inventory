@@ -121,6 +121,15 @@ public class AbstractTestBase {
         return response;
     }
 
+    protected static Response put(String path, Object payload) throws Throwable {
+        String json = mapper.writeValueAsString(payload);
+        String url = baseURI + path;
+        System.out.println("putting "+ url);
+        Request request =
+                newAuthRequest().url(url).put(RequestBody.create(MEDIA_TYPE_JSON, json)).build();
+        return client.newCall(request).execute();
+    }
+
     @SuppressWarnings("unchecked")
     protected static <T> T getWithRetries(String path, Class<T> type, int attemptCount, long attemptDelay)
             throws Throwable {

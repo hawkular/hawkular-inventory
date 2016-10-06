@@ -17,6 +17,7 @@
 package org.hawkular.inventory.impl.tinkerpop.spi;
 
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__contentHash;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__from;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__identityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__metric_data_type;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__metric_interval;
@@ -34,6 +35,7 @@ import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__syn
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetCp;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetEid;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__targetType;
+import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__to;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__unit;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.name;
 
@@ -41,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -161,7 +164,15 @@ public final class Constants {
 
         __contentHash("contentHash", String.class),
 
-        __syncHash("syncHash", String.class);
+        __syncHash("syncHash", String.class),
+
+        __from(Long.class),
+
+        __to(Long.class),
+
+        __changeKind(int.class)
+
+        ;
 
         private final String sortName;
         private final Class<?> propertyType;
@@ -227,7 +238,8 @@ public final class Constants {
         resource(Resource.class, name, __identityHash, __contentHash, __syncHash),
         metric(Metric.class, name, __metric_interval, __identityHash, __contentHash, __syncHash),
         metadatapack(MetadataPack.class, name),
-        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid),
+        relationship(Relationship.class, __sourceType, __targetType, __sourceCp, __targetCp, __sourceEid, __targetEid,
+                __from, __to),
         dataEntity(DataEntity.class, name, __identityHash, __contentHash, __syncHash),
         structuredData(StructuredData.class, __structuredDataType,
                 __structuredDataValue_b, __structuredDataValue_i, __structuredDataValue_f, __structuredDataValue_s,
@@ -235,6 +247,9 @@ public final class Constants {
 
         private final String[] mappedProperties;
         private final Class<?> entityType;
+
+        private static final List<String> identityVertexProperties =
+                Arrays.asList(Property.__type.name(), Property.__eid.name(), Property.__cp.name());
 
         Type(Class<?> entityType, Property... mappedProperties) {
             this.entityType = entityType;
@@ -398,10 +413,22 @@ public final class Constants {
         public String[] getMappedProperties() {
             return mappedProperties;
         }
+
+        public String identityVertexLabel() {
+            return name();
+        }
+
+        public String stateVertexLabel() {
+            return identityVertexLabel() + "_state";
+        }
+
+        public static List<String> getIdentityVertexProperties() {
+            return identityVertexProperties;
+        }
     }
 
     public enum InternalEdge {
-        __withIdentityHash, __containsIdentityHash
+        __withIdentityHash, __containsIdentityHash, __inState
     }
 
     public enum InternalType {

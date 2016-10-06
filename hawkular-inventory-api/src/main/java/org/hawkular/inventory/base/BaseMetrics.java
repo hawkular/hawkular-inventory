@@ -32,6 +32,7 @@ import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -61,7 +62,8 @@ public final class BaseMetrics {
         }
 
         @Override
-        protected EntityAndPendingNotifications<BE, Metric> wireUpNewEntity(BE entity, Metric.Blueprint blueprint,
+        protected EntityAndPendingNotifications<BE, Metric> wireUpNewEntity(Discriminator discriminator, BE entity,
+                                                                            Metric.Blueprint blueprint,
                                                                             CanonicalPath parentPath, BE parent,
                                                                             Transaction<BE> tx) {
 
@@ -71,7 +73,7 @@ public final class BaseMetrics {
                 CanonicalPath tenant = CanonicalPath.of().tenant(parentPath.ids().getTenantId()).get();
                 CanonicalPath metricTypePath = Util.canonicalize(blueprint.getMetricTypePath(), tenant, parentPath,
                         MetricType.SEGMENT_TYPE);
-                metricTypeObject = tx.find(metricTypePath);
+                metricTypeObject = tx.find(discriminator, metricTypePath);
 
             } catch (ElementNotFoundException e) {
                 throw new IllegalArgumentException("A metric type with path '" + blueprint.getMetricTypePath() +
@@ -81,11 +83,11 @@ public final class BaseMetrics {
             //specifically do NOT check relationship rules, here because defines cannot be created "manually".
             //here we "know what we are doing" and need to create the defines relationship to capture the
             //contract of the metric.
-            BE r = tx.relate(metricTypeObject, entity, defines.name(), null);
+            BE r = tx.relate(discriminator, metricTypeObject, entity, defines.name(), null);
 
             CanonicalPath entityPath = tx.extractCanonicalPath(entity);
 
-            MetricType metricType = tx.convert(metricTypeObject, MetricType.class);
+            MetricType metricType = tx.convert(discriminator, metricTypeObject, MetricType.class);
 
             Metric ret = new Metric(blueprint.getName(), parentPath.extend(Metric.SEGMENT_TYPE,
                     tx.extractId(entity)).get(), null, null, null, metricType, blueprint.getCollectionInterval(),
@@ -97,7 +99,7 @@ public final class BaseMetrics {
             notifs.add(new Notification<>(rel, rel, created()));
 
             if (Resource.class.equals(tx.extractType(parent))) {
-                r = tx.relate(parent, entity, incorporates.name(), null);
+                r = tx.relate(discriminator, parent, entity, incorporates.name(), null);
                 rel = new Relationship(tx.extractId(r), incorporates.name(), parentPath, entityPath);
                 notifs.add(new Notification<>(rel, rel, created()));
             }

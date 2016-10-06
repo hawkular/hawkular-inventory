@@ -37,6 +37,7 @@ import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.base.spi.Discriminator;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -67,8 +68,8 @@ public final class BaseMetadataPacks {
                         SegmentType type = p.getSegment().getElementType();
                         Class<?> cls = Entity.entityTypeFromSegmentType(type);
                         try {
-                            BE e = tx.find(p);
-                            return (Entity<? extends Entity.Blueprint, ?>) tx.convert(e, cls);
+                            BE e = tx.find(context.discriminator(), p);
+                            return (Entity<? extends Entity.Blueprint, ?>) tx.convert(context.discriminator(), e, cls);
                         } catch (ElementNotFoundException ex) {
                             throw new EntityNotFoundException(cls, Query.filters(Query.to(p)));
                         }
@@ -79,17 +80,18 @@ public final class BaseMetadataPacks {
 
         @Override
         protected EntityAndPendingNotifications<BE, MetadataPack>
-        wireUpNewEntity(BE entity, MetadataPack.Blueprint blueprint, CanonicalPath parentPath, BE parent,
+        wireUpNewEntity(Discriminator discriminator, BE entity, MetadataPack.Blueprint blueprint,
+                        CanonicalPath parentPath, BE parent,
                         Transaction<BE> tx) {
             Set<Notification<?, ?>> newRels = new HashSet<>();
 
             blueprint.getMembers().forEach((p) -> {
                 try {
-                    BE member = tx.find(p);
+                    BE member = tx.find(discriminator, p);
 
-                    BE rel = tx.relate(entity, member, incorporates.name(), null);
+                    BE rel = tx.relate(discriminator, entity, member, incorporates.name(), null);
 
-                    Relationship r = tx.convert(rel, Relationship.class);
+                    Relationship r = tx.convert(discriminator, rel, Relationship.class);
                     newRels.add(new Notification<>(r, r, created()));
                 } catch (ElementNotFoundException e) {
                     throw new EntityNotFoundException(p.getSegment().getElementType().getSimpleName(),
@@ -97,7 +99,7 @@ public final class BaseMetadataPacks {
                 }
             });
 
-            MetadataPack entityObject = tx.convert(entity, MetadataPack.class);
+            MetadataPack entityObject = tx.convert(discriminator, entity, MetadataPack.class);
 
             return new EntityAndPendingNotifications<>(entity, entityObject, newRels);
         }

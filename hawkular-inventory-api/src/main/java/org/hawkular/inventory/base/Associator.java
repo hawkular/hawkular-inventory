@@ -54,14 +54,14 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
     static <BE> Relationship associate(TraversalContext<BE, ?> context, SegmentType sourceEntityType,
                                        Relationships.WellKnown relationship, Path id) {
         return inTx(context, tx -> {
-            BE target = Util.find(tx, context.sourcePath, id);
+            BE target = Util.find(context.discriminator(), tx, context.sourcePath, id);
 
             Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
 
-            BE source = tx.querySingle(sourceQuery);
+            BE source = tx.querySingle(context.discriminator(), sourceQuery);
 
-            EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(tx, source,
-                    relationship.name(), target, null);
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.createAssociation(context.discriminator(), tx,
+                    source, relationship.name(), target, null);
 
             tx.getPreCommit().addNotifications(rel);
 
@@ -78,11 +78,11 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
                                           SegmentType sourceEntityType,
                                           Relationships.WellKnown relationship, Path id) {
         return inTx(context, tx -> {
-            BE target = Util.find(tx, context.sourcePath, id);
+            BE target = Util.find(context.discriminator(), tx, context.sourcePath, id);
 
             Query sourceQuery = context.sourcePath.extend().filter().with(type(sourceEntityType)).get();
-            EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(tx, sourceQuery,
-                    sourceEntityType, relationship.name(), target);
+            EntityAndPendingNotifications<BE, Relationship> rel = Util.deleteAssociation(context.discriminator(), tx,
+                    sourceQuery, sourceEntityType, relationship.name(), target);
 
             tx.getPreCommit().addNotifications(rel);
 
@@ -105,7 +105,8 @@ class Associator<BE, E extends Entity<?, ?>> extends Traversal<BE, E> {
 
             SegmentType targetType = path.getSegment().getElementType();
 
-            return Util.getAssociation(tx, sourceQuery, sourceEntityType, targetQuery, targetType, relationship.name());
+            return Util.getAssociation(context.discriminator(), tx, sourceQuery, sourceEntityType, targetQuery,
+                    targetType, relationship.name());
         });
     }
 

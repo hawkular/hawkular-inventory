@@ -33,12 +33,12 @@ public final class Synced {
 
     }
 
-    public interface SingleWithRelationships<E extends Entity<B, U>, B extends Entity.Blueprint,
-            U extends Entity.Update> extends Single<E, B, U>, ResolvableToSingleWithRelationships<E, U> {
+    public interface SingleEntity<E extends Entity<B, U>, B extends Entity.Blueprint,
+            U extends Entity.Update> extends Single<E, B, U>, ResolvableToSingleEntity<E, U> {
     }
 
     public interface Single<E extends Entity<B, U>, B extends Entity.Blueprint,
-            U extends Entity.Update> extends ResolvableToSingle<E, U> {
+            U extends Entity.Update> extends ResolvableToSingle<E, U>, Versioned<E> {
 
         /**
          * This is useful for figuring out what changed about the structure of the entity

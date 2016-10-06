@@ -184,7 +184,22 @@ public final class TinkerpopInventory extends BaseInventory<Element> {
                                 .withName(Constants.Property.__targetIdentityHash.name())
                                 .withType(String.class)
                                 .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__from.name())
+                                .withType(Long.class)
+                                .build())
+                        .build(),
+                IndexSpec.builder()
+                        .withElementType(Edge.class)
+                        .withProperty(IndexSpec.Property.builder()
+                                .withName(Constants.Property.__to.name())
+                                .withType(Long.class)
+                                .build())
                         .build());
+
         return graph;
     }
 
