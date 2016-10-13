@@ -140,12 +140,24 @@
       <groupId>org.umlg</groupId>
       <artifactId>sqlg-hsqldb-dialect</artifactId>
       <version>${version.org.umlg}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hsqldb</groupId>
+          <artifactId>hsqldb</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.umlg</groupId>
       <artifactId>sqlg-postgres-dialect</artifactId>
       <version>${version.org.umlg}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Commenting this out because we're shipping with HSQLDB as our embedded solution for now.
@@ -156,6 +168,19 @@
       <!--<artifactId>sqlg-h2-dialect</artifactId>-->
       <!--<version>${version.org.umlg}</version>-->
     <!--</dependency>-->
+
+    <!-- include the versions of the drivers we want -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${version.org.postgresql}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+      <version>${version.org.hsqldb}</version>
+    </dependency>
 
     <!-- Logging -->
     <dependency>
