@@ -138,7 +138,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             //__eid is globally unique for relationships
             it = context.getGraph().traversal().E().has(__eid.name(), path.getSegment().getElementId());
         } else {
-            it = context.getGraph().traversal().V().has(__cp.name(), path.toString());
+            it = context.getGraph().traversal().V()
+                    .hasLabel(Constants.Type.of(path.getSegment().getElementType()).name())
+                    .has(__cp.name(), path.toString());
         }
 
         if (!it.hasNext()) {
