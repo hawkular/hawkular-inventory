@@ -80,7 +80,7 @@ public final class SyncHash {
         };
 
         ComputeHash.IntermediateHashResult res = ComputeHash
-                .treeOf(structure, rootPath, true, true, true, startChild, endChild);
+                .treeOf(structure, rootPath, true, true, true, startChild, endChild, p -> null);
 
         tbld[0].withPath(res.path).withHash(res.syncHash);
 

@@ -80,7 +80,7 @@ public final class IdentityHash {
         for (Entity.Blueprint bl : all) {
             //identity hash not dependent on relative paths (if any) in the data, so null for entityPath is ok.
             ComputeHash.IntermediateHashResult res = ComputeHash.computeHash(null, bl, metadataView, ctor, true, false,
-                    false, (rp) -> null);
+                    false, rp -> null, rp -> null);
             result.append(res.identityHash);
         }
 
@@ -136,7 +136,7 @@ public final class IdentityHash {
         //identity hash is not computed using any relative paths, so we can pass null to the root path of the
         //computation.
         ComputeHash.IntermediateHashResult res = ComputeHash.treeOf(inventory, null, true, false, false, startChild,
-                endChild);
+                endChild, p -> null);
 
         tbld[0].withPath(res.path).withHash(res.identityHash);
 
@@ -162,7 +162,7 @@ public final class IdentityHash {
             ComputeHash.HashableView v = ComputeHash.HashableView.of(structure);
             ComputeHash.IntermediateHashResult res = ComputeHash
                     .computeHash(e.getPath(), structure.getRoot(), v, ctor, true, false,
-                            false, (rp) -> null);
+                            false, rp -> null, rp -> null);
             resultHash.append(res.identityHash);
         });
 

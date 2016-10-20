@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.hawkular.inventory.api.model.ComputeHash.IntermediateHashContext;
 import org.hawkular.inventory.api.model.ComputeHash.IntermediateHashResult;
@@ -45,7 +46,8 @@ public final class Hashes implements Serializable {
         return ComputeHash.of(root, rootPath, true, true, true);
     }
 
-    public static Tree treeOf(InventoryStructure<?> root, CanonicalPath rootPath) {
+    public static Tree treeOf(InventoryStructure<?> root, CanonicalPath rootPath,
+                              Function<RelativePath, Hashes> hashLoader) {
         Tree.AbstractBuilder<?>[] tbld =
                 new Tree.AbstractBuilder[1];
 
@@ -68,11 +70,16 @@ public final class Hashes implements Serializable {
             }
         };
 
-        IntermediateHashResult res = ComputeHash.treeOf(root, rootPath, true, true, true, startChild, endChild);
+        IntermediateHashResult res = ComputeHash.treeOf(root, rootPath, true, true, true, startChild, endChild,
+                hashLoader);
 
         tbld[0].withPath(res.path).withHash(new Hashes(res));
 
         return ((Tree.Builder)tbld[0]).build();
+    }
+
+    public static Tree treeOf(InventoryStructure<?> root, CanonicalPath rootPath) {
+        return treeOf(root, rootPath, rp -> null);
     }
 
     public Hashes(String identityHash, String contentHash, String syncHash) {

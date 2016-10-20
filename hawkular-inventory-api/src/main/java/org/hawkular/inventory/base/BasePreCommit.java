@@ -26,6 +26,7 @@ import static org.hawkular.inventory.api.Action.syncHashChanged;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,6 +58,7 @@ import org.hawkular.inventory.api.model.Syncable;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
 /**
@@ -199,13 +201,68 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             return;
         }
 
-        @SuppressWarnings("unchecked")
-        Entity<? extends Entity.Blueprint, ?> e = (Entity<? extends Entity.Blueprint, ?>) changedEntity.element;
-        Hashes.Tree treeHash = computeHashes
-                ? Hashes.treeOf(InventoryStructure.of(e, inventory), e.getPath())
-                : Hashes.Tree.builder().build();
+        if (changedEntity.isSignificant()) {
+            @SuppressWarnings("unchecked")
+            Entity<? extends Entity.Blueprint, ?> e = (Entity<? extends Entity.Blueprint, ?>) changedEntity.element;
+            Hashes.Tree treeHash;
 
-        __correctChangesNoPrologue(changedEntity, treeHash);
+            if (computeHashes) {
+                treeHash = Hashes.treeOf(InventoryStructure.of(e, inventory), e.getPath(), rp -> {
+                    if (rp.getPath().isEmpty()) {
+                        //this represents the changedEntity itself, which is by definition in its processing tree...
+                        return null;
+                    }
+                    ProcessingTree<BE> child = changedEntity.getChild(rp);
+                    if (child != null) {
+                        //we've found the child in the processing tree. This means there's been some changes
+                        //made to it or its children, so we need to recompute the hashes. Returning null means
+                        //"recompute the hashes".
+                        return null;
+                    } else {
+                        //ok, this entity is not in our processing tree.. This means there's been no change to
+                        //it made in this transaction, so we can just load its hashes from the database instead
+                        //of (recursively) computing them
+                        CanonicalPath childCp = rp.applyTo(e.getPath());
+
+                        @SuppressWarnings("unchecked")
+                        Entity<?, ?> childE;
+
+                        try {
+                            //noinspection unchecked
+                            childE = tx.convert(tx.find(childCp),
+                                    (Class<Entity<?, ?>>) Inventory.types().byPath(childCp).getElementType());
+                        } catch (ElementNotFoundException e1) {
+                            //hmm, ok, let's just try and compute this then
+                            return null;
+                        }
+
+                        String contentHash = null;
+                        String identityHash = null;
+                        String syncHash = null;
+
+                        if (childE instanceof ContentHashable) {
+                            contentHash = ((ContentHashable) childE).getContentHash();
+                        }
+
+                        if (childE instanceof IdentityHashable) {
+                            identityHash = ((IdentityHashable) childE).getIdentityHash();
+                        }
+
+                        if (childE instanceof Syncable) {
+                            syncHash = ((Syncable) childE).getSyncHash();
+                        }
+
+                        return new Hashes(identityHash, contentHash, syncHash);
+                    }
+                });
+            } else {
+                treeHash = Hashes.Tree.builder().build();
+            }
+
+            __correctChangesNoPrologue(changedEntity, treeHash);
+        } else {
+            changedEntity.children.forEach(c -> correctChanges(c, computeHashes));
+        }
     }
 
     private void correctChanges(ProcessingTree<BE> changedEntity, Hashes.Tree newHash) {
@@ -225,6 +282,12 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private boolean __correctChangesPrologue(ProcessingTree<BE> changedEntity) {
         if (changedEntity.cp == null) {
+            return false;
+        }
+
+        if (!changedEntity.isSignificant()) {
+            //fast track - this is an entity that has not been CRUD'd but is present in the tree to complete the
+            //hierarchy
             return false;
         }
 
@@ -540,6 +603,10 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             }
         }
 
+        boolean isSignificant() {
+            return canBeIdentityRoot() || !notifications.isEmpty();
+        }
+
         void add(EntityAndPendingNotifications<BE, ?> entity) {
             if (this.path != null) {
                 throw new IllegalStateException("Cannot add element to partial results from a non-root segment.");
@@ -550,6 +617,30 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             found.representation = entity.getEntityRepresentation();
             found.element = entity.getEntity();
             found.notifications.addAll(entity.getNotifications());
+        }
+
+        ProcessingTree<BE> getChild(RelativePath childPath) {
+            Iterator<Path.Segment> segments = childPath.getPath().iterator();
+            Set<ProcessingTree<BE>> children = this.children;
+
+            CanonicalPath.Extender childCp = cp.modified();
+            ProcessingTree<BE> current = null;
+            while (segments.hasNext()) {
+                Path.Segment seg = segments.next();
+                CanonicalPath expectedCp = childCp.extend(seg.getElementType(), seg.getElementId()).get();
+                childCp = expectedCp.modified();
+
+                current = null;
+                for (ProcessingTree<BE> c : children) {
+                    if (expectedCp.equals(c.cp)) {
+                        current = c;
+                        children = c.children;
+                        break;
+                    }
+                }
+            }
+
+            return segments.hasNext() ? null : current;
         }
 
         private ProcessingTree<BE> extendTreeTo(CanonicalPath entityPath) {
@@ -602,7 +693,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ProcessingTree<BE> that = (ProcessingTree<BE>) o;
+            ProcessingTree<?> that = (ProcessingTree<?>) o;
 
             return path.equals(that.path);
         }
