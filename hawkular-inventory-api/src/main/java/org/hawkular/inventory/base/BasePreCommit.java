@@ -623,20 +623,25 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             Iterator<Path.Segment> segments = childPath.getPath().iterator();
             Set<ProcessingTree<BE>> children = this.children;
 
-            CanonicalPath.Extender childCp = cp.modified();
             ProcessingTree<BE> current = null;
             while (segments.hasNext()) {
                 Path.Segment seg = segments.next();
-                CanonicalPath expectedCp = childCp.extend(seg.getElementType(), seg.getElementId()).get();
-                childCp = expectedCp.modified();
 
                 current = null;
                 for (ProcessingTree<BE> c : children) {
-                    if (expectedCp.equals(c.cp)) {
+                    //children are bound to each have a different ending segment, otherwise their CP would be the same
+                    //which is illegal in inventory. We can therefore just compare the current segment with the last
+                    //segment of the child path and if they match, move on to that child.
+                    if (seg.equals(c.cp.getSegment())) {
                         current = c;
                         children = c.children;
                         break;
                     }
+                }
+
+                //no child found matching this segment...
+                if (current == null) {
+                    break;
                 }
             }
 
