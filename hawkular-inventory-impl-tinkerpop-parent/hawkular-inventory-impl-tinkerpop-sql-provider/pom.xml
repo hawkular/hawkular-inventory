@@ -123,7 +123,7 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-hsqldb</artifactId>
+      <artifactId>sqlg-h2</artifactId>
       <version>${version.org.umlg}</version>
       <scope>test</scope>
     </dependency>

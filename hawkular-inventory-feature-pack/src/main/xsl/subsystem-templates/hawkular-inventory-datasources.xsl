@@ -28,40 +28,31 @@
        way of saying of xPath's 2.0 prefix-less selector //*:config/*:supplement[@name='default']  -->
   <xsl:template match="//*[local-name()='config']/*[local-name()='subsystem']/*[local-name()='datasources']">
     <xsl:copy>
-      <!--
-          If you wish to use Hawkular Inventory with an SQL backend (which is NOT recommended for anything but toy
-          deployments) you can start hawkular with the following system properties:
-          -Dsql.jdbc.url='jndi:java:jboss/datasources/HawkularInventoryDS_hsqldb'
-          -Dhawkular.inventory.tinkerpop.graph-provider-impl=org.hawkular.inventory.impl.tinkerpop.sql.SqlGraphProvider
-
-          Note that inventory only supports HSQLDB or Postgresql as its SQL backends (and the jdbc drivers are not
-          deployed in the Hawkular server by default).
-      -->
-      <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_hsqldb" pool-name="HawkularInventoryDS_hsqldb"
-                  enabled="true" use-java-context="true">
-        <connection-url>
-          jdbc:hsqldb:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072
-        </connection-url>
-        <driver>hsqldb</driver>
-        <security>
-          <user-name>sa</user-name>
-          <password>sa</password>
-        </security>
-      </datasource>
-
-      <!-- Commenting this out for time being since we're shipping with HSQLDB. If you want to enable
-           H2 support again, don't forget to uncomment the dependency of inventory-dist on the sqlg-h2-dialect. -->
-      <!--<datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_h2" pool-name="HawkularInventoryDS_h2"-->
+      <!-- Commenting this out for time being since we're shipping with H2. If you want to enable
+           HSQLDB support again, don't forget to uncomment the dependency of inventory-dist on the sqlg-hsqldb-dialect. -->
+      <!--<datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_hsqldb" pool-name="HawkularInventoryDS_hsqldb"-->
                   <!--enabled="true" use-java-context="true">-->
         <!--<connection-url>-->
-          <!--jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072-->
+          <!--jdbc:hsqldb:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072-->
         <!--</connection-url>-->
-        <!--<driver>h2</driver>-->
+        <!--<driver>hsqldb</driver>-->
         <!--<security>-->
           <!--<user-name>sa</user-name>-->
           <!--<password>sa</password>-->
         <!--</security>-->
       <!--</datasource>-->
+
+      <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_h2" pool-name="HawkularInventoryDS_h2"
+                  enabled="true" use-java-context="true">
+        <connection-url>
+          jdbc:h2:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=32768
+        </connection-url>
+        <driver>h2</driver>
+        <security>
+          <user-name>sa</user-name>
+          <password>sa</password>
+        </security>
+      </datasource>
 
       <datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_postgres"
                   pool-name="HawkularInventoryDS_postgres" enabled="true" use-java-context="true">
@@ -84,7 +75,8 @@
       <driver name="postgresql" module="org.postgresql.postgresql">
         <xa-datasource-class>org.postgresql.xa.PGXADataSource</xa-datasource-class>
       </driver>
-      <driver name="hsqldb" module="org.hsqldb.hsqldb"/>
+      <!-- This is not needed unless you want to re-enable the HSQLDB support -->
+      <!--<driver name="hsqldb" module="org.hsqldb.hsqldb"/>-->
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>

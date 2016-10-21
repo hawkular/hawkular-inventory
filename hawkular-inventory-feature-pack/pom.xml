@@ -58,9 +58,10 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hsqldb</groupId>
-      <artifactId>hsqldb</artifactId>
-      <version>${version.org.hsqldb}</version>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${version.com.h2database}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
