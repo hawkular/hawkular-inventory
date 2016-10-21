@@ -21,7 +21,7 @@
   <parent>
     <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>1.0.1.Final-SNAPSHOT</version>
+    <version>1.1.0.Final-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -72,6 +72,19 @@
     </dependency>
 
     <!-- Test deps -->
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.19</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

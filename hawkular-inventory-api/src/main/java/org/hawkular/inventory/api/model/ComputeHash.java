@@ -113,7 +113,7 @@ final class ComputeHash {
 
         IntermediateHashResult res =
                 ComputeHash.computeHash(rootPath, inventory.getRoot(), ComputeHash.HashableView.of(inventory), ctor,
-                        computeIdentity, computeContent, computeSync, (rp) -> null);
+                        computeIdentity, computeContent, computeSync, rp -> null, rp -> null);
 
         return new Hashes(res.identityHash, res.contentHash, res.syncHash);
     }
@@ -122,7 +122,8 @@ final class ComputeHash {
                                          boolean computeIdentity,
                                          boolean computeContent, boolean computeSync,
                                          Consumer<IntermediateHashContext> onStartChild,
-                                         BiConsumer<IntermediateHashContext, IntermediateHashResult> onEndChild) {
+                                         BiConsumer<IntermediateHashContext, IntermediateHashResult> onEndChild,
+                                         Function<RelativePath, Hashes> hashLoader) {
         ComputeHash.DigestComputingWriter wrt = new ComputeHash.DigestComputingWriter(ComputeHash.newDigest());
 
         ComputeHash.HashConstructor ctor = new ComputeHash.HashConstructor(wrt) {
@@ -142,14 +143,16 @@ final class ComputeHash {
                 computeContent, computeSync,
                 //we don't want the root element in the relative paths of the children so that they are easily
                 //appendable to the root.
-                (rp) -> rp.slide(1, 0)
+                (rp) -> rp.slide(1, 0),
+                hashLoader
         );
 
     }
 
     static IntermediateHashResult computeHash(CanonicalPath entityPath, Blueprint entity, HashableView structure,
                                               HashConstructor bld, boolean compIdentity, boolean compContent,
-                                              boolean compSync, Function<RelativePath, RelativePath> pathCompleter) {
+                                              boolean compSync, Function<RelativePath, RelativePath> pathCompleter,
+                                              Function<RelativePath, Hashes> hashLoader) {
 
         Class<?> entityType = Inventory.types().byBlueprint(entity.getClass()).getElementType();
 
@@ -357,28 +360,38 @@ final class ComputeHash {
                                                 Consumer<IntermediateHashContext> hashComputation) {
                 IntermediateHashContext childCtx = context.progress(root);
                 bld.startChild(childCtx);
-                hashComputation.accept(childCtx);
 
-                String identityHash = null;
-                String contentHash = null;
-                String syncHash = null;
+                Hashes loadedHashes = hashLoader.apply(childCtx.root.slide(1, 0));
+
+                boolean compute = loadedHashes == null
+                        || (computeIdentity && loadedHashes.getIdentityHash() == null)
+                        || (computeContent && loadedHashes.getContentHash() == null)
+                        || (computeSync && loadedHashes.getSyncHash() == null);
+
+                if (compute) {
+                    hashComputation.accept(childCtx);
+                }
+
+                String identityHash = loadedHashes == null ? null : loadedHashes.getIdentityHash();
+                String contentHash =  loadedHashes == null ? null : loadedHashes.getContentHash();
+                String syncHash =  loadedHashes == null ? null : loadedHashes.getSyncHash();
 
                 DigestComputingWriter digestor = bld.getDigestor();
-                if (computeIdentity) {
+                if (computeIdentity && identityHash == null) {
                     digestor.reset();
                     digestor.append(childCtx.identity);
                     digestor.close();
                     identityHash = digestor.digest();
                 }
 
-                if (computeContent) {
+                if (computeContent && contentHash == null) {
                     digestor.reset();
                     digestor.append(childCtx.content);
                     digestor.close();
                     contentHash = digestor.digest();
                 }
 
-                if (computeSync) {
+                if (computeSync && syncHash == null) {
                     digestor.reset();
                     digestor.append(identityHash);
                     digestor.append(contentHash);
