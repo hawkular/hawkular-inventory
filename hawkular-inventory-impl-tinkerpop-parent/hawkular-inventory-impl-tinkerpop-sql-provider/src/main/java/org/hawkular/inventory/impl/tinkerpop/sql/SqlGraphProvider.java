@@ -215,9 +215,11 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(resourceType, contains, operationType);
         edges.add(resourceType, contains, data);
         edges.add(resourceType, defines, resource);
+        edges.add(resourceType, incorporates, metricType);
         edges.add(resourceType, __withIdentityHash, identityHash);
 
         //metric type relationships
+        edges.add(metricType, defines, metric);
         edges.add(metricType, __withIdentityHash, identityHash);
 
         //operation type relationships
