@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>1.0.1.Final</version>
+    <version>1.0.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-json-helper</artifactId>
