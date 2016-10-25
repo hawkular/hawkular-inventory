@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.inventory</groupId>
     <artifactId>hawkular-inventory-parent</artifactId>
-    <version>1.1.0.Final-SNAPSHOT</version>
+    <version>1.0.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-rest-api</artifactId>
@@ -56,6 +56,11 @@
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
       <scope>provided</scope> <!-- there is a WildFly module -->
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-cors-jaxrs-filter</artifactId>
     </dependency>
 
     <dependency>

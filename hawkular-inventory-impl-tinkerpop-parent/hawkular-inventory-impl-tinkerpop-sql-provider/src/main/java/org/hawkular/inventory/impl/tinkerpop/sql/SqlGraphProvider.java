@@ -22,6 +22,7 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
+import static org.hawkular.inventory.api.Relationships.WellKnown.isParentOf;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__containsIdentityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge.__withIdentityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__identityHash;
@@ -214,9 +215,11 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(resourceType, contains, operationType);
         edges.add(resourceType, contains, data);
         edges.add(resourceType, defines, resource);
+        edges.add(resourceType, incorporates, metricType);
         edges.add(resourceType, __withIdentityHash, identityHash);
 
         //metric type relationships
+        edges.add(metricType, defines, metric);
         edges.add(metricType, __withIdentityHash, identityHash);
 
         //operation type relationships
@@ -231,6 +234,7 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(resource, contains, resource);
         edges.add(resource, contains, data);
         edges.add(resource, contains, metric);
+        edges.add(resource, isParentOf, resource);
         edges.add(resource, incorporates, metric);
         edges.add(resource, __withIdentityHash, identityHash);
 

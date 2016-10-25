@@ -1,0 +1,13 @@
+{
+  "1.0.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.Hashes.Tree org.hawkular.inventory.api.model.Hashes::treeOf(org.hawkular.inventory.api.model.InventoryStructure<?>, org.hawkular.inventory.paths.CanonicalPath, java.util.function.Function<org.hawkular.inventory.paths.RelativePath, org.hawkular.inventory.api.model.Hashes>)",
+          "justification": "This is not adding a new feature, so no need to increase a minor version because of this."
+        }         
+      ]
+    }
+  }
+}

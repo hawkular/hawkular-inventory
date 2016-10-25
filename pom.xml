@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>hawkular-inventory-parent</artifactId>
-  <version>1.1.0.Final-SNAPSHOT</version>
+  <version>1.0.2.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
@@ -56,7 +56,7 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.commons>0.7.4.Final</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.7.10.Final</version.org.hawkular.commons>
 
     <version.io.reactivex>1.0.8</version.io.reactivex>
     <!-- overrides 3.1.2 from parent which produces NPE -->
@@ -226,6 +226,12 @@
         <groupId>org.powermock</groupId>
         <artifactId>powermock-api-mockito</artifactId>
         <version>${version.org.powermock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-cors-jaxrs-filter</artifactId>
+        <version>${version.org.hawkular.commons}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

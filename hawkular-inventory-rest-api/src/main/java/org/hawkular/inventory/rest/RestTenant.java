@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import static org.hawkular.inventory.rest.RequestUtil.extractPaging;
 
 import java.io.IOException;
@@ -23,10 +25,12 @@ import java.io.Reader;
 import java.net.URISyntaxException;
 import java.util.Collection;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -43,6 +47,8 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.16.0
  */
 @Path("/tenant")
+@Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
 public class RestTenant extends RestBase {
 
     public RestTenant() {
