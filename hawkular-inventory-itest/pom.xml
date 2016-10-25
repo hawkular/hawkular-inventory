@@ -286,6 +286,8 @@
                 <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
                 <javaOpt>-Dsql.jdbc.url=${sql.jdbc.url}</javaOpt>
                 <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
+                <javaOpt>-Dhawkular.allowed-cors-origins=http://allowed.origin</javaOpt>
+                <javaOpt>-Dhawkular.allowed-cors-access-control-allow-headers=kachny,kachny</javaOpt>
                 <!--<javaOpt>-Xdebug</javaOpt>-->
                 <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
               </javaOpts>

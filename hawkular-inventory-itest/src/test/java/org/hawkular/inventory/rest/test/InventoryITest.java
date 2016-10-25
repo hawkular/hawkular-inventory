@@ -34,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,6 +67,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 /**
@@ -1486,6 +1488,30 @@ public class InventoryITest extends AbstractTestBase {
     public void testInvalidTreeHash() throws Throwable {
         Response response = get(basePath + "/entity/e;" + environmentId + "/treeHash");
         assertEquals(400, response.code());
+    }
+
+    @Test
+    public void testCors() throws Throwable {
+        Function<String, Response> test = (origin) -> {
+            Request.Builder bld = new Request.Builder().method("OPTIONS", null)
+                    .addHeader("Origin", origin).url(baseURI + basePath);
+            try {
+                return client.newCall(bld.build()).execute();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to execute CORS request.", e);
+            }
+        };
+
+        Response response = test.apply("http://allowed.origin");
+        Assert.assertEquals(200, response.code());
+        Assert.assertTrue(response.header("Access-Control-Allow-Headers").contains("authorization"));
+        Assert.assertTrue(response.header("Access-Control-Allow-Headers").contains("kachny"));
+
+        response = test.apply("https://allowed.origin");
+        Assert.assertEquals(400, response.code());
+
+        response = test.apply("http://disallowed.origin");
+        Assert.assertEquals(400, response.code());
     }
 
     private <T> T readAs(String path, ObjectMapper mapper, Class<T> type) throws Throwable {

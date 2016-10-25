@@ -43,6 +43,8 @@
     <web-resource-collection>
       <web-resource-name>REST endpoints</web-resource-name>
       <url-pattern>/*</url-pattern>
+      <!-- Spec requires the pre-flight CORS requests to be not authenticated -->
+      <http-method-omission>OPTIONS</http-method-omission>
     </web-resource-collection>
     <auth-constraint>
       <role-name>*</role-name>
