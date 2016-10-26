@@ -33,7 +33,7 @@
       <!--<datasource jndi-name="java:/jboss/datasources/HawkularInventoryDS_hsqldb" pool-name="HawkularInventoryDS_hsqldb"-->
                   <!--enabled="true" use-java-context="true">-->
         <!--<connection-url>-->
-          <!--jdbc:hsqldb:${jboss.server.data.dir}/hawkular-inventory/db;MVCC=true;CACHE_SIZE=131072-->
+          <!--jdbc:hsqldb:${jboss.server.data.dir}/hawkular-inventory/db;hsqldb.tx=mvcc;hsqldb.cache_size=32768;hsqldb.nio_data_file=false;hsqldb.write_delay_millis=100-->
         <!--</connection-url>-->
         <!--<driver>hsqldb</driver>-->
         <!--<security>-->
