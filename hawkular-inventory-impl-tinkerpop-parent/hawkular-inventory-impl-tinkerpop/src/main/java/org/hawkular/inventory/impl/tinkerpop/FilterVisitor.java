@@ -153,22 +153,28 @@ class FilterVisitor {
     public void visit(GraphTraversal<?, ?> query, With.Types types, QueryTranslationState state) {
             String prop = propertyNameBasedOnState(__type, state);
 
+        String typeName = null;
+        String[] typeNames = null;
+
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            query.has(prop, type.name());
-            return;
+            typeName = type.name();
+            query.has(prop, typeName);
+        } else {
+            typeNames =
+                    Stream.of(types.getTypes()).map(st -> Constants.Type.of(st).name()).toArray(String[]::new);
+            query.has(prop, P.within(typeNames));
         }
 
-        GraphTraversal<?, ?>[] typeChecks = new GraphTraversal<?, ?>[types.getTypes().length];
-
-        Arrays.setAll(typeChecks, i -> {
-            Constants.Type type = Constants.Type.of(types.getTypes()[i]);
-            return __.has(prop, type.name());
-        });
-
-        query.or((Traversal<?, ?>[]) typeChecks);
-
         goBackFromEdges(query, state);
+
+        //another optimization - we know what label the target entity should have, which helps in limiting the "reach"
+        //of the query
+        if (typeNames == null) {
+            query.hasLabel(typeName);
+        } else {
+            query.hasLabel(P.within(typeNames));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -337,20 +343,15 @@ class FilterVisitor {
     public void visit(GraphTraversal<?, ?> query, With.CanonicalPaths filter, QueryTranslationState state) {
         String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
 
-        if (filter.getPaths().length == 1) {
-            //this only works if we are on vertices, so check for that
-            if (prop.equals(__cp.name())) {
-                query.has(T.label, Constants.Type.of(filter.getPaths()[0].getSegment().getElementType()).name());
-            }
+        String typeName = null;
+        String[] typeNames = null;
 
+        if (filter.getPaths().length == 1) {
+            typeName = Constants.Type.of(filter.getPaths()[0].getSegment().getElementType()).name();
             query.has(prop, filter.getPaths()[0].toString());
         } else {
-            if (prop.equals(__cp.name())) {
-                String[] labels = Stream.of(filter.getPaths()).map(p -> p.getSegment().getElementType())
-                        .toArray(String[]::new);
-
-                query.has(T.label, P.within(labels));
-            }
+            typeNames = Stream.of(filter.getPaths()).map(p -> p.getSegment().getElementType())
+                    .toArray(String[]::new);
 
             String[] paths = Stream.of(filter.getPaths()).map(Object::toString).toArray(String[]::new);
 
@@ -358,6 +359,12 @@ class FilterVisitor {
         }
 
         goBackFromEdges(query, state);
+
+        if (typeNames == null) {
+            query.hasLabel(typeName);
+        } else {
+            query.hasLabel(P.within(typeNames));
+        }
     }
 
     @SuppressWarnings("unchecked")
