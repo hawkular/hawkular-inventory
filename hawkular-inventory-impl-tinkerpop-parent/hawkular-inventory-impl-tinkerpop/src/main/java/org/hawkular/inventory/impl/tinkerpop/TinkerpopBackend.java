@@ -216,6 +216,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         //XXX this probably would be more efficient as a proper pipe
         q.filter(e -> !isBackendInternal(e.get()));
 
+        Log.LOG.debugf("Query execution:\nquery:\n%s\n\npipeline:\n%s", query, q);
+
         if (filter == null) {
             return page(q, pager, conversion);
         } else {
