@@ -37,6 +37,9 @@ set -o pipefail
 # /^.* <<< FAILURE! *$/p
 # This how surefire reports errors, so we output that to have some visibility of the failing tests in the travis log.
 #
+# /.* <<< ERROR! */,/^\s*$/p
+# If there is a test error print it and everything under it until the next empty line - this way we see the failed tests.
+#
 # With this, we have the overview of what stage the build is currently in, yet we don't flood the output with stuff from tests and merely informative messages from the build.
 #
-mvn -fae -s .travis.maven.settings.xml clean install -Pitest 2>&1 | sed -n 's/^\[INFO\]  *org\.apache\.maven\.cli\.event\.ExecutionEventLogger - \( *[^ ].*\)$/[INFO] \1/p; /WARN/p; /ERROR/p; /^Tests run/p; /.* <<< FAILURE! *$/p'
+mvn -fae -s .travis.maven.settings.xml clean install -Pitest 2>&1 | sed -n 's/^\[INFO\]  *org\.apache\.maven\.cli\.event\.ExecutionEventLogger - \( *[^ ].*\)$/[INFO] \1/p; /WARN/p; /ERROR/p; /^Tests run/p; /.* <<< FAILURE! *$/p; /.* <<< ERROR! *$/,/^ *$/p'
