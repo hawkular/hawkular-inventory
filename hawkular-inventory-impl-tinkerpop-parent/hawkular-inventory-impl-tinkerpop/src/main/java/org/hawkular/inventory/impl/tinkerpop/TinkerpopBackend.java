@@ -1103,6 +1103,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return context.requiresRollbackAfterFailure(t);
     }
 
+    @Override public boolean isTransactionRetryWarranted(Throwable t) {
+        return context.isTransactionRetryWarranted(t);
+    }
+
     private StructuredData loadStructuredData(Vertex owner, Relationships.WellKnown owningEdge) {
         Iterator<Vertex> it = owner.vertices(Direction.OUT, owningEdge.name());
         if (!it.hasNext()) {

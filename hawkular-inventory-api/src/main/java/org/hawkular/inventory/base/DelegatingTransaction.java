@@ -208,4 +208,8 @@ public class DelegatingTransaction<E> implements Transaction<E> {
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {
         return tx.requiresRollbackAfterFailure(t);
     }
+
+    @Override public boolean isTransactionRetryWarranted(Throwable t) {
+        return tx.isTransactionRetryWarranted(t);
+    }
 }

@@ -211,4 +211,8 @@ public class BackendTransaction<E> implements Transaction<E> {
     @Override public boolean requiresRollbackAfterFailure(Throwable t) {
         return backend.requiresRollbackAfterFailure(t);
     }
+
+    @Override public boolean isTransactionRetryWarranted(Throwable t) {
+        return backend.isTransactionRetryWarranted(t);
+    }
 }

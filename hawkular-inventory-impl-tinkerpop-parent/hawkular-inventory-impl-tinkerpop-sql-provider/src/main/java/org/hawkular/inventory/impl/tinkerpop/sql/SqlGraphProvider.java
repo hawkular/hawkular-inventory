@@ -299,6 +299,24 @@ public class SqlGraphProvider implements GraphProvider {
         return inputException;
     }
 
+    @Override public boolean isTransactionRetryWarranted(Graph graph, Throwable t) {
+        //this is always going to be hairy and hacky...
+        //Basically for each supported Sqlg dialect we need to identify the exceptions caught by the database that
+        //are recoverable by retrying a transaction.
+
+        SqlgGraph sg = (SqlgGraph) graph;
+
+        if (sg.getJdbcUrl().startsWith("jdbc:postgresql")) {
+            //this happens when the schema changes in another transaction while a tx is in progress.
+            //therefore restarting the tx should clear this out...
+            if (t.getMessage().endsWith("ERROR: cached plan must not change result type")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @FunctionalInterface
     private interface AddEdgeHelper<T, U, V> {
         void add(T t, U u, V v);
