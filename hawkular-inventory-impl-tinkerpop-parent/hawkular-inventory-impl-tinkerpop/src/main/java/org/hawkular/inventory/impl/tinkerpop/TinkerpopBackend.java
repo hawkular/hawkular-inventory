@@ -461,8 +461,11 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Vertex tenantVertex = context.getGraph().traversal().V()
                 .has(__cp.name(), CanonicalPath.of().tenant(tenantId).get().toString()).next();
 
-        Iterator<Vertex> hashNodesIt = __(tenantVertex).outE(Constants.InternalEdge.__containsIdentityHash.name())
-                .has(Constants.Property.__targetIdentityHash.name(), identityHash).inV();
+        Iterator<Vertex> hashNodesIt = __(tenantVertex)
+                .outE(Constants.InternalEdge.__containsIdentityHash.name())
+                .has(Constants.Property.__targetIdentityHash.name(), identityHash)
+                .inV()
+                .hasLabel(Constants.InternalType.__identityHash.name());
 
         closeAfter(hashNodesIt, () -> {
             if (hashNodesIt.hasNext()) {
@@ -834,7 +837,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
     @Override
     public Vertex persist(StructuredData structuredData) {
-        Vertex thisVertex = context.getGraph().addVertex();
+        Vertex thisVertex = context.getGraph().addVertex(Constants.Type.structuredData.name());
 
         Pair<Vertex, Vertex> parentAndCurrent = new Pair<>(null, thisVertex);
 
@@ -881,7 +884,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (StructuredData c : value) {
-                    parentAndCurrent.second = context.getGraph().addVertex();
+                    parentAndCurrent.second = context.getGraph().addVertex(Constants.Type.structuredData.name());
                     parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
                     c.accept(this, c);
                 }
@@ -907,7 +910,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (Map.Entry<String, StructuredData> e : value.entrySet()) {
-                    parentAndCurrent.second = context.getGraph().addVertex();
+                    parentAndCurrent.second = context.getGraph().addVertex(Constants.Type.structuredData.name());
                     //we need to make sure the maps are stored in the same order as seen - the maps are linked
                     //and therefore preserve insertion order
                     parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
