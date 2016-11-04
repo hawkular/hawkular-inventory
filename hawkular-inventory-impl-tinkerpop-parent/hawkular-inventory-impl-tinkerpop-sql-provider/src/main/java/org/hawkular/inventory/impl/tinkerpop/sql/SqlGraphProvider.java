@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
@@ -105,6 +106,8 @@ public class SqlGraphProvider implements GraphProvider {
                 Stream.of(Constants.Type.values()).filter(t -> Entity.class.isAssignableFrom(t.getEntityType()))
                         .map(Enum::name).toArray(String[]::new);
 
+        String[] edgeLabels = Stream.of(Relationships.WellKnown.values()).map(Enum::name).toArray(String[]::new);
+
         sqlg.tx().open();
 
         Iterator<IndexSpec> it = specs.iterator();
@@ -132,8 +135,12 @@ public class SqlGraphProvider implements GraphProvider {
                 is.getProperties().stream().filter(IndexSpec.Property::isUnique)
                         .findAny().ifPresent(p -> sqlg.createVertexUniqueConstraint(p.getName(), entityLabels));
             } else {
-                //This is not working yet in Sqlg
-                //sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
+                for (String l : edgeLabels) {
+                    sqlg.createEdgeLabeledIndex(l, keyValues.toArray());
+                }
+//Sqlg doesn't support this yet...
+//                is.getProperties().stream().filter(IndexSpec.Property::isUnique)
+//                        .findAny().ifPresent(p -> sqlg.createEdgeUniqueConstraint(p.getName(), entityLabels));
             }
         }
 
