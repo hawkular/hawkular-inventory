@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.inventory</groupId>
   <artifactId>hawkular-inventory-parent</artifactId>
-  <version>1.0.3.Final-SNAPSHOT</version>
+  <version>1.1.0.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2015</inceptionYear>
@@ -64,8 +64,8 @@
     <version.com.github.fge>2.2.6</version.com.github.fge>
     <version.com.thinkaurelius.titan>1.1.0-SNAPSHOT</version.com.thinkaurelius.titan>
     <version.com.tinkerpop.gremlin>2.6.0</version.com.tinkerpop.gremlin>
-    <version.org.apache.tinkerpop>3.2.2</version.org.apache.tinkerpop>
-    <version.org.umlg>1.3.0-SRC-revision-46e6886ee1136bc275c25b164a27a457218e11ea</version.org.umlg>
+    <version.org.apache.tinkerpop>3.2.3</version.org.apache.tinkerpop>
+    <version.org.umlg>1.3.2-SRC-revision-b8cbea0f96fcbbd5150e7a4f9c469850b9973331</version.org.umlg>
 
     <version.org.antlr>4.5.3</version.org.antlr>
 

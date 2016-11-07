@@ -21,7 +21,7 @@
   <parent>
     <artifactId>hawkular-inventory-impl-tinkerpop-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>1.0.3.Final-SNAPSHOT</version>
+    <version>1.1.0.Final-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -51,21 +51,6 @@
       <groupId>org.umlg</groupId>
       <artifactId>sqlg-core</artifactId>
       <version>${version.org.umlg}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- This dependency is necessary due to exclusion of gremlin-groovy,
-    since sqlg-core uses commons-lang3 which is included by transitivity
-    in gremlin-groovy -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>${version.commons-lang3}</version>
     </dependency>
 
     <dependency>
@@ -123,7 +108,7 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-hsqldb</artifactId>
+      <artifactId>sqlg-hsqldb-dialect</artifactId>
       <version>${version.org.umlg}</version>
       <scope>test</scope>
     </dependency>

@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>1.0.3.Final-SNAPSHOT</version>
+    <version>1.1.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-dist</artifactId>
@@ -138,32 +138,24 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-hsqldb</artifactId>
+      <artifactId>sqlg-hsqldb-dialect</artifactId>
       <version>${version.org.umlg}</version>
       <exclusions>
         <exclusion>
           <groupId>org.hsqldb</groupId>
           <artifactId>hsqldb</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-postgres</artifactId>
+      <artifactId>sqlg-postgres-dialect</artifactId>
       <version>${version.org.umlg}</version>
       <exclusions>
         <exclusion>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.tinkerpop</groupId>
-          <artifactId>gremlin-groovy</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -188,15 +180,6 @@
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
       <version>${version.org.hsqldb}</version>
-    </dependency>
-
-    <!-- This dependency is necessary due to exclusion of gremlin-groovy,
-    since sqlg-core uses commons-lang3 which is included by transitivity
-    in gremlin-groovy -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>${version.commons-lang3}</version>
     </dependency>
 
     <!-- Logging -->

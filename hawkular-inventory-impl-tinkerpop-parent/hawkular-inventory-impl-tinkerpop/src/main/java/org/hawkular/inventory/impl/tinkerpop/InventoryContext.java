@@ -82,4 +82,8 @@ final class InventoryContext {
         return graphProvider.requiresRollbackAfterFailure(t);
     }
 
+    public boolean isTransactionRetryWarranted(Throwable t) {
+        return graphProvider.isTransactionRetryWarranted(graph, t);
+    }
+
 }

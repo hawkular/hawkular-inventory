@@ -358,4 +358,15 @@ public interface InventoryBackend<E> extends AutoCloseable {
     default boolean requiresRollbackAfterFailure(Throwable t) {
         return true;
     }
+
+    /**
+     * Tries to determine if a transaction retry has a chance of recovering from a condition signified by the provided
+     * throwable.
+     *
+     * @param t a throwable that caused a transaction payload to fail.
+     * @return true if the transaction should be retried, false otherwise
+     */
+    default boolean isTransactionRetryWarranted(Throwable t) {
+        return false;
+    }
 }
