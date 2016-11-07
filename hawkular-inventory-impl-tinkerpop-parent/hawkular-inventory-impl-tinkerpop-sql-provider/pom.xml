@@ -108,7 +108,7 @@
 
     <dependency>
       <groupId>org.umlg</groupId>
-      <artifactId>sqlg-hsqldb-dialect</artifactId>
+      <artifactId>sqlg-h2-dialect</artifactId>
       <version>${version.org.umlg}</version>
       <scope>test</scope>
     </dependency>
