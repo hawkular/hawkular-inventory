@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.impl.tinkerpop.spi.Constants;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
@@ -105,6 +106,8 @@ public class SqlGraphProvider implements GraphProvider {
                 Stream.of(Constants.Type.values()).filter(t -> Entity.class.isAssignableFrom(t.getEntityType()))
                         .map(Enum::name).toArray(String[]::new);
 
+        String[] edgeLabels = Stream.of(Relationships.WellKnown.values()).map(Enum::name).toArray(String[]::new);
+
         sqlg.tx().open();
 
         Iterator<IndexSpec> it = specs.iterator();
@@ -132,8 +135,12 @@ public class SqlGraphProvider implements GraphProvider {
                 is.getProperties().stream().filter(IndexSpec.Property::isUnique)
                         .findAny().ifPresent(p -> sqlg.createVertexUniqueConstraint(p.getName(), entityLabels));
             } else {
-                //This is not working yet in Sqlg
-                //sqlg.createEdgeLabeledIndex(Edge.DEFAULT_LABEL, keyValues.toArray());
+                for (String l : edgeLabels) {
+                    sqlg.createEdgeLabeledIndex(l, keyValues.toArray());
+                }
+//Sqlg doesn't support this yet...
+//                is.getProperties().stream().filter(IndexSpec.Property::isUnique)
+//                        .findAny().ifPresent(p -> sqlg.createEdgeUniqueConstraint(p.getName(), entityLabels));
             }
         }
 
@@ -186,8 +193,14 @@ public class SqlGraphProvider implements GraphProvider {
                 Stream.of(Constants.Type.relationship.getMappedProperties())
                         .flatMap(p -> Stream.of(p, propertySampleValue.apply(p))).toArray();
 
-        AddEdgeHelper<SchemaTable, Enum<?>, SchemaTable> edges = (out, rel, in) ->
-                graph.getSchemaManager().ensureEdgeTableExist(schema, rel.name(), in, out, relProps);
+        AddEdgeHelper<SchemaTable, Enum<?>, SchemaTable> edges = (out, rel, in, props) -> {
+            if (props == null) {
+                props = new Object[0];
+            } else if (props.length == 0) {
+                props = relProps;
+            }
+            graph.getSchemaManager().ensureEdgeTableExist(schema, rel.name(), in, out, props);
+        };
 
         graph.tx().open();
 
@@ -197,7 +210,7 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(tenant, contains, feed);
         edges.add(tenant, contains, resourceType);
         edges.add(tenant, contains, metricType);
-        edges.add(tenant, __containsIdentityHash, identityHash);
+        edges.add(tenant, __containsIdentityHash, identityHash, Constants.Property.__targetIdentityHash.name(), "");
 
         //environment relationships
         edges.add(environment, contains, resource);
@@ -209,22 +222,22 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(feed, contains, metricType);
         edges.add(feed, contains, resource);
         edges.add(feed, contains, metric);
-        edges.add(feed, __withIdentityHash, identityHash);
+        edges.add(feed, __withIdentityHash, identityHash, (Object[]) null);
 
         //resource type relationships
         edges.add(resourceType, contains, operationType);
         edges.add(resourceType, contains, data);
         edges.add(resourceType, defines, resource);
         edges.add(resourceType, incorporates, metricType);
-        edges.add(resourceType, __withIdentityHash, identityHash);
+        edges.add(resourceType, __withIdentityHash, identityHash, (Object[]) null);
 
         //metric type relationships
         edges.add(metricType, defines, metric);
-        edges.add(metricType, __withIdentityHash, identityHash);
+        edges.add(metricType, __withIdentityHash, identityHash, (Object[]) null);
 
         //operation type relationships
         edges.add(operationType, contains, data);
-        edges.add(operationType, __withIdentityHash, identityHash);
+        edges.add(operationType, __withIdentityHash, identityHash, (Object[]) null);
 
         //metadata pack relationships
         edges.add(metadataPack, incorporates, resourceType);
@@ -236,14 +249,14 @@ public class SqlGraphProvider implements GraphProvider {
         edges.add(resource, contains, metric);
         edges.add(resource, isParentOf, resource);
         edges.add(resource, incorporates, metric);
-        edges.add(resource, __withIdentityHash, identityHash);
+        edges.add(resource, __withIdentityHash, identityHash, (Object[]) null);
 
         //metric relationships
-        edges.add(metric, __withIdentityHash, identityHash);
+        edges.add(metric, __withIdentityHash, identityHash, (Object[]) null);
 
         //data entity relationships
         edges.add(data, hasData, structuredData);
-        edges.add(data, __withIdentityHash, identityHash);
+        edges.add(data, __withIdentityHash, identityHash, (Object[]) null);
 
         //structured data relationships
         edges.add(structuredData, contains, structuredData);
@@ -299,9 +312,27 @@ public class SqlGraphProvider implements GraphProvider {
         return inputException;
     }
 
+    @Override public boolean isTransactionRetryWarranted(Graph graph, Throwable t) {
+        //this is always going to be hairy and hacky...
+        //Basically for each supported Sqlg dialect we need to identify the exceptions caught by the database that
+        //are recoverable by retrying a transaction.
+
+        SqlgGraph sg = (SqlgGraph) graph;
+
+        if (sg.getJdbcUrl().startsWith("jdbc:postgresql")) {
+            //this happens when the schema changes in another transaction while a tx is in progress.
+            //therefore restarting the tx should clear this out...
+            if (t.getMessage().endsWith("ERROR: cached plan must not change result type")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @FunctionalInterface
     private interface AddEdgeHelper<T, U, V> {
-        void add(T t, U u, V v);
+        void add(T t, U u, V v, Object... props);
     }
 
     private enum PropertyKeys implements Configuration.Property {
