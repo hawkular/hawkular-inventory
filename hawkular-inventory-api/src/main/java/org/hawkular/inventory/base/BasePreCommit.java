@@ -60,6 +60,7 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
+import org.jboss.logging.Logger;
 
 /**
  * Takes care of defining the pre-commit actions based on the set of entities modified within a single transaction.
@@ -73,6 +74,9 @@ import org.hawkular.inventory.paths.SegmentType;
  * @since 0.13.0
  */
 public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
+    //DON'T USE THIS FOR ANYTHING ELSE BUT DEBUG LOGGING - for normal logging purposes, use the typed logger
+    //from the api package
+    private static final Logger DBG = Logger.getLogger(BasePreCommit.class);
 
     /**
      * Notifications about entities that are not hashable and therefore need no processing
@@ -192,11 +196,14 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }
 
         correctiveAction = t -> {
+            DBG.debug("Processing pre-commit changes.");
             processingTree.children.forEach(c -> correctChanges(c, true));
+            DBG.debug("Done processing pre-commit changes.");
         };
     }
 
     private void correctChanges(ProcessingTree<BE> changedEntity, boolean computeHashes) {
+        DBG.debugf("Processing changes of %s (compute hashes = %s)", changedEntity.cp, computeHashes);
         if (__correctChangesPrologue(changedEntity)) {
             return;
         }
@@ -207,9 +214,16 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             Hashes.Tree treeHash;
 
             if (computeHashes) {
+                DBG.debugf("About to compute treehash of %s", changedEntity.cp);
+
                 treeHash = Hashes.treeOf(InventoryStructure.of(e, inventory), e.getPath(), rp -> {
+                    if (DBG.isDebugEnabled()) {
+                        DBG.debugf("About to load hashes of %s", rp.applyTo(changedEntity.cp));
+                    }
+
                     if (rp.getPath().isEmpty()) {
                         //this represents the changedEntity itself, which is by definition in its processing tree...
+                        DBG.debugf("Not loading the hashes, because this is the changed entity itself.");
                         return null;
                     }
                     ProcessingTree<BE> child = changedEntity.getChild(rp);
@@ -217,12 +231,16 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                         //we've found the child in the processing tree. This means there's been some changes
                         //made to it or its children, so we need to recompute the hashes. Returning null means
                         //"recompute the hashes".
+                        DBG.debugf("Child %s found in processing tree. Hashes need to be recomputed, not loaded.",
+                                rp.applyTo(changedEntity.cp));
                         return null;
                     } else {
                         //ok, this entity is not in our processing tree.. This means there's been no change to
                         //it made in this transaction, so we can just load its hashes from the database instead
                         //of (recursively) computing them
                         CanonicalPath childCp = rp.applyTo(e.getPath());
+
+                        DBG.debugf("Loading hashes of %s from the database.", childCp);
 
                         @SuppressWarnings("unchecked")
                         Entity<?, ?> childE;
@@ -233,6 +251,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                                     (Class<Entity<?, ?>>) Inventory.types().byPath(childCp).getElementType());
                         } catch (ElementNotFoundException e1) {
                             //hmm, ok, let's just try and compute this then
+                            DBG.debugf("Entity %s not found in the database, its hashes will be recomputed instead.",
+                                    childCp);
                             return null;
                         }
 
@@ -252,24 +272,31 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                             syncHash = ((Syncable) childE).getSyncHash();
                         }
 
+                        DBG.debugf("Hashes of %s loaded from database.", childCp);
+
                         return new Hashes(identityHash, contentHash, syncHash);
                     }
                 });
             } else {
+                DBG.debugf("Not computing hashes of %s as instructed.", changedEntity.cp);
                 treeHash = Hashes.Tree.builder().build();
             }
 
             __correctChangesNoPrologue(changedEntity, treeHash);
         } else {
+            DBG.debugf("Entity %s not significant for hashing, proceeding to its children.", changedEntity.cp);
             changedEntity.children.forEach(c -> correctChanges(c, computeHashes));
         }
+
+        DBG.debugf("Done processing changes of %s", changedEntity.cp);
     }
 
     private void correctChanges(ProcessingTree<BE> changedEntity, Hashes.Tree newHash) {
-        if (__correctChangesPrologue(changedEntity)) {
-            return;
+        DBG.debugf("Processing changes of %s with tree loaded", changedEntity.cp);
+        if (!__correctChangesPrologue(changedEntity)) {
+            __correctChangesNoPrologue(changedEntity, newHash);
         }
-        __correctChangesNoPrologue(changedEntity, newHash);
+        DBG.debugf("Done processing changes of %s with tree loaded", changedEntity.cp);
     }
 
     private void __correctChangesNoPrologue(ProcessingTree<BE> changedEntity, Hashes.Tree newHash) {
@@ -288,6 +315,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         if (!changedEntity.isSignificant()) {
             //fast track - this is an entity that has not been CRUD'd but is present in the tree to complete the
             //hierarchy
+            DBG.debug("Entity not hash-significant. Proceeding quickly.");
             return false;
         }
 
@@ -295,10 +323,12 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                 Inventory.types().bySegment(changedEntity.cp.getSegment().getElementType()).getBlueprintType()))) {
             //this is currently the case for metadata packs, which do not have their IDs assigned by the user.
             //we therefore mark them as processed.
+            DBG.debug("Metadatapacks not processable. Bailing out quickly.");
             return true;
         }
 
         try {
+            DBG.debug("Refreshing the entity in the current transaction.");
             changedEntity.loadFrom(tx);
         } catch (ElementNotFoundException e) {
             //ok, we're inside a delete and the root entity no longer exists... bail out quickly...
@@ -316,9 +346,14 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         @SuppressWarnings("unchecked")
         Entity<? extends Entity.Blueprint, ?> e = (Entity<? extends Entity.Blueprint, ?>) changedEntity.element;
         addHashChangeNotifications(changedEntity.element, hashes, changedEntity.notifications);
+
+        DBG.debugf("Persisting changed hashes of %s to the database", changedEntity.cp);
+
         tx.updateHashes(changedEntity.representation, hashes);
         correctedChanges.add(new EntityAndPendingNotifications<BE, AbstractElement<?, ?>>(
                 changedEntity.representation, e, changedEntity.notifications));
+
+        DBG.debugf("Proceeding to children of %s", changedEntity.cp);
 
         changedEntity.children.forEach(c -> correctChanges(c, true));
     }
@@ -332,7 +367,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         //check if there is a create or update notification if necessary
         Hashes origHash = hashesOf(changesTree.element);
         if (!Objects.equals(origHash, treeHash.getHash())) {
-            //check if the notifications contain an update or create
+            //check if the notifications contain a create
             Optional<Notification<?, ?>> createNotif = ns.stream()
                     .filter(n -> n.getAction() == created() && n.getValue().equals(changesTree.element))
                     .findAny();
@@ -346,7 +381,9 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             }
 
             //now also actually update the element in inventory with the new hashes
+            DBG.debugf("Updating hashes of %s in database.", changesTree.cp);
             tx.updateHashes(changesTree.representation, treeHash.getHash());
+            DBG.debugf("Done updating hashes of %s in database.", changesTree.cp);
         }
 
         //set the notifications to emit
@@ -411,6 +448,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
     private void addHashChangeNotifications(AbstractElement<?, ?> entity, Hashes newHashes,
                                             List<Notification<?, ?>> notifications) {
+        DBG.debugf("Adding hash change notifications to entity %s", entity.getPath());
+
         if (entity instanceof Syncable) {
             Syncable el = (Syncable) entity;
 
@@ -459,6 +498,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
     }
 
     private boolean processDeletion(ProcessingTree<BE> changesTree, List<Notification<?, ?>> ns) {
+        DBG.debugf("Checking for deletion of entity %s", changesTree.cp);
+
         Optional<Notification<?, ?>> deleteNotification = ns.stream()
                 .filter(n -> n.getAction() == Action.deleted() && n.getValue() instanceof AbstractElement)
                 .filter(n -> ((AbstractElement<?, ?>) n.getValue()).getPath().equals(changesTree.cp))
@@ -466,6 +507,8 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
 
         if (deleteNotification.isPresent()) {
+            DBG.debugf("Processing deletion of the entity %s", changesTree.cp);
+
             //just emit what the caller wanted and don't bother any longer
             Notification<?, ?> n = deleteNotification.get();
 
@@ -477,8 +520,11 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                 return true;
             });
 
+            DBG.debugf("Done processing deletion of entity %s", changesTree.cp);
             return true;
         }
+
+        DBG.debugf("No delete notifications found for entity %s", changesTree.cp);
         return false;
     }
 
@@ -537,7 +583,7 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
         }, null);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Notification<?, ?> cloneWithNewEntity(Notification<?, ?> notif, AbstractElement<?, ?> element) {
         if (!(notif.getValue() instanceof AbstractElement)) {
             return notif;
