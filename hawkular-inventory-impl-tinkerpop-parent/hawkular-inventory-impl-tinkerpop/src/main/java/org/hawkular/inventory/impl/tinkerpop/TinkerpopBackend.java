@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -64,6 +65,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
 import org.hawkular.inventory.api.EntityNotFoundException;
@@ -714,19 +716,21 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             throw new IllegalArgumentException("Target not a vertex.");
         }
 
-        Edge e = ((Vertex) sourceEntity).addEdge(name, (Vertex) targetEntity);
-        if (properties != null) {
-            properties.forEach(e::property);
-        }
+        Map<String, Object> props = properties == null ? Collections.emptyMap() : properties;
 
+        Object[] keyValues = asKeyValues(props,
+                __sourceType.name(), sourceEntity.property(__type.name()).value(),
+                __targetType.name(), targetEntity.property(__type.name()).orElse(null),
+                __sourceCp.name(), sourceEntity.property(__cp.name()).orElse(null),
+                __targetCp.name(), targetEntity.property(__cp.name()).orElse(null),
+                __sourceEid.name(), sourceEntity.property(__eid.name()).orElse(null),
+                __targetEid.name(), targetEntity.property(__eid.name()).orElse(null));
+
+        Edge e = ((Vertex) sourceEntity).addEdge(name, (Vertex) targetEntity, keyValues);
+
+        //these need the ID of the edge, so we need to set the props after the edge has been created
         e.property(__eid.name(), e.id().toString());
         e.property(__cp.name(), CanonicalPath.of().relationship(e.id().toString()).get().toString());
-        e.property(__sourceType.name(), sourceEntity.property(__type.name()).value());
-        setNonNullProperty(e, __targetType.name(), targetEntity.property(__type.name()).orElse(null));
-        setNonNullProperty(e, __sourceCp.name(), sourceEntity.property(__cp.name()).orElse(null));
-        setNonNullProperty(e, __targetCp.name(), targetEntity.property(__cp.name()).orElse(null));
-        setNonNullProperty(e, __sourceEid.name(), sourceEntity.property(__eid.name()).orElse(null));
-        setNonNullProperty(e, __targetEid.name(), targetEntity.property(__eid.name()).orElse(null));
 
         return e;
     }
@@ -794,7 +798,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             }
 
             @Override
-            public Element visitData(DataEntity.Blueprint data, Void parameter) {
+            public Element visitData(DataEntity.Blueprint<?> data, Void parameter) {
                 return common(path, data.getName(), data.getProperties(), DataEntity.class);
             }
 
@@ -818,16 +822,16 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 try {
                     checkProperties(properties, Constants.Type.of(cls).getMappedProperties());
 
-                    Vertex v = context.getGraph().addVertex(Constants.Type.of(cls).name());
-                    v.property(__type.name(), Constants.Type.of(cls).name());
-                    v.property(__eid.name(), path.getSegment().getElementId());
-                    v.property(__cp.name(), path.toString());
-                    setNonNullProperty(v, Constants.Property.name.name(), name);
+                    Map<String, Object> props = properties == null ? Collections.emptyMap() : properties;
 
-                    if (properties != null) {
-                        properties.forEach(v::property);
-                    }
-                    return v;
+                    Object[] keyVals = asKeyValues(props,
+                            T.label, Constants.Type.of(cls).name(),
+                            __type.name(), Constants.Type.of(cls).name(),
+                            __eid.name(), path.getSegment().getElementId(),
+                            __cp.name(), path.toString(),
+                            Constants.Property.name.name(), name);
+
+                    return context.getGraph().addVertex(keyVals);
                 } catch (RuntimeException e) {
                     throw context.translateException(e, path);
                 }
@@ -884,8 +888,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (StructuredData c : value) {
-                    parentAndCurrent.second = context.getGraph().addVertex(Constants.Type.structuredData.name());
-                    parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
+                    parentAndCurrent.second = context.getGraph().addVertex(
+                            T.label, Constants.Type.structuredData.name(),
+                            Constants.Property.__structuredDataIndex.name(), idx++);
                     c.accept(this, c);
                 }
 
@@ -910,11 +915,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 int idx = 0;
                 for (Map.Entry<String, StructuredData> e : value.entrySet()) {
-                    parentAndCurrent.second = context.getGraph().addVertex(Constants.Type.structuredData.name());
                     //we need to make sure the maps are stored in the same order as seen - the maps are linked
                     //and therefore preserve insertion order
-                    parentAndCurrent.second.property(Constants.Property.__structuredDataIndex.name(), idx++);
-                    parentAndCurrent.second.property(Constants.Property.__structuredDataKey.name(), e.getKey());
+                    parentAndCurrent.second = context.getGraph().addVertex(
+                            T.label, Constants.Type.structuredData.name(),
+                            Constants.Property.__structuredDataIndex.name(), idx++,
+                            Constants.Property.__structuredDataKey.name(), e.getKey());
                     e.getValue().accept(this, e.getValue());
                 }
 
@@ -1429,5 +1435,29 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             default:
                 throw new IllegalStateException("Unsupported order direction: " + direction);
         }
+    }
+
+    private static Object[] asKeyValues(Map<String, Object> properties,
+                                        Object... additionalKeyValues) {
+        List<Object> ret = new ArrayList<>(additionalKeyValues.length + properties.size() * 2);
+
+        for (int i = 0; i < additionalKeyValues.length; i += 2) {
+            Object key = additionalKeyValues[i];
+            Object value = additionalKeyValues[i + 1];
+
+            if (key != null && value != null) {
+                ret.add(key);
+                ret.add(value);
+            }
+        }
+
+        for (Map.Entry<String, Object> e : properties.entrySet()) {
+            if (e.getValue() != null) {
+                ret.add(e.getKey());
+                ret.add(e.getValue());
+            }
+        }
+
+        return ret.toArray();
     }
 }
