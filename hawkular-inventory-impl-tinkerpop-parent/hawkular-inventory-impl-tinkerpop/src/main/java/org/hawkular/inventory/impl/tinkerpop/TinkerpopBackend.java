@@ -19,7 +19,6 @@ package org.hawkular.inventory.impl.tinkerpop;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.__;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
@@ -201,7 +200,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 q = context.getGraph().traversal().V();
             }
         } else {
-            q = __(startingPoint);
+            q = startingPoint instanceof Vertex
+                ? context.getGraph().traversal().V(startingPoint)
+                : context.getGraph().traversal().E(startingPoint);
         }
 
         FilterApplicator.applyAll(query, q);
@@ -286,8 +287,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
             //toList() is important as it ensures eager evaluation of the closure - the callers might modify the
             //conditions for the evaluation during the iteration which would skew the results.
-            return (List<Element>) (List) __((Vertex) startingPoint).repeat((Traversal<?, Vertex>) loop).emit()
-                    .toList();
+            return (List<Element>) (List) context.getGraph().traversal().V((Vertex) startingPoint)
+                    .repeat((Traversal<?, Vertex>) loop).emit().toList();
         }
     }
 
@@ -308,17 +309,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return false;
         }
 
-        Iterator<Vertex> targets = ((Vertex) source).vertices(Direction.OUT, relationshipName);
+        Iterator<?> it = context.getGraph().traversal()
+                .V(source).out(relationshipName).hasLabel(target.label()).is(target);
 
-        return closeAfter(targets, () -> {
-            while (targets.hasNext()) {
-                if (target.equals(targets.next())) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
+        return closeAfter(it, it::hasNext);
     }
 
     @Override
@@ -336,7 +330,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         Vertex t = (Vertex) target;
 
 
-        Iterator<Edge> it = __(source).outE(relationshipName).has(__targetCp.name(), t.property(__cp.name()).value());
+        Iterator<Edge> it = context.getGraph().traversal().V(source).outE(relationshipName)
+                .has(__targetCp.name(), t.property(__cp.name()).value());
 
         try {
             if (!it.hasNext()) {
@@ -357,7 +352,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
         Vertex v = (Vertex) entity;
 
-        GraphTraversal<?, Element> q = __(v);
+        GraphTraversal<?, ? extends Element> q = context.getGraph().traversal().V(v);
 
         switch (direction) {
             case incoming:
@@ -465,7 +460,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 .hasLabel(Constants.Type.tenant.name())
                 .next();
 
-        Iterator<Vertex> hashNodesIt = __(tenantVertex)
+        Iterator<Vertex> hashNodesIt = context.getGraph().traversal().V(tenantVertex)
                 .outE(Constants.InternalEdge.__containsIdentityHash.name())
                 .has(Constants.Property.__targetIdentityHash.name(), identityHash)
                 .inV()
@@ -511,7 +506,8 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 //check if were are the last user of the hash node
                 Vertex hashNode = hashNodeEdge.inVertex();
 
-                Iterator<Long> countIt = __(hashNode).inE(Constants.InternalEdge.__withIdentityHash.name()).count();
+                Iterator<Long> countIt = context.getGraph().traversal().V(hashNode)
+                        .inE(Constants.InternalEdge.__withIdentityHash.name()).count();
                 long count = closeAfter(countIt, countIt::next);
                 if (count == 1) {
                     hashNode.remove();
@@ -689,7 +685,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
     public Element descendToData(Element dataEntityRepresentation, RelativePath dataPath) {
         Query q = Query.path().with(With.dataAt(dataPath)).get();
 
-        GraphTraversal<Element, Element> pipeline = __(dataEntityRepresentation);
+        GraphTraversal<?, ? extends Element> pipeline = dataEntityRepresentation instanceof Vertex
+                ? context.getGraph().traversal().V(dataEntityRepresentation)
+                : context.getGraph().traversal().E(dataEntityRepresentation);
 
         FilterApplicator.applyAll(q, pipeline);
 
@@ -1170,7 +1168,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return idxA - idxB;
         };
 
-        Iterator<Vertex> it = __(root).out(contains.name()).order().by(orderFn);
+        Iterator<Vertex> it = context.getGraph().traversal().V(root).out(contains.name()).order().by(orderFn);
 
         while (it.hasNext()) {
             Vertex child = it.next();
@@ -1219,7 +1217,7 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
             return idxA - idxB;
         };
 
-        Iterator<Vertex> it = __(root).out(contains.name()).order().by(orderFn);
+        Iterator<Vertex> it = context.getGraph().traversal().V(root).out(contains.name()).order().by(orderFn);
         while (it.hasNext()) {
             Vertex v = it.next();
 
