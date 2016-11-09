@@ -461,7 +461,9 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         String tenantId = cp.ids().getTenantId();
 
         Vertex tenantVertex = context.getGraph().traversal().V()
-                .has(__cp.name(), CanonicalPath.of().tenant(tenantId).get().toString()).next();
+                .has(__cp.name(), CanonicalPath.of().tenant(tenantId).get().toString())
+                .hasLabel(Constants.Type.tenant.name())
+                .next();
 
         Iterator<Vertex> hashNodesIt = __(tenantVertex)
                 .outE(Constants.InternalEdge.__containsIdentityHash.name())
@@ -474,12 +476,13 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
                 Vertex hashNode = hashNodesIt.next();
                 vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
             } else {
-                Vertex hashNode = context.getGraph().addVertex(Constants.InternalType.__identityHash.name());
-                hashNode.property(Constants.Property.__identityHash.name(), identityHash);
-                hashNode.property(Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
+                Vertex hashNode = context.getGraph().addVertex(
+                        T.label, Constants.InternalType.__identityHash.name(),
+                        Constants.Property.__identityHash.name(), identityHash,
+                        Constants.Property.__type.name(), Constants.InternalType.__identityHash.name());
 
-                Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode);
-                e.property(Constants.Property.__targetIdentityHash.name(), identityHash);
+                Edge e = tenantVertex.addEdge(Constants.InternalEdge.__containsIdentityHash.name(), hashNode,
+                        Constants.Property.__targetIdentityHash.name(), identityHash);
 
                 vertex.addEdge(Constants.InternalEdge.__withIdentityHash.name(), hashNode);
             }
@@ -507,13 +510,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
 
                 //check if were are the last user of the hash node
                 Vertex hashNode = hashNodeEdge.inVertex();
-                Iterator<Edge> entitiesWithSameHash =
-                        hashNode.edges(Direction.IN, Constants.InternalEdge.__withIdentityHash.name());
 
-                Spliterator<Edge> sp = Spliterators.spliteratorUnknownSize(entitiesWithSameHash,
-                        Spliterator.IMMUTABLE & Spliterator.NONNULL);
-
-                if (StreamSupport.stream(sp, false).count() == 1) {
+                Iterator<Long> countIt = __(hashNode).inE(Constants.InternalEdge.__withIdentityHash.name()).count();
+                long count = closeAfter(countIt, countIt::next);
+                if (count == 1) {
                     hashNode.remove();
                 } else {
                     hashNodeEdge.remove();

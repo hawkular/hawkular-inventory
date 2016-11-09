@@ -532,7 +532,16 @@ class FilterVisitor {
     public void visit(GraphTraversal<?, ?> query, @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query.out(__withIdentityHash.name()).in(__withIdentityHash.name());
+        String sourceLabels = nextRandomLabel();
+        String results = nextRandomLabel();
+        String resultLabels = nextRandomLabel();
+
+        //this used to be query.out(__withIdentityHash).in(__withIdentityHash) but that didn't account for the fact
+        //that we should only find identical entities WITH THE SAME TYPE.. the query below does the trick
+        query.as(sourceLabels).out(__withIdentityHash.name())
+                .in(__withIdentityHash.name()).as(results, resultLabels)
+                .select(sourceLabels, resultLabels).by(T.label).where(sourceLabels, P.eq(resultLabels))
+                .select(results).dedup();
     }
 
     private void convertToPipeline(RelativePath path, GraphTraversal<?, ?> pipeline) {
