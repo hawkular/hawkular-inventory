@@ -549,7 +549,9 @@ class FilterVisitor {
             if (SegmentType.up.equals(s.getElementType())) {
                 pipeline.in(Relationships.WellKnown.contains.name());
             } else {
-                pipeline.out(Relationships.WellKnown.contains.name());
+                pipeline.out(Relationships.WellKnown.contains.name())
+                        .hasLabel(Constants.Type.of(s.getElementType()).name());
+
                 apply(s, pipeline);
             }
         }
