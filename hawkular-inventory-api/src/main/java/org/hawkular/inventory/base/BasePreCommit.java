@@ -216,7 +216,11 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
             if (computeHashes) {
                 DBG.debugf("About to compute treehash of %s", changedEntity.cp);
 
-                treeHash = Hashes.treeOf(InventoryStructure.of(e, inventory), e.getPath(), rp -> {
+                //this inventory structure stores the loaded entities as the attachments of the structure elements
+                //we can take advantage of that below to "load" the hashes, by just looking up the attachment
+                InventoryStructure<?> struct = InventoryStructure.of(e, inventory);
+
+                treeHash = Hashes.treeOf(struct, e.getPath(), rp -> {
                     if (DBG.isDebugEnabled()) {
                         DBG.debugf("About to load hashes of %s", rp.applyTo(changedEntity.cp));
                     }
@@ -240,21 +244,17 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
                         //of (recursively) computing them
                         CanonicalPath childCp = rp.applyTo(e.getPath());
 
-                        DBG.debugf("Loading hashes of %s from the database.", childCp);
+                        DBG.debugf("Using pre-loaded hashes of %s.", childCp);
 
-                        @SuppressWarnings("unchecked")
-                        Entity<?, ?> childE;
-
-                        try {
-                            //noinspection unchecked
-                            childE = tx.convert(tx.find(childCp),
-                                    (Class<Entity<?, ?>>) Inventory.types().byPath(childCp).getElementType());
-                        } catch (ElementNotFoundException e1) {
+                        InventoryStructure.FullNode node = struct.getNode(rp);
+                        if (node == null) {
                             //hmm, ok, let's just try and compute this then
                             DBG.debugf("Entity %s not found in the database, its hashes will be recomputed instead.",
                                     childCp);
                             return null;
                         }
+
+                        Entity<?, ?> childE = (Entity<?, ?>) node.getAttachment();
 
                         String contentHash = null;
                         String identityHash = null;
