@@ -23,7 +23,7 @@
   <parent>
     <artifactId>hawkular-inventory-parent</artifactId>
     <groupId>org.hawkular.inventory</groupId>
-    <version>1.1.1.Final</version>
+    <version>1.1.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-inventory-bus-api</artifactId>
@@ -34,7 +34,7 @@
     <url>https://github.com/hawkular/hawkular-inventory</url>
     <connection>scm:git:https://github.com/hawkular/hawkular-inventory</connection>
     <developerConnection>scm:git:git@github.com:hawkular/hawkular-inventory.git</developerConnection>
-    <tag>1.1.1.Final</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <dependencies>
