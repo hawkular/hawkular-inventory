@@ -33,6 +33,9 @@
       <logger category="org.hawkular.inventory.rest.requests">
         <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
       </logger>
+      <logger category="org.umlg.sqlg">
+        <level name="${{hawkular.log.inventory.sqlg:INFO}}" />
+      </logger>
     </xsl:copy>
   </xsl:template>
 

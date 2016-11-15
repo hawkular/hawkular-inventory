@@ -548,48 +548,43 @@ final class ComputeHash {
 
         static HashableView of(InventoryStructure<?> structure) {
             return new HashableView() {
+                private DataEntity.Blueprint<?> getData(RelativePath.Extender parentPath, DataRole dataRole) {
+                    Blueprint b =
+                            structure.get(parentPath.extend(SegmentType.d, dataRole.name()).get());
+
+                    return b == null ? dummyDataBlueprint(dataRole) : (DataEntity.Blueprint<?>) b;
+                }
+
                 @Override
                 public DataEntity.Blueprint<?> getConfiguration(RelativePath rootPath,
                                                                 Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = rootPath.modified().extend(SegmentType.r, parentResource.getId())
-                            .get().slide(1, 0);
+                    RelativePath.Extender resourcePath = rootPath.modified()
+                            .extend(SegmentType.r, parentResource.getId()).get().slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(resourcePath, DataEntity.class)) {
-                        return s.filter(d -> configuration.equals(d.getRole()))
-                                .findFirst().orElse(dummyDataBlueprint(configuration));
-                    }
+                    return getData(resourcePath, configuration);
                 }
 
                 @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
-                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resourceType(rt.getId()).get();
+                    RelativePath.Extender p = rt.equals(structure.getRoot()) ? RelativePath.empty()
+                            : RelativePath.empty().extend(SegmentType.rt, rt.getId());
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> configurationSchema.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(configurationSchema));
-                    }
+                    return getData(p, configurationSchema);
                 }
 
                 @Override
                 public DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root,
                                                                           Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
-                            .get().slide(1, 0);
+                    RelativePath.Extender resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
+                            .get().slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(resourcePath, DataEntity.class)
-                            .filter(d -> connectionConfiguration.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfiguration));
-                    }
+                    return getData(resourcePath, connectionConfiguration);
                 }
 
                 @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
-                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resourceType(rt.getId()).get();
+                    RelativePath.Extender p = rt.equals(structure.getRoot()) ? RelativePath.empty()
+                            : RelativePath.empty().extend(SegmentType.rt, rt.getId());
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> connectionConfigurationSchema.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfigurationSchema));
-                    }
+                    return getData(p, connectionConfigurationSchema);
                 }
 
                 @Override public List<Metric.Blueprint> getFeedMetrics() {
@@ -624,13 +619,10 @@ final class ComputeHash {
                 @Override
                 public DataEntity.Blueprint<?> getParameterTypes(RelativePath rootResourceType,
                                                                  OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
-                            .slide(1, 0);
+                    RelativePath.Extender p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
+                            .slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> parameterTypes.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(parameterTypes));
-                    }
+                    return getData(p, parameterTypes);
                 }
 
                 @Override
@@ -663,13 +655,10 @@ final class ComputeHash {
 
                 @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
                                                                        OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
-                            .slide(1, 0);
+                    RelativePath.Extender p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
+                            .slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> returnType.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(returnType));
-                    }
+                    return getData(p, returnType);
                 }
             };
         }
