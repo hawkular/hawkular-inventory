@@ -972,7 +972,7 @@
             "type" : "string",
             "enum" : [ "NONE", "PERCENTAGE", "BYTES", "KILOBYTES", "MEGABYTES", "GIGABYTES", "TERABYTES", "PETABYTES", "BITS", "KILOBITS", "MEGABITS", "GIGABITS", "TERABITS", "PETABITS", "EPOCH_MILLISECONDS", "EPOCH_SECONDS", "JIFFYS", "NANOSECONDS", "MICROSECONDS", "MILLISECONDS", "SECONDS", "MINUTES", "HOURS", "DAYS", "PER_JIFFY", "PER_NANOSECOND", "PER_MICROSECOND", "PER_MILLISECOND", "PER_SECOND", "PER_MINUTE", "PER_HOUR", "PER_DAY", "CELSIUS", "KELVIN", "FAHRENHEIGHT" ]
           },
-          "type" : {
+          "metricDataType" : {
             "type" : "string",
             "enum" : [ "GAUGE", "AVAILABILITY", "COUNTER", "COUNTER_RATE" ]
           },
@@ -995,7 +995,7 @@
             "type" : "string",
             "enum" : [ "NONE", "PERCENTAGE", "BYTES", "KILOBYTES", "MEGABYTES", "GIGABYTES", "TERABYTES", "PETABYTES", "BITS", "KILOBITS", "MEGABITS", "GIGABITS", "TERABITS", "PETABITS", "EPOCH_MILLISECONDS", "EPOCH_SECONDS", "JIFFYS", "NANOSECONDS", "MICROSECONDS", "MILLISECONDS", "SECONDS", "MINUTES", "HOURS", "DAYS", "PER_JIFFY", "PER_NANOSECOND", "PER_MICROSECOND", "PER_MILLISECOND", "PER_SECOND", "PER_MINUTE", "PER_HOUR", "PER_DAY", "CELSIUS", "KELVIN", "FAHRENHEIGHT" ]
           },
-          "type" : {
+          "metricDataType" : {
             "type" : "string",
             "enum" : [ "GAUGE", "AVAILABILITY", "COUNTER", "COUNTER_RATE" ]
           },
