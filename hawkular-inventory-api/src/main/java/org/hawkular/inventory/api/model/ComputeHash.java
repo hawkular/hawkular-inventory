@@ -350,7 +350,7 @@ final class ComputeHash {
                         targetType);
 
                 if (targetPath.isCanonical()) {
-                    targetPath = targetPath.toCanonicalPath().relativeTo(entityPath);
+                    targetPath = targetPath.toCanonicalPath().relativeTo(ctx.origin);
                 }
 
                 return targetPath.toRelativePath();
@@ -416,7 +416,8 @@ final class ComputeHash {
             private void appendEntityIdentity(Entity.Blueprint child, IntermediateHashContext ctx) {
                 ctx.identity.append(child.accept(this, ctx).identityHash);
             }
-        }, new IntermediateHashContext(RelativePath.empty().get()));
+        }, new IntermediateHashContext(entityPath == null ? null : entityPath.up(),
+                RelativePath.empty().get()));
     }
 
     static void appendIdentity(String data, IntermediateHashContext ctx) {
@@ -808,18 +809,23 @@ final class ComputeHash {
     }
 
     static class IntermediateHashContext {
+        final CanonicalPath origin;
         final RelativePath root;
         final StringBuilder identity = new StringBuilder();
         final StringBuilder content = new StringBuilder();
         final StringBuilder sync = new StringBuilder();
 
-        IntermediateHashContext(RelativePath root) {
+        IntermediateHashContext(CanonicalPath origin, RelativePath root) {
+            this.origin = origin;
             this.root = root;
         }
 
         IntermediateHashContext progress(Entity.Blueprint bl) {
-            return new IntermediateHashContext(root.modified().extend(Blueprint.getSegmentTypeOf(bl),
-                    bl.getId()).get());
+            SegmentType st = Blueprint.getSegmentTypeOf(bl);
+            String id = bl.getId();
+
+            return new IntermediateHashContext(origin == null ? null : origin.modified().extend(st, id).get(),
+                    root.modified().extend(st, id).get());
         }
     }
 
