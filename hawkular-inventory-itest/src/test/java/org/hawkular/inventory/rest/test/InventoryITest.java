@@ -993,13 +993,13 @@ public class InventoryITest extends AbstractTestBase {
         + "            {" //
         + "                \"id\"                : \""+ bulkMetricTypePrefix + ".1\"," //
         + "                \"unit\"              : \"BYTES\"," //
-        + "                \"type\"              : \"GAUGE\"," //
+        + "                \"metricDataType\"    : \"GAUGE\"," //
         + "                \"collectionInterval\": \"300\"" //
         + "            }," //
         + "            {" //
         + "                \"id\"                : \""+ bulkMetricTypePrefix + ".2\"," //
         + "                \"unit\"              : \"BYTES\"," //
-        + "                \"type\"              : \"GAUGE\"," //
+        + "                \"metricDataType\"              : \"GAUGE\"," //
         + "                \"collectionInterval\": \"300\"" //
         + "            }" //
         + "        ]" //
@@ -1168,7 +1168,7 @@ public class InventoryITest extends AbstractTestBase {
                 + "    \"metricType\": ["//
                 + "      {"//
                 + "        \"id\": \""+ mt1 +"\","//
-                + "        \"type\": \"GAUGE\","//
+                + "        \"metricDataType\": \"GAUGE\","//
                 + "        \"unit\": \"MILLISECONDS\","//
                 + "        \"collectionInterval\": \"1\""//
                 + "      }"//
@@ -1418,7 +1418,7 @@ public class InventoryITest extends AbstractTestBase {
                 + "        {"//
                 + "            \"data\": {"//
                 + "                \"id\": \"metricType\","//
-                + "                \"type\": \"GAUGE\","//
+                + "                \"metricDataType\": \"GAUGE\","//
                 + "                \"unit\": \"NONE\","//
                 + "                \"collectionInterval\": 0,"//
                 + "                \"name\": \"My Metric Type With A Friendly Name\""//

@@ -35,7 +35,6 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.IdentityHash;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
-import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
@@ -65,9 +64,7 @@ import org.hawkular.inventory.json.mixins.model.EnvironmentMixin;
 import org.hawkular.inventory.json.mixins.model.FeedMixin;
 import org.hawkular.inventory.json.mixins.model.IdentityHashTreeMixin;
 import org.hawkular.inventory.json.mixins.model.InventoryStructureMixin;
-import org.hawkular.inventory.json.mixins.model.MetricDataTypeMixin;
 import org.hawkular.inventory.json.mixins.model.MetricMixin;
-import org.hawkular.inventory.json.mixins.model.MetricTypeBlueprintMixin;
 import org.hawkular.inventory.json.mixins.model.MetricTypeMixin;
 import org.hawkular.inventory.json.mixins.model.OperationTypeMixin;
 import org.hawkular.inventory.json.mixins.model.RelationshipMixin;
@@ -126,7 +123,6 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(Feed.class, FeedMixin.class);
         objectMapper.addMixIn(Metric.class, MetricMixin.class);
         objectMapper.addMixIn(MetricType.class, MetricTypeMixin.class);
-        objectMapper.addMixIn(MetricDataType.class, MetricDataTypeMixin.class);
         objectMapper.addMixIn(Path.class, CanonicalPathMixin.class);
         objectMapper.addMixIn(Relationship.class, RelationshipMixin.class);
         objectMapper.addMixIn(RelativePath.class, RelativePathMixin.class);
@@ -140,7 +136,6 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(InventoryStructure.class, InventoryStructureMixin.class);
         objectMapper.addMixIn(IdentityHash.Tree.class, IdentityHashTreeMixin.class);
         objectMapper.addMixIn(SyncHash.Tree.class, SyncHashTreeMixin.class);
-        objectMapper.addMixIn(MetricType.Blueprint.class, MetricTypeBlueprintMixin.class);
 
         /**
          * Query

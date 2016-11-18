@@ -215,8 +215,7 @@ public class SerializationTest {
     }
 
     @Test
-    @Deprecated
-    public void testMetricTypeIncludesDeprecatedFields() throws Exception {
+    public void testMetricTypeIsUpperCase() throws Exception {
         MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), "a", null, null, MetricUnit.BYTES,
                 COUNTER, new HashMap<String, Object>() {{
             put("a", "b");
@@ -227,16 +226,12 @@ public class SerializationTest {
         JsonNode json = mapper.readTree(ser);
 
         Assert.assertTrue(json.isObject());
-
-        Assert.assertTrue(json.has("type"));
         Assert.assertTrue(json.has("metricDataType"));
-        Assert.assertEquals(COUNTER.name(), json.get("type").textValue());
-        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
+        Assert.assertEquals(COUNTER.name(), json.get("metricDataType").textValue());
     }
 
     @Test
-    @Deprecated
-    public void testMetricTypeBlueprintIncludesDeprecatedFields() throws Exception {
+    public void testMetricTypeBlueprintIsUpperCase() throws Exception {
         MetricType.Blueprint mt = MetricType.Blueprint.builder(COUNTER).withId("c").withInterval(0L)
                 .withUnit(MetricUnit.BYTES).withProperties(new HashMap<String, Object>() {{
                     put("a", "b");
@@ -247,11 +242,8 @@ public class SerializationTest {
         JsonNode json = mapper.readTree(ser);
 
         Assert.assertTrue(json.isObject());
-
-        Assert.assertTrue(json.has("type"));
         Assert.assertTrue(json.has("metricDataType"));
-        Assert.assertEquals(COUNTER.name(), json.get("type").textValue());
-        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
+        Assert.assertEquals(COUNTER.name(), json.get("metricDataType").textValue());
     }
 
     @Test
