@@ -252,16 +252,16 @@ public abstract class BaseInventory<E> implements Inventory {
 
     @Override
     public <T extends AbstractElement> Page<T> execute(Query query, Class<T> requestedEntity, Pager pager) {
-        InventoryBackend<E> tx = getBackend().startTransaction();
+        Transaction<E> tx = tenantContext.startTransaction();
         try {
             return new TransformingPage<T, T>(tx.query(query, pager, e -> backend.convert(e, requestedEntity), null),
                     Function.identity()) {
                 @Override public void close() {
-                    tx.rollback();
+                    tx.directAccess().rollback();
                 }
             };
         } catch (Throwable t) {
-            tx.rollback();
+            tx.directAccess().rollback();
             throw t;
         }
     }
