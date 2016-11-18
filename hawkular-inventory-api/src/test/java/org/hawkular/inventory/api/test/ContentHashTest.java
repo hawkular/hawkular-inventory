@@ -127,11 +127,16 @@ public class ContentHashTest {
             Entity.Blueprint bl = accept(t, generator, null);
 
             if (bl != null) {
-                //no other entity type but the resource needs the canonical path to compute the content hash.
-                //so we can safely just pass here the canonical path of the resource. It will be ignored in all other
-                //but correct cases.
-                String contentHash =
-                        ContentHash.of(bl, CanonicalPath.of().tenant("tnt").feed("fd").resource("id").get());
+                //no other entity type but the resource and metric needs the canonical path to compute the content hash.
+                CanonicalPath cp;
+                if (bl instanceof Resource.Blueprint) {
+                    cp = CanonicalPath.of().tenant("tnt").feed("fd").resource("id").get();
+                } else if (bl instanceof Metric.Blueprint) {
+                    cp = CanonicalPath.of().tenant("tnt").feed("fd").metric("id").get();
+                } else {
+                    cp = null;
+                }
+                String contentHash = ContentHash.of(bl, cp);
 
                 ElementTypeVisitor.accept(t, new ElementTypeVisitor.Simple<Void, Void>() {
                     @Override protected Void defaultAction(SegmentType elementType, Void parameter) {
