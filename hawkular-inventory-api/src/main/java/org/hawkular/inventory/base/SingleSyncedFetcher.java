@@ -24,8 +24,6 @@ import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -58,6 +56,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.ElementBlueprintVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricType;
@@ -75,6 +74,7 @@ import org.hawkular.inventory.paths.ElementTypeVisitor;
 import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
+import org.jboss.logging.Logger;
 
 /**
  * @author Lukas Krejci
@@ -85,6 +85,8 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
         extends SingleEntityFetcher<BE, E, U>
         implements Synced.SingleWithRelationships<E, B, U> {
 
+    private static final Logger DBG = Logger.getLogger(SingleSyncedFetcher.class);
+
     SingleSyncedFetcher(TraversalContext<BE, E> context) {
         super(context);
     }
@@ -93,34 +95,76 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
         inTx(tx -> {
             BE root = tx.querySingle(context.select().get());
 
-            boolean rootFullyInitialized = true;
+            E entity;
+
             if (root == null) {
                 Mutator<BE, E, B, U, String> mutator = createMutator(tx);
                 EntityAndPendingNotifications<BE, E> res =
                         mutator.doCreate(syncRequest.getInventoryStructure().getRoot(), tx);
                 root = res.getEntityRepresentation();
-                rootFullyInitialized = false;
+                entity = res.getEntity();
+            } else {
+                entity = tx.convert(root, context.entityClass);
             }
 
             CanonicalPath rootPath = tx.extractCanonicalPath(root);
 
-            Map.Entry<InventoryStructure<B>, SyncHash.Tree> structAndTree;
-            if (rootFullyInitialized) {
-                 structAndTree = treeHashAndStructure(tx);
+            InventoryStructure<B> currentStructure =
+                    InventoryStructure.of(entity, context.inventory.keepTransaction(tx));
+
+            //If we're using the deep search we need to load both trees in full to be able to determine what is synced.
+            //If on the other hand we're syncing "shallowly", we can skip a lot of database access by computing the hash
+            //only for the parts of the tree that has been changed in the incoming inventory structure.
+            //This is the value of the hash loader which is used either if we're doing deep search or if we're syncing
+            //everything - in which case we don't actually load anything from the database and just recompute the
+            //hash of the whole new structure.
+            Function<RelativePath, Hashes> hashLoader = rp -> null;
+
+            InventoryStructure<B> newStructure;
+
+            if (syncRequest.getConfiguration().getSyncedTypes().size() == SegmentType.values().length) {
+                //special case if we are syncing everything - in this case we need no merging of the already persisted
+                //parts of the tree into the new structure.
+                DBG.debugf("Using the fast lane for full sync of %s", rootPath);
+
+                newStructure = syncRequest.getInventoryStructure();
             } else {
-                structAndTree = new SimpleImmutableEntry<>(
-                        InventoryStructure.of(syncRequest.getInventoryStructure().getRoot()).build(),
-                        SyncHash.Tree.builder().build());
+                DBG.debugf("Merging persisted structure with the new data of %s", rootPath);
+                newStructure =
+                        mergeTree(currentStructure, syncRequest.getInventoryStructure(),
+                                syncRequest.getConfiguration());
+                DBG.debugf("Done merging the persisted and new data of %s", rootPath);
+
+                if (!syncRequest.getConfiguration().isDeepSearch()) {
+                    //Ok, so this is not deep search and we merged parts of the persisted tree into our new tree.
+                    //So if we encounter such persisted node while computing the hashes, we actually don't need to
+                    //compute its hash - it hasn't changed (because it's not in the incoming structure) and we know
+                    //its hash already.
+                    hashLoader = rp -> {
+                        //just check if the node on the position has attachment - in that case it's been loaded from
+                        //the database and we need not recompute its hash.
+                        InventoryStructure.FullNode node = newStructure.getNode(rp);
+                        if (node == null) {
+                            return null;
+                        }
+
+                        Entity<?, ?> e = (Entity<?, ?>) node.getAttachment();
+                        if (e == null) {
+                            return null;
+                        }
+
+                        return Hashes.of(e);
+                    };
+                }
             }
 
-            SyncHash.Tree currentTree = structAndTree.getValue();
-            InventoryStructure<B> currentStructure = structAndTree.getKey();
-            InventoryStructure<B> newStructure =
-                    mergeTree(currentStructure, syncRequest.getInventoryStructure(), syncRequest.getConfiguration());
+            DBG.debugf("Computing sync tree of the merged structure of %s", rootPath);
+            SyncHash.Tree newTree = SyncHash.treeOf(newStructure, rootPath, hashLoader);
+            DBG.debugf("Done computing sync tree of the merged structure of %s", rootPath);
 
-            SyncHash.Tree newTree = SyncHash.treeOf(newStructure, rootPath);
-
-            syncTrees(tx, rootPath, root, currentTree, newTree, newStructure);
+            DBG.debugf("Syncing the merged tree to the database state of root %s", rootPath);
+            syncTrees(tx, rootPath, RelativePath.empty().get(), root, newTree, newStructure, currentStructure);
+            DBG.debugf("Done syncing the merged tree and the database state of root %s", rootPath);
 
             return null;
         });
@@ -133,65 +177,96 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
     private InventoryStructure<B> mergeTree(InventoryStructure<B> currentTree, InventoryStructure<B> newTree,
                                     SyncConfiguration configuration) {
         if (configuration.isDeepSearch()) {
-            return mergeDeepTree(InventoryStructure.Offline.copy(currentTree).asBuilder(),
+            return mergeDeepTree(currentTree, RelativePath.empty().get(),
                     InventoryStructure.Offline.copy(newTree).asBuilder(), configuration.getSyncedTypes()).build();
         } else {
-            return mergeShallowTree(InventoryStructure.Offline.copy(currentTree).asBuilder(),
+            return mergeShallowTree(currentTree, RelativePath.empty().get(),
                     InventoryStructure.Offline.copy(newTree).asBuilder(), configuration.getSyncedTypes()).build();
         }
     }
 
     @SuppressWarnings("unchecked")
-    private InventoryStructure.Builder<B> mergeShallowTree(InventoryStructure.AbstractBuilder<?> currentTree,
+    private InventoryStructure.Builder<B> mergeShallowTree(InventoryStructure<?> currentTree, RelativePath treePath,
                                                            InventoryStructure.AbstractBuilder<?> newTree,
                                                            Set<SegmentType> mergedTypes) {
 
-        Set<Path.Segment> currentChildPaths = currentTree.getChildrenPaths();
-        Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+        DBG.debugf("Starting to merge shallow tree. Loading children under [%s]", treePath);
+        try (Stream<InventoryStructure.FullNode> currentChildren = currentTree.getAllChildNodes(treePath)) {
+            DBG.debugf("Done loading the children under [%s]", treePath);
 
-        for (Path.Segment ccp : currentChildPaths) {
-            if (newChildPaths.contains(ccp)) {
-                mergeShallowTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
-            } else if (!mergedTypes.contains(ccp.getElementType())) {
-                newTree.addChild(currentTree.getChild(ccp), true);
+            Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+
+            currentChildren.forEach(currentChild -> {
+                SegmentType childType =
+                        Inventory.types().byBlueprint(currentChild.getEntity().getClass()).getSegmentType();
+                Path.Segment childPathSegment = new Path.Segment(childType, currentChild.getEntity().getId());
+
+                if (newChildPaths.contains(childPathSegment)) {
+                    mergeShallowTree(currentTree, treePath.modified().extend(childPathSegment).get(),
+                            newTree.getChild(childPathSegment), mergedTypes);
+                } else if (!mergedTypes.contains(childType)) {
+                    newTree.addChild(currentChild.getEntity(), currentChild.getAttachment());
+                }
+            });
+
+            DBG.debugf("Done merging shallow tree of [%s]", treePath);
+
+            if (newTree instanceof InventoryStructure.Builder) {
+                return (InventoryStructure.Builder<B>) newTree;
+            } else {
+                return null;
             }
-        }
-
-        if (newTree instanceof InventoryStructure.Builder) {
-            return (InventoryStructure.Builder<B>) newTree;
-        } else {
-            return null;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private InventoryStructure.Builder<B> mergeDeepTree(InventoryStructure.AbstractBuilder<?> currentTree,
+    private InventoryStructure.Builder<B> mergeDeepTree(InventoryStructure<?> currentTree, RelativePath treePath,
                                                         InventoryStructure.AbstractBuilder<?> newTree,
                                                         Set<SegmentType> mergedTypes) {
-        Set<Path.Segment> currentChildPaths = currentTree.getChildrenPaths();
-        Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+        DBG.debugf("Starting to merge shallow tree. Loading children under [%s]", treePath);
+        try (Stream<InventoryStructure.FullNode> currentChildren = currentTree.getAllChildNodes(treePath)) {
+            DBG.debugf("Done loading the children under [%s]", treePath);
 
-        for (Path.Segment ccp : currentChildPaths) {
-            if (newChildPaths.contains(ccp)) {
-                mergeDeepTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
-            } else if (!mergedTypes.contains(ccp.getElementType())) {
-                newTree.addChild(currentTree.getChild(ccp).getBlueprint());
-                mergeDeepTree(currentTree.getChild(ccp), newTree.getChild(ccp), mergedTypes);
+            Set<Path.Segment> newChildPaths = newTree.getChildrenPaths();
+
+            currentChildren.forEach(currentChild -> {
+                SegmentType childType =
+                        Inventory.types().byBlueprint(currentChild.getEntity().getClass()).getSegmentType();
+                Path.Segment childPathSegment = new Path.Segment(childType, currentChild.getEntity().getId());
+
+                if (newChildPaths.contains(childPathSegment)) {
+                    mergeDeepTree(currentTree, treePath.modified().extend(childPathSegment).get(),
+                            newTree.getChild(childPathSegment), mergedTypes);
+                } else if (!mergedTypes.contains(childType)) {
+                    newTree.addChild(currentChild.getEntity(), currentChild.getAttachment());
+                    mergeDeepTree(currentTree, treePath.modified().extend(childPathSegment).get(),
+                            newTree.getChild(childPathSegment), mergedTypes);
+                }
+            });
+
+            DBG.debugf("Done merging shallow tree of [%s]", treePath);
+
+            if (newTree instanceof InventoryStructure.Builder) {
+                return (InventoryStructure.Builder<B>) newTree;
+            } else {
+                return null;
             }
-        }
-
-        if (newTree instanceof InventoryStructure.Builder) {
-            return (InventoryStructure.Builder<B>) newTree;
-        } else {
-            return null;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void syncTrees(Transaction<BE> tx, CanonicalPath root, BE oldElement, SyncHash.Tree oldTree,
-                           SyncHash.Tree newTree, InventoryStructure<?> newStructure) {
+    private void syncTrees(Transaction<BE> tx, CanonicalPath root, RelativePath pathFromRoot, BE oldElement,
+                           SyncHash.Tree newTree, InventoryStructure<?> newStructure,
+                           InventoryStructure<?> persistedStructure) {
 
-        if (!Objects.equals(oldTree.getHash(), newTree.getHash())) {
+        InventoryStructure.FullNode persistedNode = persistedStructure.getNode(pathFromRoot);
+        String persistedHash = persistedNode == null ? null : ((Syncable) persistedNode.getAttachment()).getSyncHash();
+
+        if (!Objects.equals(persistedHash, newTree.getHash())) {
+            if (DBG.isDebugEnabled()) {
+                DBG.debugf("Hashes differ on %s. Syncing...", pathFromRoot.applyTo(root));
+            }
+
             //we only need to do something if the hashes don't match. If they do, it means this entity and its whole
             //subtree is equivalent. But it isn't because the hashes differ, so...
             Blueprint newState = newStructure.get(newTree.getPath());
@@ -207,38 +282,37 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
             //we can exploit the InventoryStructure.EntityType enum which is ordered with this in mind.
             Set<SyncHash.Tree> unprocessedChildren = sortByType(newTree.getChildren());
 
-            Map<SyncHash.Tree, SyncHash.Tree> updates = new HashMap<>();
-
-            //again, it is important to create types before to resources or metrics, etc.
-            Map<InventoryStructure.EntityType, Set<SyncHash.Tree>> childrenByType = splitByType(oldTree
-                    .getChildren());
+            Set<SyncHash.Tree> updates = new HashSet<>();
 
             for (InventoryStructure.EntityType type : InventoryStructure.EntityType.values()) {
-                Set<SyncHash.Tree> oldChildren = childrenByType.get(type);
-                if (oldChildren == null) {
-                    continue;
-                }
-
-                for (SyncHash.Tree oldChild : oldChildren) {
-                    SyncHash.Tree newChild = newTree.getChild(oldChild.getPath().getSegment());
-
-                    if (newChild == null) {
-                        //ok, this entity is no longer in the new structure
-                        CanonicalPath childCp = oldChild.getPath().applyTo(root);
-                        try {
-                            //delete using a normal API so that all checks are run
-                            inv.inspect(childCp, ResolvableToSingle.class).delete();
-                        } catch (EntityNotFoundException e) {
-                            Log.LOGGER.debug("Failed to find a child to be deleted on canonical path " + childCp
-                                    + ". Ignoring this since we were going to delete it anyway.", e);
-                        }
-                    } else {
-                        //kewl, we have a matching child that we need to sync
-                        //let's just postpone the actual update until the end of the method, just in case Java gets
-                        //tail-call optimization ;)
-                        unprocessedChildren.remove(newChild);
-                        updates.put(oldChild, newChild);
+                try (Stream<InventoryStructure.FullNode> oldChildren = persistedStructure.getChildNodes(pathFromRoot,
+                        type.elementType)) {
+                    if (oldChildren == null) {
+                        continue;
                     }
+
+                    oldChildren.forEach(oldChild -> {
+                        Entity<?, ?> oldEntity = (Entity<?, ?>) oldChild.getAttachment();
+                        CanonicalPath childCp = oldEntity.getPath();
+                        SyncHash.Tree newChild = newTree.getChild(childCp.getSegment());
+
+                        if (newChild == null) {
+                            //ok, this entity is no longer in the new structure
+                            try {
+                                //delete using a normal API so that all checks are run
+                                inv.inspect(childCp, ResolvableToSingle.class).delete();
+                            } catch (EntityNotFoundException e) {
+                                Log.LOGGER.debug("Failed to find a child to be deleted on canonical path " + childCp
+                                        + ". Ignoring this since we were going to delete it anyway.", e);
+                            }
+                        } else {
+                            //kewl, we have a matching child that we need to sync
+                            //let's just postpone the actual update until the end of the method, just in case Java gets
+                            //tail-call optimization ;)
+                            unprocessedChildren.remove(newChild);
+                            updates.add(newChild);
+                        }
+                    });
                 }
             }
 
@@ -246,18 +320,20 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
             unprocessedChildren.forEach(c -> create(tx, root, c, newStructure));
 
             //and finally updates...
-            for (Map.Entry<SyncHash.Tree, SyncHash.Tree> e : updates.entrySet()) {
-                SyncHash.Tree oldChild = e.getKey();
-                SyncHash.Tree update = e.getValue();
+            for (SyncHash.Tree update : updates) {
                 CanonicalPath childCp = update.getPath().applyTo(root);
                 try {
                     BE child = tx.find(childCp);
-                    syncTrees(tx, root, child, oldChild, update, newStructure);
+                    syncTrees(tx, root, childCp.relativeTo(root), child, update, newStructure, persistedStructure);
                 } catch (ElementNotFoundException ex) {
                     Log.LOGGER.debug("Failed to find entity on " + childCp + " that we thought was there. Never mind " +
                             "though, we can just create it again.", ex);
                     create(tx, root, update, newStructure);
                 }
+            }
+        } else {
+            if (DBG.isDebugEnabled()) {
+                DBG.debugf("Hashes match on %s. Sync on its subtree done.", pathFromRoot.applyTo(root));
             }
         }
     }
@@ -501,27 +577,6 @@ abstract class SingleSyncedFetcher<BE, E extends Entity<B, U> & Syncable, B exte
                 .filter(p -> p.getPath().isParentOf(childPath) && p.getPath().getDepth() == childPath.getDepth() - 1)
                 .findAny()
                 .orElse(null);
-    }
-
-    private static Map<InventoryStructure.EntityType, Set<SyncHash.Tree>>
-    splitByType(Collection<SyncHash.Tree> group) {
-
-        EnumMap<InventoryStructure.EntityType, Set<SyncHash.Tree>> ret =
-                new EnumMap<>(InventoryStructure.EntityType.class);
-
-        group.forEach(t -> {
-            SegmentType elementType = t.getPath().getSegment().getElementType();
-            InventoryStructure.EntityType entityType = InventoryStructure.EntityType.of(elementType);
-            Set<SyncHash.Tree> siblings = ret.get(entityType);
-            if (siblings == null) {
-                siblings = new HashSet<>();
-                ret.put(entityType, siblings);
-            }
-
-            siblings.add(t);
-        });
-
-        return ret;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

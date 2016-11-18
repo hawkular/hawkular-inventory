@@ -256,25 +256,9 @@ public class BasePreCommit<BE> implements Transaction.PreCommit<BE> {
 
                         Entity<?, ?> childE = (Entity<?, ?>) node.getAttachment();
 
-                        String contentHash = null;
-                        String identityHash = null;
-                        String syncHash = null;
-
-                        if (childE instanceof ContentHashable) {
-                            contentHash = ((ContentHashable) childE).getContentHash();
-                        }
-
-                        if (childE instanceof IdentityHashable) {
-                            identityHash = ((IdentityHashable) childE).getIdentityHash();
-                        }
-
-                        if (childE instanceof Syncable) {
-                            syncHash = ((Syncable) childE).getSyncHash();
-                        }
-
                         DBG.debugf("Hashes of %s loaded from database.", childCp);
 
-                        return new Hashes(identityHash, contentHash, syncHash);
+                        return Hashes.of(childE);
                     }
                 });
             } else {
