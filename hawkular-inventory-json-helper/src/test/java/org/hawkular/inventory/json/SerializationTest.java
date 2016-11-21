@@ -215,7 +215,7 @@ public class SerializationTest {
     }
 
     @Test
-    public void testMetricTypeIsUpperCase() throws Exception {
+    public void testMetricTypeIsLowerCase() throws Exception {
         MetricType mt = new MetricType(CanonicalPath.fromString("/t;t/mt;c"), "a", null, null, MetricUnit.BYTES,
                 COUNTER, new HashMap<String, Object>() {{
             put("a", "b");
@@ -227,11 +227,11 @@ public class SerializationTest {
 
         Assert.assertTrue(json.isObject());
         Assert.assertTrue(json.has("metricDataType"));
-        Assert.assertEquals(COUNTER.name(), json.get("metricDataType").textValue());
+        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
     }
 
     @Test
-    public void testMetricTypeBlueprintIsUpperCase() throws Exception {
+    public void testMetricTypeBlueprintIsLowerCase() throws Exception {
         MetricType.Blueprint mt = MetricType.Blueprint.builder(COUNTER).withId("c").withInterval(0L)
                 .withUnit(MetricUnit.BYTES).withProperties(new HashMap<String, Object>() {{
                     put("a", "b");
@@ -243,7 +243,7 @@ public class SerializationTest {
 
         Assert.assertTrue(json.isObject());
         Assert.assertTrue(json.has("metricDataType"));
-        Assert.assertEquals(COUNTER.name(), json.get("metricDataType").textValue());
+        Assert.assertEquals(COUNTER.getDisplayName(), json.get("metricDataType").textValue());
     }
 
     @Test
