@@ -2585,6 +2585,109 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
     }
 
     @Test
+    public void testSync_immuneToOrdering() throws Exception {
+        //this test is to ensure that the hash computation is not affected by the order of the elements in the incoming
+        //inventory structure. For the offline inventory structure, this is ensured by using a tree set to store stuff
+        //with a proper comparator and for the online inventory structure this is ensured by actually retrieving the
+        //elements ordered from the database.
+
+        //so, we create a structure, sync it, retrieve the online structure and then create another offline structure
+        //with different insertion order of the elements and all the computed hashes need to match. Additional twist on
+        //this is that we will be using entity IDs with identical hash codes - this is so that we catch any use of
+        //hash set that would be insertion-order sensitive for elements with colliding hash codes.
+        String tenantId = "testSync_immuneToOrdering";
+
+        String[] ids = HashcodeUtil.getStringsWithSameHashcode(12);
+        String feedId = ids[0];
+        String resourceTypeId = ids[1];
+        String metricTypeId = ids[2];
+        String resource1Id = ids[3];
+        String metric1Id = ids[4];
+        String metric2Id = ids[5];
+        String resource2Id = ids[6];
+        String metric3Id = ids[7];
+        String metric4Id = ids[8];
+        String resource3Id = ids[9];
+        String metric5Id = ids[10];
+        String metric6Id = ids[11];
+
+        try {
+            Feeds.Single f = inventory.tenants().create(Tenant.Blueprint.builder().withId(tenantId).build())
+                    .feeds().create(Feed.Blueprint.builder().withId(feedId).build());
+
+            InventoryStructure<Feed.Blueprint> fullStructure = InventoryStructure
+                    .of(Feed.Blueprint.builder().withId(feedId).build())
+                    .addChild(ResourceType.Blueprint.builder().withId(resourceTypeId).build())
+                    .addChild(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId(metricTypeId).withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .startChild(Resource.Blueprint.builder().withResourceTypePath(resourceTypeId).withId(resource1Id)
+                            .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric1Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric2Id)
+                            .withInterval(0L).build())
+                    .end()
+                    .startChild(Resource.Blueprint.builder().withResourceTypePath(resourceTypeId).withId(resource2Id)
+                            .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric3Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric4Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Resource.Blueprint.builder().withId(resource3Id)
+                            .withResourceTypePath("../" + resourceTypeId).build())
+                    .end()
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath(metricTypeId).withId(metric5Id)
+                            .withInterval(0L).build())
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath(metricTypeId).withId(metric6Id)
+                            .withInterval(0L).build())
+                    .build();
+
+            f.synchronize(SyncRequest.syncEverything(fullStructure));
+
+            Feed persistedFeed = inventory.tenants().get(tenantId).feeds().get(feedId).entity();
+
+            Assert.assertEquals(persistedFeed.getSyncHash(), SyncHash.of(fullStructure, persistedFeed.getPath()));
+
+            //now create another inventory structure with permutated order of insertion
+            InventoryStructure<Feed.Blueprint> anotherStructure = InventoryStructure
+                    .of(Feed.Blueprint.builder().withId(feedId).build())
+                    .addChild(ResourceType.Blueprint.builder().withId(resourceTypeId).build())
+                    .addChild(MetricType.Blueprint.builder(MetricDataType.GAUGE).withId(metricTypeId).withInterval(0L)
+                            .withUnit(MetricUnit.NONE).build())
+                    .startChild(Resource.Blueprint.builder().withResourceTypePath(resourceTypeId).withId(resource2Id)
+                            .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric3Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric4Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Resource.Blueprint.builder().withId(resource3Id)
+                            .withResourceTypePath("../" + resourceTypeId).build())
+                    .end()
+                    .startChild(Resource.Blueprint.builder().withResourceTypePath(resourceTypeId).withId(resource1Id)
+                            .build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric1Id)
+                            .withInterval(0L).build())
+                    /**/.addChild(Metric.Blueprint.builder().withMetricTypePath("../" + metricTypeId).withId(metric2Id)
+                            .withInterval(0L).build())
+                    .end()
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath(metricTypeId).withId(metric6Id)
+                            .withInterval(0L).build())
+                    .addChild(Metric.Blueprint.builder().withMetricTypePath(metricTypeId).withId(metric5Id)
+                            .withInterval(0L).build())
+                    .build();
+
+            Assert.assertEquals(persistedFeed.getSyncHash(), SyncHash.of(anotherStructure, persistedFeed.getPath()));
+        } catch (Exception t) {
+            t.printStackTrace();
+            throw t;
+        } finally {
+            if (inventory.tenants().get(tenantId).exists()) {
+                inventory.tenants().delete(tenantId);
+            }
+        }
+    }
+
+    @Test
     public void testObserveTenants() throws Exception {
         String tid = "testObserveTenants";
         runObserverTest(Tenant.class, 0, 0, () -> {

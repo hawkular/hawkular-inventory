@@ -16,19 +16,22 @@
  */
 package org.hawkular.inventory.api.model;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
+import static org.hawkular.inventory.api.model.Helper.ENTITY_ORDER;
 import static org.hawkular.inventory.paths.SegmentType.r;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,12 +45,16 @@ import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.OperationTypes;
+import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResolvableToMany;
 import org.hawkular.inventory.api.ResolvableToSingle;
 import org.hawkular.inventory.api.ResolvingToMultiple;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.Tenants;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.paging.Order;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -86,22 +93,32 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             HashMap<CanonicalPath, FullNode> cache = new HashMap<>();
 
+            {
+                cache.put(rootEntity.getPath(), root);
+            }
+
             @SuppressWarnings("unchecked")
             @Override public B getRoot() {
                 return (B) root.entity;
             }
 
             @Override
-            public <EE extends Entity<? extends BB, ?>, BB extends Blueprint> Stream<BB>
-            getChildren(RelativePath parent, Class<EE> childType) {
+            public <EE extends Entity<? extends BB, ?>, BB extends Entity.Blueprint>
+            Stream<FullNode> getChildNodes(RelativePath parent, Class<EE> childType) {
                 CanonicalPath absoluteParent = rootEntity.getPath().modified().extend(parent.getPath()).get();
                 SegmentType parentType = absoluteParent.getSegment().getElementType();
 
                 SegmentType childSegment = SegmentType.fromElementType(childType);
 
-                return ElementTypeVisitor.accept(childSegment, new ElementTypeVisitor<Stream<BB>, Void>() {
+                return ElementTypeVisitor.accept(childSegment, new ElementTypeVisitor<Stream<FullNode>, Void>() {
 
-                    @Override public Stream<BB> visitTenant(Void parameter) {
+                    class EmptyStreamByDefault extends ElementTypeVisitor.Simple<Stream<FullNode>, Void> {
+                        @Override protected Stream<FullNode> defaultAction(SegmentType elementType, Void parameter) {
+                            return Stream.empty();
+                        }
+                    }
+
+                    @Override public Stream<FullNode> visitTenant(Void parameter) {
                         if (absoluteParent.isDefined()) {
                             return Stream.empty();
                         } else {
@@ -109,105 +126,105 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                         }
                     }
 
-                    @Override public Stream<BB> visitEnvironment(Void parameter) {
+                    @Override public Stream<FullNode> visitEnvironment(Void parameter) {
                         return fromRead(Tenant.class, Tenants.Single.class, Environments.Container::environments);
                     }
 
-                    @Override public Stream<BB> visitFeed(Void parameter) {
+                    @Override public Stream<FullNode> visitFeed(Void parameter) {
                         return fromRead(Tenant.class, Tenants.Single.class, Feeds.Container::feeds);
                     }
 
-                    @Override public Stream<BB> visitMetric(Void parameter) {
-                        return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
-                            @Override public Stream<BB> visitEnvironment(Void parameter) {
+                    @Override public Stream<FullNode> visitMetric(Void parameter) {
+                        return ElementTypeVisitor.accept(parentType, new EmptyStreamByDefault() {
+                            @Override public Stream<FullNode> visitEnvironment(Void parameter) {
                                 return fromRead(Environment.class, Environments.Single.class,
                                         Metrics.Container::metrics);
                             }
 
-                            @Override public Stream<BB> visitFeed(Void parameter) {
+                            @Override public Stream<FullNode> visitFeed(Void parameter) {
                                 return fromRead(Feed.class, Feeds.Single.class, Metrics.Container::metrics);
                             }
 
-                            @Override public Stream<BB> visitResource(Void parameter) {
+                            @Override public Stream<FullNode> visitResource(Void parameter) {
                                 return fromRead(Resource.class, Resources.Single.class, Metrics.Container::metrics);
                             }
                         }, null);
                     }
 
-                    @Override public Stream<BB> visitMetricType(Void parameter) {
-                        return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
-                            @Override public Stream<BB> visitTenant(Void parameter) {
+                    @Override public Stream<FullNode> visitMetricType(Void parameter) {
+                        return ElementTypeVisitor.accept(parentType, new EmptyStreamByDefault() {
+                            @Override public Stream<FullNode> visitTenant(Void parameter) {
                                 return fromRead(Tenant.class, Tenants.Single.class, MetricTypes.Container::metricTypes);
                             }
 
-                            @Override public Stream<BB> visitFeed(Void parameter) {
+                            @Override public Stream<FullNode> visitFeed(Void parameter) {
                                 return fromRead(Feed.class, Feeds.Single.class, MetricTypes.Container::metricTypes);
                             }
                         }, null);
                     }
 
-                    @Override public Stream<BB> visitResource(Void parameter) {
-                        return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
-                            @Override public Stream<BB> visitEnvironment(Void parameter) {
+                    @Override public Stream<FullNode> visitResource(Void parameter) {
+                        return ElementTypeVisitor.accept(parentType, new EmptyStreamByDefault() {
+                            @Override public Stream<FullNode> visitEnvironment(Void parameter) {
                                 return fromRead(Environment.class, Environments.Single.class,
                                         Resources.Container::resources);
                             }
 
-                            @Override public Stream<BB> visitFeed(Void parameter) {
+                            @Override public Stream<FullNode> visitFeed(Void parameter) {
                                 return fromRead(Feed.class, Feeds.Single.class, Resources.Container::resources);
                             }
 
-                            @Override public Stream<BB> visitResource(Void parameter) {
+                            @Override public Stream<FullNode> visitResource(Void parameter) {
                                 return fromRead(Resource.class, Resources.Single.class, Resources.Container::resources);
                             }
                         }, null);
                     }
 
-                    @Override public Stream<BB> visitResourceType(Void parameter) {
-                        return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
-                            @Override public Stream<BB> visitTenant(Void parameter) {
+                    @Override public Stream<FullNode> visitResourceType(Void parameter) {
+                        return ElementTypeVisitor.accept(parentType, new EmptyStreamByDefault() {
+                            @Override public Stream<FullNode> visitTenant(Void parameter) {
                                 return fromRead(Tenant.class, Tenants.Single.class,
                                         ResourceTypes.Container::resourceTypes);
                             }
 
-                            @Override public Stream<BB> visitFeed(Void parameter) {
+                            @Override public Stream<FullNode> visitFeed(Void parameter) {
                                 return fromRead(Feed.class, Feeds.Single.class, ResourceTypes.Container::resourceTypes);
                             }
                         }, null);
                     }
 
-                    @Override public Stream<BB> visitRelationship(Void parameter) {
+                    @Override public Stream<FullNode> visitRelationship(Void parameter) {
                         return Stream.empty();
                     }
 
-                    @Override public Stream<BB> visitData(Void parameter) {
-                        return ElementTypeVisitor.accept(parentType, new ElementTypeVisitor.Simple<Stream<BB>, Void>() {
-                            @Override public Stream<BB> visitResource(Void parameter) {
+                    @Override public Stream<FullNode> visitData(Void parameter) {
+                        return ElementTypeVisitor.accept(parentType, new EmptyStreamByDefault() {
+                            @Override public Stream<FullNode> visitResource(Void parameter) {
                                 return fromRead(Resource.class, Resources.Single.class, Data.Container::data);
                             }
 
-                            @Override public Stream<BB> visitResourceType(Void parameter) {
+                            @Override public Stream<FullNode> visitResourceType(Void parameter) {
                                 return fromRead(ResourceType.class, ResourceTypes.Single.class, Data.Container::data);
                             }
 
-                            @Override public Stream<BB> visitOperationType(Void parameter) {
+                            @Override public Stream<FullNode> visitOperationType(Void parameter) {
                                 return fromRead(OperationType.class, OperationTypes.Single.class,
                                         Data.Container::data);
                             }
                         }, null);
                     }
 
-                    @Override public Stream<BB> visitOperationType(Void parameter) {
+                    @Override public Stream<FullNode> visitOperationType(Void parameter) {
                         return fromRead(ResourceType.class, ResourceTypes.Single.class,
                                 OperationTypes.Container::operationTypes);
                     }
 
-                    @Override public Stream<BB> visitMetadataPack(Void parameter) {
+                    @Override public Stream<FullNode> visitMetadataPack(Void parameter) {
                         throw new IllegalStateException("Unhandled type of entity in inventory structure: " +
                                 parentType);
                     }
 
-                    @Override public Stream<BB> visitUnknown(Void parameter) {
+                    @Override public Stream<FullNode> visitUnknown(Void parameter) {
                         throw new IllegalStateException("Unhandled type of entity in inventory structure: " +
                                 parentType);
                     }
@@ -215,9 +232,9 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                     @SuppressWarnings("unchecked")
                     private <P extends Entity<?, PU>, PA extends ResolvableToSingle<P, PU>, PU extends Entity.Update,
                             X extends Entity<XB, ?>, XB extends Entity.Blueprint>
-                    Stream<BB> fromRead(Class<P> parentType, Class<PA> parentAccessType,
+                    Stream<FullNode> fromRead(Class<P> parentType, Class<PA> parentAccessType,
                                         Function<PA, ResolvingToMultiple<? extends ResolvableToMany<X>>>
-                                               childAccessSupplier) {
+                                                childAccessSupplier) {
 
                         Class<?> parentSegmentType = AbstractElement.toElementClass(absoluteParent.getSegment()
                                 .getElementType());
@@ -232,18 +249,45 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                     @SuppressWarnings("unchecked")
                     private <X extends Entity<XB, ?>, XB extends Entity.Blueprint>
-                    Stream<BB> fromRead(ResolvingToMultiple<? extends ResolvableToMany<X>> read) {
-                        Page<X> it = read.getAll().entities(Pager.none());
+                    Stream<FullNode> fromRead(ResolvingToMultiple<? extends ResolvableToMany<X>> read) {
+                        Page<X> it = read.getAll().entities(Pager.unlimited(Order.by("id", Order.Direction.ASCENDING)));
                         Spliterator<X> sit = Spliterators.spliterator(it, Long.MAX_VALUE, Spliterator.DISTINCT &
                                 Spliterator.IMMUTABLE & Spliterator.NONNULL);
 
                         return StreamSupport.stream(sit, false).map(e -> {
                             XB blueprint = Inventory.asBlueprint(e);
-                            cache.put(e.getPath(), new FullNode(blueprint, e));
-                            return (BB) blueprint;
+                            FullNode n = new FullNode(blueprint, e);
+                            cache.put(e.getPath(), n);
+                            return n;
                         }).onClose(it::close);
                     }
                 }, null);
+            }
+
+            @Override public Stream<FullNode> getAllChildNodes(RelativePath parent) {
+                CanonicalPath absoluteParent = rootEntity.getPath().modified().extend(parent.getPath()).get();
+
+                Query q = Query.path().with(With.path(absoluteParent), Related.by(contains)).get();
+
+                @SuppressWarnings("rawtypes")
+                Page<Entity> results = inventory.execute(q, Entity.class, Pager.none());
+
+                return StreamSupport.stream(results.spliterator(), false)
+                        .map(e -> {
+                            @SuppressWarnings("unchecked")
+                            FullNode n = new FullNode((Entity.Blueprint) Inventory.asBlueprint(e), e);
+                            cache.put(e.getPath(), n);
+                            return n;
+                        })
+                        .sorted(ENTITY_ORDER)
+                        .onClose(results::close);
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public <EE extends Entity<? extends BB, ?>, BB extends Entity.Blueprint>
+            Stream<BB> getChildren(RelativePath parent, Class<EE> childType) {
+                return getChildNodes(parent, childType).map(n -> (BB) n.getEntity());
             }
 
             @Override public Entity.Blueprint get(RelativePath path) {
@@ -289,7 +333,19 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      * @return the builder to build an offline inventory structure
      */
     static <B extends Entity.Blueprint> InventoryStructure.Offline.Builder<B> of(B root) {
-        return Offline.of(root);
+        return of(root, null);
+    }
+
+    /**
+     * Shortcut method, exactly identical to calling {@link Offline#of(Entity.Blueprint, Object)}.
+     *
+     * @param root the root blueprint
+     * @param attachment the attachment of the blueprint
+     * @param <B> the type of the blueprint
+     * @return the builder to build an offline inventory structure
+     */
+    static <B extends Entity.Blueprint> InventoryStructure.Offline.Builder<B> of(B root, Object attachment) {
+        return Offline.of(root, attachment);
     }
 
     /**
@@ -310,8 +366,18 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
      * @param <B>       the type of the child entity blueprint
      * @return a stream of blueprints corresponding to the child entities.
      */
-    <E extends Entity<? extends B, ?>, B extends Blueprint> Stream<B> getChildren(RelativePath parent,
+    <E extends Entity<? extends B, ?>, B extends Entity.Blueprint> Stream<B> getChildren(RelativePath parent,
                                                                                   Class<E> childType);
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    default <E extends Entity<? extends B, ?>, B extends Entity.Blueprint>
+    Stream<FullNode> getChildNodes(RelativePath parent, Class<E> childType) {
+        SegmentType childSegmentType = Inventory.types().byElement((Class)childType).getSegmentType();
+        return getChildren(parent, childType).map(b -> {
+            RelativePath childPath = parent.modified().extend(childSegmentType, b.getId()).get();
+            return getNode(childPath);
+        }).filter(n -> n != null);
+    }
 
     /**
      * Gets a blueprint on the given path.
@@ -332,33 +398,40 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
     }
 
     /**
+     * Returns all direct children of the specified parent.
+     *
      * <b>WARNING</b>: the returned stream MUST BE closed after processing.
      *
-     * @param parent
+     * @param parent the parent of which to return the children
      * @return the stream of all children of the parent
      */
     default Stream<Entity.Blueprint> getAllChildren(RelativePath parent) {
-        Stream<Entity.Blueprint> ret = Stream.empty();
+        return getAllChildNodes(parent).map(FullNode::getEntity);
+    }
+
+    /**
+     * Returns all direct children of the specified parent.
+     *
+     * <b>WARNING</b>: the returned stream MUST BE closed after processing.
+     *
+     * @param parent the parent of which to return the children
+     * @return the stream of all children of the parent
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    default Stream<FullNode> getAllChildNodes(RelativePath parent) {
+        Stream<FullNode> ret = Stream.empty();
         RelativePath.Extender check = RelativePath.empty()
                 .extend(Blueprint.getSegmentTypeOf(getRoot()),getRoot().getId())
                 .extend(parent.getPath());
 
-        for (SegmentType st : SegmentType.values()) {
-            if (st != SegmentType.rl && EntityType.supports(st) && check.canExtendTo(st)) {
-                //streams are a pain..
-                //we need to ensure that the children are evaluated 1 by one - 1 that no 2 queries run
-                //in parallel... in here we do not know if we are loading directly from a backend store
-                //or from memory.
-                //We cannot guarantee the transactional behavior of a backend - even if it supports a transaction frame
-                //it still may choose to use multiple transactions during the lifetime of a frame.
-                //Streams are evaluated lazily and concat'ed stream calls close on the underlying streams (i.e. commit()
-                //of the txs that we might be using) during its close method. As such, if we just concat'ed our calls
-                //to get children, we might try to nest the transactions - which is not supported by Titan at least.
-                //To overcome this, eagerly evaluate each of our children and compose the resulting stream from the
-                //loaded results.
-                List<Entity.Blueprint> res;
-                try (Stream<?> next = getChildren(parent, Entity.entityTypeFromSegmentType(st))) {
-                    res = next.map(e -> (Entity.Blueprint) e).collect(Collectors.toList());
+        for (EntityType et : EntityType.values()) {
+            SegmentType st = et.segmentType;
+            if (check.canExtendTo(st)) {
+                List<FullNode> res;
+                Class entityType = Entity.entityTypeFromSegmentType(st);
+
+                try (Stream<FullNode> next = (Stream<FullNode>) getChildNodes(parent, entityType)) {
+                    res = next.collect(Collectors.toList());
                 }
 
                 ret = Stream.concat(ret, res.stream());
@@ -368,32 +441,15 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
         return ret;
     }
 
+    /**
+     * This had an out-of-place name. Use {@link #getAllChildNodes(RelativePath)} instead.
+     *
+     * @param parent the parent of which to return the children
+     * @return the stream of all children of the parent
+     */
+    @Deprecated
     default Stream<FullNode> getAllChildrenWithAttachments(RelativePath parent) {
-        Stream<FullNode> ret = Stream.empty();
-        RelativePath.Extender check = RelativePath.empty()
-                .extend(Blueprint.getSegmentTypeOf(getRoot()),getRoot().getId())
-                .extend(parent.getPath());
-
-        RelativePath parentPath = check.get();
-
-        for (SegmentType st : SegmentType.values()) {
-            if (st != SegmentType.rl && EntityType.supports(st) && check.canExtendTo(st)) {
-                List<FullNode> res;
-                try (Stream<?> next = getChildren(parent, Entity.entityTypeFromSegmentType(st))) {
-                    res = next
-                            .map(b -> (Entity.Blueprint) b)
-                            .map(b -> {
-                                Object attachment = getNode(parentPath.modified().extend(st, b.getId()).get());
-                                return new FullNode(b, attachment);
-                            })
-                            .collect(Collectors.toList());
-                }
-
-                ret = Stream.concat(ret, res.stream());
-            }
-        }
-
-        return ret;
+        return getAllChildNodes(parent);
     }
 
     /**
@@ -448,7 +504,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
         resource(Resource.class, Resource.Blueprint.class, r),
         dataEntity(DataEntity.class, DataEntity.Blueprint.class, SegmentType.d);
 
-        public final Class<? extends Entity<?, ?>> elementType;
+        public final Class<? extends Entity<? extends Entity.Blueprint, ?>> elementType;
         public final Class<? extends Entity.Blueprint> blueprintType;
         public final SegmentType segmentType;
 
@@ -492,8 +548,8 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             return null;
         }
 
-        EntityType(Class<? extends Entity<?, ?>> elementType, Class<? extends Entity.Blueprint> blueprintType,
-                   SegmentType segmentType) {
+        EntityType(Class<? extends Entity<? extends Entity.Blueprint, ?>> elementType,
+                   Class<? extends Entity.Blueprint> blueprintType, SegmentType segmentType) {
             this.elementType = elementType;
             this.blueprintType = blueprintType;
             this.segmentType = segmentType;
@@ -520,9 +576,17 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
             this.root = root;
             this.children = children;
             this.entities = entities;
+            if (!entities.containsKey(EmptyRelativePath.I)) {
+                entities.put(EmptyRelativePath.I, new FullNode(root, null));
+            }
         }
 
         public static <R extends Entity.Blueprint> Offline<R> copy(InventoryStructure<R> other) {
+            return copy(other, false);
+        }
+
+        public static <R extends Entity.Blueprint> Offline<R> copy(InventoryStructure<R> other,
+                                                                   boolean withAttachments) {
             Map<RelativePath, FullNode> entities = new HashMap<>();
 
             ElementTypeVisitor<Void, RelativePath.Extender> visitor =
@@ -549,31 +613,36 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
                                 if (parentNode == null) {
                                     if (parentPath.isDefined()) {
                                         throw new IllegalStateException("Could not find the tracked children of a" +
-                                                " parent " + parentNode + " during inventory structure copy. This is a " +
+                                                " parent " + parentPath + " during inventory structure copy. This is a " +
                                                 "bug.");
                                     } else {
-                                        parentNode = new FullNode(other.getRoot(),
-                                                other.getNode(EmptyRelativePath.I));
+                                        Object att = withAttachments
+                                                ? other.getNode(EmptyRelativePath.I).getAttachment()
+                                                : null;
+                                        parentNode = new FullNode(other.getRoot(), att);
                                         entities.put(parentPath, parentNode);
                                     }
                                 }
 
                                 //we cannot recursively call ourselves while evaluating the stream, because that
                                 //would result in nested transactions, which are not supported...
-                                List<B> otherChildren;
-                                try (Stream<B> s = other.getChildren(parent.get(), childType)) {
+                                List<FullNode> otherChildren;
+                                try (Stream<FullNode> s = other.getChildNodes(parent.get(), childType)) {
                                     otherChildren = s.collect(Collectors.toList());
                                 }
 
                                 otherChildren.forEach(c -> {
                                     RelativePath.Extender childPath = parentPath.modified()
-                                            .extend(childSeg, c.getId());
+                                            .extend(childSeg, c.getEntity().getId());
 
                                     RelativePath cp = childPath.get();
 
                                     FullNode childNode = entities.get(cp);
                                     if (childNode == null) {
-                                        childNode = new FullNode(c, other.getNode(cp));
+                                        Object att = withAttachments
+                                                ? other.getNode(cp).getAttachment()
+                                                : null;
+                                        childNode = new FullNode(c.getEntity(), att);
                                         entities.put(cp, childNode);
                                     }
 
@@ -631,7 +700,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                 Set<FullNode> childrenBlueprints = childrenByType.get(entityType);
                 if (childrenBlueprints == null) {
-                    childrenBlueprints = new HashSet<>();
+                    childrenBlueprints = new TreeSet<>(Helper.ENTITY_ORDER);
                     childrenByType.put(entityType, childrenBlueprints);
                 }
                 childrenBlueprints.add(entity);
@@ -648,12 +717,16 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
          */
         public InventoryStructure.Builder<Root> asBuilder() {
             RelativePath rootPath = EmptyRelativePath.I;
-            Object attachment = getNode(rootPath);
+            Object attachment = getNode(rootPath).getAttachment();
             return new InventoryStructure.Builder<>(root, attachment, EmptyRelativePath.I, entities, children);
         }
 
         public static <R extends Entity.Blueprint> Builder<R> of(R root) {
-            return new Builder<>(root);
+            return of(root, null);
+        }
+
+        public static <R extends Entity.Blueprint> Builder<R> of (R root, Object attachment) {
+            return new Builder<>(root, attachment);
         }
 
         @Override public Root getRoot() {
@@ -661,7 +734,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
         }
 
         @SuppressWarnings("unchecked") @Override
-        public <E extends Entity<? extends B, ?>, B extends Blueprint> Stream<B>
+        public <E extends Entity<? extends B, ?>, B extends Entity.Blueprint> Stream<B>
         getChildren(RelativePath parent, Class<E> childType) {
             return (Stream<B>) children.getOrDefault(parent, Collections.emptyMap())
                     .getOrDefault(EntityType.of(childType), Collections.emptySet())
@@ -845,7 +918,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
             Set<FullNode> bls = cs.get(childType);
             if (bls == null) {
-                bls = new HashSet<>();
+                bls = new TreeSet<>(ENTITY_ORDER);
                 cs.put(childType, bls);
             }
 
@@ -902,7 +975,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                 Set<FullNode> childrenOfType = parentChildren.get(structureType);
                 if (childrenOfType == null) {
-                    childrenOfType = new HashSet<>();
+                    childrenOfType = new TreeSet<>(Helper.ENTITY_ORDER);
                     parentChildren.put(structureType, childrenOfType);
                 }
 
@@ -926,7 +999,7 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
                     Set<FullNode> currentBlueprints = currentChildren.get(entityType);
                     if (currentBlueprints == null) {
-                        currentBlueprints = new HashSet<>();
+                        currentBlueprints = new TreeSet<>(ENTITY_ORDER);
                         currentChildren.put(entityType, currentBlueprints);
                     }
 
@@ -1031,4 +1104,18 @@ public interface InventoryStructure<Root extends Entity.Blueprint> {
 
 class EmptyRelativePath {
     static final RelativePath I = RelativePath.empty().get();
+}
+
+class Helper {
+    static final Comparator<InventoryStructure.FullNode> ENTITY_ORDER = (a, b) -> {
+        InventoryStructure.EntityType aType = InventoryStructure.EntityType.ofBlueprint(a.getEntity().getClass());
+        InventoryStructure.EntityType bType = InventoryStructure.EntityType.ofBlueprint(b.getEntity().getClass());
+
+        int ret = aType.ordinal() - bType.ordinal();
+        if (ret == 0) {
+            ret = a.getEntity().getId().compareTo(b.getEntity().getId());
+        }
+
+        return ret;
+    };
 }

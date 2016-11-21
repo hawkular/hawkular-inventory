@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.paths.RelativePath;
@@ -85,7 +84,7 @@ public final class InventoryStructureSerializer extends JsonSerializer<Inventory
         }
     }
 
-    private <E extends Entity<B, ?>, B extends Blueprint> List<B> getChildren(InventoryStructure<?> structure,
+    private <E extends Entity<B, ?>, B extends Entity.Blueprint> List<B> getChildren(InventoryStructure<?> structure,
                                                                       RelativePath path, Class<E> type) {
         try (Stream<B> s = structure.getChildren(path, type)) {
             return s.collect(toList());

@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.model;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.Path;
@@ -54,9 +55,12 @@ public final class SyncHash {
      *
      * @param structure the inventory structure to compute the tree hash of
      * @param rootPath the canonical path of the root of the inventory structure
+     * @param hashLoader a function that returns null if the hash of some structure node should be recomputed or returns
+     *                   its hashes if no need to recompute it
      * @return the sync tree hash of the provided inventory structure
      */
-    public static Tree treeOf(InventoryStructure<?> structure, CanonicalPath rootPath) {
+    public static Tree treeOf(InventoryStructure<?> structure, CanonicalPath rootPath,
+                              Function<RelativePath, Hashes> hashLoader) {
         @SuppressWarnings("unchecked")
         Tree.AbstractBuilder<?>[] tbld =
                 new Tree.AbstractBuilder[1];
@@ -80,11 +84,15 @@ public final class SyncHash {
         };
 
         ComputeHash.IntermediateHashResult res = ComputeHash
-                .treeOf(structure, rootPath, true, true, true, startChild, endChild, p -> null);
+                .treeOf(structure, rootPath, true, true, true, startChild, endChild, hashLoader);
 
         tbld[0].withPath(res.path).withHash(res.syncHash);
 
         return ((Tree.Builder)tbld[0]).build();
+    }
+
+    public static Tree treeOf(InventoryStructure<?> structure, CanonicalPath rootPath) {
+        return treeOf(structure, rootPath, p -> null);
     }
 
     public static final class Tree extends AbstractHashTree<Tree, String> {

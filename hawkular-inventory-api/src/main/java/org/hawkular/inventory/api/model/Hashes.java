@@ -46,6 +46,26 @@ public final class Hashes implements Serializable {
         return ComputeHash.of(root, rootPath, true, true, true);
     }
 
+    public static Hashes of(Entity<?, ?> entity) {
+        String contentHash = null;
+        String identityHash = null;
+        String syncHash = null;
+
+        if (entity instanceof ContentHashable) {
+            contentHash = ((ContentHashable) entity).getContentHash();
+        }
+
+        if (entity instanceof IdentityHashable) {
+            identityHash = ((IdentityHashable) entity).getIdentityHash();
+        }
+
+        if (entity instanceof Syncable) {
+            syncHash = ((Syncable) entity).getSyncHash();
+        }
+
+        return new Hashes(identityHash, contentHash, syncHash);
+    }
+
     public static Tree treeOf(InventoryStructure<?> root, CanonicalPath rootPath,
                               Function<RelativePath, Hashes> hashLoader) {
         Tree.AbstractBuilder<?>[] tbld =
