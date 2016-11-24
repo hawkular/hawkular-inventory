@@ -16,7 +16,7 @@ See the scenario file for the list of options.
 
 == Running
 
- mvn gatling:execute -Dxxx=y ...
+    ./mvnw gatling:execute -Dxxx=y ...
 
 Each scenario option can be set with a system property.
 
