@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>44</version>
+    <version>50-SRC-revision-0422f95715bdbc9f91fa343510e032c3b466c9dc</version>
   </parent>
 
   <groupId>org.hawkular.inventory</groupId>
