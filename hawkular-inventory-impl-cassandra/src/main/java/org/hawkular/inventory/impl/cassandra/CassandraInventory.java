@@ -16,13 +16,17 @@
  */
 package org.hawkular.inventory.impl.cassandra;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Manifest;
 
 import javax.net.ssl.SSLContext;
 
@@ -185,7 +189,7 @@ public final class CassandraInventory extends BaseInventory<CElement> {
         session.execute("USE " + keyspace);
 
         session.execute("INSERT INTO " + keyspace + ".sys_config (config_id, name, value) VALUES " +
-                "('org.hawkular.metrics', 'version', '" + getClass().getPackage().getImplementationVersion() + "')");
+                "('org.hawkular.metrics', 'version', '" + getCassandraInventoryVersion() + "')");
 
     }
 
@@ -261,4 +265,26 @@ public final class CassandraInventory extends BaseInventory<CElement> {
             return envVars;
         }
     }
+
+    private String getCassandraInventoryVersion() {
+        try {
+            Enumeration<URL> resources = getClass().getClassLoader().getResources("META-INF/MANIFEST.MF");
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                Manifest manifest = new Manifest(resource.openStream());
+                String vendorId = manifest.getMainAttributes().getValue("Implementation-Vendor-Id");
+                if (vendorId != null && vendorId.equals("org.hawkular.inventory")) {
+                    return manifest.getMainAttributes().getValue("Implementation-Version");
+                }
+            }
+            throw new IllegalStateException("Failed to extract the version of Cassandra backend for Hawkular" +
+                    " Inventory from the manifest file.");
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Failed to extract the version of Cassandra backend for Hawkular Inventory from the manifest file.",
+                    e);
+        }
+    }
+
+
 }
