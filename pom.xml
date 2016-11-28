@@ -46,6 +46,7 @@
     <module>hawkular-inventory-load-tests</module>
     <module>hawkular-inventory-rest-api</module>
     <module>hawkular-inventory-security-parent</module>
+    <module>hawkular-inventory-impl-cassandra</module>
   </modules>
 
   <scm>
