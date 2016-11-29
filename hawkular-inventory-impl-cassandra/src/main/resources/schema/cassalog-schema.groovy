@@ -41,17 +41,45 @@ schemaChange {
     version '2.0.0.2'
     author 'Lukas Krejci'
     tags '2.0.0'
-    description 'Create initial tables for tenant.'
+    description 'Create initial tables for entities.'
     cql (["""
-CREATE TABLE tenant (
+CREATE TABLE entity (
     cp text,
     name text,
     properties map<text, text>,
     PRIMARY KEY (cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 ""","""
-CREATE INDEX tenant_name ON tenant ( name );
+CREATE INDEX entity_name ON tenant ( name );
 ""","""
-CREATE INDEX tenant_property ON tenant (KEYS(properties));
+CREATE INDEX entity_property ON tenant (KEYS(properties));
+"""])
+}
+
+schemaChange {
+    version '2.0.0.3'
+    author 'Lukas Krejci'
+    tags '2.0.0'
+    description 'Tables for relationships'
+    cql (["""
+CREATE TABLE relationship_out (
+    source_cp text,
+    target_cp text,
+    name text,
+    properties map<text, text>,
+    PRIMARY KEY (source_cp, target_cp, name)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
+""", """
+CREATE INDEX relationship_out_property ON relationship_out (KEYS(properties));  
+""","""
+CREATE TABLE relationship_in (
+    target_cp text,
+    source_cp text,
+    name text,
+    properties map<text, text>,
+    PRIMARY KEY (target_cp, source_cp, name)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
+""", """
+CREATE INDEX relationship_in_property ON relationship_in (KEYS(properties));  
 """])
 }

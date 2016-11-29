@@ -27,11 +27,13 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import com.datastax.driver.core.Row;
+
 /**
  * @author Lukas Krejci
  * @since 2.0.0
  */
-public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<CElement> {
+public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<Row> {
     private static CassandraDaemon CASSANDRA_DAEMON;
     private static CassandraInventory INVENTORY;
 

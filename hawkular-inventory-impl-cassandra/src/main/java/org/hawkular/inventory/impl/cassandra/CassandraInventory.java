@@ -41,6 +41,7 @@ import com.datastax.driver.core.HostDistance;
 import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
@@ -50,15 +51,15 @@ import com.google.common.collect.ImmutableMap;
  * @author Lukas Krejci
  * @since 2.0.0
  */
-public final class CassandraInventory extends BaseInventory<CElement> {
+public final class CassandraInventory extends BaseInventory<Row> {
     public CassandraInventory() {
     }
 
-    private CassandraInventory(CassandraInventory orig, TransactionConstructor<CElement> txCtor) {
+    private CassandraInventory(CassandraInventory orig, TransactionConstructor<Row> txCtor) {
         super(orig, null, txCtor);
     }
 
-    @Override protected CassandraInventory cloneWith(TransactionConstructor<CElement> transactionCtor) {
+    @Override protected CassandraInventory cloneWith(TransactionConstructor<Row> transactionCtor) {
         return new CassandraInventory(this, transactionCtor);
     }
 
@@ -67,8 +68,7 @@ public final class CassandraInventory extends BaseInventory<CElement> {
             Session session = connect(configuration);
             initSchema(session, configuration.getProperty(Prop.KEYSPACE, "hawkular_inventory"));
 
-            //TODO implement
-            return null;
+            return new CassandraBackend(session);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Could not initialize Cassandra connection using the provided configuration.", e);
