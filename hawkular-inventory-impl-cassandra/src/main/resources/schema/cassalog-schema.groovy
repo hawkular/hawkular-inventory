@@ -50,9 +50,9 @@ CREATE TABLE entity (
     PRIMARY KEY (cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 ""","""
-CREATE INDEX entity_name ON tenant ( name );
+CREATE INDEX entity_name ON entity ( name );
 ""","""
-CREATE INDEX entity_property ON tenant (KEYS(properties));
+CREATE INDEX entity_property ON entity (KEYS(properties));
 """])
 }
 
@@ -67,7 +67,7 @@ CREATE TABLE relationship_out (
     target_cp text,
     name text,
     properties map<text, text>,
-    PRIMARY KEY (source_cp, target_cp, name)
+    PRIMARY KEY (source_cp, name, target_cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
 """, """
 CREATE INDEX relationship_out_property ON relationship_out (KEYS(properties));  
@@ -77,7 +77,7 @@ CREATE TABLE relationship_in (
     source_cp text,
     name text,
     properties map<text, text>,
-    PRIMARY KEY (target_cp, source_cp, name)
+    PRIMARY KEY (target_cp, name, source_cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
 """, """
 CREATE INDEX relationship_in_property ON relationship_in (KEYS(properties));  

@@ -59,33 +59,30 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
+import org.hawkular.rx.cassandra.driver.RxSession;
 
-import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.Select;
+
+import rx.Observable;
 
 /**
  * @author Lukas Krejci
  * @since 2.0.0
  */
 public final class CassandraBackend implements InventoryBackend<Row> {
-    private static final String RELATIONSHIP_OUT = "relationship_out";
-    private static final String RELATIONSHIP_IN = "relationship_in";
-    private static final String ENTITY = "entity";
-    private static final String CP = "cp";
-    private static final String SOURCE_CP = "source_cp";
-    private static final String TARGET_CP = "target_cp";
-    private static final String NAME = "name";
-    private static final String PROPERTIES = "properties";
 
-    private final Session session;
+    private final RxSession session;
+    private final Statements statements;
+    private final QueryExecutor queryExecutor;
 
-    public CassandraBackend(Session session) {
+    public CassandraBackend(RxSession session) {
         this.session = session;
+        this.statements = new Statements(session);
+        this.queryExecutor = new QueryExecutor(session, statements);
     }
 
     @Override public boolean isPreferringBigTransactions() {
@@ -101,44 +98,48 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public Row find(CanonicalPath element) throws ElementNotFoundException {
-        Select select;
+        Observable<PreparedStatement> select;
         String cp = element.toString();
         if (element.getSegment().getElementType() == SegmentType.rl) {
-            select = select().all().from(RELATIONSHIP_OUT);
+            select = statements.findRelationshipByCanonicalPath();
         } else {
-            select = select().all().from(ENTITY);
+            select = statements.findEntityByCanonicalPath();
         }
 
         //TODO this doesn't work for relationships - they don't have a CP in database, because it is meant to be
         //inferred from source_cp and target_cp...
-        ResultSet results = session.execute(select.where(eq(CP, cp)));
-        return results.one();
+        return select.flatMap(st -> session.execute(st.bind(cp))).toBlocking().first().one();
     }
 
     @Override public Page<Row> query(Query query, Pager pager) {
-        //TODO implement
-        return null;
+        Observable<Row> rs = queryExecutor.execute(query);
+        //total size just not supported. period
+        return new Page<>(rs.toBlocking().getIterator(), pager, -1);
     }
 
     @Override public Row querySingle(Query query) {
-        //TODO implement
-        return null;
+        Observable<Row> rs = queryExecutor.execute(query);
+        Iterator<Row> it = rs.toBlocking().getIterator();
+        return it.hasNext() ? it.next() : null;
     }
 
     @Override public Page<Row> traverse(Row startingPoint, Query query, Pager pager) {
-        //TODO implement
-        return null;
+        Observable<Row> rs = queryExecutor.traverse(startingPoint, query);
+        //total size just not supported. period
+        return new Page<>(rs.toBlocking().getIterator(), pager, -1);
     }
 
     @Override public Row traverseToSingle(Row startingPoint, Query query) {
-        //TODO implement
-        return null;
+        Observable<Row> rs = queryExecutor.traverse(startingPoint, query);
+        Iterator<Row> it = rs.toBlocking().getIterator();
+        return it.hasNext() ? it.next() : null;
     }
 
     @Override
     public <T> Page<T> query(Query query, Pager pager, Function<Row, T> conversion, Function<T, Boolean> filter) {
-        //TODO implement
-        return null;
+        Observable<Row> qrs = queryExecutor.execute(query);
+        Observable<T> rs = qrs.map(conversion::apply).filter(filter::apply);
+        return new Page<>(rs.toBlocking().getIterator(), pager, -1);
     }
 
     @Override
@@ -150,17 +151,17 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public boolean hasRelationship(Row entity, Relationships.Direction direction, String relationshipName) {
-        String cp = entity.getString(CP);
+        String cp = entity.getString(Statements.CP);
         Clause cond;
         String table;
         switch (direction) {
             case incoming:
-                cond = eq(TARGET_CP, cp);
-                table = RELATIONSHIP_IN;
+                cond = eq(Statements.TARGET_CP, cp);
+                table = Statements.RELATIONSHIP_IN;
                 break;
             case outgoing:
-                cond = eq(SOURCE_CP, cp);
-                table = RELATIONSHIP_OUT;
+                cond = eq(Statements.SOURCE_CP, cp);
+                table = Statements.RELATIONSHIP_OUT;
                 break;
             case both:
                 return hasRelationship(entity, outgoing, relationshipName)
@@ -169,10 +170,8 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 throw new IllegalStateException("Unsupported direction: " + direction);
         }
 
-        Statement q = select().countAll().from(table).where(cond).and(eq(NAME, relationshipName));
-        ResultSet rs = session.execute(q);
-        rs.one().getLong(0);
-        return false;
+        Statement q = select().countAll().from(table).where(cond).and(eq(Statements.NAME, relationshipName));
+        return session.execute(q).count().toBlocking().first() > 0;
     }
 
     @Override public boolean hasRelationship(Row source, Row target, String relationshipName) {
@@ -249,18 +248,18 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public Row relate(Row sourceEntity, Row targetEntity, String name, Map<String, Object> properties) {
-        String sourceCp = sourceEntity.getString(CP);
-        String targetCp = targetEntity.getString(CP);
+        String sourceCp = sourceEntity.getString(Statements.CP);
+        String targetCp = targetEntity.getString(Statements.CP);
         Map<String, String> props = properties == null ? Collections.emptyMap() : properties.entrySet().stream()
                 .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), e.getValue().toString()))
                 .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
                         AbstractMap.SimpleImmutableEntry::getValue));
 
-        Insert q = insertInto(RELATIONSHIP_OUT).values(new String[]{SOURCE_CP, TARGET_CP, NAME, PROPERTIES},
+        Insert q = insertInto(Statements.RELATIONSHIP_OUT).values(new String[]{
+                        Statements.SOURCE_CP, Statements.TARGET_CP, Statements.NAME, Statements.PROPERTIES},
                 new Object[]{sourceCp, targetCp, name, props}).ifNotExists();
 
-        ResultSet rs = session.execute(q);
-        return rs.one();
+        return session.execute(q).toBlocking().first().one();
     }
 
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
@@ -277,11 +276,11 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
                                 AbstractMap.SimpleImmutableEntry::getValue));
 
-                Insert q = insertInto(ENTITY).values(new String[] {CP, NAME, PROPERTIES},
+                Insert q = insertInto(Statements.ENTITY).values(new String[] {
+                                Statements.CP, Statements.NAME, Statements.PROPERTIES},
                         new Object[] {path, name, props}).ifNotExists();
 
-                ResultSet rs = session.execute(q);
-                return rs.one();
+                return session.execute(q).toBlocking().first().one();
             }
 
             @Override public Row visitTenant(Tenant.Blueprint tenant, Void parameter) {

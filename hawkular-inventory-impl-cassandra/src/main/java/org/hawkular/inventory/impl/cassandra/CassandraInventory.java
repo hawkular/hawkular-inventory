@@ -35,6 +35,7 @@ import org.cassalog.core.CassalogBuilder;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.TransactionConstructor;
+import org.hawkular.rx.cassandra.driver.RxSessionImpl;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.HostDistance;
@@ -68,7 +69,7 @@ public final class CassandraInventory extends BaseInventory<Row> {
             Session session = connect(configuration);
             initSchema(session, configuration.getProperty(Prop.KEYSPACE, "hawkular_inventory"));
 
-            return new CassandraBackend(session);
+            return new CassandraBackend(new RxSessionImpl(session));
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Could not initialize Cassandra connection using the provided configuration.", e);
