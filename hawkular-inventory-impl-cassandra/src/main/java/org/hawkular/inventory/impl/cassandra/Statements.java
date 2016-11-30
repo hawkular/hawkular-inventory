@@ -31,7 +31,12 @@ final class Statements {
     static final String RELATIONSHIP_OUT = "relationship_out";
     static final String RELATIONSHIP_IN = "relationship_in";
     static final String ENTITY = "entity";
+    static final String ENTITY_ID_IDX = "entity_id_idx";
+    static final String ENTITY_TYPE_IDX = "entity_type_idx";
+    static final String ENTITY_NAME_IDX = "entity_name_idx";
     static final String CP = "cp";
+    static final String ID = "id";
+    static final String TYPE = "type";
     static final String SOURCE_CP = "source_cp";
     static final String TARGET_CP = "target_cp";
     static final String NAME = "name";

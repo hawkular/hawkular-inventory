@@ -44,15 +44,31 @@ schemaChange {
     description 'Create initial tables for entities.'
     cql (["""
 CREATE TABLE entity (
-    cp text,
+    cp ascii,
+    id text,
+    type int,
     name text,
     properties map<text, text>,
     PRIMARY KEY (cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 ""","""
-CREATE INDEX entity_name ON entity ( name );
+CREATE TABLE entity_id_idx (
+    id text,
+    cp ascii,
+    PRIMARY KEY (id, cp)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 ""","""
-CREATE INDEX entity_property ON entity (KEYS(properties));
+CREATE TABLE entity_type_idx (
+    type int,
+    cp ascii,
+    PRIMARY KEY (type, cp)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
+""","""
+CREATE TABLE entity_name_idx (
+    name text,
+    cp set<ascii>,
+    PRIMARY KEY (name)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """])
 }
 

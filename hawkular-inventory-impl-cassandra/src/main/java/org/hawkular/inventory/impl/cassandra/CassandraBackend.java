@@ -64,6 +64,7 @@ import org.hawkular.rx.cassandra.driver.RxSession;
 import org.jboss.logging.Logger;
 
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Clause;
@@ -292,10 +293,10 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         return session.execute(q)
                 //follow the successful addition into the main table by concurrent updates of the in/out companions
                 .concatWith(session.execute(out).mergeWith(session.execute(in)))
-                //take our insertion into the main table
-                .first()
+                //force all statements to execute
+                .toList()
                 //and get the result
-                .toBlocking().first().one();
+                .toBlocking().first().get(0).one();
     }
 
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
@@ -313,10 +314,32 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                                 AbstractMap.SimpleImmutableEntry::getValue));
 
                 Insert q = insertInto(Statements.ENTITY).values(new String[] {
-                                Statements.CP, Statements.NAME, Statements.PROPERTIES},
-                        new Object[] {path, name, props}).ifNotExists();
+                                Statements.CP, Statements.ID, Statements.NAME, Statements.PROPERTIES},
+                        new Object[] {path.toString(), name, props}).ifNotExists();
 
-                return session.execute(q).toBlocking().first().one();
+                Insert id_idx = insertInto(Statements.ENTITY_ID_IDX).values(
+                        new String[] {Statements.ID, Statements.CP},
+                        new Object[] {path.getSegment().getElementId(), path.toString()});
+
+                Insert type_idx = insertInto(Statements.ENTITY_TYPE_IDX).values(
+                        new String[] {Statements.TYPE, Statements.CP},
+                        new Object[] {path.getSegment().getElementType().ordinal(), path.toString()});
+
+                Observable<ResultSet> indices = session.execute(id_idx).mergeWith(session.execute(type_idx));
+                if (name != null) {
+                    Insert name_idx = insertInto(Statements.ENTITY_NAME_IDX).values(
+                            new String[] {Statements.NAME, Statements.CP},
+                            new Object[] {name, path.toString()});
+                    indices = indices.mergeWith(session.execute(name_idx));
+                }
+
+                return session.execute(q)
+                        //follow the successful addition into the main table by concurrent updates of the in/out companions
+                        .concatWith(indices)
+                        //force all statements to execute
+                        .toList()
+                        //and get the result
+                        .toBlocking().first().get(0).one();
             }
 
             @Override public Row visitTenant(Tenant.Blueprint tenant, Void parameter) {
