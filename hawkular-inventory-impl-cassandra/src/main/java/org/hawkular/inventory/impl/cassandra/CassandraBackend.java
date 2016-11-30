@@ -57,6 +57,7 @@ import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.PathSegmentCodec;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
@@ -269,11 +270,32 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
                         AbstractMap.SimpleImmutableEntry::getValue));
 
-        Insert q = insertInto(Statements.RELATIONSHIP_OUT).values(new String[]{
-                        Statements.SOURCE_CP, Statements.TARGET_CP, Statements.NAME, Statements.PROPERTIES},
-                new Object[]{sourceCp, targetCp, name, props}).ifNotExists();
+        //the relationship CP is a composition of the sourceCP, name and targetCP
+        CanonicalPath cp = CanonicalPath.of().relationship(
+                PathSegmentCodec.encode(sourceCp) + ";" + name + ";" + PathSegmentCodec.encode(targetCp)).get();
 
-        return session.execute(q).toBlocking().first().one();
+        Insert q = insertInto(Statements.RELATIONSHIP).values(
+                new String[]{Statements.CP, Statements.SOURCE_CP, Statements.TARGET_CP, Statements.NAME,
+                        Statements.PROPERTIES},
+                new Object[]{cp, sourceCp, targetCp, name, props});
+
+        Insert out = insertInto(Statements.RELATIONSHIP_OUT).values(new String[]{
+                        Statements.SOURCE_CP, Statements.TARGET_CP, Statements.CP, Statements.NAME,
+                        Statements.PROPERTIES},
+                new Object[]{sourceCp, targetCp, cp, name, props}).ifNotExists();
+
+        Insert in = insertInto(Statements.RELATIONSHIP_IN).values(new String[]{
+                        Statements.SOURCE_CP, Statements.TARGET_CP, Statements.CP, Statements.NAME,
+                        Statements.PROPERTIES},
+                new Object[]{sourceCp, targetCp, cp, name, props}).ifNotExists();
+
+        return session.execute(q)
+                //follow the successful addition into the main table by concurrent updates of the in/out companions
+                .concatWith(session.execute(out).mergeWith(session.execute(in)))
+                //take our insertion into the main table
+                .first()
+                //and get the result
+                .toBlocking().first().one();
     }
 
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
