@@ -122,7 +122,7 @@ public interface InventoryBackend<E> extends AutoCloseable {
     /**
      * Going from the starting poing, this will return an iterator over all elements that are connected to the starting
      * point using relationships with provided name and recursively down to the elements connected in the same way to
-     * them.
+     * them. Breadth-first algorithm is expected for resulting iterator.
      *
      * @param startingPoint    the starting element
      * @param direction        any of the valid directions including

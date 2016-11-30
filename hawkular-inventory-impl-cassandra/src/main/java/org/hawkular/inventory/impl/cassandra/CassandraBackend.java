@@ -16,17 +16,19 @@
  */
 package org.hawkular.inventory.impl.cassandra;
 
+import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 
 import java.io.InputStream;
 import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -64,12 +66,12 @@ import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
 import org.jboss.logging.Logger;
 
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import rx.Observable;
 
@@ -105,19 +107,23 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public Row find(CanonicalPath element) throws ElementNotFoundException {
-        PreparedStatement select;
         String cp = element.toString();
+        final Observable<Row> rowObservable;
         if (element.getSegment().getElementType() == SegmentType.rl) {
-            select = statements.findRelationshipByCanonicalPath();
+            rowObservable = statements.findRelationshipByCanonicalPath(cp);
         } else {
-            select = statements.findEntityByCanonicalPath();
+            rowObservable = statements.findEntityByCanonicalPath(cp);
         }
 
         DBG.debugf("Executing find of %s", element);
 
         //TODO this doesn't work for relationships - they don't have a CP in database, because it is meant to be
         //inferred from source_cp and target_cp...
-        return session.execute(select.bind(cp)).toBlocking().first().one();
+        Row row = rowObservable.toBlocking().firstOrDefault(null);
+        if (row == null) {
+            throw new ElementNotFoundException();
+        }
+        return row;
     }
 
     @Override public Page<Row> query(Query query, Pager pager) {
@@ -165,26 +171,60 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         return new Page<>(ts.toBlocking().getIterator(), pager, -1);
     }
 
+    private Observable<String> getRelationshipOtherEnds(String cp, Relationships.Direction direction, Collection<String> relationshipNames) {
+        if (direction == outgoing) {
+            return statements.findOutRelationshipBySourceAndNames(cp, relationshipNames)
+                    .map(row -> row.getString(Statements.TARGET_CP));
+        } else if (direction == incoming) {
+            return statements.findInRelationshipByTargetAndNames(cp, relationshipNames)
+                    .map(row -> row.getString(Statements.SOURCE_CP));
+        } else if (direction == both) {
+            return getRelationshipOtherEnds(cp, outgoing, relationshipNames)
+                    .mergeWith(getRelationshipOtherEnds(cp, incoming, relationshipNames));
+        }
+        throw new IllegalStateException("Unsupported direction: " + direction);
+    }
+
     @Override
     public Iterator<Row> getTransitiveClosureOver(Row startingPoint, Relationships.Direction direction,
                                                        String... relationshipNames) {
-        //TODO implement
-        return null;
+        String startingCP = startingPoint.getString(Statements.CP);
+        if (startingCP == null) {
+            // Not a vertex
+            return Collections.<Row>emptyList().iterator();
+        }
+
+        TransitiveClosureProcessor runner = new TransitiveClosureProcessor(
+                cp -> getRelationshipOtherEnds(cp, direction, Arrays.asList(relationshipNames)));
+        return runner.process(startingCP)
+                .toList()
+                .flatMap(listCP -> loadEntities(listCP).toList()
+                        .map(unsorted -> reorderEntities(unsorted, listCP)))
+                .toBlocking()
+                .first()
+                .iterator();
+    }
+
+    private Observable<Row> loadEntities(Iterable<String> listCP) {
+        Statement st = statements.findEntityByCanonicalPaths().bind(listCP);
+        return session.executeAndFetch(st);
+    }
+
+    private List<Row> reorderEntities(List<Row> unsorted, List<String> sortedCps) {
+        Map<String, Row> rowsByCP = Maps.uniqueIndex(unsorted, row -> row.getString(Statements.CP));
+        return sortedCps.stream().map(rowsByCP::get).collect(Collectors.toList());
     }
 
     @Override
     public boolean hasRelationship(Row entity, Relationships.Direction direction, String relationshipName) {
         String cp = entity.getString(Statements.CP);
-        Clause cond;
-        String table;
+        final Observable<Long> countObservable;
         switch (direction) {
             case incoming:
-                cond = eq(Statements.TARGET_CP, cp);
-                table = Statements.RELATIONSHIP_IN;
+                countObservable = statements.countInRelationshipByTargetAndName(cp, relationshipName);
                 break;
             case outgoing:
-                cond = eq(Statements.SOURCE_CP, cp);
-                table = Statements.RELATIONSHIP_OUT;
+                countObservable = statements.countOutRelationshipBySourceAndName(cp, relationshipName);
                 break;
             case both:
                 return hasRelationship(entity, outgoing, relationshipName)
@@ -192,26 +232,57 @@ public final class CassandraBackend implements InventoryBackend<Row> {
             default:
                 throw new IllegalStateException("Unsupported direction: " + direction);
         }
-
-        Statement q = select().countAll().from(table).where(cond).and(eq(Statements.NAME, relationshipName));
-        return session.execute(q).count().toBlocking().first() > 0;
+        return countObservable.toBlocking().first() > 0;
     }
 
     @Override public boolean hasRelationship(Row source, Row target, String relationshipName) {
-        //TODO implement
-        return false;
+        // NOTE (possible improvement): add PK on both source & target for in-query filtering
+        String cpSource = source.getString(Statements.CP);
+        String cpTarget = target.getString(Statements.CP);
+        Observable<Boolean> isEmpty = statements.findOutRelationshipBySourceAndName(cpSource, relationshipName)
+                .filter(row -> cpTarget.equals(row.getString(Statements.TARGET_CP)))
+                .isEmpty();
+        return !isEmpty.toBlocking().first();
     }
 
     @Override
     public Set<Row> getRelationships(Row entity, Relationships.Direction direction, String... names) {
-        //TODO implement
-        return null;
+        if (direction == outgoing) {
+            String cp = entity.getString(Statements.CP);
+            List<Row> result = statements.findOutRelationshipBySourceAndNames(cp, Arrays.asList(names))
+                    .toList()
+                    .toBlocking()
+                    .first();
+            return ImmutableSet.copyOf(result);
+        } else if (direction == incoming) {
+            String cp = entity.getString(Statements.CP);
+            List<Row> result = statements.findInRelationshipByTargetAndNames(cp, Arrays.asList(names))
+                    .toList()
+                    .toBlocking()
+                    .first();
+            return ImmutableSet.copyOf(result);
+        } else if (direction == both) {
+            return ImmutableSet.<Row>builder()
+                    .addAll(getRelationships(entity, incoming, names))
+                    .addAll(getRelationships(entity, outgoing, names))
+                    .build();
+        }
+        throw new IllegalStateException("Unsupported direction: " + direction);
     }
 
     @Override public Row getRelationship(Row source, Row target, String relationshipName)
             throws ElementNotFoundException {
-        //TODO implement
-        return null;
+        // NOTE (possible improvement): add PK on both source & target for in-query filtering
+        String cpSource = source.getString(Statements.CP);
+        String cpTarget = target.getString(Statements.CP);
+        Row result = statements.findOutRelationshipBySourceAndName(cpSource, relationshipName)
+                .filter(row -> cpTarget.equals(row.getString(Statements.TARGET_CP)))
+                .toBlocking()
+                .firstOrDefault(null);
+        if (result == null) {
+            throw new ElementNotFoundException();
+        }
+        return result;
     }
 
     @Override public Row getRelationshipSource(Row relationship) {
