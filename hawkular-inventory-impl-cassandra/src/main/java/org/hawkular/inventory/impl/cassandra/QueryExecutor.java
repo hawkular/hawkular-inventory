@@ -31,6 +31,7 @@ import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
+import org.jboss.logging.Logger;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -38,15 +39,19 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
 
 import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Lukas Krejci
  * @since 2.0.0
  */
 final class QueryExecutor {
+    private static final Logger DBG = Logger.getLogger(QueryExecutor.class);
 
     private final RxSession session;
     private final Statements statements;
+    private final Scheduler scheduler = Schedulers.io();
 
     QueryExecutor(RxSession session, Statements statements) {
         this.session = session;
@@ -54,51 +59,58 @@ final class QueryExecutor {
     }
 
     public Observable<Row> execute(Query query) {
+        DBG.debugf("Execute of %s", query);
+
         Observable<Row> data;
         if (query.getFragments().length == 0) {
+            DBG.debugf("Empty query, returning empty observable");
+
             return Observable.empty();
         } else {
+            DBG.debugf("Starting the query %s with the first filter %s", query, query.getFragments()[0].getFilter());
+
             data = start(query.getFragments()[0].getFilter());
         }
 
-        for (int i = 1; i < query.getFragments().length; ++i) {
-            //TODO this is wrong - most probably we will be able to join multiple following filters into a single
-            //statement
-            QueryFragment qf = query.getFragments()[i];
-            if (qf instanceof PathFragment) {
-                data = progress(qf.getFilter(), data);
-            } else {
-                data = filter(qf.getFilter(), data);
-            }
-        }
-
-        return processSubTrees(data, query);
+        return traverse(data, query, 1);
     }
 
     public Observable<Row> traverse(Row startingPoint, Query query) {
+        DBG.debugf("Executing traverse %s from %s", query, startingPoint);
+
         Observable<Row> res = Observable.just(startingPoint);
-        return traverse(res, query);
+        return traverse(res, query, 0);
     }
 
     private Observable<Row> processSubTrees(Observable<Row> data, Query query) {
         if (!query.getSubTrees().isEmpty()) {
             return data.flatMap(r -> {
+                DBG.debugf("IN FLIGHT: Appending subtrees to partial query results of query %s", query);
+
                 Observable<Row> res = Observable.empty();
                 for (Query q : query.getSubTrees()) {
+                    DBG.debugf("IN FLIGHT: Merging subquery %s to partial query results of query %s", q, query);
+
                     res = res.mergeWith(traverse(r, q));
                 }
 
                 return res;
             });
         } else {
+            DBG.debugf("No subqueries found in %s. Returing the observable as is.", query);
             return data;
         }
     }
 
-    private Observable<Row> traverse(Observable<Row> data, Query query) {
-        for (QueryFragment qf : query.getFragments()) {
+    private Observable<Row> traverse(Observable<Row> data, Query query, int startWithFragmentIndex) {
+        QueryFragment[] qfs = query.getFragments();
+
+        DBG.debugf("Traversing query fragments starting at %d of query %s", startWithFragmentIndex, query);
+
+        for (int i = startWithFragmentIndex; i < qfs.length; ++i) {
             //TODO this is wrong - most probably we will be able to join multiple following filters into a single
             //statement
+            QueryFragment qf = qfs[i];
             if (qf instanceof PathFragment) {
                 data = progress(qf.getFilter(), data);
             } else {
@@ -106,25 +118,36 @@ final class QueryExecutor {
             }
         }
 
+        DBG.debugf("Applying subqueries to %s", query);
+
         return processSubTrees(data, query);
     }
 
     private Observable<Row> start(Filter initialFilter) {
-        return toStatement(initialFilter, null).flatMap(session::executeAndFetch);
+        return toStatement(initialFilter, null).flatMap(st -> {
+            DBG.debugf("IN FLIGHT: start: executing filter %s as a new statement %s", initialFilter, st);
+            return session.executeAndFetch(st, scheduler);
+        });
     }
 
     private Observable<Row> progress(Filter progressFilter, Observable<Row> intermediateResults) {
         return intermediateResults
-                .flatMap(r -> toStatement(progressFilter, r))
-                .flatMap(session::executeAndFetch);
+                .flatMap(r -> {
+                    DBG.debugf("IN FLIGHT: progress: converting filter %s to a new statement with row %s", progressFilter, r);
+                   return toStatement(progressFilter, r);
+                })
+                .flatMap(st -> {
+                    DBG.debugf("IN FLIGHT: progress: Executing statement %s to get new intermediate results for progress using filter %s.", st, progressFilter);
+                    return session.executeAndFetch(st, scheduler);
+                });
     }
 
     private Observable<Row> filter(Filter filter, Observable<Row> intermediateResults) {
         return intermediateResults.flatMap(r -> {
-            String cp = r.getString(Statements.CP);
+            DBG.debugf("IN FLIGHT: filter: applying filter %s on row %s by facilitating progress()", filter, r);
             Observable<Row> targets = progress(filter, Observable.just(r));
             //TODO hmm... couldn't this be done using a query?
-            return targets.filter(t -> t.getString(Statements.CP).equals(cp));
+            return targets.take(1).map(any -> r);
         });
     }
 
@@ -137,6 +160,7 @@ final class QueryExecutor {
     }
 
     private Observable<? extends Statement> toStatement(With.CanonicalPaths filter, Row bound) {
+        DBG.debugf("Creating statement for CP filter %s on row %s", filter, bound);
         if (bound == null) {
             //just fetch an entities with given canonical paths
             List<String> entityCps = Stream.of(filter.getPaths())
@@ -152,12 +176,12 @@ final class QueryExecutor {
             Observable<BoundStatement> ret = null;
 
             if (!entityCps.isEmpty()) {
-                ret = statements.getFindEntityByCanonicalPaths().map(st -> st.bind(entityCps));
+                ret = Observable.just(statements.getFindEntityByCanonicalPaths().bind(entityCps));
             }
 
             if (!relCps.isEmpty()) {
                 Observable<BoundStatement> st =
-                        statements.getFindRelationshipByCanonicalPaths().map(s -> s.bind(relCps));
+                        Observable.just(statements.getFindRelationshipByCanonicalPaths().bind(relCps));
                 if (ret == null) {
                     ret = st;
                 } else {
@@ -170,14 +194,12 @@ final class QueryExecutor {
             //inefficient, but hey - we're not exactly efficient anywhere around here...
             String ourCpStr = bound.getString(Statements.CP);
             CanonicalPath ourCp = CanonicalPath.fromString(ourCpStr);
-            Observable<PreparedStatement> st = ourCp.getSegment().getElementType() == SegmentType.rl
+            PreparedStatement st = ourCp.getSegment().getElementType() == SegmentType.rl
                     ? statements.getFindRelationshipByCanonicalPaths()
                     : statements.getFindEntityByCanonicalPaths();
 
-            return st.map(s -> {
-                List<String> cps = Stream.of(filter.getPaths()).map(CanonicalPath::toString).collect(toList());
-                return s.bind(cps);
-            });
+            List<String> cps = Stream.of(filter.getPaths()).map(CanonicalPath::toString).collect(toList());
+            return Observable.just(st.bind(cps));
         }
     }
 }

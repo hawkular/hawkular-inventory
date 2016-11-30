@@ -22,13 +22,12 @@ import org.hawkular.rx.cassandra.driver.RxSession;
 
 import com.datastax.driver.core.PreparedStatement;
 
-import rx.Observable;
-
 /**
  * @author Lukas Krejci
  * @since 2.0.0
  */
 final class Statements {
+    static final String RELATIONSHIP = "relationship";
     static final String RELATIONSHIP_OUT = "relationship_out";
     static final String RELATIONSHIP_IN = "relationship_in";
     static final String ENTITY = "entity";
@@ -38,37 +37,37 @@ final class Statements {
     static final String NAME = "name";
     static final String PROPERTIES = "properties";
 
-    private final Observable<PreparedStatement> findEntityByCanonicalPath;
-    private final Observable<PreparedStatement> findRelationshipByCanonicalPath;
-    private final Observable<PreparedStatement> findEntityByCanonicalPaths;
-    private final Observable<PreparedStatement> findRelationshipByCanonicalPaths;
+    private final PreparedStatement findEntityByCanonicalPath;
+    private final PreparedStatement findRelationshipByCanonicalPath;
+    private final PreparedStatement findEntityByCanonicalPaths;
+    private final PreparedStatement findRelationshipByCanonicalPaths;
 
     Statements(RxSession session) {
         findEntityByCanonicalPath = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " = ?;");
         findEntityByCanonicalPaths = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " IN ?;");
         findRelationshipByCanonicalPath =
-                prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + CP + " = ?;");
+                prepare(session, "SELECT * FROM " + RELATIONSHIP + " WHERE " + CP + " = ?;");
         findRelationshipByCanonicalPaths =
-                prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + CP + " IN ?;");
+                prepare(session, "SELECT * FROM " + RELATIONSHIP + " WHERE " + CP + " IN ?;");
     }
 
-    Observable<PreparedStatement> findEntityByCanonicalPath() {
+    PreparedStatement findEntityByCanonicalPath() {
         return findEntityByCanonicalPath;
     }
 
-    public Observable<PreparedStatement> findRelationshipByCanonicalPath() {
+    PreparedStatement findRelationshipByCanonicalPath() {
         return findRelationshipByCanonicalPath;
     }
 
-    public Observable<PreparedStatement> getFindEntityByCanonicalPaths() {
+    PreparedStatement getFindEntityByCanonicalPaths() {
         return findEntityByCanonicalPaths;
     }
 
-    public Observable<PreparedStatement> getFindRelationshipByCanonicalPaths() {
+    PreparedStatement getFindRelationshipByCanonicalPaths() {
         return findRelationshipByCanonicalPaths;
     }
 
-    private Observable<PreparedStatement> prepare(RxSession session, String statement) {
-        return session.prepare(statement);
+    private PreparedStatement prepare(RxSession session, String statement) {
+        return session.prepare(statement).toBlocking().first();
     }
 }

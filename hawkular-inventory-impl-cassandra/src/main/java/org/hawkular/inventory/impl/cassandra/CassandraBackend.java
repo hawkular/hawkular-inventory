@@ -60,6 +60,7 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
+import org.jboss.logging.Logger;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
@@ -74,6 +75,7 @@ import rx.Observable;
  * @since 2.0.0
  */
 public final class CassandraBackend implements InventoryBackend<Row> {
+    private static final Logger DBG = Logger.getLogger(CassandraBackend.class);
 
     private final RxSession session;
     private final Statements statements;
@@ -98,7 +100,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public Row find(CanonicalPath element) throws ElementNotFoundException {
-        Observable<PreparedStatement> select;
+        PreparedStatement select;
         String cp = element.toString();
         if (element.getSegment().getElementType() == SegmentType.rl) {
             select = statements.findRelationshipByCanonicalPath();
@@ -106,30 +108,40 @@ public final class CassandraBackend implements InventoryBackend<Row> {
             select = statements.findEntityByCanonicalPath();
         }
 
+        DBG.debugf("Executing find of %s", element);
+
         //TODO this doesn't work for relationships - they don't have a CP in database, because it is meant to be
         //inferred from source_cp and target_cp...
-        return select.flatMap(st -> session.execute(st.bind(cp))).toBlocking().first().one();
+        return session.execute(select.bind(cp)).toBlocking().first().one();
     }
 
     @Override public Page<Row> query(Query query, Pager pager) {
+        DBG.debugf("Executing query %s", query);
+
         Observable<Row> rs = queryExecutor.execute(query);
         //total size just not supported. period
         return new Page<>(rs.toBlocking().getIterator(), pager, -1);
     }
 
     @Override public Row querySingle(Query query) {
+        DBG.debugf("Executing querySingle %s", query);
+
         Observable<Row> rs = queryExecutor.execute(query);
         Iterator<Row> it = rs.toBlocking().getIterator();
         return it.hasNext() ? it.next() : null;
     }
 
     @Override public Page<Row> traverse(Row startingPoint, Query query, Pager pager) {
+        DBG.debugf("Executing traverse %s from startingPoint %s", query, startingPoint);
+
         Observable<Row> rs = queryExecutor.traverse(startingPoint, query);
         //total size just not supported. period
         return new Page<>(rs.toBlocking().getIterator(), pager, -1);
     }
 
     @Override public Row traverseToSingle(Row startingPoint, Query query) {
+        DBG.debugf("Executing traverseToSingle %s from startingPoint %s", query, startingPoint);
+
         Observable<Row> rs = queryExecutor.traverse(startingPoint, query);
         Iterator<Row> it = rs.toBlocking().getIterator();
         return it.hasNext() ? it.next() : null;
@@ -137,6 +149,8 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public <T> Page<T> query(Query query, Pager pager, Function<Row, T> conversion, Function<T, Boolean> filter) {
+        DBG.debugf("Executing query with conversion and filter %s", query);
+
         Observable<Row> qrs = queryExecutor.execute(query);
         Observable<T> rs = qrs.map(conversion::apply).filter(filter::apply);
         return new Page<>(rs.toBlocking().getIterator(), pager, -1);
