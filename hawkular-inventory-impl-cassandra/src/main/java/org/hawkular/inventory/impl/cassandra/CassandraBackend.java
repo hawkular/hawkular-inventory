@@ -18,6 +18,8 @@ package org.hawkular.inventory.impl.cassandra;
 
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
+import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
@@ -46,7 +48,9 @@ import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Hashes;
 import org.hawkular.inventory.api.model.MetadataPack;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Resource;
@@ -279,9 +283,85 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         return null;
     }
 
-    @Override public <T> T convert(Row entityRepresentation, Class<T> entityType) {
-        //TODO implement
-        return null;
+    @SuppressWarnings("unchecked")
+    @Override public <T> T convert(Row er, Class<T> entityType) {
+        if (!AbstractElement.class.isAssignableFrom(entityType)) {
+            throw new IllegalArgumentException("entityType");
+        }
+
+        SegmentType type = Inventory.types()
+                .byElement((Class<AbstractElement<Blueprint, AbstractElement.Update>>)entityType)
+                .getSegmentType();
+
+        CanonicalPath cp = extractCanonicalPath(er);
+        String name = er.getString(Statements.NAME);
+        Map<String, Object> props = er.getColumnDefinitions().contains(Statements.PROPERTIES)
+                 ? (Map<String, Object>) er.getObject(Statements.PROPERTIES)
+                 : Collections.emptyMap();
+
+        Function<Map<String, Object>, Object> applyPropertiesAndConstruct;
+
+        //TODO init these
+        String syncHash = "syncHash";
+        String identityHash = "identityHash";
+        String contentHash = "contentHash";
+        Long collectionInterval = 0L;
+
+        switch (type) {
+            case rl:
+                CanonicalPath sourceCp = CanonicalPath.fromString(er.getString(Statements.SOURCE_CP));
+                CanonicalPath targetCp = CanonicalPath.fromString(er.getString(Statements.TARGET_CP));
+                applyPropertiesAndConstruct = ps ->
+                        new Relationship(cp.getSegment().getElementId(), name, sourceCp, targetCp, ps);
+                break;
+            case d:
+                StructuredData data = loadStructuredData(er, hasData.name());
+                applyPropertiesAndConstruct = ps -> new DataEntity(cp, data, identityHash, contentHash, syncHash, ps);
+                break;
+            case e:
+                applyPropertiesAndConstruct = ps -> new Environment(name, cp, contentHash, ps);
+                break;
+            case f:
+                applyPropertiesAndConstruct = ps -> new Feed(name, cp, identityHash, contentHash, syncHash, ps);
+                break;
+            case m:
+                Row mtr = getRelationships(er, incoming, defines.name()).iterator().next();
+                MetricType mt = convert(mtr, MetricType.class);
+                applyPropertiesAndConstruct =
+                        ps -> new Metric(name, cp, identityHash, contentHash, syncHash, mt, collectionInterval, ps);
+                break;
+            case mp:
+                applyPropertiesAndConstruct = ps -> new MetadataPack(name, cp, ps);
+                break;
+            case mt:
+                MetricUnit unit = null; //TODO implement
+                MetricDataType dataType = null; //TODO implement
+                applyPropertiesAndConstruct =
+                        ps -> new MetricType(name, cp, identityHash, contentHash, syncHash, unit, dataType, ps,
+                                collectionInterval);
+                break;
+            case ot:
+                applyPropertiesAndConstruct =
+                        ps -> new OperationType(name, cp, identityHash, contentHash, syncHash, ps);
+                break;
+            case r:
+                Row rtr = getRelationships(er, incoming, defines.name()).iterator().next();
+                ResourceType rt = convert(rtr, ResourceType.class);
+                applyPropertiesAndConstruct = ps -> new Resource(name, cp, identityHash, contentHash, syncHash, rt, ps);
+                break;
+            case rt:
+                applyPropertiesAndConstruct = ps -> new ResourceType(name, cp, identityHash, contentHash, syncHash, ps);
+                break;
+            case t:
+                applyPropertiesAndConstruct = ps -> new Tenant(name, cp, contentHash, ps);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported entity type to convert: " + entityType);
+        }
+
+        //TODO handle structured data and shallow structured data
+        //TODO filter the properties
+        return (T) applyPropertiesAndConstruct.apply(props);
     }
 
     @Override public Row descendToData(Row dataEntityRepresentation, RelativePath dataPath) {
@@ -488,5 +568,10 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     @Override public void close() throws Exception {
         //TODO implement
 
+    }
+
+    private StructuredData loadStructuredData(Row parent, String relationship) {
+        //TODO implement
+        return null;
     }
 }
