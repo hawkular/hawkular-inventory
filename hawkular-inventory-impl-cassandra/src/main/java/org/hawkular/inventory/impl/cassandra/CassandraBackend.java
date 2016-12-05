@@ -371,8 +371,11 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public Row relate(Row sourceEntity, Row targetEntity, String name, Map<String, Object> properties) {
-        String sourceCp = sourceEntity.getString(Statements.CP);
-        String targetCp = targetEntity.getString(Statements.CP);
+        String sourceCpS = sourceEntity.getString(Statements.CP);
+        String targetCpS = targetEntity.getString(Statements.CP);
+        CanonicalPath sourceCp = CanonicalPath.fromString(sourceCpS);
+        CanonicalPath targetCp = CanonicalPath.fromString(targetCpS);
+
         Map<String, String> props = properties == null ? Collections.emptyMap() : properties.entrySet().stream()
                 .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), e.getValue().toString()))
                 .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
@@ -380,23 +383,32 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
         //the relationship CP is a composition of the sourceCP, name and targetCP
         String cp = CanonicalPath.of().relationship(
-                PathSegmentCodec.encode(sourceCp) + ";" + name + ";" + PathSegmentCodec.encode(targetCp)).get()
+                PathSegmentCodec.encode(sourceCpS) + ";" + name + ";" + PathSegmentCodec.encode(targetCpS)).get()
                 .toString();
+
+        String sourceId = sourceCp.getSegment().getElementId();
+        int sourceType = sourceCp.getSegment().getElementType().ordinal();
+        String targetId = targetCp.getSegment().getElementId();
+        int targetType = targetCp.getSegment().getElementType().ordinal();
 
         Insert q = insertInto(Statements.RELATIONSHIP).values(
                 new String[]{Statements.CP, Statements.SOURCE_CP, Statements.TARGET_CP, Statements.NAME,
                         Statements.PROPERTIES},
-                new Object[]{cp, sourceCp, targetCp, name, props});
+                new Object[]{cp, sourceCpS, targetCpS, name, props});
 
         Insert out = insertInto(Statements.RELATIONSHIP_OUT).values(new String[]{
                         Statements.SOURCE_CP, Statements.TARGET_CP, Statements.CP, Statements.NAME,
-                        Statements.PROPERTIES},
-                new Object[]{sourceCp, targetCp, cp, name, props}).ifNotExists();
+                        Statements.PROPERTIES, Statements.SOURCE_ID, Statements.SOURCE_TYPE, Statements.TARGET_ID,
+                        Statements.TARGET_TYPE},
+                new Object[]{sourceCpS, targetCpS, cp, name, props, sourceId, sourceType, targetId, targetType})
+                .ifNotExists();
 
         Insert in = insertInto(Statements.RELATIONSHIP_IN).values(new String[]{
                         Statements.SOURCE_CP, Statements.TARGET_CP, Statements.CP, Statements.NAME,
-                        Statements.PROPERTIES},
-                new Object[]{sourceCp, targetCp, cp, name, props}).ifNotExists();
+                        Statements.PROPERTIES, Statements.SOURCE_ID, Statements.SOURCE_TYPE, Statements.TARGET_ID,
+                        Statements.TARGET_TYPE},
+                new Object[]{sourceCpS, targetCpS, cp, name, props, sourceId, sourceType, targetId, targetType})
+                .ifNotExists();
 
         //blocking execution of the insert statements
         session.execute(q)
@@ -407,7 +419,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 //and get the result
                 .toBlocking().first().get(0).one();
         //but return the inserted row - which is not what the insert statement returns
-        return GeneratedRow.ofRelationship(keyspace, cp, sourceCp, targetCp, name, props);
+        return GeneratedRow.ofRelationship(keyspace, cp, name, sourceCpS, targetCpS, props);
     }
 
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
