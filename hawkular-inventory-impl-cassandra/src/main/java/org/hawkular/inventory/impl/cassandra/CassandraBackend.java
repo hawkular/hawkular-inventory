@@ -25,6 +25,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 
 import java.io.InputStream;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -85,7 +86,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     private final QueryExecutor queryExecutor;
     private final String keyspace;
 
-    public CassandraBackend(RxSession session, String keyspace) {
+    CassandraBackend(RxSession session, String keyspace) {
         this.session = session;
         this.statements = new Statements(session);
         this.queryExecutor = new QueryExecutor(session, statements);
@@ -97,7 +98,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public boolean isUniqueIndexSupported() {
-        return false;
+        return true;
     }
 
     @Override public InventoryBackend<Row> startTransaction() {
@@ -198,8 +199,13 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public boolean hasRelationship(Row source, Row target, String relationshipName) {
-        //TODO implement
-        return false;
+        String sourceCp = source.getString(Statements.CP);
+        String targetCp = target.getString(Statements.CP);
+
+        Statement q = select().countAll().from(Statements.RELATIONSHIP_OUT)
+                .where(eq(Arrays.asList(Statements.SOURCE_CP, Statements.TARGET_CP),
+                        Arrays.asList(sourceCp, targetCp)));
+        return session.execute(q).count().toBlocking().first() > 0;
     }
 
     @Override
