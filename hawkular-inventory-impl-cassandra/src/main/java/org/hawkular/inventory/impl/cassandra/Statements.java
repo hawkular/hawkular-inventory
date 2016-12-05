@@ -39,6 +39,10 @@ final class Statements {
     static final String TYPE = "type";
     static final String SOURCE_CP = "source_cp";
     static final String TARGET_CP = "target_cp";
+    static final String SOURCE_ID = "source_id";
+    static final String TARGET_ID = "target_id";
+    static final String SOURCE_TYPE = "source_type";
+    static final String TARGET_TYPE = "target_type";
     static final String NAME = "name";
     static final String PROPERTIES = "properties";
 
@@ -46,6 +50,10 @@ final class Statements {
     private final PreparedStatement findRelationshipByCanonicalPath;
     private final PreparedStatement findEntityByCanonicalPaths;
     private final PreparedStatement findRelationshipByCanonicalPaths;
+    private final PreparedStatement findEntityCpsByIds;
+    private final PreparedStatement findEntityCpsById;
+    private final PreparedStatement findEntityCpsByTypes;
+    private final PreparedStatement findEntityCpsByType;
 
     Statements(RxSession session) {
         findEntityByCanonicalPath = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " = ?;");
@@ -54,6 +62,12 @@ final class Statements {
                 prepare(session, "SELECT * FROM " + RELATIONSHIP + " WHERE " + CP + " = ?;");
         findRelationshipByCanonicalPaths =
                 prepare(session, "SELECT * FROM " + RELATIONSHIP + " WHERE " + CP + " IN ?;");
+        findEntityCpsByIds = prepare(session, "SELECT " + CP + " FROM " + ENTITY_ID_IDX + " WHERE " + ID + " IN ?;");
+        findEntityCpsById = prepare(session, "SELECT " + CP + " FROM " + ENTITY_ID_IDX + " WHERE " + ID + " = ?;");
+        findEntityCpsByTypes = prepare(session, "SELECT " + CP + " FROM " + ENTITY_TYPE_IDX + " WHERE " + TYPE
+                + " IN ?;");
+        findEntityCpsByType = prepare(session, "SELECT " + CP + " FROM " + ENTITY_TYPE_IDX + " WHERE " + TYPE
+                + " = ?;");
     }
 
     PreparedStatement findEntityByCanonicalPath() {
@@ -64,12 +78,28 @@ final class Statements {
         return findRelationshipByCanonicalPath;
     }
 
-    PreparedStatement getFindEntityByCanonicalPaths() {
+    PreparedStatement findEntityByCanonicalPaths() {
         return findEntityByCanonicalPaths;
     }
 
-    PreparedStatement getFindRelationshipByCanonicalPaths() {
+    PreparedStatement findRelationshipByCanonicalPaths() {
         return findRelationshipByCanonicalPaths;
+    }
+
+    PreparedStatement findEntityCpsByIds() {
+        return findEntityCpsByIds;
+    }
+
+    PreparedStatement findEntityCpsById() {
+        return findEntityCpsById;
+    }
+
+    PreparedStatement findEntityCpsByTypes() {
+        return findEntityCpsByTypes;
+    }
+
+    PreparedStatement findEntityCpsByType() {
+        return findEntityCpsByType;
     }
 
     private PreparedStatement prepare(RxSession session, String statement) {

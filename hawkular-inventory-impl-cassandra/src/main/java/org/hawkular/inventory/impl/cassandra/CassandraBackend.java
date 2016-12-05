@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.AbstractElement;
@@ -82,11 +83,13 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     private final RxSession session;
     private final Statements statements;
     private final QueryExecutor queryExecutor;
+    private final String keyspace;
 
-    public CassandraBackend(RxSession session) {
+    public CassandraBackend(RxSession session, String keyspace) {
         this.session = session;
         this.statements = new Statements(session);
         this.queryExecutor = new QueryExecutor(session, statements);
+        this.keyspace = keyspace;
     }
 
     @Override public boolean isPreferringBigTransactions() {
@@ -153,9 +156,13 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     public <T> Page<T> query(Query query, Pager pager, Function<Row, T> conversion, Function<T, Boolean> filter) {
         DBG.debugf("Executing query with conversion and filter %s", query);
 
-        Observable<Row> qrs = queryExecutor.execute(query);
-        Observable<T> rs = qrs.map(conversion::apply).filter(filter::apply);
-        return new Page<>(rs.toBlocking().getIterator(), pager, -1);
+        if (filter == null) {
+            filter = any -> true;
+        }
+
+        Observable<Row> rs = queryExecutor.execute(query);
+        Observable<T> ts = rs.map(conversion::apply).filter(filter::apply);
+        return new Page<>(ts.toBlocking().getIterator(), pager, -1);
     }
 
     @Override
@@ -208,33 +215,47 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public Row getRelationshipSource(Row relationship) {
-        //TODO implement
-        return null;
+        String sourceCp = relationship.getString(Statements.SOURCE_CP);
+        try {
+            return find(CanonicalPath.fromString(sourceCp));
+        } catch (ElementNotFoundException e) {
+            throw new IllegalArgumentException("Could not find the source of the relationship.", e);
+        }
     }
 
     @Override public Row getRelationshipTarget(Row relationship) {
-        //TODO implement
-        return null;
+        String targetCp = relationship.getString(Statements.TARGET_CP);
+        try {
+            return find(CanonicalPath.fromString(targetCp));
+        } catch (ElementNotFoundException e) {
+            throw new IllegalArgumentException("Could not find the target of the relationship.", e);
+        }
     }
 
     @Override public String extractRelationshipName(Row relationship) {
-        //TODO implement
-        return null;
+        return relationship.getString(Statements.NAME);
     }
 
     @Override public String extractId(Row entityRepresentation) {
-        //TODO implement
-        return null;
+        if (entityRepresentation.getColumnDefinitions().contains(Statements.SOURCE_CP)) {
+            return extractCanonicalPath(entityRepresentation).getSegment().getElementId();
+        } else {
+            return entityRepresentation.getString(Statements.ID);
+        }
     }
 
     @Override public Class<?> extractType(Row entityRepresentation) {
-        //TODO implement
-        return null;
+        if (entityRepresentation.getColumnDefinitions().contains(Statements.SOURCE_CP)) {
+            return Relationship.class;
+        } else {
+            int ord = entityRepresentation.getInt(Statements.TYPE);
+            SegmentType st = SegmentType.values()[ord];
+            return Inventory.types().bySegment(st).getElementType();
+        }
     }
 
     @Override public CanonicalPath extractCanonicalPath(Row entityRepresentation) {
-        //TODO implement
-        return null;
+        return CanonicalPath.fromString(entityRepresentation.getString(Statements.CP));
     }
 
     @Override public String extractIdentityHash(Row entityRepresentation) {
@@ -272,8 +293,9 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         AbstractMap.SimpleImmutableEntry::getValue));
 
         //the relationship CP is a composition of the sourceCP, name and targetCP
-        CanonicalPath cp = CanonicalPath.of().relationship(
-                PathSegmentCodec.encode(sourceCp) + ";" + name + ";" + PathSegmentCodec.encode(targetCp)).get();
+        String cp = CanonicalPath.of().relationship(
+                PathSegmentCodec.encode(sourceCp) + ";" + name + ";" + PathSegmentCodec.encode(targetCp)).get()
+                .toString();
 
         Insert q = insertInto(Statements.RELATIONSHIP).values(
                 new String[]{Statements.CP, Statements.SOURCE_CP, Statements.TARGET_CP, Statements.NAME,
@@ -290,13 +312,16 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         Statements.PROPERTIES},
                 new Object[]{sourceCp, targetCp, cp, name, props}).ifNotExists();
 
-        return session.execute(q)
+        //blocking execution of the insert statements
+        session.execute(q)
                 //follow the successful addition into the main table by concurrent updates of the in/out companions
                 .concatWith(session.execute(out).mergeWith(session.execute(in)))
                 //force all statements to execute
                 .toList()
                 //and get the result
                 .toBlocking().first().get(0).one();
+        //but return the inserted row - which is not what the insert statement returns
+        return GeneratedRow.ofRelationship(keyspace, cp, sourceCp, targetCp, name, props);
     }
 
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
@@ -313,9 +338,18 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
                                 AbstractMap.SimpleImmutableEntry::getValue));
 
-                Insert q = insertInto(Statements.ENTITY).values(new String[] {
-                                Statements.CP, Statements.ID, Statements.NAME, Statements.PROPERTIES},
-                        new Object[] {path.toString(), name, props}).ifNotExists();
+                Insert q = insertInto(Statements.ENTITY).values(new String[]{
+                                Statements.CP,
+                                Statements.ID,
+                                Statements.TYPE,
+                                Statements.NAME,
+                                Statements.PROPERTIES},
+                        new Object[]{
+                                path.toString(),
+                                path.getSegment().getElementId(),
+                                path.getSegment().getElementType().ordinal(),
+                                name,
+                                props}).ifNotExists();
 
                 Insert id_idx = insertInto(Statements.ENTITY_ID_IDX).values(
                         new String[] {Statements.ID, Statements.CP},
@@ -333,13 +367,17 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                     indices = indices.mergeWith(session.execute(name_idx));
                 }
 
-                return session.execute(q)
+                //blocking execution of the insert...
+                session.execute(q)
                         //follow the successful addition into the main table by concurrent updates of the in/out companions
                         .concatWith(indices)
                         //force all statements to execute
                         .toList()
                         //and get the result
                         .toBlocking().first().get(0).one();
+                //but return the inserted row - which is not what the insert statement returns
+                return GeneratedRow.ofEntity(keyspace, path.toString(), path.getSegment().getElementId(),
+                        path.getSegment().getElementType().ordinal(), name, props);
             }
 
             @Override public Row visitTenant(Tenant.Blueprint tenant, Void parameter) {

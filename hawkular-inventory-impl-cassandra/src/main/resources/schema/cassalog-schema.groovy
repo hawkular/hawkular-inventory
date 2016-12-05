@@ -79,37 +79,37 @@ schemaChange {
     description 'Tables for relationships'
     cql (["""
 CREATE TABLE relationship (
-    cp text PRIMARY KEY,
+    cp ascii PRIMARY KEY,
     name text,
-    source_cp text,
-    target_cp text,
+    source_cp ascii,
+    target_cp ascii,
     properties map<text, text>
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """, """
 CREATE TABLE relationship_out (
-    source_cp text,
-    target_cp text,
-    cp text,
+    source_cp ascii,
+    target_cp ascii,
+    source_id text,
+    target_id text,
+    source_type int,
+    target_type int,
+    cp ascii,
     name text,
     properties map<text, text>,
-    PRIMARY KEY (source_cp, name)
+    PRIMARY KEY (source_cp, name, source_type, source_id)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
-""", """
-CREATE INDEX relationship_out_property ON relationship_out (KEYS(properties));  
-""", """
-CREATE INDEX relationship_out_cp ON relationship_out (cp);  
 """, """
 CREATE TABLE relationship_in (
-    target_cp text,
-    source_cp text,
-    cp text,
+    target_cp ascii,
+    source_cp ascii,
+    source_id text,
+    target_id text,
+    source_type int,
+    target_type int,
+    cp ascii,
     name text,
     properties map<text, text>,
-    PRIMARY KEY (target_cp, name)
+    PRIMARY KEY (target_cp, name, target_type, target_id)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
-""", """
-CREATE INDEX relationship_in_property ON relationship_in (KEYS(properties));  
-""", """
-CREATE INDEX relationship_in_cp ON relationship_in (cp);  
 """])
 }

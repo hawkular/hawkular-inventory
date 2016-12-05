@@ -67,9 +67,10 @@ public final class CassandraInventory extends BaseInventory<Row> {
     @Override protected CassandraBackend doInitialize(Configuration configuration) {
         try {
             Session session = connect(configuration);
-            initSchema(session, configuration.getProperty(Prop.KEYSPACE, "hawkular_inventory"));
+            String keyspace = configuration.getProperty(Prop.KEYSPACE, "hawkular_inventory");
+            initSchema(session, keyspace);
 
-            return new CassandraBackend(new RxSessionImpl(session));
+            return new CassandraBackend(new RxSessionImpl(session), keyspace);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Could not initialize Cassandra connection using the provided configuration.", e);
