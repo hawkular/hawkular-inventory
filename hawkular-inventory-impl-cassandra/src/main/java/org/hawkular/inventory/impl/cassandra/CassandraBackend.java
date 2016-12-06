@@ -219,9 +219,8 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 .iterator();
     }
 
-    private Observable<Row> loadEntities(Iterable<String> listCP) {
-        Statement st = statements.findEntityByCanonicalPaths().bind(listCP);
-        return session.executeAndFetch(st);
+    private Observable<Row> loadEntities(List<String> listCP) {
+        return statements.findEntityByCanonicalPaths(listCP);
     }
 
     private List<Row> reorderEntities(List<Row> unsorted, List<String> sortedCps) {
@@ -255,9 +254,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
         String relCP = getRelationshipCanonicalPath(relationshipName, sourceCp, targetCp);
 
-        Statement q = statements.findRelationshipByCanonicalPath().bind(relCP);
-
-        return !session.executeAndFetch(q).isEmpty().toBlocking().first();
+        return !statements.findRelationshipByCanonicalPath(relCP).isEmpty().toBlocking().first();
     }
 
     @Override
@@ -299,7 +296,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                     }
                 })
                 .toList()
-                .flatMap(cps -> session.executeAndFetch(statements.findEntityByCanonicalPaths().bind(cps)));
+                .flatMap(statements::findEntityByCanonicalPaths);
     }
 
     private Observable<Row> getRelationshipRows(Row entity, Relationships.Direction direction, String... names) {
@@ -353,9 +350,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
         String relCP = getRelationshipCanonicalPath(relationshipName, sourceCp, targetCp);
 
-        Statement q = statements.findRelationshipByCanonicalPath().bind(relCP);
-
-        Row result = session.executeAndFetch(q).toBlocking().firstOrDefault(null);
+        Row result = statements.findRelationshipByCanonicalPath(relCP).toBlocking().firstOrDefault(null);
         if (result == null) {
             throw new ElementNotFoundException();
         }
@@ -716,8 +711,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public void close() throws Exception {
-        //TODO implement
-
+        session.close();
     }
 
     private StructuredData loadStructuredData(Row parent, String relationship) {

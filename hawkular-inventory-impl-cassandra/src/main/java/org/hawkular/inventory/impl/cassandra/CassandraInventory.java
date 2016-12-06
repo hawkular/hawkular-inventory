@@ -77,6 +77,7 @@ public final class CassandraInventory extends BaseInventory<Row> {
         }
     }
 
+
     private Session connect(Configuration configuration) {
         Cluster.Builder clusterBuilder = new Cluster.Builder();
         int port;

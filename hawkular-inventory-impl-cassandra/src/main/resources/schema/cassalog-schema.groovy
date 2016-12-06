@@ -97,7 +97,7 @@ CREATE TABLE relationship_out (
     cp ascii,
     properties map<text, text>,
     PRIMARY KEY (source_cp, name)
-) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """, """
 CREATE TABLE relationship_in (
     target_cp ascii,
@@ -110,6 +110,6 @@ CREATE TABLE relationship_in (
     cp ascii,
     properties map<text, text>,
     PRIMARY KEY (target_cp, name)
-) WITH compaction = { 'class': 'LeveledCompactionStrategy' }; 
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """])
 }

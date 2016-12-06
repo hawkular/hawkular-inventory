@@ -140,7 +140,7 @@ import rx.Subscription;
 public abstract class AbstractBaseInventoryTestsuite<E> {
     protected BaseInventory<E> inventory;
 
-    protected static <E> void setupNewInventory(BaseInventory<E> inventory) throws Exception {
+    public static void initializeInventoryForTest(BaseInventory<?> inventory) throws Exception {
         Properties ps = new Properties();
         try (FileInputStream f = new FileInputStream(System.getProperty("graph.config"))) {
             ps.load(f);
@@ -152,6 +152,10 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
                 .build();
 
         inventory.initialize(config);
+    }
+
+    protected static <E> void setupNewInventory(BaseInventory<E> inventory) throws Exception {
+        initializeInventoryForTest(inventory);
 
         try {
             inventory.tenants().delete("com.acme.tenant");

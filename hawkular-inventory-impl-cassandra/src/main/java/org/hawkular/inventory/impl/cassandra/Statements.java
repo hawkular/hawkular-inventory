@@ -13,13 +13,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-
 package org.hawkular.inventory.impl.cassandra;
 
-import java.util.Collection;
+import static java.util.stream.Collectors.toList;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
 
 import com.datastax.driver.core.PreparedStatement;
@@ -101,14 +103,6 @@ final class Statements {
                 + " IN ?;");
     }
 
-    PreparedStatement findEntityByCanonicalPath() {
-        return findEntityByCanonicalPath;
-    }
-
-    PreparedStatement findRelationshipByCanonicalPath() {
-        return findRelationshipByCanonicalPath;
-    }
-
     Observable<Row> findEntityByCanonicalPath(String cp) {
         return session.executeAndFetch(findEntityByCanonicalPath.bind(cp));
     }
@@ -117,28 +111,28 @@ final class Statements {
         return session.executeAndFetch(findRelationshipByCanonicalPath.bind(cp));
     }
 
-    PreparedStatement findEntityByCanonicalPaths() {
-        return findEntityByCanonicalPaths;
+    Observable<Row> findEntityByCanonicalPaths(List<String> cps) {
+        return session.executeAndFetch(findEntityByCanonicalPaths.bind(cps));
     }
 
-    PreparedStatement findRelationshipByCanonicalPaths() {
-        return findRelationshipByCanonicalPaths;
+    Observable<Row> findRelationshipByCanonicalPaths(List<String> cps) {
+        return session.executeAndFetch(findRelationshipByCanonicalPaths.bind(cps));
     }
 
-    PreparedStatement findEntityCpsByIds() {
-        return findEntityCpsByIds;
+    Observable<Row> findEntityCpsByIds(List<String> ids) {
+        return session.executeAndFetch(findEntityCpsByIds.bind(ids));
     }
 
-    PreparedStatement findEntityCpsById() {
-        return findEntityCpsById;
+    Observable<Row> findEntityCpsById(String id) {
+        return session.executeAndFetch(findEntityCpsById.bind(id));
     }
 
-    PreparedStatement findEntityCpsByTypes() {
-        return findEntityCpsByTypes;
+    Observable<Row> findEntityCpsByTypes(List<SegmentType> types) {
+        return session.executeAndFetch(findEntityCpsByTypes.bind(types.stream().map(Enum::ordinal).collect(toList())));
     }
 
-    PreparedStatement findEntityCpsByType() {
-        return findEntityCpsByType;
+    Observable<Row> findEntityCpsByType(SegmentType type) {
+        return session.executeAndFetch(findEntityCpsByType.bind(type.ordinal()));
     }
 
     Observable<Long> countOutRelationshipBySourceAndName(String source, String name) {
@@ -171,20 +165,20 @@ final class Statements {
                 .flatMap(name -> findInRelationshipByTargetAndName(target, name));
     }
 
-    PreparedStatement findRelationshipOutsBySourceCpsAndName() {
-        return findRelationshipOutsBySourceCpsAndName;
+    Observable<Row> findRelationshipOutsBySourceCpsAndName(List<String> cps, String name) {
+        return session.executeAndFetch(findRelationshipOutsBySourceCpsAndName.bind(cps, name));
     }
 
-    PreparedStatement findRelationshipInsByTargetCpsAndName() {
-        return findRelationshipInsByTargetCpsAndName;
+    Observable<Row> findRelationshipInsByTargetCpsAndName(List<String> cps, String name) {
+        return session.executeAndFetch(findRelationshipInsByTargetCpsAndName.bind(cps, name));
     }
 
-    PreparedStatement findRelationshipOutsBySourceCps() {
-        return findRelationshipOutsBySourceCps;
+    Observable<Row> findRelationshipOutsBySourceCps(List<String> cps) {
+        return session.executeAndFetch(findRelationshipOutsBySourceCps.bind(cps));
     }
 
-    PreparedStatement findRelationshipInsByTargetCps() {
-        return findRelationshipInsByTargetCps;
+    Observable<Row> findRelationshipInsByTargetCps(List<String> cps) {
+        return session.executeAndFetch(findRelationshipInsByTargetCps.bind(cps));
     }
 
     private PreparedStatement prepare(RxSession session, String statement) {

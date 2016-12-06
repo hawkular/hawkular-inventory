@@ -13,9 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-
 package org.hawkular.inventory.impl.cassandra;
 
 import static java.util.stream.Collectors.toList;
@@ -32,7 +30,6 @@ import static org.hawkular.inventory.impl.cassandra.Statements.TYPE;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.hawkular.inventory.api.PathFragment;
@@ -43,10 +40,10 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.rx.cassandra.driver.RxSession;
 import org.jboss.logging.Logger;
 
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 
 import rx.Observable;
@@ -204,7 +201,7 @@ final class QueryExecutor {
                 r -> r.getString(prop),
                 (rows, constraints) -> {
                     List<String> cps = rows.stream().map(r -> r.getString(CP)).collect(toList());
-                    return session.executeAndFetch(statements.findEntityByCanonicalPaths().bind(cps));
+                    return statements.findEntityByCanonicalPaths(cps);
                 }
         );
     }
@@ -214,15 +211,15 @@ final class QueryExecutor {
         String prop = state.propertyNameBasedOnState(TYPE);
 
         return doFilter(
-                Stream.of(filter.getSegmentTypes()).map(Enum::ordinal).collect(toList()),
+                Stream.of(filter.getSegmentTypes()).collect(toList()),
                 bounds,
                 state,
                 statements::findEntityCpsByType,
                 statements::findEntityCpsByTypes,
-                r -> r.getInt(prop),
+                r -> SegmentType.values()[r.getInt(prop)],
                 (rows, constraints) -> {
                     List<String> cps = rows.stream().map(r -> r.getString(CP)).collect(toList());
-                    return session.executeAndFetch(statements.findEntityByCanonicalPaths().bind(cps));
+                    return statements.findEntityByCanonicalPaths(cps);
                 }
         );
     }
@@ -246,8 +243,8 @@ final class QueryExecutor {
                     state.inEdges = true;
                     state.comingFrom = Relationships.Direction.incoming;
                     ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                            .flatMap(cps -> session.executeAndFetch(statements.findRelationshipInsByTargetCpsAndName()
-                                    .bind(cps, filter.getRelationshipName())));
+                            .flatMap(cps -> statements.findRelationshipInsByTargetCpsAndName(cps,
+                                    filter.getRelationshipName()));
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -260,8 +257,7 @@ final class QueryExecutor {
                         ret = ret.filter(r -> r.getString(CP).equals(cp));
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                                .flatMap(cps -> session.executeAndFetch(statements.findRelationshipInsByTargetCps()
-                                        .bind(cps, filter.getRelationshipName())))
+                                .flatMap(statements::findRelationshipInsByTargetCps)
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
@@ -271,8 +267,8 @@ final class QueryExecutor {
                     state.inEdges = true;
                     state.comingFrom = Relationships.Direction.outgoing;
                     ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                            .flatMap(cps -> session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
-                                    .bind(cps, filter.getRelationshipName())));
+                            .flatMap(cps -> statements.findRelationshipOutsBySourceCpsAndName(
+                                    cps, filter.getRelationshipName()));
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -285,8 +281,7 @@ final class QueryExecutor {
                         ret = ret.filter(r -> r.getString(CP).equals(cp));
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                                .flatMap(cps -> session.executeAndFetch(statements.findRelationshipOutsBySourceCps()
-                                        .bind(cps, filter.getRelationshipName())))
+                                .flatMap(statements::findRelationshipOutsBySourceCps)
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
@@ -298,11 +293,10 @@ final class QueryExecutor {
                     state.comingFrom = Relationships.Direction.both;
                     ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
                             .flatMap(cps ->
-                                session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
-                                        .bind(cps, filter.getRelationshipName()))
-                                        .mergeWith(session.executeAndFetch(
-                                                statements.findRelationshipOutsBySourceCpsAndName()
-                                        .bind(cps, filter.getRelationshipName()))));
+                                    statements.findRelationshipOutsBySourceCpsAndName(cps, filter.getRelationshipName())
+                                            .mergeWith(
+                                                    statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                                            filter.getRelationshipName())));
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -315,11 +309,10 @@ final class QueryExecutor {
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
                                 .flatMap(cps ->
-                                        session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
-                                                .bind(cps, filter.getRelationshipName()))
-                                                .mergeWith(session.executeAndFetch(
-                                                        statements.findRelationshipOutsBySourceCpsAndName()
-                                                                .bind(cps, filter.getRelationshipName()))))
+                                        statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                                filter.getRelationshipName())
+                                                .mergeWith(statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                                        filter.getRelationshipName())))
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
@@ -338,10 +331,10 @@ final class QueryExecutor {
     }
 
     private <T> Observable<Row> doFilter(List<T> constraints, Observable<Row> bounds, TraversalState state,
-                                              Supplier<PreparedStatement> primaryFetchBySingleConstraint,
-                                              Supplier<PreparedStatement> primaryFetchByMultipleConstraints,
-                                              Function<Row, T> constraintMatchProducer,
-                                              Func2<List<Row>, List<T>, Observable<Row>>resultModulator) {
+                                         Function<T, Observable<Row>> primaryFetchBySingleConstraint,
+                                         Function<List<T>, Observable<Row>> primaryFetchByMultipleConstraints,
+                                         Function<Row, T> constraintMatchProducer,
+                                         Func2<List<Row>, List<T>, Observable<Row>> resultModulator) {
         Observable<Row> ret;
         if (bounds == null) {
             if (state.inEdges) {
@@ -349,9 +342,9 @@ final class QueryExecutor {
                         " traversing edges.");
             } else {
                 if (constraints.size() == 1) {
-                    ret = session.executeAndFetch(primaryFetchBySingleConstraint.get().bind(constraints.get(0)));
+                    ret = primaryFetchBySingleConstraint.apply(constraints.get(0));
                 } else {
-                    ret = session.executeAndFetch(primaryFetchByMultipleConstraints.get().bind(constraints));
+                    ret = primaryFetchByMultipleConstraints.apply(constraints);
                 }
 
                 if (resultModulator != null) {
@@ -389,8 +382,7 @@ final class QueryExecutor {
                     }
                 })
                 .toList()
-                .flatMap(cps -> Observable.just(QueryExecutor.this.statements.findEntityByCanonicalPaths().bind(cps)))
-                .flatMap(session::executeAndFetch);
+                .flatMap(statements::findEntityByCanonicalPaths);
     }
 
     private static class TraversalState implements Cloneable {

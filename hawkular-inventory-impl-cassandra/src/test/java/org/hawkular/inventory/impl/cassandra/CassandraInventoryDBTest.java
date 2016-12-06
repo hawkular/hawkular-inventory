@@ -16,18 +16,12 @@
  */
 package org.hawkular.inventory.impl.cassandra;
 
-import java.io.FileInputStream;
-import java.net.URL;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Properties;
 
-import org.apache.cassandra.service.CassandraDaemon;
-import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Relationships;
-import org.hawkular.inventory.api.feeds.AcceptWithFallbackFeedIdStrategy;
-import org.hawkular.inventory.api.feeds.RandomUUIDFeedIdStrategy;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.junit.AfterClass;
@@ -43,36 +37,20 @@ import com.datastax.driver.core.Row;
  * @since 2.0.0
  */
 public class CassandraInventoryDBTest {
-    private static CassandraDaemon CASSANDRA_DAEMON;
     private static InventoryBackend<Row> BACKEND;
 
     @BeforeClass
     public static void init() throws Exception {
-
-        URL cassandraConfigFile = CassandraInventoryDBTest.class.getResource("/cassandra-config.yaml");
-        System.setProperty("cassandra.config", cassandraConfigFile.toString());
-        CASSANDRA_DAEMON = new CassandraDaemon(true);
-        CASSANDRA_DAEMON.activate();
+        CassandraController.start();
         CassandraInventory inventory = new CassandraInventory();
-        Properties ps = new Properties();
-        try (FileInputStream f = new FileInputStream(System.getProperty("graph.config"))) {
-            ps.load(f);
-        }
-
-        Configuration config = Configuration.builder().withFeedIdStrategy(
-                new AcceptWithFallbackFeedIdStrategy(new RandomUUIDFeedIdStrategy()))
-                .withConfiguration(ps)
-                .build();
-
-        inventory.initialize(config);
+        AbstractBaseInventoryTestsuite.initializeInventoryForTest(inventory);
         BACKEND = inventory.getBackend();
     }
 
     @AfterClass
     public static void shutdown() throws Exception {
-        if (CASSANDRA_DAEMON != null) {
-            CASSANDRA_DAEMON.deactivate();
-        }
+        BACKEND.close();
+        CassandraController.stop();
     }
 
     @Test

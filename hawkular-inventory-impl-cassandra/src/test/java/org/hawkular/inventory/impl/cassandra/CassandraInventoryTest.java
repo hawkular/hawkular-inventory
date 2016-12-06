@@ -16,9 +16,6 @@
  */
 package org.hawkular.inventory.impl.cassandra;
 
-import java.net.URL;
-
-import org.apache.cassandra.service.CassandraDaemon;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +31,6 @@ import com.datastax.driver.core.Row;
  * @since 2.0.0
  */
 public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<Row> {
-    private static CassandraDaemon CASSANDRA_DAEMON;
     private static CassandraInventory INVENTORY;
 
     @Rule public TestName name = new TestName();
@@ -64,10 +60,7 @@ public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<Row> 
 //                    }
 //                }));
 
-        URL cassandraConfigFile = CassandraInventoryTest.class.getResource("/cassandra-config.yaml");
-        System.setProperty("cassandra.config", cassandraConfigFile.toString());
-        CASSANDRA_DAEMON = new CassandraDaemon(true);
-        CASSANDRA_DAEMON.activate();
+        CassandraController.start();
         INVENTORY = new CassandraInventory();
         setupNewInventory(INVENTORY);
         setupData(INVENTORY);
@@ -78,9 +71,7 @@ public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<Row> 
         try {
             teardownData(INVENTORY);
         } finally {
-            if (CASSANDRA_DAEMON != null) {
-                CASSANDRA_DAEMON.deactivate();
-            }
+            CassandraController.stop();
         }
     }
 
