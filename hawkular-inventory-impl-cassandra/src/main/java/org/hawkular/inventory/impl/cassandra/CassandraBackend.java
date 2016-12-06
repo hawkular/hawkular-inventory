@@ -22,9 +22,7 @@ import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
 import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 
 import java.io.InputStream;
 import java.util.AbstractMap;
@@ -78,7 +76,6 @@ import org.jboss.logging.Logger;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TypeTokens;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.google.common.collect.Maps;
@@ -103,7 +100,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     CassandraBackend(RxSession session, String keyspace) {
         this.session = session;
         this.statements = new Statements(session);
-        this.queryExecutor = new QueryExecutor(session, statements);
+        this.queryExecutor = new QueryExecutor(statements);
         this.keyspace = keyspace;
     }
 
@@ -185,7 +182,8 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     //TODO this is identical in purpose to getRelated()
-    private Observable<String> getRelationshipOtherEnds(String cp, Relationships.Direction direction, Collection<String> relationshipNames) {
+    private Observable<String> getRelationshipOtherEnds(String cp, Relationships.Direction direction,
+                                                        Collection<String> relationshipNames) {
         if (direction == outgoing) {
             return statements.findOutRelationshipBySourceAndNames(cp, relationshipNames)
                     .map(row -> row.getString(Statements.TARGET_CP));
@@ -300,47 +298,38 @@ public final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     private Observable<Row> getRelationshipRows(Row entity, Relationships.Direction direction, String... names) {
-        String cp = entity.getString(Statements.CP);
+        String entityCP = entity.getString(Statements.CP);
 
-        Observable<Statement> qs;
+        Observable<Row> res;
         switch (direction) {
             case incoming:
                 if (names.length == 1) {
-                    qs = Observable.just(select().all().from(Statements.RELATIONSHIP_IN)
-                            .where(eq(Statements.TARGET_CP, cp)).and(eq(Statements.NAME, names[0])));
+                    res = statements.findInRelationshipByTargetAndName(entityCP, names[0]);
                 } else {
-                    qs = Observable.just(select().all().from(Statements.RELATIONSHIP_IN)
-                            .where(eq(Statements.TARGET_CP, cp)));
+                    res = statements.findInRelationshipsByTarget(entityCP);
                 }
                 break;
             case outgoing:
                 if (names.length == 1) {
-                    qs = Observable
-                            .just(select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp))
-                                    .and(eq(Statements.NAME, names[0])));
+                    res = statements.findOutRelationshipBySourceAndName(entityCP, names[0]);
                 } else {
-                    qs = Observable
-                            .just(select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp)));
+                    res = statements.findOutRelationshipsBySource(entityCP);
                 }
                 break;
             case both:
                 if (names.length == 1) {
-                    qs = Observable.just(
-                            select().all().from(Statements.RELATIONSHIP_IN).where(eq(Statements.TARGET_CP, cp))
-                                    .and(eq(Statements.NAME, names[0])),
-                            select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp))
-                                    .and(eq(Statements.NAME, names[0])));
+                    res = statements.findInRelationshipByTargetAndName(entityCP, names[0])
+                            .mergeWith(statements.findOutRelationshipBySourceAndName(entityCP, names[0]));
                 } else {
-                    qs = Observable.just(
-                            select().all().from(Statements.RELATIONSHIP_IN).where(eq(Statements.TARGET_CP, cp)),
-                            select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp)));
+                    res = statements.findInRelationshipsByTarget(entityCP).mergeWith(
+                            statements.findOutRelationshipsBySource(entityCP));
                 }
                 break;
             default:
                 throw new IllegalStateException("Unhandled relationship direction: " + direction);
         }
 
-        return qs.flatMap(session::executeAndFetch);
+        return res;
     }
 
     @Override public Row getRelationship(Row source, Row target, String relationshipName)

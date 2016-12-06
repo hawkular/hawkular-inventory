@@ -65,6 +65,8 @@ final class Statements {
     private final PreparedStatement countInRelationshipByTargetAndName;
     private final PreparedStatement findOutRelationshipBySourceAndName;
     private final PreparedStatement findInRelationshipByTargetAndName;
+    private final PreparedStatement findInRelationshipsByTarget;
+    private final PreparedStatement findOutRelationshipsBySource;
     private final PreparedStatement findRelationshipOutsBySourceCpsAndName;
     private final PreparedStatement findRelationshipOutsBySourceCps;
     private final PreparedStatement findRelationshipInsByTargetCpsAndName;
@@ -93,6 +95,10 @@ final class Statements {
                 session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP + " = ? AND " + NAME + " = ?;");
         findInRelationshipByTargetAndName = prepare(
                 session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP + " = ? AND " + NAME + " = ?;");
+        findInRelationshipsByTarget = prepare(session,
+                "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP + " = ?");
+        findOutRelationshipsBySource = prepare(session,
+                "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP + " = ?");
         findRelationshipOutsBySourceCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP
                 + " IN ? AND " + NAME + " = ?;");
         findRelationshipInsByTargetCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP
@@ -153,6 +159,14 @@ final class Statements {
 
     Observable<Row> findInRelationshipByTargetAndName(String source, String name) {
         return session.executeAndFetch(findInRelationshipByTargetAndName.bind(source, name));
+    }
+
+    Observable<Row> findInRelationshipsByTarget(String cp) {
+        return session.executeAndFetch(findInRelationshipsByTarget.bind(cp));
+    }
+
+    Observable<Row> findOutRelationshipsBySource(String cp) {
+        return session.executeAndFetch(findOutRelationshipsBySource.bind(cp));
     }
 
     Observable<Row> findOutRelationshipBySourceAndNames(String source, Collection<String> names) {

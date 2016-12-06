@@ -18,6 +18,7 @@ package org.hawkular.inventory.impl.cassandra;
 
 import static java.util.stream.Collectors.toList;
 
+import static org.hawkular.inventory.api.Relationships.WellKnown.contains;
 import static org.hawkular.inventory.impl.cassandra.Statements.CP;
 import static org.hawkular.inventory.impl.cassandra.Statements.ID;
 import static org.hawkular.inventory.impl.cassandra.Statements.SOURCE_CP;
@@ -29,6 +30,8 @@ import static org.hawkular.inventory.impl.cassandra.Statements.TARGET_TYPE;
 import static org.hawkular.inventory.impl.cassandra.Statements.TYPE;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -37,11 +40,13 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.QueryFragment;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.Path;
+import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
-import org.hawkular.rx.cassandra.driver.RxSession;
 import org.jboss.logging.Logger;
 
 import com.datastax.driver.core.Row;
@@ -56,15 +61,13 @@ import rx.functions.Func2;
 final class QueryExecutor {
     private static final Logger DBG = Logger.getLogger(QueryExecutor.class);
 
-    private final RxSession session;
     private final Statements statements;
 
-    QueryExecutor(RxSession session, Statements statements) {
-        this.session = session;
+    QueryExecutor(Statements statements) {
         this.statements = statements;
     }
 
-    public Observable<Row> execute(Query query) {
+    Observable<Row> execute(Query query) {
         DBG.debugf("Execute of %s", query);
 
         Observable<Row> data;
@@ -82,7 +85,7 @@ final class QueryExecutor {
         return traverse(data, query, 1, traversalState);
     }
 
-    public Observable<Row> traverse(Row startingPoint, Query query) {
+    Observable<Row> traverse(Row startingPoint, Query query) {
         DBG.debugf("Executing traverse %s from %s", query, startingPoint);
 
         Observable<Row> res = Observable.just(startingPoint);
@@ -166,6 +169,8 @@ final class QueryExecutor {
             return execRelated((Related) filter, bounds, state);
         } else if (filter instanceof With.RelativePaths) {
             return execRelativePaths((With.RelativePaths) filter, bounds, state);
+        } else if (filter instanceof Marker) {
+            return execMarker((Marker) filter, bounds, state);
         } else {
             throw new IllegalArgumentException("Unsupported filter type: " + filter.getClass().getName());
         }
@@ -325,9 +330,70 @@ final class QueryExecutor {
         return ret;
     }
 
+    private Observable<Row> execMarker(Marker filter, Observable<Row> bounds, TraversalState state) {
+        state.markedPositions.put(filter.getLabel(), bounds.replay());
+        return bounds;
+    }
+
     private Observable<Row> execRelativePaths(With.RelativePaths filter, Observable<Row> bounds, TraversalState state) {
-        //TODO implement
-        return Observable.empty();
+        bounds = goBackFromEdges(bounds, state);
+
+        TraversalState currentState = state.clone();
+
+        return bounds.toList().flatMap(rows -> {
+            Observable<Row> ret = Observable.empty();
+
+            Function<TraversalState, Function<Row, String>> getCp = (ts) -> {
+                if (ts.comingFrom == null) {
+                    return r -> r.getString(CP);
+                } else if (ts.comingFrom == Relationships.Direction.incoming) {
+                    return r -> r.getString(SOURCE_CP);
+                } else if (ts.comingFrom == Relationships.Direction.outgoing) {
+                    return r -> r.getString(TARGET_CP);
+                } else {
+                    throw new IllegalStateException("Cannot handle 'both' direction during relative path traversal.");
+                }
+            };
+
+            for (RelativePath path : filter.getPaths()) {
+                Observable<Row> pathRes = Observable.from(rows);
+
+                for (Path.Segment seg : path.getPath()) {
+                    Function<Row, String> cp = getCp.apply(currentState);
+                    switch (seg.getElementType()) {
+                        case up:
+                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps ->
+                                    statements.findRelationshipInsByTargetCpsAndName(cps, contains.name()));
+                            currentState.inEdges = true;
+                            currentState.comingFrom = Relationships.Direction.incoming;
+                            break;
+                        default:
+                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps ->
+                                    statements.findRelationshipOutsBySourceCpsAndName(cps, contains.name()));
+                            currentState.inEdges = true;
+                            currentState.comingFrom = Relationships.Direction.outgoing;
+                    }
+                }
+
+                if (filter.getMarkerLabel() != null) {
+                    Observable<Row> toMatch = currentState.markedPositions.get(filter.getMarkerLabel());
+                    if (toMatch == null) {
+                        throw new IllegalArgumentException(
+                                "Query doesn't contain the marked position: " + filter.getMarkerLabel());
+                    }
+
+                    List<String> matchingCps = toMatch.map(r -> r.getString(CP)).toList().toBlocking().first();
+
+                    Function<Row, String> cp = getCp.apply(currentState);
+
+                    pathRes = pathRes.filter(r -> matchingCps.contains(cp.apply(r)));
+                }
+
+                ret = ret.mergeWith(goBackFromEdges(pathRes, currentState));
+            }
+
+            return ret;
+        });
     }
 
     private <T> Observable<Row> doFilter(List<T> constraints, Observable<Row> bounds, TraversalState state,
@@ -389,9 +455,11 @@ final class QueryExecutor {
         boolean inEdges;
         Relationships.Direction comingFrom;
         boolean explicitChange;
+        final Map<String, Observable<Row>> markedPositions = new ConcurrentHashMap<>();
 
         @Override public TraversalState clone() {
             try {
+                //shallow-copying the markedPositions is actually what we want
                 return (TraversalState) super.clone();
             } catch (CloneNotSupportedException e) {
                 //doesn't happen
