@@ -18,9 +18,14 @@
 
 package org.hawkular.inventory.impl.cassandra;
 
+import java.util.Collection;
+
 import org.hawkular.rx.cassandra.driver.RxSession;
 
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
+
+import rx.Observable;
 
 /**
  * @author Lukas Krejci
@@ -54,12 +59,18 @@ final class Statements {
     private final PreparedStatement findEntityCpsById;
     private final PreparedStatement findEntityCpsByTypes;
     private final PreparedStatement findEntityCpsByType;
+    private final PreparedStatement countOutRelationshipBySourceAndName;
+    private final PreparedStatement countInRelationshipByTargetAndName;
+    private final PreparedStatement findOutRelationshipBySourceAndName;
+    private final PreparedStatement findInRelationshipByTargetAndName;
     private final PreparedStatement findRelationshipOutsBySourceCpsAndName;
     private final PreparedStatement findRelationshipOutsBySourceCps;
     private final PreparedStatement findRelationshipInsByTargetCpsAndName;
     private final PreparedStatement findRelationshipInsByTargetCps;
+    private final RxSession session;
 
     Statements(RxSession session) {
+        this.session = session;
         findEntityByCanonicalPath = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " = ?;");
         findEntityByCanonicalPaths = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " IN ?;");
         findRelationshipByCanonicalPath =
@@ -72,6 +83,14 @@ final class Statements {
                 + " IN ?;");
         findEntityCpsByType = prepare(session, "SELECT " + CP + " FROM " + ENTITY_TYPE_IDX + " WHERE " + TYPE
                 + " = ?;");
+        countOutRelationshipBySourceAndName = prepare(
+                session, "SELECT COUNT(*) FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP + " = ? AND " + NAME + " = ?;");
+        countInRelationshipByTargetAndName = prepare(
+                session, "SELECT COUNT(*) FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP + " = ? AND " + NAME + " = ?;");
+        findOutRelationshipBySourceAndName = prepare(
+                session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP + " = ? AND " + NAME + " = ?;");
+        findInRelationshipByTargetAndName = prepare(
+                session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP + " = ? AND " + NAME + " = ?;");
         findRelationshipOutsBySourceCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP
                 + " IN ? AND " + NAME + " = ?;");
         findRelationshipInsByTargetCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP
@@ -88,6 +107,14 @@ final class Statements {
 
     PreparedStatement findRelationshipByCanonicalPath() {
         return findRelationshipByCanonicalPath;
+    }
+
+    Observable<Row> findEntityByCanonicalPath(String cp) {
+        return session.executeAndFetch(findEntityByCanonicalPath.bind(cp));
+    }
+
+    Observable<Row> findRelationshipByCanonicalPath(String cp) {
+        return session.executeAndFetch(findRelationshipByCanonicalPath.bind(cp));
     }
 
     PreparedStatement findEntityByCanonicalPaths() {
@@ -114,19 +141,49 @@ final class Statements {
         return findEntityCpsByType;
     }
 
-    public PreparedStatement findRelationshipOutsBySourceCpsAndName() {
+    Observable<Long> countOutRelationshipBySourceAndName(String source, String name) {
+        return session.executeAndFetch(countOutRelationshipBySourceAndName.bind(source, name))
+                .first()
+                .map(row -> row.getLong(0));
+    }
+
+    Observable<Long> countInRelationshipByTargetAndName(String target, String name) {
+        return session.executeAndFetch(countInRelationshipByTargetAndName.bind(target, name))
+                .first()
+                .map(row -> row.getLong(0));
+    }
+
+    Observable<Row> findOutRelationshipBySourceAndName(String source, String name) {
+        return session.executeAndFetch(findOutRelationshipBySourceAndName.bind(source, name));
+    }
+
+    Observable<Row> findInRelationshipByTargetAndName(String source, String name) {
+        return session.executeAndFetch(findInRelationshipByTargetAndName.bind(source, name));
+    }
+
+    Observable<Row> findOutRelationshipBySourceAndNames(String source, Collection<String> names) {
+        return Observable.from(names)
+                .flatMap(name -> findOutRelationshipBySourceAndName(source, name));
+    }
+
+    Observable<Row> findInRelationshipByTargetAndNames(String target, Collection<String> names) {
+        return Observable.from(names)
+                .flatMap(name -> findInRelationshipByTargetAndName(target, name));
+    }
+
+    PreparedStatement findRelationshipOutsBySourceCpsAndName() {
         return findRelationshipOutsBySourceCpsAndName;
     }
 
-    public PreparedStatement findRelationshipInsByTargetCpsAndName() {
+    PreparedStatement findRelationshipInsByTargetCpsAndName() {
         return findRelationshipInsByTargetCpsAndName;
     }
 
-    public PreparedStatement findRelationshipOutsBySourceCps() {
+    PreparedStatement findRelationshipOutsBySourceCps() {
         return findRelationshipOutsBySourceCps;
     }
 
-    public PreparedStatement findRelationshipInsByTargetCps() {
+    PreparedStatement findRelationshipInsByTargetCps() {
         return findRelationshipInsByTargetCps;
     }
 

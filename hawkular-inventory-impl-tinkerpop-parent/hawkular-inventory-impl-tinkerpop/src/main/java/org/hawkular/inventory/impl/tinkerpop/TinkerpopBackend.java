@@ -418,10 +418,12 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         return entityRepresentation.<String>property(Constants.Property.__identityHash.name()).orElse(null);
     }
 
+    @Override
     public String extractContentHash(Element entityRepresentation) {
         return entityRepresentation.<String>property(Constants.Property.__contentHash.name()).orElse(null);
     }
 
+    @Override
     public String extractSyncHash(Element entityRepresentation) {
         return entityRepresentation.<String>property(Constants.Property.__syncHash.name()).orElse(null);
     }
