@@ -27,13 +27,16 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 
 import java.io.InputStream;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.hawkular.inventory.api.Inventory;
 import org.hawkular.inventory.api.Query;
@@ -73,8 +76,10 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.TypeTokens;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
+import com.google.common.reflect.TypeToken;
 
 import rx.Observable;
 
@@ -84,6 +89,8 @@ import rx.Observable;
  */
 public final class CassandraBackend implements InventoryBackend<Row> {
     private static final Logger DBG = Logger.getLogger(CassandraBackend.class);
+
+    private static final TypeToken<Map<String, String>> PROPERTIES_TYPE = TypeTokens.mapOf(String.class, String.class);
 
     private final RxSession session;
     private final Statements statements;
@@ -172,7 +179,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public Iterator<Row> getTransitiveClosureOver(Row startingPoint, Relationships.Direction direction,
-                                                       String... relationshipNames) {
+                                                  String... relationshipNames) {
         //TODO implement
         return null;
     }
@@ -206,22 +213,109 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         String sourceCp = source.getString(Statements.CP);
         String targetCp = target.getString(Statements.CP);
 
-        Statement q = select().countAll().from(Statements.RELATIONSHIP_OUT)
-                .where(eq(Arrays.asList(Statements.SOURCE_CP, Statements.TARGET_CP),
-                        Arrays.asList(sourceCp, targetCp)));
-        return session.execute(q).count().toBlocking().first() > 0;
+        String relCP = getRelationshipCanonicalPath(relationshipName, sourceCp, targetCp);
+
+        Statement q = statements.findRelationshipByCanonicalPath().bind(relCP);
+
+        return session.executeAndFetch(q).toBlocking().toIterable().iterator().hasNext();
     }
 
     @Override
     public Set<Row> getRelationships(Row entity, Relationships.Direction direction, String... names) {
-        //TODO implement
-        return null;
+        Observable<Row> rows = getRelationshipRows(entity, direction, names);
+        Iterable<Row> res;
+        if (names.length == 1) {
+            res = rows.toBlocking().toIterable();
+        } else {
+            Set<String> sortedNames = Stream.of(names).sorted().collect(Collectors.toCollection(TreeSet::new));
+
+            res = rows.filter(r -> sortedNames.contains(r.getString(Statements.NAME)))
+                    .toBlocking().toIterable();
+        }
+
+        return StreamSupport.stream(res.spliterator(), false).collect(Collectors.toSet());
+    }
+
+    private Observable<Row> getRelated(Row entity, Relationships.Direction direction, String... relationshipNames) {
+        String entityCp = entity.getString(Statements.CP);
+
+        return getRelationshipRows(entity, direction, relationshipNames)
+                .map(r -> {
+                    switch (direction) {
+                        case outgoing:
+                            return r.getString(Statements.TARGET_CP);
+                        case incoming:
+                            return r.getString(Statements.SOURCE_CP);
+                        case both:
+                            String source = r.getString(Statements.SOURCE_CP);
+                            String target = r.getString(Statements.TARGET_CP);
+                            if (source.equals(entityCp)) {
+                                return target;
+                            } else {
+                                return source;
+                            }
+                        default:
+                            throw new IllegalStateException("Unhandled direction: " + direction);
+                    }
+                })
+                .toList()
+                .flatMap(cps -> session.executeAndFetch(statements.findEntityByCanonicalPaths().bind(cps)));
+    }
+
+    private Observable<Row> getRelationshipRows(Row entity, Relationships.Direction direction, String... names) {
+        String cp = entity.getString(Statements.CP);
+
+        Observable<Statement> qs;
+        switch (direction) {
+            case incoming:
+                if (names.length == 1) {
+                    qs = Observable.just(select().all().from(Statements.RELATIONSHIP_IN)
+                            .where(eq(Statements.TARGET_CP, cp)).and(eq(Statements.NAME, names[0])));
+                } else {
+                    qs = Observable.just(select().all().from(Statements.RELATIONSHIP_IN)
+                            .where(eq(Statements.TARGET_CP, cp)));
+                }
+                break;
+            case outgoing:
+                if (names.length == 1) {
+                    qs = Observable
+                            .just(select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp))
+                                    .and(eq(Statements.NAME, names[0])));
+                } else {
+                    qs = Observable
+                            .just(select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp)));
+                }
+                break;
+            case both:
+                if (names.length == 1) {
+                    qs = Observable.just(
+                            select().all().from(Statements.RELATIONSHIP_IN).where(eq(Statements.TARGET_CP, cp))
+                                    .and(eq(Statements.NAME, names[0])),
+                            select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp))
+                                    .and(eq(Statements.NAME, names[0])));
+                } else {
+                    qs = Observable.just(
+                            select().all().from(Statements.RELATIONSHIP_IN).where(eq(Statements.TARGET_CP, cp)),
+                            select().all().from(Statements.RELATIONSHIP_OUT).where(eq(Statements.SOURCE_CP, cp)));
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unhandled relationship direction: " + direction);
+        }
+
+        return qs.flatMap(session::executeAndFetch);
     }
 
     @Override public Row getRelationship(Row source, Row target, String relationshipName)
             throws ElementNotFoundException {
-        //TODO implement
-        return null;
+        String sourceCp = source.getString(Statements.CP);
+        String targetCp = target.getString(Statements.CP);
+
+        String relCP = getRelationshipCanonicalPath(relationshipName, sourceCp, targetCp);
+
+        Statement q = statements.findRelationshipByCanonicalPath().bind(relCP);
+
+        return session.executeAndFetch(q).toBlocking().first();
     }
 
     @Override public Row getRelationshipSource(Row relationship) {
@@ -283,21 +377,21 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override public <T> T convert(Row er, Class<T> entityType) {
         if (!AbstractElement.class.isAssignableFrom(entityType)) {
             throw new IllegalArgumentException("entityType");
         }
 
         SegmentType type = Inventory.types()
-                .byElement((Class<AbstractElement<Blueprint, AbstractElement.Update>>)entityType)
+                .byElement((Class<AbstractElement<Blueprint, AbstractElement.Update>>) entityType)
                 .getSegmentType();
 
         CanonicalPath cp = extractCanonicalPath(er);
         String name = er.getString(Statements.NAME);
-        Map<String, Object> props = er.getColumnDefinitions().contains(Statements.PROPERTIES)
-                 ? (Map<String, Object>) er.getObject(Statements.PROPERTIES)
-                 : Collections.emptyMap();
+        Map<String, String> props = er.getColumnDefinitions().contains(Statements.PROPERTIES)
+                ? er.get(Statements.PROPERTIES, PROPERTIES_TYPE)
+                : Collections.emptyMap();
 
         Function<Map<String, Object>, Object> applyPropertiesAndConstruct;
 
@@ -305,7 +399,6 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         String syncHash = "syncHash";
         String identityHash = "identityHash";
         String contentHash = "contentHash";
-        Long collectionInterval = 0L;
 
         switch (type) {
             case rl:
@@ -325,27 +418,31 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 applyPropertiesAndConstruct = ps -> new Feed(name, cp, identityHash, contentHash, syncHash, ps);
                 break;
             case m:
-                Row mtr = getRelationships(er, incoming, defines.name()).iterator().next();
+                Row mtr = getRelated(er, incoming, defines.name()).toBlocking().first();
                 MetricType mt = convert(mtr, MetricType.class);
-                applyPropertiesAndConstruct =
-                        ps -> new Metric(name, cp, identityHash, contentHash, syncHash, mt, collectionInterval, ps);
+                applyPropertiesAndConstruct = ps -> {
+                    Long collectionInterval = extractProperty(ps, MappedProperty.COLLECTION_INTERVAL);
+                    return new Metric(name, cp, identityHash, contentHash, syncHash, mt, collectionInterval, ps);
+                };
                 break;
             case mp:
                 applyPropertiesAndConstruct = ps -> new MetadataPack(name, cp, ps);
                 break;
             case mt:
-                MetricUnit unit = null; //TODO implement
-                MetricDataType dataType = null; //TODO implement
-                applyPropertiesAndConstruct =
-                        ps -> new MetricType(name, cp, identityHash, contentHash, syncHash, unit, dataType, ps,
-                                collectionInterval);
+                applyPropertiesAndConstruct = ps -> {
+                    Long collectionInterval = extractProperty(ps, MappedProperty.COLLECTION_INTERVAL);
+                    MetricUnit unit = extractProperty(ps, MappedProperty.UNIT);
+                    MetricDataType dataType = extractProperty(ps, MappedProperty.METRIC_DATA_TYPE);
+                    return new MetricType(name, cp, identityHash, contentHash, syncHash, unit, dataType, ps,
+                            collectionInterval);
+                };
                 break;
             case ot:
                 applyPropertiesAndConstruct =
                         ps -> new OperationType(name, cp, identityHash, contentHash, syncHash, ps);
                 break;
             case r:
-                Row rtr = getRelationships(er, incoming, defines.name()).iterator().next();
+                Row rtr = getRelated(er, incoming, defines.name()).toBlocking().first();
                 ResourceType rt = convert(rtr, ResourceType.class);
                 applyPropertiesAndConstruct = ps -> new Resource(name, cp, identityHash, contentHash, syncHash, rt, ps);
                 break;
@@ -360,8 +457,12 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         }
 
         //TODO handle structured data and shallow structured data
-        //TODO filter the properties
-        return (T) applyPropertiesAndConstruct.apply(props);
+        return (T) applyPropertiesAndConstruct.apply((Map<String, Object>) (Map) props);
+    }
+
+    private <T> T extractProperty(Map<String, ?> props, MappedProperty prop) {
+        Object val = props.remove(prop.propertyName());
+        return prop.fromString(val == null ? null : val.toString());
     }
 
     @Override public Row descendToData(Row dataEntityRepresentation, RelativePath dataPath) {
@@ -382,9 +483,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         AbstractMap.SimpleImmutableEntry::getValue));
 
         //the relationship CP is a composition of the sourceCP, name and targetCP
-        String cp = CanonicalPath.of().relationship(
-                PathSegmentCodec.encode(sourceCpS) + ";" + name + ";" + PathSegmentCodec.encode(targetCpS)).get()
-                .toString();
+        String cp = getRelationshipCanonicalPath(name, sourceCpS, targetCpS);
 
         String sourceId = sourceCp.getSegment().getElementId();
         int sourceType = sourceCp.getSegment().getElementType().ordinal();
@@ -422,19 +521,41 @@ public final class CassandraBackend implements InventoryBackend<Row> {
         return GeneratedRow.ofRelationship(keyspace, cp, name, sourceCpS, targetCpS, props);
     }
 
+    private String getRelationshipCanonicalPath(String name, String sourceCP, String targetCP) {
+        return CanonicalPath.of().relationship(
+                PathSegmentCodec.encode(sourceCP) + ";" + name + ";" + PathSegmentCodec.encode(targetCP)).get()
+                .toString();
+    }
+
     @Override public Row persist(CanonicalPath path, Blueprint blueprint) {
         return blueprint.accept(new ElementBlueprintVisitor.Simple<Row, Void>() {
-            private Row common(Entity.Blueprint bl) {
-                return common(bl, bl.getName());
+            @Override protected Row defaultAction(Object bl, Void parameter) {
+                return common((Entity.Blueprint) bl, ((Entity.Blueprint) bl).getName());
             }
 
             private Row common(AbstractElement.Blueprint bl, String name) {
                 Map<String, String> props = bl.getProperties() == null
-                        ? Collections.emptyMap()
+                        ? new HashMap<>(2)
                         : bl.getProperties().entrySet().stream()
                         .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), e.getValue().toString()))
                         .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey,
                                 AbstractMap.SimpleImmutableEntry::getValue));
+
+                bl.accept(new ElementBlueprintVisitor.Simple<Void, Void>() {
+                    @Override public Void visitMetric(Metric.Blueprint metric, Void parameter) {
+                        addToPropertiesIfNotNull(props, metric.getCollectionInterval(),
+                                MappedProperty.COLLECTION_INTERVAL);
+                        return null;
+                    }
+
+                    @Override public Void visitMetricType(MetricType.Blueprint type, Void parameter) {
+                        addToPropertiesIfNotNull(props, type.getCollectionInterval(),
+                                MappedProperty.COLLECTION_INTERVAL);
+                        addToPropertiesIfNotNull(props, type.getMetricDataType(), MappedProperty.METRIC_DATA_TYPE);
+                        addToPropertiesIfNotNull(props, type.getUnit(), MappedProperty.UNIT);
+                        return null;
+                    }
+                }, null);
 
                 Insert q = insertInto(Statements.ENTITY).values(new String[]{
                                 Statements.CP,
@@ -450,18 +571,18 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                                 props}).ifNotExists();
 
                 Insert id_idx = insertInto(Statements.ENTITY_ID_IDX).values(
-                        new String[] {Statements.ID, Statements.CP},
-                        new Object[] {path.getSegment().getElementId(), path.toString()});
+                        new String[]{Statements.ID, Statements.CP},
+                        new Object[]{path.getSegment().getElementId(), path.toString()});
 
                 Insert type_idx = insertInto(Statements.ENTITY_TYPE_IDX).values(
-                        new String[] {Statements.TYPE, Statements.CP},
-                        new Object[] {path.getSegment().getElementType().ordinal(), path.toString()});
+                        new String[]{Statements.TYPE, Statements.CP},
+                        new Object[]{path.getSegment().getElementType().ordinal(), path.toString()});
 
                 Observable<ResultSet> indices = session.execute(id_idx).mergeWith(session.execute(type_idx));
                 if (name != null) {
                     Insert name_idx = insertInto(Statements.ENTITY_NAME_IDX).values(
-                            new String[] {Statements.NAME, Statements.CP},
-                            new Object[] {name, path.toString()});
+                            new String[]{Statements.NAME, Statements.CP},
+                            new Object[]{name, path.toString()});
                     indices = indices.mergeWith(session.execute(name_idx));
                 }
 
@@ -478,50 +599,22 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                         path.getSegment().getElementType().ordinal(), name, props);
             }
 
-            @Override public Row visitTenant(Tenant.Blueprint tenant, Void parameter) {
-                return common(tenant);
-            }
-
-            @Override public Row visitEnvironment(Environment.Blueprint environment, Void parameter) {
-                return common(environment);
-            }
-
-            @Override public Row visitFeed(Feed.Blueprint feed, Void parameter) {
-                return common(feed);
-            }
-
-            @Override public Row visitMetric(Metric.Blueprint metric, Void parameter) {
-                return common(metric);
-            }
-
-            @Override public Row visitMetricType(MetricType.Blueprint type, Void parameter) {
-                return common(type);
-            }
-
-            @Override public Row visitResource(Resource.Blueprint resource, Void parameter) {
-                return common(resource);
-            }
-
-            @Override public Row visitResourceType(ResourceType.Blueprint type, Void parameter) {
-                return common(type);
-            }
-
             @Override public Row visitRelationship(Relationship.Blueprint relationship, Void parameter) {
                 throw new IllegalArgumentException("Relationships cannot be persisted using the persist() method.");
-            }
-
-            @Override public Row visitData(DataEntity.Blueprint<?> data, Void parameter) {
-                return common(data);
-            }
-
-            @Override public Row visitOperationType(OperationType.Blueprint operationType, Void parameter) {
-                return common(operationType);
             }
 
             @Override public Row visitMetadataPack(MetadataPack.Blueprint metadataPack, Void parameter) {
                 return common(metadataPack, metadataPack.getName());
             }
         }, null);
+    }
+
+    private void addToPropertiesIfNotNull(Map<String, String> properties, Object value, MappedProperty property) {
+        if (value == null) {
+            return;
+        }
+
+        properties.put(property.propertyName(), property.toString(value));
     }
 
     @Override public Row persist(StructuredData structuredData) {

@@ -54,6 +54,10 @@ final class Statements {
     private final PreparedStatement findEntityCpsById;
     private final PreparedStatement findEntityCpsByTypes;
     private final PreparedStatement findEntityCpsByType;
+    private final PreparedStatement findRelationshipOutsBySourceCpsAndName;
+    private final PreparedStatement findRelationshipOutsBySourceCps;
+    private final PreparedStatement findRelationshipInsByTargetCpsAndName;
+    private final PreparedStatement findRelationshipInsByTargetCps;
 
     Statements(RxSession session) {
         findEntityByCanonicalPath = prepare(session, "SELECT * FROM " + ENTITY + " WHERE " + CP + " = ?;");
@@ -68,6 +72,14 @@ final class Statements {
                 + " IN ?;");
         findEntityCpsByType = prepare(session, "SELECT " + CP + " FROM " + ENTITY_TYPE_IDX + " WHERE " + TYPE
                 + " = ?;");
+        findRelationshipOutsBySourceCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP
+                + " IN ? AND " + NAME + " = ?;");
+        findRelationshipInsByTargetCpsAndName = prepare(session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP
+                + " IN ? AND " + NAME + " = ?;");
+        findRelationshipOutsBySourceCps = prepare(session, "SELECT * FROM " + RELATIONSHIP_OUT + " WHERE " + SOURCE_CP
+                + " IN ?;");
+        findRelationshipInsByTargetCps = prepare(session, "SELECT * FROM " + RELATIONSHIP_IN + " WHERE " + TARGET_CP
+                + " IN ?;");
     }
 
     PreparedStatement findEntityByCanonicalPath() {
@@ -100,6 +112,22 @@ final class Statements {
 
     PreparedStatement findEntityCpsByType() {
         return findEntityCpsByType;
+    }
+
+    public PreparedStatement findRelationshipOutsBySourceCpsAndName() {
+        return findRelationshipOutsBySourceCpsAndName;
+    }
+
+    public PreparedStatement findRelationshipInsByTargetCpsAndName() {
+        return findRelationshipInsByTargetCpsAndName;
+    }
+
+    public PreparedStatement findRelationshipOutsBySourceCps() {
+        return findRelationshipOutsBySourceCps;
+    }
+
+    public PreparedStatement findRelationshipInsByTargetCps() {
+        return findRelationshipInsByTargetCps;
     }
 
     private PreparedStatement prepare(RxSession session, String statement) {

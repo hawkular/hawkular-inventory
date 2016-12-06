@@ -40,6 +40,7 @@ import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.QueryFragment;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.rx.cassandra.driver.RxSession;
@@ -164,6 +165,10 @@ final class QueryExecutor {
             return execIds((With.Ids) filter, bounds, state);
         } else if (filter instanceof With.Types) {
             return execTypes((With.Types) filter, bounds, state);
+        } else if (filter instanceof Related) {
+            return execRelated((Related) filter, bounds, state);
+        } else if (filter instanceof With.RelativePaths) {
+            return execRelativePaths((With.RelativePaths) filter, bounds, state);
         } else {
             throw new IllegalArgumentException("Unsupported filter type: " + filter.getClass().getName());
         }
@@ -222,6 +227,116 @@ final class QueryExecutor {
         );
     }
 
+    private Observable<Row> execRelated(Related filter, Observable<Row> bounds, TraversalState state) {
+        Observable<Row> ret = goBackFromEdges(bounds, state);
+
+        String tmp1 = null;
+        String tmp2 = null;
+        if (filter.getEntityPath() != null) {
+            tmp1 = filter.getEntityPath().toString();
+            tmp2 = state.chooseBasedOnDirection(CP, TARGET_CP, SOURCE_CP);
+        }
+        String otherEndEntityFilterProp = tmp1;
+        String otherEndEntityFilterValue = tmp2;
+
+        boolean applied = false;
+        switch (filter.getEntityRole()) {
+            case TARGET:
+                if (null != filter.getRelationshipName()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.incoming;
+                    ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                            .flatMap(cps -> session.executeAndFetch(statements.findRelationshipInsByTargetCpsAndName()
+                                    .bind(cps, filter.getRelationshipName())));
+                    applied = true;
+                }
+                if (null != filter.getRelationshipId()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.incoming;
+                    // TODO test
+                    String cp = CanonicalPath.of().relationship(filter.getRelationshipId()).get().toString();
+                    //not too efficient, but this is rarely used...
+                    if (applied) {
+                        ret = ret.filter(r -> r.getString(CP).equals(cp));
+                    } else {
+                        ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                                .flatMap(cps -> session.executeAndFetch(statements.findRelationshipInsByTargetCps()
+                                        .bind(cps, filter.getRelationshipName())))
+                                .filter(r -> r.getString(CP).equals(cp));
+                    }
+                }
+                break;
+            case SOURCE:
+                if (null != filter.getRelationshipName()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.outgoing;
+                    ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                            .flatMap(cps -> session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
+                                    .bind(cps, filter.getRelationshipName())));
+                    applied = true;
+                }
+                if (null != filter.getRelationshipId()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.outgoing;
+                    // TODO test
+                    String cp = CanonicalPath.of().relationship(filter.getRelationshipId()).get().toString();
+                    //not too efficient, but this is rarely used...
+                    if (applied) {
+                        ret = ret.filter(r -> r.getString(CP).equals(cp));
+                    } else {
+                        ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                                .flatMap(cps -> session.executeAndFetch(statements.findRelationshipOutsBySourceCps()
+                                        .bind(cps, filter.getRelationshipName())))
+                                .filter(r -> r.getString(CP).equals(cp));
+                    }
+                }
+                break;
+            case ANY:
+                // TODO properties-on-edges optimization not implemented for direction "both"
+                if (null != filter.getRelationshipName()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.both;
+                    ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                            .flatMap(cps ->
+                                session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
+                                        .bind(cps, filter.getRelationshipName()))
+                                        .mergeWith(session.executeAndFetch(
+                                                statements.findRelationshipOutsBySourceCpsAndName()
+                                        .bind(cps, filter.getRelationshipName()))));
+                    applied = true;
+                }
+                if (null != filter.getRelationshipId()) {
+                    state.inEdges = true;
+                    state.comingFrom = Relationships.Direction.both;
+                    // TODO test
+                    String cp = CanonicalPath.of().relationship(filter.getRelationshipId()).get().toString();
+                    if (applied) {
+                        ret = ret.filter(r -> r.getString(CP).equals(cp));
+                    } else {
+                        ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
+                                .flatMap(cps ->
+                                        session.executeAndFetch(statements.findRelationshipOutsBySourceCpsAndName()
+                                                .bind(cps, filter.getRelationshipName()))
+                                                .mergeWith(session.executeAndFetch(
+                                                        statements.findRelationshipOutsBySourceCpsAndName()
+                                                                .bind(cps, filter.getRelationshipName()))))
+                                .filter(r -> r.getString(CP).equals(cp));
+                    }
+                }
+        }
+
+        if (otherEndEntityFilterProp != null) {
+            ret = ret.filter(r -> r.getString(otherEndEntityFilterProp).equals(otherEndEntityFilterValue));
+        }
+
+        return ret;
+    }
+
+    private Observable<Row> execRelativePaths(With.RelativePaths filter, Observable<Row> bounds, TraversalState state) {
+        //TODO implement
+        return Observable.empty();
+    }
+
     private <T> Observable<Row> doFilter(List<T> constraints, Observable<Row> bounds, TraversalState state,
                                               Supplier<PreparedStatement> primaryFetchBySingleConstraint,
                                               Supplier<PreparedStatement> primaryFetchByMultipleConstraints,
@@ -255,14 +370,14 @@ final class QueryExecutor {
             return results;
         }
 
-        TraversalState currentState = state.clone();
+        Relationships.Direction comingFrom = state.comingFrom;
 
         state.inEdges = false;
         state.comingFrom = null;
 
         return results
                 .flatMap(r -> {
-                    switch (currentState.comingFrom) {
+                    switch (comingFrom) {
                         case incoming:
                             return Observable.just(r.getString(TARGET_CP));
                         case outgoing:
@@ -270,7 +385,7 @@ final class QueryExecutor {
                         case both:
                             return Observable.just(r.getString(SOURCE_CP), r.getString(TARGET_CP));
                         default:
-                            throw new IllegalStateException("Unsupported direction: " + currentState.comingFrom);
+                            throw new IllegalStateException("Unsupported direction: " + comingFrom);
                     }
                 })
                 .toList()
