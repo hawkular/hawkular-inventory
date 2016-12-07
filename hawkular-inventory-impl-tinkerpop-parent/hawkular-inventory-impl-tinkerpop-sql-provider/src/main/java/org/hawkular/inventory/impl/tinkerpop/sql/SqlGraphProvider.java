@@ -28,6 +28,7 @@ import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.InternalEdge._
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__identityHash;
 import static org.hawkular.inventory.impl.tinkerpop.spi.Constants.Property.__type;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -320,9 +321,13 @@ public class SqlGraphProvider implements GraphProvider {
         SqlgGraph sg = (SqlgGraph) graph;
 
         if (sg.getJdbcUrl().startsWith("jdbc:postgresql")) {
+            if (!(t instanceof SQLException)) {
+                return false;
+            }
+
             //this happens when the schema changes in another transaction while a tx is in progress.
             //therefore restarting the tx should clear this out...
-            if (t.getMessage().endsWith("ERROR: cached plan must not change result type")) {
+            if (t.getMessage() != null && t.getMessage().endsWith("ERROR: cached plan must not change result type")) {
                 return true;
             }
         }
