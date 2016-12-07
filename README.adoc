@@ -146,7 +146,7 @@ rest-api : 2000-2999
 The rest-tests are not run by default as they need a running WildFly server with `rest-servlet` web application
 deployed. To run them manually you can specify not to skip them
 
-    mvn -Dmaven.test.skip=false test
+    ./mvnw -Dmaven.test.skip=false test
 
 == License
 
@@ -168,7 +168,7 @@ Hawkular-Inventory is released under Apache License, Version 2.0 as described in
    limitations under the License.
 ----
 
-During build if you are getting `Some files do not have the expected license header` just run `mvn license:format`.
+During build if you are getting `Some files do not have the expected license header` just run `./mvnw license:format`.
 
 
 

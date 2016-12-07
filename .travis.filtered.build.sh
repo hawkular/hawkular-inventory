@@ -42,4 +42,4 @@ set -o pipefail
 #
 # With this, we have the overview of what stage the build is currently in, yet we don't flood the output with stuff from tests and merely informative messages from the build.
 #
-mvn -fae -s .travis.maven.settings.xml clean install -Pitest 2>&1 | sed -n 's/^\[INFO\]  *org\.apache\.maven\.cli\.event\.ExecutionEventLogger - \( *[^ ].*\)$/[INFO] \1/p; /WARN/p; /ERROR/p; /^Tests run/p; /.* <<< FAILURE! *$/p; /.* <<< ERROR! *$/,/^ *$/p'
+./mvnw -fae -s .travis.maven.settings.xml clean install -Pitest 2>&1 | sed -n 's/^\[INFO\]  *org\.apache\.maven\.cli\.event\.ExecutionEventLogger - \( *[^ ].*\)$/[INFO] \1/p; /WARN/p; /ERROR/p; /^Tests run/p; /.* <<< FAILURE! *$/p; /.* <<< ERROR! *$/,/^ *$/p'
