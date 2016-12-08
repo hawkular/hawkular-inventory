@@ -42,7 +42,7 @@ import com.google.common.reflect.TypeToken;
  * @author Lukas Krejci
  * @since 2.0.0
  */
-public class GeneratedRow implements Row {
+final class GeneratedRow implements Row {
 
     private static final Constructor<ColumnDefinitions> COLUMN_DEFINITIONS_CONSTRUCTOR;
     private static final Constructor<ColumnDefinitions.Definition> DEFINITION_CONSTRUCTOR;

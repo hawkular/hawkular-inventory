@@ -23,7 +23,7 @@ import org.hawkular.inventory.api.model.MetricUnit;
  * @author Lukas Krejci
  * @since 2.0.0
  */
-public enum MappedProperty {
+enum MappedProperty {
     UNIT("-$unit"),
     METRIC_DATA_TYPE("-$metricDataType"),
     COLLECTION_INTERVAL("-$collectionInterval")

@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.cassandra;
 
+import org.hawkular.inventory.api.Query;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
@@ -30,7 +31,7 @@ import org.jboss.logging.annotations.ValidIdRange;
  */
 @MessageLogger(projectCode = "HAWKINV")
 @ValidIdRange(min = 2000, max = 2999)
-public interface Log extends BasicLogger {
+interface Log extends BasicLogger {
 
     Log LOG = Logger.getMessageLogger(Log.class, "org.hawkular.inventory.impl.cassandra");
 
@@ -64,4 +65,20 @@ public interface Log extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 2006, value = "Invalid page size specified in the configuration: %s. Using the default %s.")
     void warnInvalidPageSize(String found, String defaultValue, @Cause Throwable throwable);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2007, value = "Error while executing query %s")
+    void warnErrorExecutingQuery(Query query, @Cause Throwable cause);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2008, value = "Error while executing query %s starting at %s.")
+    void warnErrorExecutingTraverse(Query query, Object startingPoint, @Cause Throwable cause);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2009, value = "Error finding a related entity.")
+    void warnErrorFindingRelatedEntity(@Cause Throwable cause);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 2010, value = "Error finding a relationships.")
+    void warnErrorFindingRelationships(@Cause Throwable cause);
 }
