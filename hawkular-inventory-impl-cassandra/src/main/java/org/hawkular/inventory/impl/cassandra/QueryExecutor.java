@@ -82,7 +82,8 @@ final class QueryExecutor {
             data = start(query.getFragments()[0].getFilter(), traversalState);
         }
 
-        return traverse(data, query, 1, traversalState);
+        return traverse(data, query, 1, traversalState)
+                .doOnError(t -> Log.LOG.warnErrorExecutingQuery(query, t));
     }
 
     Observable<Row> traverse(Row startingPoint, Query query) {
@@ -94,7 +95,8 @@ final class QueryExecutor {
 
         state.inEdges = startingPoint.getColumnDefinitions().contains(SOURCE_CP);
 
-        return traverse(res, query, 0, state);
+        return traverse(res, query, 0, state)
+                .doOnError(t -> Log.LOG.warnErrorExecutingTraverse(query, startingPoint, t));
     }
 
     private Observable<Row> processSubTrees(Observable<Row> data, Query query, TraversalState state) {
@@ -178,7 +180,7 @@ final class QueryExecutor {
 
     private Observable<Row> execCps(With.CanonicalPaths filter, Observable<Row> bounds,
                                     TraversalState state) {
-        DBG.debugf("Creating statement for CP filter %s", filter);
+        DBG.debugf("Creating pipeline for CP filter %s", filter);
 
         String prop = state.propertyNameBasedOnState(TYPE);
 
@@ -194,7 +196,7 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execIds(With.Ids filter, Observable<Row> bounds, TraversalState state) {
-        DBG.debugf("Creating statement for ID filter %s", filter);
+        DBG.debugf("Creating pipeline for ID filter %s", filter);
         String prop = state.propertyNameBasedOnState(TYPE);
 
         return doFilter(
@@ -212,7 +214,7 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execTypes(With.Types filter, Observable<Row> bounds, TraversalState state) {
-        DBG.debugf("Creating statement for type filter %s", filter);
+        DBG.debugf("Creating pipeline for type filter %s", filter);
         String prop = state.propertyNameBasedOnState(TYPE);
 
         return doFilter(
@@ -230,6 +232,8 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execRelated(Related filter, Observable<Row> bounds, TraversalState state) {
+        DBG.debugf("Creating pipeline for related filter %s", filter);
+
         Observable<Row> ret = goBackFromEdges(bounds, state);
 
         String tmp1 = null;
@@ -247,9 +251,14 @@ final class QueryExecutor {
                 if (null != filter.getRelationshipName()) {
                     state.inEdges = true;
                     state.comingFrom = Relationships.Direction.incoming;
+                    DBG.debugf("Jumping on incoming relationships called %s.", filter.getRelationshipName());
                     ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                            .flatMap(cps -> statements.findRelationshipInsByTargetCpsAndName(cps,
-                                    filter.getRelationshipName()));
+                            .flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Finding relationships called %s with target CPs %s",
+                                        filter.getRelationshipName(), cps);
+                                return statements.findRelationshipInsByTargetCpsAndName(cps,
+                                        filter.getRelationshipName());
+                            });
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -262,7 +271,11 @@ final class QueryExecutor {
                         ret = ret.filter(r -> r.getString(CP).equals(cp));
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                                .flatMap(statements::findRelationshipInsByTargetCps)
+                                .flatMap(cps -> {
+                                    DBG.debugf("INFLIGHT: Finding any relationships with target CPs %s to find the" +
+                                            " one with relationship CP %s", cps, cp);
+                                    return statements.findRelationshipInsByTargetCps(cps);
+                                })
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
@@ -271,9 +284,14 @@ final class QueryExecutor {
                 if (null != filter.getRelationshipName()) {
                     state.inEdges = true;
                     state.comingFrom = Relationships.Direction.outgoing;
-                    ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                            .flatMap(cps -> statements.findRelationshipOutsBySourceCpsAndName(
-                                    cps, filter.getRelationshipName()));
+                    DBG.debugf("Jumping on outgoing relationships called %s.", filter.getRelationshipName());
+                    ret = ret.map(r -> r.getString(CP)).toList()
+                            .flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Finding relationships called %s with source CPs %s",
+                                        filter.getRelationshipName(), cps);
+                                return statements.findRelationshipOutsBySourceCpsAndName(
+                                        cps, filter.getRelationshipName());
+                            });
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -286,7 +304,11 @@ final class QueryExecutor {
                         ret = ret.filter(r -> r.getString(CP).equals(cp));
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                                .flatMap(statements::findRelationshipOutsBySourceCps)
+                                .flatMap(cps -> {
+                                    DBG.debugf("INFLIGHT: Finding any relationships with source CPs %s to find the" +
+                                            " one with relationship CP %s", cps, cp);
+                                    return statements.findRelationshipOutsBySourceCps(cps);
+                                })
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
@@ -296,12 +318,19 @@ final class QueryExecutor {
                 if (null != filter.getRelationshipName()) {
                     state.inEdges = true;
                     state.comingFrom = Relationships.Direction.both;
+                    DBG.debugf("Jumping on incoming and outgoing relationships called %s.",
+                            filter.getRelationshipName());
                     ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                            .flatMap(cps ->
-                                    statements.findRelationshipOutsBySourceCpsAndName(cps, filter.getRelationshipName())
-                                            .mergeWith(
-                                                    statements.findRelationshipOutsBySourceCpsAndName(cps,
-                                                            filter.getRelationshipName())));
+                            .flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Finding relationships called %s with source or target CPs %s",
+                                        filter.getRelationshipName(), cps);
+                                return statements
+                                        .findRelationshipOutsBySourceCpsAndName(cps, filter.getRelationshipName())
+                                        .mergeWith(
+                                                statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                                        filter.getRelationshipName()));
+                            });
+
                     applied = true;
                 }
                 if (null != filter.getRelationshipId()) {
@@ -313,17 +342,22 @@ final class QueryExecutor {
                         ret = ret.filter(r -> r.getString(CP).equals(cp));
                     } else {
                         ret = ret.flatMap(r -> Observable.just(r.getString(CP))).toList()
-                                .flatMap(cps ->
-                                        statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                .flatMap(cps -> {
+                                    DBG.debugf("INFLIGHT: Finding any relationships with source or target CPs %s to" +
+                                            " find the one with relationship CP %s", cps, cp);
+                                        return statements.findRelationshipOutsBySourceCpsAndName(cps,
                                                 filter.getRelationshipName())
                                                 .mergeWith(statements.findRelationshipOutsBySourceCpsAndName(cps,
-                                                        filter.getRelationshipName())))
+                                                        filter.getRelationshipName()));
+                                })
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
                 }
         }
 
         if (otherEndEntityFilterProp != null) {
+            DBG.debugf("Restricting the related filter targets on prop %s with value %s", otherEndEntityFilterProp,
+                    otherEndEntityFilterValue);
             ret = ret.filter(r -> r.getString(otherEndEntityFilterProp).equals(otherEndEntityFilterValue));
         }
 
@@ -331,11 +365,14 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execMarker(Marker filter, Observable<Row> bounds, TraversalState state) {
+        DBG.debugf("Marking the current position in the traversal as label %s", filter.getLabel());
         state.markedPositions.put(filter.getLabel(), bounds.replay());
         return bounds;
     }
 
     private Observable<Row> execRelativePaths(With.RelativePaths filter, Observable<Row> bounds, TraversalState state) {
+        DBG.debugf("Creating pipeline for relative path filter %s", filter);
+
         bounds = goBackFromEdges(bounds, state);
 
         TraversalState currentState = state.clone();
@@ -344,6 +381,7 @@ final class QueryExecutor {
             Observable<Row> ret = Observable.empty();
 
             Function<TraversalState, Function<Row, String>> getCp = (ts) -> {
+                DBG.debugf("INFLIGHT: Determining what CPs to use based on the current direction: %s", ts.comingFrom);
                 if (ts.comingFrom == null) {
                     return r -> r.getString(CP);
                 } else if (ts.comingFrom == Relationships.Direction.incoming) {
@@ -362,14 +400,18 @@ final class QueryExecutor {
                     Function<Row, String> cp = getCp.apply(currentState);
                     switch (seg.getElementType()) {
                         case up:
-                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps ->
-                                    statements.findRelationshipInsByTargetCpsAndName(cps, contains.name()));
+                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Going up from CPs %s", cps);
+                                return statements.findRelationshipInsByTargetCpsAndName(cps, contains.name());
+                            });
                             currentState.inEdges = true;
                             currentState.comingFrom = Relationships.Direction.incoming;
                             break;
                         default:
-                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps ->
-                                    statements.findRelationshipOutsBySourceCpsAndName(cps, contains.name()));
+                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Going down from CPs %s", cps);
+                                return statements.findRelationshipOutsBySourceCpsAndName(cps, contains.name());
+                            });
                             currentState.inEdges = true;
                             currentState.comingFrom = Relationships.Direction.outgoing;
                     }
@@ -383,6 +425,8 @@ final class QueryExecutor {
                     }
 
                     List<String> matchingCps = toMatch.map(r -> r.getString(CP)).toList().toBlocking().first();
+                    DBG.debugf("INFLIGHT: Found marker %s to correspond to the CPs: %s", filter.getMarkerLabel(),
+                            matchingCps);
 
                     Function<Row, String> cp = getCp.apply(currentState);
 
@@ -436,6 +480,7 @@ final class QueryExecutor {
 
         return results
                 .flatMap(r -> {
+                    DBG.debugf("INFLIGHT: Going back from edges. Coming from the direction: " + comingFrom);
                     switch (comingFrom) {
                         case incoming:
                             return Observable.just(r.getString(TARGET_CP));
@@ -473,11 +518,11 @@ final class QueryExecutor {
             }
             switch (prop) {
                 case CP:
-                    return chooseBasedOnDirection(CP, TARGET_CP, SOURCE_CP);
+                    return chooseBasedOnDirection(CP, SOURCE_CP, TARGET_CP);
                 case ID:
-                    return chooseBasedOnDirection(ID, TARGET_ID, SOURCE_ID);
+                    return chooseBasedOnDirection(ID, SOURCE_ID, TARGET_ID);
                 case TYPE:
-                    return chooseBasedOnDirection(TYPE, TARGET_TYPE, SOURCE_TYPE);
+                    return chooseBasedOnDirection(TYPE, SOURCE_TYPE, TARGET_TYPE);
                 default:
                     return prop;
             }

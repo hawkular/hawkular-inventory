@@ -118,11 +118,11 @@ final class Statements {
     }
 
     Observable<Row> findEntityByCanonicalPaths(List<String> cps) {
-        return session.executeAndFetch(findEntityByCanonicalPaths.bind(cps));
+        return cps.isEmpty() ? Observable.empty() : session.executeAndFetch(findEntityByCanonicalPaths.bind(cps));
     }
 
     Observable<Row> findRelationshipByCanonicalPaths(List<String> cps) {
-        return session.executeAndFetch(findRelationshipByCanonicalPaths.bind(cps));
+        return cps.isEmpty() ? Observable.empty() : session.executeAndFetch(findRelationshipByCanonicalPaths.bind(cps));
     }
 
     Observable<Row> findEntityCpsByIds(List<String> ids) {
@@ -134,7 +134,9 @@ final class Statements {
     }
 
     Observable<Row> findEntityCpsByTypes(List<SegmentType> types) {
-        return session.executeAndFetch(findEntityCpsByTypes.bind(types.stream().map(Enum::ordinal).collect(toList())));
+        return types.isEmpty()
+                ? Observable.empty()
+                : session.executeAndFetch(findEntityCpsByTypes.bind(types.stream().map(Enum::ordinal).collect(toList())));
     }
 
     Observable<Row> findEntityCpsByType(SegmentType type) {
@@ -180,19 +182,23 @@ final class Statements {
     }
 
     Observable<Row> findRelationshipOutsBySourceCpsAndName(List<String> cps, String name) {
-        return session.executeAndFetch(findRelationshipOutsBySourceCpsAndName.bind(cps, name));
+        return cps.isEmpty()
+                ? Observable.empty()
+                : session.executeAndFetch(findRelationshipOutsBySourceCpsAndName.bind(cps, name));
     }
 
     Observable<Row> findRelationshipInsByTargetCpsAndName(List<String> cps, String name) {
-        return session.executeAndFetch(findRelationshipInsByTargetCpsAndName.bind(cps, name));
+        return cps.isEmpty()
+                ? Observable.empty()
+                : session.executeAndFetch(findRelationshipInsByTargetCpsAndName.bind(cps, name));
     }
 
     Observable<Row> findRelationshipOutsBySourceCps(List<String> cps) {
-        return session.executeAndFetch(findRelationshipOutsBySourceCps.bind(cps));
+        return cps.isEmpty() ? Observable.empty() : session.executeAndFetch(findRelationshipOutsBySourceCps.bind(cps));
     }
 
     Observable<Row> findRelationshipInsByTargetCps(List<String> cps) {
-        return session.executeAndFetch(findRelationshipInsByTargetCps.bind(cps));
+        return cps.isEmpty() ? Observable.empty() : session.executeAndFetch(findRelationshipInsByTargetCps.bind(cps));
     }
 
     private PreparedStatement prepare(RxSession session, String statement) {
