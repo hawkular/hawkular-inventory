@@ -35,6 +35,7 @@ import org.cassalog.core.CassalogBuilder;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.base.TransactionConstructor;
+import org.hawkular.rx.cassandra.driver.RxSession;
 import org.hawkular.rx.cassandra.driver.RxSessionImpl;
 
 import com.datastax.driver.core.Cluster;
@@ -70,13 +71,16 @@ public final class CassandraInventory extends BaseInventory<Row> {
             String keyspace = configuration.getProperty(Prop.KEYSPACE, "hawkular_inventory");
             initSchema(session, keyspace);
 
-            return new CassandraBackend(new RxSessionImpl(session), keyspace);
+            boolean syncQuerying = Boolean.parseBoolean(configuration.getProperty(Prop.QUERY_SYNCHRONOUSLY, "false"));
+
+            RxSession rxSession = syncQuerying ? new SynchronousRxSessionImpl(session) : new RxSessionImpl(session);
+
+            return new CassandraBackend(rxSession, keyspace);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Could not initialize Cassandra connection using the provided configuration.", e);
         }
     }
-
 
     private Session connect(Configuration configuration) {
         Cluster.Builder clusterBuilder = new Cluster.Builder();
@@ -242,7 +246,11 @@ public final class CassandraInventory extends BaseInventory<Row> {
         PAGE_SIZE("hawkular.inventory.cassandra.page-size",
                 Arrays.asList("hawkular.inventory.cassandra.page-size",
                         "hawkular.metrics.cassandra.page-size"),
-                Arrays.asList("HAWKULAR_INVENTORY_CASSANDRA_PAGE_SIZE", "PAGE_SIZE"));
+                Arrays.asList("HAWKULAR_INVENTORY_CASSANDRA_PAGE_SIZE", "PAGE_SIZE")),
+
+        QUERY_SYNCHRONOUSLY("hawkular.inventory.cassandra.synchronousQuerying", null, null)
+
+        ;
 
         private final String propertyName;
         private final List<String> systemProperties;

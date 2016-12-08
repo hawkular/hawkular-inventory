@@ -37,29 +37,7 @@ public class CassandraInventoryTest extends AbstractBaseInventoryTestsuite<Row> 
 
     @BeforeClass
     public static void init() throws Exception {
-//        RxJavaPlugins.getInstance().registerObservableExecutionHook(new DebugHook<>(
-//                new DebugNotificationListener<Object>() {
-//                    @Override public <T> T onNext(DebugNotification<T> n) {
-//                        Log.LOG.debugf("onNext on %s", n);
-//                        return super.onNext(n);
-//                    }
-//
-//                    @Override public <T> Object start(DebugNotification<T> n) {
-//                        Log.LOG.debugf("start on %s", n);
-//                        return super.start(n);
-//                    }
-//
-//                    @Override public void complete(Object context) {
-//                        Log.LOG.debugf("complete on %s", context);
-//                        super.complete(context);
-//                    }
-//
-//                    @Override public void error(Object context, Throwable e) {
-//                        Log.LOG.debugf(e, "error on %s", context);
-//                        super.error(context, e);
-//                    }
-//                }));
-
+        RxSetup.setup();
         CassandraController.start();
         INVENTORY = new CassandraInventory();
         setupNewInventory(INVENTORY);

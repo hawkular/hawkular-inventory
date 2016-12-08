@@ -41,6 +41,7 @@ public class CassandraInventoryDBTest {
 
     @BeforeClass
     public static void init() throws Exception {
+        RxSetup.setup();
         CassandraController.start();
         CassandraInventory inventory = new CassandraInventory();
         AbstractBaseInventoryTestsuite.initializeInventoryForTest(inventory);

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -30,6 +31,11 @@ import rx.Observable;
  * @author Joel Takvorian
  */
 public class TransitiveClosureProcessorTest {
+
+    @BeforeClass
+    public static void setup() {
+        RxSetup.setup();
+    }
 
     @Test
     public void shouldProcessTree() {
