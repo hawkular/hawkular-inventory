@@ -87,7 +87,7 @@ import rx.Observable;
  * @author Lukas Krejci
  * @since 2.0.0
  */
-public final class CassandraBackend implements InventoryBackend<Row> {
+final class CassandraBackend implements InventoryBackend<Row> {
     private static final Logger DBG = Logger.getLogger(CassandraBackend.class);
 
     private static final TypeToken<Map<String, String>> PROPERTIES_TYPE = TypeTokens.mapOf(String.class, String.class);
@@ -294,7 +294,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                     }
                 })
                 .toList()
-                .flatMap(statements::findEntityByCanonicalPaths);
+                .flatMap(statements::findEntityByCanonicalPaths).doOnError(Log.LOG::warnErrorFindingRelatedEntity);
     }
 
     private Observable<Row> getRelationshipRows(Row entity, Relationships.Direction direction, String... names) {
@@ -329,7 +329,7 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 throw new IllegalStateException("Unhandled relationship direction: " + direction);
         }
 
-        return res;
+        return res.doOnError(Log.LOG::warnErrorFindingRelationships);
     }
 
     @Override public Row getRelationship(Row source, Row target, String relationshipName)
@@ -417,6 +417,13 @@ public final class CassandraBackend implements InventoryBackend<Row> {
                 .getSegmentType();
 
         CanonicalPath cp = extractCanonicalPath(er);
+
+        if (cp.getSegment().getElementType() != type) {
+            throw new IllegalArgumentException("The provided backend row is of an entity of type "
+                    + cp.getSegment().getElementType().getSimpleName() + ". Cannot convert it to the requested "
+                    + type.getSimpleName());
+        }
+
         String name = er.getString(Statements.NAME);
         Map<String, String> props = er.getColumnDefinitions().contains(Statements.PROPERTIES)
                 ? er.get(Statements.PROPERTIES, PROPERTIES_TYPE)
