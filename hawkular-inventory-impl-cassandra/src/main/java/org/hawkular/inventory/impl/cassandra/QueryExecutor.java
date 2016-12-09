@@ -43,8 +43,8 @@ import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Marker;
 import org.hawkular.inventory.api.filters.Related;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.base.spi.NoopFilter;
 import org.hawkular.inventory.paths.CanonicalPath;
-import org.hawkular.inventory.paths.Path;
 import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 import org.jboss.logging.Logger;
@@ -173,6 +173,8 @@ final class QueryExecutor {
             return execRelativePaths((With.RelativePaths) filter, bounds, state);
         } else if (filter instanceof Marker) {
             return execMarker((Marker) filter, bounds, state);
+        } else if (filter instanceof NoopFilter) {
+            return bounds;
         } else {
             throw new IllegalArgumentException("Unsupported filter type: " + filter.getClass().getName());
         }
@@ -324,11 +326,11 @@ final class QueryExecutor {
                             .flatMap(cps -> {
                                 DBG.debugf("INFLIGHT: Finding relationships called %s with source or target CPs %s",
                                         filter.getRelationshipName(), cps);
-                                return statements
-                                        .findRelationshipOutsBySourceCpsAndName(cps, filter.getRelationshipName())
-                                        .mergeWith(
-                                                statements.findRelationshipOutsBySourceCpsAndName(cps,
-                                                        filter.getRelationshipName()));
+                                return Observable.mergeDelayError(
+                                        statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                                filter.getRelationshipName()),
+                                        statements.findRelationshipInsByTargetCpsAndName(cps,
+                                                filter.getRelationshipName()));
                             });
 
                     applied = true;
@@ -345,10 +347,10 @@ final class QueryExecutor {
                                 .flatMap(cps -> {
                                     DBG.debugf("INFLIGHT: Finding any relationships with source or target CPs %s to" +
                                             " find the one with relationship CP %s", cps, cp);
-                                        return statements.findRelationshipOutsBySourceCpsAndName(cps,
-                                                filter.getRelationshipName())
-                                                .mergeWith(statements.findRelationshipOutsBySourceCpsAndName(cps,
-                                                        filter.getRelationshipName()));
+                                    return statements.findRelationshipOutsBySourceCpsAndName(cps,
+                                            filter.getRelationshipName())
+                                            .mergeWith(statements.findRelationshipInsByTargetCpsAndName(cps,
+                                                    filter.getRelationshipName()));
                                 })
                                 .filter(r -> r.getString(CP).equals(cp));
                     }
@@ -366,7 +368,7 @@ final class QueryExecutor {
 
     private Observable<Row> execMarker(Marker filter, Observable<Row> bounds, TraversalState state) {
         DBG.debugf("Marking the current position in the traversal as label %s", filter.getLabel());
-        state.markedPositions.put(filter.getLabel(), bounds.replay());
+        state.markedPositions.put(filter.getLabel(), bounds.cache());
         return bounds;
     }
 
@@ -375,47 +377,52 @@ final class QueryExecutor {
 
         bounds = goBackFromEdges(bounds, state);
 
-        TraversalState currentState = state.clone();
+        TraversalState originalState = state.clone();
 
         return bounds.toList().flatMap(rows -> {
             Observable<Row> ret = Observable.empty();
 
-            Function<TraversalState, Function<Row, String>> getCp = (ts) -> {
-                DBG.debugf("INFLIGHT: Determining what CPs to use based on the current direction: %s", ts.comingFrom);
-                if (ts.comingFrom == null) {
-                    return r -> r.getString(CP);
-                } else if (ts.comingFrom == Relationships.Direction.incoming) {
-                    return r -> r.getString(SOURCE_CP);
-                } else if (ts.comingFrom == Relationships.Direction.outgoing) {
-                    return r -> r.getString(TARGET_CP);
-                } else {
-                    throw new IllegalStateException("Cannot handle 'both' direction during relative path traversal.");
-                }
+            Function<TraversalState, Function<Row, String>> getCp = ts -> {
+                String col = ts.chooseBasedOnDirection(CP, TARGET_CP, SOURCE_CP);
+                DBG.debugf("INFLIGHT: Determined the column %s to be used for reading CPs when coming from %s",
+                        col, ts.comingFrom);
+                return r -> r.getString(col);
+            };
+
+            Function<TraversalState, Function<Row, Integer>> getType = ts -> {
+                String col = ts.chooseBasedOnDirection(TYPE, TARGET_TYPE, SOURCE_TYPE);
+                DBG.debugf("INFLIGHT: Determined the column %s to be used for reading type when coming from %s",
+                        col, ts.comingFrom);
+                return r -> r.getInt(col);
             };
 
             for (RelativePath path : filter.getPaths()) {
-                Observable<Row> pathRes = Observable.from(rows);
-
-                for (Path.Segment seg : path.getPath()) {
+                TraversalState currentState = originalState.clone();
+                Observable<Row> start = Observable.from(rows);
+                Observable<Row> pathRes = Observable.from(path.getPath()).reduce(start, (rs, seg) -> {
                     Function<Row, String> cp = getCp.apply(currentState);
+                    Observable<Row> next;
                     switch (seg.getElementType()) {
                         case up:
-                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps -> {
+                            currentState.inEdges = true;
+                            currentState.comingFrom = Relationships.Direction.incoming;
+                            next = rs.map(cp::apply).toList().flatMap(cps -> {
                                 DBG.debugf("INFLIGHT: Going up from CPs %s", cps);
                                 return statements.findRelationshipInsByTargetCpsAndName(cps, contains.name());
                             });
-                            currentState.inEdges = true;
-                            currentState.comingFrom = Relationships.Direction.incoming;
                             break;
                         default:
-                            pathRes = pathRes.map(cp::apply).toList().flatMap(cps -> {
-                                DBG.debugf("INFLIGHT: Going down from CPs %s", cps);
-                                return statements.findRelationshipOutsBySourceCpsAndName(cps, contains.name());
-                            });
                             currentState.inEdges = true;
                             currentState.comingFrom = Relationships.Direction.outgoing;
+                            Function<Row, Integer> type = getType.apply(currentState);
+                            next = rs.map(cp::apply).toList().flatMap(cps -> {
+                                DBG.debugf("INFLIGHT: Going down from CPs %s", cps);
+                                return statements.findRelationshipOutsBySourceCpsAndName(cps, contains.name())
+                                        .filter(r -> type.apply(r) == seg.getElementType().ordinal());
+                            });
                     }
-                }
+                    return next;
+                }).toBlocking().first();
 
                 if (filter.getMarkerLabel() != null) {
                     Observable<Row> toMatch = currentState.markedPositions.get(filter.getMarkerLabel());
@@ -424,16 +431,15 @@ final class QueryExecutor {
                                 "Query doesn't contain the marked position: " + filter.getMarkerLabel());
                     }
 
-                    List<String> matchingCps = toMatch.map(r -> r.getString(CP)).toList().toBlocking().first();
-                    DBG.debugf("INFLIGHT: Found marker %s to correspond to the CPs: %s", filter.getMarkerLabel(),
-                            matchingCps);
+                    DBG.debugf("INFLIGHT: Applying marker %s", filter.getMarkerLabel());
 
                     Function<Row, String> cp = getCp.apply(currentState);
 
-                    pathRes = pathRes.filter(r -> matchingCps.contains(cp.apply(r)));
+                    pathRes = pathRes.filter(r ->
+                            toMatch.map(mr -> mr.getString(CP)).contains(cp.apply(r)).toBlocking().first());
                 }
 
-                ret = ret.mergeWith(goBackFromEdges(pathRes, currentState));
+                ret = Observable.merge(ret, goBackFromEdges(pathRes, currentState));
             }
 
             return ret;
@@ -497,10 +503,10 @@ final class QueryExecutor {
     }
 
     private static class TraversalState implements Cloneable {
+        final Map<String, Observable<Row>> markedPositions = new ConcurrentHashMap<>();
         boolean inEdges;
         Relationships.Direction comingFrom;
         boolean explicitChange;
-        final Map<String, Observable<Row>> markedPositions = new ConcurrentHashMap<>();
 
         @Override public TraversalState clone() {
             try {
@@ -528,7 +534,7 @@ final class QueryExecutor {
             }
         }
 
-        private String chooseBasedOnDirection(String defaultvalue, String inValue, String outValue) {
+        private <T> T chooseBasedOnDirection(T defaultvalue, T inValue, T outValue) {
             if (comingFrom == null) {
                 return defaultvalue;
             }

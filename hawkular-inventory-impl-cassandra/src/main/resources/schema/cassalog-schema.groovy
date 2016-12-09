@@ -89,27 +89,27 @@ CREATE TABLE relationship (
 CREATE TABLE relationship_out (
     source_cp ascii,
     name text,
-    source_type int,
-    source_id text,
     target_cp ascii,
+    source_type int,
+    source_id text,                                                              
     target_type int,
     target_id text,
     cp ascii,
     properties map<text, text>,
-    PRIMARY KEY (source_cp, name)
+    PRIMARY KEY (source_cp, name, target_cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """, """
 CREATE TABLE relationship_in (
     target_cp ascii,
     name text,
+    source_cp ascii,
     target_type int,
     target_id text,
-    source_cp ascii,
     source_id text,
     source_type int,
     cp ascii,
     properties map<text, text>,
-    PRIMARY KEY (target_cp, name)
+    PRIMARY KEY (target_cp, name, source_cp)
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """])
 }
