@@ -111,7 +111,7 @@ public final class BaseRelationships {
 
                 BE origin = tx.querySingle(context.sourcePath);
                 if (origin == null) {
-                    throw new EntityNotFoundException(originEntityType, Query.filters(context.select().get()));
+                    throw new EntityNotFoundException(originEntityType, Query.filters(context.sourcePath));
                 }
 
                 // if this is a well-known relationship, there might be some semantic checks for it...
