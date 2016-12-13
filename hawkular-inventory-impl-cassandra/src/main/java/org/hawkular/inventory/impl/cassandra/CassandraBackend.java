@@ -294,11 +294,19 @@ final class CassandraBackend implements InventoryBackend<Row> {
                     }
                 })
                 .toList()
-                .flatMap(statements::findEntityByCanonicalPaths).doOnError(Log.LOG::warnErrorFindingRelatedEntity);
+                .flatMap(cps -> {
+                    DBG.debugf("INFLIGHT: getRelated: getting CPs: %s", cps);
+                    return statements.findEntityByCanonicalPaths(cps);
+                }).doOnError(Log.LOG::warnErrorFindingRelatedEntity);
     }
 
     private Observable<Row> getRelationshipRows(Row entity, Relationships.Direction direction, String... names) {
         String entityCP = entity.getString(Statements.CP);
+
+        if (DBG.isDebugEnabled()) {
+            DBG.debugf("Getting relationships of %s called %s in the direction %s", entityCP, Arrays.asList(names),
+                    direction);
+        }
 
         Observable<Row> res;
         switch (direction) {

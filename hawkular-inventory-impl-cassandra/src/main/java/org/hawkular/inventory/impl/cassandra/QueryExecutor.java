@@ -82,8 +82,14 @@ final class QueryExecutor {
             data = start(query.getFragments()[0].getFilter(), traversalState);
         }
 
-        return traverse(data, query, 1, traversalState)
+        Observable<Row> result = traverse(data, query, 1, traversalState)
                 .doOnError(t -> Log.LOG.warnErrorExecutingQuery(query, t));
+
+        if (!traversalState.explicitChange && traversalState.inEdges) {
+            result = goBackFromEdges(result, traversalState);
+        }
+
+        return result;
     }
 
     Observable<Row> traverse(Row startingPoint, Query query) {
@@ -95,8 +101,14 @@ final class QueryExecutor {
 
         state.inEdges = startingPoint.getColumnDefinitions().contains(SOURCE_CP);
 
-        return traverse(res, query, 0, state)
+        Observable<Row> result = traverse(res, query, 0, state)
                 .doOnError(t -> Log.LOG.warnErrorExecutingTraverse(query, startingPoint, t));
+
+        if (!state.explicitChange && state.inEdges) {
+            result = goBackFromEdges(result, state);
+        }
+
+        return result;
     }
 
     private Observable<Row> processSubTrees(Observable<Row> data, Query query, TraversalState state) {
@@ -182,9 +194,8 @@ final class QueryExecutor {
 
     private Observable<Row> execCps(With.CanonicalPaths filter, Observable<Row> bounds,
                                     TraversalState state) {
-        DBG.debugf("Creating pipeline for CP filter %s", filter);
-
-        String prop = state.propertyNameBasedOnState(TYPE);
+        String prop = state.propertyNameBasedOnState(CP);
+        DBG.debugf("Creating pipeline for CP filter %s, looking for the CP in column %s", filter, prop);
 
         return doFilter(
                 Stream.of(filter.getPaths()).map(CanonicalPath::toString).collect(toList()),
@@ -198,8 +209,8 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execIds(With.Ids filter, Observable<Row> bounds, TraversalState state) {
-        DBG.debugf("Creating pipeline for ID filter %s", filter);
-        String prop = state.propertyNameBasedOnState(TYPE);
+        String prop = state.propertyNameBasedOnState(ID);
+        DBG.debugf("Creating pipeline for ID filter %s, looking for the ID in column %s", filter, prop);
 
         return doFilter(
                 Stream.of(filter.getIds()).collect(toList()),
@@ -216,8 +227,8 @@ final class QueryExecutor {
     }
 
     private Observable<Row> execTypes(With.Types filter, Observable<Row> bounds, TraversalState state) {
-        DBG.debugf("Creating pipeline for type filter %s", filter);
         String prop = state.propertyNameBasedOnState(TYPE);
+        DBG.debugf("Creating pipeline for type filter %s, looking for the type in column %s", filter, prop);
 
         return doFilter(
                 Stream.of(filter.getSegmentTypes()).collect(toList()),
@@ -468,7 +479,12 @@ final class QueryExecutor {
                 }
             }
         } else {
-            ret = bounds.filter(r -> constraints.contains(constraintMatchProducer.apply(r)));
+            ret = bounds.filter(r -> {
+                T value = constraintMatchProducer.apply(r);
+                DBG.debugf("INFLIGHT: Checking for constraints %s containing row %s converted as %s", constraints, r,
+                        value);
+                return constraints.contains(value);
+            });
         }
 
         return goBackFromEdges(ret, state);
@@ -489,9 +505,9 @@ final class QueryExecutor {
                     DBG.debugf("INFLIGHT: Going back from edges. Coming from the direction: " + comingFrom);
                     switch (comingFrom) {
                         case incoming:
-                            return Observable.just(r.getString(TARGET_CP));
-                        case outgoing:
                             return Observable.just(r.getString(SOURCE_CP));
+                        case outgoing:
+                            return Observable.just(r.getString(TARGET_CP));
                         case both:
                             return Observable.just(r.getString(SOURCE_CP), r.getString(TARGET_CP));
                         default:
@@ -499,7 +515,10 @@ final class QueryExecutor {
                     }
                 })
                 .toList()
-                .flatMap(statements::findEntityByCanonicalPaths);
+                .flatMap(cps -> {
+                    DBG.debugf("INFLIGHT: Going back from edges to CPs: %s", cps);
+                    return statements.findEntityByCanonicalPaths(cps);
+                });
     }
 
     private static class TraversalState implements Cloneable {
@@ -524,11 +543,11 @@ final class QueryExecutor {
             }
             switch (prop) {
                 case CP:
-                    return chooseBasedOnDirection(CP, SOURCE_CP, TARGET_CP);
+                    return chooseBasedOnDirection(CP, TARGET_CP, SOURCE_CP);
                 case ID:
-                    return chooseBasedOnDirection(ID, SOURCE_ID, TARGET_ID);
+                    return chooseBasedOnDirection(ID, TARGET_ID, SOURCE_ID);
                 case TYPE:
-                    return chooseBasedOnDirection(TYPE, SOURCE_TYPE, TARGET_TYPE);
+                    return chooseBasedOnDirection(TYPE, TARGET_TYPE, SOURCE_TYPE);
                 default:
                     return prop;
             }
