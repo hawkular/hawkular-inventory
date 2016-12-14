@@ -20,10 +20,10 @@ import static org.hawkular.inventory.api.Relationships.Direction.both;
 import static org.hawkular.inventory.api.Relationships.Direction.incoming;
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
 import static org.hawkular.inventory.api.Relationships.WellKnown.defines;
-import static org.hawkular.inventory.api.Relationships.WellKnown.hasData;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.insertInto;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,6 +68,7 @@ import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
+import org.hawkular.inventory.json.StructuredDataDeserializer;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.PathSegmentCodec;
 import org.hawkular.inventory.paths.RelativePath;
@@ -78,6 +80,9 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TypeTokens;
 import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 
@@ -96,6 +101,7 @@ final class CassandraBackend implements InventoryBackend<Row> {
     private final Statements statements;
     private final QueryExecutor queryExecutor;
     private final String keyspace;
+    private final JsonFactory jsonFactory = new JsonFactory();
 
     CassandraBackend(RxSession session, String keyspace) {
         this.session = session;
@@ -452,7 +458,7 @@ final class CassandraBackend implements InventoryBackend<Row> {
                         new Relationship(cp.getSegment().getElementId(), name, sourceCp, targetCp, ps);
                 break;
             case d:
-                StructuredData data = loadStructuredData(er, hasData.name());
+                StructuredData data = loadStructuredData(er);
                 applyPropertiesAndConstruct = ps -> new DataEntity(cp, data, identityHash, contentHash, syncHash, ps);
                 break;
             case e:
@@ -516,6 +522,28 @@ final class CassandraBackend implements InventoryBackend<Row> {
 
     @Override
     public Row relate(Row sourceEntity, Row targetEntity, String name, Map<String, Object> properties) {
+        if (targetEntity.getColumnDefinitions().contains(Statements.CP)) {
+            return relateEntities(sourceEntity, targetEntity, name, properties);
+        } else {
+            return relateData(sourceEntity, targetEntity);
+        }
+    }
+
+    private Row relateData(Row sourceEntity, Row targetEntity) {
+        String sourceCp = sourceEntity.getString(Statements.CP);
+        UUID dataId = targetEntity.getUUID(Statements.ID);
+
+        Insert q = insertInto(Statements.ENTITY_DATA).values(
+                new String[] {Statements.CP, Statements.DATA_ID},
+                new Object[] {sourceCp, dataId}
+        );
+
+        session.execute(q).toBlocking().first();
+        //TODO implement
+        return null;
+    }
+
+    private Row relateEntities(Row sourceEntity, Row targetEntity, String name, Map<String, Object> properties) {
         String sourceCpS = sourceEntity.getString(Statements.CP);
         String targetCpS = targetEntity.getString(Statements.CP);
         CanonicalPath sourceCp = CanonicalPath.fromString(sourceCpS);
@@ -662,8 +690,16 @@ final class CassandraBackend implements InventoryBackend<Row> {
     }
 
     @Override public Row persist(StructuredData structuredData) {
-        //TODO implement
-        return null;
+        UUID id = UUIDs.random();
+        String data = structuredData.toJSON();
+        Insert q = insertInto(Statements.JSON_DATA).values(
+                new String[]{Statements.ID, Statements.VALUE},
+                new Object[]{id, data}
+        );
+
+        session.execute(q).toBlocking().first();
+
+        return GeneratedRow.ofData(keyspace, id, data);
     }
 
     @Override public void update(Row entity, AbstractElement.Update update) {
@@ -718,8 +754,21 @@ final class CassandraBackend implements InventoryBackend<Row> {
         session.close();
     }
 
-    private StructuredData loadStructuredData(Row parent, String relationship) {
-        //TODO implement
-        return null;
+    private StructuredData loadStructuredData(Row parent) {
+        String cp = parent.getString(Statements.CP);
+
+        return statements.findDataIdsByDataEntityCp(cp).flatMap(r -> {
+            UUID id = r.getUUID(Statements.DATA_ID);
+            return statements.findDataById(id);
+        }).map(d -> {
+            try {
+                String data = d.getString(Statements.VALUE);
+                JsonParser parser = jsonFactory.createParser(data);
+                parser.nextToken();
+                return new StructuredDataDeserializer().deserialize(parser, null);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to read JSON data from the database");
+            }
+        }).toBlocking().first();
     }
 }

@@ -71,6 +71,10 @@ final class GeneratedRow implements Row {
         return new GeneratedRow(relationshipColDefs(keyspace), cp, sourceCp, targetCp, name, props);
     }
 
+    public static GeneratedRow ofData(String keyspace, UUID id, String data) {
+        return new GeneratedRow(dataColDefs(keyspace), id, data);
+    }
+
     private static ColumnDefinitions entityColDefs(String keyspace) {
         try {
             ColumnDefinitions.Definition[] entityCols = new ColumnDefinitions.Definition[]{
@@ -104,6 +108,20 @@ final class GeneratedRow implements Row {
         } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
             throw new IllegalStateException("Failed to construct a fake Cassandra result row definitions for a" +
                     " relationship.", e);
+        }
+    }
+
+    private static ColumnDefinitions dataColDefs(String keyspace) {
+        try {
+            ColumnDefinitions.Definition[] dataCols = new ColumnDefinitions.Definition[]{
+                    def(keyspace, Statements.JSON_DATA, Statements.ID, DataType.uuid()),
+                    def(keyspace, Statements.JSON_DATA, Statements.VALUE, DataType.text())
+            };
+
+            return COLUMN_DEFINITIONS_CONSTRUCTOR.newInstance(dataCols, null);
+        } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
+            throw new IllegalStateException("Failed to construct a fake Cassandra result row definitions for  data.",
+                    e);
         }
     }
 

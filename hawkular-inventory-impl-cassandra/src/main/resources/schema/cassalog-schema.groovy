@@ -66,8 +66,18 @@ CREATE TABLE entity_type_idx (
 ""","""
 CREATE TABLE entity_name_idx (
     name text,
-    cp set<ascii>,
+    cp ascii,
     PRIMARY KEY (name)
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
+""", """
+CREATE TABLE json_data (
+    id uuid PRIMARY KEY,
+    value text
+) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
+""", """
+CREATE TABLE entity_data (
+    cp ascii PRIMARY KEY,
+    data_id uuid
 ) WITH compaction = { 'class': 'LeveledCompactionStrategy' };
 """])
 }
