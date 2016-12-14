@@ -56,7 +56,7 @@
   </scm>
 
   <properties>
-    <version.org.hawkular.commons>0.8.0.Final</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.9.1.Final-SRC-revision-cca1a8e40526c5c577b25a39b94ea0a52c178fd6</version.org.hawkular.commons>
 
     <version.io.reactivex>1.1.7</version.io.reactivex>
     <!-- overrides 3.1.2 from parent which produces NPE -->
