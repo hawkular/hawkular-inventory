@@ -18,9 +18,9 @@ package org.hawkular.inventory.rest.test;
 
 import java.io.IOException;
 
-import com.squareup.okhttp.Interceptor;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.Interceptor;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Enables logging of the requests prior to their sending over the wire.

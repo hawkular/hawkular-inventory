@@ -32,12 +32,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
-import com.squareup.okhttp.Credentials;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
+
+import okhttp3.Credentials;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class AbstractTestBase {
 
@@ -70,13 +71,15 @@ public class AbstractTestBase {
     protected static ObjectMapper mapper;
 
     static {
-        client = new OkHttpClient();
+        OkHttpClient.Builder bldr = new OkHttpClient.Builder();
         if (Boolean.parseBoolean(System.getProperty("http.log.wire", "false"))) {
-            client.interceptors().add(new LoggingInterceptor());
+            bldr.addInterceptor(new LoggingInterceptor());
         }
-        client.setConnectTimeout(60, TimeUnit.SECONDS);
-        client.setReadTimeout(60, TimeUnit.SECONDS);
-        client.setWriteTimeout(60, TimeUnit.SECONDS);
+        bldr.connectTimeout(60, TimeUnit.SECONDS);
+        bldr.readTimeout(60, TimeUnit.SECONDS);
+        bldr.writeTimeout(60, TimeUnit.SECONDS);
+
+        client = bldr.build();
 
         mapper = new ObjectMapper();
         AnnotationIntrospector jacksonIntrospector = new JacksonAnnotationIntrospector();

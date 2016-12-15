@@ -67,8 +67,9 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
