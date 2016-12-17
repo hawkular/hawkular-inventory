@@ -119,7 +119,7 @@ public class ContentHashTest {
                                                                         //and props
         String resourceHash = hash("../../rt;resourceType" + name, props);
 
-        String metricTypeHash = hash("" + MetricDataType.GAUGE + MetricUnit.BYTES + "1" + name, props);
+        String metricTypeHash = hash("" + MetricDataType.GAUGE.name() + MetricUnit.BYTES + "1" + name, props);
 
         String dataHash = hash(StructuredData.get().bool(true).toJSON() + "configuration", props);
 

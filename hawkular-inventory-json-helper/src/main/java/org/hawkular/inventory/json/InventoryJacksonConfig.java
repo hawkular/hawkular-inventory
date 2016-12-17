@@ -67,7 +67,6 @@ import org.hawkular.inventory.json.mixins.model.IdentityHashTreeMixin;
 import org.hawkular.inventory.json.mixins.model.InventoryStructureMixin;
 import org.hawkular.inventory.json.mixins.model.MetricDataTypeMixin;
 import org.hawkular.inventory.json.mixins.model.MetricMixin;
-import org.hawkular.inventory.json.mixins.model.MetricTypeBlueprintMixin;
 import org.hawkular.inventory.json.mixins.model.MetricTypeMixin;
 import org.hawkular.inventory.json.mixins.model.OperationTypeMixin;
 import org.hawkular.inventory.json.mixins.model.RelationshipMixin;
@@ -140,7 +139,6 @@ public final class InventoryJacksonConfig {
         objectMapper.addMixIn(InventoryStructure.class, InventoryStructureMixin.class);
         objectMapper.addMixIn(IdentityHash.Tree.class, IdentityHashTreeMixin.class);
         objectMapper.addMixIn(SyncHash.Tree.class, SyncHashTreeMixin.class);
-        objectMapper.addMixIn(MetricType.Blueprint.class, MetricTypeBlueprintMixin.class);
 
         /**
          * Query
